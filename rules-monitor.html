@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系统规则监测与管理</title>
+    <link rel="stylesheet" href="assets/css/main.css">
+    <link rel="stylesheet" href="assets/css/rules-monitor.css">
+</head>
+<body>
+    <div class="rules-monitor-container">
+        <!-- 页面头部 -->
+        <header class="monitor-header">
+            <div class="header-left">
+                <h1>系统规则监测与管理中心</h1>
+                <div class="system-status" id="system-overall-status">
+                    <span class="status-indicator" id="status-indicator"></span>
+                    <span id="status-text">系统状态: 监测中</span>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="user-info" id="user-info">
+                    <span>欢迎, <span id="current-user">未登录</span></span>
+                    <span class="permission-badge" id="permission-level">访客</span>
+                </div>
+                <div class="system-info">
+                    <div class="info-item">
+                        <span class="info-label">当前时间:</span>
+                        <span class="info-value" id="current-time">--:--:--</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">运行时长:</span>
+                        <span class="info-value" id="uptime">00:00:00</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- 权限提示 -->
+        <div class="permission-alert" id="permission-alert">
+            <div class="alert-content">
+                <i class="alert-icon">⚠️</i>
+                <p>此页面仅对管理员和Vikey管理员开放。请确保您拥有足够的权限。</p>
+            </div>
+        </div>
+
+        <!-- 功能导航 -->
+        <nav class="monitor-nav">
+            <ul class="nav-tabs">
+                <li class="nav-item active" data-tab="rules-overview">规则概览</li>
+                <li class="nav-item" data-tab="rule-details">规则详情</li>
+                <li class="nav-item" data-tab="auto-repair">自动修复</li>
+                <li class="nav-item" data-tab="gray-testing">灰度测试</li>
+                <li class="nav-item" data-tab="history">迭代历史</li>
+                <li class="nav-item" data-tab="deepseek">DeepSeek集成</li>
+                <li class="nav-item" data-tab="backup">备份与回滚</li>
+            </ul>
+        </nav>
+
+        <!-- 主内容区域 -->
+        <main class="monitor-content">
+            <!-- 规则概览面板 -->
+            <div class="tab-content active" id="rules-overview">
+                <div class="section-header">
+                    <h2>系统规则概览</h2>
+                    <div class="section-actions">
+                        <button class="btn primary" onclick="refreshRules()">刷新规则</button>
+                        <button class="btn secondary" onclick="exportRules()">导出规则</button>
+                        <button class="btn secondary" onclick="importRules()">导入规则</button>
+                    </div>
+                </div>
+                
+                <div class="stats-cards">
+                    <div class="stat-card">
+                        <div class="stat-value" id="total-rules">0</div>
+                        <div class="stat-label">总规则数</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="active-rules">0</div>
+                        <div class="stat-label">活跃规则</div>
+                    </div>
+                    <div class="stat-card warning">
+                        <div class="stat-value" id="warning-rules">0</div>
+                        <div class="stat-label">警告规则</div>
+                    </div>
+                    <div class="stat-card error">
+                        <div class="stat-value" id="error-rules">0</div>
+                        <div class="stat-label">错误规则</div>
+                    </div>
+                </div>
+
+                <div class="rules-table-container">
+                    <table class="rules-table">
+                        <thead>
+                            <tr>
+                                <th>规则ID</th>
+                                <th>规则名称</th>
+                                <th>规则类型</th>
+                                <th>状态</th>
+                                <th>优先级</th>
+                                <th>最后检查时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="rules-list">
+                            <!-- 规则列表将通过JavaScript动态填充 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 规则详情面板 -->
+            <div class="tab-content" id="rule-details">
+                <div class="section-header">
+                    <h2>规则详情</h2>
+                    <div class="section-actions">
+                        <button class="btn primary" onclick="createNewRule()">创建规则</button>
+                        <button class="btn danger" onclick="deleteSelectedRule()">删除规则</button>
+                    </div>
+                </div>
+                
+                <div class="rule-editor">
+                    <div class="editor-header">
+                        <h3>规则配置</h3>
+                        <div class="rule-status-badge" id="editor-rule-status">未选择</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="rule-id-input">规则ID</label>
+                        <input type="text" id="rule-id-input" disabled placeholder="自动生成">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="rule-name-input">规则名称</label>
+                        <input type="text" id="rule-name-input" placeholder="请输入规则名称">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="rule-type-select">规则类型</label>
+                        <select id="rule-type-select">
+                            <option value="system">系统规则</option>
+                            <option value="security">安全规则</option>
+                            <option value="performance">性能规则</option>
+                            <option value="data">数据规则</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="rule-description">规则描述</label>
+                        <textarea id="rule-description" rows="4" placeholder="请输入规则描述"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="rule-priority">优先级</label>
+                        <select id="rule-priority">
+                            <option value="low">低</option>
+                            <option value="medium">中</option>
+                            <option value="high">高</option>
+                            <option value="critical">关键</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="rule-conditions">触发条件</label>
+                        <textarea id="rule-conditions" rows="6" placeholder="请输入规则触发条件"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="rule-actions">执行操作</label>
+                        <textarea id="rule-actions" rows="6" placeholder="请输入规则执行操作"></textarea>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button class="btn primary" onclick="saveRuleChanges()">保存更改</button>
+                        <button class="btn secondary" onclick="testRule()">测试规则</button>
+                        <button class="btn secondary" onclick="resetEditor()">重置</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 自动修复面板 -->
+            <div class="tab-content" id="auto-repair">
+                <div class="section-header">
+                    <h2>自动修复管理</h2>
+                    <div class="section-actions">
+                        <button class="btn primary" onclick="startAutoRepairScan()">开始扫描</button>
+                        <button class="btn danger" onclick="stopAutoRepairScan()">停止扫描</button>
+                    </div>
+                </div>
+                
+                <div class="repair-settings">
+                    <h3>修复设置</h3>
+                    <div class="setting-row">
+                        <label>
+                            <input type="checkbox" id="enable-auto-repair" checked>
+                            启用自动修复
+                        </label>
+                        <label>
+                            <input type="checkbox" id="enable-deepseek-repair" checked>
+                            启用DeepSeek智能修复
+                        </label>
+                        <label>
+                            <input type="checkbox" id="require-approval" checked>
+                            修复前需要批准
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="repair-queue">
+                    <h3>修复队列</h3>
+                    <div id="repair-queue-list">
+                        <!-- 修复队列将通过JavaScript动态填充 -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- 灰度测试面板 -->
+            <div class="tab-content" id="gray-testing">
+                <div class="section-header">
+                    <h2>灰度测试环境</h2>
+                    <div class="section-actions">
+                        <button class="btn primary" onclick="deployToGray()">部署到灰度环境</button>
+                        <button class="btn secondary" onclick="promoteToProduction()">推广到生产环境</button>
+                    </div>
+                </div>
+                
+                <div class="gray-environment-info">
+                    <h3>环境信息</h3>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">灰度环境状态:</span>
+                            <span class="info-value" id="gray-status">未知</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">当前版本:</span>
+                            <span class="info-value" id="gray-version">0.0.0</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">测试用户比例:</span>
+                            <span class="info-value" id="gray-user-percentage">0%</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">部署时间:</span>
+                            <span class="info-value" id="gray-deploy-time">--</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="test-results">
+                    <h3>测试结果</h3>
+                    <div id="test-results-list">
+                        <!-- 测试结果将通过JavaScript动态填充 -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- 迭代历史面板 -->
+            <div class="tab-content" id="history">
+                <div class="section-header">
+                    <h2>迭代历史与建议</h2>
+                    <div class="section-actions">
+                        <button class="btn secondary" onclick="generateSuggestions()">生成迭代建议</button>
+                    </div>
+                </div>
+                
+                <div class="history-timeline">
+                    <h3>历史迭代记录</h3>
+                    <div id="history-list">
+                        <!-- 历史记录将通过JavaScript动态填充 -->
+                    </div>
+                </div>
+                
+                <div class="suggestions-panel">
+                    <h3>迭代建议</h3>
+                    <div id="suggestions-list">
+                        <!-- 迭代建议将通过JavaScript动态填充 -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- DeepSeek集成面板 -->
+            <div class="tab-content" id="deepseek">
+                <div class="section-header">
+                    <h2>DeepSeek模型集成</h2>
+                    <div class="section-actions">
+                        <button class="btn primary" onclick="connectDeepSeek()">连接模型</button>
+                        <button class="btn secondary" onclick="updateDeepSeekModel()">更新模型</button>
+                    </div>
+                </div>
+                
+                <div class="deepseek-status">
+                    <h3>模型状态</h3>
+                    <div class="status-grid">
+                        <div class="status-item">
+                            <span class="status-label">连接状态:</span>
+                            <span class="status-value" id="deepseek-connection">未连接</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">模型版本:</span>
+                            <span class="status-value" id="deepseek-version">未知</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">上次更新:</span>
+                            <span class="status-value" id="deepseek-last-update">--</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="deepseek-actions">
+                    <h3>智能操作</h3>
+                    <button class="btn secondary" onclick="analyzeSystemWithDeepseek()">分析系统问题</button>
+                    <button class="btn secondary" onclick="optimizeRulesWithDeepseek()">优化规则配置</button>
+                    <button class="btn secondary" onclick="generateCodeWithDeepseek()">生成修复代码</button>
+                </div>
+            </div>
+
+            <!-- 备份与回滚面板 -->
+            <div class="tab-content" id="backup">
+                <div class="section-header">
+                    <h2>备份与回滚管理</h2>
+                    <div class="section-actions">
+                        <button class="btn primary" onclick="createBackup()">创建备份</button>
+                        <button class="btn secondary" onclick="restoreBackup()">恢复备份</button>
+                    </div>
+                </div>
+                
+                <div class="backup-settings">
+                    <h3>备份设置</h3>
+                    <div class="setting-row">
+                        <label>
+                            <input type="checkbox" id="enable-auto-backup" checked>
+                            启用自动备份
+                        </label>
+                        <select id="backup-frequency">
+                            <option value="daily">每日</option>
+                            <option value="weekly">每周</option>
+                            <option value="monthly">每月</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="backups-list">
+                    <h3>备份列表</h3>
+                    <div id="backups-table-container">
+                        <table class="backups-table">
+                            <thead>
+                                <tr>
+                                    <th>备份ID</th>
+                                    <th>备份时间</th>
+                                    <th>备份大小</th>
+                                    <th>状态</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="backups-list-body">
+                                <!-- 备份列表将通过JavaScript动态填充 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- 操作日志 -->
+        <div class="operations-log">
+            <div class="log-header">
+                <h3>操作日志</h3>
+                <button class="btn small" onclick="clearLogs()">清空日志</button>
+            </div>
+            <div class="log-content" id="operations-log-content">
+                <!-- 操作日志将通过JavaScript动态填充 -->
+            </div>
+        </div>
+
+        <!-- 消息通知 -->
+        <div class="notifications-container" id="notifications-container">
+            <!-- 通知将通过JavaScript动态添加 -->
+        </div>
+    </div>
+
+    <!-- 引入JavaScript文件 -->
+    <script src="assets/js/config.js"></script>
+    <script src="assets/js/core/auth.js"></script>
+    <script src="assets/js/core/logger.js"></script>
+    <script src="assets/js/core/deepseek-api.js"></script>
+    <script src="assets/js/modules/rules-monitor.js"></script>
+</body>
+</html>

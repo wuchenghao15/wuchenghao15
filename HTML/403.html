@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta name="version" content="202511061155263790">
+    <!-- VERSION: 20251106.8b0e01c7 -->
+    <!-- VERSION: 20251106.70b8394e -->
+    <!-- VERSION: 20251106.bac2ae27 -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>403 - 访问被拒绝</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="assets/css/common_styles/main.css">
+    <link rel="stylesheet" href="assets/css/other_styles/variables.css">
+    <link rel="stylesheet" href="assets/css/common_styles/responsive.css">
+    <link rel="stylesheet" href="assets/css/footer.css">
+        <style>
+            /* 时间显示样式 */
+            .time-display {
+                position: absolute;
+                top: 20px;
+                right: 20px;
+                text-align: right;
+                color: var(--text-color);
+                z-index: 100;
+                font-size: 14px;
+                font-weight: 500;
+            }
+            
+            @media (max-width: 768px) {
+                .time-display {
+                    position: static;
+                    text-align: center;
+                    margin-bottom: 15px;
+                }
+            }
+        </style>
+    
+    <!-- 安全机制相关 -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
+    <meta name="referrer" content="no-referrer-when-downgrade">
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #6c757d;
+            --background-color: #f5f7fa;
+            --text-color: #333;
+            --text-light: #666;
+            --error-color: #d9534f;
+            --error-bg: rgba(217, 83, 79, 0.1);
+            --card-bg: #ffffff;
+            --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            --transition-fast: 0.3s ease;
+            --transition-medium: 0.5s ease;
+        }
+
+        body.dark-theme {
+            --primary-color: #17a2b8;
+            --secondary-color: #6c757d;
+            --background-color: #2d3748;
+            --text-color: #e2e8f0;
+            --text-light: #a0aec0;
+            --error-color: #f56565;
+            --error-bg: rgba(245, 101, 101, 0.1);
+            --card-bg: #1a202c;
+            --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        body {
+            font-family: 'Segoe UI', 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            transition: background-color var(--transition-medium), color var(--transition-medium);
+            overflow-x: hidden;
+        }
+
+        /* 背景装饰 */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, var(--error-bg) 0%, transparent 70%);
+            z-index: -1;
+            animation: rotate 30s linear infinite;
+            opacity: 0.7;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .login-header {
+            background-color: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+            padding: 15px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        body.dark-theme .login-header {
+            background-color: rgba(26, 32, 44, 0.95);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+        }
+
+        .logo {
+            height: 40px;
+            width: auto;
+            margin-right: 10px;
+        }
+
+        .system-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin: 0;
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .system-title::before {
+            content: '🛡️';
+            font-size: 24px;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .header-stats {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .time-display {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-light);
+            text-align: right;
+        }
+
+        .visit-info {
+            display: flex;
+            flex-direction: column;
+            font-size: 12px;
+            color: var(--text-light);
+            text-align: right;
+        }
+
+        .theme-toggle {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all var(--transition-fast);
+            position: relative;
+        }
+
+        .theme-toggle:hover {
+            background-color: rgba(0, 0, 0, 0.05);
+            transform: scale(1.1);
+        }
+
+        body.dark-theme .theme-toggle:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .theme-toggle .theme-icon {
+            font-size: 20px;
+            transition: transform var(--transition-medium) ease;
+        }
+
+        .theme-toggle:hover .theme-icon {
+            transform: rotate(180deg);
+        }
+
+        /* 公祭日主题 */
+        html.memorial-day-theme {
+            filter: grayscale(100%);
+        }
+
+        .error-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .error-wrapper {
+            background-color: var(--card-bg);
+            border-radius: 20px;
+            padding: 4rem 3rem;
+            box-shadow: var(--card-shadow);
+            max-width: 600px;
+            width: 100%;
+            transform: translateY(0);
+            animation: float 8s ease-in-out infinite;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .error-wrapper::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--error-color), transparent);
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
+        }
+
+        .error-icon {
+            font-size: 100px;
+            color: var(--error-color);
+            margin-bottom: 30px;
+            display: inline-block;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+        }
+
+        .error-code {
+            font-size: 80px;
+            font-weight: 900;
+            margin: 0;
+            color: var(--error-color);
+            line-height: 1;
+            background: linear-gradient(135deg, var(--error-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 15px;
+        }
+
+        .error-subtitle {
+            font-size: 28px;
+            margin: 0 0 20px 0;
+            color: var(--text-color);
+            font-weight: 700;
+        }
+
+        .error-message {
+            font-size: 18px;
+            margin: 20px 0;
+            color: var(--text-light);
+            line-height: 1.6;
+        }
+
+        #errorDetails {
+            background-color: rgba(0, 0, 0, 0.03);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 25px 0;
+            text-align: left;
+            font-size: 14px;
+        }
+
+        body.dark-theme #errorDetails {
+            background-color: rgba(255, 255, 255, 0.03);
+        }
+
+        #currentUrl {
+            font-family: 'SF Mono', Monaco, Inconsolata, Consolas, monospace;
+            color: var(--error-color);
+            word-break: break-all;
+            padding: 8px;
+            background-color: rgba(0, 0, 0, 0.03);
+            border-radius: 6px;
+            margin: 8px 0;
+            display: block;
+        }
+
+        body.dark-theme #currentUrl {
+            background-color: rgba(255, 255, 255, 0.03);
+        }
+
+        .error-actions {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .error-btn {
+            padding: 14px 30px;
+            border: none;
+            border-radius: 30px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 140px;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .error-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left var(--transition-fast);
+        }
+
+        .error-btn:hover::before {
+            left: 100%;
+        }
+
+        .error-btn.primary {
+            background-color: var(--error-color);
+            color: white;
+        }
+
+        .error-btn.primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(217, 83, 79, 0.4);
+        }
+
+        .error-btn.secondary {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+
+        .error-btn.secondary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(108, 117, 125, 0.4);
+        }
+
+        .back-to-home {
+            margin-top: 20px;
+            font-size: 14px;
+            color: var(--text-light);
+        }
+
+        .back-to-home a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color var(--transition-fast);
+            position: relative;
+        }
+
+        .back-to-home a::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background-color: var(--primary-color);
+            transition: width var(--transition-fast);
+        }
+
+        .back-to-home a:hover {
+            color: var(--error-color);
+        }
+
+        .back-to-home a:hover::after {
+            width: 100%;
+            background-color: var(--error-color);
+        }
+
+        .security-alert {
+            margin-top: 30px;
+            padding: 15px;
+            background-color: var(--error-bg);
+            border-left: 4px solid var(--error-color);
+            border-radius: 0 8px 8px 0;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            text-align: left;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(-100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .security-alert i {
+            color: var(--error-color);
+            font-size: 20px;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .security-alert span {
+            color: var(--text-color);
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        footer {
+            background-color: var(--card-bg);
+            padding: 30px 20px;
+            color: var(--text-light);
+            border-top: 1px solid rgba(0, 0, 0, 0.08);
+        }
+
+        body.dark-theme footer {
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .footer-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .footer-section h3 {
+            font-size: 18px;
+            margin-bottom: 20px;
+            color: var(--text-color);
+            position: relative;
+            padding-bottom: 10px;
+        }
+
+        .footer-section h3::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 40px;
+            height: 3px;
+            background-color: var(--primary-color);
+            border-radius: 3px;
+        }
+
+        .footer-links {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .footer-links li {
+            margin-bottom: 12px;
+        }
+
+        .footer-links a {
+            color: var(--text-light);
+            text-decoration: none;
+            transition: color var(--transition-fast);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .footer-links a:hover {
+            color: var(--primary-color);
+            transform: translateX(5px);
+        }
+
+        .footer-bottom {
+            border-top: 1px solid rgba(0, 0, 0, 0.08);
+            padding-top: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            align-items: center;
+        }
+
+        body.dark-theme .footer-bottom {
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .footer-version {
+            display: flex;
+            gap: 30px;
+            font-size: 12px;
+        }
+
+        .footer-social {
+            display: flex;
+            gap: 15px;
+        }
+
+        .footer-social a {
+            color: var(--text-light);
+            font-size: 20px;
+            transition: all var(--transition-fast);
+        }
+
+        .footer-social a:hover {
+            color: var(--primary-color);
+            transform: translateY(-3px);
+        }
+
+        .footer-copyright {
+            font-size: 12px;
+            text-align: center;
+            line-height: 1.5;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .error-wrapper {
+                padding: 3rem 2rem;
+                margin: 20px;
+            }
+
+            .error-icon {
+                font-size: 80px;
+            }
+
+            .error-code {
+                font-size: 60px;
+            }
+
+            .error-subtitle {
+                font-size: 24px;
+            }
+
+            .error-message {
+                font-size: 16px;
+            }
+
+            .error-actions {
+                flex-direction: column;
+                width: 100%;
+                gap: 12px;
+            }
+
+            .error-btn {
+                width: 100%;
+            }
+
+            .header-content {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+
+            .header-right {
+                justify-content: center;
+            }
+
+            .header-stats {
+                align-items: center;
+            }
+
+            .time-display,
+            .visit-info {
+                text-align: center;
+            }
+
+            .footer-content {
+                grid-template-columns: 1fr;
+                gap: 25px;
+            }
+
+            .footer-version {
+                flex-direction: column;
+                gap: 10px;
+                align-items: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .error-wrapper {
+                padding: 2.5rem 1.5rem;
+            }
+
+            .error-icon {
+                font-size: 70px;
+            }
+
+            .error-code {
+                font-size: 50px;
+            }
+
+            .error-subtitle {
+                font-size: 20px;
+            }
+
+            .security-alert {
+                flex-direction: column;
+                gap: 10px;
+                padding: 12px;
+            }
+        }
+    </style>
+    <script>
+        // 防盗链检查
+        document.addEventListener('DOMContentLoaded', function() {
+            const timestamp = Date.now();
+            const random = Math.random().toString(36).substring(2);
+            const antiHotlink = btoa(`${timestamp}_${random}`);
+            
+            document.cookie = `anti_hotlink=${antiHotlink}; path=/; max-age=3600; secure; samesite=strict`;
+        });
+        
+        // 防右键查看
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            alert('该操作已被禁止');
+            return false;
+        });
+        
+        // 禁用选择文本
+        document.addEventListener('selectstart', function(e) {
+            e.preventDefault();
+            return false;
+        });
+        
+        // 禁用复制快捷键
+        document.addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'x' || e.key === 'u')) {
+                e.preventDefault();
+                return false;
+            }
+        });
+        
+        // 检测公祭日主题
+        function checkNationalMemorialDay() {
+            const today = new Date();
+            const month = today.getMonth() + 1;
+            const day = today.getDate();
+            
+            // 南京大屠杀死难者国家公祭日：12月13日
+            // 汶川地震纪念日：5月12日
+            // 唐山大地震纪念日：7月28日
+            const memorialDays = [
+                { month: 12, day: 13 },
+                { month: 5, day: 12 },
+                { month: 7, day: 28 }
+            ];
+            
+            return memorialDays.some(memDay => memDay.month === month && memDay.day === day);
+        }
+        
+        // 自动应用公祭日主题
+        if (checkNationalMemorialDay()) {
+            document.documentElement.classList.add('memorial-day-theme');
+        }
+    </script>
+
+<!-- CryptoJS库，用于JS解密 -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
+</head>
+<body>
+    <header class="login-header">
+        <div class="header-content">
+            <div class="logo-container">
+                <h1 class="system-title">MTSCOS</h1>
+            </div>
+            <div class="header-right">
+                <div class="header-stats">
+                    <div class="time-display" id="current-time"></div>
+                    <div class="visit-info" id="visit-info"></div>
+                </div>
+                <div class="theme-toggle">
+                    <button id="themeToggle" class="theme-toggle" title="切换主题">
+                        <i class="far fa-moon theme-icon"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+    
+    <div class="time-display" id="time-display">
+            <div id="gregorian-date"></div>
+            <div id="lunar-date"></div>
+        </div>
+        <div class="error-container">
+        <div class="error-wrapper">
+            <div class="error-icon">
+                <i class="fas fa-shield-alt"></i>
+            </div>
+            <div class="error-code">403</div>
+            <h2 class="error-subtitle">访问被拒绝</h2>
+            <p class="error-message">抱歉，您没有权限访问此页面或执行此操作。请联系系统管理员获取相应权限，或尝试以其他用户身份登录。</p>
+            
+            <div class="error-details" id="errorDetails">
+                <p>尝试访问的页面: <span id="currentUrl">加载中...</span></p>
+                <p>时间: <span id="errorTime">加载中...</span></p>
+            </div>
+            
+            <div class="error-actions">
+                <a href="javascript:void(0);" onclick="window.location.href = './index.html';" class="error-btn primary">
+                    <i class="fas fa-sign-in-alt"></i>
+                    <span>重新登录</span>
+                </a>
+                <a href="javascript:history.back()" class="error-btn secondary">
+                    <i class="fas fa-arrow-left"></i>
+                    <span>返回上一页</span>
+                </a>
+                <a href="javascript:void(0);" onclick="window.location.href = './index.html';" class="error-btn secondary">
+                    <i class="fas fa-home"></i>
+                    <span>返回首页</span>
+                </a>
+            </div>
+            
+            <div class="back-to-home">
+                或 <a href="javascript:void(0);" onclick="window.location.href = './index.html';">返回登录页面</a>
+            </div>
+            
+            <div class="security-alert">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span>安全提示：未经授权的访问尝试已被记录。请确保您拥有适当的权限后再访问系统资源。</span>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 初始化主题图标
+        function initializeThemeIcon() {
+            const themeButton = document.getElementById('themeToggle');
+            const icon = themeButton.querySelector('.theme-icon');
+            
+            // 检查是否是公祭日
+            if (checkNationalMemorialDay()) {
+                icon.className = 'fas fa-flag theme-icon';
+                themeButton.title = '公祭日模式 (不可切换)';
+                themeButton.disabled = true;
+                return;
+            }
+            
+            // 检查保存的主题
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            if (savedTheme === 'dark') {
+                // 如果是深色主题，显示太阳图标
+                icon.className = 'far fa-sun theme-icon';
+                themeButton.title = '切换到浅色主题';
+                document.body.classList.add('dark-theme');
+            } else {
+                // 如果是浅色主题，显示月亮图标
+                icon.className = 'far fa-moon theme-icon';
+                themeButton.title = '切换到深色主题';
+                document.body.classList.remove('dark-theme');
+            }
+        }
+
+        // 主题切换 - 太阳与月亮互换效果
+        document.getElementById('themeToggle').addEventListener('click', function() {
+            // 检查是否是公祭日模式
+            if (checkNationalMemorialDay()) {
+                return; // 公祭日模式不可切换
+            }
+            
+            const icon = this.querySelector('.theme-icon');
+            document.body.classList.toggle('dark-theme');
+            if (document.body.classList.contains('dark-theme')) {
+                // 切换到深色主题，显示太阳图标
+                icon.className = 'far fa-sun theme-icon';
+                this.title = '切换到浅色主题';
+                // 保存主题设置
+                localStorage.setItem('theme', 'dark');
+            } else {
+                // 切换到浅色主题，显示月亮图标
+                icon.className = 'far fa-moon theme-icon';
+                this.title = '切换到深色主题';
+                // 保存主题设置
+                localStorage.setItem('theme', 'light');
+            }
+        });
+        
+        // 页面加载后执行
+        document.addEventListener('DOMContentLoaded', function() {
+            // 显示当前URL和时间 - 优先使用服务器传入的参数
+            const requestedPath = window.REQUESTED_PATH || window.location.href;
+            const timestamp = window.TIMESTAMP || new Date().toLocaleString('zh-CN');
+            
+            document.getElementById('currentUrl').textContent = requestedPath;
+            document.getElementById('errorTime').textContent = timestamp;
+            
+            // 更新当前时间
+            function updateTime() {
+                document.getElementById('current-time').textContent = new Date().toLocaleString('zh-CN');
+            }
+            updateTime();
+            setInterval(updateTime, 1000);
+            
+            // 初始化主题图标
+            initializeThemeIcon();
+            
+            // 初始化锁定屏幕管理器 - 添加类型检查
+            if (typeof LockScreenManager !== 'undefined') {
+                const lockManager = new LockScreenManager();
+                // LockScreenManager构造函数会自动初始化，无需调用init()
+            }
+        });
+    </script>
+    
+    <!-- 锁定界面脚本 -->
+    <script src="../assets/js/lock-screen.js"></script>
+    
+    <!-- 安全机制模块 -->
+    <script src="../assets/js/core/session-manager.js"></script>
+    <script src="../assets/js/core/encryption.js"></script>
+    <script src="../assets/js/core/security-events.js"></script>
+    <script src="../assets/js/core/data-security.js"></script>
+    <script src="../assets/js/core/token-verification.js"></script>
+    
+    <!-- 系统锁定管理脚本 -->
+    <!-- 全局锁定系统脚本 -->
+
+    <script src="../assets/js/error_handler.js"></script>
+    
+    <!-- CSS自动加载器 -->
+    <script src="../assets/js/common-utils.js"></script>
+        <script src="../assets/js/css-auto-loader.js"></script>
+        <script>
+            // 安全机制初始化
+            document.addEventListener('DOMContentLoaded', function() {
+                // 初始化安全模块
+                const sessionManager = new SessionManager();
+                const encryptionManager = new EncryptionManager();
+                const securityEventManager = new SecurityEventManager();
+                const dataSecurityManager = new DataSecurityManager();
+                const tokenVerificationManager = new TokenVerificationManager();
+                
+                // 启动安全监控
+                setTimeout(() => {
+                    console.log('403页面安全机制已启动');
+                }, 1000);
+                
+                // 页面卸载时清理
+                window.addEventListener('beforeunload', function() {
+                    if (sessionManager) sessionManager.clearSession();
+                    if (securityEventManager) securityEventManager.stopMonitoring();
+                });
+            });
+            
+            // 初始化时间显示
+            function updateDateTime() {
+                // 获取当前时间
+                const now = new Date();
+                
+                // 更新公历时间
+                const gregorianDate = now.toLocaleDateString('zh-CN', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    weekday: 'long'
+                });
+                document.getElementById('gregorian-date').textContent = gregorianDate;
+                
+                // 模拟农历时间
+                const lunarDate = getLunarDate(now);
+                document.getElementById('lunar-date').textContent = lunarDate;
+            }
+            
+            // 简单的农历日期模拟函数
+            function getLunarDate(date) {
+                const lunarMonths = ['正月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '冬月', '腊月'];
+                const lunarDays = ['初一', '初二', '初三', '初四', '初五', '初六', '初七', '初八', '初九', '初十', 
+                                  '十一', '十二', '十三', '十四', '十五', '十六', '十七', '十八', '十九', '二十',
+                                  '廿一', '廿二', '廿三', '廿四', '廿五', '廿六', '廿七', '廿八', '廿九', '三十'];
+                
+                const month = date.getMonth();
+                const day = date.getDate() - 1;
+                
+                return `农历 ${lunarMonths[month]} ${lunarDays[day]}`;
+            }
+            
+            // 页面加载完成后初始化
+            window.addEventListener('DOMContentLoaded', () => {
+                // 初始更新时间
+                updateDateTime();
+                // 每秒更新时间
+                setInterval(updateDateTime, 1000);
+                
+                // 应用防盗链检查
+                if (window.CommonUtils && window.CommonUtils.checkHotlinkProtection) {
+                    window.CommonUtils.checkHotlinkProtection();
+                }
+            });
+        </script>
+    
+    <!-- 页脚 -->
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>关于我们</h3>
+                    <ul class="footer-links">
+                        <li><a href="#"><i class="fas fa-info-circle"></i> 公司简介</a></li>
+                        <li><a href="#"><i class="fas fa-history"></i> 发展历程</a></li>
+                        <li><a href="#"><i class="fas fa-users"></i> 团队介绍</a></li>
+                        <li><a href="#"><i class="fas fa-newspaper"></i> 新闻动态</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>产品服务</h3>
+                    <ul class="footer-links">
+                        <li><a href="#"><i class="fas fa-cogs"></i> 系统功能</a></li>
+                        <li><a href="#"><i class="fas fa-rocket"></i> 解决方案</a></li>
+                        <li><a href="#"><i class="fas fa-chart-line"></i> 数据分析</a></li>
+                        <li><a href="#"><i class="fas fa-shield-alt"></i> 安全服务</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>帮助中心</h3>
+                    <ul class="footer-links">
+                        <li><a href="#"><i class="fas fa-book"></i> 使用文档</a></li>
+                        <li><a href="#"><i class="fas fa-question-circle"></i> 常见问题</a></li>
+                        <li><a href="#"><i class="fas fa-headset"></i> 技术支持</a></li>
+                        <li><a href="#"><i class="fas fa-life-ring"></i> 联系我们</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>联系我们</h3>
+                    <ul class="footer-links">
+                        <li><a href="#"><i class="fas fa-map-marker-alt"></i> 北京市海淀区科技园区</a></li>
+                        <li><a href="#"><i class="fas fa-phone"></i> 400-888-8888</a></li>
+                        <li><a href="#"><i class="fas fa-envelope"></i> contact@mtscos.com</a></li>
+                        <li><a href="#"><i class="fas fa-clock"></i> 周一至周五 9:00-18:00</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <div class="footer-version">
+                    <span>版本: 3.251102.113945</span>
+                    <span>内部版本: 20251102002.251102.113945</span>
+                </div>
+                <div class="footer-social">
+                    <a href="#"><i class="fab fa-weixin"></i></a>
+                    <a href="#"><i class="fab fa-weibo"></i></a>
+                    <a href="#"><i class="fab fa-github"></i></a>
+                    <a href="#"><i class="fab fa-linkedin"></i></a>
+                </div>
+                <p class="footer-copyright">© 2025 MTSCOS 智能管理系统 版权所有 | 作者: Chenghao Wu | 京ICP备12345678号</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

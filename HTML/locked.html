@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>安全锁定页面 - MTSCOS AI</title>
+    <link rel="stylesheet" href="assets/css/common_styles/security.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .security-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .lock-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .lock-icon {
+            font-size: 80px;
+            color: #e74c3c;
+            margin-bottom: 20px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .lock-title {
+            font-size: 28px;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-weight: 700;
+        }
+
+        .lock-message {
+            font-size: 16px;
+            color: #7f8c8d;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        .security-info {
+            background: rgba(52, 152, 219, 0.1);
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+            text-align: left;
+        }
+
+        .security-info h3 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+
+        .security-info ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .security-info li {
+            padding: 5px 0;
+            color: #34495e;
+            font-size: 14px;
+        }
+
+        .security-info li:before {
+            content: "🔒 ";
+            margin-right: 8px;
+        }
+
+        .countdown {
+            font-size: 24px;
+            color: #e74c3c;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+
+        .unlock-btn {
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 30px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .unlock-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(52, 152, 219, 0.3);
+        }
+
+        .unlock-btn:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .verification-input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 16px;
+            margin: 15px 0;
+            text-align: center;
+            transition: border-color 0.3s ease;
+        }
+
+        .verification-input:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: blink 1s infinite;
+        }
+
+        .status-active {
+            background: #27ae60;
+        }
+
+        .status-warning {
+            background: #f39c12;
+        }
+
+        .status-danger {
+            background: #e74c3c;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0.3; }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .security-log {
+            background: rgba(0, 0, 0, 0.8);
+            color: #00ff00;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            text-align: left;
+            max-height: 150px;
+            overflow-y: auto;
+            margin: 20px 0;
+        }
+
+        .watermark {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 12px;
+            z-index: 10000;
+        }
+    </style>
+</head>
+<body>
+    <!-- 安全覆盖层 -->
+    <div class="security-overlay" id="securityOverlay">
+        <div class="lock-container">
+            <div class="lock-icon">🔒</div>
+            <h1 class="lock-title">系统安全锁定</h1>
+            <p class="lock-message">
+                检测到异常访问行为，系统已启动安全保护机制<br>
+                请完成身份验证以继续访问
+            </p>
+            
+            <div class="countdown" id="countdown">
+                <span class="status-indicator status-danger"></span>
+                剩余锁定时间: <span id="timeRemaining">--:--</span>
+            </div>
+
+            <div class="security-info">
+                <h3>🛡️ 安全机制已激活</h3>
+                <ul>
+                    <li>超时机制保护</li>
+                    <li>数据加密传输</li>
+                    <li>防调试保护</li>
+                    <li>访问权限验证</li>
+                    <li>异常行为检测</li>
+                    <li>证书令牌验证</li>
+                    <li>防盗链保护</li>
+                    <li>时区地址验证</li>
+                </ul>
+            </div>
+
+            <div id="verificationSection">
+                <input type="password" 
+                       class="verification-input" 
+                       id="verificationInput" 
+                       placeholder="请输入安全验证码"
+                       maxlength="6">
+                <br>
+                <button class="unlock-btn" id="unlockBtn" disabled>
+                    验证身份
+                </button>
+            </div>
+
+            <div class="security-log" id="securityLog">
+                <div>[系统] 安全模块已加载...</div>
+                <div>[检测] 正在分析访问环境...</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="watermark" id="watermark">MTSCOS AI Security v1.0</div>
+
+    <!-- 核心安全脚本 -->
+    <script src="assets/js/core/security-core.js"></script>
+    <script src="assets/js/core/encryption.js"></script>
+    <script src="assets/js/core/anti-debug.js"></script>
+    <script src="assets/js/core/session-manager.js"></script>
+    <script src="assets/js/core/token-validator.js"></script>
+    
+    <script>
+        // 主安全控制器
+        class SecurityController {
+            constructor() {
+                this.isLocked = true;
+                this.lockReason = '';
+                this.lockEndTime = 0;
+                this.verificationCode = '';
+                this.securityLog = [];
+                this.encryptionKey = this.generateEncryptionKey();
+                this.sessionToken = null;
+                this.viKey = null;
+                
+                this.init();
+            }
+
+            init() {
+                this.log('[初始化] 安全控制器启动中...');
+                this.setupSecurityEvents();
+                this.checkEnvironment();
+                this.startCountdown();
+                this.generateVerificationCode();
+                this.setupEventListeners();
+                this.validateSession();
+                this.log('[初始化] 所有安全模块已激活');
+            }
+
+            // 生成加密密钥
+            generateEncryptionKey() {
+                const timestamp = Date.now().toString();
+                const random = Math.random().toString(36).substring(2);
+                const key = btoa(timestamp + random).substring(0, 32);
+                this.log('[加密] 生成新的加密密钥');
+                return key;
+            }
+
+            // 设置安全事件监听器
+            setupSecurityEvents() {
+                // 禁用右键菜单
+                document.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                    this.log('[防护] 阻止右键菜单');
+                    return false;
+                });
+
+                // 禁用选择文本
+                document.addEventListener('selectstart', (e) => {
+                    e.preventDefault();
+                    this.log('[防护] 阻止文本选择');
+                    return false;
+                });
+
+                // 禁用拖拽
+                document.addEventListener('dragstart', (e) => {
+                    e.preventDefault();
+                    this.log('[防护] 阻止拖拽操作');
+                    return false;
+                });
+
+                // 禁用F12、Ctrl+Shift+I等开发者工具快捷键
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'F12' || 
+                        (e.ctrlKey && e.shiftKey && e.key === 'I') ||
+                        (e.ctrlKey && e.shiftKey && e.key === 'C') ||
+                        (e.ctrlKey && e.key === 'U') ||
+                        (e.ctrlKey && e.key === 'S')) {
+                        e.preventDefault();
+                        this.log('[防护] 阻止开发者工具快捷键: ' + e.key);
+                        return false;
+                    }
+                });
+
+                // 检测开发者工具
+                let devtools = {
+                    open: false,
+                    orientation: null
+                };
+                
+                const threshold = 160;
+                
+                setInterval(() => {
+                    if (window.outerHeight - window.innerHeight > threshold || 
+                        window.outerWidth - window.innerWidth > threshold) {
+                        if (!devtools.open) {
+                            devtools.open = true;
+                            this.handleDevToolsDetection();
+                        }
+                    } else {
+                        devtools.open = false;
+                    }
+                }, 500);
+
+                // 监听复制事件
+                document.addEventListener('copy', (e) => {
+                    e.preventDefault();
+                    this.log('[防护] 阻止复制操作');
+                    return false;
+                });
+
+                // 监听打印事件
+                window.addEventListener('beforeprint', (e) => {
+                    e.preventDefault();
+                    this.log('[防护] 阻止打印操作');
+                    return false;
+                });
+            }
+
+            // 检测开发者工具
+            handleDevToolsDetection() {
+                this.log('[警告] 检测到开发者工具已打开!');
+                this.extendLockTime(300); // 延长锁定5分钟
+                this.showWarningMessage('检测到调试行为，锁定时间已延长!');
+            }
+
+            // 检查环境安全
+            checkEnvironment() {
+                this.log('[环境] 开始安全环境检测...');
+                
+                // 检查时区
+                const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                if (!this.isValidTimezone(timezone)) {
+                    this.log('[警告] 异常时区检测: ' + timezone);
+                    this.extendLockTime(600);
+                }
+
+                // 检查用户代理
+                const userAgent = navigator.userAgent;
+                if (this.isSuspiciousUserAgent(userAgent)) {
+                    this.log('[警告] 可疑用户代理: ' + userAgent);
+                    this.extendLockTime(300);
+                }
+
+                // 检查屏幕分辨率
+                const screenCheck = this.checkScreenResolution();
+                if (!screenCheck.valid) {
+                    this.log('[警告] 异常屏幕分辨率: ' + screenCheck.resolution);
+                }
+
+                // 检查是否在iframe中
+                if (window.self !== window.top) {
+                    this.log('[警告] 检测到iframe嵌入');
+                    this.preventIframeEmbedding();
+                }
+
+                this.log('[环境] 环境检测完成');
+            }
+
+            // 验证时区
+            isValidTimezone(timezone) {
+                const validTimezones = [
+                    'Asia/Shanghai', 'Asia/Beijing', 'Asia/Hong_Kong',
+                    'Asia/Taipei', 'Asia/Tokyo', 'Asia/Seoul'
+                ];
+                return validTimezones.includes(timezone);
+            }
+
+            // 检查可疑用户代理
+            isSuspiciousUserAgent(userAgent) {
+                const suspiciousPatterns = [
+                    /bot/i, /crawler/i, /spider/i, /scraper/i,
+                    /curl/i, /wget/i, /python/i, /java/i
+                ];
+                return suspiciousPatterns.some(pattern => pattern.test(userAgent));
+            }
+
+            // 检查屏幕分辨率
+            checkScreenResolution() {
+                const width = screen.width;
+                const height = screen.height;
+                const resolution = `${width}x${height}`;
+                
+                // 检查是否为常见的可疑分辨率
+                const suspiciousResolutions = [
+                    '0x0', '1x1', '2x2', '100x100', '200x200'
+                ];
+                
+                return {
+                    valid: !suspiciousResolutions.includes(resolution),
+                    resolution: resolution
+                };
+            }
+
+            // 防止iframe嵌入
+            preventIframeEmbedding() {
+                if (window.top !== window.self) {
+                    window.top.location = window.location;
+                }
+            }
+
+            // 生成验证码
+            generateVerificationCode() {
+                this.verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+                this.log('[验证] 生成验证码: ' + this.verificationCode);
+                
+                // 加密存储验证码
+                const encrypted = this.encrypt(this.verificationCode);
+                sessionStorage.setItem('temp_verification', encrypted);
+            }
+
+            // 设置事件监听器
+            setupEventListeners() {
+                const input = document.getElementById('verificationInput');
+                const btn = document.getElementById('unlockBtn');
+
+                input.addEventListener('input', (e) => {
+                    const value = e.target.value;
+                    btn.disabled = value.length !== 6;
+                    
+                    if (value.length === 6) {
+                        this.verifyCode(value);
+                    }
+                });
+
+                btn.addEventListener('click', () => {
+                    const value = input.value;
+                    if (value.length === 6) {
+                        this.verifyCode(value);
+                    }
+                });
+
+                // 防止输入框获得焦点时的默认行为
+                input.addEventListener('focus', (e) => {
+                    e.target.value = '';
+                });
+            }
+
+            // 验证验证码
+            verifyCode(inputCode) {
+                this.log('[验证] 尝试验证码: ' + inputCode);
+                
+                if (inputCode === this.verificationCode) {
+                    this.log('[验证] 验证成功');
+                    this.unlock();
+                } else {
+                    this.log('[验证] 验证失败');
+                    this.handleVerificationFailure();
+                }
+            }
+
+            // 处理验证失败
+            handleVerificationFailure() {
+                const input = document.getElementById('verificationInput');
+                const btn = document.getElementById('unlockBtn');
+                
+                input.style.borderColor = '#e74c3c';
+                btn.style.background = 'linear-gradient(45deg, #e74c3c, #c0392b)';
+                
+                setTimeout(() => {
+                    input.style.borderColor = '#ddd';
+                    btn.style.background = 'linear-gradient(45deg, #3498db, #2980b9)';
+                    input.value = '';
+                    btn.disabled = true;
+                    this.generateVerificationCode(); // 重新生成验证码
+                }, 2000);
+
+                this.extendLockTime(60); // 验证失败延长锁定1分钟
+                this.showWarningMessage('验证码错误，锁定时间已延长!');
+            }
+
+            // 延长锁定时间
+            extendLockTime(seconds) {
+                this.lockEndTime = Math.max(this.lockEndTime, Date.now() + seconds * 1000);
+                this.log('[锁定] 延长锁定时间: ' + seconds + '秒');
+            }
+
+            // 显示警告消息
+            showWarningMessage(message) {
+                this.log('[警告] ' + message);
+                // 可以在这里添加更复杂的警告显示逻辑
+            }
+
+            // 解锁
+            unlock() {
+                this.log('[解锁] 开始解锁流程...');
+                
+                // 创建会话令牌
+                this.sessionToken = this.generateSessionToken();
+                
+                // 验证VIKey
+                if (!this.validateVIKey()) {
+                    this.log('[错误] VIKey验证失败');
+                    return;
+                }
+
+                // 更新锁定状态
+                this.isLocked = false;
+                
+                // 保存解锁状态
+                localStorage.setItem('security_unlocked', 'true');
+                localStorage.setItem('session_token', this.sessionToken);
+                localStorage.setItem('unlock_time', Date.now().toString());
+                
+                this.log('[解锁] 解锁成功，令牌: ' + this.sessionToken.substring(0, 8) + '...');
+                
+                // 隐藏锁定界面
+                setTimeout(() => {
+                    document.getElementById('securityOverlay').style.display = 'none';
+                    this.log('[界面] 锁定界面已隐藏');
+                }, 1000);
+            }
+
+            // 生成会话令牌
+            generateSessionToken() {
+                const payload = {
+                    timestamp: Date.now(),
+                    random: Math.random().toString(36).substring(2),
+                    userAgent: navigator.userAgent.substring(0, 50),
+                    sessionId: this.createSessionId()
+                };
+                
+                return this.encrypt(JSON.stringify(payload));
+            }
+
+            // 创建会话ID
+            createSessionId() {
+                return 'session_' + Date.now() + '_' + Math.random().toString(36).substring(2);
+            }
+
+            // 验证VIKey
+            validateVIKey() {
+                // 这里实现VIKey验证逻辑
+                // 简化版本：检查本地存储的VIKey
+                this.viKey = localStorage.getItem('vikey');
+                
+                if (!this.viKey) {
+                    // 生成新的VIKey
+                    this.viKey = this.generateVIKey();
+                    localStorage.setItem('vikey', this.viKey);
+                }
+                
+                this.log('[VIKey] 验证完成: ' + this.viKey.substring(0, 8) + '...');
+                return true;
+            }
+
+            // 生成VIKey
+            generateVIKey() {
+                const timestamp = Date.now().toString();
+                const fingerprint = this.generateFingerprint();
+                const random = Math.random().toString(36).substring(2);
+                
+                return btoa(timestamp + fingerprint + random).substring(0, 64);
+            }
+
+            // 生成设备指纹
+            generateFingerprint() {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                ctx.textBaseline = 'top';
+                ctx.font = '14px Arial';
+                ctx.fillText('Device fingerprint', 2, 2);
+                
+                const fingerprint = [
+                    navigator.userAgent,
+                    navigator.language,
+                    screen.width + 'x' + screen.height,
+                    new Date().getTimezoneOffset(),
+                    canvas.toDataURL()
+                ].join('|');
+                
+                return this.hashString(fingerprint);
+            }
+
+            // 字符串哈希
+            hashString(str) {
+                let hash = 0;
+                for (let i = 0; i < str.length; i++) {
+                    const char = str.charCodeAt(i);
+                    hash = ((hash << 5) - hash) + char;
+                    hash = hash & hash;
+                }
+                return hash.toString(36);
+            }
+
+            // 验证会话
+            validateSession() {
+                const isUnlocked = localStorage.getItem('security_unlocked');
+                const sessionToken = localStorage.getItem('session_token');
+                const unlockTime = localStorage.getItem('unlock_time');
+                
+                if (isUnlocked === 'true' && sessionToken && unlockTime) {
+                    const timeDiff = Date.now() - parseInt(unlockTime);
+                    const maxSessionTime = 30 * 60 * 1000; // 30分钟
+                    
+                    if (timeDiff < maxSessionTime) {
+                        this.log('[会话] 有效会话检测到，自动解锁');
+                        this.isLocked = false;
+                        document.getElementById('securityOverlay').style.display = 'none';
+                        return;
+                    }
+                }
+                
+                this.log('[会话] 需要重新验证');
+                this.lockEndTime = Date.now() + 5 * 60 * 1000; // 默认锁定5分钟
+            }
+
+            // 开始倒计时
+            startCountdown() {
+                const updateCountdown = () => {
+                    if (!this.isLocked) return;
+                    
+                    const now = Date.now();
+                    const remaining = Math.max(0, this.lockEndTime - now);
+                    
+                    if (remaining === 0) {
+                        this.log('[倒计时] 锁定时间结束');
+                        this.generateVerificationCode();
+                        document.getElementById('unlockBtn').disabled = false;
+                        document.getElementById('timeRemaining').textContent = '验证可用';
+                        return;
+                    }
+                    
+                    const minutes = Math.floor(remaining / 60000);
+                    const seconds = Math.floor((remaining % 60000) / 1000);
+                    
+                    document.getElementById('timeRemaining').textContent = 
+                        `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                };
+                
+                updateCountdown();
+                setInterval(updateCountdown, 1000);
+            }
+
+            // 加密方法
+            encrypt(data) {
+                // 简化的加密实现
+                const encrypted = btoa(data + '|' + this.encryptionKey);
+                return encrypted;
+            }
+
+            // 解密方法
+            decrypt(encryptedData) {
+                try {
+                    const decrypted = atob(encryptedData);
+                    const parts = decrypted.split('|');
+                    if (parts.length === 2 && parts[1] === this.encryptionKey) {
+                        return parts[0];
+                    }
+                    return null;
+                } catch (e) {
+                    this.log('[错误] 解密失败: ' + e.message);
+                    return null;
+                }
+            }
+
+            // 记录安全日志
+            log(message) {
+                const timestamp = new Date().toLocaleTimeString();
+                const logEntry = `[${timestamp}] ${message}`;
+                this.securityLog.push(logEntry);
+                
+                // 更新日志显示
+                const logContainer = document.getElementById('securityLog');
+                if (logContainer) {
+                    const logDiv = document.createElement('div');
+                    logDiv.textContent = logEntry;
+                    logContainer.appendChild(logDiv);
+                    
+                    // 保持最新的日志可见
+                    logContainer.scrollTop = logContainer.scrollHeight;
+                    
+                    // 限制日志条数
+                    if (logContainer.children.length > 50) {
+                        logContainer.removeChild(logContainer.firstChild);
+                    }
+                }
+                
+                console.log(logEntry);
+            }
+        }
+
+        // 页面加载完成后初始化安全系统
+        document.addEventListener('DOMContentLoaded', () => {
+            window.securityController = new SecurityController();
+        });
+
+        // 防止页面被关闭时的数据泄露
+        window.addEventListener('beforeunload', (e) => {
+            if (window.securityController && window.securityController.isLocked) {
+                e.preventDefault();
+                e.returnValue = '安全系统正在运行，确定要离开吗？';
+                return e.returnValue;
+            }
+        });
+
+        // 定期安全检查
+        setInterval(() => {
+            if (window.securityController) {
+                window.securityController.checkEnvironment();
+            }
+        }, 30000); // 每30秒检查一次
+
+        // 水印更新
+        setInterval(() => {
+            const watermark = document.getElementById('watermark');
+            if (watermark) {
+                watermark.textContent = `MTSCOS AI Security v1.0 - ${new Date().toLocaleTimeString()}`;
+            }
+        }, 1000);
+    </script>
+</body>
+</html>

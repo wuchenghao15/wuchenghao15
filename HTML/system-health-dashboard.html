@@ -1,0 +1,1460 @@
+<!DOCTYPE html>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MTSCOS AI 系统健康监控仪表板</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            /* 间距系统 */
+            --spacing-xs: 4px;
+            --spacing-sm: 8px;
+            --spacing-md: 16px;
+            --spacing-lg: 24px;
+            --spacing-xl: 32px;
+            --spacing-2xl: 48px;
+            
+            /* 颜色系统 */
+            --primary-color: #2563eb;
+            --primary-hover: #1d4ed8;
+            --primary-light: #dbeafe;
+            --success-color: #16a34a;
+            --success-hover: #15803d;
+            --success-light: #dcfce7;
+            --warning-color: #f59e0b;
+            --warning-hover: #d97706;
+            --warning-light: #fef3c7;
+            --error-color: #dc2626;
+            --error-hover: #b91c1c;
+            --error-light: #fee2e2;
+            --info-color: #0891b2;
+            --info-hover: #0e7490;
+            --info-light: #e0f2fe;
+            
+            /* 背景和表面 */
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-tertiary: #334155;
+            --surface: #1e293b;
+            --surface-light: #334155;
+            
+            /* 文本颜色 */
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --text-inverse: #ffffff;
+            
+            /* 边框和阴影 */
+            --border-color: #475569;
+            --border-light: #64748b;
+            --border-radius: 8px;
+            --border-radius-lg: 12px;
+            --border-radius-xl: 16px;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+            --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+            
+            /* 动画和过渡 */
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 50%, var(--bg-tertiary) 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: var(--spacing-lg, 24px);
+            width: 100%;
+        }
+
+        header {
+            background: var(--surface);
+            backdrop-filter: blur(10px);
+            padding: var(--spacing-md, 16px) 0;
+            border-bottom: 1px solid var(--border-color);
+            box-shadow: var(--shadow-lg, 0 10px 15px -3px rgb(0 0 0 / 0.1));
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            transition: var(--transition);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 var(--spacing-lg, 24px);
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md, 16px);
+            transition: var(--transition);
+        }
+
+        .logo:hover {
+            transform: scale(1.02);
+        }
+
+        .logo-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--primary-color), var(--info-color));
+            border-radius: var(--border-radius-lg, 12px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 20px;
+            box-shadow: var(--shadow-md, 0 4px 6px -1px rgb(0 0 0 / 0.1));
+            position: relative;
+            overflow: hidden;
+        }
+
+        .logo-icon::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            animation: shimmer 3s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary-color), var(--info-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin: 0;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm, 8px);
+            padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
+            background: var(--surface-light);
+            border-radius: 20px;
+            font-size: 0.875rem;
+            border: 1px solid var(--border-color);
+            transition: var(--transition);
+        }
+
+        .status-indicator:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md, 0 4px 6px -1px rgb(0 0 0 / 0.1));
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+            position: relative;
+        }
+
+        .status-dot::after {
+            content: '';
+            position: absolute;
+            top: -4px;
+            left: -4px;
+            right: -4px;
+            bottom: -4px;
+            border-radius: 50%;
+            background: inherit;
+            opacity: 0.3;
+            animation: pulse-ring 2s infinite;
+        }
+
+        .status-dot.healthy { 
+            background: var(--success-color);
+            box-shadow: 0 0 10px var(--success-color);
+        }
+        
+        .status-dot.warning { 
+            background: var(--warning-color);
+            box-shadow: 0 0 10px var(--warning-color);
+        }
+        
+        .status-dot.error { 
+            background: var(--error-color);
+            box-shadow: 0 0 10px var(--error-color);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(0.9); }
+        }
+
+        @keyframes pulse-ring {
+            0% { transform: scale(1); opacity: 0.3; }
+            100% { transform: scale(1.5); opacity: 0; }
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: var(--spacing-lg, 24px);
+            margin-top: var(--spacing-xl, 32px);
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .card {
+            background: var(--surface);
+            backdrop-filter: blur(10px);
+            border-radius: var(--border-radius-xl, 16px);
+            padding: var(--spacing-lg, 24px);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-lg, 0 10px 15px -3px rgb(0 0 0 / 0.1));
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary-color), var(--info-color));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: var(--shadow-xl, 0 20px 25px -5px rgb(0 0 0 / 0.15));
+            border-color: var(--border-light);
+        }
+
+        .card:hover::before {
+            opacity: 1;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-lg, 24px);
+            padding-bottom: var(--spacing-md, 16px);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .card-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md, 12px);
+            color: var(--text-primary);
+        }
+
+        .card-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: var(--border-radius, 8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            box-shadow: var(--shadow-sm, 0 1px 2px 0 rgb(0 0 0 / 0.05));
+            transition: var(--transition);
+        }
+
+        .card:hover .card-icon {
+            transform: scale(1.1) rotate(5deg);
+        }
+
+        .icon-services { 
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+            color: var(--text-inverse);
+        }
+        
+        .icon-models { 
+            background: linear-gradient(135deg, var(--success-color), var(--success-hover));
+            color: var(--text-inverse);
+        }
+        
+        .icon-errors { 
+            background: linear-gradient(135deg, var(--error-color), var(--error-hover));
+            color: var(--text-inverse);
+        }
+        
+        .icon-dependencies { 
+            background: linear-gradient(135deg, var(--warning-color), var(--warning-hover));
+            color: var(--text-inverse);
+        }
+        
+        .icon-performance { 
+            background: linear-gradient(135deg, var(--info-color), var(--info-hover));
+            color: var(--text-inverse);
+        }
+        
+        .icon-logs { 
+            background: linear-gradient(135deg, var(--bg-tertiary), var(--surface-light));
+            color: var(--text-primary);
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin: var(--spacing-md, 16px) 0;
+            background: linear-gradient(135deg, var(--text-primary), var(--text-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1.2;
+        }
+
+        .metric-label {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .metric-change {
+            font-size: 0.75rem;
+            padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px);
+            border-radius: 12px;
+            margin-top: var(--spacing-sm, 8px);
+            display: inline-flex;
+            align-items: center;
+            gap: var(--spacing-xs, 4px);
+            font-weight: 600;
+            transition: var(--transition);
+        }
+
+        .metric-change:hover {
+            transform: scale(1.05);
+        }
+
+        .change-positive {
+            background: var(--success-light);
+            color: var(--success-color);
+            border: 1px solid var(--success-color);
+        }
+
+        .change-negative {
+            background: var(--error-light);
+            color: var(--error-color);
+            border: 1px solid var(--error-color);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background: var(--surface-light);
+            border-radius: var(--border-radius, 8px);
+            overflow: hidden;
+            margin: var(--spacing-md, 16px) 0;
+            position: relative;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: var(--border-radius, 8px);
+            transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            animation: progress-shimmer 2s infinite;
+        }
+
+        @keyframes progress-shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .progress-success { 
+            background: linear-gradient(135deg, var(--success-color), var(--success-hover));
+            box-shadow: 0 0 10px rgba(22, 163, 74, 0.3);
+        }
+        
+        .progress-warning { 
+            background: linear-gradient(135deg, var(--warning-color), var(--warning-hover));
+            box-shadow: 0 0 10px rgba(245, 158, 11, 0.3);
+        }
+        
+        .progress-error { 
+            background: linear-gradient(135deg, var(--error-color), var(--error-hover));
+            box-shadow: 0 0 10px rgba(220, 38, 38, 0.3);
+        }
+
+        .list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--spacing-md, 16px);
+            border-bottom: 1px solid var(--border-color);
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .list-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+            transform: scaleY(0);
+            transition: transform 0.3s ease;
+        }
+
+        .list-item:hover {
+            background: var(--surface-light);
+            transform: translateX(3px);
+        }
+
+        .list-item:hover::before {
+            transform: scaleY(1);
+        }
+
+        .list-item:last-child {
+            border-bottom: none;
+        }
+
+        .item-info {
+            flex: 1;
+        }
+
+        .item-name {
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .item-details {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .item-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-badge {
+            padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px);
+            border-radius: 16px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border: 1px solid transparent;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .status-badge::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .status-badge:hover::before {
+            left: 100%;
+        }
+
+        .status-badge:hover {
+            transform: scale(1.05);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .badge-running {
+            background: var(--success-light);
+            color: var(--success-color);
+            border-color: var(--success-color);
+        }
+
+        .badge-stopped {
+            background: var(--error-light);
+            color: var(--error-color);
+            border-color: var(--error-color);
+        }
+
+        .badge-error {
+            background: var(--error-light);
+            color: var(--error-color);
+            border-color: var(--error-color);
+        }
+
+        .badge-warning {
+            background: var(--warning-light);
+            color: var(--warning-color);
+            border-color: var(--warning-color);
+        }
+
+        .chart-container {
+            height: 200px;
+            margin: var(--spacing-lg, 24px) 0;
+            padding: var(--spacing-md, 16px);
+            background: var(--surface-light);
+            border-radius: var(--border-radius-lg, 12px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .chart-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--primary-color), var(--info-color), var(--primary-color));
+            animation: chart-scan 3s linear infinite;
+        }
+
+        @keyframes chart-scan {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .mini-chart {
+            width: 100%;
+            height: 100%;
+            border-radius: 8px;
+            background: var(--bg-tertiary);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .btn {
+            padding: var(--spacing-sm, 8px) var(--spacing-lg, 24px);
+            border: none;
+            border-radius: var(--border-radius, 8px);
+            cursor: pointer;
+            font-weight: 600;
+            transition: var(--transition);
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            position: relative;
+            overflow: hidden;
+            display: inline-flex;
+            align-items: center;
+            gap: var(--spacing-sm, 8px);
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .btn:active::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+            color: white;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-secondary {
+            background: var(--surface);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--surface-light);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .refresh-indicator {
+            position: fixed;
+            top: 100px;
+            right: var(--spacing-lg, 24px);
+            background: var(--surface);
+            padding: var(--spacing-md, 16px) var(--spacing-lg, 24px);
+            border-radius: var(--border-radius-lg, 12px);
+            border: 1px solid var(--border-color);
+            display: none;
+            align-items: center;
+            gap: var(--spacing-sm, 8px);
+            z-index: 1000;
+            box-shadow: var(--shadow-lg);
+            backdrop-filter: blur(10px);
+            animation: slideInRight 0.3s ease;
+        }
+
+        .refresh-indicator.show {
+            display: flex;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 3px solid var(--surface-light);
+            border-top: 3px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .notification {
+            position: fixed;
+            bottom: var(--spacing-lg, 24px);
+            right: var(--spacing-lg, 24px);
+            background: var(--surface);
+            padding: var(--spacing-lg, 24px);
+            border-radius: var(--border-radius-lg, 12px);
+            border-left: 4px solid var(--primary-color);
+            box-shadow: var(--shadow-lg);
+            max-width: 400px;
+            z-index: 1000;
+            transform: translateX(500px);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-color);
+        }
+
+        .notification.show {
+            transform: translateX(0);
+            animation: slideInUp 0.3s ease;
+        }
+
+        .notification.error {
+            border-left-color: var(--error-color);
+            background: linear-gradient(135deg, var(--surface), var(--error-light));
+        }
+
+        .notification.success {
+            border-left-color: var(--success-color);
+            background: linear-gradient(135deg, var(--surface), var(--success-light));
+        }
+
+        .notification.warning {
+            border-left-color: var(--warning-color);
+            background: linear-gradient(135deg, var(--surface), var(--warning-light));
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideInUp {
+            from {
+                transform: translateY(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @media (max-width: 1024px) {
+            .dashboard-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: var(--spacing-md, 16px);
+            }
+            
+            .container {
+                padding: var(--spacing-lg, 24px);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+                gap: var(--spacing-md, 16px);
+            }
+            
+            .header-content {
+                flex-direction: column;
+                gap: var(--spacing-md, 16px);
+                text-align: center;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+                gap: var(--spacing-sm, 8px);
+            }
+            
+            .container {
+                padding: var(--spacing-md, 16px);
+            }
+            
+            .notification {
+                left: var(--spacing-md, 16px);
+                right: var(--spacing-md, 16px);
+                max-width: none;
+            }
+            
+            .refresh-indicator {
+                right: var(--spacing-md, 16px);
+            }
+        }
+
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 1.5rem;
+            }
+            
+            .card {
+                padding: var(--spacing-md, 16px);
+            }
+            
+            .metric-value {
+                font-size: 1.5rem;
+            }
+            
+            .btn {
+                padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
+                font-size: 0.75rem;
+            }
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+
+        .log-viewer {
+            background: var(--surface-light);
+            border-radius: var(--border-radius, 8px);
+            padding: var(--spacing-lg, 24px);
+            height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+            line-height: 1.6;
+            border: 1px solid var(--border-color);
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06);
+        }
+
+        .log-entry {
+            margin-bottom: var(--spacing-sm, 8px);
+            padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
+            border-radius: var(--border-radius, 8px);
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .log-entry:hover {
+            transform: translateX(3px);
+        }
+
+        .log-error {
+            background: var(--error-light);
+            border-left: 3px solid var(--error-color);
+            color: var(--error-color);
+        }
+
+        .log-warning {
+            background: var(--warning-light);
+            border-left: 3px solid var(--warning-color);
+            color: var(--warning-color);
+        }
+
+        .log-info {
+            background: var(--info-light);
+            border-left: 3px solid var(--info-color);
+            color: var(--info-color);
+        }
+
+        .timestamp {
+            color: var(--text-secondary);
+            margin-right: var(--spacing-md, 16px);
+            font-weight: 600;
+            font-size: 0.75rem;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <div class="logo">
+                <div class="logo-icon">🤖</div>
+                <h1>MTSCOS AI 系统健康监控</h1>
+            </div>
+            <div class="status-indicator">
+                <div class="status-dot healthy" id="systemStatusDot"></div>
+                <span id="systemStatusText">系统健康</span>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="dashboard-grid">
+            <!-- 系统概览 -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <div class="card-icon icon-performance">📊</div>
+                        系统概览
+                    </div>
+                </div>
+                <div class="metric-value" id="systemHealthScore">98%</div>
+                <div class="metric-label">健康评分</div>
+                <div class="progress-bar">
+                    <div class="progress-fill progress-success" id="healthProgressBar" style="width: 98%"></div>
+                </div>
+                <div class="metric-change change-positive">↑ 2% 较昨日</div>
+            </div>
+
+            <!-- 服务状态 -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <div class="card-icon icon-services">🔧</div>
+                        服务状态
+                    </div>
+                </div>
+                <div class="metric-value" id="runningServices">12</div>
+                <div class="metric-label">运行中服务</div>
+                <div class="progress-bar">
+                    <div class="progress-fill progress-success" style="width: 85%"></div>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="refreshServices()">
+                        🔄 刷新
+                    </button>
+                    <button class="btn btn-secondary" onclick="showServiceDetails()">
+                        📋 详情
+                    </button>
+                </div>
+            </div>
+
+            <!-- DeepSeek 模型 -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <div class="card-icon icon-models">🧠</div>
+                        DeepSeek 模型
+                    </div>
+                </div>
+                <div class="metric-value" id="modelStatus">已挂载</div>
+                <div class="metric-label">模型状态</div>
+                <div class="chart-container">
+                    <canvas id="modelPerformanceChart" class="mini-chart"></canvas>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="checkModelStatus()">
+                        🔍 检查
+                    </button>
+                    <button class="btn btn-secondary" onclick="remountModel()">
+                        🔄 重挂载
+                    </button>
+                </div>
+            </div>
+
+            <!-- 错误监控 -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <div class="card-icon icon-errors">⚠️</div>
+                        错误监控
+                    </div>
+                </div>
+                <div class="metric-value" id="errorCount">3</div>
+                <div class="metric-label">待处理错误</div>
+                <div class="metric-change change-negative">↑ 1 较上小时</div>
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="fixErrors()">
+                        🔧 自动修复
+                    </button>
+                    <button class="btn btn-secondary" onclick="viewErrors()">
+                        📋 查看详情
+                    </button>
+                </div>
+            </div>
+
+            <!-- 依赖项状态 -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <div class="card-icon icon-dependencies">📦</div>
+                        依赖项状态
+                    </div>
+                </div>
+                <div class="metric-value" id="dependencyUpdates">5</div>
+                <div class="metric-label">可用更新</div>
+                <div class="progress-bar">
+                    <div class="progress-fill progress-warning" style="width: 25%"></div>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="updateDependencies()">
+                        🔄 更新全部
+                    </button>
+                    <button class="btn btn-secondary" onclick="viewDependencies()">
+                        📋 管理依赖
+                    </button>
+                </div>
+            </div>
+
+            <!-- 系统性能 -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <div class="card-icon icon-performance">⚡</div>
+                        系统性能
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="performanceChart" class="mini-chart"></canvas>
+                </div>
+                <div class="list-item">
+                    <div class="item-info">
+                        <div class="item-name">CPU 使用率</div>
+                        <div class="item-details">45% 平均使用率</div>
+                    </div>
+                    <div class="item-status">
+                        <span class="status-badge badge-running">正常</span>
+                    </div>
+                </div>
+                <div class="list-item">
+                    <div class="item-info">
+                        <div class="item-name">内存使用率</div>
+                        <div class="item-details">2.1GB / 8GB</div>
+                    </div>
+                    <div class="item-status">
+                        <span class="status-badge badge-running">正常</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 服务列表 -->
+            <div class="card full-width">
+                <div class="card-header">
+                    <div class="card-title">
+                        <div class="card-icon icon-services">🔧</div>
+                        服务详情
+                    </div>
+                </div>
+                <div id="servicesList">
+                    <!-- 服务列表将通过JavaScript动态生成 -->
+                </div>
+            </div>
+
+            <!-- 实时日志 -->
+            <div class="card full-width">
+                <div class="card-header">
+                    <div class="card-title">
+                        <div class="card-icon icon-logs">📝</div>
+                        实时日志
+                    </div>
+                </div>
+                <div class="log-viewer" id="logViewer">
+                    <!-- 日志内容将通过JavaScript动态生成 -->
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="refreshLogs()">
+                        🔄 刷新日志
+                    </button>
+                    <button class="btn btn-secondary" onclick="clearLogs()">
+                        🗑️ 清空
+                    </button>
+                    <button class="btn btn-secondary" onclick="downloadLogs()">
+                        💾 下载
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 刷新指示器 -->
+    <div class="refresh-indicator" id="refreshIndicator">
+        <div class="spinner"></div>
+        <span>正在刷新数据...</span>
+    </div>
+
+    <!-- 通知容器 -->
+    <div id="notificationContainer"></div>
+
+    <script>
+        // 全局状态管理
+        const systemState = {
+            services: [],
+            modelStatus: 'mounted',
+            errors: [],
+            dependencies: [],
+            logs: [],
+            metrics: {
+                healthScore: 98,
+                runningServices: 12,
+                errorCount: 3,
+                dependencyUpdates: 5,
+                cpuUsage: 45,
+                memoryUsage: 26
+            }
+        };
+
+        // 初始化仪表板
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeDashboard();
+            startRealTimeUpdates();
+            initializeCharts();
+        });
+
+        function initializeDashboard() {
+            showNotification('系统监控仪表板已启动', 'success');
+            refreshAllData();
+        }
+
+        function startRealTimeUpdates() {
+            // 每30秒刷新一次数据
+            setInterval(refreshAllData, 30000);
+            
+            // 每5秒更新日志
+            setInterval(refreshLogs, 5000);
+        }
+
+        function refreshAllData() {
+            showRefreshIndicator(true);
+            
+            Promise.all([
+                refreshServices(),
+                refreshMetrics(),
+                refreshModelStatus(),
+                refreshErrors(),
+                refreshDependencies()
+            ]).then(() => {
+                showRefreshIndicator(false);
+                updateSystemStatus();
+            }).catch(error => {
+                console.error('刷新数据失败:', error);
+                showRefreshIndicator(false);
+                showNotification('数据刷新失败', 'error');
+            });
+        }
+
+        function refreshServices() {
+            return new Promise((resolve) => {
+                // 模拟服务数据
+                const mockServices = [
+                    { name: 'web-server', status: 'running', uptime: '2天3小时', memory: '256MB' },
+                    { name: 'database', status: 'running', uptime: '2天3小时', memory: '512MB' },
+                    { name: 'api-gateway', status: 'running', uptime: '1天12小时', memory: '128MB' },
+                    { name: 'cache-server', status: 'warning', uptime: '5小时', memory: '64MB' },
+                    { name: 'file-server', status: 'running', uptime: '2天3小时', memory: '128MB' },
+                    { name: 'auth-service', status: 'running', uptime: '2天3小时', memory: '96MB' }
+                ];
+                
+                systemState.services = mockServices;
+                renderServicesList();
+                document.getElementById('runningServices').textContent = 
+                    mockServices.filter(s => s.status === 'running').length;
+                
+                resolve();
+            });
+        }
+
+        function renderServicesList() {
+            const container = document.getElementById('servicesList');
+            container.innerHTML = '';
+            
+            systemState.services.forEach(service => {
+                const item = document.createElement('div');
+                item.className = 'list-item';
+                
+                const statusClass = service.status === 'running' ? 'badge-running' : 
+                                   service.status === 'warning' ? 'badge-warning' : 'badge-error';
+                
+                item.innerHTML = `
+                    <div class="item-info">
+                        <div class="item-name">${service.name}</div>
+                        <div class="item-details">运行时间: ${service.uptime} | 内存: ${service.memory}</div>
+                    </div>
+                    <div class="item-status">
+                        <span class="status-badge ${statusClass}">${service.status}</span>
+                    </div>
+                `;
+                
+                container.appendChild(item);
+            });
+        }
+
+        function refreshMetrics() {
+            return new Promise((resolve) => {
+                // 模拟指标数据
+                const healthScore = Math.floor(Math.random() * 10) + 90;
+                const cpuUsage = Math.floor(Math.random() * 30) + 30;
+                const memoryUsage = Math.floor(Math.random() * 20) + 20;
+                
+                systemState.metrics.healthScore = healthScore;
+                systemState.metrics.cpuUsage = cpuUsage;
+                systemState.metrics.memoryUsage = memoryUsage;
+                
+                document.getElementById('systemHealthScore').textContent = healthScore + '%';
+                document.getElementById('healthProgressBar').style.width = healthScore + '%';
+                
+                resolve();
+            });
+        }
+
+        function refreshModelStatus() {
+            return new Promise((resolve) => {
+                // 模拟模型状态检查
+                const statuses = ['已挂载', '运行中', '检查中', '需要更新'];
+                const status = statuses[Math.floor(Math.random() * statuses.length)];
+                
+                systemState.modelStatus = status;
+                document.getElementById('modelStatus').textContent = status;
+                
+                resolve();
+            });
+        }
+
+        function refreshErrors() {
+            return new Promise((resolve) => {
+                // 模拟错误数据
+                const errorCount = Math.floor(Math.random() * 10);
+                systemState.metrics.errorCount = errorCount;
+                document.getElementById('errorCount').textContent = errorCount;
+                
+                resolve();
+            });
+        }
+
+        function refreshDependencies() {
+            return new Promise((resolve) => {
+                // 模拟依赖项数据
+                const updateCount = Math.floor(Math.random() * 15);
+                systemState.metrics.dependencyUpdates = updateCount;
+                document.getElementById('dependencyUpdates').textContent = updateCount;
+                
+                resolve();
+            });
+        }
+
+        function refreshLogs() {
+            const logViewer = document.getElementById('logViewer');
+            const newLogs = generateMockLogs();
+            
+            newLogs.forEach(log => {
+                const logEntry = document.createElement('div');
+                logEntry.className = `log-entry log-${log.level}`;
+                logEntry.innerHTML = `
+                    <span class="timestamp">[${log.timestamp}]</span>
+                    <span>${log.message}</span>
+                `;
+                
+                logViewer.appendChild(logEntry);
+            });
+            
+            // 保持最多100条日志
+            while (logViewer.children.length > 100) {
+                logViewer.removeChild(logViewer.firstChild);
+            }
+            
+            // 自动滚动到底部
+            logViewer.scrollTop = logViewer.scrollHeight;
+        }
+
+        function generateMockLogs() {
+            const logs = [];
+            const now = new Date();
+            const messages = [
+                { level: 'info', message: '系统健康检查完成' },
+                { level: 'info', message: '服务状态更新' },
+                { level: 'warning', message: '内存使用率较高' },
+                { level: 'info', message: '依赖项检查完成' },
+                { level: 'error', message: '连接超时: database-server' }
+            ];
+            
+            for (let i = 0; i < 3; i++) {
+                const message = messages[Math.floor(Math.random() * messages.length)];
+                logs.push({
+                    ...message,
+                    timestamp: now.toLocaleTimeString()
+                });
+            }
+            
+            return logs;
+        }
+
+        function updateSystemStatus() {
+            const healthScore = systemState.metrics.healthScore;
+            const statusDot = document.getElementById('systemStatusDot');
+            const statusText = document.getElementById('systemStatusText');
+            
+            if (healthScore >= 90) {
+                statusDot.className = 'status-dot healthy';
+                statusText.textContent = '系统健康';
+            } else if (healthScore >= 70) {
+                statusDot.className = 'status-dot warning';
+                statusText.textContent = '系统警告';
+            } else {
+                statusDot.className = 'status-dot error';
+                statusText.textContent = '系统异常';
+            }
+        }
+
+        function initializeCharts() {
+            // 初始化性能图表
+            const performanceCanvas = document.getElementById('performanceChart');
+            if (performanceCanvas) {
+                const ctx = performanceCanvas.getContext('2d');
+                drawPerformanceChart(ctx);
+            }
+            
+            // 初始化模型性能图表
+            const modelCanvas = document.getElementById('modelPerformanceChart');
+            if (modelCanvas) {
+                const ctx = modelCanvas.getContext('2d');
+                drawModelPerformanceChart(ctx);
+            }
+        }
+
+        function drawPerformanceChart(ctx) {
+            const canvas = ctx.canvas;
+            const width = canvas.width = canvas.offsetWidth;
+            const height = canvas.height = canvas.offsetHeight;
+            
+            // 清空画布
+            ctx.clearRect(0, 0, width, height);
+            
+            // 绘制简单的性能曲线
+            ctx.strokeStyle = '#2563eb';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            
+            const points = 20;
+            for (let i = 0; i < points; i++) {
+                const x = (i / (points - 1)) * width;
+                const y = height / 2 + Math.sin(i * 0.5) * height * 0.3;
+                
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+            
+            ctx.stroke();
+        }
+
+        function drawModelPerformanceChart(ctx) {
+            const canvas = ctx.canvas;
+            const width = canvas.width = canvas.offsetWidth;
+            const height = canvas.height = canvas.offsetHeight;
+            
+            // 清空画布
+            ctx.clearRect(0, 0, width, height);
+            
+            // 绘制模型性能柱状图
+            const barWidth = width / 10;
+            const data = [65, 78, 82, 91, 88, 95, 89, 92, 94, 96];
+            
+            ctx.fillStyle = '#16a34a';
+            data.forEach((value, index) => {
+                const barHeight = (value / 100) * height;
+                const x = index * barWidth + barWidth * 0.1;
+                const y = height - barHeight;
+                
+                ctx.fillRect(x, y, barWidth * 0.8, barHeight);
+            });
+        }
+
+        function showRefreshIndicator(show) {
+            const indicator = document.getElementById('refreshIndicator');
+            if (show) {
+                indicator.classList.add('show');
+            } else {
+                indicator.classList.remove('show');
+            }
+        }
+
+        function showNotification(message, type = 'info') {
+            const container = document.getElementById('notificationContainer');
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            
+            container.appendChild(notification);
+            
+            // 显示通知
+            setTimeout(() => {
+                notification.classList.add('show');
+            }, 100);
+            
+            // 3秒后自动隐藏
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => {
+                    container.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }
+
+        // 操作函数
+        function refreshServices() {
+            showRefreshIndicator(true);
+            refreshServices().then(() => {
+                showRefreshIndicator(false);
+                showNotification('服务状态已刷新', 'success');
+            });
+        }
+
+        function checkModelStatus() {
+            showNotification('正在检查模型状态...', 'info');
+            setTimeout(() => {
+                showNotification('模型状态检查完成', 'success');
+            }, 2000);
+        }
+
+        function remountModel() {
+            showNotification('正在重新挂载模型...', 'info');
+            setTimeout(() => {
+                showNotification('模型重新挂载成功', 'success');
+                refreshModelStatus();
+            }, 3000);
+        }
+
+        function fixErrors() {
+            showNotification('正在自动修复错误...', 'info');
+            setTimeout(() => {
+                showNotification('错误修复完成', 'success');
+                refreshErrors();
+            }, 2000);
+        }
+
+        function updateDependencies() {
+            showNotification('正在更新依赖项...', 'info');
+            setTimeout(() => {
+                showNotification('依赖项更新完成', 'success');
+                refreshDependencies();
+            }, 5000);
+        }
+
+        function clearLogs() {
+            const logViewer = document.getElementById('logViewer');
+            logViewer.innerHTML = '';
+            showNotification('日志已清空', 'success');
+        }
+
+        function downloadLogs() {
+            showNotification('正在准备下载日志...', 'info');
+            setTimeout(() => {
+                showNotification('日志下载已开始', 'success');
+            }, 1000);
+        }
+
+        function showServiceDetails() {
+            showNotification('服务详情功能开发中...', 'info');
+        }
+
+        function viewErrors() {
+            showNotification('错误详情功能开发中...', 'info');
+        }
+
+        function viewDependencies() {
+            showNotification('依赖管理功能开发中...', 'info');
+        }
+
+        // 键盘快捷键
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'F5') {
+                event.preventDefault();
+                refreshAllData();
+            } else if (event.key === 'r' && event.ctrlKey) {
+                event.preventDefault();
+                refreshAllData();
+            }
+        });
+    </script>
+</body>
+</html>

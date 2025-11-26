@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>备份管理 - MTSCOS AI系统</title>
+    <link rel="stylesheet" href="assets/css/main.css">
+    <link rel="stylesheet" href="assets/css/backup-management.css">
+</head>
+<body>
+    <!-- 页面加载遮罩 -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="loading-spinner"></div>
+        <p id="loading-text">加载中...</p>
+    </div>
+
+    <!-- 顶部导航栏 -->
+    <header class="main-header">
+        <div class="header-content">
+            <div class="logo-container">
+                <img src="assets/img/logo.png" alt="MTSCOS Logo" class="logo">
+                <h1 class="system-name">MTSCOS AI</h1>
+            </div>
+            <nav class="main-nav">
+                <ul class="nav-menu">
+                    <li><a href="dashboard.html">控制面板</a></li>
+                    <li><a href="logs-viewer.html">日志查看</a></li>
+                    <li><a href="vikey-monitor.html">规则监测</a></li>
+                    <li><a href="audit-management.html">审计管理</a></li>
+                    <li><a href="backup-management.html" class="active">备份管理</a></li>
+                    <li><a href="auth-requests.html">授权管理</a></li>
+                    <li><a href="settings.html">系统设置</a></li>
+                </ul>
+            </nav>
+            <div class="user-profile">
+                <span id="current-user" class="user-name">管理员</span>
+                <button id="logout-btn" class="logout-button">退出登录</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 侧边导航 -->
+    <aside class="sidebar">
+        <nav class="sidebar-nav">
+            <ul class="sidebar-menu">
+                <li class="sidebar-item">
+                    <a href="backup-management.html" class="sidebar-link active">
+                        <i class="icon-backup"></i>
+                        <span>备份管理</span>
+                    </a>
+                </li>
+                <li class="sidebar-item">
+                    <a href="#backup-list" class="sidebar-link">
+                        <i class="icon-list"></i>
+                        <span>备份列表</span>
+                    </a>
+                </li>
+                <li class="sidebar-item">
+                    <a href="#create-backup" class="sidebar-link">
+                        <i class="icon-create"></i>
+                        <span>创建备份</span>
+                    </a>
+                </li>
+                <li class="sidebar-item">
+                    <a href="#restore-history" class="sidebar-link">
+                        <i class="icon-history"></i>
+                        <span>恢复历史</span>
+                    </a>
+                </li>
+                <li class="sidebar-item">
+                    <a href="#backup-settings" class="sidebar-link">
+                        <i class="icon-settings"></i>
+                        <span>备份设置</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </aside>
+
+    <!-- 主要内容区 -->
+    <main class="main-content">
+        <!-- 权限警告 -->
+        <div id="permission-warning" class="warning-banner hidden">
+            <i class="icon-warning"></i>
+            <span>您没有执行此操作的权限，请联系系统管理员。</span>
+            <button class="close-warning">×</button>
+        </div>
+
+        <!-- 页面标题 -->
+        <div class="page-header">
+            <h2>备份管理</h2>
+            <p>系统配置和数据的备份、恢复和管理功能</p>
+        </div>
+
+        <!-- 功能按钮 -->
+        <div class="action-buttons">
+            <button id="create-full-backup" class="btn btn-primary">
+                <i class="icon-backup-full"></i>
+                创建完整备份
+            </button>
+            <button id="create-incremental-backup" class="btn btn-secondary">
+                <i class="icon-backup-incremental"></i>
+                创建增量备份
+            </button>
+            <button id="import-backup" class="btn btn-secondary">
+                <i class="icon-import"></i>
+                导入备份
+            </button>
+            <input type="file" id="backup-file-input" class="hidden" accept=".zip,.tar.gz">
+        </div>
+
+        <!-- 统计卡片 -->
+        <div class="stats-cards">
+            <div class="stat-card">
+                <div class="stat-icon stat-primary">
+                    <i class="icon-backup-full"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>完整备份</h3>
+                    <p id="full-backups-count" class="stat-number">0</p>
+                    <p class="stat-description">最近: <span id="last-full-backup">无</span></p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon stat-secondary">
+                    <i class="icon-backup-incremental"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>增量备份</h3>
+                    <p id="incremental-backups-count" class="stat-number">0</p>
+                    <p class="stat-description">最近: <span id="last-incremental-backup">无</span></p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon stat-success">
+                    <i class="icon-restore"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>恢复操作</h3>
+                    <p id="restore-count" class="stat-number">0</p>
+                    <p class="stat-description">最近: <span id="last-restore">无</span></p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon stat-warning">
+                    <i class="icon-storage"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>备份存储</h3>
+                    <p id="storage-usage" class="stat-number">0 MB</p>
+                    <p class="stat-description">占用率: <span id="storage-percentage">0%</span></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 备份列表区域 -->
+        <section id="backup-list" class="content-section">
+            <div class="section-header">
+                <h3>备份列表</h3>
+                <div class="section-actions">
+                    <div class="search-box">
+                        <input type="text" id="backup-search" placeholder="搜索备份...">
+                        <button class="search-button">
+                            <i class="icon-search"></i>
+                        </button>
+                    </div>
+                    <select id="backup-filter" class="filter-select">
+                        <option value="all">所有备份</option>
+                        <option value="full">完整备份</option>
+                        <option value="incremental">增量备份</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="table-container">
+                <table id="backups-table" class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>类型</th>
+                            <th>创建时间</th>
+                            <th>大小</th>
+                            <th>描述</th>
+                            <th>创建者</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="backups-table-body">
+                        <!-- 备份数据将通过JavaScript动态填充 -->
+                        <tr class="empty-row">
+                            <td colspan="7" class="empty-message">加载中...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- 分页控件 -->
+            <div class="pagination-controls">
+                <div class="pagination-info">
+                    显示 <span id="showing-range">0-0</span> 条，共 <span id="total-items">0</span> 条
+                </div>
+                <div class="pagination-buttons">
+                    <button id="prev-page" class="btn btn-sm btn-secondary" disabled>
+                        <i class="icon-prev"></i> 上一页
+                    </button>
+                    <button id="next-page" class="btn btn-sm btn-secondary" disabled>
+                        下一页 <i class="icon-next"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 备份设置 -->
+        <section id="backup-settings" class="content-section">
+            <div class="section-header">
+                <h3>备份设置</h3>
+            </div>
+            
+            <div class="settings-container">
+                <div class="settings-group">
+                    <h4>自动备份</h4>
+                    <div class="setting-item">
+                        <label for="auto-backup-enabled">启用自动备份</label>
+                        <div class="setting-control">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="auto-backup-enabled" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="setting-item">
+                        <label for="backup-interval">备份间隔 (小时)</label>
+                        <div class="setting-control">
+                            <input type="number" id="backup-interval" min="1" max="168" value="24">
+                        </div>
+                    </div>
+                    <div class="setting-item">
+                        <label for="backup-type">默认备份类型</label>
+                        <div class="setting-control">
+                            <select id="backup-type">
+                                <option value="full">完整备份</option>
+                                <option value="incremental" selected>增量备份</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="settings-group">
+                    <h4>备份保留</h4>
+                    <div class="setting-item">
+                        <label for="max-backup-versions">最大备份版本数</label>
+                        <div class="setting-control">
+                            <input type="number" id="max-backup-versions" min="1" max="100" value="30">
+                        </div>
+                    </div>
+                    <div class="setting-item">
+                        <label for="full-backup-frequency">完整备份频率</label>
+                        <div class="setting-control">
+                            <select id="full-backup-frequency">
+                                <option value="daily">每天</option>
+                                <option value="weekly" selected>每周</option>
+                                <option value="monthly">每月</option>
+                                <option value="manual">手动</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="settings-group">
+                    <h4>备份内容</h4>
+                    <div class="setting-item">
+                        <label for="backup-configs">备份系统配置</label>
+                        <div class="setting-control">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="backup-configs" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="setting-item">
+                        <label for="backup-database">备份数据库</label>
+                        <div class="setting-control">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="backup-database" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="setting-item">
+                        <label for="backup-logs">备份日志文件</label>
+                        <div class="setting-control">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="backup-logs">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="settings-actions">
+                <button id="save-settings" class="btn btn-primary">保存设置</button>
+                <button id="reset-settings" class="btn btn-secondary">恢复默认</button>
+            </div>
+        </section>
+
+        <!-- 恢复历史 -->
+        <section id="restore-history" class="content-section">
+            <div class="section-header">
+                <h3>恢复历史</h3>
+            </div>
+            
+            <div class="table-container">
+                <table id="restore-history-table" class="data-table">
+                    <thead>
+                        <tr>
+                            <th>操作时间</th>
+                            <th>恢复的备份</th>
+                            <th>操作者</th>
+                            <th>状态</th>
+                            <th>备注</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="restore-history-body">
+                        <!-- 恢复历史将通过JavaScript动态填充 -->
+                        <tr class="empty-row">
+                            <td colspan="6" class="empty-message">暂无恢复历史记录</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="main-footer">
+        <div class="footer-content">
+            <p>© 2025 MTSCOS AI 系统 - 版本 1.0.0</p>
+            <div class="footer-links">
+                <a href="about.html">关于系统</a>
+                <a href="help.html">帮助文档</a>
+                <a href="privacy.html">隐私政策</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- 创建备份模态框 -->
+    <div id="create-backup-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">创建备份</h3>
+                <button class="close-modal">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="backup-name">备份名称</label>
+                    <input type="text" id="backup-name" placeholder="输入备份名称（可选）">
+                </div>
+                <div class="form-group">
+                    <label for="backup-description">描述</label>
+                    <textarea id="backup-description" rows="3" placeholder="输入备份描述（可选）"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="modal-backup-type">备份类型</label>
+                    <select id="modal-backup-type">
+                        <option value="full">完整备份</option>
+                        <option value="incremental">增量备份</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary close-modal">取消</button>
+                <button id="confirm-create-backup" class="btn btn-primary">确认创建</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 恢复确认模态框 -->
+    <div id="restore-confirm-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>确认恢复</h3>
+                <button class="close-modal">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="warning-message">
+                    <i class="icon-warning"></i>
+                    <p>恢复操作将会覆盖当前系统状态，此操作不可逆！</p>
+                    <p>系统将自动创建当前状态的备份作为回退点。</p>
+                </div>
+                <div id="restore-backup-info" class="backup-info">
+                    <!-- 备份信息将动态填充 -->
+                </div>
+                <div class="form-group">
+                    <label for="restore-reason">恢复原因</label>
+                    <textarea id="restore-reason" rows="2" placeholder="请输入恢复原因"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary close-modal">取消</button>
+                <button id="confirm-restore" class="btn btn-danger">确认恢复</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 删除确认模态框 -->
+    <div id="delete-confirm-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>确认删除</h3>
+                <button class="close-modal">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="danger-message">
+                    <i class="icon-danger"></i>
+                    <p>确定要删除此备份吗？此操作不可逆！</p>
+                </div>
+                <div id="delete-backup-info" class="backup-info">
+                    <!-- 备份信息将动态填充 -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary close-modal">取消</button>
+                <button id="confirm-delete" class="btn btn-danger">确认删除</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 备份详情模态框 -->
+    <div id="backup-details-modal" class="modal hidden">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3>备份详情</h3>
+                <button class="close-modal">×</button>
+            </div>
+            <div class="modal-body">
+                <div id="backup-details-content" class="backup-details">
+                    <!-- 备份详情将动态填充 -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary close-modal">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 比较备份模态框 -->
+    <div id="compare-backups-modal" class="modal hidden">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3>比较备份</h3>
+                <button class="close-modal">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="backup-1-select">选择第一个备份</label>
+                    <select id="backup-1-select" class="backup-select"></select>
+                </div>
+                <div class="form-group">
+                    <label for="backup-2-select">选择第二个备份</label>
+                    <select id="backup-2-select" class="backup-select"></select>
+                </div>
+                <button id="compare-button" class="btn btn-primary">执行比较</button>
+                
+                <div id="comparison-results" class="comparison-results hidden">
+                    <!-- 比较结果将动态填充 -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary close-modal">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 消息提示 -->
+    <div id="notification" class="notification hidden">
+        <div class="notification-content">
+            <i class="notification-icon" id="notification-icon"></i>
+            <span id="notification-message"></span>
+        </div>
+        <button class="close-notification">×</button>
+    </div>
+
+    <!-- JavaScript 文件 -->
+    <script src="assets/js/config.js"></script>
+    <script src="assets/js/auth.js"></script>
+    <script src="assets/js/modules/backup-manager.js"></script>
+    <script src="assets/js/modules/backup-management.js"></script>
+    <script src="assets/js/main.js"></script>
+</body>
+</html>

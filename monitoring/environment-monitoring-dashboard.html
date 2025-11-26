@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>环境监控仪表板</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .global-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .status-indicator {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .status-healthy { background: #10b981; }
+        .status-degraded { background: #f59e0b; }
+        .status-critical { background: #ef4444; }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .last-update {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .card-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .environment-status {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .environment-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: #f9fafb;
+            border-radius: 10px;
+            border-left: 4px solid #e5e7eb;
+            transition: all 0.3s ease;
+        }
+
+        .environment-item.healthy {
+            border-left-color: #10b981;
+            background: #f0fdf4;
+        }
+
+        .environment-item.unhealthy {
+            border-left-color: #ef4444;
+            background: #fef2f2;
+        }
+
+        .environment-item.unknown {
+            border-left-color: #6b7280;
+            background: #f9fafb;
+        }
+
+        .environment-info {
+            flex: 1;
+        }
+
+        .environment-name {
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 5px;
+        }
+
+        .environment-url {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .environment-metrics {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .metric {
+            text-align: center;
+        }
+
+        .metric-value {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .metric-label {
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        .charts-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .chart-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .chart-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #1f2937;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+        }
+
+        .alerts-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .alert-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px;
+            margin-bottom: 10px;
+            background: #f9fafb;
+            border-radius: 10px;
+            border-left: 4px solid #e5e7eb;
+        }
+
+        .alert-item.critical {
+            border-left-color: #ef4444;
+            background: #fef2f2;
+        }
+
+        .alert-item.warning {
+            border-left-color: #f59e0b;
+            background: #fffbeb;
+        }
+
+        .alert-icon {
+            font-size: 1.5rem;
+        }
+
+        .alert-content {
+            flex: 1;
+        }
+
+        .alert-message {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .alert-details {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .alert-time {
+            font-size: 0.8rem;
+            color: #999;
+        }
+
+        .no-alerts {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .spinner {
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .connection-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            z-index: 1000;
+        }
+
+        .connected {
+            background: #10b981;
+            color: white;
+        }
+
+        .disconnected {
+            background: #ef4444;
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .charts-container {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .status-bar {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="connection-status" id="connectionStatus">
+        <span id="connectionText">连接中...</span>
+    </div>
+
+    <div class="container">
+        <header class="header">
+            <h1>🔍 环境监控仪表板</h1>
+            <div class="status-bar">
+                <div class="global-status">
+                    <div class="status-indicator" id="globalStatusIndicator"></div>
+                    <span id="globalStatusText">检查中...</span>
+                </div>
+                <div class="last-update" id="lastUpdate">最后更新: --</div>
+            </div>
+        </header>
+
+        <div class="dashboard-grid">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">🌐 环境状态</h2>
+                    <span id="environmentCount">0 个环境</span>
+                </div>
+                <div class="environment-status" id="environmentStatus">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>加载环境状态中...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">🚨 告警信息</h2>
+                    <span id="alertCount">0 个活跃告警</span>
+                </div>
+                <div class="alerts-container" id="alertsContainer">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>加载告警信息中...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="charts-container">
+            <div class="chart-card">
+                <h3 class="chart-title">📊 响应时间趋势</h3>
+                <div class="chart-container">
+                    <canvas id="responseTimeChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-card">
+                <h3 class="chart-title">💻 系统资源使用率</h3>
+                <div class="chart-container">
+                    <canvas id="resourceChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class MonitoringDashboard {
+            constructor() {
+                this.socket = null;
+                this.charts = {};
+                this.data = {
+                    status: null,
+                    metrics: null,
+                    alerts: null
+                };
+
+                this.init();
+            }
+
+            init() {
+                this.initSocket();
+                this.initCharts();
+                this.loadInitialData();
+            }
+
+            initSocket() {
+                this.socket = io();
+                
+                this.socket.on('connect', () => {
+                    this.updateConnectionStatus(true);
+                    console.log('已连接到监控服务器');
+                });
+
+                this.socket.on('disconnect', () => {
+                    this.updateConnectionStatus(false);
+                    console.log('与监控服务器断开连接');
+                });
+
+                this.socket.on('status', (data) => {
+                    this.data.status = data;
+                    this.updateEnvironmentStatus(data);
+                    this.updateGlobalStatus(data.global);
+                });
+
+                this.socket.on('metrics', (data) => {
+                    this.data.metrics = data;
+                    this.updateCharts(data);
+                });
+
+                this.socket.on('alert', (alert) => {
+                    this.addAlert(alert);
+                });
+            }
+
+            initCharts() {
+                // 响应时间趋势图
+                const responseTimeCtx = document.getElementById('responseTimeChart').getContext('2d');
+                this.charts.responseTime = new Chart(responseTimeCtx, {
+                    type: 'line',
+                    data: {
+                        labels: [],
+                        datasets: []
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: '响应时间 (ms)'
+                                }
+                            },
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: '时间'
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'top'
+                            }
+                        }
+                    }
+                });
+
+                // 系统资源使用率图
+                const resourceCtx = document.getElementById('resourceChart').getContext('2d');
+                this.charts.resource = new Chart(resourceCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['CPU', '内存', '磁盘'],
+                        datasets: [{
+                            data: [0, 0, 0],
+                            backgroundColor: [
+                                '#667eea',
+                                '#764ba2',
+                                '#f59e0b'
+                            ],
+                            borderWidth: 2,
+                            borderColor: '#fff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'bottom'
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return context.label + ': ' + context.parsed + '%';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            async loadInitialData() {
+                try {
+                    // 加载初始状态数据
+                    const statusResponse = await fetch('/api/status');
+                    const statusData = await statusResponse.json();
+                    this.data.status = statusData;
+                    this.updateEnvironmentStatus(statusData);
+                    this.updateGlobalStatus(statusData.global);
+
+                    // 加载初始指标数据
+                    const metricsResponse = await fetch('/api/metrics');
+                    const metricsData = await metricsResponse.json();
+                    this.data.metrics = metricsData;
+                    this.updateCharts(metricsData);
+
+                    // 加载初始告警数据
+                    const alertsResponse = await fetch('/api/alerts');
+                    const alertsData = await alertsResponse.json();
+                    this.data.alerts = alertsData;
+                    this.updateAlerts(alertsData);
+
+                } catch (error) {
+                    console.error('加载初始数据失败:', error);
+                }
+            }
+
+            updateConnectionStatus(connected) {
+                const status = document.getElementById('connectionStatus');
+                const text = document.getElementById('connectionText');
+
+                if (connected) {
+                    status.className = 'connection-status connected';
+                    text.textContent = '已连接';
+                } else {
+                    status.className = 'connection-status disconnected';
+                    text.textContent = '连接断开';
+                }
+            }
+
+            updateGlobalStatus(globalStatus) {
+                const indicator = document.getElementById('globalStatusIndicator');
+                const text = document.getElementById('globalStatusText');
+                const lastUpdate = document.getElementById('lastUpdate');
+
+                indicator.className = `status-indicator status-${globalStatus.overall}`;
+                
+                const statusMap = {
+                    healthy: '系统正常',
+                    degraded: '系统降级',
+                    critical: '系统严重'
+                };
+                
+                text.textContent = statusMap[globalStatus.overall] || '状态未知';
+                lastUpdate.textContent = `最后更新: ${new Date(globalStatus.timestamp).toLocaleString()}`;
+            }
+
+            updateEnvironmentStatus(statusData) {
+                const container = document.getElementById('environmentStatus');
+                const environmentCount = document.getElementById('environmentCount');
+
+                if (!statusData.environments) {
+                    return;
+                }
+
+                const environments = Object.entries(statusData.environments);
+                environmentCount.textContent = `${environments.length} 个环境`;
+
+                const html = environments.map(([key, env]) => {
+                    const responseTime = env.responseTime ? `${env.responseTime}ms` : '--';
+                    const cpu = env.metrics?.cpu ? `${env.metrics.cpu}%` : '--';
+                    const memory = env.metrics?.memory ? `${env.metrics.memory}%` : '--';
+
+                    return `
+                        <div class="environment-item ${env.status}">
+                            <div class="environment-info">
+                                <div class="environment-name">${env.name}</div>
+                                <div class="environment-url">${env.url}</div>
+                            </div>
+                            <div class="environment-metrics">
+                                <div class="metric">
+                                    <div class="metric-value">${responseTime}</div>
+                                    <div class="metric-label">响应时间</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">${cpu}</div>
+                                    <div class="metric-label">CPU</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">${memory}</div>
+                                    <div class="metric-label">内存</div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                container.innerHTML = html;
+            }
+
+            updateAlerts(alertsData) {
+                const container = document.getElementById('alertsContainer');
+                const alertCount = document.getElementById('alertCount');
+
+                const activeAlerts = alertsData.active || [];
+                alertCount.textContent = `${activeAlerts.length} 个活跃告警`;
+
+                if (activeAlerts.length === 0) {
+                    container.innerHTML = `
+                        <div class="no-alerts">
+                            <div style="font-size: 3rem; margin-bottom: 10px;">✅</div>
+                            <p>暂无活跃告警</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const html = activeAlerts.map(alert => {
+                    const alertClass = alert.isCritical ? 'critical' : 'warning';
+                    const alertIcon = alert.isCritical ? '🚨' : '⚠️';
+                    const time = new Date(alert.timestamp).toLocaleString();
+
+                    return `
+                        <div class="alert-item ${alertClass}">
+                            <div class="alert-icon">${alertIcon}</div>
+                            <div class="alert-content">
+                                <div class="alert-message">${alert.data.message}</div>
+                                <div class="alert-details">
+                                    环境: ${alert.data.environment} | 类型: ${alert.alertType}
+                                </div>
+                                <div class="alert-time">${time}</div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                container.innerHTML = html;
+            }
+
+            addAlert(alert) {
+                // 如果有新的告警，重新加载告警数据
+                this.loadInitialData();
+            }
+
+            updateCharts(metricsData) {
+                if (!metricsData.current) {
+                    return;
+                }
+
+                // 更新响应时间趋势图
+                this.updateResponseTimeChart(metricsData);
+
+                // 更新系统资源使用率图
+                this.updateResourceChart(metricsData);
+            }
+
+            updateResponseTimeChart(metricsData) {
+                const chart = this.charts.responseTime;
+                const environments = Object.keys(metricsData.current);
+
+                // 生成时间标签
+                const labels = [];
+                const now = Date.now();
+                for (let i = 9; i >= 0; i--) {
+                    labels.push(new Date(now - i * 60000).toLocaleTimeString());
+                }
+
+                // 生成数据集
+                const datasets = environments.map((envKey, index) => {
+                    const envMetrics = metricsData.current[envKey];
+                    const responseTimeData = envMetrics.responseTime || [];
+                    
+                    // 获取最近10个数据点
+                    const recentData = responseTimeData.slice(-10);
+                    const data = recentData.map(item => item.value || 0);
+
+                    const colors = [
+                        '#667eea', '#764ba2', '#f59e0b', '#10b981',
+                        '#ef4444', '#3b82f6', '#8b5cf6', '#ec4899'
+                    ];
+
+                    return {
+                        label: envKey,
+                        data: data,
+                        borderColor: colors[index % colors.length],
+                        backgroundColor: colors[index % colors.length] + '20',
+                        tension: 0.4,
+                        fill: false
+                    };
+                });
+
+                chart.data.labels = labels;
+                chart.data.datasets = datasets;
+                chart.update('none');
+            }
+
+            updateResourceChart(metricsData) {
+                const chart = this.charts.resource;
+                
+                // 计算平均资源使用率
+                let totalCpu = 0, totalMemory = 0, totalDisk = 0;
+                let count = 0;
+
+                Object.values(metricsData.current).forEach(envMetrics => {
+                    if (envMetrics.cpu && envMetrics.cpu.length > 0) {
+                        totalCpu += envMetrics.cpu[envMetrics.cpu.length - 1].value;
+                    }
+                    if (envMetrics.memory && envMetrics.memory.length > 0) {
+                        totalMemory += envMetrics.memory[envMetrics.memory.length - 1].value;
+                    }
+                    if (envMetrics.disk && envMetrics.disk.length > 0) {
+                        totalDisk += envMetrics.disk[envMetrics.disk.length - 1].value;
+                    }
+                    count++;
+                });
+
+                if (count > 0) {
+                    chart.data.datasets[0].data = [
+                        Math.round(totalCpu / count),
+                        Math.round(totalMemory / count),
+                        Math.round(totalDisk / count)
+                    ];
+                    chart.update('none');
+                }
+            }
+        }
+
+        // 初始化仪表板
+        document.addEventListener('DOMContentLoaded', () => {
+            new MonitoringDashboard();
+        });
+    </script>
+</body>
+</html>

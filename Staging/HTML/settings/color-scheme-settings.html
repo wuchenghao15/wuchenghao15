@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MTSCOS AI - 配色方案设置</title>
+    <style>
+        /* 基础样式 */
+        :root {
+            --primary-color: #165DFF;
+            --secondary-color: #4E5969;
+            --background-color: #F5F7FA;
+            --text-color: #2C3E50;
+            --accent-color: #00D4AA;
+            --border-color: #E5E6EB;
+            --success-color: #52C41A;
+            --warning-color: #FAAD14;
+            --error-color: #F5222D;
+            --card-background: #FFFFFF;
+            --hover-color: #ECF5FF;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: var(--card-background);
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 24px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 500;
+        }
+
+        .header .back-btn {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+
+        .header .back-btn:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .content {
+            padding: 32px;
+        }
+
+        .section {
+            margin-bottom: 40px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 500;
+            margin-bottom: 16px;
+            color: var(--text-color);
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        /* 配色方案卡片 */
+        .schemes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        .scheme-card {
+            background-color: var(--card-background);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+            transition: all 0.3s;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .scheme-card:hover {
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+            border-color: var(--primary-color);
+        }
+
+        .scheme-card.selected {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(22, 93, 255, 0.2);
+        }
+
+        .scheme-colors {
+            display: flex;
+            height: 60px;
+        }
+
+        .scheme-color {
+            flex: 1;
+            transition: opacity 0.3s;
+        }
+
+        .scheme-info {
+            padding: 16px;
+        }
+
+        .scheme-name {
+            font-size: 16px;
+            font-weight: 500;
+            margin-bottom: 4px;
+            color: var(--text-color);
+        }
+
+        .scheme-category {
+            font-size: 12px;
+            color: var(--secondary-color);
+            background-color: var(--background-color);
+            padding: 2px 8px;
+            border-radius: 12px;
+            display: inline-block;
+            margin-bottom: 8px;
+        }
+
+        .scheme-score {
+            font-size: 14px;
+            color: var(--secondary-color);
+            display: flex;
+            align-items: center;
+        }
+
+        .score-label {
+            margin-right: 8px;
+        }
+
+        .score-stars {
+            color: var(--warning-color);
+        }
+
+        .scheme-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 12px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 1px solid transparent;
+            outline: none;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .btn-primary:hover {
+            background-color: #0E4FD8;
+            border-color: #0E4FD8;
+        }
+
+        .btn-outline {
+            background-color: transparent;
+            color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        .btn-outline:hover {
+            background-color: var(--hover-color);
+        }
+
+        /* 预览部分 */
+        .preview-section {
+            background-color: var(--background-color);
+            border-radius: 8px;
+            padding: 24px;
+            margin-bottom: 32px;
+        }
+
+        .preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .preview-title {
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .preview-controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        .preview-device {
+            background-color: var(--card-background);
+            border-radius: 8px;
+            padding: 24px;
+            min-height: 400px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        /* 注册表单预览 */
+        .preview-form {
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 24px;
+            background-color: var(--card-background);
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .preview-form-title {
+            font-size: 20px;
+            font-weight: 500;
+            text-align: center;
+            margin-bottom: 24px;
+            color: var(--primary-color);
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: var(--text-color);
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+            background-color: var(--card-background);
+            color: var(--text-color);
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(22, 93, 255, 0.2);
+        }
+
+        .form-button {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-top: 8px;
+        }
+
+        .form-button:hover {
+            background-color: #0E4FD8;
+        }
+
+        .form-footer {
+            text-align: center;
+            margin-top: 16px;
+            font-size: 14px;
+            color: var(--secondary-color);
+        }
+
+        .form-footer a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        .form-footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* 颜色自定义部分 */
+        .customization-section {
+            background-color: var(--background-color);
+            border-radius: 8px;
+            padding: 24px;
+        }
+
+        .color-pickers {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .color-picker-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .color-picker-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            color: var(--text-color);
+        }
+
+        .color-value {
+            font-family: monospace;
+            font-size: 12px;
+            color: var(--secondary-color);
+            background-color: var(--card-background);
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+
+        .color-input {
+            width: 100%;
+            height: 40px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            cursor: pointer;
+            background-color: transparent;
+        }
+
+        .custom-scheme-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        /* 保存和应用部分 */
+        .save-section {
+            background-color: var(--background-color);
+            border-radius: 8px;
+            padding: 24px;
+            margin-top: 32px;
+        }
+
+        .save-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn-large {
+            padding: 12px 24px;
+            font-size: 16px;
+        }
+
+        .btn-success {
+            background-color: var(--success-color);
+            color: white;
+            border-color: var(--success-color);
+        }
+
+        .btn-success:hover {
+            background-color: #44AD19;
+            border-color: #44AD19;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .header {
+                padding: 16px 20px;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+
+            .content {
+                padding: 20px;
+            }
+
+            .schemes-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .save-actions {
+                flex-direction: column;
+            }
+
+            .custom-scheme-actions {
+                flex-direction: column;
+            }
+        }
+
+        /* 加载状态 */
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+            color: var(--secondary-color);
+        }
+
+        .loading::after {
+            content: '';
+            width: 20px;
+            height: 20px;
+            margin-left: 10px;
+            border: 2px solid var(--border-color);
+            border-top: 2px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 消息提示 */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 16px 24px;
+            border-radius: 4px;
+            color: white;
+            font-size: 14px;
+            z-index: 1000;
+            transform: translateX(100%);
+            transition: transform 0.3s;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.success {
+            background-color: var(--success-color);
+        }
+
+        .notification.error {
+            background-color: var(--error-color);
+        }
+
+        .notification.warning {
+            background-color: var(--warning-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>MTSCOS AI 配色方案设置</h1>
+            <button class="back-btn" onclick="window.history.back()">返回</button>
+        </div>
+
+        <div class="content">
+            <!-- 推荐配色方案部分 -->
+            <div class="section">
+                <h2 class="section-title">推荐配色方案</h2>
+                <div class="schemes-grid" id="recommended-schemes">
+                    <div class="loading">正在加载推荐配色方案</div>
+                </div>
+            </div>
+
+            <!-- 预览部分 -->
+            <div class="section">
+                <div class="preview-section">
+                    <div class="preview-header">
+                        <h3 class="preview-title">实时预览</h3>
+                        <div class="preview-controls">
+                            <button class="btn btn-outline" onclick="setPreviewType('registration')">注册页</button>
+                            <button class="btn btn-outline" onclick="setPreviewType('dashboard')">仪表盘</button>
+                            <button class="btn btn-outline" onclick="setPreviewType('login')">登录页</button>
+                        </div>
+                    </div>
+                    <div class="preview-device" id="preview-container">
+                        <!-- 注册表单预览 -->
+                        <div class="preview-form">
+                            <h3 class="preview-form-title">创建账户</h3>
+                            <div class="form-group">
+                                <label class="form-label" for="preview-username">用户名</label>
+                                <input type="text" id="preview-username" class="form-input" placeholder="请输入用户名">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="preview-email">邮箱</label>
+                                <input type="email" id="preview-email" class="form-input" placeholder="请输入邮箱地址">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="preview-password">密码</label>
+                                <input type="password" id="preview-password" class="form-input" placeholder="请设置密码">
+                            </div>
+                            <button class="form-button">立即注册</button>
+                            <div class="form-footer">
+                                已有账号？<a href="#">立即登录</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 自定义颜色部分 -->
+            <div class="section">
+                <div class="customization-section">
+                    <h3 class="section-title">自定义颜色</h3>
+                    <div class="color-pickers">
+                        <div class="color-picker-group">
+                            <label class="color-picker-label">
+                                主色调
+                                <span class="color-value" id="primary-color-value">#165DFF</span>
+                            </label>
+                            <input type="color" id="primary-color-picker" class="color-input" value="#165DFF">
+                        </div>
+                        <div class="color-picker-group">
+                            <label class="color-picker-label">
+                                辅助色
+                                <span class="color-value" id="secondary-color-value">#4E5969</span>
+                            </label>
+                            <input type="color" id="secondary-color-picker" class="color-input" value="#4E5969">
+                        </div>
+                        <div class="color-picker-group">
+                            <label class="color-picker-label">
+                                背景色
+                                <span class="color-value" id="background-color-value">#F5F7FA</span>
+                            </label>
+                            <input type="color" id="background-color-picker" class="color-input" value="#F5F7FA">
+                        </div>
+                        <div class="color-picker-group">
+                            <label class="color-picker-label">
+                                文本色
+                                <span class="color-value" id="text-color-value">#2C3E50</span>
+                            </label>
+                            <input type="color" id="text-color-picker" class="color-input" value="#2C3E50">
+                        </div>
+                        <div class="color-picker-group">
+                            <label class="color-picker-label">
+                                强调色
+                                <span class="color-value" id="accent-color-value">#00D4AA</span>
+                            </label>
+                            <input type="color" id="accent-color-picker" class="color-input" value="#00D4AA">
+                        </div>
+                    </div>
+                    <div class="custom-scheme-actions">
+                        <button class="btn btn-outline" onclick="generateComplimentary()">生成配套方案</button>
+                        <button class="btn btn-outline" onclick="resetToDefault()">重置为默认</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 保存和应用部分 -->
+            <div class="section">
+                <div class="save-section">
+                    <h3 class="section-title">应用设置</h3>
+                    <p>保存后的设置将应用于整个灰度测试环境，您可以随时更改并预览效果。</p>
+                    <div class="save-actions">
+                        <button class="btn btn-primary btn-large" onclick="applyScheme()">应用当前方案</button>
+                        <button class="btn btn-success btn-large" onclick="saveScheme()">保存并应用</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 通知组件 -->
+    <div class="notification" id="notification"></div>
+
+    <script>
+        // 当前选中的配色方案
+        let currentScheme = null;
+        // 当前预览类型
+        let previewType = 'registration';
+        // 默认配色方案
+        const defaultColors = {
+            '--primary-color': '#165DFF',
+            '--secondary-color': '#4E5969',
+            '--background-color': '#F5F7FA',
+            '--text-color': '#2C3E50',
+            '--accent-color': '#00D4AA'
+        };
+
+        // 初始化页面
+        document.addEventListener('DOMContentLoaded', () => {
+            // 加载推荐的配色方案
+            loadRecommendedSchemes();
+            
+            // 为颜色选择器添加事件监听
+            setupColorPickers();
+        });
+
+        // 加载推荐的配色方案
+        async function loadRecommendedSchemes() {
+            try {
+                // 模拟API调用，实际应用中应调用服务器端API
+                const schemesGrid = document.getElementById('recommended-schemes');
+                schemesGrid.innerHTML = '<div class="loading">正在加载推荐配色方案</div>';
+                
+                // 模拟网络延迟
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                // 使用预设数据（在实际应用中应从服务器获取）
+                const schemes = [
+                    {
+                        id: 'scheme-001',
+                        name: '现代简约',
+                        colors: ['#165DFF', '#FFFFFF', '#F5F7FA', '#4E5969', '#000000'],
+                        category: 'minimalist',
+                        score: 0.95
+                    },
+                    {
+                        id: 'scheme-002',
+                        name: '科技感',
+                        colors: ['#00D4AA', '#11214A', '#F9F9F9', '#4F5E7B', '#000000'],
+                        category: 'tech',
+                        score: 0.91
+                    },
+                    {
+                        id: 'scheme-003',
+                        name: '商务专业',
+                        colors: ['#2C3E50', '#3498DB', '#FFFFFF', '#BDC3C7', '#2C3E50'],
+                        category: 'business',
+                        score: 0.89
+                    },
+                    {
+                        id: 'scheme-004',
+                        name: '活力清新',
+                        colors: ['#FF6B6B', '#4ECDC4', '#FFFFFF', '#F7FFF7', '#FFE66D'],
+                        category: 'creative',
+                        score: 0.87
+                    },
+                    {
+                        id: 'scheme-005',
+                        name: '深色主题',
+                        colors: ['#121212', '#1E1E1E', '#BB86FC', '#03DAC6', '#FFFFFF'],
+                        category: 'dark',
+                        score: 0.86
+                    }
+                ];
+                
+                // 渲染配色方案卡片
+                renderSchemeCards(schemes);
+                
+            } catch (error) {
+                console.error('加载配色方案失败:', error);
+                showNotification('加载配色方案失败，请稍后重试', 'error');
+            }
+        }
+
+        // 渲染配色方案卡片
+        function renderSchemeCards(schemes) {
+            const schemesGrid = document.getElementById('recommended-schemes');
+            schemesGrid.innerHTML = '';
+            
+            schemes.forEach(scheme => {
+                const card = document.createElement('div');
+                card.className = 'scheme-card';
+                card.dataset.schemeId = scheme.id;
+                
+                // 渲染颜色条
+                const colorsHtml = scheme.colors.map(color => 
+                    `<div class="scheme-color" style="background-color: ${color}"></div>`
+                ).join('');
+                
+                // 计算星级评分
+                const starsHtml = generateStars(scheme.score);
+                
+                card.innerHTML = `
+                    <div class="scheme-colors">
+                        ${colorsHtml}
+                    </div>
+                    <div class="scheme-info">
+                        <div class="scheme-name">${scheme.name}</div>
+                        <div class="scheme-category">${scheme.category}</div>
+                        <div class="scheme-score">
+                            <span class="score-label">推荐评分:</span>
+                            <span class="score-stars">${starsHtml}</span>
+                            <span> (${(scheme.score * 100).toFixed(0)}%)</span>
+                        </div>
+                        <div class="scheme-actions">
+                            <button class="btn btn-outline" onclick="previewScheme(event, '${scheme.id}', ${JSON.stringify(scheme.colors)})">预览</button>
+                            <button class="btn btn-primary" onclick="selectScheme(event, '${scheme.id}', ${JSON.stringify(scheme.colors)})">选择</button>
+                        </div>
+                    </div>
+                `;
+                
+                schemesGrid.appendChild(card);
+            });
+        }
+
+        // 生成星级评分
+        function generateStars(score) {
+            const fullStars = Math.floor(score * 5);
+            const halfStar = score * 5 % 1 >= 0.5;
+            const emptyStars = 5 - fullStars - (halfStar ? 1 : 0);
+            
+            let starsHtml = '';
+            starsHtml += '★'.repeat(fullStars);
+            starsHtml += halfStar ? '☆' : '';
+            starsHtml += '☆'.repeat(emptyStars);
+            
+            return starsHtml;
+        }
+
+        // 设置颜色选择器事件监听
+        function setupColorPickers() {
+            const colorPickers = [
+                { id: 'primary-color-picker', valueId: 'primary-color-value', cssVar: '--primary-color' },
+                { id: 'secondary-color-picker', valueId: 'secondary-color-value', cssVar: '--secondary-color' },
+                { id: 'background-color-picker', valueId: 'background-color-value', cssVar: '--background-color' },
+                { id: 'text-color-picker', valueId: 'text-color-value', cssVar: '--text-color' },
+                { id: 'accent-color-picker', valueId: 'accent-color-value', cssVar: '--accent-color' }
+            ];
+            
+            colorPickers.forEach(({ id, valueId, cssVar }) => {
+                const picker = document.getElementById(id);
+                const valueDisplay = document.getElementById(valueId);
+                
+                picker.addEventListener('input', (e) => {
+                    const color = e.target.value;
+                    valueDisplay.textContent = color;
+                    
+                    // 应用到预览
+                    updateCSSVariable(cssVar, color);
+                    
+                    // 清除当前选中的方案
+                    clearSelectedScheme();
+                });
+            });
+        }
+
+        // 更新CSS变量
+        function updateCSSVariable(varName, value) {
+            document.documentElement.style.setProperty(varName, value);
+        }
+
+        // 预览配色方案
+        function previewScheme(event, schemeId, colors) {
+            event.stopPropagation();
+            
+            // 应用颜色到页面
+            updateCSSVariable('--primary-color', colors[0] || '#165DFF');
+            updateCSSVariable('--secondary-color', colors[1] || '#4E5969');
+            updateCSSVariable('--background-color', colors[2] || '#F5F7FA');
+            updateCSSVariable('--text-color', colors[3] || '#2C3E50');
+            updateCSSVariable('--accent-color', colors[4] || '#00D4AA');
+            
+            // 更新颜色选择器的值
+            updateColorPickers(colors);
+        }
+
+        // 选择配色方案
+        function selectScheme(event, schemeId, colors) {
+            event.stopPropagation();
+            
+            // 预览方案
+            previewScheme(event, schemeId, colors);
+            
+            // 清除之前的选中状态
+            clearSelectedScheme();
+            
+            // 设置选中状态
+            const card = document.querySelector(`.scheme-card[data-scheme-id="${schemeId}"]`);
+            if (card) {
+                card.classList.add('selected');
+            }
+            
+            // 记录当前方案
+            currentScheme = { id: schemeId, colors };
+            
+            showNotification('已选择配色方案', 'success');
+        }
+
+        // 清除选中的方案
+        function clearSelectedScheme() {
+            const selectedCard = document.querySelector('.scheme-card.selected');
+            if (selectedCard) {
+                selectedCard.classList.remove('selected');
+            }
+            currentScheme = null;
+        }
+
+        // 更新颜色选择器的值
+        function updateColorPickers(colors) {
+            document.getElementById('primary-color-picker').value = colors[0] || '#165DFF';
+            document.getElementById('primary-color-value').textContent = colors[0] || '#165DFF';
+            
+            document.getElementById('secondary-color-picker').value = colors[1] || '#4E5969';
+            document.getElementById('secondary-color-value').textContent = colors[1] || '#4E5969';
+            
+            document.getElementById('background-color-picker').value = colors[2] || '#F5F7FA';
+            document.getElementById('background-color-value').textContent = colors[2] || '#F5F7FA';
+            
+            document.getElementById('text-color-picker').value = colors[3] || '#2C3E50';
+            document.getElementById('text-color-value').textContent = colors[3] || '#2C3E50';
+            
+            document.getElementById('accent-color-picker').value = colors[4] || '#00D4AA';
+            document.getElementById('accent-color-value').textContent = colors[4] || '#00D4AA';
+        }
+
+        // 生成配套方案
+        function generateComplimentary() {
+            const primaryColor = document.getElementById('primary-color-picker').value;
+            
+            // 模拟生成配套方案
+            const complimentaryColors = getComplimentaryColors(primaryColor);
+            
+            // 应用配套方案
+            updateCSSVariable('--primary-color', primaryColor);
+            updateCSSVariable('--secondary-color', complimentaryColors.secondary);
+            updateCSSVariable('--background-color', complimentaryColors.background);
+            updateCSSVariable('--text-color', complimentaryColors.text);
+            updateCSSVariable('--accent-color', complimentaryColors.accent);
+            
+            // 更新颜色选择器
+            updateColorPickers([
+                primaryColor,
+                complimentaryColors.secondary,
+                complimentaryColors.background,
+                complimentaryColors.text,
+                complimentaryColors.accent
+            ]);
+            
+            showNotification('已生成配套配色方案', 'success');
+        }
+
+        // 获取互补色
+        function getComplimentaryColors(baseColor) {
+            // 简单的互补色计算（实际应用中应使用更复杂的算法）
+            const colorMap = {
+                '#165DFF': { secondary: '#4E5969', background: '#F5F7FA', text: '#2C3E50', accent: '#00D4AA' },
+                '#00D4AA': { secondary: '#11214A', background: '#F9F9F9', text: '#4F5E7B', accent: '#FF6B6B' },
+                '#2C3E50': { secondary: '#3498DB', background: '#FFFFFF', text: '#BDC3C7', accent: '#E74C3C' },
+                '#FF6B6B': { secondary: '#4ECDC4', background: '#FFFFFF', text: '#F7FFF7', accent: '#FFE66D' },
+                '#121212': { secondary: '#1E1E1E', background: '#1E1E1E', text: '#FFFFFF', accent: '#BB86FC' }
+            };
+            
+            return colorMap[baseColor] || {
+                secondary: '#4E5969',
+                background: '#F5F7FA',
+                text: '#2C3E50',
+                accent: '#00D4AA'
+            };
+        }
+
+        // 重置为默认
+        function resetToDefault() {
+            // 应用默认颜色
+            Object.entries(defaultColors).forEach(([varName, value]) => {
+                updateCSSVariable(varName, value);
+            });
+            
+            // 更新颜色选择器
+            updateColorPickers([
+                defaultColors['--primary-color'],
+                defaultColors['--secondary-color'],
+                defaultColors['--background-color'],
+                defaultColors['--text-color'],
+                defaultColors['--accent-color']
+            ]);
+            
+            // 清除选中的方案
+            clearSelectedScheme();
+            
+            showNotification('已重置为默认配色方案', 'success');
+        }
+
+        // 设置预览类型
+        function setPreviewType(type) {
+            previewType = type;
+            updatePreviewContent();
+        }
+
+        // 更新预览内容
+        function updatePreviewContent() {
+            const previewContainer = document.getElementById('preview-container');
+            
+            if (previewType === 'registration') {
+                previewContainer.innerHTML = `
+                    <div class="preview-form">
+                        <h3 class="preview-form-title">创建账户</h3>
+                        <div class="form-group">
+                            <label class="form-label" for="preview-username">用户名</label>
+                            <input type="text" id="preview-username" class="form-input" placeholder="请输入用户名">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="preview-email">邮箱</label>
+                            <input type="email" id="preview-email" class="form-input" placeholder="请输入邮箱地址">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="preview-password">密码</label>
+                            <input type="password" id="preview-password" class="form-input" placeholder="请设置密码">
+                        </div>
+                        <button class="form-button">立即注册</button>
+                        <div class="form-footer">
+                            已有账号？<a href="#">立即登录</a>
+                        </div>
+                    </div>
+                `;
+            } else if (previewType === 'dashboard') {
+                previewContainer.innerHTML = `
+                    <div style="padding: 20px;">
+                        <h3 style="color: var(--primary-color); margin-bottom: 20px;">仪表盘概览</h3>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
+                            <div style="background-color: var(--card-background); padding: 16px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                                <div style="color: var(--secondary-color); font-size: 14px;">总用户</div>
+                                <div style="color: var(--text-color); font-size: 24px; font-weight: 500; margin-top: 8px;">1,234</div>
+                            </div>
+                            <div style="background-color: var(--card-background); padding: 16px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                                <div style="color: var(--secondary-color); font-size: 14px;">今日访问</div>
+                                <div style="color: var(--text-color); font-size: 24px; font-weight: 500; margin-top: 8px;">56</div>
+                            </div>
+                            <div style="background-color: var(--card-background); padding: 16px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                                <div style="color: var(--secondary-color); font-size: 14px;">活跃度</div>
+                                <div style="color: var(--text-color); font-size: 24px; font-weight: 500; margin-top: 8px;">87%</div>
+                            </div>
+                        </div>
+                        <div style="background-color: var(--card-background); padding: 16px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                            <div style="color: var(--primary-color); margin-bottom: 16px;">最近活动</div>
+                            <div style="border-top: 1px solid var(--border-color); padding: 12px 0;">
+                                <div style="color: var(--text-color);">用户登录</div>
+                                <div style="color: var(--secondary-color); font-size: 12px; margin-top: 4px;">10分钟前</div>
+                            </div>
+                            <div style="border-top: 1px solid var(--border-color); padding: 12px 0;">
+                                <div style="color: var(--text-color);">数据更新</div>
+                                <div style="color: var(--secondary-color); font-size: 12px; margin-top: 4px;">30分钟前</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else if (previewType === 'login') {
+                previewContainer.innerHTML = `
+                    <div class="preview-form">
+                        <h3 class="preview-form-title">用户登录</h3>
+                        <div class="form-group">
+                            <label class="form-label" for="preview-login-username">用户名</label>
+                            <input type="text" id="preview-login-username" class="form-input" placeholder="请输入用户名">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="preview-login-password">密码</label>
+                            <input type="password" id="preview-login-password" class="form-input" placeholder="请输入密码">
+                        </div>
+                        <button class="form-button">登录</button>
+                        <div class="form-footer">
+                            <a href="#">忘记密码？</a>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // 应用当前方案
+        function applyScheme() {
+            // 在实际应用中，这里应该将当前配色方案应用到整个系统
+            showNotification('配色方案已应用', 'success');
+        }
+
+        // 保存并应用方案
+        function saveScheme() {
+            try {
+                // 获取当前配色
+                const currentColors = {
+                    '--primary-color': document.getElementById('primary-color-picker').value,
+                    '--secondary-color': document.getElementById('secondary-color-picker').value,
+                    '--background-color': document.getElementById('background-color-picker').value,
+                    '--text-color': document.getElementById('text-color-picker').value,
+                    '--accent-color': document.getElementById('accent-color-picker').value
+                };
+                
+                // 模拟保存到本地存储
+                localStorage.setItem('mtscos-color-scheme', JSON.stringify(currentColors));
+                
+                // 显示成功消息
+                showNotification('配色方案已保存并应用', 'success');
+                
+            } catch (error) {
+                console.error('保存配色方案失败:', error);
+                showNotification('保存配色方案失败', 'error');
+            }
+        }
+
+        // 显示通知
+        function showNotification(message, type = 'info') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification ${type}`;
+            
+            // 显示通知
+            setTimeout(() => {
+                notification.classList.add('show');
+            }, 10);
+            
+            // 3秒后隐藏通知
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
+        // 检查是否有保存的配色方案
+        function checkSavedScheme() {
+            try {
+                const saved = localStorage.getItem('mtscos-color-scheme');
+                if (saved) {
+                    const colors = JSON.parse(saved);
+                    Object.entries(colors).forEach(([varName, value]) => {
+                        updateCSSVariable(varName, value);
+                    });
+                    
+                    // 更新颜色选择器
+                    updateColorPickers([
+                        colors['--primary-color'],
+                        colors['--secondary-color'],
+                        colors['--background-color'],
+                        colors['--text-color'],
+                        colors['--accent-color']
+                    ]);
+                }
+            } catch (error) {
+                console.error('加载保存的配色方案失败:', error);
+            }
+        }
+
+        // 初始化时检查保存的方案
+        checkSavedScheme();
+    </script>
+</body>
+</html>

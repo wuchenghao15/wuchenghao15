@@ -1,0 +1,2328 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系统设置</title>
+    <link rel="stylesheet" href="assets/css/common.css">
+    <link rel="stylesheet" href="assets/css/loading.css">
+    <link rel="stylesheet" href="assets/css/settings.css">
+    
+    <!-- 规则引擎脚本 -->
+    <script src="assets/js/rule-engine.js?v=20251120"></script>
+    <!-- 数据库管理脚本 -->
+    <script src="JavaScript/database-manager.js?v=20251120"></script>
+
+</head>
+<body>
+    <!-- 头部 -->
+    <header class="header">
+        <div class="header-content">
+            <div>
+                <h1 class="header-title">
+                    ⚙️ 系统设置
+                </h1>
+                <p class="header-subtitle">统一管理所有系统配置和参数</p>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-secondary" onclick="exportSettings()">
+                    📥 导出配置
+                </button>
+                <button class="btn btn-secondary" onclick="importSettings()">
+                    📤 导入配置
+                </button>
+                <button class="btn btn-primary" onclick="saveAllSettings()">
+                    💾 保存所有设置
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主容器 -->
+    <div class="main-container">
+        <!-- Tab导航 -->
+        <div class="tab-navigation">
+            <div class="tab-nav">
+                <button class="tab-nav-item active" onclick="switchTab('system')">
+                    🖥️ 系统配置
+                </button>
+                <button class="tab-nav-item" onclick="switchTab('security')">
+                    🔒 安全设置
+                </button>
+                <button class="tab-nav-item" onclick="switchTab('vikey')">
+                    🔑 Vikey管理
+                </button>
+                <button class="tab-nav-item" onclick="switchTab('users')">
+                    👥 用户管理
+                </button>
+                <button class="tab-nav-item" onclick="switchTab('database')">
+                    🗄️ 数据库
+                </button>
+                <button class="tab-nav-item" onclick="switchTab('backup')">
+                    💾 备份恢复
+                </button>
+                <button class="tab-nav-item" onclick="switchTab('logs')">
+                    📊 日志审计
+                </button>
+                <button class="tab-nav-item" onclick="switchTab('ui')">
+                    🎨 界面主题
+                </button>
+                <button class="tab-nav-item" onclick="switchTab('advanced')">
+                    ⚙️ 高级设置
+                </button>
+                <button class="tab-nav-item" onclick="switchTab('rules')">
+                    📋 规则管理
+                </button>
+            </div>
+        </div>
+
+        <!-- Tab内容 -->
+        <div class="tab-content">
+            <!-- 系统配置 -->
+            <div id="system-tab" class="tab-pane active">
+                <div class="settings-group">
+                    <h2 class="settings-group-title">
+                        🖥️ 基本系统设置
+                    </h2>
+                    <p class="settings-group-description">
+                        配置系统的基本运行参数和行为
+                    </p>
+
+                    <div class="settings-item">
+                        <div class="settings-item-info">
+                            <h3 class="settings-item-title">系统名称</h3>
+                            <p class="settings-item-description">设置系统的显示名称</p>
+                        </div>
+                        <div class="settings-item-control">
+                            <input type="text" class="form-control" id="system-name" value="MTSCOS安全系统" style="width: 200px;">
+                        </div>
+                    </div>
+
+                    <div class="settings-item">
+                        <div class="settings-item-info">
+                            <h3 class="settings-item-title">系统版本</h3>
+                            <p class="settings-item-description">当前系统版本信息</p>
+                        </div>
+                        <div class="settings-item-control">
+                            <span class="status-indicator online">
+                                <span class="status-dot"></span>
+                                v1.0.0
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="settings-item">
+                        <div class="settings-item-info">
+                            <h3 class="settings-item-title">自动锁定时间</h3>
+                            <p class="settings-item-description">用户无操作后自动锁定系统的时间（分钟）</p>
+                        </div>
+                        <div class="settings-item-control">
+                            <input type="number" class="form-control" id="auto-lock-time" value="30" min="1" max="240" style="width: 100px;">
+                        </div>
+                    </div>
+
+                    <div class="settings-item">
+                        <div class="settings-item-info">
+                            <h3 class="settings-item-title">系统维护模式</h3>
+                            <p class="settings-item-description">启用后系统将进入维护模式，只允许管理员访问</p>
+                        </div>
+                        <div class="settings-item-control">
+                            <label class="switch">
+                                <input type="checkbox" id="maintenance-mode">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <h2 class="settings-group-title">
+                        📊 系统状态监控
+                    </h2>
+                    <p class="settings-group-description">
+                        实时监控系统运行状态和性能指标
+                    </p>
+
+                    <div class="grid grid-3">
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="card-title">CPU使用率</div>
+                                <div class="card-subtitle">处理器负载</div>
+                            </div>
+                            <div class="card-body">
+                                <div class="stat-number">45%</div>
+                                <div class="progress">
+                                    <div class="progress-bar" style="width: 45%"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="card-title">内存使用</div>
+                                <div class="card-subtitle">RAM占用情况</div>
+                            </div>
+                            <div class="card-body">
+                                <div class="stat-number">2.3GB</div>
+                                <div class="progress">
+                                    <div class="progress-bar" style="width: 60%"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="card-title">在线用户</div>
+                                <div class="card-subtitle">当前活跃用户数</div>
+                            </div>
+                            <div class="card-body">
+                                <div class="stat-number">12</div>
+                                <div class="stat-label">活跃会话</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 安全设置 -->
+            <div id="security-tab" class="tab-pane">
+                <div class="settings-group">
+                    <h2 class="settings-group-title">
+                        🔒 密码策略
+                    </h2>
+                    <p class="settings-group-description">
+                        配置用户密码的安全要求和策略
+                    </p>
+
+                    <div class="settings-item">
+                        <div class="settings-item-info">
+                            <h3 class="settings-item-title">最小密码长度</h3>
+                            <p class="settings-item-description">用户密码的最小字符长度</p>
+                        </div>
+                        <div class="settings-item-control">
+                            <input type="number" class="form-control" id="min-password-length" value="8" min="6" max="32" style="width: 100px;">
+                        </div>
+                    </div>
+
+                    <div class="settings-item">
+                        <div class="settings-item-info">
+                            <h3 class="settings-item-title">密码复杂度要求</h3>
+                            <p class="settings-item-description">要求密码包含大小写字母、数字和特殊字符</p>
+                        </div>
+                        <div class="settings-item-control">
+                            <label class="switch">
+                                <input type="checkbox" id="password-complexity" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="settings-item">
+                        <div class="settings-item-info">
+                            <h3 class="settings-item-title">密码有效期</h3>
+                            <p class="settings-item-description">密码需要更改的天数（0表示永不过期）</p>
+                        </div>
+                        <div class="settings-item-control">
+                            <input type="number" class="form-control" id="password-expiry" value="90" min="0" max="365" style="width: 100px;">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <h2 class="settings-group-title">
+                        🛡️ 防护机制
+                    </h2>
+                    <p class="settings-group-description">
+                        配置系统的安全防护和监控机制
+                    </p>
+
+                    <div class="settings-item">
+                        <div class="settings-item-info">
+                            <h3 class="settings-item-title">登录失败锁定</h3>
+                            <p class="settings-item-description">连续登录失败后锁定账户的次数</p>
+                        </div>
+                        <div class="settings-item-control">
+                            <input type="number" class="form-control" id="login-fail-lock" value="5" min="3" max="10" style="width: 100px;">
+                        </div>
+                    </div>
+
+                    <div class="settings-item">
+                        <div class="settings-item-info">
+                            <h3 class="settings-item-title">账户锁定时间</h3>
+                            <p class="settings-item-description">账户被锁定后自动解锁的时间（分钟）</p>
+                        </div>
+                        <div class="settings-item-control">
+                            <input type="number" class="form-control" id="account-lock-time" value="30" min="5" max="1440" style="width: 100px;">
+                        </div>
+                    </div>
+
+                    <div class="settings-item">
+                        <div class="settings-item-info">
+                            <h3 class="settings-item-title">IP白名单</h3>
+                            <p class="settings-item-description">只允许白名单中的IP地址访问系统</p>
+                        </div>
+                        <div class="settings-item-control">
+                            <label class="switch">
+                                <input type="checkbox" id="ip-whitelist">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vikey管理 -->
+            <div id="vikey-tab" class="tab-pane">
+                <div class="settings-group">
+                    <h2 class="settings-group-title">
+                        🔑 Vikey设备配置
+                    </h2>
+                    <p class="settings-group-description">
+                        管理Vikey硬件设备的配置和权限
+                    </p>
+
+                    <div class="settings-item">
+                        <div class="settings-item-info">
+                            <h3 class="settings-item-title">启用Vikey验证</h3>
+                            <p class="settings-item-description">允许用户使用Vikey硬件设备进行身份验证</p>
+                        </div>
+                        <div class="settings-item-control">
+                            <label class="switch">
+                                <input type="checkbox" id="vikey-enabled" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="settings-item">
+                        <div class="settings-item-info">
+                            <h3 class="settings-item-title">Vikey超时时间</h3>
+                            <p class="settings-item-description">Vikey设备验证的超时时间（秒）</p>
+                        </div>
+                        <div class="settings-item-control">
+                            <input type="number" class="form-control" id="vikey-timeout" value="30" min="10" max="120" style="width: 100px;">
+                        </div>
+                    </div>
+
+                    <div class="settings-item">
+                        <div class="settings-item-info">
+                            <h3 class="settings-item-title">管理员Vikey例外</h3>
+                            <p class="settings-item-description">管理员插入Vikey时忽略系统锁定和超时</p>
+                        </div>
+                        <div class="settings-item-control">
+                            <label class="switch">
+                                <input type="checkbox" id="admin-vikey-exception" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <h2 class="settings-group-title">
+                        📋 已注册设备
+                    </h2>
+                    <p class="settings-group-description">
+                        查看和管理已注册的Vikey设备
+                    </p>
+
+                    <div class="alert alert-info">
+                        ℹ️ 当前已注册 <strong>3</strong> 个Vikey设备，其中 <strong>2</strong> 个在线
+                    </div>
+
+                    <!-- 这里可以添加设备列表表格 -->
+                </div>
+            </div>
+
+            <!-- 用户管理 -->
+            <div id="users-tab" class="tab-pane">
+                <div class="settings-group">
+                    <h2 class="settings-group-title">
+                        👥 用户权限管理
+                    </h2>
+                    <p class="settings-group-description">
+                        配置用户权限级别和访问控制
+                    </p>
+
+                    <div class="settings-item">
+                        <div class="settings-item-info">
+                            <h3 class="settings-item-title">默认用户权限</h3>
+                            <p class="settings-item-description">新注册用户的默认权限级别</p>
+                        </div>
+                        <div class="settings-item-control">
+                            <select class="form-control form-select" id="default-user-role" style="width: 150px;">
+                                <option value="GUEST">访客</option>
+                                <option value="USER" selected>普通用户</option>
+                                <option value="ADMIN">管理员</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="settings-item">
+                        <div class="settings-item-info">
+                            <h3 class="settings-item-title">允许用户注册</h3>
+                            <p class="settings-item-description">允许新用户自行注册账户</p>
+                        </div>
+                        <div class="settings-item-control">
+                            <label class="switch">
+                                <input type="checkbox" id="allow-user-registration">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="settings-item">
+                        <div class="settings-item-info">
+                            <h3 class="settings-item-title">多管理员批准</h3>
+                            <p class="settings-item-description">敏感操作需要多名管理员批准</p>
+                        </div>
+                        <div class="settings-item-control">
+                            <label class="switch">
+                                <input type="checkbox" id="multi-admin-approval" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 数据库 -->
+            <div id="database-tab" class="tab-pane">
+                <div class="settings-group">
+                    <h2 class="settings-group-title">
+                        🗄️ 数据库配置
+                    </h2>
+                    <p class="settings-group-description">
+                        配置数据库连接和备份参数
+                    </p>
+
+                    <div class="settings-item">
+                        <div class="settings-item-info">
+                            <h3 class="settings-item-title">数据库类型</h3>
+                            <p class="settings-item-description">当前使用的数据库类型</p>
+                        </div>
+                        <div class="settings-item-control">
+                            <span class="status-indicator online">
+                                <span class="status-dot"></span>
+                                IndexedDB
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="settings-item">
+                        <div class="settings-item-info">
+                            <h3 class="settings-item-title">自动备份</h3>
+                            <p class="settings-item-description">定期自动备份数据库</p>
+                        </div>
+                        <div class="settings-item-control">
+                            <label class="switch">
+                                <input type="checkbox" id="auto-backup" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="settings-item">
+                        <div class="settings-item-info">
+                            <h3 class="settings-item-title">备份间隔</h3>
+                            <p class="settings-item-description">自动备份的时间间隔（小时）</p>
+                        </div>
+                        <div class="settings-item-control">
+                            <input type="number" class="form-control" id="backup-interval" value="24" min="1" max="168" style="width: 100px;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 备份恢复 -->
+            <div id="backup-tab" class="tab-pane">
+                <div class="settings-group">
+                    <h2 class="settings-group-title">
+                        💾 备份管理
+                    </h2>
+                    <p class="settings-group-description">
+                        管理系统备份和恢复操作
+                    </p>
+
+                    <div class="button-group">
+                        <button class="btn btn-primary" onclick="createBackup()">
+                            📦 创建备份
+                        </button>
+                        <button class="btn btn-success" onclick="restoreBackup()">
+                            🔄 恢复备份
+                        </button>
+                        <button class="btn btn-warning" onclick="scheduleBackup()">
+                            ⏰ 定时备份
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 日志审计 -->
+            <div id="logs-tab" class="tab-pane">
+                <div class="settings-group">
+                    <h2 class="settings-group-title">
+                        📊 日志配置
+                    </h2>
+                    <p class="settings-group-description">
+                        配置系统日志记录和审计策略
+                    </p>
+
+                    <div class="settings-item">
+                        <div class="settings-item-info">
+                            <h3 class="settings-item-title">日志级别</h3>
+                            <p class="settings-item-description">记录的日志最低级别</p>
+                        </div>
+                        <div class="settings-item-control">
+                            <select class="form-control form-select" id="log-level" style="width: 150px;">
+                                <option value="ERROR">错误</option>
+                                <option value="WARN">警告</option>
+                                <option value="INFO" selected>信息</option>
+                                <option value="DEBUG">调试</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="settings-item">
+                        <div class="settings-item-info">
+                            <h3 class="settings-item-title">日志保留天数</h3>
+                            <p class="settings-item-description">日志文件保留的天数</p>
+                        </div>
+                        <div class="settings-item-control">
+                            <input type="number" class="form-control" id="log-retention" value="30" min="7" max="365" style="width: 100px;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 界面主题 -->
+            <div id="ui-tab" class="tab-pane">
+                <div class="settings-group">
+                    <h2 class="settings-group-title">
+                        🎨 主题设置
+                    </h2>
+                    <p class="settings-group-description">
+                        自定义系统界面外观和主题
+                    </p>
+
+                    <div class="settings-item">
+                        <div class="settings-item-info">
+                            <h3 class="settings-item-title">主题模式</h3>
+                            <p class="settings-item-description">选择系统的主题模式</p>
+                        </div>
+                        <div class="settings-item-control">
+                            <select class="form-control form-select" id="theme-mode" onchange="changeTheme(this.value)" style="width: 150px;">
+                                <option value="light">浅色主题</option>
+                                <option value="dark">深色主题</option>
+                                <option value="auto" selected>跟随系统</option>
+                                <option value="memorial">哀悼主题</option>
+                                <option value="celebration">喜庆主题</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="settings-item">
+                        <div class="settings-item-info">
+                            <h3 class="settings-item-title">主题颜色</h3>
+                            <p class="settings-item-description">选择系统的主色调</p>
+                        </div>
+                        <div class="settings-item-control">
+                            <input type="color" class="form-control" id="theme-color" value="#667eea" onchange="changeThemeColor(this.value)" style="width: 100px; height: 40px;">
+                        </div>
+                    </div>
+
+                    <div class="settings-item">
+                        <div class="settings-item-info">
+                            <h3 class="settings-item-title">自动主题切换</h3>
+                            <p class="settings-item-description">根据时间自动切换主题</p>
+                        </div>
+                        <div class="settings-item-control">
+                            <label class="switch">
+                                <input type="checkbox" id="auto-theme-switch" onchange="toggleAutoTheme(this.checked)">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="settings-item">
+                        <div class="settings-item-info">
+                            <h3 class="settings-item-title">日出时间</h3>
+                            <p class="settings-item-description">浅色主题开始时间</p>
+                        </div>
+                        <div class="settings-item-control">
+                            <input type="time" class="form-control" id="sunrise-time" value="06:00" style="width: 120px;">
+                        </div>
+                    </div>
+
+                    <div class="settings-item">
+                        <div class="settings-item-info">
+                            <h3 class="settings-item-title">日落时间</h3>
+                            <p class="settings-item-description">深色主题开始时间</p>
+                        </div>
+                        <div class="settings-item-control">
+                            <input type="time" class="form-control" id="sunset-time" value="18:00" style="width: 120px;">
+                        </div>
+                    </div>
+
+                    <div class="settings-item">
+                        <div class="settings-item-info">
+                            <h3 class="settings-item-title">当前主题状态</h3>
+                            <p class="settings-item-description">显示当前激活的主题信息</p>
+                        </div>
+                        <div class="settings-item-control">
+                            <div id="current-theme-status" class="status-indicator online">
+                                <span class="status-dot"></span>
+                                <span id="theme-status-text">跟随系统</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <h2 class="settings-group-title">
+                        🎯 主题预览
+                    </h2>
+                    <p class="settings-group-description">
+                        预览不同主题的效果
+                    </p>
+
+                    <div class="theme-preview-container">
+                        <div class="theme-preview-card" onclick="previewTheme('light')">
+                            <div class="theme-preview light-theme">
+                                <div class="preview-header">浅色主题</div>
+                                <div class="preview-content">
+                                    <div class="preview-button">按钮</div>
+                                    <div class="preview-text">示例文本内容</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="theme-preview-card" onclick="previewTheme('dark')">
+                            <div class="theme-preview dark-theme">
+                                <div class="preview-header">深色主题</div>
+                                <div class="preview-content">
+                                    <div class="preview-button">按钮</div>
+                                    <div class="preview-text">示例文本内容</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="theme-preview-card" onclick="previewTheme('memorial')">
+                            <div class="theme-preview memorial-theme">
+                                <div class="preview-header">哀悼主题</div>
+                                <div class="preview-content">
+                                    <div class="preview-button">按钮</div>
+                                    <div class="preview-text">示例文本内容</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="theme-preview-card" onclick="previewTheme('celebration')">
+                            <div class="theme-preview celebration-theme">
+                                <div class="preview-header">喜庆主题</div>
+                                <div class="preview-content">
+                                    <div class="preview-button">按钮</div>
+                                    <div class="preview-text">示例文本内容</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 高级设置 -->
+            <div id="advanced-tab" class="tab-pane">
+                <div class="settings-group">
+                    <h2 class="settings-group-title">
+                        ⚙️ 高级配置
+                    </h2>
+                    <p class="settings-group-description">
+                        系统高级参数配置（请谨慎修改）
+                    </p>
+
+                    <div class="alert alert-warning">
+                        ⚠️ 修改高级配置可能会影响系统稳定性，请确保了解各项参数的作用
+                    </div>
+
+                    <div class="settings-item">
+                        <div class="settings-item-info">
+                            <h3 class="settings-item-title">调试模式</h3>
+                            <p class="settings-item-description">启用系统调试模式，显示详细错误信息</p>
+                        </div>
+                        <div class="settings-item-control">
+                            <label class="switch">
+                                <input type="checkbox" id="debug-mode">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="settings-item">
+                        <div class="settings-item-info">
+                            <h3 class="settings-item-title">环境安全扫描</h3>
+                            <p class="settings-item-description">启用用户环境安全扫描和风险评估</p>
+                        </div>
+                        <div class="settings-item-control">
+                            <label class="switch">
+                                <input type="checkbox" id="env-security-scan" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 规则管理 -->
+            <div id="rules-tab" class="tab-pane">
+                <div class="settings-group">
+                    <h2 class="settings-group-title">
+                        📋 系统规则管理
+                    </h2>
+                    <p class="settings-group-description">
+                        管理系统规则、绑定机制和执行策略
+                    </p>
+
+                    <!-- 规则统计 -->
+                    <div class="rules-stats">
+                        <div class="stat-card">
+                            <div class="stat-number" id="total-rules">0</div>
+                            <div class="stat-label">总规则数</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="active-rules">0</div>
+                            <div class="stat-label">激活规则</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="total-mechanisms">0</div>
+                            <div class="stat-label">绑定机制</div>
+                        </div>
+                    </div>
+                    
+                    <!-- 规则操作按钮 -->
+                    <div class="rules-actions">
+                        <button class="btn btn-primary" onclick="loadRules()">
+                            🔄 刷新规则
+                        </button>
+                        <button class="btn btn-success" onclick="showAddRuleModal()">
+                            ➕ 新增规则
+                        </button>
+                        <button class="btn btn-warning" onclick="showAddMechanismModal()">
+                            ⚙️ 新增机制
+                        </button>
+                        <button class="btn btn-info" onclick="exportRules()">
+                            📤 导出规则
+                        </button>
+                        <button class="btn btn-secondary" onclick="importRules()">
+                            📥 导入规则
+                        </button>
+                    </div>
+                    
+                    <!-- 规则分类标签 -->
+                    <div class="rule-categories">
+                        <button class="category-btn active" onclick="filterRules('all')">全部</button>
+                        <button class="category-btn" onclick="filterRules('security')">安全</button>
+                        <button class="category-btn" onclick="filterRules('performance')">性能</button>
+                        <button class="category-btn" onclick="filterRules('backup')">备份</button>
+                        <button class="category-btn" onclick="filterRules('monitoring')">监控</button>
+                        <button class="category-btn" onclick="filterRules('automation')">自动化</button>
+                    </div>
+                    
+                    <!-- 规则列表 -->
+                    <div class="rules-list" id="rules-list">
+                        <!-- 规则项目将通过JavaScript动态生成 -->
+                    </div>
+                    
+                    <!-- 机制列表 -->
+                    <div class="mechanisms-section">
+                        <h4>绑定机制</h4>
+                        <div class="mechanisms-list" id="mechanisms-list">
+                            <!-- 机制项目将通过JavaScript动态生成 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script>
+        // 全局变量
+        let currentTab = 'system';
+        let settingsData = {};
+        let hasUnsavedChanges = false;
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('初始化设置页面...');
+            
+            // 加载设置数据
+            loadSettings();
+            
+            // 设置事件监听器
+            setupEventListeners();
+            
+            // 初始化界面
+            initializeUI();
+            
+            console.log('设置页面初始化完成');
+        });
+
+        /**
+         * 切换Tab
+         */
+        function switchTab(tabName) {
+            // 检查是否有未保存的更改
+            if (hasUnsavedChanges) {
+                if (!confirm('您有未保存的更改，确定要切换标签页吗？')) {
+                    return;
+                }
+            }
+
+            // 更新导航状态
+            document.querySelectorAll('.tab-nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // 更新内容显示
+            document.querySelectorAll('.tab-pane').forEach(pane => {
+                pane.classList.remove('active');
+            });
+            document.getElementById(tabName + '-tab').classList.add('active');
+
+            currentTab = tabName;
+            
+            // 加载特定标签页的数据
+            loadTabData(tabName);
+        }
+
+        /**
+         * 加载设置数据
+         */
+        async function loadSettings() {
+            try {
+                // 从localStorage或数据库加载设置
+                const savedSettings = localStorage.getItem('systemSettings');
+                if (savedSettings) {
+                    settingsData = JSON.parse(savedSettings);
+                    applySettingsToUI();
+                }
+
+                console.log('设置数据加载完成');
+            } catch (error) {
+                console.error('加载设置失败:', error);
+            }
+        }
+
+        /**
+         * 应用设置到UI
+         */
+        function applySettingsToUI() {
+            // 应用系统设置
+            if (settingsData.system) {
+                const systemName = document.getElementById('system-name');
+                if (systemName && settingsData.system.name) {
+                    systemName.value = settingsData.system.name;
+                }
+
+                const autoLockTime = document.getElementById('auto-lock-time');
+                if (autoLockTime && settingsData.system.autoLockTime) {
+                    autoLockTime.value = settingsData.system.autoLockTime;
+                }
+
+                const maintenanceMode = document.getElementById('maintenance-mode');
+                if (maintenanceMode && settingsData.system.maintenanceMode) {
+                    maintenanceMode.checked = settingsData.system.maintenanceMode;
+                }
+            }
+
+            // 应用安全设置
+            if (settingsData.security) {
+                const minPasswordLength = document.getElementById('min-password-length');
+                if (minPasswordLength && settingsData.security.minPasswordLength) {
+                    minPasswordLength.value = settingsData.security.minPasswordLength;
+                }
+
+                const passwordComplexity = document.getElementById('password-complexity');
+                if (passwordComplexity && settingsData.security.passwordComplexity) {
+                    passwordComplexity.checked = settingsData.security.passwordComplexity;
+                }
+            }
+
+            // 应用其他设置...
+        }
+
+        /**
+         * 设置事件监听器
+         */
+        function setupEventListeners() {
+            // 监听表单控件变化
+            document.querySelectorAll('.form-control, input[type="checkbox"]').forEach(element => {
+                element.addEventListener('change', function() {
+                    hasUnsavedChanges = true;
+                    updateSettingFromUI(this);
+                });
+            });
+
+            // 监听页面离开事件
+            window.addEventListener('beforeunload', function(e) {
+                if (hasUnsavedChanges) {
+                    e.preventDefault();
+                    e.returnValue = '您有未保存的更改，确定要离开吗？';
+                }
+            });
+        }
+
+        /**
+         * 从UI更新设置数据
+         */
+        function updateSettingFromUI(element) {
+            const id = element.id;
+            const value = element.type === 'checkbox' ? element.checked : element.value;
+
+            // 根据元素ID更新对应的设置项
+            switch (id) {
+                case 'system-name':
+                    if (!settingsData.system) settingsData.system = {};
+                    settingsData.system.name = value;
+                    break;
+                case 'auto-lock-time':
+                    if (!settingsData.system) settingsData.system = {};
+                    settingsData.system.autoLockTime = parseInt(value);
+                    break;
+                case 'maintenance-mode':
+                    if (!settingsData.system) settingsData.system = {};
+                    settingsData.system.maintenanceMode = value;
+                    break;
+                case 'min-password-length':
+                    if (!settingsData.security) settingsData.security = {};
+                    settingsData.security.minPasswordLength = parseInt(value);
+                    break;
+                case 'password-complexity':
+                    if (!settingsData.security) settingsData.security = {};
+                    settingsData.security.passwordComplexity = value;
+                    break;
+                // 添加更多设置项的处理...
+            }
+        }
+
+        /**
+         * 保存所有设置
+         */
+        async function saveAllSettings() {
+            try {
+                showLoading('正在保存设置...');
+
+                // 收集所有表单数据
+                collectAllSettings();
+
+                // 保存到localStorage
+                localStorage.setItem('systemSettings', JSON.stringify(settingsData));
+
+                // 这里可以添加保存到服务器的逻辑
+                // await saveSettingsToServer(settingsData);
+
+                hasUnsavedChanges = false;
+                hideLoading();
+                showNotification('设置保存成功', 'success');
+
+                console.log('设置保存完成:', settingsData);
+
+            } catch (error) {
+                hideLoading();
+                console.error('保存设置失败:', error);
+                showNotification('保存设置失败: ' + error.message, 'error');
+            }
+        }
+
+        /**
+         * 收集所有设置数据
+         */
+        function collectAllSettings() {
+            // 确保设置对象存在
+            if (!settingsData.system) settingsData.system = {};
+            if (!settingsData.security) settingsData.security = {};
+            if (!settingsData.vikey) settingsData.vikey = {};
+            if (!settingsData.users) settingsData.users = {};
+            if (!settingsData.database) settingsData.database = {};
+            if (!settingsData.ui) settingsData.ui = {};
+            if (!settingsData.advanced) settingsData.advanced = {};
+
+            // 收集系统设置
+            settingsData.system.name = document.getElementById('system-name')?.value || '';
+            settingsData.system.autoLockTime = parseInt(document.getElementById('auto-lock-time')?.value || 30);
+            settingsData.system.maintenanceMode = document.getElementById('maintenance-mode')?.checked || false;
+
+            // 收集安全设置
+            settingsData.security.minPasswordLength = parseInt(document.getElementById('min-password-length')?.value || 8);
+            settingsData.security.passwordComplexity = document.getElementById('password-complexity')?.checked || false;
+            settingsData.security.passwordExpiry = parseInt(document.getElementById('password-expiry')?.value || 90);
+            settingsData.security.loginFailLock = parseInt(document.getElementById('login-fail-lock')?.value || 5);
+            settingsData.security.accountLockTime = parseInt(document.getElementById('account-lock-time')?.value || 30);
+            settingsData.security.ipWhitelist = document.getElementById('ip-whitelist')?.checked || false;
+
+            // 收集Vikey设置
+            settingsData.vikey.enabled = document.getElementById('vikey-enabled')?.checked || false;
+            settingsData.vikey.timeout = parseInt(document.getElementById('vikey-timeout')?.value || 30);
+            settingsData.vikey.adminException = document.getElementById('admin-vikey-exception')?.checked || false;
+
+            // 收集用户设置
+            settingsData.users.defaultRole = document.getElementById('default-user-role')?.value || 'USER';
+            settingsData.users.allowRegistration = document.getElementById('allow-user-registration')?.checked || false;
+            settingsData.users.multiAdminApproval = document.getElementById('multi-admin-approval')?.checked || false;
+
+            // 收集数据库设置
+            settingsData.database.autoBackup = document.getElementById('auto-backup')?.checked || false;
+            settingsData.database.backupInterval = parseInt(document.getElementById('backup-interval')?.value || 24);
+
+            // 收集日志设置
+            settingsData.logs.level = document.getElementById('log-level')?.value || 'INFO';
+            settingsData.logs.retention = parseInt(document.getElementById('log-retention')?.value || 30);
+
+            // 收集UI设置
+            settingsData.ui.themeMode = document.getElementById('theme-mode')?.value || 'auto';
+            settingsData.ui.themeColor = document.getElementById('theme-color')?.value || '#667eea';
+
+            // 收集高级设置
+            settingsData.advanced.debugMode = document.getElementById('debug-mode')?.checked || false;
+            settingsData.advanced.envSecurityScan = document.getElementById('env-security-scan')?.checked || false;
+
+            // 添加时间戳
+            settingsData.lastUpdated = new Date().toISOString();
+        }
+
+        /**
+         * 导出设置
+         */
+        function exportSettings() {
+            try {
+                collectAllSettings();
+                
+                const dataStr = JSON.stringify(settingsData, null, 2);
+                const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(dataBlob);
+                
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `system-settings-${new Date().toISOString().split('T')[0]}.json`;
+                link.click();
+                
+                URL.revokeObjectURL(url);
+                showNotification('设置导出成功', 'success');
+                
+            } catch (error) {
+                console.error('导出设置失败:', error);
+                showNotification('导出设置失败: ' + error.message, 'error');
+            }
+        }
+
+        /**
+         * 导入设置
+         */
+        function importSettings() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            
+            input.onchange = function(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const importedSettings = JSON.parse(e.target.result);
+                        
+                        if (confirm('导入设置将覆盖当前所有配置，确定要继续吗？')) {
+                            settingsData = importedSettings;
+                            applySettingsToUI();
+                            hasUnsavedChanges = true;
+                            showNotification('设置导入成功，请保存以应用更改', 'success');
+                        }
+                        
+                    } catch (error) {
+                        console.error('导入设置失败:', error);
+                        showNotification('导入设置失败: 文件格式错误', 'error');
+                    }
+                };
+                reader.readAsText(file);
+            };
+            
+            input.click();
+        }
+
+        /**
+         * 创建备份
+         */
+        async function createBackup() {
+            try {
+                showLoading('正在创建备份...');
+                
+                // 这里应该调用实际的备份API
+                // const backupResult = await backupAPI.createBackup();
+                
+                setTimeout(() => {
+                    hideLoading();
+                    showNotification('备份创建成功', 'success');
+                }, 2000);
+                
+            } catch (error) {
+                hideLoading();
+                console.error('创建备份失败:', error);
+                showNotification('创建备份失败: ' + error.message, 'error');
+            }
+        }
+
+        /**
+         * 恢复备份
+         */
+        async function restoreBackup() {
+            if (!confirm('恢复备份将覆盖当前所有数据，确定要继续吗？')) {
+                return;
+            }
+            
+            try {
+                showLoading('正在恢复备份...');
+                
+                // 这里应该调用实际的恢复API
+                // const restoreResult = await backupAPI.restoreBackup(backupId);
+                
+                setTimeout(() => {
+                    hideLoading();
+                    showNotification('备份恢复成功，系统将重新加载', 'success');
+                    
+                    // 重新加载页面
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 2000);
+                }, 2000);
+                
+            } catch (error) {
+                hideLoading();
+                console.error('恢复备份失败:', error);
+                showNotification('恢复备份失败: ' + error.message, 'error');
+            }
+        }
+
+        /**
+         * 定时备份
+         */
+        function scheduleBackup() {
+            // 这里可以打开定时备份配置对话框
+            alert('定时备份功能正在开发中...');
+        }
+
+        /**
+         * 加载特定标签页数据
+         */
+        function loadTabData(tabName) {
+            // 根据标签页名称加载特定数据
+            switch (tabName) {
+                case 'vikey':
+                    loadVikeyData();
+                    break;
+                case 'users':
+                    loadUserData();
+                    break;
+                case 'database':
+                    loadDatabaseData();
+                    break;
+                // 添加其他标签页的数据加载...
+            }
+        }
+
+        /**
+         * 加载Vikey数据
+         */
+        async function loadVikeyData() {
+            try {
+                // 这里应该调用Vikey API获取设备数据
+                console.log('加载Vikey数据...');
+                
+            } catch (error) {
+                console.error('加载Vikey数据失败:', error);
+            }
+        }
+
+        /**
+         * 加载用户数据
+         */
+        async function loadUserData() {
+            try {
+                // 这里应该调用用户管理API获取用户数据
+                console.log('加载用户数据...');
+                
+            } catch (error) {
+                console.error('加载用户数据失败:', error);
+            }
+        }
+
+        /**
+         * 加载数据库数据
+         */
+        async function loadDatabaseData() {
+            try {
+                // 这里应该调用数据库API获取状态数据
+                console.log('加载数据库数据...');
+                
+            } catch (error) {
+                console.error('加载数据库数据失败:', error);
+            }
+        }
+
+        /**
+         * 初始化UI
+         */
+        function initializeUI() {
+            // 初始化进度条动画
+            setTimeout(() => {
+                document.querySelectorAll('.progress-bar').forEach(bar => {
+                    const width = bar.style.width;
+                    bar.style.width = '0%';
+                    setTimeout(() => {
+                        bar.style.width = width;
+                    }, 100);
+                });
+            }, 500);
+        }
+
+        /**
+         * 显示加载状态
+         */
+        function showLoading(message = '加载中...') {
+            // 这里可以显示全局加载遮罩
+            console.log('Loading:', message);
+        }
+
+        /**
+         * 隐藏加载状态
+         */
+        function hideLoading() {
+            // 这里可以隐藏全局加载遮罩
+            console.log('Loading hidden');
+        }
+
+        /**
+         * 切换主题
+         */
+        function changeTheme(theme) {
+            try {
+                // 移除所有主题类
+                document.body.classList.remove('light-theme', 'dark-theme', 'memorial-theme', 'celebration-theme');
+                
+                // 添加新主题类
+                if (theme !== 'auto') {
+                    document.body.classList.add(theme + '-theme');
+                }
+                
+                // 保存主题设置
+                localStorage.setItem('selectedTheme', theme);
+                
+                // 更新主题状态显示
+                updateThemeStatus(theme);
+                
+                // 显示通知
+                const themeNames = {
+                    'light': '浅色主题',
+                    'dark': '深色主题',
+                    'auto': '跟随系统',
+                    'memorial': '哀悼主题',
+                    'celebration': '喜庆主题'
+                };
+                
+                showNotification(`已切换到${themeNames[theme]}`, 'success');
+                
+            } catch (error) {
+                console.error('切换主题失败:', error);
+                showNotification('切换主题失败: ' + error.message, 'error');
+            }
+        }
+
+        /**
+         * 更改主题颜色
+         */
+        function changeThemeColor(color) {
+            try {
+                // 设置CSS变量
+                document.documentElement.style.setProperty('--primary-color', color);
+                
+                // 保存颜色设置
+                localStorage.setItem('themeColor', color);
+                
+                // 更新相关颜色变量
+                updateThemeColors(color);
+                
+                showNotification('主题颜色已更新', 'success');
+                
+            } catch (error) {
+                console.error('更改主题颜色失败:', error);
+                showNotification('更改主题颜色失败: ' + error.message, 'error');
+            }
+        }
+
+        /**
+         * 更新主题相关颜色
+         */
+        function updateThemeColors(baseColor) {
+            // 根据基础颜色生成相关的颜色变量
+            const colors = generateColorPalette(baseColor);
+            
+            document.documentElement.style.setProperty('--primary-hover', colors.hover);
+            document.documentElement.style.setProperty('--primary-light', colors.light);
+            document.documentElement.style.setProperty('--primary-dark', colors.dark);
+        }
+
+        /**
+         * 生成颜色调色板
+         */
+        function generateColorPalette(baseColor) {
+            // 简单的颜色生成逻辑
+            return {
+                hover: adjustColor(baseColor, -20),
+                light: adjustColor(baseColor, 40),
+                dark: adjustColor(baseColor, -40)
+            };
+        }
+
+        /**
+         * 调整颜色亮度
+         */
+        function adjustColor(color, amount) {
+            const num = parseInt(color.replace('#', ''), 16);
+            const r = Math.min(255, Math.max(0, (num >> 16) + amount));
+            const g = Math.min(255, Math.max(0, ((num >> 8) & 0x00FF) + amount));
+            const b = Math.min(255, Math.max(0, (num & 0x0000FF) + amount));
+            return '#' + ((r << 16) | (g << 8) | b).toString(16).padStart(6, '0');
+        }
+
+        /**
+         * 切换自动主题
+         */
+        function toggleAutoTheme(enabled) {
+            try {
+                if (enabled) {
+                    startAutoThemeScheduler();
+                    showNotification('已启用自动主题切换', 'success');
+                } else {
+                    stopAutoThemeScheduler();
+                    showNotification('已禁用自动主题切换', 'success');
+                }
+                
+                // 保存设置
+                localStorage.setItem('autoThemeEnabled', enabled);
+                
+            } catch (error) {
+                console.error('切换自动主题失败:', error);
+                showNotification('切换自动主题失败: ' + error.message, 'error');
+            }
+        }
+
+        /**
+         * 启动自动主题调度器
+         */
+        let autoThemeInterval;
+        function startAutoThemeScheduler() {
+            // 立即检查一次
+            checkAutoTheme();
+            
+            // 每分钟检查一次
+            autoThemeInterval = setInterval(checkAutoTheme, 60000);
+        }
+
+        /**
+         * 停止自动主题调度器
+         */
+        function stopAutoThemeScheduler() {
+            if (autoThemeInterval) {
+                clearInterval(autoThemeInterval);
+                autoThemeInterval = null;
+            }
+        }
+
+        /**
+         * 检查自动主题
+         */
+        function checkAutoTheme() {
+            const now = new Date();
+            const currentHour = now.getHours();
+            const currentMinute = now.getMinutes();
+            const currentTime = currentHour * 60 + currentMinute;
+            
+            const sunriseTime = document.getElementById('sunrise-time')?.value || '06:00';
+            const sunsetTime = document.getElementById('sunset-time')?.value || '18:00';
+            
+            const [sunriseHour, sunriseMinute] = sunriseTime.split(':').map(Number);
+            const [sunsetHour, sunsetMinute] = sunsetTime.split(':').map(Number);
+            
+            const sunriseMinutes = sunriseHour * 60 + sunriseMinute;
+            const sunsetMinutes = sunsetHour * 60 + sunsetMinute;
+            
+            // 根据时间选择主题
+            let targetTheme;
+            if (currentTime >= sunriseMinutes && currentTime < sunsetMinutes) {
+                targetTheme = 'light';
+            } else {
+                targetTheme = 'dark';
+            }
+            
+            // 应用主题
+            if (document.body.classList.contains(targetTheme + '-theme') === false) {
+                changeTheme(targetTheme);
+            }
+        }
+
+        /**
+         * 预览主题
+         */
+        function previewTheme(theme) {
+            try {
+                // 临时应用主题
+                const originalTheme = localStorage.getItem('selectedTheme') || 'auto';
+                
+                // 移除所有主题类
+                document.body.classList.remove('light-theme', 'dark-theme', 'memorial-theme', 'celebration-theme');
+                
+                // 添加预览主题类
+                if (theme !== 'auto') {
+                    document.body.classList.add(theme + '-theme');
+                }
+                
+                // 显示预览提示
+                showNotification(`正在预览${getThemeName(theme)}，3秒后恢复`, 'info');
+                
+                // 3秒后恢复原主题
+                setTimeout(() => {
+                    changeTheme(originalTheme);
+                }, 3000);
+                
+            } catch (error) {
+                console.error('预览主题失败:', error);
+                showNotification('预览主题失败: ' + error.message, 'error');
+            }
+        }
+
+        /**
+         * 获取主题名称
+         */
+        function getThemeName(theme) {
+            const themeNames = {
+                'light': '浅色主题',
+                'dark': '深色主题',
+                'auto': '跟随系统',
+                'memorial': '哀悼主题',
+                'celebration': '喜庆主题'
+            };
+            return themeNames[theme] || theme;
+        }
+
+        /**
+         * 更新主题状态显示
+         */
+        function updateThemeStatus(theme) {
+            const statusText = document.getElementById('theme-status-text');
+            if (statusText) {
+                statusText.textContent = getThemeName(theme);
+            }
+        }
+
+        /**
+         * 初始化主题系统
+         */
+        function initializeThemeSystem() {
+            try {
+                // 加载保存的主题设置
+                const savedTheme = localStorage.getItem('selectedTheme') || 'auto';
+                const savedColor = localStorage.getItem('themeColor') || '#667eea';
+                const autoThemeEnabled = localStorage.getItem('autoThemeEnabled') === 'true';
+                
+                // 应用主题
+                changeTheme(savedTheme);
+                
+                // 应用颜色
+                changeThemeColor(savedColor);
+                
+                // 设置表单值
+                const themeModeSelect = document.getElementById('theme-mode');
+                if (themeModeSelect) {
+                    themeModeSelect.value = savedTheme;
+                }
+                
+                const themeColorInput = document.getElementById('theme-color');
+                if (themeColorInput) {
+                    themeColorInput.value = savedColor;
+                }
+                
+                const autoThemeSwitch = document.getElementById('auto-theme-switch');
+                if (autoThemeSwitch) {
+                    autoThemeSwitch.checked = autoThemeEnabled;
+                    
+                    if (autoThemeEnabled) {
+                        startAutoThemeScheduler();
+                    }
+                }
+                
+                // 更新状态显示
+                updateThemeStatus(savedTheme);
+                
+            } catch (error) {
+                console.error('初始化主题系统失败:', error);
+            }
+        }
+
+        /**
+         * 显示通知
+         */
+        function showNotification(message, type = 'info') {
+            // 创建通知元素
+            const notification = document.createElement('div');
+            notification.className = `alert alert-${type}`;
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                z-index: 9999;
+                min-width: 300px;
+                animation: slideInRight 0.3s ease;
+            `;
+            notification.innerHTML = message;
+
+            document.body.appendChild(notification);
+
+            // 自动移除通知
+            setTimeout(() => {
+                notification.style.animation = 'slideOutRight 0.3s ease';
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 300);
+            }, 3000);
+        }
+
+        /**
+         * 初始化页面
+         */
+        document.addEventListener('DOMContentLoaded', function() {
+            try {
+                // 初始化主题系统
+                initializeThemeSystem();
+                
+                // 加载设置
+                loadSettings();
+                
+                // 设置事件监听器
+                setupEventListeners();
+                
+                // 初始化UI
+                initializeUI();
+                
+                // 显示加载完成状态
+                hideLoadingState();
+                
+            } catch (error) {
+                console.error('页面初始化失败:', error);
+                showNotification('页面初始化失败: ' + error.message, 'error');
+            }
+        });
+
+        // 添加动画样式
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideInRight {
+                from {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+            }
+            
+            @keyframes slideOutRight {
+                from {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+                to {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // 规则管理相关变量
+        let rulesData = [];
+        let mechanismsData = [];
+        let currentFilter = 'all';
+        let ruleEngine = null;
+        let ruleAPI = null;
+
+        /**
+         * 初始化规则管理系统
+         */
+        async function initializeRulesSystem() {
+            try {
+                // 加载规则引擎和管理API
+                if (typeof RuleEngine !== 'undefined') {
+                    ruleEngine = new RuleEngine();
+                    await ruleEngine.loadRules();
+                }
+                
+                if (typeof RuleManagementAPI !== 'undefined') {
+                    ruleAPI = new RuleManagementAPI();
+                }
+                
+                // 加载规则数据
+                await loadRules();
+                
+                console.log('规则管理系统初始化完成');
+            } catch (error) {
+                console.error('规则管理系统初始化失败:', error);
+                showNotification('规则管理系统初始化失败: ' + error.message, 'error');
+            }
+        }
+
+        /**
+         * 加载规则数据
+         */
+        async function loadRules() {
+            try {
+                showLoading('正在加载规则数据...');
+                
+                // 从配置文件加载规则
+                const response = await fetch('./config/system-rules.json');
+                if (response.ok) {
+                    const data = await response.json();
+                    rulesData = data.rules || [];
+                    mechanismsData = data.mechanisms || [];
+                } else {
+                    // 如果配置文件不存在，使用默认数据
+                    rulesData = getDefaultRules();
+                    mechanismsData = getDefaultMechanisms();
+                }
+                
+                // 更新UI
+                updateRulesStats();
+                renderRulesList();
+                renderMechanismsList();
+                
+                hideLoading();
+                showNotification('规则数据加载完成', 'success');
+                
+            } catch (error) {
+                hideLoading();
+                console.error('加载规则失败:', error);
+                showNotification('加载规则失败: ' + error.message, 'error');
+            }
+        }
+
+        /**
+         * 获取默认规则
+         */
+        function getDefaultRules() {
+            return [
+                {
+                    id: 'password_validator',
+                    name: '密码验证规则',
+                    description: '验证用户密码强度和复杂度',
+                    category: 'security',
+                    enabled: true,
+                    priority: 'high',
+                    trigger: 'user_password_change',
+                    actions: ['validate_password_strength', 'check_password_complexity'],
+                    mechanism: 'password_validator'
+                },
+                {
+                    id: 'account_security',
+                    name: '账户安全规则',
+                    description: '监控账户登录异常和安全威胁',
+                    category: 'security',
+                    enabled: true,
+                    priority: 'high',
+                    trigger: 'user_login_attempt',
+                    actions: ['detect_suspicious_login', 'block_brute_force'],
+                    mechanism: 'account_security'
+                },
+                {
+                    id: 'auto_backup',
+                    name: '自动备份规则',
+                    description: '定期执行系统数据备份',
+                    category: 'backup',
+                    enabled: true,
+                    priority: 'medium',
+                    trigger: 'scheduled_task',
+                    actions: ['create_backup', 'verify_backup_integrity'],
+                    mechanism: 'auto_backup'
+                }
+            ];
+        }
+
+        /**
+         * 获取默认机制
+         */
+        function getDefaultMechanisms() {
+            return [
+                {
+                    id: 'password_validator',
+                    name: '密码验证器',
+                    description: '验证密码强度和复杂度的核心机制',
+                    enabled: true,
+                    type: 'validator'
+                },
+                {
+                    id: 'account_security',
+                    name: '账户安全监控',
+                    description: '监控账户安全状态和异常行为',
+                    enabled: true,
+                    type: 'monitor'
+                },
+                {
+                    id: 'auto_backup',
+                    name: '自动备份服务',
+                    description: '执行自动备份任务的服务机制',
+                    enabled: true,
+                    type: 'service'
+                }
+            ];
+        }
+
+        /**
+         * 更新规则统计
+         */
+        function updateRulesStats() {
+            const totalRules = rulesData.length;
+            const activeRules = rulesData.filter(rule => rule.enabled).length;
+            const totalMechanisms = mechanismsData.length;
+            
+            document.getElementById('total-rules').textContent = totalRules;
+            document.getElementById('active-rules').textContent = activeRules;
+            document.getElementById('total-mechanisms').textContent = totalMechanisms;
+        }
+
+        /**
+         * 渲染规则列表
+         */
+        function renderRulesList() {
+            const rulesList = document.getElementById('rules-list');
+            
+            // 过滤规则
+            let filteredRules = rulesData;
+            if (currentFilter !== 'all') {
+                filteredRules = rulesData.filter(rule => rule.category === currentFilter);
+            }
+            
+            if (filteredRules.length === 0) {
+                rulesList.innerHTML = `
+                    <div class="alert alert-info">
+                        <p>📋 暂无${currentFilter === 'all' ? '' : getCategoryName(currentFilter)}规则</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            rulesList.innerHTML = filteredRules.map(rule => `
+                <div class="rule-item">
+                    <div class="rule-header">
+                        <div>
+                            <div class="rule-title">${rule.name}</div>
+                            <div class="rule-category">${getCategoryName(rule.category)}</div>
+                        </div>
+                        <div class="rule-actions">
+                            <span class="rule-status ${rule.enabled ? 'enabled' : 'disabled'}">
+                                ${rule.enabled ? '✓ 已启用' : '✗ 已禁用'}
+                            </span>
+                            <span class="rule-priority ${rule.priority}">
+                                ${getPriorityName(rule.priority)}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="rule-description">${rule.description}</div>
+                    <div class="rule-meta">
+                        <div class="rule-meta-item">
+                            <span>🆔</span>
+                            <span>${rule.id}</span>
+                        </div>
+                        <div class="rule-meta-item">
+                            <span>⚡</span>
+                            <span>${rule.trigger}</span>
+                        </div>
+                        <div class="rule-meta-item">
+                            <span>🔧</span>
+                            <span>${rule.mechanism}</span>
+                        </div>
+                    </div>
+                    <div class="rule-actions">
+                        <button class="btn btn-sm btn-primary" onclick="editRule('${rule.id}')">
+                            ✏️ 编辑
+                        </button>
+                        <button class="btn btn-sm btn-${rule.enabled ? 'warning' : 'success'}" onclick="toggleRule('${rule.id}')">
+                            ${rule.enabled ? '⏸️ 禁用' : '▶️ 启用'}
+                        </button>
+                        <button class="btn btn-sm btn-info" onclick="testRule('${rule.id}')">
+                            🧪 测试
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteRule('${rule.id}')">
+                            🗑️ 删除
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        /**
+         * 渲染机制列表
+         */
+        function renderMechanismsList() {
+            const mechanismsList = document.getElementById('mechanisms-list');
+            
+            if (mechanismsData.length === 0) {
+                mechanismsList.innerHTML = `
+                    <div class="alert alert-info">
+                        <p>⚙️ 暂无绑定机制</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            mechanismsList.innerHTML = mechanismsData.map(mechanism => `
+                <div class="mechanism-item">
+                    <div class="mechanism-header">
+                        <div class="mechanism-name">${mechanism.name}</div>
+                        <div class="mechanism-status ${mechanism.enabled ? 'active' : 'inactive'}">
+                            <span class="status-dot"></span>
+                            ${mechanism.enabled ? '运行中' : '已停止'}
+                        </div>
+                    </div>
+                    <div class="mechanism-description">${mechanism.description}</div>
+                    <div class="rule-meta">
+                        <div class="rule-meta-item">
+                            <span>🆔</span>
+                            <span>${mechanism.id}</span>
+                        </div>
+                        <div class="rule-meta-item">
+                            <span>📦</span>
+                            <span>${getTypeName(mechanism.type)}</span>
+                        </div>
+                    </div>
+                    <div class="rule-actions">
+                        <button class="btn btn-sm btn-primary" onclick="editMechanism('${mechanism.id}')">
+                            ✏️ 编辑
+                        </button>
+                        <button class="btn btn-sm btn-${mechanism.enabled ? 'warning' : 'success'}" onclick="toggleMechanism('${mechanism.id}')">
+                            ${mechanism.enabled ? '⏸️ 停止' : '▶️ 启动'}
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteMechanism('${mechanism.id}')">
+                            🗑️ 删除
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        /**
+         * 过滤规则
+         */
+        function filterRules(category) {
+            currentFilter = category;
+            
+            // 更新分类按钮状态
+            document.querySelectorAll('.category-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // 重新渲染规则列表
+            renderRulesList();
+        }
+
+        /**
+         * 显示新增规则模态框
+         */
+        function showAddRuleModal() {
+            showRuleModal('add');
+        }
+
+        /**
+         * 显示新增机制模态框
+         */
+        function showAddMechanismModal() {
+            showMechanismModal('add');
+        }
+
+        /**
+         * 显示规则模态框
+         */
+        function showRuleModal(mode, ruleId = null) {
+            const modal = document.createElement('div');
+            modal.className = 'rule-modal show';
+            modal.innerHTML = `
+                <div class="rule-modal-content">
+                    <div class="rule-modal-header">
+                        <h3 class="rule-modal-title">${mode === 'add' ? '新增规则' : '编辑规则'}</h3>
+                        <button class="rule-modal-close" onclick="closeModal(this)">✕</button>
+                    </div>
+                    <form class="rule-form" onsubmit="saveRule(event, '${mode}', '${ruleId || ''}')">
+                        <div class="form-group">
+                            <label class="form-label">规则ID</label>
+                            <input type="text" class="form-input" id="rule-id" required 
+                                   value="${mode === 'edit' && ruleId ? getRuleById(ruleId).id : ''}"
+                                   ${mode === 'edit' ? 'readonly' : ''}>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">规则名称</label>
+                            <input type="text" class="form-input" id="rule-name" required
+                                   value="${mode === 'edit' && ruleId ? getRuleById(ruleId).name : ''}">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">规则描述</label>
+                            <textarea class="form-textarea" id="rule-description" required
+                                      >${mode === 'edit' && ruleId ? getRuleById(ruleId).description : ''}</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">规则分类</label>
+                            <select class="form-select" id="rule-category" required>
+                                <option value="security" ${mode === 'edit' && ruleId && getRuleById(ruleId).category === 'security' ? 'selected' : ''}>安全</option>
+                                <option value="performance" ${mode === 'edit' && ruleId && getRuleById(ruleId).category === 'performance' ? 'selected' : ''}>性能</option>
+                                <option value="backup" ${mode === 'edit' && ruleId && getRuleById(ruleId).category === 'backup' ? 'selected' : ''}>备份</option>
+                                <option value="monitoring" ${mode === 'edit' && ruleId && getRuleById(ruleId).category === 'monitoring' ? 'selected' : ''}>监控</option>
+                                <option value="automation" ${mode === 'edit' && ruleId && getRuleById(ruleId).category === 'automation' ? 'selected' : ''}>自动化</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">优先级</label>
+                            <select class="form-select" id="rule-priority" required>
+                                <option value="high" ${mode === 'edit' && ruleId && getRuleById(ruleId).priority === 'high' ? 'selected' : ''}>高</option>
+                                <option value="medium" ${mode === 'edit' && ruleId && getRuleById(ruleId).priority === 'medium' ? 'selected' : ''}>中</option>
+                                <option value="low" ${mode === 'edit' && ruleId && getRuleById(ruleId).priority === 'low' ? 'selected' : ''}>低</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">触发条件</label>
+                            <input type="text" class="form-input" id="rule-trigger" required
+                                   value="${mode === 'edit' && ruleId ? getRuleById(ruleId).trigger : ''}">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">绑定机制</label>
+                            <select class="form-select" id="rule-mechanism" required>
+                                ${mechanismsData.map(m => `
+                                    <option value="${m.id}" ${mode === 'edit' && ruleId && getRuleById(ruleId).mechanism === m.id ? 'selected' : ''}>${m.name}</option>
+                                `).join('')}
+                            </select>
+                        </div>
+                        <div class="rule-modal-actions">
+                            <button type="button" class="btn btn-secondary" onclick="closeModal(this)">取消</button>
+                            <button type="submit" class="btn btn-primary">${mode === 'add' ? '新增' : '保存'}</button>
+                        </div>
+                    </form>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        /**
+         * 保存规则
+         */
+        function saveRule(event, mode, ruleId) {
+            event.preventDefault();
+            
+            const formData = {
+                id: document.getElementById('rule-id').value,
+                name: document.getElementById('rule-name').value,
+                description: document.getElementById('rule-description').value,
+                category: document.getElementById('rule-category').value,
+                priority: document.getElementById('rule-priority').value,
+                trigger: document.getElementById('rule-trigger').value,
+                mechanism: document.getElementById('rule-mechanism').value,
+                enabled: true,
+                actions: []
+            };
+            
+            if (mode === 'add') {
+                // 检查ID是否已存在
+                if (rulesData.find(rule => rule.id === formData.id)) {
+                    showNotification('规则ID已存在，请使用其他ID', 'error');
+                    return;
+                }
+                rulesData.push(formData);
+                showNotification('规则添加成功', 'success');
+            } else {
+                // 编辑现有规则
+                const index = rulesData.findIndex(rule => rule.id === ruleId);
+                if (index !== -1) {
+                    rulesData[index] = { ...rulesData[index], ...formData };
+                    showNotification('规则更新成功', 'success');
+                }
+            }
+            
+            // 更新UI
+            updateRulesStats();
+            renderRulesList();
+            
+            // 关闭模态框
+            closeModal(event.target);
+            
+            // 保存到配置文件
+            saveRulesToConfig();
+        }
+
+        /**
+         * 切换规则状态
+         */
+        function toggleRule(ruleId) {
+            const rule = rulesData.find(r => r.id === ruleId);
+            if (rule) {
+                rule.enabled = !rule.enabled;
+                renderRulesList();
+                updateRulesStats();
+                showNotification(`规则已${rule.enabled ? '启用' : '禁用'}`, 'success');
+                saveRulesToConfig();
+            }
+        }
+
+        /**
+         * 删除规则
+         */
+        function deleteRule(ruleId) {
+            if (confirm('确定要删除这个规则吗？此操作不可撤销。')) {
+                const index = rulesData.findIndex(rule => rule.id === ruleId);
+                if (index !== -1) {
+                    rulesData.splice(index, 1);
+                    renderRulesList();
+                    updateRulesStats();
+                    showNotification('规则删除成功', 'success');
+                    saveRulesToConfig();
+                }
+            }
+        }
+
+        /**
+         * 测试规则
+         */
+        async function testRule(ruleId) {
+            try {
+                showLoading('正在测试规则...');
+                
+                if (ruleEngine) {
+                    const result = await ruleEngine.testRule(ruleId);
+                    if (result.success) {
+                        showNotification('规则测试通过', 'success');
+                    } else {
+                        showNotification('规则测试失败: ' + result.error, 'error');
+                    }
+                } else {
+                    showNotification('规则引擎未初始化', 'warning');
+                }
+                
+                hideLoading();
+            } catch (error) {
+                hideLoading();
+                console.error('测试规则失败:', error);
+                showNotification('测试规则失败: ' + error.message, 'error');
+            }
+        }
+
+        /**
+         * 导出规则
+         */
+        function exportRules() {
+            const data = {
+                rules: rulesData,
+                mechanisms: mechanismsData,
+                exportTime: new Date().toISOString(),
+                version: '1.0'
+            };
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `system-rules-${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            showNotification('规则导出成功', 'success');
+        }
+
+        /**
+         * 导入规则
+         */
+        function importRules() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        try {
+                            const data = JSON.parse(e.target.result);
+                            if (data.rules && data.mechanisms) {
+                                rulesData = data.rules;
+                                mechanismsData = data.mechanisms;
+                                updateRulesStats();
+                                renderRulesList();
+                                renderMechanismsList();
+                                saveRulesToConfig();
+                                showNotification('规则导入成功', 'success');
+                            } else {
+                                showNotification('导入文件格式不正确', 'error');
+                            }
+                        } catch (error) {
+                            showNotification('导入文件解析失败: ' + error.message, 'error');
+                        }
+                    };
+                    reader.readAsText(file);
+                }
+            };
+            input.click();
+        }
+
+        /**
+         * 保存规则到配置文件
+         */
+        async function saveRulesToConfig() {
+            try {
+                const data = {
+                    rules: rulesData,
+                    mechanisms: mechanismsData,
+                    lastUpdated: new Date().toISOString()
+                };
+                
+                // 这里应该调用API保存到服务器
+                // await fetch('./api/save-rules', {
+                //     method: 'POST',
+                //     headers: { 'Content-Type': 'application/json' },
+                //     body: JSON.stringify(data)
+                // });
+                
+                // 暂时保存到localStorage
+                localStorage.setItem('systemRules', JSON.stringify(data));
+                
+            } catch (error) {
+                console.error('保存规则配置失败:', error);
+            }
+        }
+
+        /**
+         * 关闭模态框
+         */
+        function closeModal(element) {
+            const modal = element.closest('.rule-modal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+
+        /**
+         * 获取规则ByID
+         */
+        function getRuleById(ruleId) {
+            return rulesData.find(rule => rule.id === ruleId);
+        }
+
+        /**
+         * 获取分类名称
+         */
+        function getCategoryName(category) {
+            const names = {
+                'security': '安全',
+                'performance': '性能',
+                'backup': '备份',
+                'monitoring': '监控',
+                'automation': '自动化'
+            };
+            return names[category] || category;
+        }
+
+        /**
+         * 获取优先级名称
+         */
+        function getPriorityName(priority) {
+            const names = {
+                'high': '高优先级',
+                'medium': '中优先级',
+                'low': '低优先级'
+            };
+            return names[priority] || priority;
+        }
+
+        /**
+         * 获取类型名称
+         */
+        function getTypeName(type) {
+            const names = {
+                'validator': '验证器',
+                'monitor': '监控器',
+                'service': '服务',
+                'executor': '执行器'
+            };
+            return names[type] || type;
+        }
+
+        /**
+         * 页面初始化
+         */
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化规则管理系统
+            if (typeof initializeRulesSystem === 'function') {
+                initializeRulesSystem();
+            }
+            
+            // 初始化Tab切换功能
+            initializeTabs();
+            
+            // 初始化其他设置页面功能
+            initializeSettings();
+        });
+
+        /**
+         * 初始化Tab切换功能
+         */
+        function initializeTabs() {
+            const tabButtons = document.querySelectorAll('.tab-nav-item');
+            const tabPanes = document.querySelectorAll('.tab-pane');
+            
+            tabButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const targetTab = this.getAttribute('data-tab');
+                    
+                    // 移除所有活动状态
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
+                    tabPanes.forEach(pane => pane.classList.remove('active'));
+                    
+                    // 添加当前活动状态
+                    this.classList.add('active');
+                    const targetPane = document.getElementById(targetTab);
+                    if (targetPane) {
+                        targetPane.classList.add('active');
+                    }
+                });
+            });
+        }
+
+        /**
+         * 初始化其他设置页面功能
+         */
+        function initializeSettings() {
+            // 初始化主题管理器
+            initThemeManager();
+            
+            // 这里可以添加其他设置页面的初始化代码
+            console.log('Settings page initialized');
+        }
+
+        /**
+         * 初始化主题管理器
+         */
+        async function initThemeManager() {
+            try {
+                console.log('Starting ThemeManager initialization...');
+                
+                // 如果ThemeManager类不存在，尝试动态加载脚本
+                if (typeof ThemeManager === 'undefined') {
+                    console.log('ThemeManager not found, loading script dynamically...');
+                    
+                    try {
+                        await new Promise((resolve, reject) => {
+                            const script = document.createElement('script');
+                            script.src = 'assets/js/theme-manager.js?v=20251120';
+                            script.onload = () => {
+                                console.log('ThemeManager script loaded successfully');
+                                resolve();
+                            };
+                            script.onerror = (error) => {
+                                console.error('Failed to load ThemeManager script:', error);
+                                reject(error);
+                            };
+                            document.head.appendChild(script);
+                        });
+                        
+                        // 等待脚本执行完成
+                        await new Promise(resolve => setTimeout(resolve, 500));
+                        
+                        console.log('After script load - ThemeManager:', typeof ThemeManager);
+                        console.log('After script load - window.themeManager:', typeof window.themeManager);
+                        
+                    } catch (loadError) {
+                        console.error('Error loading ThemeManager script:', loadError);
+                        return;
+                    }
+                }
+                
+                console.log('Checking for ThemeManager...');
+                console.log('window.themeManager:', typeof window.themeManager);
+                console.log('ThemeManager:', typeof ThemeManager);
+                
+                if (typeof window.themeManager !== 'undefined') {
+                    // 使用已存在的全局themeManager实例
+                    console.log('Using existing ThemeManager instance');
+                    
+                    // 更新主题设置界面
+                    updateThemeSettingsUI();
+                } else if (typeof ThemeManager !== 'undefined') {
+                    // 如果没有全局实例但类存在，创建新实例
+                    console.log('Creating new ThemeManager instance...');
+                    window.themeManager = new ThemeManager();
+                    
+                    // 等待初始化完成
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    
+                    // 更新主题设置界面
+                    updateThemeSettingsUI();
+                    
+                    console.log('Created new ThemeManager instance');
+                } else {
+                    console.error('ThemeManager class not found after all attempts');
+
+                }
+            } catch (error) {
+                console.error('Failed to initialize ThemeManager:', error);
+            }
+        }
+        /**
+         * 更新主题设置界面
+         */
+        function updateThemeSettingsUI() {
+            if (!window.themeManager) return;
+            
+            const config = window.themeManager.config;
+            
+            // 设置主题模式
+            const themeModeEl = document.getElementById('theme-mode');
+            if (themeModeEl) {
+                themeModeEl.value = config.mode || 'auto';
+            }
+            
+            // 设置日出日落时间
+            const sunriseTimeEl = document.getElementById('sunrise-time');
+            if (sunriseTimeEl) {
+                sunriseTimeEl.value = config.sunriseTime || '06:00';
+            }
+            
+            const sunsetTimeEl = document.getElementById('sunset-time');
+            if (sunsetTimeEl) {
+                sunsetTimeEl.value = config.sunsetTime || '18:00';
+            }
+            
+            // 设置自动切换选项
+            const autoSunsetEl = document.getElementById('auto-switch-enabled');
+            if (autoSunsetEl) {
+                autoSunsetEl.checked = config.autoSwitch;
+            }
+            
+            const autoMemorialEl = document.getElementById('memorial-auto-switch');
+            if (autoMemorialEl) {
+                autoMemorialEl.checked = config.memorialAutoSwitch;
+            }
+            
+            const autoCelebrationEl = document.getElementById('celebration-auto-switch');
+            if (autoCelebrationEl) {
+                autoCelebrationEl.checked = config.celebrationAutoSwitch;
+            }
+        }
+    </script>
+</body>
+</html>

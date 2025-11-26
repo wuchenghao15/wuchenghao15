@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<!DOCTYPE html>
+<!DOCTYPE html>
+<!DOCTYPE html>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta name="version" content="202511061306446373">
+    <!-- VERSION: 20251106.edf209d6 -->
+    <!-- VERSION: 20251106.ee6b7b7a -->
+    <!-- VERSION: 20251106.2cec62b0 -->
+    <meta charset="UTF-8">
+    <!-- 兼容性meta标签 -->
+    
+    <!-- IE兼容性 -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    
+    <!-- 移动设备优化 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <!-- iOS设备特定样式 -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="MTSCOS系统">
+    
+    <!-- 禁用电话号码和邮箱自动识别 -->
+    <meta name="format-detection" content="telephone=no, email=no">
+    
+    <!-- IE触摸优化 -->
+    <meta name="msapplication-tap-highlight" content="no">
+    <title>MTSCOS - 仪表盘</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="assets/css/common_styles/variables-fallback.css">
+    <link rel="stylesheet" href="assets/css/common_styles/fonts.css">
+    <link rel="stylesheet" href="assets/css/common_styles/main.css">
+    <link rel="stylesheet" href="assets/css/other_styles/variables.css">
+    <link rel="stylesheet" href="assets/css/common_styles/responsive.css">
+    <link rel="stylesheet" href="CSS/auto-theme.css">
+    <link rel="stylesheet" href="assets/css/footer.css">
+    <style>
+        /* 仪表盘特定样式 */
+        .dashboard-container {
+            min-height: 100vh;
+            background-color: var(--background-color, #f5f7fa);
+            color: var(--text-color, #333);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        
+        body.dark-theme .dashboard-container {
+            background-color: var(--background-color, #2d3748);
+        }
+        
+        .dashboard-content {
+            padding: 20px;
+        }
+        
+        /* 确保退出按钮样式正确 */
+        .logout-btn {
+            background-color: var(--error-color, #dc3545);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: background-color 0.3s ease;
+        }
+        
+        .logout-btn:hover {
+            background-color: #c82333;
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard-content {
+                padding: 10px;
+            }
+        }
+        
+        /* 时间显示样式 */
+        .time-display {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 0.2rem;
+        }
+        
+        .current-time-text {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        .lunar-time {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            font-style: italic;
+            font-family: 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        .visit-info {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+        
+        .theme-status {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            background: var(--bg-secondary);
+            padding: 0.2rem 0.5rem;
+            border-radius: 12px;
+            border: 1px solid var(--border-light);
+        }
+    </style>
+<body>
+    <div class="dashboard-container">
+        <header class="login-header">
+            <div class="header-content">
+                <div class="logo-container">
+                    <h1 class="system-title">MTSCOS 系统仪表盘</h1>
+                </div>
+                <div class="header-right">
+                    <div class="header-stats">
+                        <div class="time-display" id="current-time">
+                            <div class="current-time-text">加载中...</div>
+                            <div class="lunar-time">加载中...</div>
+                        </div>
+                        <div class="visit-info" id="visit-info">
+                            <span>访问信息</span>
+                        </div>
+                        <div class="theme-status" id="theme-status">
+                            <span>主题: 自动</span>
+                        </div>
+                    </div>
+                    <div class="user-info">
+                        <!-- 用户登录状态和头像菜单将由user_profile.js动态生成 -->
+                        <button class="logout-btn" id="logoutBtn">
+                            <i class="fas fa-sign-out-alt"></i>
+                            <span>退出登录</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+        
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                // 自动主题系统初始化
+                setTimeout(() => {
+                    if (window.autoThemeManager) {
+                        window.autoThemeManager.init();
+                        console.log('Dashboard: 自动主题管理器已启动');
+                    } else {
+                        console.warn('Dashboard: 自动主题管理器未找到');
+                    }
+                    
+                    // 启动增强时间显示
+                    if (window.enhancedTimeDisplay) {
+                        window.enhancedTimeDisplay.init();
+                        console.log('Dashboard: 增强时间显示已启动');
+                    } else {
+                        console.warn('Dashboard: 增强时间显示未找到');
+                    }
+                }, 500);
+                
+                // 登出功能
+                const logoutBtn = document.getElementById('logoutBtn');
+                if (logoutBtn) {
+                    logoutBtn.addEventListener('click', function() {
+                        if (confirm('确定要退出登录吗？')) {
+                            // 清除本地存储
+                            localStorage.removeItem('authToken');
+                            localStorage.removeItem('userProfile');
+                            localStorage.removeItem('loginTime');
+                            
+                            // 跳转到登录页面
+                            window.location.href = 'login.html';
+                        }
+                    });
+                }
+            });
+        </script>
+        
+        <div class="dashboard-content">
+            <div class="welcome-section">
+                <h1 class="welcome-title">欢迎使用 MTSCOS 智能管理系统</h1>
+                <p class="welcome-message">这是您的个人仪表盘，您可以在此管理系统资源和执行日常操作。</p>
+            </div>
+            
+            <div class="system-status">
+                <div class="status-item">
+                    <div class="status-value">
+                        <i class="fas fa-database text-success"></i>
+                    </div>
+                    <div class="status-label">数据库已连接</div>
+                </div>
+                <div class="status-item">
+                    <div class="status-value">
+                        <i class="fas fa-shield-alt text-success"></i>
+                    </div>
+                    <div class="status-label">安全状态正常</div>
+                </div>
+                <div class="status-item">
+                    <div class="status-value">
+                        <i class="fas fa-users text-success"></i>
+                    </div>
+                    <div class="status-label">用户已认证</div>
+                </div>
+            </div>
+            
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-cogs"></i>
+                    </div>
+                    <h3 class="feature-title">系统设置</h3>
+                    <p class="feature-description">管理系统参数和配置选项，优化系统性能。</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-users-cog"></i>
+                    </div>
+                    <h3 class="feature-title">用户管理</h3>
+                    <p class="feature-description">添加、编辑和管理系统用户，分配权限和角色。</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h3 class="feature-title">数据分析</h3>
+                    <p class="feature-description">查看系统数据统计和分析报表，辅助决策。</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h3 class="feature-title">安全中心</h3>
+                    <p class="feature-description">管理系统安全设置，查看安全日志和警告。</p>
+                </div>
+            </div>
+            
+            <div class="quick-actions">
+                <button class="quick-action-btn">
+                    <i class="fas fa-database"i>
+                    <span>数据库管理</span>
+                </button>
+                <button class="quick-action-btn">
+                    <i class="fas fa-history"i>
+                    <span>操作日志</span>
+                </button>
+                <button class="quick-action-btn">
+                    <i class="fas fa-question-circle"i>
+                    <span>帮助中心</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="../assets/js/dashboard.js"></script>
+    <script src="../assets/js/unified-auth-manager.js"></script>
+    
+    <!-- 安全机制模块 -->
+    <script defer src="../assets/js/core/session-manager.js"></script>
+    <script defer src="../assets/js/core/encryption.js"></script>
+    <script defer src="../assets/js/core/security-events.js"></script>
+    <script defer src="../assets/js/core/data-security.js"></script>
+    <script defer src="../assets/js/core/token-verification.js"></script>
+    
+    <!-- 安全管理器 -->
+    <script src="../assets/js/security-manager.js"></script>
+    
+    <!-- 自动主题和增强时间显示 -->
+    <script defer src="../JS/auto-theme-manager.js"></script>
+    <script defer src="../JS/enhanced-time-display.js"></script>
+    
+    <!-- 系统锁定管理脚本 -->
+    <script>
+        // 安全机制初始化
+        window.addEventListener('DOMContentLoaded', function() {
+            // 初始化所有安全模块
+            try {
+                // 初始化会话管理器
+                if (typeof SessionManager !== 'undefined') {
+                    window.sessionManager = new SessionManager();
+                    console.log('[安全] 会话管理器已初始化');
+                }
+                
+                // 初始化加密管理器
+                if (typeof EncryptionManager !== 'undefined') {
+                    window.encryptionManager = new EncryptionManager();
+                    console.log('[安全] 加密管理器已初始化');
+                }
+                
+                // 初始化安全事件管理器
+                if (typeof SecurityEventManager !== 'undefined') {
+                    window.securityEventManager = new SecurityEventManager();
+                    console.log('[安全] 安全事件管理器已初始化');
+                }
+                
+                // 初始化数据安全管理器
+                if (typeof DataSecurityManager !== 'undefined') {
+                    window.dataSecurityManager = new DataSecurityManager();
+                    console.log('[安全] 数据安全管理器已初始化');
+                }
+                
+                // 初始化令牌验证管理器
+                if (typeof TokenVerificationManager !== 'undefined') {
+                    window.tokenVerificationManager = new TokenVerificationManager();
+                    console.log('[安全] 令牌验证管理器已初始化');
+                }
+                
+                // 启动安全监控
+                setTimeout(() => {
+                    if (window.sessionManager) {
+                        window.sessionManager.startMonitoring();
+                    }
+                    if (window.securityEventManager) {
+                        window.securityEventManager.startMonitoring();
+                    }
+                }, 1000);
+                
+            } catch (error) {
+                console.error('[安全] 安全模块初始化失败:', error);
+                // 重定向到锁定页面
+                window.location.href = 'locked.html';
+            }
+        });
+        
+        // 页面卸载时清理
+        window.addEventListener('beforeunload', function() {
+            try {
+                if (window.sessionManager) {
+                    window.sessionManager.cleanup();
+                }
+                if (window.dataSecurityManager) {
+                    window.dataSecurityManager.lockAllData();
+                }
+            } catch (error) {
+                console.error('[安全] 页面卸载清理失败:', error);
+            }
+        });
+        
+        // 确保dashboard.js中的退出登录功能与user_profile.js兼容
+        if (typeof logoutBtn !== 'undefined') {
+            logoutBtn.addEventListener('click', logoutUser);
+        }
+        
+        // 初始化统一认证管理器
+        if (typeof UnifiedAuthManager !== 'undefined') {
+            try {
+                window.authManager = new UnifiedAuthManager({
+                    maxAttempts: 5,
+                    lockDuration: 30,
+                    sessionTimeout: 15,
+                    storagePrefix: 'mtscos_'
+                });
+                console.log('仪表盘页面统一认证管理器初始化成功');
+            } catch (initError) {
+                console.error('仪表盘页面统一认证管理器初始化失败:', initError);
+            }
+        }
+        
+        // 页面卸载时清理资源
+        window.addEventListener('beforeunload', function() {
+            if (window.authManager && typeof window.authManager.cleanup === 'function') {
+                try {
+                    window.authManager.cleanup();
+                } catch (cleanupError) {
+                    console.warn('仪表盘页面清理统一认证管理器失败:', cleanupError);
+                }
+            }
+        });
+    </script>
+    
+    <!-- 页脚 -->
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>关于我们</h3>
+                    <ul class="footer-links">
+                        <li><a href="#"><i class="fas fa-info-circle"></i> 公司简介</a></li>
+                        <li><a href="#"><i class="fas fa-history"></i> 发展历程</a></li>
+                        <li><a href="#"><i class="fas fa-users"></i> 团队介绍</a></li>
+                        <li><a href="#"><i class="fas fa-newspaper"></i> 新闻动态</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>产品服务</h3>
+                    <ul class="footer-links">
+                        <li><a href="#"><i class="fas fa-cogs"></i> 系统功能</a></li>
+                        <li><a href="#"><i class="fas fa-rocket"></i> 解决方案</a></li>
+                        <li><a href="#"><i class="fas fa-chart-line"></i> 数据分析</a></li>
+                        <li><a href="#"><i class="fas fa-shield-alt"></i> 安全服务</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>帮助中心</h3>
+                    <ul class="footer-links">
+                        <li><a href="#"><i class="fas fa-book"></i> 使用文档</a></li>
+                        <li><a href="#"><i class="fas fa-question-circle"></i> 常见问题</a></li>
+                        <li><a href="#"><i class="fas fa-headset"></i> 技术支持</a></li>
+                        <li><a href="#"><i class="fas fa-life-ring"></i> 联系我们</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>联系我们</h3>
+                    <ul class="footer-links">
+                        <li><a href="#"><i class="fas fa-map-marker-alt"></i> 北京市海淀区科技园区</a></li>
+                        <li><a href="#"><i class="fas fa-phone"></i> 400-888-8888</a></li>
+                        <li><a href="#"><i class="fas fa-envelope"></i> contact@mtscos.com</a></li>
+                        <li><a href="#"><i class="fas fa-clock"></i> 周一至周五 9:00-18:00</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <div class="footer-social">
+                    <a href="#"><i class="fab fa-weixin"></i></a>
+                    <a href="#"><i class="fab fa-weibo"></i></a>
+                    <a href="#"><i class="fab fa-github"></i></a>
+                    <a href="#"><i class="fab fa-linkedin"></i></a>
+                </div>
+                <p class="footer-copyright">© 2025 MTSCOS 智能管理系统 版权所有 | 作者: Chenghao Wu | 京ICP备12345678号</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

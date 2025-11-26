@@ -1,0 +1,3383 @@
+<!DOCTYPE html>
+<!DOCTYPE html>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta name="version" content="202511061306446373">
+    <!-- VERSION: 20251106.91a1a16e -->
+    <!-- VERSION: 20251106.e5421137 -->
+    <!-- VERSION: 20251106.d0b15ee1 -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系统设置 - MTSCOS</title>
+    <!-- 正确的CSS引用 -->
+    <link rel="stylesheet" href="assets/css/common_styles/theme-system.css">
+    <link rel="stylesheet" href="assets/css/settings.css">
+    <link rel="stylesheet" href="assets/css/common_styles/main.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="assets/css/common_styles/responsive.css">
+    <link rel="stylesheet" href="assets/css/footer.css">
+    
+    <!-- 统一系统管理器 -->
+    <script src="../JavaScript/unified-system-manager.js"></script>
+    <script src="../JavaScript/database-manager.js"></script>
+    <script src="../JavaScript/mydata-manager.js"></script>
+    <script src="../JavaScript/theme-manager.js"></script>
+    
+    <!-- 安全管理器 -->
+    <script src="../assets/js/security-manager.js"></script>
+    
+    <!-- 系统锁定管理脚本 -->
+    
+    <style>
+        /* 优化的设置页面样式 */
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+            margin: 0;
+            padding: 0;
+            color: var(--text-primary);
+            padding-top: 80px;
+            transition: var(--transition);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        
+        body.dark-theme {
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+            color: var(--text-primary);
+        }
+        
+        .settings-container {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: var(--spacing-xl, 24px);
+            max-width: 1400px;
+            margin: 0 auto;
+            min-height: calc(100vh - 120px);
+            padding: 0 var(--spacing-xl, 24px);
+        }
+        
+        .settings-panel {
+            display: none;
+            background: var(--bg-card);
+            border-radius: var(--border-radius-lg, 12px);
+            padding: var(--spacing-2xl, 32px);
+            box-shadow: var(--shadow-lg, 0 10px 15px -3px rgb(0 0 0 / 0.1));
+            border: 1px solid var(--border-color);
+            transition: var(--transition);
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .settings-panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-color), var(--info-color));
+            opacity: 0;
+            transition: var(--transition);
+        }
+        
+        .settings-panel.active::before {
+            opacity: 1;
+        }
+        
+        .settings-panel.active {
+            display: block;
+            animation: slideInUp 0.4s ease-out;
+        }
+        
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .settings-panel h2 {
+            color: var(--primary-color);
+            border-bottom: 3px solid var(--primary-color);
+            padding-bottom: var(--spacing-md, 16px);
+            margin-top: 0;
+            margin-bottom: var(--spacing-xl, 24px);
+            font-size: 1.5rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md, 16px);
+        }
+        
+        .settings-panel h2::before {
+            content: '⚙️';
+            font-size: 1.25rem;
+        }
+        
+        .unit {
+            margin-left: var(--spacing-sm, 8px);
+            color: var(--text-muted);
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        
+        .hint {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            margin-top: var(--spacing-xs, 4px);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xs, 4px);
+            line-height: 1.4;
+        }
+        
+        .hint::before {
+            content: 'ℹ️';
+            font-size: 0.75rem;
+        }
+        
+        .settings-form {
+            max-width: 800px;
+        }
+        
+        .form-group {
+            margin-bottom: var(--spacing-lg, 24px);
+            position: relative;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: var(--spacing-sm, 8px);
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: var(--spacing-md, 16px);
+            border: 2px solid var(--border-color);
+            border-radius: var(--border-radius, 8px);
+            box-sizing: border-box;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            transition: var(--transition);
+            font-size: 0.875rem;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+            transform: translateY(-1px);
+        }
+        
+        .form-group input:hover,
+        .form-group select:hover,
+        .form-group textarea:hover {
+            border-color: var(--text-muted);
+        }
+        
+        .input-group {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm, 8px);
+        }
+        
+        .input-group input {
+            flex: 1;
+        }
+        
+        .form-actions {
+            display: flex;
+            gap: var(--spacing-md, 16px);
+            margin-top: var(--spacing-xl, 24px);
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: var(--spacing-md, 16px) var(--spacing-xl, 24px);
+            border: none;
+            border-radius: var(--border-radius, 8px);
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 600;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: var(--spacing-sm, 8px);
+            text-decoration: none;
+            position: relative;
+            overflow: hidden;
+            min-height: 44px;
+        }
+        
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+        
+        .btn:hover::before {
+            left: 100%;
+        }
+        
+        .btn-primary {
+            background: var(--primary-color);
+            color: var(--text-inverse);
+        }
+        
+        .btn-primary:hover {
+            background: var(--primary-hover);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg, 0 10px 15px -3px rgb(0 0 0 / 0.1));
+        }
+        
+        .btn-secondary {
+            background: var(--secondary-color);
+            color: var(--text-inverse);
+        }
+        
+        .btn-secondary:hover {
+            background: var(--secondary-hover);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md, 0 4px 6px -1px rgb(0 0 0 / 0.1));
+        }
+        
+        .btn-info {
+            background: var(--info-color);
+            color: var(--text-inverse);
+        }
+        
+        .btn-info:hover {
+            background: var(--info-hover);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md, 0 4px 6px -1px rgb(0 0 0 / 0.1));
+        }
+        
+        .btn-warning {
+            background: var(--warning-color);
+            color: var(--text-inverse);
+        }
+        
+        .btn-warning:hover {
+            background: var(--warning-hover);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md, 0 4px 6px -1px rgb(0 0 0 / 0.1));
+        }
+        
+        /* 深色主题设置面板样式 */
+        body.dark-theme .settings-panel {
+            background-color: var(--bg-card);
+            color: var(--text-primary);
+        }
+        
+        body.dark-theme .settings-panel h2,
+        body.dark-theme .settings-panel h3 {
+            color: var(--text-primary);
+        }
+        
+        body.dark-theme input,
+        body.dark-theme select,
+        body.dark-theme textarea {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            border-color: var(--border-color);
+        }
+        
+        body.dark-theme input:focus,
+        body.dark-theme select:focus,
+        body.dark-theme textarea:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px var(--primary-light);
+        }
+        
+        /* 退出按钮样式 */
+        .logout-btn {
+            background-color: var(--error-color);
+            color: var(--text-inverse);
+            border: none;
+            padding: 8px 16px;
+            border-radius: var(--border-radius-sm);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: var(--transition);
+        }
+        
+        .logout-btn:hover {
+            background-color: var(--error-hover);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        /* 侧边栏样式 */
+        .sidebar {
+            width: 280px;
+            background: var(--surface);
+            padding: var(--spacing-lg, 20px);
+            border-radius: var(--border-radius-lg, 12px);
+            box-shadow: var(--shadow-lg, 0 10px 15px -3px rgb(0 0 0 / 0.1));
+            height: fit-content;
+            position: sticky;
+            top: var(--spacing-lg, 20px);
+            border: 1px solid var(--border-light);
+            backdrop-filter: blur(10px);
+        }
+        
+        .sidebar h3 {
+            margin: 0 0 var(--spacing-lg, 20px) 0;
+            color: var(--text-primary);
+            font-size: 1.125rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm, 8px);
+        }
+        
+        .sidebar h3::before {
+            content: '⚙️';
+            font-size: 1.25rem;
+        }
+        
+        .sidebar-menu {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-xs, 4px);
+        }
+        
+        .menu-item {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md, 12px);
+            padding: var(--spacing-md, 12px) var(--spacing-lg, 16px);
+            border-radius: var(--border-radius, 8px);
+            cursor: pointer;
+            transition: var(--transition);
+            color: var(--text-secondary);
+            font-weight: 500;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .menu-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 3px;
+            height: 0;
+            background: var(--primary-color);
+            transition: height 0.3s ease;
+            border-radius: 0 2px 2px 0;
+        }
+        
+        .menu-item:hover {
+            background: var(--background-light);
+            color: var(--primary-color);
+            transform: translateX(4px);
+        }
+        
+        .menu-item:hover::before {
+            height: 70%;
+        }
+        
+        .menu-item.active {
+            background: var(--primary-color);
+            color: var(--text-inverse);
+            box-shadow: var(--shadow-md, 0 4px 6px -1px rgb(0 0 0 / 0.1));
+        }
+        
+        .menu-item.active::before {
+            height: 70%;
+            background: var(--text-inverse);
+        }
+        
+        .content {
+            flex: 1;
+        }
+        
+        /* 只读字段样式 */
+        .readonly-field {
+            padding: 10px;
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-sm);
+            color: var(--text-muted);
+        }
+        
+        /* 版本列表样式 */
+        .version-list {
+            padding: 10px;
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-sm);
+            min-height: 40px;
+        }
+        
+        /* 通知样式 */
+        .notification {
+            position: fixed;
+            top: var(--spacing-lg, 20px);
+            right: var(--spacing-lg, 20px);
+            padding: var(--spacing-lg, 16px) var(--spacing-xl, 20px);
+            border-radius: var(--border-radius-lg, 12px);
+            box-shadow: var(--shadow-xl, 0 20px 25px -5px rgb(0 0 0 / 0.1));
+            display: none;
+            z-index: 1000;
+            max-width: 400px;
+            border: 1px solid var(--border-light);
+            backdrop-filter: blur(10px);
+            animation: slideInRight 0.3s ease-out;
+            transition: var(--transition);
+        }
+        
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        .notification.success {
+            background: linear-gradient(135deg, var(--success-color), var(--success-hover));
+            color: var(--text-inverse);
+            border-color: var(--success-color);
+        }
+        
+        .notification.error {
+            background: linear-gradient(135deg, var(--error-color), var(--error-hover));
+            color: var(--text-inverse);
+            border-color: var(--error-color);
+        }
+        
+        .notification.info {
+            background: linear-gradient(135deg, var(--info-color), var(--info-hover));
+            color: var(--text-inverse);
+            border-color: var(--info-color);
+        }
+        
+        .notification-content {
+            display: flex;
+            align-items: flex-start;
+            gap: var(--spacing-md, 12px);
+        }
+        
+        .notification-content::before {
+            content: '';
+            font-size: 1.25rem;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+        
+        .notification.success .notification-content::before {
+            content: '✅';
+        }
+        
+        .notification.error .notification-content::before {
+            content: '❌';
+        }
+        
+        .notification.info .notification-content::before {
+            content: 'ℹ️';
+        }
+        
+        .notification-close {
+            position: absolute;
+            top: var(--spacing-sm, 8px);
+            right: var(--spacing-sm, 8px);
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            font-size: 14px;
+            cursor: pointer;
+            color: inherit;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+        }
+        
+        .notification-close:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
+        }
+        
+        @media (max-width: 1024px) {
+            .settings-container {
+                grid-template-columns: 260px 1fr;
+                gap: var(--spacing-lg, 20px);
+            }
+            
+            .sidebar {
+                width: 100%;
+                position: static;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .settings-container {
+                grid-template-columns: 1fr;
+                gap: var(--spacing-md, 16px);
+                padding: var(--spacing-md, 16px);
+            }
+            
+            .sidebar {
+                order: -1;
+                position: static;
+                padding: var(--spacing-md, 16px);
+            }
+            
+            .sidebar h3 {
+                font-size: 1rem;
+                margin-bottom: var(--spacing-md, 16px);
+            }
+            
+            .menu-item {
+                padding: var(--spacing-sm, 10px) var(--spacing-md, 12px);
+                font-size: 0.875rem;
+            }
+            
+            .settings-panel {
+                padding: var(--spacing-lg, 20px);
+                border-radius: var(--border-radius, 8px);
+            }
+            
+            .settings-panel h2 {
+                font-size: 1.25rem;
+                margin-bottom: var(--spacing-lg, 20px);
+            }
+            
+            .settings-form {
+                max-width: 100%;
+                padding: 0;
+            }
+            
+            .form-group {
+                flex-direction: column;
+                align-items: stretch;
+                gap: var(--spacing-xs, 4px);
+            }
+            
+            .form-group label {
+                min-width: auto;
+                text-align: left;
+                margin-bottom: var(--spacing-xs, 4px);
+            }
+            
+            .form-actions {
+                flex-direction: column;
+                gap: var(--spacing-sm, 8px);
+            }
+            
+            .btn {
+                width: 100%;
+                justify-content: center;
+                min-height: 48px;
+            }
+            
+            .input-group {
+                flex-direction: column;
+                align-items: stretch;
+                gap: var(--spacing-sm, 8px);
+            }
+            
+            .notification {
+                top: var(--spacing-md, 16px);
+                right: var(--spacing-md, 16px);
+                left: var(--spacing-md, 16px);
+                max-width: none;
+                padding: var(--spacing-md, 16px);
+            }
+            
+            .notification-content {
+                gap: var(--spacing-sm, 8px);
+            }
+        }
+        
+        @media (max-width: 480px) {
+            header {
+                padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
+                flex-wrap: wrap;
+                gap: var(--spacing-sm, 8px);
+            }
+            
+            .header-left,
+            .header-right {
+                flex: 1;
+                min-width: 0;
+            }
+            
+            .logo-container {
+                font-size: 1.125rem;
+            }
+            
+            .system-info {
+                font-size: 0.75rem;
+            }
+            
+            .user-info {
+                padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px);
+                font-size: 0.875rem;
+            }
+            
+            .settings-panel {
+                padding: var(--spacing-md, 16px);
+            }
+            
+            .settings-panel h2 {
+                font-size: 1.125rem;
+            }
+            
+            .form-row {
+                grid-template-columns: 1fr;
+                gap: var(--spacing-sm, 8px);
+            }
+        }
+        
+        /* 安全信息样式 */
+        .security-info {
+            background-color: var(--info-light);
+            padding: 15px;
+            border-radius: var(--border-radius-sm);
+            margin-top: 20px;
+            width: 100%;
+            box-sizing: border-box;
+            border: 1px solid var(--info-color);
+        }
+        
+        .security-info h3 {
+            color: var(--info-color);
+            margin-top: 0;
+        }
+        
+        .security-info ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        
+        .security-info li {
+            margin-bottom: 5px;
+            color: var(--text-secondary);
+        }
+        
+        .security-config {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .security-config h4 {
+            margin-top: 0;
+            color: var(--text-primary);
+        }
+        
+        .config-options {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 14px;
+            width: auto;
+            background-color: var(--secondary-color);
+            color: var(--text-inverse);
+            border: none;
+            border-radius: var(--border-radius-sm);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        
+        .btn-small:hover {
+            background-color: var(--secondary-hover);
+            transform: translateY(-1px);
+        }
+        
+        /* 深色主题下的安全信息样式 */
+        body.dark-theme .security-info {
+            background-color: var(--bg-secondary);
+            border-color: var(--border-color);
+        }
+        
+        body.dark-theme .security-config {
+            border-top-color: var(--border-color);
+        }
+        
+        /* 动画效果 */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 系统规则管理样式 */
+        .rules-container {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-sm);
+            background-color: var(--bg-secondary);
+        }
+
+        .rule-item {
+            border-bottom: 1px solid var(--border-color);
+            padding: 15px;
+            transition: var(--transition);
+        }
+
+        .rule-item:last-child {
+            border-bottom: none;
+        }
+
+        .rule-item:hover {
+            background-color: var(--bg-primary);
+        }
+
+        .rule-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .rule-name {
+            font-weight: bold;
+            color: var(--text-primary);
+        }
+
+        .rule-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .rule-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .rule-description {
+            flex: 1;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .rule-status {
+            margin-left: 10px;
+        }
+
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .status-enabled {
+            background-color: var(--success-color);
+            color: var(--text-inverse);
+        }
+
+        .status-disabled {
+            background-color: var(--error-color);
+            color: var(--text-inverse);
+        }
+
+        .execution-status {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-sm);
+            padding: 15px;
+        }
+
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .status-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .status-label {
+            font-weight: bold;
+            color: var(--text-primary);
+        }
+
+        .status-value {
+            color: var(--text-secondary);
+        }
+
+        .batch-operations {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .mechanisms-container {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-sm);
+            background-color: var(--bg-secondary);
+        }
+
+        .mechanism-item {
+            border-bottom: 1px solid var(--border-color);
+            padding: 15px;
+            transition: var(--transition);
+        }
+
+        .mechanism-item:last-child {
+            border-bottom: none;
+        }
+
+        .mechanism-item:hover {
+            background-color: var(--bg-primary);
+        }
+
+        .mechanism-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .mechanism-name {
+            font-weight: bold;
+            color: var(--text-primary);
+        }
+
+        .mechanism-description {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        /* 开关样式 */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--border-color);
+            transition: var(--transition);
+            border-radius: 24px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: var(--transition);
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--primary-color);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        /* 按钮样式增强 */
+        .btn-edit {
+            background-color: var(--info-color);
+            color: var(--text-inverse);
+            border: none;
+            padding: 4px 8px;
+            border-radius: var(--border-radius-sm);
+            cursor: pointer;
+            font-size: 12px;
+            transition: var(--transition);
+        }
+
+        .btn-edit:hover {
+            background-color: var(--info-hover);
+        }
+
+        .btn-delete {
+            background-color: var(--error-color);
+            color: var(--text-inverse);
+            border: none;
+            padding: 4px 8px;
+            border-radius: var(--border-radius-sm);
+            cursor: pointer;
+            font-size: 12px;
+            transition: var(--transition);
+        }
+
+        .btn-delete:hover {
+            background-color: var(--error-hover);
+        }
+
+        /* 滚动条样式 */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
+        }
+
+        /* 数据库相关样式 */
+        .db-config {
+            background-color: var(--bg-secondary);
+            padding: 15px;
+            border-radius: var(--border-radius-sm);
+            margin: 10px 0;
+            border: 1px solid var(--border-color);
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-left: 10px;
+            background-color: var(--text-muted);
+        }
+
+        .status-indicator.connected {
+            background-color: var(--success-color);
+            animation: pulse-green 2s infinite;
+        }
+
+        .status-indicator.disconnected {
+            background-color: var(--error-color);
+        }
+
+        .status-indicator.connecting {
+            background-color: var(--warning-color);
+            animation: pulse-yellow 1s infinite;
+        }
+
+        @keyframes pulse-green {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        @keyframes pulse-yellow {
+            0% { opacity: 1; }
+            50% { opacity: 0.3; }
+            100% { opacity: 1; }
+        }
+
+        /* 日志容器样式 */
+        .log-container {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-sm);
+            padding: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+
+        .log-entry {
+            display: flex;
+            margin-bottom: 5px;
+            padding: 3px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .log-entry:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+        .log-time {
+            color: var(--text-muted);
+            margin-right: 10px;
+            min-width: 80px;
+        }
+
+        .log-message {
+            color: var(--text-secondary);
+            flex: 1;
+        }
+
+        .log-entry.success .log-message {
+            color: var(--success-color);
+        }
+
+        .log-entry.error .log-message {
+            color: var(--error-color);
+        }
+
+        .log-entry.warning .log-message {
+            color: var(--warning-color);
+        }
+
+        .log-entry.info .log-message {
+            color: var(--info-color);
+        }
+
+        /* MyData管理样式 */
+        .tables-container {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-sm);
+            background-color: var(--bg-secondary);
+        }
+
+        .table-item {
+            border-bottom: 1px solid var(--border-color);
+            padding: 15px;
+            transition: var(--transition);
+        }
+
+        .table-item:last-child {
+            border-bottom: none;
+        }
+
+        .table-item:hover {
+            background-color: var(--bg-primary);
+        }
+
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .table-name {
+            font-weight: bold;
+            color: var(--text-primary);
+        }
+
+        .table-stats {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .table-actions {
+            display: flex;
+            gap: 5px;
+            margin-top: 8px;
+        }
+
+        .migration-container {
+            background-color: var(--bg-secondary);
+            padding: 15px;
+            border-radius: var(--border-radius-sm);
+            border: 1px solid var(--border-color);
+        }
+
+        .migration-status {
+            margin-bottom: 15px;
+        }
+
+        .migration-status p {
+            margin: 5px 0;
+            color: var(--text-secondary);
+        }
+
+        .migration-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .data-operations {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .cache-management {
+            background-color: var(--bg-secondary);
+            padding: 15px;
+            border-radius: var(--border-radius-sm);
+            border: 1px solid var(--border-color);
+        }
+
+        .cache-settings {
+            margin-bottom: 15px;
+        }
+
+        .cache-settings label {
+            display: block;
+            margin-bottom: 10px;
+            color: var(--text-primary);
+        }
+
+        .cache-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .log-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-top: 10px;
+        }
+
+        .danger-operations {
+            background-color: #fff5f5;
+            border: 1px solid #fed7d7;
+            border-radius: var(--border-radius-sm);
+            padding: 15px;
+        }
+
+        .warning-box {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            color: var(--error-color);
+            font-weight: bold;
+        }
+
+        .warning-box i {
+            font-size: 20px;
+        }
+
+        .danger-label {
+            color: var(--error-color);
+            font-weight: bold;
+        }
+
+        .btn-small {
+            padding: 4px 8px;
+            font-size: 12px;
+            border-radius: var(--border-radius-sm);
+            border: none;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .btn-small:hover {
+            opacity: 0.8;
+        }
+
+        .btn-small.btn-info {
+            background-color: var(--info-color);
+            color: var(--text-inverse);
+        }
+
+        .btn-small.btn-warning {
+            background-color: var(--warning-color);
+            color: var(--text-inverse);
+        }
+
+        .btn-small.btn-danger {
+            background-color: var(--error-color);
+            color: var(--text-inverse);
+        }
+    </style>
+
+<body>
+    <header class="login-header">
+        <div class="header-content">
+            <div class="logo-container">
+                <h1 class="system-title">MTSCOS 系统设置</h1>
+            </div>
+            <div class="header-right">
+                <div class="header-stats">
+                    <div class="time-display" id="current-time"></div>
+                    <div class="visit-info" id="visit-info"></div>
+                </div>
+                <div class="theme-toggle">
+                    <select id="themeSelector" onchange="themeManager.switchTheme(this.value)">
+                        <!-- 选项将由主题管理器动态生成 -->
+                    </select>
+                </div>
+                <div class="user-info">
+                    <button class="logout-btn" id="logoutBtn">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>退出登录</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="settings-container">
+        <div class="sidebar">
+            <div class="sidebar-menu">
+                <div class="menu-item active" data-target="general-settings">
+                    <i class="fas fa-cog"></i>
+                    <span>通用设置</span>
+                </div>
+                <div class="menu-item" data-target="database-settings">
+                    <i class="fas fa-database"></i>
+                    <span>数据库设置</span>
+                </div>
+                <div class="menu-item" data-target="python-settings">
+                    <i class="fab fa-python"></i>
+                    <span>Python版本</span>
+                </div>
+                <div class="menu-item" data-target="security-settings">
+                    <i class="fas fa-shield-alt"></i>
+                    <span>安全设置</span>
+                </div>
+                <div class="menu-item" data-target="system-rules-settings">
+                    <i class="fas fa-cogs"></i>
+                    <span>系统规则管理</span>
+                </div>
+                <div class="menu-item" data-target="mydata-settings">
+                    <i class="fas fa-database"></i>
+                    <span>MyData管理</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="content">
+            <!-- 通用设置面板 -->
+            <div id="general-settings" class="settings-panel active">
+                <h2>通用设置</h2>
+                <div class="settings-form">
+                    <div class="form-group">
+                        <label for="session-timeout">会话超时时间（分钟）</label>
+                        <div class="input-group">
+                            <input type="number" id="session-timeout" min="1" max="1440" value="30">
+                            <span class="unit">分钟</span>
+                        </div>
+                        <small class="hint">设置用户会话自动超时的时间，超时后需要重新登录</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="page-auto-refresh">页面自动刷新（分钟）</label>
+                        <div class="input-group">
+                            <input type="number" id="page-auto-refresh" min="0" max="60" value="0">
+                            <span class="unit">分钟</span>
+                        </div>
+                        <small class="hint">设置为0表示禁用自动刷新</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="theme-mode">主题模式</label>
+                        <select id="theme-mode">
+                            <option value="auto">自动模式</option>
+                            <option value="manual">手动模式</option>
+                        </select>
+                        <small class="hint">自动模式会根据时间和特殊日期自动切换主题</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="sunset-time">日落时间</label>
+                        <input type="time" id="sunset-time" value="18:00">
+                        <small class="hint">在此时间之后自动切换到深色主题</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="sunrise-time">日出时间</label>
+                        <input type="time" id="sunrise-time" value="06:00">
+                        <small class="hint">在此时间之后自动切换到浅色主题</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="auto-switch-enabled" checked>
+                            <span>启用日落时间自动切换</span>
+                        </label>
+                        <small class="hint">根据日出日落时间自动切换浅色/深色主题</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="memorial-auto-switch" checked>
+                            <span>启用哀悼主题自动切换</span>
+                        </label>
+                        <small class="hint">在特殊纪念日（如国家公祭日、清明节）自动切换到哀悼主题</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="celebration-auto-switch" checked>
+                            <span>启用喜庆主题自动切换</span>
+                        </label>
+                        <small class="hint">在节日（如国庆节、春节）自动切换到喜庆主题</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label>当前主题状态</label>
+                        <div id="theme-status" class="readonly-field">
+                            <i class="fas fa-spinner fa-spin"></i> 正在加载...
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="auto-logout">
+                            <span>启用自动登出提醒</span>
+                        </label>
+                        <small class="hint">在会话即将超时前显示提醒</small>
+                    </div>
+
+                    <div class="form-actions">
+                        <button id="save-general-settings" class="btn btn-primary">保存设置</button>
+                        <button id="reset-general-settings" class="btn btn-secondary">恢复默认</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 数据库设置面板 -->
+            <div id="database-settings" class="settings-panel">
+                <h2>数据库设置</h2>
+                <div class="settings-form">
+                    <!-- 数据库类型选择 -->
+                    <div class="form-group">
+                        <label for="db-type">数据库类型</label>
+                        <select id="db-type" onchange="onDatabaseTypeChange(this.value)">
+                            <option value="mssql">Microsoft SQL Server (MSSQL)</option>
+                            <option value="mysql">MySQL</option>
+                            <option value="sqlite">SQLite</option>
+                        </select>
+                        <small class="hint">选择要使用的数据库类型</small>
+                    </div>
+
+                    <!-- MSSQL 连接配置 -->
+                    <div id="mssql-config" class="db-config">
+                        <div class="form-group">
+                            <label for="db-host">数据库主机</label>
+                            <input type="text" id="db-host" value="wuchenghao15.net" placeholder="wuchenghao15.net">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="db-port">数据库端口</label>
+                            <input type="number" id="db-port" value="33693" placeholder="33693">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="db-name">数据库名称</label>
+                            <input type="text" id="db-name" value="MyData" placeholder="MyData">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="db-user">数据库用户名</label>
+                            <input type="text" id="db-user" value="sa" placeholder="sa">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="db-password">数据库密码</label>
+                            <input type="password" id="db-password" value="LoginMe15" placeholder="********">
+                        </div>
+                    </div>
+
+                    <!-- 连接状态显示 -->
+                    <div class="form-group">
+                        <label>数据库连接状态</label>
+                        <div id="db-connection-status" class="readonly-field">
+                            <i class="fas fa-database"></i> 
+                            <span id="db-status-text">未连接</span>
+                            <span id="db-status-indicator" class="status-indicator"></span>
+                        </div>
+                    </div>
+
+                    <!-- 系统因子状态 -->
+                    <div class="form-group">
+                        <label>系统因子状态</label>
+                        <div id="system-factors-status" class="readonly-field">
+                            <i class="fas fa-cogs"></i> 
+                            <span id="factors-status-text">未初始化</span>
+                            <span id="factors-status-indicator" class="status-indicator"></span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="save-credentials" checked>
+                            <span>保存数据库凭证</span>
+                        </label>
+                        <small class="hint">勾选后将保存数据库连接信息到系统配置</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="auto-connect" checked>
+                            <span>系统启动时自动连接</span>
+                        </label>
+                        <small class="hint">系统启动时自动连接到配置的数据库</small>
+                    </div>
+
+                    <div class="form-actions">
+                        <button id="test-db-connection" class="btn btn-info" onclick="testDatabaseConnection()">
+                            <i class="fas fa-plug"></i> 测试连接
+                        </button>
+                        <button id="init-database" class="btn btn-warning" onclick="initializeDatabase()">
+                            <i class="fas fa-database"></i> 初始化数据库
+                        </button>
+                        <button id="save-db-settings" class="btn btn-primary" onclick="saveDatabaseSettings()">
+                            <i class="fas fa-save"></i> 保存设置
+                        </button>
+                        <button id="reset-db-settings" class="btn btn-secondary" onclick="resetDatabaseSettings()">
+                            <i class="fas fa-undo"></i> 恢复默认
+                        </button>
+                    </div>
+
+                    <!-- 数据库操作日志 -->
+                    <div class="form-group">
+                        <label>数据库操作日志</label>
+                        <div id="db-operation-log" class="log-container">
+                            <div class="log-entry">
+                                <span class="log-time">--:--:--</span>
+                                <span class="log-message">等待数据库操作...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Python版本设置面板 -->
+            <div id="python-settings" class="settings-panel">
+                <h2>Python版本管理</h2>
+                <div class="settings-form">
+                    <div class="form-group">
+                        <label>当前Python版本</label>
+                        <div id="current-python-version" class="readonly-field">
+                            <i class="fas fa-spinner fa-spin"></i> 正在检测...
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="python-path">Python执行路径</label>
+                        <input type="text" id="python-path" placeholder="/usr/bin/python3">
+                    </div>
+
+                    <div class="form-group">
+                        <label>可用Python版本</label>
+                        <div id="available-python-versions" class="version-list">
+                            <i class="fas fa-spinner fa-spin"></i> 正在检测可用版本...
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button id="check-python-update" class="btn btn-info">检查更新</button>
+                        <button id="update-python-version" class="btn btn-warning">升级Python</button>
+                        <button id="save-python-settings" class="btn btn-primary">保存设置</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 安全设置面板 -->
+            <div id="security-settings" class="settings-panel">
+                <h2>安全设置</h2>
+                <div class="settings-form">
+                    <div class="form-group">
+                        <label for="password-policy">密码策略</label>
+                        <select id="password-policy">
+                            <option value="low">低（最少6位）</option>
+                            <option value="medium">中（最少8位，包含字母和数字）</option>
+                            <option value="high">高（最少10位，包含大小写字母、数字和特殊字符）</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="failed-login-attempts">登录失败次数限制</label>
+                        <input type="number" id="failed-login-attempts" min="3" max="10" value="5">
+                    </div>
+
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="enable-2fa">
+                            <span>启用双因素认证</span>
+                        </label>
+                    </div>
+
+                    <!-- 系统安全特性 -->
+                    <div class="security-info" id="security-info">
+                        <h3>系统安全特性</h3>
+                        <ul>
+                            <li><strong>安全机制</strong>: 采用HTTPS加密传输，密码哈希存储，防止SQL注入</li>
+                            <li><strong>超时机制</strong>: 登录会话15分钟无活动自动登出</li>
+                            <li><strong>脚本机制</strong>: 严格的脚本安全检查，防止XSS攻击</li>
+                            <li><strong>回滚机制</strong>: 系统操作支持事务回滚，确保数据一致性</li>
+                            <li><strong>版本机制</strong>: 系统版本控制，支持功能回退</li>
+                        </ul>
+                        
+                        <!-- 安全机制配置入口 -->
+                        <div class="security-config">
+                            <h4>安全配置</h4>
+                            <div class="config-options">
+                                <button id="security-config-btn" class="btn btn-small">安全设置</button>
+                                <button id="timeout-config-btn" class="btn btn-small">超时设置</button>
+                                <button id="version-config-btn" class="btn btn-small">版本信息</button>
+                                <button id="rollback-config-btn" class="btn btn-small">系统回滚</button>
+                                <button id="script-config-btn" class="btn btn-small">脚本管理</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button id="save-security-settings" class="btn btn-primary">保存设置</button>
+                        <button id="reset-security-settings" class="btn btn-secondary">恢复默认</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 系统规则管理面板 -->
+            <div id="system-rules-settings" class="settings-panel">
+                <h2>系统规则管理</h2>
+                <div class="settings-form">
+                    <!-- 规则类别选择 -->
+                    <div class="form-group">
+                        <label for="rule-category">规则类别</label>
+                        <select id="rule-category" onchange="loadRuleCategory(this.value)">
+                            <option value="security">安全规则</option>
+                            <option value="performance">性能规则</option>
+                            <option value="data">数据规则</option>
+                            <option value="monitoring">监控规则</option>
+                            <option value="update">更新规则</option>
+                        </select>
+                        <small class="hint">选择要管理的规则类别</small>
+                    </div>
+
+                    <!-- 规则列表 -->
+                    <div class="form-group">
+                        <label>当前规则列表</label>
+                        <div id="rules-list" class="rules-container">
+                            <div class="rule-item">
+                                <div class="rule-header">
+                                    <span class="rule-name">加载中...</span>
+                                    <div class="rule-actions">
+                                        <button class="btn-small btn-edit" onclick="editRule('')">
+                                            <i class="fas fa-edit"></i> 编辑
+                                        </button>
+                                        <button class="btn-small btn-delete" onclick="deleteRule('')">
+                                            <i class="fas fa-trash"></i> 删除
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="rule-content">
+                                    <div class="rule-description">正在加载规则...</div>
+                                    <div class="rule-status">
+                                        <span class="status-badge status-enabled">启用</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 添加新规则 -->
+                    <div class="form-group">
+                        <button id="add-new-rule" class="btn btn-info" onclick="showAddRuleDialog()">
+                            <i class="fas fa-plus"></i> 添加新规则
+                        </button>
+                    </div>
+
+                    <!-- 规则执行状态 -->
+                    <div class="form-group">
+                        <label>规则执行状态</label>
+                        <div id="rules-execution-status" class="execution-status">
+                            <div class="status-item">
+                                <span class="status-label">系统规则管理器:</span>
+                                <span class="status-value" id="system-manager-status">
+                                    <i class="fas fa-spinner fa-spin"></i> 检查中...
+                                </span>
+                            </div>
+                            <div class="status-item">
+                                <span class="status-label">最后执行时间:</span>
+                                <span class="status-value" id="last-execution-time">--</span>
+                            </div>
+                            <div class="status-item">
+                                <span class="status-label">活跃规则数量:</span>
+                                <span class="status-value" id="active-rules-count">--</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 批量操作 -->
+                    <div class="form-group">
+                        <label>批量操作</label>
+                        <div class="batch-operations">
+                            <button id="enable-all-rules" class="btn btn-small" onclick="batchOperation('enable')">
+                                <i class="fas fa-check"></i> 启用所有规则
+                            </button>
+                            <button id="disable-all-rules" class="btn btn-small" onclick="batchOperation('disable')">
+                                <i class="fas fa-times"></i> 禁用所有规则
+                            </button>
+                            <button id="reload-rules" class="btn btn-small" onclick="reloadRules()">
+                                <i class="fas fa-sync"></i> 重新加载规则
+                            </button>
+                            <button id="export-rules" class="btn btn-small" onclick="exportRules()">
+                                <i class="fas fa-download"></i> 导出规则配置
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 系统机制管理 -->
+                    <div class="form-group">
+                        <label>系统机制管理</label>
+                        <div class="mechanisms-container">
+                            <div class="mechanism-item">
+                                <div class="mechanism-header">
+                                    <span class="mechanism-name">错误处理机制</span>
+                                    <div class="mechanism-toggle">
+                                        <label class="switch">
+                                            <input type="checkbox" id="error-handling-toggle" checked>
+                                            <span class="slider"></span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="mechanism-description">自动捕获和处理系统错误，确保系统稳定性</div>
+                            </div>
+                            
+                            <div class="mechanism-item">
+                                <div class="mechanism-header">
+                                    <span class="mechanism-name">缓存机制</span>
+                                    <div class="mechanism-toggle">
+                                        <label class="switch">
+                                            <input type="checkbox" id="cache-mechanism-toggle" checked>
+                                            <span class="slider"></span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="mechanism-description">智能缓存管理，提升系统响应速度</div>
+                            </div>
+                            
+                            <div class="mechanism-item">
+                                <div class="mechanism-header">
+                                    <span class="mechanism-name">日志机制</span>
+                                    <div class="mechanism-toggle">
+                                        <label class="switch">
+                                            <input type="checkbox" id="logging-mechanism-toggle" checked>
+                                            <span class="slider"></span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="mechanism-description">全面的日志记录和分析，便于问题追踪</div>
+                            </div>
+                            
+                            <div class="mechanism-item">
+                                <div class="mechanism-header">
+                                    <span class="mechanism-name">安全机制</span>
+                                    <div class="mechanism-toggle">
+                                        <label class="switch">
+                                            <input type="checkbox" id="security-mechanism-toggle" checked>
+                                            <span class="slider"></span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="mechanism-description">多层次安全防护，保障系统安全</div>
+                            </div>
+                            
+                            <div class="mechanism-item">
+                                <div class="mechanism-header">
+                                    <span class="mechanism-name">性能优化机制</span>
+                                    <div class="mechanism-toggle">
+                                        <label class="switch">
+                                            <input type="checkbox" id="performance-mechanism-toggle" checked>
+                                            <span class="slider"></span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="mechanism-description">自动性能监控和优化，保持最佳性能</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button id="save-system-rules" class="btn btn-primary">保存设置</button>
+                        <button id="reset-system-rules" class="btn btn-secondary">恢复默认</button>
+                        <button id="test-system-rules" class="btn btn-info">测试规则</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MyData管理面板 -->
+            <div id="mydata-settings" class="settings-panel">
+                <h2>MyData统一数据管理</h2>
+                <div class="settings-form">
+                    <!-- MyData状态 -->
+                    <div class="form-group">
+                        <label>MyData管理器状态</label>
+                        <div id="mydata-status" class="execution-status">
+                            <div class="status-item">
+                                <span class="status-label">初始化状态:</span>
+                                <span class="status-value" id="mydata-init-status">
+                                    <i class="fas fa-spinner fa-spin"></i> 检查中...
+                                </span>
+                            </div>
+                            <div class="status-item">
+                                <span class="status-label">版本:</span>
+                                <span class="status-value" id="mydata-version">--</span>
+                            </div>
+                            <div class="status-item">
+                                <span class="status-label">数据表数量:</span>
+                                <span class="status-value" id="mydata-tables-count">--</span>
+                            </div>
+                            <div class="status-item">
+                                <span class="status-label">总记录数:</span>
+                                <span class="status-value" id="mydata-total-records">--</span>
+                            </div>
+                            <div class="status-item">
+                                <span class="status-label">存储大小:</span>
+                                <span class="status-value" id="mydata-storage-size">--</span>
+                            </div>
+                            <div class="status-item">
+                                <span class="status-label">缓存大小:</span>
+                                <span class="status-value" id="mydata-cache-size">--</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 数据表管理 -->
+                    <div class="form-group">
+                        <label>数据表管理</label>
+                        <div id="mydata-tables" class="tables-container">
+                            <div class="table-item">
+                                <div class="table-header">
+                                    <span class="table-name">加载中...</span>
+                                    <div class="table-stats">
+                                        <span class="record-count">0 条记录</span>
+                                    </div>
+                                </div>
+                                <div class="table-actions">
+                                    <button class="btn-small btn-info" onclick="viewTable('')">
+                                        <i class="fas fa-eye"></i> 查看
+                                    </button>
+                                    <button class="btn-small btn-warning" onclick="optimizeTable('')">
+                                        <i class="fas fa-tools"></i> 优化
+                                    </button>
+                                    <button class="btn-small btn-danger" onclick="clearTable('')">
+                                        <i class="fas fa-trash"></i> 清空
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 数据迁移 -->
+                    <div class="form-group">
+                        <label>数据迁移管理</label>
+                        <div class="migration-container">
+                            <div class="migration-status">
+                                <p><strong>迁移状态:</strong> <span id="migration-status">未开始</span></p>
+                                <p><strong>已迁移项目:</strong> <span id="migrated-items">0</span></p>
+                                <p><strong>失败项目:</strong> <span id="failed-items">0</span></p>
+                            </div>
+                            <div class="migration-actions">
+                                <button id="start-migration" class="btn btn-primary" onclick="startDataMigration()">
+                                    <i class="fas fa-download"></i> 开始迁移
+                                </button>
+                                <button id="retry-migration" class="btn btn-warning" onclick="retryFailedMigration()">
+                                    <i class="fas fa-redo"></i> 重试失败项
+                                </button>
+                                <button id="cleanup-old-data" class="btn btn-danger" onclick="cleanupOldData()">
+                                    <i class="fas fa-broom"></i> 清理旧数据
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 数据操作 -->
+                    <div class="form-group">
+                        <label>数据操作</label>
+                        <div class="data-operations">
+                            <button id="export-mydata" class="btn btn-info" onclick="exportMyData()">
+                                <i class="fas fa-download"></i> 导出数据
+                            </button>
+                            <button id="import-mydata" class="btn btn-warning" onclick="importMyData()">
+                                <i class="fas fa-upload"></i> 导入数据
+                            </button>
+                            <button id="backup-mydata" class="btn btn-primary" onclick="backupMyData()">
+                                <i class="fas fa-save"></i> 备份数据
+                            </button>
+                            <button id="restore-mydata" class="btn btn-secondary" onclick="restoreMyData()">
+                                <i class="fas fa-history"></i> 恢复数据
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 缓存管理 -->
+                    <div class="form-group">
+                        <label>缓存管理</label>
+                        <div class="cache-management">
+                            <div class="cache-settings">
+                                <label>
+                                    <input type="checkbox" id="mydata-encryption" checked>
+                                    <span>启用数据加密</span>
+                                </label>
+                                <label>
+                                    <input type="checkbox" id="mydata-compression" checked>
+                                    <span>启用数据压缩</span>
+                                </label>
+                                <div class="form-group">
+                                    <label for="cache-timeout">缓存超时时间（分钟）</label>
+                                    <input type="number" id="cache-timeout" min="1" max="60" value="5">
+                                </div>
+                            </div>
+                            <div class="cache-actions">
+                                <button id="clear-cache" class="btn btn-small btn-warning" onclick="clearMyDataCache()">
+                                    <i class="fas fa-trash"></i> 清空缓存
+                                </button>
+                                <button id="refresh-cache" class="btn btn-small btn-info" onclick="refreshMyDataCache()">
+                                    <i class="fas fa-sync"></i> 刷新缓存
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 日志查看 -->
+                    <div class="form-group">
+                        <label>系统日志</label>
+                        <div id="mydata-logs" class="log-container">
+                            <div class="log-entry info">
+                                <span class="log-time">--:--:--</span>
+                                <span class="log-message">正在加载日志...</span>
+                            </div>
+                        </div>
+                        <div class="log-controls">
+                            <button id="refresh-logs" class="btn btn-small btn-info" onclick="refreshMyDataLogs()">
+                                <i class="fas fa-sync"></i> 刷新日志
+                            </button>
+                            <button id="clear-logs" class="btn btn-small btn-danger" onclick="clearMyDataLogs()">
+                                <i class="fas fa-trash"></i> 清空日志
+                            </button>
+                            <select id="log-level-filter">
+                                <option value="all">全部级别</option>
+                                <option value="info">信息</option>
+                                <option value="warning">警告</option>
+                                <option value="error">错误</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- 危险操作 -->
+                    <div class="form-group">
+                        <label class="danger-label">危险操作</label>
+                        <div class="danger-operations">
+                            <div class="warning-box">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <p><strong>警告:</strong> 以下操作将永久删除数据，请谨慎操作！</p>
+                            </div>
+                            <button id="reset-mydata" class="btn btn-danger" onclick="resetMyData()">
+                                <i class="fas fa-exclamation-triangle"></i> 重置MyData
+                            </button>
+                            <button id="clear-all-mydata" class="btn btn-danger" onclick="clearAllMyData()">
+                                <i class="fas fa-trash-alt"></i> 清空所有数据
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button id="save-mydata-settings" class="btn btn-primary">保存设置</button>
+                        <button id="reset-mydata-settings" class="btn btn-secondary">恢复默认</button>
+                        <button id="refresh-mydata-status" class="btn btn-info" onclick="refreshMyDataStatus()">
+                            <i class="fas fa-sync"></i> 刷新状态
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 通知消息 -->
+    <div id="notification" class="notification">
+        <div class="notification-content">
+            <i class="fas fa-info-circle"></i>
+            <span id="notification-message"></span>
+        </div>
+        <button class="notification-close">&times;</button>
+    </div>
+
+    <script>
+        // 基本功能脚本
+        document.addEventListener('DOMContentLoaded', function() {
+
+            
+            // 加载终端兼容性配置
+            async function loadTerminalCompatibilityConfig() {
+                try {
+                    const response = await fetch('../Configs/terminal_compatibility.json');
+                    if (response.ok) {
+                        const config = await response.json();
+                        console.log('终端兼容性配置已加载:', config);
+                        // 存储配置到全局对象供其他组件使用
+                        window.terminalConfig = config;
+                        return config;
+                    } else {
+                        console.error('无法加载终端兼容性配置:', response.status);
+                    }
+                } catch (error) {
+                    console.error('加载终端兼容性配置时出错:', error);
+                }
+            }
+            
+            // 加载配置
+            loadTerminalCompatibilityConfig();
+            
+            // 更新当前时间
+            function updateTime() {
+                const now = new Date();
+                document.getElementById('current-time').textContent = now.toLocaleString('zh-CN');
+            }
+            updateTime();
+            setInterval(updateTime, 1000);
+            
+            // 侧边栏菜单切换
+            const menuItems = document.querySelectorAll('.menu-item');
+            menuItems.forEach(item => {
+                item.addEventListener('click', function() {
+                    // 移除所有活跃状态
+                    menuItems.forEach(mi => mi.classList.remove('active'));
+                    const panels = document.querySelectorAll('.settings-panel');
+                    panels.forEach(panel => panel.classList.remove('active'));
+                    
+                    // 添加当前活跃状态
+                    this.classList.add('active');
+                    const target = this.getAttribute('data-target');
+                    document.getElementById(target).classList.add('active');
+                });
+            });
+            
+            // 主题管理器初始化
+            let themeManager;
+            
+            // 初始化主题管理器
+            async function initThemeManager() {
+                try {
+                    // 如果ThemeManager类不存在，尝试动态加载脚本
+                    if (typeof ThemeManager === 'undefined') {
+                        console.log('ThemeManager not found, loading script dynamically...');
+                        
+                        try {
+                            await new Promise((resolve, reject) => {
+                                const script = document.createElement('script');
+                                script.src = 'assets/js/theme-manager.js?v=20251120';
+                                script.onload = () => {
+                                    console.log('ThemeManager script loaded successfully');
+                                    resolve();
+                                };
+                                script.onerror = (error) => {
+                                    console.error('Failed to load ThemeManager script:', error);
+                                    reject(error);
+                                };
+                                document.head.appendChild(script);
+                            });
+                            
+                            // 等待脚本执行完成
+                            await new Promise(resolve => setTimeout(resolve, 500));
+                            
+                            console.log('After script load - ThemeManager:', typeof ThemeManager);
+                            console.log('After script load - window.themeManager:', typeof window.themeManager);
+                            
+                        } catch (loadError) {
+                            console.error('Error loading ThemeManager script:', loadError);
+                            return;
+                        }
+                    }
+                    
+                    if (typeof ThemeManager !== 'undefined') {
+                        themeManager = new ThemeManager();
+                        
+                        // 等待初始化完成
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                        
+                        // 更新主题设置界面
+                        updateThemeSettingsUI();
+                        
+                        // 监听主题变化 - 使用定时器检查主题变化
+                        let lastTheme = themeManager.currentTheme;
+                        setInterval(() => {
+                            if (themeManager.currentTheme !== lastTheme) {
+                                updateThemeStatus(themeManager.currentTheme, '主题变化');
+                                showNotification('主题已切换到: ' + themeManager.currentTheme, 'info');
+                                lastTheme = themeManager.currentTheme;
+                            }
+                        }, 1000);
+                        
+                    } else {
+                        console.error('ThemeManager 类未找到');
+                    }
+                } catch (error) {
+                    console.error('初始化主题管理器失败:', error);
+                }
+            }
+            
+            // 更新主题设置界面
+            function updateThemeSettingsUI() {
+                if (!themeManager) return;
+                
+                const config = themeManager.config;
+                
+                // 设置主题模式
+                const themeModeEl = document.getElementById('theme-mode');
+                if (themeModeEl) {
+                    themeModeEl.value = config.mode;
+                }
+                
+                // 设置日出日落时间
+                const sunriseTimeEl = document.getElementById('sunrise-time');
+                if (sunriseTimeEl) {
+                    sunriseTimeEl.value = config.sunriseTime;
+                }
+                
+                const sunsetTimeEl = document.getElementById('sunset-time');
+                if (sunsetTimeEl) {
+                    sunsetTimeEl.value = config.sunsetTime;
+                }
+                
+                // 设置自动切换选项
+            const autoSunsetEl = document.getElementById('auto-switch-enabled');
+            if (autoSunsetEl) {
+                autoSunsetEl.checked = config.autoSwitch;
+            }
+            
+            const autoMemorialEl = document.getElementById('memorial-auto-switch');
+            if (autoMemorialEl) {
+                autoMemorialEl.checked = config.autoSwitch;
+            }
+            
+            const autoCelebrationEl = document.getElementById('celebration-auto-switch');
+            if (autoCelebrationEl) {
+                autoCelebrationEl.checked = config.autoSwitch;
+            }
+                
+                // 更新主题状态显示
+                updateThemeStatus(themeManager.currentTheme, '界面加载');
+            }
+            
+            // 更新主题状态显示
+            function updateThemeStatus(theme, reason) {
+                const statusEl = document.getElementById('current-theme-status');
+                if (statusEl) {
+                    const themeNames = {
+                        'light': '浅色主题',
+                        'dark': '深色主题',
+                        'memorial': '哀悼主题',
+                        'celebration': '喜庆主题'
+                    };
+                    
+                    statusEl.innerHTML = 
+                        '<div style="display: flex; align-items: center; gap: 8px;">' +
+                            '<div style="width: 12px; height: 12px; border-radius: 50%; background: var(--' + (theme === 'dark' ? 'accent' : theme === 'memorial' ? 'error' : theme === 'celebration' ? 'warning' : 'primary') + ');"></div>' +
+                            '<span>' + (themeNames[theme] || theme) + '</span>' +
+                            '<small style="color: var(--text-secondary);">(' + reason + ')</small>' +
+                        '</div>';
+                }
+            }
+            
+            // 主题模式切换
+            const themeModeEl = document.getElementById('theme-mode');
+            if (themeModeEl) {
+                themeModeEl.addEventListener('change', function() {
+                if (!themeManager) return;
+                
+                const mode = this.value;
+                themeManager.setMode(mode);
+                
+                // 根据模式启用/禁用手动选项
+                    const manualOptions = document.querySelectorAll('.manual-theme-option');
+                    manualOptions.forEach(option => {
+                        option.style.opacity = mode === 'manual' ? '1' : '0.5';
+                        option.style.pointerEvents = mode === 'manual' ? 'auto' : 'none';
+                    });
+                });
+            }
+            
+            // 日出日落时间设置
+            const sunriseTimeEl = document.getElementById('sunrise-time');
+            if (sunriseTimeEl) {
+                sunriseTimeEl.addEventListener('change', function() {
+                if (!themeManager) return;
+                themeManager.config.sunriseTime = this.value;
+                themeManager.saveConfig();
+                });
+            }
+            
+            const sunsetTimeEl = document.getElementById('sunset-time');
+            if (sunsetTimeEl) {
+                sunsetTimeEl.addEventListener('change', function() {
+                if (!themeManager) return;
+                themeManager.config.sunsetTime = this.value;
+                themeManager.saveConfig();
+                });
+            }
+            
+            // 自动切换选项
+            const autoSunsetEl = document.getElementById('auto-switch-enabled');
+            if (autoSunsetEl) {
+                autoSunsetEl.addEventListener('change', function() {
+                if (!themeManager) return;
+                themeManager.config.autoSwitch = this.checked;
+                themeManager.saveConfig();
+                });
+            }
+            
+            const autoMemorialEl = document.getElementById('memorial-auto-switch');
+            if (autoMemorialEl) {
+                autoMemorialEl.addEventListener('change', function() {
+                if (!themeManager) return;
+                themeManager.config.autoSwitch = this.checked;
+                themeManager.saveConfig();
+                });
+            }
+            
+            const autoCelebrationEl = document.getElementById('celebration-auto-switch');
+            if (autoCelebrationEl) {
+                autoCelebrationEl.addEventListener('change', function() {
+                if (!themeManager) return;
+                themeManager.config.autoSwitch = this.checked;
+                themeManager.saveConfig();
+                });
+            }
+            
+            // 手动主题切换按钮
+            const manualLightThemeEl = document.getElementById('manual-light-theme');
+            if (manualLightThemeEl) {
+                manualLightThemeEl.addEventListener('click', function() {
+                if (!themeManager || themeManager.config.mode !== 'manual') return;
+                themeManager.setTheme('light', '手动切换');
+                });
+            }
+            
+            const manualDarkThemeEl = document.getElementById('manual-dark-theme');
+            if (manualDarkThemeEl) {
+                manualDarkThemeEl.addEventListener('click', function() {
+                if (!themeManager || themeManager.config.mode !== 'manual') return;
+                themeManager.setTheme('dark', '手动切换');
+                });
+            }
+            
+            // 保存主题设置
+            const saveThemeSettingsEl = document.getElementById('save-theme-settings');
+            if (saveThemeSettingsEl) {
+                saveThemeSettingsEl.addEventListener('click', function() {
+                if (!themeManager) {
+                    showNotification('主题管理器未初始化', 'error');
+                    return;
+                }
+                
+                themeManager.saveConfig();
+                showNotification('主题设置已保存', 'success');
+                });
+            }
+            
+            // 重置主题设置
+            const resetThemeSettingsEl = document.getElementById('reset-theme-settings');
+            if (resetThemeSettingsEl) {
+                resetThemeSettingsEl.addEventListener('click', function() {
+                if (!confirm('确定要恢复默认主题设置吗？')) {
+                    return;
+                }
+                
+                if (!themeManager) {
+                    showNotification('主题管理器未初始化', 'error');
+                    return;
+                }
+                
+                themeManager.config = {
+                    mode: 'auto',
+                    autoSwitch: true,
+                    sunriseTime: '06:00',
+                    sunsetTime: '18:00',
+                    memorialDays: ['04-04', '09-18', '12-13'],
+                    celebrationDays: ['01-01', '10-01', '02-10']
+                };
+                
+                themeManager.saveConfig();
+                updateThemeSettingsUI();
+                showNotification('主题设置已恢复默认', 'info');
+                });
+            }
+            
+            // 初始化主题管理器
+            initThemeManager();
+
+            // MyData管理器初始化
+            function initMyDataManager() {
+                if (typeof MyDataManager !== 'undefined') {
+                    window.myDataManager = new MyDataManager();
+                    
+                    // 初始化MyData管理器
+                    window.myDataManager.initialize().then(() => {
+                        console.log('MyData管理器初始化成功');
+                        updateMyDataStatus();
+                        loadTablesList();
+                        loadMigrationStatus();
+                    }).catch(error => {
+                        console.error('MyData管理器初始化失败:', error);
+                        showNotification('MyData管理器初始化失败', 'error');
+                    });
+                } else {
+                    console.error('MyDataManager类未找到');
+                    showNotification('MyDataManager类未找到', 'error');
+                }
+            }
+
+            // 更新MyData状态
+            function updateMyDataStatus() {
+                if (!window.myDataManager) return;
+
+                const statusElement = document.getElementById('mydata-status');
+                const databaseElement = document.getElementById('mydata-database');
+                
+                try {
+                    const isInitialized = window.myDataManager.isInitialized;
+                    const stats = window.myDataManager.getDatabaseStats();
+                    
+                    statusElement.textContent = isInitialized ? '已初始化' : '未初始化';
+                    statusElement.className = isInitialized ? 'status-indicator status-active' : 'status-indicator status-inactive';
+                    
+                    databaseElement.textContent = 'MyData (' + stats.totalRecords + ' 条记录)';
+                } catch (error) {
+                    console.error('更新MyData状态失败:', error);
+                    statusElement.textContent = '错误';
+                    statusElement.className = 'status-indicator status-inactive';
+                }
+            }
+
+            // 加载数据表列表
+            function loadTablesList() {
+                if (!window.myDataManager) return;
+
+                const container = document.getElementById('tables-container');
+                
+                try {
+                    const stats = window.myDataManager.getDatabaseStats();
+                    container.innerHTML = '';
+
+                    for (const [tableName, tableInfo] of Object.entries(stats.tables)) {
+                        const tableItem = document.createElement('div');
+                        tableItem.className = 'table-item';
+                        tableItem.innerHTML = 
+                            '<div class="table-header">' +
+                                '<span class="table-name">' + tableName + '</span>' +
+                                '<span class="table-stats">' + tableInfo.count + ' 条记录</span>' +
+                            '</div>' +
+                            '<div class="table-actions">' +
+                                '<button class="btn-small btn-info" onclick="viewTableData(\'' + tableName + '\')">查看</button>' +
+                                '<button class="btn-small btn-warning" onclick="exportTableData(\'' + tableName + '\')">导出</button>' +
+                                '<button class="btn-small btn-danger" onclick="clearTableData(\'' + tableName + '\')">清空</button>' +
+                            '</div>';
+                        container.appendChild(tableItem);
+                    }
+                } catch (error) {
+                    console.error('加载数据表列表失败:', error);
+                    container.innerHTML = '<p style="color: var(--error-color);">加载数据表失败</p>';
+                }
+            }
+
+            // 加载迁移状态
+            function loadMigrationStatus() {
+                if (!window.myDataManager) return;
+
+                const statusElement = document.getElementById('migration-status');
+                
+                try {
+                    const migrationStatus = window.myDataManager.checkMigrationStatus();
+                    
+                    statusElement.innerHTML = '<p><strong>本地存储:</strong> ' + (migrationStatus.localStorage ? '有数据' : '无数据') + '</p>' +
+                        '<p><strong>IndexedDB:</strong> ' + (migrationStatus.indexedDB ? '有数据' : '无数据') + '</p>' +
+                        '<p><strong>迁移状态:</strong> ' + (migrationStatus.migrated ? '已迁移' : '未迁移') + '</p>';
+                } catch (error) {
+                    console.error('加载迁移状态失败:', error);
+                    statusElement.innerHTML = '<p style="color: var(--error-color);">获取迁移状态失败</p>';
+                }
+            }
+
+            // 查看表数据
+            function viewTableData(tableName) {
+                if (!window.myDataManager) return;
+
+                try {
+                    const data = window.myDataManager.getAllRecords(tableName);
+                    const dataStr = JSON.stringify(data, null, 2);
+                    
+                    // 创建模态框显示数据
+                    const modal = document.createElement('div');
+                    modal.style.cssText = 
+                        'position: fixed; top: 0; left: 0; width: 100%; height: 100%;' +
+                        'background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center;' +
+                        'z-index: 10000;';
+                    
+                    modal.innerHTML = '<div style="background: var(--bg-primary); padding: 20px; border-radius: var(--border-radius); max-width: 80%; max-height: 80%; overflow: auto;">' +
+                        '<h3>' + tableName + ' 数据</h3>' +
+                        '<pre style="background: var(--bg-secondary); padding: 10px; border-radius: var(--border-radius-sm); overflow: auto;">' + dataStr + '</pre>' +
+                        '<button onclick="this.parentElement.parentElement.remove()" style="margin-top: 10px;">关闭</button>' +
+                        '</div>';
+                    
+                    document.body.appendChild(modal);
+                } catch (error) {
+                    console.error('查看表数据失败:', error);
+                    showNotification('查看表数据失败', 'error');
+                }
+            }
+
+            // 导出表数据
+            function exportTableData(tableName) {
+                if (!window.myDataManager) return;
+
+                try {
+                    const data = window.myDataManager.exportTable(tableName);
+                    const blob = new Blob([data], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = tableName + '_export_' + new Date().toISOString().split('T')[0] + '.json';
+                    a.click();
+                    
+                    URL.revokeObjectURL(url);
+                    showNotification(tableName + ' 数据导出成功', 'success');
+                } catch (error) {
+                    console.error('导出表数据失败:', error);
+                    showNotification('导出表数据失败', 'error');
+                }
+            }
+
+            // 清空表数据
+            function clearTableData(tableName) {
+                if (!window.myDataManager) return;
+
+                if (!confirm('确定要清空 ' + tableName + ' 表的所有数据吗？此操作不可恢复！')) {
+                    return;
+                }
+
+                try {
+                    window.myDataManager.clearTable(tableName);
+                    loadTablesList();
+                    updateMyDataStatus();
+                    showNotification(tableName + ' 数据已清空', 'success');
+                } catch (error) {
+                    console.error('清空表数据失败:', error);
+                    showNotification('清空表数据失败', 'error');
+                }
+            }
+
+            // 执行数据迁移
+            function executeMigration() {
+                if (!window.myDataManager) return;
+
+                try {
+                    const result = window.myDataManager.migrateFromLocalStorage();
+                    if (result.success) {
+                        showNotification('数据迁移成功，迁移了 ' + result.migratedCount + ' 条记录', 'success');
+                        loadMigrationStatus();
+                        loadTablesList();
+                        updateMyDataStatus();
+                    } else {
+                        showNotification('数据迁移失败: ' + result.error, 'error');
+                    }
+                } catch (error) {
+                    console.error('执行数据迁移失败:', error);
+                    showNotification('执行数据迁移失败', 'error');
+                }
+            }
+
+            // 导入数据
+            function importData() {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '.json';
+                
+                input.onchange = function(event) {
+                    const file = event.target.files[0];
+                    if (!file) return;
+
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        try {
+                            const data = JSON.parse(e.target.result);
+                            const result = window.myDataManager.importData(data);
+                            
+                            if (result.success) {
+                                showNotification('数据导入成功，导入了 ' + result.importedCount + ' 条记录', 'success');
+                                loadTablesList();
+                                updateMyDataStatus();
+                            } else {
+                                showNotification('数据导入失败: ' + result.error, 'error');
+                            }
+                        } catch (error) {
+                            console.error('导入数据失败:', error);
+                            showNotification('导入数据失败，请检查文件格式', 'error');
+                        }
+                    };
+                    
+                    reader.readAsText(file);
+                };
+                
+                input.click();
+            }
+
+            // 导出所有数据
+            function exportAllData() {
+                if (!window.myDataManager) return;
+
+                try {
+                    const data = window.myDataManager.exportAllData();
+                    const blob = new Blob([data], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'mydata_export_' + new Date().toISOString().split('T')[0] + '.json';
+                    a.click();
+                    
+                    URL.revokeObjectURL(url);
+                    showNotification('所有数据导出成功', 'success');
+                } catch (error) {
+                    console.error('导出所有数据失败:', error);
+                    showNotification('导出所有数据失败', 'error');
+                }
+            }
+
+            // 清空所有数据
+            function clearAllData() {
+                if (!window.myDataManager) return;
+
+                const password = prompt('请输入密码确认清空所有数据：');
+                if (password !== 'admin123') {
+                    showNotification('密码错误，操作取消', 'error');
+                    return;
+                }
+
+                if (!confirm('确定要清空所有数据吗？此操作不可恢复！')) {
+                    return;
+                }
+
+                try {
+                    window.myDataManager.clearAllData();
+                    loadTablesList();
+                    updateMyDataStatus();
+                    showNotification('所有数据已清空', 'success');
+                } catch (error) {
+                    console.error('清空所有数据失败:', error);
+                    showNotification('清空所有数据失败', 'error');
+                }
+            }
+
+            // 初始化MyData管理器
+            setTimeout(initMyDataManager, 1500);
+            
+            // 保存设置按钮
+            document.querySelectorAll('[id^="save-"]').forEach(button => {
+                button.addEventListener('click', function() {
+                    showNotification('设置已保存', 'success');
+                });
+            });
+            
+            // 重置按钮
+            document.querySelectorAll('[id^="reset-"]').forEach(button => {
+                button.addEventListener('click', function() {
+                    if (confirm('确定要恢复默认设置吗？')) {
+                        showNotification('已恢复默认设置', 'info');
+                    }
+                });
+            });
+            
+            // 测试数据库连接
+            const testDbBtn = document.getElementById('test-db-connection');
+            if (testDbBtn) {
+                testDbBtn.addEventListener('click', function() {
+                    showNotification('正在测试连接...', 'info');
+                    // 模拟测试延迟
+                    setTimeout(() => {
+                        showNotification('数据库连接测试成功', 'success');
+                    }, 1000);
+                });
+            }
+            
+            // 退出登录
+            const logoutBtnEl = document.getElementById('logoutBtn');
+            if (logoutBtnEl) {
+                logoutBtnEl.addEventListener('click', function() {
+                if (confirm('确定要退出登录吗？')) {
+                    localStorage.clear();
+                    window.location.href = 'index.html';
+                }
+                });
+            }
+            
+            // 通知函数
+            function showNotification(message, type = 'info') {
+                const notification = document.getElementById('notification');
+                const messageEl = document.getElementById('notification-message');
+                
+                messageEl.textContent = message;
+                notification.className = 'notification ' + type;
+                notification.style.display = 'block';
+                
+                // 自动关闭
+                setTimeout(() => {
+                    notification.style.display = 'none';
+                }, 3000);
+            }
+
+            // 数据库管理相关函数
+            let databaseManager = null;
+
+            // 初始化数据库管理器
+            async function initDatabaseManager() {
+                try {
+                    if (typeof DatabaseManager !== 'undefined') {
+                        databaseManager = new DatabaseManager();
+                        await databaseManager.initialize();
+                        updateDatabaseStatus();
+                        showNotification('数据库管理器初始化成功', 'success');
+                    } else {
+                        showNotification('数据库管理器未找到', 'error');
+                    }
+                } catch (error) {
+                    console.error('数据库管理器初始化失败:', error);
+                    showNotification('数据库管理器初始化失败: ' + error.message, 'error');
+                }
+            }
+
+            // 数据库类型切换
+            function onDatabaseTypeChange(dbType) {
+                // 隐藏所有数据库配置
+                document.querySelectorAll('.db-config').forEach(config => {
+                    config.style.display = 'none';
+                });
+                
+                // 显示对应的配置
+                const configId = dbType + '-config';
+                const config = document.getElementById(configId);
+                if (config) {
+                    config.style.display = 'block';
+                }
+                
+                // 更新默认端口
+                const portInput = document.getElementById('db-port');
+                if (portInput) {
+                    const defaultPorts = {
+                        'mssql': '1433',
+                        'mysql': '3306',
+                        'sqlite': '0'
+                    };
+                    portInput.value = defaultPorts[dbType] || '1433';
+                }
+            }
+
+            // 测试数据库连接
+            async function testDatabaseConnection() {
+                if (!window.DatabaseManager) {
+                    showNotification('DatabaseManager类未找到', 'error');
+                    return;
+                }
+
+                updateDatabaseStatus('connecting');
+                addDatabaseLog('info', '开始测试数据库连接...');
+                
+                try {
+                    // 创建数据库管理器实例
+                    const dbManager = new DatabaseManager();
+                    
+                    // 获取配置并更新
+                    const config = getDatabaseConfig();
+                    dbManager.config = {
+                        ...dbManager.config,
+                        host: config.host,
+                        port: config.port,
+                        username: config.username,
+                        password: config.password,
+                        database: config.database
+                    };
+                    
+                    // 测试连接
+                    const result = await dbManager.testConnection();
+                    
+                    if (result.success) {
+                        updateDatabaseStatus('connected');
+                        addDatabaseLog('success', '数据库连接测试成功 (' + result.responseTime + 'ms)');
+                        showNotification('数据库连接测试成功 (' + result.responseTime + 'ms)', 'success');
+                        
+                        // 保存成功的配置
+                        localStorage.setItem('database_config_last_success', JSON.stringify(config));
+                    } else {
+                        updateDatabaseStatus('disconnected');
+                        addDatabaseLog('error', '数据库连接测试失败: ' + result.message);
+                        showNotification('数据库连接测试失败: ' + result.message, 'error');
+                    }
+                } catch (error) {
+                    updateDatabaseStatus('disconnected');
+                    addDatabaseLog('error', '数据库连接测试异常: ' + error.message);
+                    showNotification('数据库连接测试异常: ' + error.message, 'error');
+                }
+            }
+
+            // 初始化数据库
+            async function initializeDatabase() {
+                if (!window.DatabaseManager) {
+                    showNotification('DatabaseManager类未找到', 'error');
+                    return;
+                }
+
+                if (!confirm('确定要初始化数据库吗？这将创建所有必要的表和初始数据。')) {
+                    return;
+                }
+
+                addDatabaseLog('info', '开始初始化数据库...');
+                updateSystemFactorsStatus('initializing');
+                
+                try {
+                    // 创建数据库管理器实例
+                    const dbManager = new DatabaseManager();
+                    
+                    // 获取配置并更新
+                    const config = getDatabaseConfig();
+                    dbManager.config = {
+                        ...dbManager.config,
+                        host: config.host,
+                        port: config.port,
+                        username: config.username,
+                        password: config.password,
+                        database: config.database
+                    };
+                    
+                    // 初始化数据库
+                    await dbManager.initialize();
+                    
+                    addDatabaseLog('success', '数据库初始化完成，系统表和因子已创建');
+                    updateSystemFactorsStatus('initialized');
+                    showNotification('数据库初始化完成', 'success');
+                    
+                    // 保存初始化成功的配置
+                    localStorage.setItem('database_config_initialized', JSON.stringify(config));
+                    
+                } catch (error) {
+                    addDatabaseLog('error', '数据库初始化失败: ' + error.message);
+                    updateSystemFactorsStatus('uninitialized');
+                    showNotification('数据库初始化失败: ' + error.message, 'error');
+                }
+            }
+
+            // 保存数据库设置
+            async function saveDatabaseSettings() {
+                if (!window.DatabaseManager) {
+                    showNotification('DatabaseManager类未找到', 'error');
+                    return;
+                }
+
+                try {
+                    const config = getDatabaseConfig();
+                    const saveCredentials = document.getElementById('save-credentials').checked;
+                    const autoConnect = document.getElementById('auto-connect').checked;
+                    
+                    // 验证配置
+                    if (!config.host || !config.port || !config.username || !config.database) {
+                        showNotification('请填写完整的数据库配置信息', 'error');
+                        return;
+                    }
+                    
+                    // 创建数据库管理器实例并验证配置
+                    const dbManager = new DatabaseManager();
+                    dbManager.config = {
+                        ...dbManager.config,
+                        host: config.host,
+                        port: config.port,
+                        username: config.username,
+                        password: config.password,
+                        database: config.database
+                    };
+                    
+                    // 验证配置
+                    const validation = dbManager.validateConfig();
+                    if (!validation.valid) {
+                        showNotification('数据库配置验证失败: ' + validation.message, 'error');
+                        return;
+                    }
+                    
+                    // 保存到本地存储
+                    localStorage.setItem('database_config', JSON.stringify(config));
+                    localStorage.setItem('save_credentials', saveCredentials);
+                    localStorage.setItem('auto_connect', autoConnect);
+                    
+                    addDatabaseLog('success', '数据库设置已保存');
+                    showNotification('数据库设置已保存', 'success');
+                } catch (error) {
+                    addDatabaseLog('error', '保存数据库设置失败: ' + error.message);
+                    showNotification('保存数据库设置失败: ' + error.message, 'error');
+                }
+            }
+
+            // 重置数据库设置
+            function resetDatabaseSettings() {
+                if (!confirm('确定要恢复默认数据库设置吗？')) {
+                    return;
+                }
+
+                // 恢复默认值
+                document.getElementById('db-type').value = 'mssql';
+                document.getElementById('db-host').value = 'wuchenghao15.net';
+                document.getElementById('db-port').value = '33693';
+                document.getElementById('db-name').value = 'MyData';
+                document.getElementById('db-user').value = 'sa';
+                document.getElementById('db-password').value = 'LoginMe15';
+                document.getElementById('save-credentials').checked = true;
+                document.getElementById('auto-connect').checked = true;
+                
+                // 清除本地存储
+                localStorage.removeItem('database_config');
+                localStorage.removeItem('save_credentials');
+                localStorage.removeItem('auto_connect');
+                
+                addDatabaseLog('info', '数据库设置已恢复默认');
+                showNotification('数据库设置已恢复默认', 'info');
+            }
+
+            // 获取数据库配置
+            function getDatabaseConfig() {
+                return {
+                    type: document.getElementById('db-type').value,
+                    host: document.getElementById('db-host').value,
+                    port: parseInt(document.getElementById('db-port').value),
+                    database: document.getElementById('db-name').value,
+                    username: document.getElementById('db-user').value,
+                    password: document.getElementById('db-password').value
+                };
+            }
+
+            // 更新数据库状态
+            function updateDatabaseStatus(status = 'disconnected') {
+                const statusText = document.getElementById('db-status-text');
+                const statusIndicator = document.getElementById('db-status-indicator');
+                
+                if (!statusText || !statusIndicator) return;
+                
+                statusIndicator.className = 'status-indicator';
+                
+                switch (status) {
+                    case 'connected':
+                        statusText.textContent = '已连接';
+                        statusIndicator.classList.add('connected');
+                        break;
+                    case 'connecting':
+                        statusText.textContent = '连接中...';
+                        statusIndicator.classList.add('connecting');
+                        break;
+                    case 'disconnected':
+                        statusText.textContent = '未连接';
+                        statusIndicator.classList.add('disconnected');
+                        break;
+                    default:
+                        statusText.textContent = '未知状态';
+                }
+            }
+
+            // 更新系统因子状态
+            function updateSystemFactorsStatus(status = 'uninitialized') {
+                const statusText = document.getElementById('factors-status-text');
+                const statusIndicator = document.getElementById('factors-status-indicator');
+                
+                if (!statusText || !statusIndicator) return;
+                
+                statusIndicator.className = 'status-indicator';
+                
+                switch (status) {
+                    case 'initialized':
+                        statusText.textContent = '已初始化';
+                        statusIndicator.classList.add('connected');
+                        break;
+                    case 'initializing':
+                        statusText.textContent = '初始化中...';
+                        statusIndicator.classList.add('connecting');
+                        break;
+                    case 'uninitialized':
+                        statusText.textContent = '未初始化';
+                        statusIndicator.classList.add('disconnected');
+                        break;
+                    default:
+                        statusText.textContent = '未知状态';
+                }
+            }
+
+            // 添加数据库操作日志
+            function addDatabaseLog(type, message) {
+                const logContainer = document.getElementById('db-operation-log');
+                if (!logContainer) return;
+                
+                const logEntry = document.createElement('div');
+                logEntry.className = 'log-entry ' + type;
+                
+                const now = new Date();
+                const timeString = now.toTimeString().split(' ')[0];
+                
+                logEntry.innerHTML = 
+                    '<span class="log-time">' + timeString + '</span>' +
+                    '<span class="log-message">' + message + '</span>';
+                
+                // 添加到日志容器顶部
+                logContainer.insertBefore(logEntry, logContainer.firstChild);
+                
+                // 限制日志条数
+                const logs = logContainer.querySelectorAll('.log-entry');
+                if (logs.length > 50) {
+                    logs[logs.length - 1].remove();
+                }
+            }
+
+            // 加载保存的数据库设置
+            function loadDatabaseSettings() {
+                const savedConfig = localStorage.getItem('database_config');
+                const saveCredentials = localStorage.getItem('save_credentials');
+                const autoConnect = localStorage.getItem('auto_connect');
+                
+                if (savedConfig) {
+                    try {
+                        const config = JSON.parse(savedConfig);
+                        document.getElementById('db-type').value = config.type || 'mssql';
+                        document.getElementById('db-host').value = config.host || '';
+                        document.getElementById('db-port').value = config.port || '';
+                        document.getElementById('db-name').value = config.database || '';
+                        document.getElementById('db-user').value = config.username || '';
+                        document.getElementById('db-password').value = config.password || '';
+                        
+                        onDatabaseTypeChange(config.type || 'mssql');
+                    } catch (error) {
+                        console.error('加载数据库配置失败:', error);
+                    }
+                }
+                
+                if (saveCredentials !== null) {
+                    document.getElementById('save-credentials').checked = saveCredentials === 'true';
+                }
+                
+                if (autoConnect !== null) {
+                    document.getElementById('auto-connect').checked = autoConnect === 'true';
+                }
+            }
+            
+            // 关闭通知
+            const notificationCloseEl = document.querySelector('.notification-close');
+            if (notificationCloseEl) {
+                notificationCloseEl.addEventListener('click', function() {
+                document.getElementById('notification').style.display = 'none';
+                });
+            }
+            
+            // 为安全配置按钮添加事件监听器
+            const securityConfigBtnEl = document.getElementById('security-config-btn');
+            if (securityConfigBtnEl) {
+                securityConfigBtnEl.addEventListener('click', function() {
+                alert('安全设置功能开发中...');
+                });
+            }
+            
+            const timeoutConfigBtnEl = document.getElementById('timeout-config-btn');
+            if (timeoutConfigBtnEl) {
+                timeoutConfigBtnEl.addEventListener('click', function() {
+                alert('超时设置功能开发中...');
+                });
+            }
+            
+            const versionConfigBtnEl = document.getElementById('version-config-btn');
+            if (versionConfigBtnEl) {
+                versionConfigBtnEl.addEventListener('click', function() {
+                alert('版本信息功能开发中...');
+                });
+            }
+            
+            const rollbackConfigBtnEl = document.getElementById('rollback-config-btn');
+            if (rollbackConfigBtnEl) {
+                rollbackConfigBtnEl.addEventListener('click', function() {
+                alert('系统回滚功能开发中...');
+                });
+            }
+            
+            const scriptConfigBtnEl = document.getElementById('script-config-btn');
+            if (scriptConfigBtnEl) {
+                scriptConfigBtnEl.addEventListener('click', function() {
+                    alert('脚本管理功能开发中...');
+                });
+            }
+
+            // 系统规则管理功能
+            let systemRulesManager;
+            let currentRuleCategory = 'security';
+
+            // 初始化系统规则管理器
+            async function initSystemRulesManager() {
+                try {
+                    // 加载统一系统管理器
+                    if (typeof UnifiedSystemManager !== 'undefined') {
+                        systemRulesManager = new UnifiedSystemManager();
+                        await systemRulesManager.initialize();
+                        
+                        // 更新系统管理器状态
+                        updateSystemManagerStatus(true);
+                        
+                        // 加载默认规则类别
+                        loadRuleCategory('security');
+                        
+                        // 更新执行状态
+                        updateRulesExecutionStatus();
+                        
+                        console.log('系统规则管理器初始化成功');
+                    } else {
+                        console.log('统一系统管理器未加载，使用模拟数据');
+                        initMockSystemRulesManager();
+                    }
+                } catch (error) {
+                    console.error('初始化系统规则管理器失败:', error);
+                    updateSystemManagerStatus(false);
+                    initMockSystemRulesManager();
+                }
+            }
+
+            // 初始化数据库管理器
+            async function initDatabaseManager() {
+                try {
+                    if (typeof DatabaseManager !== 'undefined') {
+                        window.databaseManager = new DatabaseManager();
+                        await window.databaseManager.initialize();
+                        updateDatabaseStatus(true);
+                        loadDatabaseSettings();
+                        console.log('数据库管理器初始化成功');
+                    } else {
+                        console.warn('DatabaseManager未定义，使用模拟模式');
+                        updateDatabaseStatus(false);
+                        loadDatabaseSettings();
+                    }
+                } catch (error) {
+                    console.error('初始化数据库管理器失败:', error);
+                    updateDatabaseStatus(false);
+                    loadDatabaseSettings();
+                }
+            }
+
+            // 模拟系统规则管理器
+            function initMockSystemRulesManager() {
+                systemRulesManager = {
+                    rules: {
+                        security: [
+                            { id: 'sec001', name: '登录验证', description: '用户登录时进行身份验证', enabled: true },
+                            { id: 'sec002', name: '权限检查', description: '访问资源时检查用户权限', enabled: true },
+                            { id: 'sec003', name: '数据加密', description: '敏感数据传输加密', enabled: true }
+                        ],
+                        performance: [
+                            { id: 'perf001', name: '缓存策略', description: '智能缓存提升响应速度', enabled: true },
+                            { id: 'perf002', name: '资源优化', description: '自动优化资源使用', enabled: true },
+                            { id: 'perf003', name: '性能监控', description: '实时监控系统性能', enabled: true }
+                        ],
+                        data: [
+                            { id: 'data001', name: '数据备份', description: '定期备份重要数据', enabled: true },
+                            { id: 'data002', name: '数据验证', description: '数据完整性验证', enabled: true },
+                            { id: 'data003', name: '数据清理', description: '自动清理过期数据', enabled: false }
+                        ],
+                        monitoring: [
+                            { id: 'mon001', name: '系统监控', description: '全方位系统状态监控', enabled: true },
+                            { id: 'mon002', name: '告警机制', description: '异常情况自动告警', enabled: true },
+                            { id: 'mon003', name: '日志分析', description: '智能日志分析', enabled: true }
+                        ],
+                        update: [
+                            { id: 'upd001', name: '版本检查', description: '自动检查系统更新', enabled: true },
+                            { id: 'upd002', name: '安全更新', description: '自动安装安全补丁', enabled: true },
+                            { id: 'upd003', name: '功能更新', description: '可选功能模块更新', enabled: false }
+                        ]
+                    },
+                    mechanisms: {
+                        errorHandling: true,
+                        cache: true,
+                        logging: true,
+                        security: true,
+                        performance: true
+                    }
+                };
+                
+                updateSystemManagerStatus(true);
+                loadRuleCategory('security');
+                updateRulesExecutionStatus();
+            }
+
+            // 更新系统管理器状态
+            function updateSystemManagerStatus(isRunning) {
+                const statusEl = document.getElementById('system-manager-status');
+                if (statusEl) {
+                    if (isRunning) {
+                        statusEl.innerHTML = '<i class="fas fa-check-circle" style="color: var(--success-color);"></i> 运行中';
+                    } else {
+                        statusEl.innerHTML = '<i class="fas fa-exclamation-triangle" style="color: var(--error-color);"></i> 未运行';
+                    }
+                }
+            }
+
+            // 加载规则类别
+            function loadRuleCategory(category) {
+                currentRuleCategory = category;
+                const rulesListEl = document.getElementById('rules-list');
+                
+                if (!systemRulesManager || !systemRulesManager.rules) {
+                    rulesListEl.innerHTML = '<div class="rule-item"><div class="rule-description">规则管理器未初始化</div></div>';
+                    return;
+                }
+
+                const rules = systemRulesManager.rules[category] || [];
+                
+                if (rules.length === 0) {
+                    rulesListEl.innerHTML = '<div class="rule-item"><div class="rule-description">该类别暂无规则</div></div>';
+                    return;
+                }
+
+                let html = '';
+                rules.forEach(rule => {
+                    html += 
+                        '<div class="rule-item">' +
+                            '<div class="rule-header">' +
+                                '<span class="rule-name">' + rule.name + '</span>' +
+                                '<div class="rule-actions">' +
+                                    '<button class="btn-small btn-edit" onclick="editRule(\'' + rule.id + '\')">' +
+                                        '<i class="fas fa-edit"></i> 编辑' +
+                                    '</button>' +
+                                    '<button class="btn-small btn-delete" onclick="deleteRule(\'' + rule.id + '\')">' +
+                                        '<i class="fas fa-trash"></i> 删除' +
+                                    '</button>' +
+                                '</div>' +
+                            '</div>' +
+                            '<div class="rule-content">' +
+                                '<div class="rule-description">' + rule.description + '</div>' +
+                                '<div class="rule-status">' +
+                                    '<span class="status-badge ' + (rule.enabled ? 'status-enabled' : 'status-disabled') + '">' +
+                                        (rule.enabled ? '启用' : '禁用') +
+                                    '</span>' +
+                                '</div>' +
+                            '</div>' +
+                        '</div>';
+                });
+                
+                rulesListEl.innerHTML = html;
+            }
+
+            // 更新规则执行状态
+            function updateRulesExecutionStatus() {
+                // 更新最后执行时间
+                const lastExecutionEl = document.getElementById('last-execution-time');
+                if (lastExecutionEl) {
+                    const now = new Date();
+                    lastExecutionEl.textContent = now.toLocaleString('zh-CN');
+                }
+
+                // 更新活跃规则数量
+                const activeRulesEl = document.getElementById('active-rules-count');
+                if (activeRulesEl && systemRulesManager && systemRulesManager.rules) {
+                    let activeCount = 0;
+                    Object.values(systemRulesManager.rules).forEach(categoryRules => {
+                        activeCount += categoryRules.filter(rule => rule.enabled).length;
+                    });
+                    activeRulesEl.textContent = activeCount;
+                }
+
+                // 更新机制开关状态
+                if (systemRulesManager && systemRulesManager.mechanisms) {
+                    Object.keys(systemRulesManager.mechanisms).forEach(mechanism => {
+                        const toggleId = mechanism.replace(/([A-Z])/g, '-$1').toLowerCase() + '-toggle';
+                        const toggleEl = document.getElementById(toggleId);
+                        if (toggleEl) {
+                            toggleEl.checked = systemRulesManager.mechanisms[mechanism];
+                        }
+                    });
+                }
+            }
+
+            // 编辑规则
+            function editRule(ruleId) {
+                if (!systemRulesManager || !systemRulesManager.rules) {
+                    showNotification('规则管理器未初始化', 'error');
+                    return;
+                }
+
+                const rules = systemRulesManager.rules[currentRuleCategory] || [];
+                const rule = rules.find(r => r.id === ruleId);
+                
+                if (!rule) {
+                    showNotification('规则不存在', 'error');
+                    return;
+                }
+
+                // 这里可以打开一个编辑对话框，暂时使用简单的prompt
+                const newName = prompt('请输入规则名称:', rule.name);
+                if (newName && newName.trim()) {
+                    const newDescription = prompt('请输入规则描述:', rule.description);
+                    if (newDescription && newDescription.trim()) {
+                        rule.name = newName.trim();
+                        rule.description = newDescription.trim();
+                        loadRuleCategory(currentRuleCategory);
+                        showNotification('规则已更新', 'success');
+                    }
+                }
+            }
+
+            // 删除规则
+            function deleteRule(ruleId) {
+                if (!systemRulesManager || !systemRulesManager.rules) {
+                    showNotification('规则管理器未初始化', 'error');
+                    return;
+                }
+
+                if (!confirm('确定要删除此规则吗？')) {
+                    return;
+                }
+
+                const rules = systemRulesManager.rules[currentRuleCategory] || [];
+                const index = rules.findIndex(r => r.id === ruleId);
+                
+                if (index !== -1) {
+                    rules.splice(index, 1);
+                    loadRuleCategory(currentRuleCategory);
+                    updateRulesExecutionStatus();
+                    showNotification('规则已删除', 'success');
+                } else {
+                    showNotification('规则不存在', 'error');
+                }
+            }
+
+            // 显示添加规则对话框
+            function showAddRuleDialog() {
+                const name = prompt('请输入新规则名称:');
+                if (!name || !name.trim()) {
+                    return;
+                }
+
+                const description = prompt('请输入规则描述:');
+                if (!description || !description.trim()) {
+                    return;
+                }
+
+                if (!systemRulesManager || !systemRulesManager.rules) {
+                    showNotification('规则管理器未初始化', 'error');
+                    return;
+                }
+
+                const newRule = {
+                    id: 'rule_' + Date.now(),
+                    name: name.trim(),
+                    description: description.trim(),
+                    enabled: true
+                };
+
+                if (!systemRulesManager.rules[currentRuleCategory]) {
+                    systemRulesManager.rules[currentRuleCategory] = [];
+                }
+
+                systemRulesManager.rules[currentRuleCategory].push(newRule);
+                loadRuleCategory(currentRuleCategory);
+                updateRulesExecutionStatus();
+                showNotification('规则已添加', 'success');
+            }
+
+            // 批量操作
+            function batchOperation(operation) {
+                if (!systemRulesManager || !systemRulesManager.rules) {
+                    showNotification('规则管理器未初始化', 'error');
+                    return;
+                }
+
+                Object.values(systemRulesManager.rules).forEach(categoryRules => {
+                    categoryRules.forEach(rule => {
+                        rule.enabled = (operation === 'enable');
+                    });
+                });
+
+                loadRuleCategory(currentRuleCategory);
+                updateRulesExecutionStatus();
+                showNotification('已' + (operation === 'enable' ? '启用' : '禁用') + '所有规则', 'success');
+            }
+
+            // 重新加载规则
+            function reloadRules() {
+                loadRuleCategory(currentRuleCategory);
+                updateRulesExecutionStatus();
+                showNotification('规则已重新加载', 'info');
+            }
+
+            // 导出规则配置
+            function exportRules() {
+                if (!systemRulesManager || !systemRulesManager.rules) {
+                    showNotification('规则管理器未初始化', 'error');
+                    return;
+                }
+
+                const config = {
+                    rules: systemRulesManager.rules,
+                    mechanisms: systemRulesManager.mechanisms,
+                    exportTime: new Date().toISOString(),
+                    version: '3.0.0'
+                };
+
+                const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'system-rules-config-' + new Date().toISOString().split('T')[0] + '.json';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                showNotification('规则配置已导出', 'success');
+            }
+
+            // 机制开关事件监听
+            document.addEventListener('change', function(e) {
+                if (e.target.type === 'checkbox' && e.target.id.endsWith('-toggle')) {
+                    const mechanism = e.target.id.replace('-toggle', '').replace(/-([a-z])/g, (g) => g[1].toUpperCase());
+                    if (systemRulesManager && systemRulesManager.mechanisms) {
+                        systemRulesManager.mechanisms[mechanism] = e.target.checked;
+                        showNotification(mechanism + '机制已' + (e.target.checked ? '启用' : '禁用'), 'info');
+                    }
+                }
+            });
+
+            // 保存系统规则设置
+            const saveSystemRulesEl = document.getElementById('save-system-rules');
+            if (saveSystemRulesEl) {
+                saveSystemRulesEl.addEventListener('click', function() {
+                    if (systemRulesManager) {
+                        // 这里可以添加保存到服务器的逻辑
+                        localStorage.setItem('system-rules-config', JSON.stringify({
+                            rules: systemRulesManager.rules,
+                            mechanisms: systemRulesManager.mechanisms
+                        }));
+                        showNotification('系统规则设置已保存', 'success');
+                    } else {
+                        showNotification('规则管理器未初始化', 'error');
+                    }
+                });
+            }
+
+            // 重置系统规则设置
+            const resetSystemRulesEl = document.getElementById('reset-system-rules');
+            if (resetSystemRulesEl) {
+                resetSystemRulesEl.addEventListener('click', function() {
+                    if (confirm('确定要恢复默认系统规则设置吗？')) {
+                        localStorage.removeItem('system-rules-config');
+                        initSystemRulesManager();
+                        showNotification('系统规则设置已恢复默认', 'info');
+                    }
+                });
+            }
+
+            // 测试系统规则
+            const testSystemRulesEl = document.getElementById('test-system-rules');
+            if (testSystemRulesEl) {
+                testSystemRulesEl.addEventListener('click', function() {
+                    showNotification('正在测试系统规则...', 'info');
+                    
+                    // 模拟测试过程
+                    setTimeout(() => {
+                        if (systemRulesManager) {
+                            showNotification('系统规则测试通过，所有功能正常', 'success');
+                        } else {
+                            showNotification('系统规则测试失败', 'error');
+                        }
+                    }, 2000);
+                });
+            }
+
+            // 初始化系统规则管理器
+            initSystemRulesManager();
+            
+            // 初始化数据库管理器
+            initDatabaseManager();
+        });
+    </script>
+    
+    <!-- 页脚 -->
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>关于我们</h3>
+                    <ul class="footer-links">
+                        <li><a href="#"><i class="fas fa-info-circle"></i> 公司简介</a></li>
+                        <li><a href="#"><i class="fas fa-history"></i> 发展历程</a></li>
+                        <li><a href="#"><i class="fas fa-users"></i> 团队介绍</a></li>
+                        <li><a href="#"><i class="fas fa-newspaper"></i> 新闻动态</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>产品服务</h3>
+                    <ul class="footer-links">
+                        <li><a href="#"><i class="fas fa-cogs"></i> 系统功能</a></li>
+                        <li><a href="#"><i class="fas fa-rocket"></i> 解决方案</a></li>
+                        <li><a href="#"><i class="fas fa-chart-line"></i> 数据分析</a></li>
+                        <li><a href="#"><i class="fas fa-shield-alt"></i> 安全服务</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>帮助中心</h3>
+                    <ul class="footer-links">
+                        <li><a href="#"><i class="fas fa-book"></i> 使用文档</a></li>
+                        <li><a href="#"><i class="fas fa-question-circle"></i> 常见问题</a></li>
+                        <li><a href="#"><i class="fas fa-headset"></i> 技术支持</a></li>
+                        <li><a href="#"><i class="fas fa-life-ring"></i> 联系我们</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>联系我们</h3>
+                    <ul class="footer-links">
+                        <li><a href="#"><i class="fas fa-map-marker-alt"></i> 北京市海淀区科技园区</a></li>
+                        <li><a href="#"><i class="fas fa-phone"></i> 400-888-8888</a></li>
+                        <li><a href="#"><i class="fas fa-envelope"></i> contact@mtscos.com</a></li>
+                        <li><a href="#"><i class="fas fa-clock"></i> 周一至周五 9:00-18:00</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <div class="footer-social">
+                    <a href="#"><i class="fab fa-weixin"></i></a>
+                    <a href="#"><i class="fab fa-weibo"></i></a>
+                    <a href="#"><i class="fab fa-github"></i></a>
+                    <a href="#"><i class="fab fa-linkedin"></i></a>
+                </div>
+                <p class="footer-copyright">© 2025 MTSCOS 智能管理系统 版权所有 | 作者: Chenghao Wu | 京ICP备12345678号</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

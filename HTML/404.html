@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta name="version" content="202511061155263790">
+    <!-- VERSION: 20251106.6f7fa670 -->
+    <!-- VERSION: 20251106.2191b862 -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 - 页面未找到</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="assets/css/common_styles/main.css">
+    <link rel="stylesheet" href="assets/css/other_styles/variables.css">
+    <link rel="stylesheet" href="assets/css/common_styles/responsive.css">
+    <link rel="stylesheet" href="CSS/auto-theme.css">
+    <link rel="stylesheet" href="assets/css/footer.css">
+    <style>
+        /* 时间显示样式 */
+        .time-display {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            text-align: right;
+            color: var(--text-color);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 2px;
+        }
+        
+        .current-time-text {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-color, #333);
+        }
+        
+        .lunar-time {
+            font-size: 12px;
+            font-style: italic;
+            color: var(--text-secondary, #666);
+        }
+        
+        .visit-info {
+            font-size: 11px;
+            color: var(--text-secondary, #666);
+            margin-top: 2px;
+        }
+        
+        .theme-status {
+            font-size: 11px;
+            color: var(--text-secondary, #666);
+            background: rgba(0, 0, 0, 0.1);
+            padding: 2px 6px;
+            border-radius: 10px;
+            margin-top: 2px;
+        }
+        
+        @media (max-width: 768px) {
+            .time-display {
+                position: static;
+                text-align: center;
+                margin-bottom: 15px;
+                align-items: center;
+            }
+        }
+    </style>
+    
+    <!-- 安全机制相关 -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
+    <meta name="referrer" content="no-referrer-when-downgrade">
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #6c757d;
+            --background-color: #f5f7fa;
+            --text-color: #333;
+            --text-light: #666;
+            --error-color: #d9534f;
+            --error-bg: #fff;
+            --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            --border-radius: 12px;
+            --transition: all 0.3s ease;
+        }
+        
+        /* 公祭日主题 */
+        html.memorial-day-theme {
+            filter: grayscale(100%);
+        }
+        
+        /* 主题图标样式 */
+        .theme-icon {
+            font-size: 20px;
+        }
+
+        body.dark-theme {
+            --primary-color: #17a2b8;
+            --secondary-color: #6c757d;
+            --background-color: #2d3748;
+            --text-color: #e2e8f0;
+            --text-light: #a0aec0;
+            --error-color: #f56565;
+            --error-bg: #3d4657;
+            --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* 背景装饰 */
+        body::before, body::after {
+            content: '';
+            position: fixed;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(0, 123, 255, 0.1) 0%, rgba(0, 123, 255, 0) 70%);
+            border-radius: 50%;
+            z-index: 0;
+            animation: float 15s ease-in-out infinite;
+        }
+
+        body::before {
+            top: -200px;
+            right: -200px;
+            animation-delay: 0s;
+        }
+
+        body::after {
+            bottom: -200px;
+            left: -200px;
+            animation-delay: -7.5s;
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0) rotate(0deg);
+            }
+            50% {
+                transform: translateY(-30px) rotate(10deg);
+            }
+        }
+
+        /* 主容器 */
+        .error-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: calc(100vh - 120px);
+            padding: 40px 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* 错误内容包装 */
+        .error-wrapper {
+            background: var(--error-bg);
+            border-radius: var(--border-radius);
+            box-shadow: var(--card-shadow);
+            padding: 50px;
+            text-align: center;
+            max-width: 600px;
+            width: 100%;
+            position: relative;
+            overflow: hidden;
+            transition: var(--transition);
+            animation: slideIn 0.6s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        /* 错误图标 */
+        .error-icon {
+            font-size: 72px;
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.05);
+                opacity: 0.9;
+            }
+        }
+
+        /* 错误代码 */
+        .error-code {
+            font-size: 120px;
+            font-weight: 800;
+            line-height: 1;
+            margin: 0 0 20px;
+            background: linear-gradient(135deg, var(--primary-color), var(--error-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
+        }
+
+        /* 错误标题 */
+        .error-subtitle {
+            font-size: 28px;
+            font-weight: 600;
+            margin: 0 0 15px;
+            color: var(--text-color);
+        }
+
+        /* 错误消息 */
+        .error-message {
+            font-size: 16px;
+            color: var(--text-light);
+            margin: 0 0 30px;
+            line-height: 1.6;
+        }
+
+        /* 错误详情 */
+        .error-details {
+            background: rgba(0, 0, 0, 0.03);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+            text-align: left;
+            font-size: 14px;
+        }
+
+        body.dark-theme .error-details {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .error-details p {
+            margin: 5px 0;
+            color: var(--text-light);
+        }
+
+        .error-details span {
+            font-family: 'Courier New', monospace;
+            background: rgba(0, 0, 0, 0.05);
+            padding: 2px 6px;
+            border-radius: 4px;
+            word-break: break-all;
+        }
+
+        body.dark-theme .error-details span {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        /* 操作按钮 */
+        .error-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .error-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 500;
+            text-decoration: none;
+            transition: var(--transition);
+            border: none;
+            cursor: pointer;
+            min-width: 140px;
+        }
+
+        .error-btn.primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .error-btn.primary:hover {
+            background-color: #0056b3;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 123, 255, 0.3);
+        }
+
+        .error-btn.secondary {
+            background-color: transparent;
+            color: var(--text-color);
+            border: 1px solid var(--secondary-color);
+        }
+
+        .error-btn.secondary:hover {
+            background-color: var(--secondary-color);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(108, 117, 125, 0.3);
+        }
+
+        /* 返回首页链接 */
+        .back-to-home {
+            font-size: 14px;
+            color: var(--text-light);
+        }
+
+        .back-to-home a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 500;
+            transition: var(--transition);
+        }
+
+        .back-to-home a:hover {
+            text-decoration: underline;
+        }
+
+        /* 安全提示 */
+        .security-note {
+            margin-top: 30px;
+            padding: 15px;
+            background: rgba(217, 83, 79, 0.1);
+            border: 1px solid rgba(217, 83, 79, 0.2);
+            border-radius: 8px;
+            font-size: 14px;
+            color: var(--error-color);
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        body.dark-theme .security-note {
+            background: rgba(245, 101, 101, 0.1);
+            border-color: rgba(245, 101, 101, 0.2);
+        }
+
+        .security-note i {
+            margin-top: 2px;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .error-wrapper {
+                padding: 40px 25px;
+                margin: 20px;
+            }
+            
+            .error-code {
+                font-size: 90px;
+            }
+            
+            .error-subtitle {
+                font-size: 24px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .error-container {
+                padding: 20px 10px;
+            }
+            
+            .error-wrapper {
+                padding: 30px 20px;
+                margin: 10px;
+            }
+            
+            .error-icon {
+                font-size: 56px;
+            }
+            
+            .error-code {
+                font-size: 72px;
+            }
+            
+            .error-subtitle {
+                font-size: 20px;
+            }
+            
+            .error-actions {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .error-btn {
+                width: 100%;
+                max-width: 280px;
+            }
+        }
+
+
+        .login-header {
+            background-color: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid #e0e0e0;
+            padding: 15px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        body.dark-theme .login-header {
+            background-color: rgba(30, 41, 59, 0.95);
+            border-bottom: 1px solid #475569;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+        }
+
+        .logo {
+            height: 40px;
+            width: auto;
+            margin-right: 10px;
+        }
+
+        .system-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin: 0;
+            color: var(--text-color);
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .header-stats {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .time-display {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-light);
+            text-align: right;
+        }
+
+        .visit-info {
+            display: flex;
+            flex-direction: column;
+            font-size: 12px;
+            color: var(--text-light);
+            text-align: right;
+        }
+
+        body.dark-theme .visit-info {
+            color: var(--text-light);
+        }
+
+
+
+        .error-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .error-code {
+            font-size: 120px;
+            font-weight: 900;
+            margin: 0;
+            background: linear-gradient(45deg, var(--error-color), var(--primary-color));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            line-height: 1;
+        }
+
+        .error-message {
+            font-size: 24px;
+            margin: 20px 0;
+            color: var(--text-light);
+        }
+
+        .error-description {
+            font-size: 16px;
+            color: var(--text-light);
+            max-width: 600px;
+            margin-bottom: 30px;
+        }
+
+        .error-actions {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+        }
+
+        .btn-secondary {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+        }
+
+        footer {
+            padding: 20px;
+            text-align: center;
+            color: var(--text-light);
+            border-top: 1px solid #e0e0e0;
+        }
+
+        body.dark-theme footer {
+            border-top: 1px solid #475569;
+        }
+
+        #current-url {
+            margin: 15px 0;
+            font-family: monospace;
+            background-color: rgba(0, 0, 0, 0.05);
+            padding: 8px 12px;
+            border-radius: 4px;
+            color: var(--error-color);
+            max-width: 100%;
+            word-break: break-all;
+        }
+
+        body.dark-theme #current-url {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        @media (max-width: 768px) {
+            .error-code {
+                font-size: 80px;
+            }
+
+            .error-message {
+                font-size: 20px;
+            }
+
+            .error-actions {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .header-content {
+                flex-direction: column;
+                gap: 10px;
+                text-align: center;
+            }
+
+            .header-right {
+                justify-content: center;
+            }
+
+            .header-stats {
+                align-items: center;
+            }
+
+            .time-display,
+            .visit-info {
+                text-align: center;
+            }
+        }
+    </style>
+    <script>
+        // 防盗链检查
+        document.addEventListener('DOMContentLoaded', function() {
+            const timestamp = Date.now();
+            const random = Math.random().toString(36).substring(2);
+            const antiHotlink = btoa(`${timestamp}_${random}`);
+            
+            document.cookie = `anti_hotlink=${antiHotlink}; path=/; max-age=3600; secure; samesite=strict`;
+        });
+        
+        // 防右键查看
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            alert('该操作已被禁止');
+            return false;
+        });
+        
+        // 禁用选择文本
+        document.addEventListener('selectstart', function(e) {
+            e.preventDefault();
+            return false;
+        });
+        
+        // 禁用复制快捷键
+        document.addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'x' || e.key === 'u')) {
+                e.preventDefault();
+                return false;
+            }
+        });
+        
+        // 检测公祭日主题
+        function checkNationalMemorialDay() {
+            const today = new Date();
+            const month = today.getMonth() + 1;
+            const day = today.getDate();
+            
+            // 南京大屠杀死难者国家公祭日：12月13日
+            // 汶川地震纪念日：5月12日
+            // 唐山大地震纪念日：7月28日
+            const memorialDays = [
+                { month: 12, day: 13 },
+                { month: 5, day: 12 },
+                { month: 7, day: 28 }
+            ];
+            
+            return memorialDays.some(memDay => memDay.month === month && memDay.day === day);
+        }
+        
+        // 自动应用公祭日主题
+        if (checkNationalMemorialDay()) {
+            document.documentElement.classList.add('memorial-day-theme');
+        }
+    </script>
+
+<!-- CryptoJS库，用于JS解密 -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
+</head>
+<body>
+    <header class="login-header">
+        <div class="header-content">
+            <div class="logo-container">
+                <h1 class="system-title">MTSCOS</h1>
+            </div>
+            <div class="header-right">
+                <div class="time-display">
+                    <div class="current-time-text">加载中...</div>
+                    <div class="lunar-time">农历加载中...</div>
+                </div>
+                <div class="visit-info">访问次数: <span id="visitCount">0</span></div>
+                <div class="theme-status">主题: 自动</div>
+            </div>
+        </div>
+    </header>
+    
+    <div class="error-container">
+        <div class="error-wrapper">
+            <div class="error-icon">
+                <i class="fas fa-search"></i>
+            </div>
+            <div class="error-code">404</div>
+            <h2 class="error-subtitle">页面未找到</h2>
+            <p class="error-message">抱歉，您访问的页面不存在或已被移除。可能是URL输入错误，或者该页面已不再可用。</p>
+            
+            <div class="error-details" id="errorDetails">
+                <p>访问的页面: <span id="currentUrl">加载中...</span></p>
+                <p>时间: <span id="errorTime">加载中...</span></p>
+            </div>
+            
+            <div class="error-actions">
+                <a href="javascript:void(0);" onclick="window.location.href = './index.html';" class="error-btn primary">
+                    <i class="fas fa-home"></i>
+                    <span>返回首页</span>
+                </a>
+                <a href="javascript:history.back()" class="error-btn secondary">
+                    <i class="fas fa-arrow-left"></i>
+                    <span>返回上一页</span>
+                </a>
+            </div>
+            
+            <div class="back-to-home">
+                或 <a href="javascript:void(0);" onclick="window.location.href = './index.html';">返回登录页面</a>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 手动主题切换代码已移除，现在使用自动主题管理器
+        
+        // 页面加载后执行
+        document.addEventListener('DOMContentLoaded', function() {
+            // 显示当前URL和时间 - 优先使用服务器传入的动态内容
+            const requestedPath = window.REQUESTED_PATH || window.location.href;
+            const errorTime = window.TIMESTAMP || new Date().toLocaleString('zh-CN');
+            
+            document.getElementById('currentUrl').textContent = requestedPath;
+            document.getElementById('errorTime').textContent = errorTime;
+            
+            // 初始化锁定屏幕管理器
+            if (typeof LockScreenManager !== 'undefined') {
+                const lockManager = new LockScreenManager();
+                // LockScreenManager构造函数会自动初始化，无需调用init()
+            }
+            
+            // 使用errorHandler记录错误
+            if (window.errorHandler) {
+                errorHandler.capture404();
+            }
+            
+            // 初始化自动主题和增强时间显示
+            setTimeout(() => {
+                try {
+                    // 初始化自动主题管理器
+                    if (typeof AutoThemeManager !== 'undefined') {
+                        window.autoThemeManager = new AutoThemeManager();
+                        console.log('[主题] 自动主题管理器已初始化');
+                    }
+                    
+                    // 初始化增强时间显示
+                    if (typeof EnhancedTimeDisplay !== 'undefined') {
+                        window.enhancedTimeDisplay = new EnhancedTimeDisplay();
+                        console.log('[时间] 增强时间显示已初始化');
+                    }
+                } catch (error) {
+                    console.error('[初始化] 自动主题或时间显示初始化失败:', error);
+                }
+            }, 500);
+        });
+    </script>
+    
+    <!-- 锁定界面脚本 -->
+    <script src="../assets/js/lock-screen.js"></script>
+    
+    <!-- 安全机制模块 -->
+    <script src="../assets/js/core/session-manager.js"></script>
+    <script src="../assets/js/core/encryption.js"></script>
+    <script src="../assets/js/core/security-events.js"></script>
+    <script src="../assets/js/core/data-security.js"></script>
+    <script src="../assets/js/core/token-verification.js"></script>
+    
+    <!-- 自动主题和增强时间显示 -->
+    <script defer src="../JS/auto-theme-manager.js"></script>
+    <script defer src="../JS/enhanced-time-display.js"></script>
+    
+    <!-- 系统锁定管理脚本 -->
+    <!-- 全局锁定系统脚本 -->
+        
+        
+        <script src="../assets/js/error_handler.js"></script>
+        <script src="../assets/js/common-utils.js"></script>
+        <script src="../assets/js/css-auto-loader.js"></script>
+    <script>
+        // 安全机制初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化安全模块
+            const sessionManager = new SessionManager();
+            const encryptionManager = new EncryptionManager();
+            const securityEventManager = new SecurityEventManager();
+            const dataSecurityManager = new DataSecurityManager();
+            const tokenVerificationManager = new TokenVerificationManager();
+            
+            // 启动安全监控
+            setTimeout(() => {
+                console.log('404页面安全机制已启动');
+            }, 1000);
+            
+            // 页面卸载时清理
+            window.addEventListener('beforeunload', function() {
+                if (sessionManager) sessionManager.clearSession();
+                if (securityEventManager) securityEventManager.stopMonitoring();
+            });
+        });
+        
+        // 手动时间更新代码已移除，现在使用增强时间显示管理器
+        
+        // 页面加载完成后初始化
+        window.addEventListener('DOMContentLoaded', () => {
+            // 应用防盗链检查
+            if (window.CommonUtils && window.CommonUtils.checkHotlinkProtection) {
+                window.CommonUtils.checkHotlinkProtection();
+            }
+        });
+    </script>
+    
+    <!-- 页脚 -->
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>关于我们</h3>
+                    <ul class="footer-links">
+                        <li><a href="#"><i class="fas fa-info-circle"></i> 公司简介</a></li>
+                        <li><a href="#"><i class="fas fa-history"></i> 发展历程</a></li>
+                        <li><a href="#"><i class="fas fa-users"></i> 团队介绍</a></li>
+                        <li><a href="#"><i class="fas fa-newspaper"></i> 新闻动态</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>产品服务</h3>
+                    <ul class="footer-links">
+                        <li><a href="#"><i class="fas fa-cogs"></i> 系统功能</a></li>
+                        <li><a href="#"><i class="fas fa-rocket"></i> 解决方案</a></li>
+                        <li><a href="#"><i class="fas fa-chart-line"></i> 数据分析</a></li>
+                        <li><a href="#"><i class="fas fa-shield-alt"></i> 安全服务</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>帮助中心</h3>
+                    <ul class="footer-links">
+                        <li><a href="#"><i class="fas fa-book"></i> 使用文档</a></li>
+                        <li><a href="#"><i class="fas fa-question-circle"></i> 常见问题</a></li>
+                        <li><a href="#"><i class="fas fa-headset"></i> 技术支持</a></li>
+                        <li><a href="#"><i class="fas fa-life-ring"></i> 联系我们</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>联系我们</h3>
+                    <ul class="footer-links">
+                        <li><a href="#"><i class="fas fa-map-marker-alt"></i> 北京市海淀区科技园区</a></li>
+                        <li><a href="#"><i class="fas fa-phone"></i> 400-888-8888</a></li>
+                        <li><a href="#"><i class="fas fa-envelope"></i> contact@mtscos.com</a></li>
+                        <li><a href="#"><i class="fas fa-clock"></i> 周一至周五 9:00-18:00</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <div class="footer-version">
+                    <span>版本: 3.251102.113945</span>
+                    <span>内部版本: 20251102002.251102.113945</span>
+                </div>
+                <div class="footer-social">
+                    <a href="#"><i class="fab fa-weixin"></i></a>
+                    <a href="#"><i class="fab fa-weibo"></i></a>
+                    <a href="#"><i class="fab fa-github"></i></a>
+                    <a href="#"><i class="fab fa-linkedin"></i></a>
+                </div>
+                <p class="footer-copyright">© 2025 MTSCOS 智能管理系统 版权所有 | 作者: Chenghao Wu | 京ICP备12345678号</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

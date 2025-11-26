@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta name="version" content="202511061306446373">
+    <!-- VERSION: 20251106.c8556215 -->
+    <!-- VERSION: 20251106.5b059c5f -->
+    <!-- VERSION: 20251106.c7374a9e -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户注册 - MTSCOS</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="assets/css/other_styles/variables.css">
+    <link rel="stylesheet" href="assets/css/page_styles/login-styles.css">
+    <link rel="stylesheet" href="assets/css/common_styles/main.css">
+    <link rel="stylesheet" href="assets/css/common_styles/responsive.css">
+    <link rel="stylesheet" href="CSS/auto-theme.css">
+
+<!-- CryptoJS库，用于JS解密 -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
+</head>
+<body>
+    <style>
+        /* 注册页面特定样式 */
+        body {
+            padding-top: 80px; /* 为头部留出空间 */
+        }
+        
+        body.dark-theme .login-container {
+            background-color: var(--card-background, #2d3748);
+        }
+        
+        body.dark-theme .form-content {
+            color: var(--text-color, #e2e8f0);
+        }
+        
+        body.dark-theme .form-input {
+            background-color: var(--input-background, #1a202c);
+            color: var(--text-color, #e2e8f0);
+            border-color: var(--border-color, #4a5568);
+        }
+        
+        body.dark-theme .form-input:focus {
+            border-color: var(--primary-color, #3182ce);
+        }
+        
+        body.dark-theme .brand-side {
+            background-color: var(--secondary-background, #374151);
+        }
+        
+        body.dark-theme .brand-title,
+        body.dark-theme .brand-description,
+        body.dark-theme .feature-item span {
+            color: var(--text-color, #e2e8f0);
+        }
+        
+        /* 时间显示样式 */
+        .time-display {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 2px;
+        }
+        
+        .current-time-text {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-color, #333);
+        }
+        
+        .lunar-time {
+            font-size: 12px;
+            font-style: italic;
+            color: var(--text-secondary, #666);
+        }
+        
+        .visit-info {
+            font-size: 11px;
+            color: var(--text-secondary, #666);
+            margin-top: 2px;
+        }
+        
+        .theme-status {
+            font-size: 11px;
+            color: var(--text-secondary, #666);
+            background: rgba(0, 0, 0, 0.1);
+            padding: 2px 6px;
+            border-radius: 10px;
+            margin-top: 2px;
+        }
+    </style>
+    <header class="login-header">
+        <div class="header-content">
+            <div class="logo-container">
+                <h1 class="system-title">MTSCOS 系统注册</h1>
+            </div>
+            <div class="header-right">
+                <div class="header-stats">
+                    <div class="time-display">
+                        <span class="current-time-text" id="current-time"></span>
+                        <span class="lunar-time" id="lunar-time"></span>
+                    </div>
+                    <div class="visit-info" id="visit-info"></div>
+                    <div class="theme-status">主题: 自动</div>
+                </div>
+            </div>
+        </div>
+    </header>
+    <div class="login-container">
+        <div class="login-wrapper">
+            <!-- 左侧品牌区域 -->
+            <div class="brand-side">
+                <div class="brand-content">
+                    <h1 class="brand-title">MTSCOS</h1>
+                    <p class="brand-description">管理您的服务器和数据库</p>
+                    
+                    <div class="brand-features">
+                        <div class="feature-item">
+                            <i class="fas fa-server"></i>
+                            <span>高效服务器管理</span>
+                        </div>
+                        <div class="feature-item">
+                            <i class="fas fa-database"></i>
+                            <span>安全数据库配置</span>
+                        </div>
+                        <div class="feature-item">
+                            <i class="fas fa-shield-alt"></i>
+                            <span>强大的安全保障</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 右侧注册表单 -->
+            <div class="form-side">
+                <div class="form-content">
+                    <h2 class="register-title">创建账号</h2>
+                    <p class="register-subtitle">加入我们，体验安全便捷的管理服务</p>
+                    
+                    <form id="registerForm" class="login-form">
+                        <div class="form-group">
+                            <label for="username" class="form-label">用户名</label>
+                            <div class="input-group">
+                                <i class="fas fa-user input-icon"></i>
+                                <input type="text" id="username" name="username" class="form-input" placeholder="请设置用户名" required>
+                            </div>
+                            <p class="form-hint">3-50个字符，可包含字母、数字、下划线、点和连字符</p>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="password" class="form-label">密码</label>
+                            <div class="input-group">
+                                <i class="fas fa-lock input-icon"></i>
+                                <input type="password" id="password" name="password" class="form-input" placeholder="请设置密码" required>
+                                <button type="button" class="toggle-password" aria-label="切换密码可见性">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                            <div class="password-strength">
+                                <div class="password-strength-bar"></div>
+                            </div>
+                            <p class="form-hint">至少6位，包含字母和数字，建议使用大小写字母、数字和特殊字符</p>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="confirmPassword" class="form-label">确认密码</label>
+                            <div class="input-group">
+                                <i class="fas fa-lock input-icon"></i>
+                                <input type="password" id="confirmPassword" name="confirmPassword" class="form-input" placeholder="请再次输入密码" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="email" class="form-label">电子邮箱</label>
+                            <div class="input-group">
+                                <i class="fas fa-envelope input-icon"></i>
+                                <input type="email" id="email" name="email" class="form-input" placeholder="请输入电子邮箱" required>
+                            </div>
+                            <p class="form-hint">用于账户安全验证和密码找回</p>
+                        </div>
+                        
+                        <!-- 安全问题 -->
+                        <div class="form-group security-question">
+                            <label for="securityQuestion" class="form-label">安全问题</label>
+                            <div class="input-group">
+                                <i class="fas fa-question-circle input-icon"></i>
+                                <select id="securityQuestion" name="securityQuestion" class="form-input" required>
+                                    <option value="">请选择一个安全问题</option>
+                                    <option value="您的出生城市是什么？">您的出生城市是什么？</option>
+                                    <option value="您的小学名称是什么？">您的小学名称是什么？</option>
+                                    <option value="您的第一只宠物叫什么名字？">您的第一只宠物叫什么名字？</option>
+                                    <option value="您母亲的姓氏是什么？">您母亲的姓氏是什么？</option>
+                                    <option value="您最喜欢的电影是什么？">您最喜欢的电影是什么？</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="securityAnswer" class="form-label">安全答案</label>
+                            <div class="input-group">
+                                <i class="fas fa-key input-icon"></i>
+                                <input type="text" id="securityAnswer" name="securityAnswer" class="form-input" placeholder="请输入安全答案" required>
+                            </div>
+                            <p class="form-hint">请记住这个答案，用于密码找回</p>
+                        </div>
+                        
+                        <!-- 验证码 -->
+                        <div class="form-group">
+                            <label for="captcha" class="form-label">验证码</label>
+                            <div class="captcha-group">
+                                <div class="input-group flex-1">
+                                    <i class="fas fa-shield-alt input-icon"></i>
+                                <input type="text" id="captcha" name="captcha" class="form-input" placeholder="请输入验证码" required>
+                            </div>
+                            <div id="captchaDisplay" class="captcha-display"></div>
+                            <button type="button" id="refreshCaptcha" class="refresh-captcha" aria-label="刷新验证码">
+                                <i class="fas fa-sync-alt"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- 隐私协议 -->
+                        <div class="form-checkbox">
+                            <input type="checkbox" id="agreeTerms" name="agreeTerms" required>
+                            <label for="agreeTerms">我已阅读并同意 <a href="#">用户协议</a> 和 <a href="#">隐私政策</a></label>
+                        </div>
+                        
+                        <input type="hidden" id="captchaId" name="captchaId" value="">
+                        <button type="submit" class="register-button">注册</button>
+                    </form>
+                    
+                    <div class="register-footer">
+                        <p>已有账号? <a href="index.html" class="login-link">立即登录</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 成功注册后显示的模态框 -->
+    <div id="successModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-icon success">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <h3 class="modal-title">注册成功!</h3>
+            <p class="modal-message">您的账号已创建成功，正在跳转到登录页面...</p>
+        </div>
+    </div>
+    
+    <!-- 引入脚本 -->
+    <script src="../assets/js/log_manager.js"></script>
+    <script src="../assets/js/auth.js"></script>
+    <script src="../assets/js/register.js"></script>
+    
+    <!-- 安全机制模块 -->
+    <script defer src="../assets/js/core/session-manager.js"></script>
+    <script defer src="../assets/js/core/encryption.js"></script>
+    <script defer src="../assets/js/core/security-events.js"></script>
+    <script defer src="../assets/js/core/data-security.js"></script>
+    <script defer src="../assets/js/core/token-verification.js"></script>
+    
+    <!-- 自动主题和增强时间显示 -->
+    <script defer src="../JS/auto-theme-manager.js"></script>
+    <script defer src="../JS/enhanced-time-display.js"></script>
+    
+    <!-- 系统锁定管理脚本 -->
+    <!-- 全局锁定系统脚本 -->
+    
+    <script>
+        // 安全机制初始化
+        window.addEventListener('DOMContentLoaded', function() {
+            // 初始化所有安全模块
+            try {
+                // 初始化会话管理器
+                if (typeof SessionManager !== 'undefined') {
+                    window.sessionManager = new SessionManager();
+                    console.log('[安全] 会话管理器已初始化');
+                }
+                
+                // 初始化加密管理器
+                if (typeof EncryptionManager !== 'undefined') {
+                    window.encryptionManager = new EncryptionManager();
+                    console.log('[安全] 加密管理器已初始化');
+                }
+                
+                // 初始化安全事件管理器
+                if (typeof SecurityEventManager !== 'undefined') {
+                    window.securityEventManager = new SecurityEventManager();
+                    console.log('[安全] 安全事件管理器已初始化');
+                }
+                
+                // 初始化数据安全管理器
+                if (typeof DataSecurityManager !== 'undefined') {
+                    window.dataSecurityManager = new DataSecurityManager();
+                    console.log('[安全] 数据安全管理器已初始化');
+                }
+                
+                // 初始化令牌验证管理器
+                if (typeof TokenVerificationManager !== 'undefined') {
+                    window.tokenVerificationManager = new TokenVerificationManager();
+                    console.log('[安全] 令牌验证管理器已初始化');
+                }
+                
+                // 启动安全监控
+                setTimeout(() => {
+                    if (window.sessionManager) {
+                        window.sessionManager.startMonitoring();
+                    }
+                    if (window.securityEventManager) {
+                        window.securityEventManager.startMonitoring();
+                    }
+                }, 1000);
+                
+                // 初始化自动主题和增强时间显示
+                setTimeout(() => {
+                    try {
+                        // 初始化自动主题管理器
+                        if (typeof AutoThemeManager !== 'undefined') {
+                            window.autoThemeManager = new AutoThemeManager();
+                            console.log('[主题] 自动主题管理器已初始化');
+                        }
+                        
+                        // 初始化增强时间显示
+                        if (typeof EnhancedTimeDisplay !== 'undefined') {
+                            window.enhancedTimeDisplay = new EnhancedTimeDisplay();
+                            console.log('[时间] 增强时间显示已初始化');
+                        }
+                    } catch (error) {
+                        console.error('[初始化] 自动主题或时间显示初始化失败:', error);
+                    }
+                }, 500);
+                
+            } catch (error) {
+                console.error('[安全] 安全模块初始化失败:', error);
+                // 注册页面不重定向，但记录错误
+            }
+        });
+        
+        // 页面卸载时清理
+        window.addEventListener('beforeunload', function() {
+            try {
+                if (window.sessionManager) {
+                    window.sessionManager.cleanup();
+                }
+                if (window.dataSecurityManager) {
+                    window.dataSecurityManager.lockAllData();
+                }
+            } catch (error) {
+                console.error('[安全] 页面卸载清理失败:', error);
+            }
+        });
+    </script>
+    
+    <!-- 页脚 -->
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>关于我们</h3>
+                    <ul class="footer-links">
+                        <li><a href="#"><i class="fas fa-info-circle"></i> 公司简介</a></li>
+                        <li><a href="#"><i class="fas fa-history"></i> 发展历程</a></li>
+                        <li><a href="#"><i class="fas fa-users"></i> 团队介绍</a></li>
+                        <li><a href="#"><i class="fas fa-newspaper"></i> 新闻动态</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>产品服务</h3>
+                    <ul class="footer-links">
+                        <li><a href="#"><i class="fas fa-cogs"></i> 系统功能</a></li>
+                        <li><a href="#"><i class="fas fa-rocket"></i> 解决方案</a></li>
+                        <li><a href="#"><i class="fas fa-chart-line"></i> 数据分析</a></li>
+                        <li><a href="#"><i class="fas fa-shield-alt"></i> 安全服务</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>帮助中心</h3>
+                    <ul class="footer-links">
+                        <li><a href="#"><i class="fas fa-book"></i> 使用文档</a></li>
+                        <li><a href="#"><i class="fas fa-question-circle"></i> 常见问题</a></li>
+                        <li><a href="#"><i class="fas fa-headset"></i> 技术支持</a></li>
+                        <li><a href="#"><i class="fas fa-life-ring"></i> 联系我们</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>联系我们</h3>
+                    <ul class="footer-links">
+                        <li><a href="#"><i class="fas fa-map-marker-alt"></i> 北京市海淀区科技园区</a></li>
+                        <li><a href="#"><i class="fas fa-phone"></i> 400-888-8888</a></li>
+                        <li><a href="#"><i class="fas fa-envelope"></i> contact@mtscos.com</a></li>
+                        <li><a href="#"><i class="fas fa-clock"></i> 周一至周五 9:00-18:00</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <div class="footer-social">
+                    <a href="#"><i class="fab fa-weixin"></i></a>
+                    <a href="#"><i class="fab fa-weibo"></i></a>
+                    <a href="#"><i class="fab fa-github"></i></a>
+                    <a href="#"><i class="fab fa-linkedin"></i></a>
+                </div>
+                <p class="footer-copyright">© 2025 MTSCOS 智能管理系统 版权所有 | 作者: Chenghao Wu | 京ICP备12345678号</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

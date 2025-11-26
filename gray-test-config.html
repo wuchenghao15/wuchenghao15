@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>灰度测试环境配置 - MTSCOS系统</title>
+    <!-- 引入样式文件 -->
+    <link rel="stylesheet" href="assets/css/main.css">
+    <link rel="stylesheet" href="assets/css/gray-test-config.css">
+    <!-- 引入Font Awesome图标库 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- 页面加载遮罩 -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <p id="loading-text">正在加载灰度测试配置...</p>
+        </div>
+    </div>
+
+    <!-- 顶部导航栏 -->
+    <header class="main-header">
+        <div class="header-left">
+            <div class="logo">
+                <img src="assets/images/logo.png" alt="MTSCOS Logo">
+                <span>MTSCOS AI 系统</span>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="dashboard.html"><i class="fas fa-tachometer-alt"></i> 仪表盘</a></li>
+                    <li><a href="vikey-monitor.html"><i class="fas fa-shield-alt"></i> 规则监控</a></li>
+                    <li class="active"><a href="gray-test-config.html"><i class="fas fa-vial"></i> 灰度测试</a></li>
+                    <li><a href="backup-management.html"><i class="fas fa-database"></i> 备份管理</a></li>
+                    <li><a href="auth-requests.html"><i class="fas fa-user-lock"></i> 授权管理</a></li>
+                </ul>
+            </nav>
+        </div>
+        <div class="header-right">
+            <div class="user-info">
+                <div class="avatar">
+                    <i class="fas fa-user-circle"></i>
+                </div>
+                <div class="user-details">
+                    <span class="user-name">管理员</span>
+                    <span class="user-role">超级管理员</span>
+                </div>
+            </div>
+            <button id="logout-btn" class="logout-btn">
+                <i class="fas fa-sign-out-alt"></i> 退出
+            </button>
+        </div>
+    </header>
+
+    <!-- 主要内容区域 -->
+    <div class="main-container">
+        <!-- 侧边导航 -->
+        <aside class="sidebar">
+            <h3 class="sidebar-title">灰度测试管理</h3>
+            <ul class="sidebar-menu">
+                <li class="sidebar-item">
+                    <a href="#test-overview" class="sidebar-link active"><i class="fas fa-chart-line"></i> 测试概览</a>
+                </li>
+                <li class="sidebar-item">
+                    <a href="#test-groups" class="sidebar-link"><i class="fas fa-users"></i> 测试组管理</a>
+                </li>
+                <li class="sidebar-item">
+                    <a href="#feature-flags" class="sidebar-link"><i class="fas fa-toggle-on"></i> 功能标志</a>
+                </li>
+                <li class="sidebar-item">
+                    <a href="#test-settings" class="sidebar-link"><i class="fas fa-cog"></i> 测试设置</a>
+                </li>
+                <li class="sidebar-item">
+                    <a href="#test-history" class="sidebar-link"><i class="fas fa-history"></i> 测试历史</a>
+                </li>
+                <li class="sidebar-item">
+                    <a href="#metrics" class="sidebar-link"><i class="fas fa-chart-bar"></i> 性能指标</a>
+                </li>
+            </ul>
+        </aside>
+
+        <!-- 内容主体 -->
+        <main class="content">
+            <!-- 权限警告 -->
+            <div id="permission-warning" class="permission-warning hidden">
+                <div class="warning-content">
+                    <i class="fas fa-exclamation-triangle warning-icon"></i>
+                    <span>您没有足够的权限执行此操作</span>
+                    <button class="close-warning"><i class="fas fa-times"></i></button>
+                </div>
+            </div>
+
+            <!-- 页面标题 -->
+            <div class="page-header">
+                <h1>灰度测试环境配置</h1>
+                <p>配置和管理灰度测试环境，实现功能的渐进式发布</p>
+            </div>
+
+            <!-- 功能按钮组 -->
+            <div class="action-buttons">
+                <button id="start-test-btn" class="btn-primary">
+                    <i class="fas fa-play-circle"></i> 开始测试
+                </button>
+                <button id="stop-test-btn" class="btn-danger" disabled>
+                    <i class="fas fa-stop-circle"></i> 停止测试
+                </button>
+                <button id="reset-config-btn" class="btn-secondary">
+                    <i class="fas fa-redo-alt"></i> 重置配置
+                </button>
+                <button id="generate-report-btn" class="btn-secondary">
+                    <i class="fas fa-file-alt"></i> 生成报告
+                </button>
+            </div>
+
+            <!-- 测试概览 -->
+            <section id="test-overview" class="section-card">
+                <h2 class="section-title">测试概览</h2>
+                <div class="stats-cards">
+                    <div class="stat-card">
+                        <div class="stat-icon success-icon">
+                            <i class="fas fa-play"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="test-status">未运行</div>
+                            <div class="stat-label">测试状态</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon info-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="test-groups-count">0</div>
+                            <div class="stat-label">测试组数量</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon warning-icon">
+                            <i class="fas fa-percentage"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="user-percentage">0%</div>
+                            <div class="stat-label">用户覆盖率</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon primary-icon">
+                            <i class="fas fa-feather-alt"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="enabled-features">0</div>
+                            <div class="stat-label">已启用功能</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon secondary-icon">
+                            <i class="fas fa-history"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="test-duration">0</div>
+                            <div class="stat-label">测试时长(小时)</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 实时状态信息 -->
+                <div class="test-status-info">
+                    <h3>实时状态</h3>
+                    <div class="status-details">
+                        <div class="status-item">
+                            <span class="status-label">流量路由策略:</span>
+                            <span class="status-value" id="traffic-routing">百分比</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">回退策略:</span>
+                            <span class="status-value" id="fallback-strategy">原始版本</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">监控间隔:</span>
+                            <span class="status-value" id="monitoring-interval">5分钟</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">上次指标收集:</span>
+                            <span class="status-value" id="last-metrics">无</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 测试组管理 -->
+            <section id="test-groups" class="section-card">
+                <div class="section-header">
+                    <h2 class="section-title">测试组管理</h2>
+                    <button id="add-test-group-btn" class="btn-primary small-btn">
+                        <i class="fas fa-plus"></i> 添加测试组
+                    </button>
+                </div>
+                
+                <div class="search-filter-bar">
+                    <div class="search-input-group">
+                        <input type="text" id="group-search" placeholder="搜索测试组..." class="search-input">
+                        <i class="fas fa-search search-icon"></i>
+                    </div>
+                </div>
+                
+                <div class="table-container">
+                    <table id="test-groups-table" class="data-table">
+                        <thead>
+                            <tr>
+                                <th>测试组ID</th>
+                                <th>测试组名称</th>
+                                <th>用户数量</th>
+                                <th>功能特性</th>
+                                <th>流量权重</th>
+                                <th>状态</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="test-groups-table-body">
+                            <tr class="empty-row">
+                                <td colspan="7" class="empty-message">加载测试组中...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="pagination-controls">
+                    <div class="pagination-info">
+                        <span>显示 <span id="showing-range">0-0</span> / 共 <span id="total-groups">0</span> 个</span>
+                    </div>
+                    <div class="pagination-buttons">
+                        <button id="prev-group-page" class="pagination-btn" disabled>
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <button id="next-group-page" class="pagination-btn" disabled>
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 功能标志 -->
+            <section id="feature-flags" class="section-card">
+                <div class="section-header">
+                    <h2 class="section-title">功能标志管理</h2>
+                    <button id="add-feature-flag-btn" class="btn-primary small-btn">
+                        <i class="fas fa-plus"></i> 添加功能标志
+                    </button>
+                </div>
+                
+                <div class="feature-flags-list">
+                    <div class="flags-grid" id="feature-flags-container">
+                        <!-- 功能标志卡片将动态插入这里 -->
+                        <div class="loading-message">加载功能标志中...</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 测试设置 -->
+            <section id="test-settings" class="section-card">
+                <h2 class="section-title">测试设置</h2>
+                
+                <div class="settings-tabs">
+                    <button class="tab-btn active" data-tab="basic">基本设置</button>
+                    <button class="tab-btn" data-tab="metrics">指标配置</button>
+                    <button class="tab-btn" data-tab="advanced">高级选项</button>
+                </div>
+                
+                <div class="settings-content">
+                    <!-- 基本设置 -->
+                    <div class="tab-content active" id="basic-tab">
+                        <form id="basic-settings-form" class="settings-form">
+                            <div class="form-group">
+                                <label class="switch-label">
+                                    <input type="checkbox" id="gray-test-enabled" class="toggle-switch">
+                                    <span class="switch-text">启用灰度测试</span>
+                                </label>
+                                <p class="form-hint">启用后，系统将根据配置的规则分发流量到灰度版本</p>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="user-percentage-input">用户覆盖率</label>
+                                    <div class="input-with-suffix">
+                                        <input type="number" id="user-percentage-input" min="0" max="100" value="50">
+                                        <span class="input-suffix">%</span>
+                                    </div>
+                                    <p class="form-hint">指定参与灰度测试的用户百分比</p>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="test-duration-input">测试持续时间</label>
+                                    <div class="input-with-suffix">
+                                        <input type="number" id="test-duration-input" min="1" max="168" value="24">
+                                        <span class="input-suffix">小时</span>
+                                    </div>
+                                    <p class="form-hint">设置灰度测试的自动持续时间，0表示不自动结束</p>
+                                </div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="traffic-routing-select">流量路由策略</label>
+                                    <select id="traffic-routing-select" class="select-input">
+                                        <option value="percentage">按百分比</option>
+                                        <option value="userGroup">按用户组</option>
+                                        <option value="cookie">按Cookie</option>
+                                    </select>
+                                    <p class="form-hint">选择如何将用户分配到测试版本</p>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="fallback-strategy-select">回退策略</label>
+                                    <select id="fallback-strategy-select" class="select-input">
+                                        <option value="original">原始版本</option>
+                                        <option value="alternate">备用版本</option>
+                                    </select>
+                                    <p class="form-hint">当出现异常时的回退策略</p>
+                                </div>
+                            </div>
+                            
+                            <div class="form-actions">
+                                <button type="submit" class="btn-primary">保存设置</button>
+                                <button type="button" id="reset-basic-settings" class="btn-secondary">重置为默认值</button>
+                            </div>
+                        </form>
+                    </div>
+                    
+                    <!-- 指标配置 -->
+                    <div class="tab-content" id="metrics-tab">
+                        <form id="metrics-settings-form" class="settings-form">
+                            <div class="form-group">
+                                <label class="switch-label">
+                                    <input type="checkbox" id="metrics-collection-enabled" class="toggle-switch" checked>
+                                    <span class="switch-text">启用指标收集</span>
+                                </label>
+                                <p class="form-hint">启用后，系统将收集灰度测试相关的性能和用户行为指标</p>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="monitoring-interval-input">监控间隔</label>
+                                <div class="input-with-suffix">
+                                    <input type="number" id="monitoring-interval-input" min="1" max="60" value="5">
+                                    <span class="input-suffix">分钟</span>
+                                </div>
+                                <p class="form-hint">设置收集性能指标的时间间隔</p>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>指标类型</label>
+                                <div class="checkbox-group">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="metric-performance" class="metric-checkbox" checked>
+                                        <span>性能指标</span>
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="metric-error-rate" class="metric-checkbox" checked>
+                                        <span>错误率指标</span>
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="metric-engagement" class="metric-checkbox" checked>
+                                        <span>用户参与度指标</span>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="form-actions">
+                                <button type="submit" class="btn-primary">保存设置</button>
+                                <button type="button" id="reset-metrics-settings" class="btn-secondary">重置为默认值</button>
+                            </div>
+                        </form>
+                    </div>
+                    
+                    <!-- 高级选项 -->
+                    <div class="tab-content" id="advanced-tab">
+                        <form id="advanced-settings-form" class="settings-form">
+                            <div class="form-group">
+                                <label class="switch-label">
+                                    <input type="checkbox" id="debug-mode" class="toggle-switch">
+                                    <span class="switch-text">启用调试模式</span>
+                                </label>
+                                <p class="form-hint">启用后，系统将记录详细的灰度测试日志</p>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="switch-label">
+                                    <input type="checkbox" id="force-update-cookies" class="toggle-switch">
+                                    <span class="switch-text">强制更新Cookie</span>
+                                </label>
+                                <p class="form-hint">强制覆盖用户现有的灰度测试Cookie</p>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="error-threshold-input">错误率阈值</label>
+                                <div class="input-with-suffix">
+                                    <input type="number" id="error-threshold-input" min="0" max="100" step="0.1" value="5">
+                                    <span class="input-suffix">%</span>
+                                </div>
+                                <p class="form-hint">当错误率超过此阈值时，自动回退到原始版本</p>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="response-time-threshold-input">响应时间阈值</label>
+                                <div class="input-with-suffix">
+                                    <input type="number" id="response-time-threshold-input" min="100" max="5000" value="2000">
+                                    <span class="input-suffix">ms</span>
+                                </div>
+                                <p class="form-hint">当响应时间超过此阈值时，触发警告</p>
+                            </div>
+                            
+                            <div class="form-actions">
+                                <button type="submit" class="btn-primary">保存设置</button>
+                                <button type="button" id="reset-advanced-settings" class="btn-secondary">重置为默认值</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 测试历史 -->
+            <section id="test-history" class="section-card">
+                <div class="section-header">
+                    <h2 class="section-title">测试历史</h2>
+                    <div class="filter-group">
+                        <select id="history-filter" class="select-input small">
+                            <option value="all">全部测试</option>
+                            <option value="completed">已完成</option>
+                            <option value="failed">失败</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="table-container">
+                    <table id="test-history-table" class="data-table">
+                        <thead>
+                            <tr>
+                                <th>测试ID</th>
+                                <th>测试名称</th>
+                                <th>开始时间</th>
+                                <th>结束时间</th>
+                                <th>用户覆盖率</th>
+                                <th>状态</th>
+                                <th>成功率</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="test-history-table-body">
+                            <tr class="empty-row">
+                                <td colspan="8" class="empty-message">加载测试历史中...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="pagination-controls">
+                    <div class="pagination-info">
+                        <span>显示 <span id="showing-history-range">0-0</span> / 共 <span id="total-history">0</span> 条</span>
+                    </div>
+                    <div class="pagination-buttons">
+                        <button id="prev-history-page" class="pagination-btn" disabled>
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <button id="next-history-page" class="pagination-btn" disabled>
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 性能指标 -->
+            <section id="metrics" class="section-card">
+                <h2 class="section-title">性能指标</h2>
+                
+                <div class="metrics-tabs">
+                    <button class="tab-btn active" data-tab="performance">性能指标</button>
+                    <button class="tab-btn" data-tab="reliability">可靠性指标</button>
+                    <button class="tab-btn" data-tab="user-experience">用户体验指标</button>
+                    <button class="tab-btn" data-tab="comparison">对比分析</button>
+                </div>
+                
+                <div class="metrics-content">
+                    <!-- 性能指标内容 -->
+                    <div class="tab-content active" id="performance-metrics-tab">
+                        <div class="metrics-cards">
+                            <div class="metric-card">
+                                <div class="metric-header">
+                                    <h4>页面加载时间</h4>
+                                    <span class="metric-timestamp">最近更新: 刚刚</span>
+                                </div>
+                                <div class="metric-value">2.8 <span class="metric-unit">秒</span></div>
+                                <div class="metric-change positive">
+                                    <i class="fas fa-arrow-down"></i>
+                                    <span>12%</span>
+                                </div>
+                            </div>
+                            
+                            <div class="metric-card">
+                                <div class="metric-header">
+                                    <h4>API响应时间</h4>
+                                    <span class="metric-timestamp">最近更新: 刚刚</span>
+                                </div>
+                                <div class="metric-value">310 <span class="metric-unit">毫秒</span></div>
+                                <div class="metric-change positive">
+                                    <i class="fas fa-arrow-down"></i>
+                                    <span>28%</span>
+                                </div>
+                            </div>
+                            
+                            <div class="metric-card">
+                                <div class="metric-header">
+                                    <h4>首屏渲染时间</h4>
+                                    <span class="metric-timestamp">最近更新: 刚刚</span>
+                                </div>
+                                <div class="metric-value">1.5 <span class="metric-unit">秒</span></div>
+                                <div class="metric-change positive">
+                                    <i class="fas fa-arrow-down"></i>
+                                    <span>15%</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="chart-container">
+                            <h4>性能趋势图</h4>
+                            <div id="performance-chart" class="chart-placeholder">
+                                <!-- 性能图表将在这里渲染 -->
+                                <div class="chart-loading">加载性能图表...</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 可靠性指标内容 -->
+                    <div class="tab-content" id="reliability-metrics-tab">
+                        <div class="metrics-cards">
+                            <div class="metric-card">
+                                <div class="metric-header">
+                                    <h4>错误率</h4>
+                                    <span class="metric-timestamp">最近更新: 刚刚</span>
+                                </div>
+                                <div class="metric-value">0.5 <span class="metric-unit">%</span></div>
+                                <div class="metric-change positive">
+                                    <i class="fas fa-arrow-down"></i>
+                                    <span>0.3%</span>
+                                </div>
+                            </div>
+                            
+                            <div class="metric-card">
+                                <div class="metric-header">
+                                    <h4>崩溃率</h4>
+                                    <span class="metric-timestamp">最近更新: 刚刚</span>
+                                </div>
+                                <div class="metric-value">0.1 <span class="metric-unit">%</span></div>
+                                <div class="metric-change neutral">
+                                    <i class="fas fa-minus"></i>
+                                    <span>0%</span>
+                                </div>
+                            </div>
+                            
+                            <div class="metric-card">
+                                <div class="metric-header">
+                                    <h4>服务可用性</h4>
+                                    <span class="metric-timestamp">最近更新: 刚刚</span>
+                                </div>
+                                <div class="metric-value">99.8 <span class="metric-unit">%</span></div>
+                                <div class="metric-change positive">
+                                    <i class="fas fa-arrow-up"></i>
+                                    <span>0.2%</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="chart-container">
+                            <h4>错误率趋势图</h4>
+                            <div id="error-rate-chart" class="chart-placeholder">
+                                <!-- 错误率图表将在这里渲染 -->
+                                <div class="chart-loading">加载错误率图表...</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 用户体验指标内容 -->
+                    <div class="tab-content" id="user-experience-metrics-tab">
+                        <div class="metrics-cards">
+                            <div class="metric-card">
+                                <div class="metric-header">
+                                    <h4>用户满意度</h4>
+                                    <span class="metric-timestamp">最近更新: 刚刚</span>
+                                </div>
+                                <div class="metric-value">4.2 <span class="metric-unit">/5</span></div>
+                                <div class="metric-change positive">
+                                    <i class="fas fa-arrow-up"></i>
+                                    <span>0.3</span>
+                                </div>
+                            </div>
+                            
+                            <div class="metric-card">
+                                <div class="metric-header">
+                                    <h4>用户参与度</h4>
+                                    <span class="metric-timestamp">最近更新: 刚刚</span>
+                                </div>
+                                <div class="metric-value">+18 <span class="metric-unit">%</span></div>
+                                <div class="metric-change positive">
+                                    <i class="fas fa-arrow-up"></i>
+                                    <span>5%</span>
+                                </div>
+                            </div>
+                            
+                            <div class="metric-card">
+                                <div class="metric-header">
+                                    <h4>跳出率</h4>
+                                    <span class="metric-timestamp">最近更新: 刚刚</span>
+                                </div>
+                                <div class="metric-value">25 <span class="metric-unit">%</span></div>
+                                <div class="metric-change positive">
+                                    <i class="fas fa-arrow-down"></i>
+                                    <span>10%</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="chart-container">
+                            <h4>用户参与度趋势图</h4>
+                            <div id="engagement-chart" class="chart-placeholder">
+                                <!-- 参与度图表将在这里渲染 -->
+                                <div class="chart-loading">加载用户参与度图表...</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 对比分析内容 -->
+                    <div class="tab-content" id="comparison-metrics-tab">
+                        <div class="comparison-filters">
+                            <div class="form-group">
+                                <label for="comparison-version-a">版本 A</label>
+                                <select id="comparison-version-a" class="select-input">
+                                    <option value="original">原始版本</option>
+                                    <option value="gray-1">灰度版本 1</option>
+                                    <option value="gray-2">灰度版本 2</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="comparison-version-b">版本 B</label>
+                                <select id="comparison-version-b" class="select-input">
+                                    <option value="original">原始版本</option>
+                                    <option value="gray-1">灰度版本 1</option>
+                                    <option value="gray-2">灰度版本 2</option>
+                                </select>
+                            </div>
+                            
+                            <button id="run-comparison" class="btn-primary">执行对比</button>
+                        </div>
+                        
+                        <div class="comparison-results" id="comparison-results-container">
+                            <!-- 对比结果将在这里显示 -->
+                            <div class="empty-comparison">
+                                <p>请选择两个版本进行对比分析</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- 页脚 -->
+    <footer class="main-footer">
+        <div class="footer-content">
+            <p>&copy; 2025 MTSCOS AI 系统. 版权所有.</p>
+            <div class="footer-links">
+                <a href="#">帮助中心</a>
+                <a href="#">API文档</a>
+                <a href="#">隐私政策</a>
+                <a href="#">联系我们</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- 添加测试组模态框 -->
+    <div id="add-test-group-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">添加测试组</h3>
+                <button class="close-modal"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="add-test-group-form">
+                    <div class="form-group">
+                        <label for="group-name">测试组名称</label>
+                        <input type="text" id="group-name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="group-weight">流量权重</label>
+                        <div class="input-with-suffix">
+                            <input type="number" id="group-weight" min="1" max="100" required>
+                            <span class="input-suffix">%</span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>功能特性</label>
+                        <div class="checkbox-group" id="group-features">
+                            <label class="checkbox-label">
+                                <input type="checkbox" value="newUI">
+                                <span>新UI界面</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" value="fastAPI">
+                                <span>快速API</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" value="newAuth">
+                                <span>新认证系统</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="group-users">用户列表（每行一个用户ID）</label>
+                        <textarea id="group-users" rows="4" placeholder="user1\nuser2\nuser3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary close-modal">取消</button>
+                <button id="confirm-add-group" class="btn-primary">确认添加</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 编辑测试组模态框 -->
+    <div id="edit-test-group-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">编辑测试组</h3>
+                <button class="close-modal"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="edit-test-group-form">
+                    <input type="hidden" id="edit-group-id">
+                    <div class="form-group">
+                        <label for="edit-group-name">测试组名称</label>
+                        <input type="text" id="edit-group-name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-group-weight">流量权重</label>
+                        <div class="input-with-suffix">
+                            <input type="number" id="edit-group-weight" min="1" max="100" required>
+                            <span class="input-suffix">%</span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>功能特性</label>
+                        <div class="checkbox-group" id="edit-group-features">
+                            <label class="checkbox-label">
+                                <input type="checkbox" value="newUI">
+                                <span>新UI界面</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" value="fastAPI">
+                                <span>快速API</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" value="newAuth">
+                                <span>新认证系统</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-group-users">用户列表（每行一个用户ID）</label>
+                        <textarea id="edit-group-users" rows="4" placeholder="user1\nuser2\nuser3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary close-modal">取消</button>
+                <button id="confirm-edit-group" class="btn-primary">保存更改</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加功能标志模态框 -->
+    <div id="add-feature-flag-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">添加功能标志</h3>
+                <button class="close-modal"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="add-feature-flag-form">
+                    <div class="form-group">
+                        <label for="flag-name">标志名称</label>
+                        <input type="text" id="flag-name" placeholder="newUI" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="flag-description">标志描述</label>
+                        <input type="text" id="flag-description" placeholder="新UI界面功能">
+                    </div>
+                    <div class="form-group">
+                        <label class="switch-label">
+                            <input type="checkbox" id="flag-enabled" class="toggle-switch">
+                            <span class="switch-text">启用此功能</span>
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary close-modal">取消</button>
+                <button id="confirm-add-flag" class="btn-primary">确认添加</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 删除确认模态框 -->
+    <div id="delete-confirm-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">确认删除</h3>
+                <button class="close-modal"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <p id="delete-message">您确定要删除所选项目吗？此操作无法撤销。</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary close-modal">取消</button>
+                <button id="confirm-delete" class="btn-danger">确认删除</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 消息通知 -->
+    <div id="notification" class="notification">
+        <div class="notification-content">
+            <i id="notification-icon" class="notification-icon"></i>
+            <span id="notification-message"></span>
+            <button class="close-notification"><i class="fas fa-times"></i></button>
+        </div>
+    </div>
+
+    <!-- 引入JavaScript文件 -->
+    <script src="assets/js/config.js"></script>
+    <script src="assets/js/auth.js"></script>
+    <script src="assets/js/helpers.js"></script>
+    <script src="assets/js/modules/gray-test-manager.js"></script>
+    <script src="assets/js/modules/gray-test-config.js"></script>
+</body>
+</html>

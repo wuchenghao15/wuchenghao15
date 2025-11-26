@@ -1,0 +1,1459 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>规则监测与管理 - MTSCOS 管理平台</title>
+    <!-- 外部样式表 -->
+    <link rel="stylesheet" href="assets/css/main.css">
+    <link rel="stylesheet" href="assets/css/vikey-monitor.css">
+    <!-- 图标库 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- 移除内联样式，使用外部CSS文件 -->
+        .vikey-monitor-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            position: relative;
+        }
+
+        .top-right-info {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            text-align: right;
+            color: #666;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            min-width: 200px;
+        }
+
+        .time-display {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #333;
+        }
+
+        .connections-display {
+            font-size: 14px;
+            margin-bottom: 5px;
+            color: #666;
+        }
+
+        .theme-display {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .vikey-status-panel {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            color: white;
+        }
+
+        .vikey-status-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .vikey-status-title {
+            font-size: 24px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .vikey-status-indicator {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #ff4444;
+            animation: pulse 2s infinite;
+            transition: all 0.3s ease;
+        }
+
+        .vikey-status-indicator.inserted {
+            background: #ffaa00;
+        }
+
+        .vikey-status-indicator.verified {
+            background: #00ff88;
+        }
+
+        .vikey-status-indicator.error {
+            background: #ff4444;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            25%, 75% { opacity: 0.3; }
+        }
+
+        .vikey-status-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .vikey-info-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .vikey-info-label {
+            font-size: 12px;
+            opacity: 0.8;
+            margin-bottom: 5px;
+        }
+
+        .vikey-info-value {
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .vikey-controls {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .vikey-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+
+        .vikey-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .vikey-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .vikey-btn.primary {
+            background: #4CAF50;
+            border-color: #4CAF50;
+        }
+
+        .vikey-btn.primary:hover {
+            background: #45a049;
+        }
+
+        .vikey-btn.danger {
+            background: #f44336;
+            border-color: #f44336;
+        }
+
+        .vikey-btn.danger:hover {
+            background: #da190b;
+        }
+
+        .vikey-events-log {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .vikey-events-header {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        <!-- 移除内联样式，所有样式将在vikey-monitor.css中定义 -->
+    </head>
+    <body class="admin-body">
+        <!-- 页面加载遮罩 -->
+        <div id="loading-overlay" class="loading-overlay">
+            <div class="loading-spinner"></div>
+            <p>加载系统规则监测...</p>
+        </div>
+
+        <!-- 顶部导航栏 -->
+        <header class="admin-header">
+            <div class="header-left">
+                <a href="index.html" class="logo">
+                    <i class="fas fa-shield-alt"></i>
+                    <span>MTSCOS 管理平台</span>
+                </a>
+            </div>
+            <div class="header-right">
+                <div class="user-info">
+                    <span id="current-user"></span>
+                    <span id="user-role"></span>
+                </div>
+                <button id="logout-btn" class="btn btn-secondary">
+                    <i class="fas fa-sign-out-alt"></i>
+                    退出
+                </button>
+            </div>
+        </header>
+
+        <!-- 侧边导航 -->
+        <nav class="admin-sidebar">
+            <ul class="sidebar-menu">
+                <li>
+                    <a href="admin-dashboard.html">
+                        <i class="fas fa-tachometer-alt"></i>
+                        <span>仪表盘</span>
+                    </a>
+                </li>
+                <li class="active">
+                    <a href="vikey-monitor.html">
+                        <i class="fas fa-cogs"></i>
+                        <span>规则监测与管理</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="user-management.html">
+                        <i class="fas fa-users-cog"></i>
+                        <span>用户管理</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="system-settings.html">
+                        <i class="fas fa-sliders-h"></i>
+                        <span>系统设置</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="logs-viewer.html">
+                        <i class="fas fa-history"></i>
+                        <span>日志查看器</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="backup-restore.html">
+                        <i class="fas fa-database"></i>
+                        <span>备份与恢复</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="gray-test.html">
+                        <i class="fas fa-flask"></i>
+                        <span>灰度测试</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- 主要内容区 -->
+        <main class="admin-main">
+            <!-- 页面标题区 -->
+            <div class="page-header">
+                <h1>规则监测与管理</h1>
+                <p>实时监控系统规则状态，自动检测并修复异常</p>
+            </div>
+
+            <!-- 权限提示区 -->
+            <div id="permission-warning" class="alert alert-warning hidden">
+                <i class="fas fa-exclamation-triangle"></i>
+                您没有足够的权限修改规则配置。仅管理员和Vikey管理员可以进行修改操作。
+            </div>
+
+            <!-- 监控控制区 -->
+            <div class="monitor-controls card">
+                <div class="card-header">
+                    <h2>监控控制面板</h2>
+                </div>
+                <div class="card-body">
+                    <div class="control-buttons">
+                        <button id="start-monitor" class="btn btn-primary">
+                            <i class="fas fa-play"></i>
+                            启动监控
+                        </button>
+                        <button id="stop-monitor" class="btn btn-warning" disabled>
+                            <i class="fas fa-stop"></i>
+                            停止监控
+                        </button>
+                        <button id="manual-check" class="btn btn-secondary">
+                            <i class="fas fa-sync"></i>
+                            手动检查
+                        </button>
+                        <div class="toggle-container">
+                            <label class="toggle-label">
+                                <input type="checkbox" id="auto-repair-toggle" checked>
+                                <span class="toggle-slider"></span>
+                                自动修复
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 监控统计信息 -->
+                    <div id="rules-monitoring-stats" class="monitoring-stats">
+                        <div class="stat-item loading">
+                            <span class="stat-number">--</span>
+                            <span class="stat-label">正常</span>
+                        </div>
+                        <div class="stat-item loading">
+                            <span class="stat-number">--</span>
+                            <span class="stat-label">警告</span>
+                        </div>
+                        <div class="stat-item loading">
+                            <span class="stat-number">--</span>
+                            <span class="stat-label">异常</span>
+                        </div>
+                        <div class="stat-item loading">
+                            <span class="stat-number">--</span>
+                            <span class="stat-label">总计</span>
+                        </div>
+                    </div>
+
+                    <!-- 监控状态信息 -->
+                    <div class="monitor-status">
+                        <p><i class="fas fa-circle status-indicator" id="monitor-status-indicator"></i>
+                            <span id="monitor-status-text">监控未启动</span></p>
+                        <p>上次检查时间: <span id="last-check-time">--</span></p>
+                        <p>下次检查时间: <span id="next-check-time">--</span></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 规则列表区 -->
+            <div class="rules-section card">
+                <div class="card-header">
+                    <h2>系统规则列表</h2>
+                    <div class="header-actions">
+                        <div class="search-bar">
+                            <input type="text" id="rule-search" placeholder="搜索规则..." class="form-control">
+                            <button class="btn btn-search">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                        <div class="filter-dropdown">
+                            <select id="rule-filter" class="form-control">
+                                <option value="all">全部状态</option>
+                                <option value="healthy">正常</option>
+                                <option value="error">异常</option>
+                                <option value="warning">警告</option>
+                            </select>
+                        </div>
+                        <div class="filter-dropdown">
+                            <select id="rule-type-filter" class="form-control">
+                                <option value="all">全部类型</option>
+                                <option value="system">系统规则</option>
+                                <option value="business">业务规则</option>
+                                <option value="security">安全规则</option>
+                                <option value="performance">性能规则</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="rules-table">
+                            <thead>
+                                <tr>
+                                    <th>规则ID</th>
+                                    <th>规则名称</th>
+                                    <th>类型</th>
+                                    <th>优先级</th>
+                                    <th>状态</th>
+                                    <th>最后检查时间</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="rules-table-body">
+                                <!-- 规则列表将通过JavaScript动态加载 -->
+                                <tr class="loading-row">
+                                    <td colspan="7">
+                                        <div class="loading-spinner small"></div>
+                                        <span>加载规则列表中...</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- 分页控制 -->
+                    <div class="pagination-controls">
+                        <button id="prev-page" class="btn btn-secondary" disabled>
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <span id="page-info">第 <span id="current-page">1</span> 页，共 <span id="total-pages">1</span> 页</span>
+                        <button id="next-page" class="btn btn-secondary" disabled>
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 规则详情模态框 -->
+            <div id="rule-details-modal" class="modal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>规则详情</h3>
+                        <button id="close-details-modal" class="close-button">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="rule-info">
+                            <div class="info-item">
+                                <label>规则ID:</label>
+                                <span id="detail-rule-id"></span>
+                            </div>
+                            <div class="info-item">
+                                <label>规则名称:</label>
+                                <span id="detail-rule-name"></span>
+                            </div>
+                            <div class="info-item">
+                                <label>类型:</label>
+                                <span id="detail-rule-type"></span>
+                            </div>
+                            <div class="info-item">
+                                <label>优先级:</label>
+                                <span id="detail-rule-priority"></span>
+                            </div>
+                            <div class="info-item">
+                                <label>描述:</label>
+                                <span id="detail-rule-description"></span>
+                            </div>
+                            <div class="info-item">
+                                <label>创建时间:</label>
+                                <span id="detail-rule-created"></span>
+                            </div>
+                            <div class="info-item">
+                                <label>最后更新:</label>
+                                <span id="detail-rule-updated"></span>
+                            </div>
+                            <div class="info-item">
+                                <label>启用状态:</label>
+                                <span id="detail-rule-enabled"></span>
+                            </div>
+                            <div class="info-item">
+                                <label>健康状态:</label>
+                                <span id="detail-rule-status"></span>
+                            </div>
+                            <div class="info-item">
+                                <label>错误信息:</label>
+                                <span id="detail-rule-error"></span>
+                            </div>
+                            <div class="info-item">
+                                <label>最后检查:</label>
+                                <span id="detail-rule-checked"></span>
+                            </div>
+                        </div>
+                        
+                        <!-- 规则详情 -->
+                        <div class="rule-details-section">
+                            <h4>规则详情</h4>
+                            <div id="rule-details-content" class="details-content">
+                                <!-- 动态加载规则详情 -->
+                            </div>
+                        </div>
+                        
+                        <!-- 规则历史 -->
+                        <div class="rule-history-section">
+                            <h4>操作历史</h4>
+                            <div class="history-list" id="rule-history-list">
+                                <!-- 动态加载历史记录 -->
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button id="close-rule-details" class="btn btn-secondary">关闭</button>
+                        <button id="manual-repair-rule" class="btn btn-primary">手动修复</button>
+                        <button id="restart-rule" class="btn btn-success">重启规则</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 规则修复确认模态框 -->
+            <div id="repair-confirm-modal" class="modal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>确认修复</h3>
+                        <button id="close-repair-modal" class="close-button">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <p>确定要修复规则 <span id="repair-rule-name"></span> 吗？</p>
+                        <p class="warning-text">修复操作可能会影响系统功能，请确保您了解操作后果。</p>
+                        <div class="repair-options">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="use-deepseek-repair" checked>
+                                使用DeepSeek模型辅助修复
+                            </label>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button id="cancel-repair" class="btn btn-secondary">取消</button>
+                        <button id="confirm-repair" class="btn btn-primary">确认修复</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 迭代历史与建议区 -->
+            <div class="iterations-section card">
+                <div class="card-header">
+                    <h2>历史迭代与建议</h2>
+                    <div class="header-actions">
+                        <button id="refresh-iterations" class="btn btn-secondary">
+                            <i class="fas fa-sync"></i>
+                            刷新
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- 迭代历史标签页 -->
+                    <div class="tabs">
+                        <button class="tab-button active" data-tab="history">迭代历史</button>
+                        <button class="tab-button" data-tab="suggestions">迭代建议</button>
+                    </div>
+                    
+                    <!-- 迭代历史内容 -->
+                    <div id="history-content" class="tab-content active">
+                        <div class="history-list" id="iterations-history">
+                            <!-- 动态加载迭代历史 -->
+                        </div>
+                    </div>
+                    
+                    <!-- 迭代建议内容 -->
+                    <div id="suggestions-content" class="tab-content">
+                        <div class="suggestions-list" id="iterations-suggestions">
+                            <!-- 动态加载迭代建议 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- 页脚 -->
+        <footer class="admin-footer">
+            <p>&copy; 2024 MTSCOS 管理平台 | 版本 1.0.0</p>
+        </footer>
+
+        <!-- 外部JavaScript文件 -->
+        <script src="assets/js/config.js"></script>
+        <script src="assets/js/modules/auth.js"></script>
+        <script src="assets/js/modules/notification.js"></script>
+        <script src="assets/js/modules/logging.js"></script>
+        <script src="assets/js/modules/rules-monitor-core.js"></script>
+        <script src="assets/js/modules/vikey-monitor.js"></script>
+    </body>
+</html>
+            background: #f8f9fa;
+            border-radius: 5px;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .vikey-event-time {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .vikey-event-description {
+            font-size: 14px;
+            color: #333;
+        }
+
+        .vikey-event-item.inserted {
+            border-left-color: #ffaa00;
+        }
+
+        .vikey-event-item.removed {
+            border-left-color: #ff4444;
+        }
+
+        .vikey-event-item.verified {
+            border-left-color: #00ff88;
+        }
+
+        .vikey-event-item.error {
+            border-left-color: #ff4444;
+        }
+
+        .vikey-permissions {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+        }
+
+        .vikey-permissions-header {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .permission-level {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            background: #f8f9fa;
+        }
+
+        .permission-level.active {
+            background: #e8f5e8;
+            border: 1px solid #4CAF50;
+        }
+
+        .permission-icon {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: #667eea;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-weight: bold;
+        }
+
+        .permission-info {
+            flex: 1;
+        }
+
+        .permission-name {
+            font-weight: bold;
+            margin-bottom: 2px;
+        }
+
+        .permission-description {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .vikey-settings {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+        }
+
+        .vikey-settings-header {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .setting-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .setting-item:last-child {
+            border-bottom: none;
+        }
+
+        .setting-label {
+            font-weight: 500;
+            color: #333;
+        }
+
+        .setting-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .setting-input {
+            width: 100px;
+            padding: 5px 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .setting-checkbox {
+            width: 20px;
+            height: 20px;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .alert-message {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .alert-message.error {
+            background: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+
+        .alert-message.success {
+            background: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+
+        .alert-icon {
+            font-size: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .vikey-monitor-container {
+                padding: 10px;
+            }
+
+            .vikey-status-panel {
+                padding: 20px;
+            }
+
+            .vikey-status-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+
+            .vikey-controls {
+                flex-direction: column;
+            }
+
+            .vikey-btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+        <div class="vikey-monitor-container">
+            <!-- 右上角信息显示 -->
+            <div class="top-right-info">
+                <div class="time-display" id="current-time">--:--:--</div>
+                <div class="connections-display" id="connection-count">连接数: 0</div>
+                <div class="theme-display" id="current-theme">主题: 默认</div>
+            </div>
+            
+            <!-- 状态面板 -->
+        <div class="vikey-status-panel">
+            <div class="vikey-status-header">
+                <div class="vikey-status-title">
+                    <div class="vikey-status-indicator" id="vikey-status-indicator"></div>
+                    <span>Vikey硬件密钥状态</span>
+                </div>
+                <div id="vikey-status-text">正在检测...</div>
+            </div>
+
+            <div class="vikey-status-info">
+                <div class="vikey-info-card">
+                    <div class="vikey-info-label">设备ID</div>
+                    <div class="vikey-info-value" id="vikey-device-id">未连接</div>
+                </div>
+                <div class="vikey-info-card">
+                    <div class="vikey-info-label">Vikey ID</div>
+                    <div class="vikey-info-value" id="vikey-id">未连接</div>
+                </div>
+                <div class="vikey-info-card">
+                    <div class="vikey-info-label">设备名称</div>
+                    <div class="vikey-info-value" id="vikey-name">未连接</div>
+                </div>
+                <div class="vikey-info-card">
+                    <div class="vikey-info-label">权限级别</div>
+                    <div class="vikey-info-value" id="vikey-permission-level">未连接</div>
+                </div>
+                <div class="vikey-info-card">
+                    <div class="vikey-info-label">有效期至</div>
+                    <div class="vikey-info-value" id="vikey-valid-to">未连接</div>
+                </div>
+                <div class="vikey-info-card">
+                    <div class="vikey-info-label">序列号</div>
+                    <div class="vikey-info-value" id="vikey-serial-number">未连接</div>
+                </div>
+            </div>
+
+            <div class="vikey-controls">
+                <button class="vikey-btn primary" id="btn-refresh-status" onclick="refreshVikeyStatus()">
+                    刷新状态
+                </button>
+                <button class="vikey-btn" id="btn-verify-vikey" onclick="verifyVikey()" disabled>
+                    验证Vikey
+                </button>
+                <button class="vikey-btn" id="btn-start-monitoring" onclick="startMonitoring()">
+                    开始监控
+                </button>
+                <button class="vikey-btn" id="btn-stop-monitoring" onclick="stopMonitoring()" disabled>
+                    停止监控
+                </button>
+                <button class="vikey-btn danger" id="btn-disconnect" onclick="disconnectVikey()" disabled>
+                    断开连接
+                </button>
+            </div>
+        </div>
+
+        <!-- 消息提示 -->
+        <div id="alert-container"></div>
+
+        <!-- 权限信息 -->
+        <div class="vikey-permissions">
+            <div class="vikey-permissions-header">权限级别信息</div>
+            <div class="permission-level" id="permission-user">
+                <div class="permission-icon">U</div>
+                <div class="permission-info">
+                    <div class="permission-name">普通用户</div>
+                    <div class="permission-description">基本系统访问权限</div>
+                </div>
+            </div>
+            <div class="permission-level" id="permission-admin">
+                <div class="permission-icon">A</div>
+                <div class="permission-info">
+                    <div class="permission-name">管理员</div>
+                    <div class="permission-description">系统管理和用户管理权限</div>
+                </div>
+            </div>
+            <div class="permission-level" id="permission-super-admin">
+                <div class="permission-icon">S</div>
+                <div class="permission-info">
+                    <div class="permission-name">超级管理员</div>
+                    <div class="permission-description">完全系统控制权限</div>
+                </div>
+            </div>
+            <div class="permission-level" id="permission-vikey-admin">
+                <div class="permission-icon">V</div>
+                <div class="permission-info">
+                    <div class="permission-name">Vikey管理员</div>
+                    <div class="permission-description">Vikey设备管理和系统锁定控制权限</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 设置面板 -->
+        <div class="vikey-settings">
+            <div class="vikey-settings-header">监控设置</div>
+            <div class="setting-item">
+                <div class="setting-label">监控间隔 (毫秒)</div>
+                <div class="setting-control">
+                    <input type="number" class="setting-input" id="monitoring-interval" value="500" min="100" max="5000">
+                </div>
+            </div>
+            <div class="setting-item">
+                <div class="setting-label">连接超时 (秒)</div>
+                <div class="setting-control">
+                    <input type="number" class="setting-input" id="connection-timeout" value="3" min="1" max="30">
+                </div>
+            </div>
+            <div class="setting-item">
+                <div class="setting-label">启用事件日志</div>
+                <div class="setting-control">
+                    <input type="checkbox" class="setting-checkbox" id="enable-event-logging" checked>
+                </div>
+            </div>
+            <div class="setting-item">
+                <div class="setting-label">自动重连</div>
+                <div class="setting-control">
+                    <input type="checkbox" class="setting-checkbox" id="auto-reconnect" checked>
+                </div>
+            </div>
+            <div class="setting-item">
+                <div class="setting-label"></div>
+                <div class="setting-control">
+                    <button class="vikey-btn primary" onclick="saveSettings()">保存设置</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 事件日志 -->
+        <div class="vikey-events-log">
+            <div class="vikey-events-header">
+                <span>事件日志</span>
+                <button class="vikey-btn" onclick="clearEventLog()">清空日志</button>
+            </div>
+            <div id="vikey-events-container">
+                <div class="vikey-event-item">
+                    <div class="vikey-event-time">系统启动</div>
+                    <div class="vikey-event-description">Vikey监控系统已初始化</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 引入JavaScript模块 -->
+    <script src="assets/js/core/vikey-api.js"></script>
+    <script src="assets/js/core/vikey-database.js"></script>
+    <script src="assets/js/core/vikey-activex-monitor.js"></script>
+
+    <script>
+        // 全局变量
+        let isMonitoring = false;
+        let currentVikeyInfo = null;
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeVikeyMonitor();
+            setupEventListeners();
+            loadSettings();
+            initializeInfoDisplay();
+        });
+
+        /**
+         * 初始化右上角信息显示
+         */
+        function initializeInfoDisplay() {
+            // 初始化并启动时间更新
+            updateCurrentTime();
+            setInterval(updateCurrentTime, 1000);
+            
+            // 初始化连接数
+            updateConnectionCount();
+            
+            // 初始化主题显示
+            updateThemeDisplay();
+            
+            // 定期更新连接数（模拟）
+            setInterval(updateConnectionCount, 5000);
+        }
+
+        /**
+         * 更新当前时间显示
+         */
+        function updateCurrentTime() {
+            const now = new Date();
+            const hours = now.getHours().toString().padStart(2, '0');
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            const seconds = now.getSeconds().toString().padStart(2, '0');
+            document.getElementById('current-time').textContent = `${hours}:${minutes}:${seconds}`;
+        }
+
+        /**
+         * 更新连接数显示
+         */
+        function updateConnectionCount() {
+            // 在实际应用中，这里应该从服务器或状态管理器获取真实的连接数
+            // 这里我们模拟一个连接数
+            let connectionCount = 0;
+            
+            // 如果有活动的Vikey连接，连接数至少为1
+            if (window.vikeyActiveXMonitor && window.vikeyActiveXMonitor.currentVikeyState && 
+                window.vikeyActiveXMonitor.currentVikeyState.state === 1) {
+                connectionCount = 1;
+            }
+            
+            // 可以添加其他连接数逻辑
+            document.getElementById('connection-count').textContent = `连接数: ${connectionCount}`;
+        }
+
+        /**
+         * 更新主题显示
+         */
+        function updateThemeDisplay() {
+            // 从localStorage获取当前主题，或者使用默认主题
+            const currentTheme = localStorage.getItem('vikey_theme') || '默认';
+            document.getElementById('current-theme').textContent = `主题: ${currentTheme}`;
+        }
+
+        /**
+         * 初始化Vikey监控
+         */
+        async function initializeVikeyMonitor() {
+            try {
+                showAlert('正在初始化Vikey监控系统...', 'info');
+
+                // 等待Vikey API初始化
+                if (window.vikeyAPI) {
+                    await new Promise(resolve => {
+                        const checkInit = setInterval(() => {
+                            if (window.vikeyAPI.isInitialized) {
+                                clearInterval(checkInit);
+                                resolve();
+                            }
+                        }, 100);
+                    });
+                }
+
+                // 等待ActiveX监控器初始化
+                if (window.vikeyActiveXMonitor) {
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+
+                // 初始状态检查
+                await refreshVikeyStatus();
+
+                showAlert('Vikey监控系统初始化完成', 'success');
+
+            } catch (error) {
+                console.error('Vikey监控初始化失败:', error);
+                showAlert('Vikey监控初始化失败: ' + error.message, 'error');
+            }
+        }
+
+        /**
+         * 设置事件监听器
+         */
+        function setupEventListeners() {
+            if (window.vikeyActiveXMonitor) {
+                // Vikey插入事件
+                window.vikeyActiveXMonitor.addEventListener('VIKEY_INSERTED', function(data) {
+                    handleVikeyInserted(data);
+                });
+
+                // Vikey拔出事件
+                window.vikeyActiveXMonitor.addEventListener('VIKEY_REMOVED', function(data) {
+                    handleVikeyRemoved(data);
+                });
+
+                // Vikey验证事件
+                window.vikeyActiveXMonitor.addEventListener('VIKEY_VERIFIED', function(data) {
+                    handleVikeyVerified(data);
+                });
+
+                // Vikey错误事件
+                window.vikeyActiveXMonitor.addEventListener('VIKEY_ERROR', function(data) {
+                    handleVikeyError(data);
+                });
+
+                // 监控状态事件
+                window.vikeyActiveXMonitor.addEventListener('MONITORING_STARTED', function() {
+                    isMonitoring = true;
+                    updateMonitoringButtons();
+                    addEventLog('监控已启动', 'info');
+                });
+
+                window.vikeyActiveXMonitor.addEventListener('MONITORING_STOPPED', function() {
+                    isMonitoring = false;
+                    updateMonitoringButtons();
+                    addEventLog('监控已停止', 'info');
+                });
+            }
+        }
+
+        /**
+         * 刷新Vikey状态
+         */
+        async function refreshVikeyStatus() {
+            try {
+                const btn = document.getElementById('btn-refresh-status');
+                btn.innerHTML = '<span class="loading-spinner"></span> 刷新中...';
+                btn.disabled = true;
+
+                if (window.vikeyActiveXMonitor) {
+                    await window.vikeyActiveXMonitor.checkVikeyStatus();
+                    const state = window.vikeyActiveXMonitor.getCurrentState();
+                    updateStatusDisplay(state);
+                }
+
+            } catch (error) {
+                console.error('刷新Vikey状态失败:', error);
+                showAlert('刷新状态失败: ' + error.message, 'error');
+            } finally {
+                const btn = document.getElementById('btn-refresh-status');
+                btn.innerHTML = '刷新状态';
+                btn.disabled = false;
+            }
+        }
+
+        /**
+         * 验证Vikey
+         */
+        async function verifyVikey() {
+            try {
+                if (!window.vikeyActiveXMonitor || !window.vikeyActiveXMonitor.isVikeyAvailable()) {
+                    showAlert('请先插入Vikey设备', 'error');
+                    return;
+                }
+
+                const btn = document.getElementById('btn-verify-vikey');
+                btn.innerHTML = '<span class="loading-spinner"></span> 验证中...';
+                btn.disabled = true;
+
+                const result = await window.vikeyActiveXMonitor.verifyVikey();
+                
+                if (result.success) {
+                    showAlert('Vikey验证成功', 'success');
+                    currentVikeyInfo = result.info;
+                    updateStatusDisplay(window.vikeyActiveXMonitor.getCurrentState());
+                } else {
+                    showAlert('Vikey验证失败: ' + result.error, 'error');
+                }
+
+            } catch (error) {
+                console.error('验证Vikey失败:', error);
+                showAlert('验证失败: ' + error.message, 'error');
+            } finally {
+                const btn = document.getElementById('btn-verify-vikey');
+                btn.innerHTML = '验证Vikey';
+                btn.disabled = false;
+            }
+        }
+
+        /**
+         * 开始监控
+         */
+        function startMonitoring() {
+            if (window.vikeyActiveXMonitor) {
+                window.vikeyActiveXMonitor.startMonitoring();
+            }
+        }
+
+        /**
+         * 停止监控
+         */
+        function stopMonitoring() {
+            if (window.vikeyActiveXMonitor) {
+                window.vikeyActiveXMonitor.stopMonitoring();
+            }
+        }
+
+        /**
+         * 断开Vikey连接
+         */
+        function disconnectVikey() {
+            if (confirm('确定要断开Vikey连接吗？')) {
+                // 这里可以添加断开连接的逻辑
+                showAlert('Vikey连接已断开', 'info');
+                updateStatusDisplay(null);
+            }
+        }
+
+        /**
+         * 更新状态显示
+         */
+        function updateStatusDisplay(state) {
+            const indicator = document.getElementById('vikey-status-indicator');
+            const statusText = document.getElementById('vikey-status-text');
+            
+            if (!state) {
+                indicator.className = 'vikey-status-indicator';
+                statusText.textContent = '未连接';
+                updateVikeyInfo(null);
+                updatePermissionDisplay(null);
+                return;
+            }
+
+            switch (state.state) {
+                case 0: // REMOVED
+                    indicator.className = 'vikey-status-indicator';
+                    statusText.textContent = 'Vikey已拔出';
+                    break;
+                case 1: // INSERTED
+                    indicator.className = 'vikey-status-indicator inserted';
+                    statusText.textContent = 'Vikey已插入';
+                    break;
+                case 2: // AUTHENTICATED
+                    indicator.className = 'vikey-status-indicator verified';
+                    statusText.textContent = 'Vikey已验证';
+                    break;
+                case 3: // ERROR
+                    indicator.className = 'vikey-status-indicator error';
+                    statusText.textContent = 'Vikey错误';
+                    break;
+                case 4: // EXPIRED
+                    indicator.className = 'vikey-status-indicator error';
+                    statusText.textContent = 'Vikey已过期';
+                    break;
+            }
+
+            if (state.info) {
+                updateVikeyInfo(state.info);
+                updatePermissionDisplay(state.info);
+            }
+
+            updateControlButtons(state);
+        }
+
+        /**
+         * 更新Vikey信息显示
+         */
+        function updateVikeyInfo(info) {
+            if (!info) {
+                document.getElementById('vikey-device-id').textContent = '未连接';
+                document.getElementById('vikey-id').textContent = '未连接';
+                document.getElementById('vikey-name').textContent = '未连接';
+                document.getElementById('vikey-permission-level').textContent = '未连接';
+                document.getElementById('vikey-valid-to').textContent = '未连接';
+                document.getElementById('vikey-serial-number').textContent = '未连接';
+                return;
+            }
+
+            document.getElementById('vikey-device-id').textContent = info.deviceId || '未知';
+            document.getElementById('vikey-id').textContent = info.vikeyId || '未知';
+            document.getElementById('vikey-name').textContent = info.vikeyName || '未知';
+            document.getElementById('vikey-permission-level').textContent = getPermissionLevelText(info.permissionLevel);
+            document.getElementById('vikey-valid-to').textContent = info.validTo ? new Date(info.validTo).toLocaleString() : '无限制';
+            document.getElementById('vikey-serial-number').textContent = info.serialNumber || '未知';
+        }
+
+        /**
+         * 更新权限显示
+         */
+        function updatePermissionDisplay(info) {
+            // 清除所有激活状态
+            document.querySelectorAll('.permission-level').forEach(el => {
+                el.classList.remove('active');
+            });
+
+            if (!info) return;
+
+            // 根据权限级别激活对应项
+            const permissionMap = {
+                1: 'permission-user',
+                2: 'permission-admin',
+                3: 'permission-super-admin',
+                4: 'permission-vikey-admin'
+            };
+
+            const elementId = permissionMap[info.permissionLevel];
+            if (elementId) {
+                document.getElementById(elementId).classList.add('active');
+            }
+        }
+
+        /**
+         * 获取权限级别文本
+         */
+        function getPermissionLevelText(level) {
+            const levels = {
+                1: '普通用户',
+                2: '管理员',
+                3: '超级管理员',
+                4: 'Vikey管理员'
+            };
+            return levels[level] || '未知';
+        }
+
+        /**
+         * 更新控制按钮状态
+         */
+        function updateControlButtons(state) {
+            const verifyBtn = document.getElementById('btn-verify-vikey');
+            const disconnectBtn = document.getElementById('btn-disconnect');
+            
+            const isConnected = state && (state.state === 1 || state.state === 2);
+            
+            verifyBtn.disabled = !isConnected;
+            disconnectBtn.disabled = !isConnected;
+        }
+
+        /**
+         * 更新监控按钮状态
+         */
+        function updateMonitoringButtons() {
+            const startBtn = document.getElementById('btn-start-monitoring');
+            const stopBtn = document.getElementById('btn-stop-monitoring');
+            
+            startBtn.disabled = isMonitoring;
+            stopBtn.disabled = !isMonitoring;
+        }
+
+        /**
+         * 处理Vikey插入事件
+         */
+        function handleVikeyInserted(data) {
+            showAlert('Vikey已插入', 'success');
+            addEventLog('Vikey设备插入', 'inserted', data.info);
+            updateStatusDisplay(window.vikeyActiveXMonitor.getCurrentState());
+        }
+
+        /**
+         * 处理Vikey拔出事件
+         */
+        function handleVikeyRemoved(data) {
+            showAlert('Vikey已拔出', 'warning');
+            addEventLog('Vikey设备拔出', 'removed');
+            updateStatusDisplay(window.vikeyActiveXMonitor.getCurrentState());
+        }
+
+        /**
+         * 处理Vikey验证事件
+         */
+        function handleVikeyVerified(data) {
+            if (data.result.success) {
+                showAlert('Vikey验证成功', 'success');
+                addEventLog('Vikey验证成功', 'verified', data.result.info);
+            } else {
+                showAlert('Vikey验证失败: ' + data.result.error, 'error');
+                addEventLog('Vikey验证失败: ' + data.result.error, 'error');
+            }
+            updateStatusDisplay(window.vikeyActiveXMonitor.getCurrentState());
+        }
+
+        /**
+         * 处理Vikey错误事件
+         */
+        function handleVikeyError(data) {
+            showAlert('Vikey错误: ' + data.errorMessage, 'error');
+            addEventLog('Vikey错误: ' + data.errorMessage, 'error', data);
+            updateStatusDisplay(window.vikeyActiveXMonitor.getCurrentState());
+        }
+
+        /**
+         * 添加事件日志
+         */
+        function addEventLog(description, type = 'info', data = null) {
+            const container = document.getElementById('vikey-events-container');
+            const eventItem = document.createElement('div');
+            eventItem.className = `vikey-event-item ${type}`;
+            
+            const time = new Date().toLocaleString();
+            eventItem.innerHTML = `
+                <div class="vikey-event-time">${time}</div>
+                <div class="vikey-event-description">${description}</div>
+            `;
+            
+            container.insertBefore(eventItem, container.firstChild);
+            
+            // 限制日志数量
+            while (container.children.length > 50) {
+                container.removeChild(container.lastChild);
+            }
+        }
+
+        /**
+         * 清空事件日志
+         */
+        function clearEventLog() {
+            if (confirm('确定要清空所有事件日志吗？')) {
+                const container = document.getElementById('vikey-events-container');
+                container.innerHTML = '';
+                addEventLog('事件日志已清空', 'info');
+            }
+        }
+
+        /**
+         * 显示提示消息
+         */
+        function showAlert(message, type = 'info') {
+            const container = document.getElementById('alert-container');
+            const alert = document.createElement('div');
+            alert.className = `alert-message ${type}`;
+            
+            const icons = {
+                info: 'ℹ️',
+                success: '✅',
+                warning: '⚠️',
+                error: '❌'
+            };
+            
+            alert.innerHTML = `
+                <span class="alert-icon">${icons[type]}</span>
+                <span>${message}</span>
+            `;
+            
+            container.appendChild(alert);
+            
+            // 自动移除提示
+            setTimeout(() => {
+                if (alert.parentNode) {
+                    alert.parentNode.removeChild(alert);
+                }
+            }, 5000);
+        }
+
+        /**
+         * 加载设置
+         */
+        function loadSettings() {
+            const settings = JSON.parse(localStorage.getItem('vikey_monitor_settings') || '{}');
+            
+            if (settings.monitoringInterval) {
+                document.getElementById('monitoring-interval').value = settings.monitoringInterval;
+            }
+            if (settings.connectionTimeout) {
+                document.getElementById('connection-timeout').value = settings.connectionTimeout;
+            }
+            if (settings.enableEventLogging !== undefined) {
+                document.getElementById('enable-event-logging').checked = settings.enableEventLogging;
+            }
+            if (settings.autoReconnect !== undefined) {
+                document.getElementById('auto-reconnect').checked = settings.autoReconnect;
+            }
+        }
+
+        /**
+         * 保存设置
+         */
+        function saveSettings() {
+            const settings = {
+                monitoringInterval: parseInt(document.getElementById('monitoring-interval').value),
+                connectionTimeout: parseInt(document.getElementById('connection-timeout').value),
+                enableEventLogging: document.getElementById('enable-event-logging').checked,
+                autoReconnect: document.getElementById('auto-reconnect').checked
+            };
+            
+            localStorage.setItem('vikey_monitor_settings', JSON.stringify(settings));
+            
+            // 应用设置到监控器
+            if (window.vikeyActiveXMonitor) {
+                window.vikeyActiveXMonitor.config.monitoringInterval = settings.monitoringInterval;
+                window.vikeyActiveXMonitor.config.connectionTimeout = settings.connectionTimeout * 1000;
+                window.vikeyActiveXMonitor.config.enableEventLogging = settings.enableEventLogging;
+                window.vikeyActiveXMonitor.config.autoReconnect = settings.autoReconnect;
+            }
+            
+            showAlert('设置已保存', 'success');
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,1235 @@
+<!DOCTYPE html>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MTSCOS 日志查看器</title>
+    <!-- 引入基础CSS -->
+    <link rel="stylesheet" href="/assets/css/common_styles/main.css">
+    <link rel="stylesheet" href="/assets/css/common_styles/modern-layout.css">
+    <link rel="stylesheet" href="/assets/css/common_styles/modern-forms.css">
+    <link rel="stylesheet" href="/assets/css/common_styles/responsive.css">
+    
+    <!-- 引入Font Awesome图标 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- 自定义CSS -->
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #3b82f6;
+            --accent-color: #1d4ed8;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --error-color: #ef4444;
+            --info-color: #3b82f6;
+            --bg-dark: #1e293b;
+            --bg-light: #f8fafc;
+            --text-dark: #1e293b;
+            --text-light: #f8fafc;
+            --border-color: #e2e8f0;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--text-dark);
+            background-color: var(--bg-light);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            box-shadow: var(--shadow-md);
+        }
+        
+        .header h1 {
+            font-size: 2.2rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 3fr;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+        
+        @media (max-width: 1024px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .sidebar {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: var(--shadow-sm);
+            height: fit-content;
+        }
+        
+        .main-content {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .section-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .filter-group {
+            margin-bottom: 20px;
+        }
+        
+        .filter-group label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: var(--text-dark);
+        }
+        
+        .filter-group select,
+        .filter-group input,
+        .filter-group button {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+        
+        .filter-group select:focus,
+        .filter-group input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+        
+        .filter-group button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        
+        .filter-group button:hover {
+            background-color: var(--accent-color);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .filter-group button:active {
+            transform: translateY(0);
+        }
+        
+        .control-buttons {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .control-buttons button {
+            flex: 1;
+            padding: 12px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--accent-color);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .btn-secondary {
+            background-color: #f1f5f9;
+            color: var(--text-dark);
+            border: 1px solid var(--border-color);
+        }
+        
+        .btn-secondary:hover {
+            background-color: #e2e8f0;
+            transform: translateY(-1px);
+        }
+        
+        .btn-success {
+            background-color: var(--success-color);
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background-color: #059669;
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .btn-warning {
+            background-color: var(--warning-color);
+            color: white;
+        }
+        
+        .btn-warning:hover {
+            background-color: #d97706;
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .btn-danger {
+            background-color: var(--error-color);
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background-color: #dc2626;
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .statistics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            transition: transform 0.2s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .stat-card.success {
+            background: linear-gradient(135deg, #d1fae5, #059669);
+            color: white;
+        }
+        
+        .stat-card.warning {
+            background: linear-gradient(135deg, #fef3c7, #d97706);
+            color: white;
+        }
+        
+        .stat-card.error {
+            background: linear-gradient(135deg, #fee2e2, #dc2626);
+            color: white;
+        }
+        
+        .stat-card.info {
+            background: linear-gradient(135deg, #dbeafe, #2563eb);
+            color: white;
+        }
+        
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        
+        .stat-label {
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+        
+        .log-table-container {
+            max-height: 600px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+        
+        .log-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        
+        .log-table thead {
+            position: sticky;
+            top: 0;
+            background-color: #f8fafc;
+            z-index: 10;
+        }
+        
+        .log-table th {
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--text-dark);
+            border-bottom: 2px solid var(--border-color);
+        }
+        
+        .log-table td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+            vertical-align: top;
+        }
+        
+        .log-table tr:hover {
+            background-color: #f8fafc;
+        }
+        
+        .log-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .log-entry-details {
+            margin-top: 8px;
+            padding: 8px;
+            background-color: #f8fafc;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        
+        .log-entry-details.collapsed {
+            max-height: 0;
+            overflow: hidden;
+            padding: 0;
+            margin: 0;
+            transition: max-height 0.3s ease;
+        }
+        
+        .action-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .action-badge.info {
+            background-color: #dbeafe;
+            color: #1e40af;
+        }
+        
+        .action-badge.success {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        
+        .action-badge.warning {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+        
+        .action-badge.error {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+        
+        .refresh-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background-color: #f8fafc;
+            border-radius: 8px;
+            font-size: 14px;
+            color: var(--text-dark);
+        }
+        
+        .refresh-status.auto-refresh {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        
+        .spinner {
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid var(--primary-color);
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+            color: var(--text-dark);
+            font-size: 1.1rem;
+        }
+        
+        .pagination {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 16px;
+            padding: 12px;
+            background-color: #f8fafc;
+            border-radius: 8px;
+        }
+        
+        .pagination-info {
+            font-size: 14px;
+            color: var(--text-dark);
+        }
+        
+        .pagination-controls {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .pagination-controls button {
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background-color: white;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .pagination-controls button:hover:not(:disabled) {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+        
+        .pagination-controls button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .container {
+                padding: 12px;
+            }
+            
+            .header h1 {
+                font-size: 1.8rem;
+            }
+            
+            .control-buttons {
+                flex-direction: column;
+            }
+            
+            .statistics {
+                grid-template-columns: 1fr;
+            }
+            
+            .log-table {
+                font-size: 12px;
+            }
+            
+            .log-table th,
+            .log-table td {
+                padding: 8px;
+            }
+            
+            .pagination {
+                flex-direction: column;
+                gap: 12px;
+                text-align: center;
+            }
+        }
+        
+        /* 黑暗模式支持 */
+        @media (prefers-color-scheme: dark) {
+            body {
+                background-color: #0f172a;
+                color: var(--text-light);
+            }
+            
+            .sidebar,
+            .main-content {
+                background-color: #1e293b;
+                color: var(--text-light);
+                border-color: #334155;
+            }
+            
+            .filter-group select,
+            .filter-group input {
+                background-color: #334155;
+                color: var(--text-light);
+                border-color: #475569;
+            }
+            
+            .log-table th {
+                background-color: #334155;
+                color: var(--text-light);
+                border-bottom-color: #475569;
+            }
+            
+            .log-table tr:hover {
+                background-color: #334155;
+            }
+            
+            .log-table td {
+                border-bottom-color: #475569;
+            }
+            
+            .stat-card {
+                background: linear-gradient(135deg, #334155, #475569);
+                color: var(--text-light);
+            }
+            
+            .refresh-status {
+                background-color: #334155;
+                color: var(--text-light);
+            }
+            
+            .pagination {
+                background-color: #334155;
+                color: var(--text-light);
+            }
+            
+            .pagination-controls button {
+                background-color: #475569;
+                color: var(--text-light);
+                border-color: #64748b;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 头部 -->
+        <div class="header">
+            <h1><i class="fas fa-chart-line"></i> MTSCOS 日志查看器</h1>
+            <p>实时监控和分析系统动作拐点日志</p>
+        </div>
+        
+        <!-- 控制面板和内容 -->
+        <div class="dashboard">
+            <!-- 侧边过滤面板 -->
+            <div class="sidebar">
+                <h2 class="section-title"><i class="fas fa-filter"></i> 过滤条件</h2>
+                
+                <div class="filter-group">
+                    <label for="log-type">日志类型</label>
+                    <select id="log-type">
+                        <option value="">全部类型</option>
+                        <option value="PAGE_LOADED">页面加载</option>
+                        <option value="PAGE_UNLOADED">页面卸载</option>
+                        <option value="USER_CLICK">用户点击</option>
+                        <option value="FORM_SUBMIT">表单提交</option>
+                        <option value="JAVASCRIPT_ERROR">JavaScript错误</option>
+                        <option value="RESOURCE_ERROR">资源错误</option>
+                        <option value="STATE_CHANGE">状态变更</option>
+                        <option value="CUSTOM_ACTION">自定义动作</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label for="start-date">开始日期</label>
+                    <input type="datetime-local" id="start-date">
+                </div>
+                
+                <div class="filter-group">
+                    <label for="end-date">结束日期</label>
+                    <input type="datetime-local" id="end-date">
+                </div>
+                
+                <div class="filter-group">
+                    <label for="search-text">搜索文本</label>
+                    <input type="text" id="search-text" placeholder="输入关键词...">
+                </div>
+                
+                <div class="filter-group">
+                    <label for="limit">显示数量</label>
+                    <select id="limit">
+                        <option value="50">50条</option>
+                        <option value="100" selected>100条</option>
+                        <option value="200">200条</option>
+                        <option value="500">500条</option>
+                        <option value="1000">1000条</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <button id="apply-filter" class="btn-primary">
+                        <i class="fas fa-search"></i> 应用过滤
+                    </button>
+                </div>
+                
+                <div class="filter-group">
+                    <button id="clear-filter" class="btn-secondary">
+                        <i class="fas fa-times"></i> 清除过滤
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 主内容区域 -->
+            <div class="main-content">
+                <!-- 控制按钮 -->
+                <div class="control-buttons">
+                    <button id="refresh-logs" class="btn-primary">
+                        <i class="fas fa-sync-alt"></i> 刷新日志
+                    </button>
+                    <button id="toggle-auto-refresh" class="btn-secondary">
+                        <i class="fas fa-clock"></i> 自动刷新
+                    </button>
+                    <button id="download-logs" class="btn-success">
+                        <i class="fas fa-download"></i> 导出日志
+                    </button>
+                    <button id="view-summary" class="btn-info">
+                        <i class="fas fa-chart-pie"></i> 统计视图
+                    </button>
+                </div>
+                
+                <!-- 统计卡片 -->
+                <div class="statistics" id="statistics-container">
+                    <div class="stat-card info">
+                        <div class="stat-number" id="total-logs">0</div>
+                        <div class="stat-label">总日志数</div>
+                    </div>
+                    <div class="stat-card success">
+                        <div class="stat-number" id="success-logs">0</div>
+                        <div class="stat-label">正常操作</div>
+                    </div>
+                    <div class="stat-card warning">
+                        <div class="stat-number" id="warning-logs">0</div>
+                        <div class="stat-label">警告事件</div>
+                    </div>
+                    <div class="stat-card error">
+                        <div class="stat-number" id="error-logs">0</div>
+                        <div class="stat-label">错误事件</div>
+                    </div>
+                </div>
+                
+                <!-- 刷新状态 -->
+                <div class="refresh-status" id="refresh-status">
+                    <span>上次刷新: 从未</span>
+                </div>
+                
+                <!-- 日志表格 -->
+                <div class="log-table-container">
+                    <table class="log-table" id="log-table">
+                        <thead>
+                            <tr>
+                                <th>时间戳</th>
+                                <th>动作类型</th>
+                                <th>会话ID</th>
+                                <th>用户ID</th>
+                                <th>详情</th>
+                            </tr>
+                        </thead>
+                        <tbody id="log-table-body">
+                            <tr>
+                                <td colspan="5" class="loading">
+                                    <div class="spinner"></div> 正在加载日志数据...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- 分页控制 -->
+                <div class="pagination">
+                    <div class="pagination-info" id="pagination-info">
+                        显示 0-0 条，共 0 条
+                    </div>
+                    <div class="pagination-controls">
+                        <button id="prev-page" disabled>
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <button id="next-page" disabled>
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 引入日志管理模块 -->
+    <script type="module">
+        // 导入日志管理模块
+        import { logManager } from '/assets/js/modules/log-management.js';
+        
+        // 等待DOM加载完成
+        document.addEventListener('DOMContentLoaded', function() {
+            // 配置
+            const config = {
+                autoRefreshInterval: 10000, // 10秒
+                autoRefreshEnabled: false,
+                currentPage: 1,
+                pageSize: 100
+            };
+            
+            // 状态
+            let filteredLogs = [];
+            let autoRefreshTimer = null;
+            let isLoading = false;
+            
+            // DOM元素
+            const elements = {
+                logTableBody: document.getElementById('log-table-body'),
+                refreshLogs: document.getElementById('refresh-logs'),
+                toggleAutoRefresh: document.getElementById('toggle-auto-refresh'),
+                downloadLogs: document.getElementById('download-logs'),
+                viewSummary: document.getElementById('view-summary'),
+                applyFilter: document.getElementById('apply-filter'),
+                clearFilter: document.getElementById('clear-filter'),
+                refreshStatus: document.getElementById('refresh-status'),
+                totalLogs: document.getElementById('total-logs'),
+                successLogs: document.getElementById('success-logs'),
+                warningLogs: document.getElementById('warning-logs'),
+                errorLogs: document.getElementById('error-logs'),
+                prevPage: document.getElementById('prev-page'),
+                nextPage: document.getElementById('next-page'),
+                paginationInfo: document.getElementById('pagination-info'),
+                logType: document.getElementById('log-type'),
+                startDate: document.getElementById('start-date'),
+                endDate: document.getElementById('end-date'),
+                searchText: document.getElementById('search-text'),
+                limit: document.getElementById('limit')
+            };
+            
+            // 初始化
+            function init() {
+                // 设置默认日期范围（过去24小时）
+                const now = new Date();
+                const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+                
+                elements.startDate.value = formatDateTimeLocal(yesterday);
+                elements.endDate.value = formatDateTimeLocal(now);
+                
+                // 设置事件监听器
+                elements.refreshLogs.addEventListener('click', refreshLogs);
+                elements.toggleAutoRefresh.addEventListener('click', toggleAutoRefresh);
+                elements.downloadLogs.addEventListener('click', downloadLogs);
+                elements.viewSummary.addEventListener('click', viewSummary);
+                elements.applyFilter.addEventListener('click', applyFilters);
+                elements.clearFilter.addEventListener('click', clearFilters);
+                elements.prevPage.addEventListener('click', goToPrevPage);
+                elements.nextPage.addEventListener('click', goToNextPage);
+                elements.limit.addEventListener('change', handleLimitChange);
+                
+                // 设置日志管理器事件监听器
+                logManager.on('logsLoaded', handleLogsLoaded);
+                logManager.on('newLog', handleNewLog);
+                logManager.on('connected', handleConnected);
+                logManager.on('disconnected', handleDisconnected);
+                logManager.on('error', handleLogManagerError);
+                
+                // 初始加载
+                loadLogs();
+            }
+            
+            // 格式化日期时间为local格式
+            function formatDateTimeLocal(date) {
+                return date.toISOString().slice(0, 16);
+            }
+            
+            // 加载日志
+            async function loadLogs() {
+                if (isLoading) return;
+                
+                isLoading = true;
+                updateRefreshStatus(true);
+                
+                try {
+                    // 构建过滤条件
+                    const filters = {
+                        limit: parseInt(elements.limit.value),
+                        startTime: elements.startDate.value ? new Date(elements.startDate.value).toISOString() : null,
+                        endTime: elements.endDate.value ? new Date(elements.endDate.value).toISOString() : null,
+                        actionType: elements.logType.value || null,
+                        searchText: elements.searchText.value || null
+                    };
+                    
+                    // 使用日志管理器加载日志
+                    await logManager.loadLogs(filters);
+                    
+                    // 更新最后刷新时间
+                    updateLastRefreshTime();
+                    
+                } catch (error) {
+                    console.error('加载日志失败:', error);
+                    showError('加载日志失败，请检查网络连接或服务状态');
+                } finally {
+                    isLoading = false;
+                    updateRefreshStatus(false);
+                }
+            }
+            
+            // 处理日志加载完成事件
+            function handleLogsLoaded(logs) {
+                // 更新统计信息
+                const stats = logManager.getStatistics();
+                updateStatistics(stats);
+                
+                // 应用过滤
+                applyFilters();
+            }
+            
+            // 处理新日志事件
+            function handleNewLog(newLog) {
+                // 如果启用了自动刷新，自动添加新日志到表格
+                if (config.autoRefreshEnabled) {
+                    // 检查新日志是否符合当前过滤条件
+                    const logType = elements.logType.value.toLowerCase();
+                    const searchText = elements.searchText.value.toLowerCase();
+                    
+                    let matchesFilter = true;
+                    
+                    // 按类型过滤
+                    if (logType && !newLog.actionType.toLowerCase().includes(logType)) {
+                        matchesFilter = false;
+                    }
+                    
+                    // 按文本搜索
+                    if (searchText) {
+                        const logString = JSON.stringify(newLog).toLowerCase();
+                        if (!logString.includes(searchText)) {
+                            matchesFilter = false;
+                        }
+                    }
+                    
+                    if (matchesFilter) {
+                        // 重新应用过滤以包含新日志
+                        applyFilters();
+                        
+                        // 高亮新添加的行
+                        highlightNewLog();
+                    }
+                }
+            }
+            
+            // 高亮新添加的日志行
+            function highlightNewLog() {
+                const rows = elements.logTableBody.querySelectorAll('tr');
+                if (rows.length > 0) {
+                    const newRow = rows[0];
+                    newRow.style.backgroundColor = '#d1fae5';
+                    setTimeout(() => {
+                        newRow.style.transition = 'background-color 1s ease';
+                        newRow.style.backgroundColor = '';
+                    }, 500);
+                }
+            }
+            
+            // 处理连接成功事件
+            function handleConnected() {
+                console.log('日志服务连接成功');
+                if (config.autoRefreshEnabled) {
+                    elements.refreshStatus.innerHTML = '<i class="fas fa-sync-alt fa-spin"></i> 实时更新已连接';
+                }
+            }
+            
+            // 处理断开连接事件
+            function handleDisconnected() {
+                console.log('日志服务连接断开');
+                if (config.autoRefreshEnabled) {
+                    elements.refreshStatus.innerHTML = '<i class="fas fa-exclamation-triangle"></i> 实时更新已断开';
+                }
+            }
+            
+            // 处理日志管理器错误
+            function handleLogManagerError(error) {
+                console.error('日志管理器错误:', error);
+                // 不显示错误，避免用户困惑
+            }
+            
+            // 刷新日志
+            function refreshLogs() {
+                config.currentPage = 1;
+                loadLogs();
+            }
+            
+            // 切换自动刷新
+            function toggleAutoRefresh() {
+                config.autoRefreshEnabled = !config.autoRefreshEnabled;
+                
+                if (config.autoRefreshEnabled) {
+                    elements.toggleAutoRefresh.classList.remove('btn-secondary');
+                    elements.toggleAutoRefresh.classList.add('btn-success');
+                    elements.toggleAutoRefresh.innerHTML = '<i class="fas fa-clock"></i> 停止刷新';
+                    
+                    // 连接WebSocket进行实时更新
+                    logManager.connectWebSocket();
+                    
+                    // 启动自动刷新定时器作为备份
+                    startAutoRefresh();
+                    
+                    // 更新状态显示
+                    elements.refreshStatus.classList.add('auto-refresh');
+                    elements.refreshStatus.innerHTML = '<i class="fas fa-sync-alt fa-spin"></i> 自动刷新已开启';
+                } else {
+                    elements.toggleAutoRefresh.classList.remove('btn-success');
+                    elements.toggleAutoRefresh.classList.add('btn-secondary');
+                    elements.toggleAutoRefresh.innerHTML = '<i class="fas fa-clock"></i> 自动刷新';
+                    
+                    // 断开WebSocket连接
+                    logManager.disconnectWebSocket();
+                    
+                    // 停止自动刷新
+                    stopAutoRefresh();
+                    
+                    // 更新状态显示
+                    elements.refreshStatus.classList.remove('auto-refresh');
+                    updateLastRefreshTime();
+                }
+            }
+            
+            // 启动自动刷新
+            function startAutoRefresh() {
+                stopAutoRefresh(); // 先停止现有的定时器
+                autoRefreshTimer = setInterval(() => {
+                    console.log('自动刷新日志...');
+                    loadLogs();
+                }, config.autoRefreshInterval);
+            }
+            
+            // 停止自动刷新
+            function stopAutoRefresh() {
+                if (autoRefreshTimer) {
+                    clearInterval(autoRefreshTimer);
+                    autoRefreshTimer = null;
+                }
+            }
+            
+            // 应用过滤条件
+            function applyFilters() {
+                // 从日志管理器获取日志数据
+                const allLogs = logManager.getStatistics().total > 0 ? 
+                    logManager.logCache : [];
+                
+                const logType = elements.logType.value.toLowerCase();
+                const searchText = elements.searchText.value.toLowerCase();
+                
+                // 过滤日志
+                filteredLogs = allLogs.filter(log => {
+                    // 按类型过滤
+                    if (logType && !log.actionType.toLowerCase().includes(logType)) {
+                        return false;
+                    }
+                    
+                    // 按文本搜索
+                    if (searchText) {
+                        const logString = JSON.stringify(log).toLowerCase();
+                        return logString.includes(searchText);
+                    }
+                    
+                    return true;
+                });
+                
+                // 重置页码
+                config.currentPage = 1;
+                
+                // 渲染日志表格
+                renderLogTable();
+                
+                // 更新分页信息
+                updatePagination();
+            }
+            
+            // 清除过滤条件
+            function clearFilters() {
+                elements.logType.value = '';
+                elements.searchText.value = '';
+                
+                // 重新应用过滤
+                applyFilters();
+            }
+            
+            // 渲染日志表格
+            function renderLogTable() {
+                const startIdx = (config.currentPage - 1) * config.pageSize;
+                const endIdx = startIdx + config.pageSize;
+                const pageLogs = filteredLogs.slice(startIdx, endIdx);
+                
+                elements.logTableBody.innerHTML = '';
+                
+                if (pageLogs.length === 0) {
+                    elements.logTableBody.innerHTML = `
+                        <tr>
+                            <td colspan="5" style="text-align: center; padding: 40px; color: #666;">
+                                <i class="fas fa-info-circle" style="font-size: 2rem; margin-bottom: 10px; display: block;"></i>
+                                没有找到符合条件的日志
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+                
+                pageLogs.forEach((log, index) => {
+                    const row = document.createElement('tr');
+                    row.dataset.index = index;
+                    
+                    // 格式化时间戳
+                    const formattedTime = new Date(log.timestamp).toLocaleString('zh-CN', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                        hour12: false
+                    });
+                    
+                    // 确定动作类型标签样式
+                    let badgeClass = 'info';
+                    if (log.actionType.includes('ERROR')) {
+                        badgeClass = 'error';
+                    } else if (log.actionType.includes('WARNING')) {
+                        badgeClass = 'warning';
+                    } else if (log.actionType.includes('SUCCESS') || 
+                             log.actionType.includes('LOADED') || 
+                             log.actionType.includes('SUBMIT')) {
+                        badgeClass = 'success';
+                    }
+                    
+                    // 格式化数据详情
+                    const formattedData = JSON.stringify(log.data, null, 2);
+                    
+                    row.innerHTML = `
+                        <td>${formattedTime}</td>
+                        <td>
+                            <span class="action-badge ${badgeClass}">${log.actionType}</span>
+                        </td>
+                        <td>${log.sessionId || '-'}</td>
+                        <td>${log.userId || 'anonymous'}</td>
+                        <td>
+                            <button class="toggle-details" style="background: none; border: none; color: var(--primary-color); cursor: pointer; font-size: 12px;">
+                                <i class="fas fa-chevron-down"></i> 查看详情
+                            </button>
+                            <pre class="log-entry-details">${formattedData}</pre>
+                        </td>
+                    `;
+                    
+                    elements.logTableBody.appendChild(row);
+                    
+                    // 添加详情切换事件
+                    const toggleBtn = row.querySelector('.toggle-details');
+                    const detailsElement = row.querySelector('.log-entry-details');
+                    
+                    toggleBtn.addEventListener('click', () => {
+                        detailsElement.classList.toggle('collapsed');
+                        const icon = toggleBtn.querySelector('i');
+                        if (detailsElement.classList.contains('collapsed')) {
+                            icon.classList.remove('fa-chevron-up');
+                            icon.classList.add('fa-chevron-down');
+                            toggleBtn.textContent = ' 查看详情';
+                            toggleBtn.prepend(icon);
+                        } else {
+                            icon.classList.remove('fa-chevron-down');
+                            icon.classList.add('fa-chevron-up');
+                            toggleBtn.textContent = ' 隐藏详情';
+                            toggleBtn.prepend(icon);
+                        }
+                    });
+                    
+                    // 默认折叠详情
+                    detailsElement.classList.add('collapsed');
+                });
+            }
+            
+            // 更新统计信息
+            function updateStatistics(stats) {
+                elements.totalLogs.textContent = stats.total;
+                elements.successLogs.textContent = stats.success;
+                elements.warningLogs.textContent = stats.warnings;
+                elements.errorLogs.textContent = stats.errors;
+            }
+            
+            // 下载日志
+            function downloadLogs() {
+                try {
+                    // 询问用户导出格式
+                    const format = prompt('请选择导出格式:', 'json');
+                    if (!format || !['json', 'csv', 'txt'].includes(format.toLowerCase())) {
+                        alert('不支持的导出格式，请选择 json、csv 或 txt');
+                        return;
+                    }
+                    
+                    // 使用日志管理器导出日志
+                    const blob = logManager.exportLogs(format.toLowerCase());
+                    const url = URL.createObjectURL(blob);
+                    
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `mtscos_logs_${new Date().toISOString().replace(/[:.]/g, '-')}.${format.toLowerCase()}`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    
+                } catch (error) {
+                    console.error('导出日志失败:', error);
+                    alert('导出日志失败: ' + error.message);
+                }
+            }
+            
+            // 查看统计视图
+            function viewSummary() {
+                try {
+                    const stats = logManager.getStatistics();
+                    
+                    // 显示简单的统计对话框
+                    let statsText = '日志统计信息:\n\n';
+                    statsText += `总日志数: ${stats.total}\n`;
+                    statsText += `正常操作: ${stats.success}\n`;
+                    statsText += `警告事件: ${stats.warnings}\n`;
+                    statsText += `错误事件: ${stats.errors}\n\n`;
+                    
+                    statsText += '按类型统计:\n';
+                    Object.entries(stats.byType).forEach(([type, count]) => {
+                        statsText += `- ${type}: ${count}\n`;
+                    });
+                    
+                    alert(statsText);
+                    
+                } catch (error) {
+                    console.error('生成统计信息失败:', error);
+                    alert('生成统计信息失败: ' + error.message);
+                }
+            }
+            
+            // 上一页
+            function goToPrevPage() {
+                if (config.currentPage > 1) {
+                    config.currentPage--;
+                    renderLogTable();
+                    updatePagination();
+                }
+            }
+            
+            // 下一页
+            function goToNextPage() {
+                const maxPage = Math.ceil(filteredLogs.length / config.pageSize);
+                if (config.currentPage < maxPage) {
+                    config.currentPage++;
+                    renderLogTable();
+                    updatePagination();
+                }
+            }
+            
+            // 更新分页控制
+            function updatePagination() {
+                const maxPage = Math.ceil(filteredLogs.length / config.pageSize);
+                
+                elements.prevPage.disabled = config.currentPage <= 1;
+                elements.nextPage.disabled = config.currentPage >= maxPage;
+                
+                // 更新分页信息
+                const startItem = filteredLogs.length > 0 ? 
+                    (config.currentPage - 1) * config.pageSize + 1 : 0;
+                const endItem = Math.min(config.currentPage * config.pageSize, filteredLogs.length);
+                
+                elements.paginationInfo.textContent = 
+                    `显示 ${startItem}-${endItem} 条，共 ${filteredLogs.length} 条`;
+            }
+            
+            // 处理显示数量变更
+            function handleLimitChange() {
+                config.pageSize = parseInt(elements.limit.value);
+                config.currentPage = 1;
+                applyFilters();
+            }
+            
+            // 更新刷新状态
+            function updateRefreshStatus(isRefreshing) {
+                if (isRefreshing) {
+                    elements.refreshStatus.innerHTML = '<div class="spinner"></div> 正在刷新...';
+                } else {
+                    updateLastRefreshTime();
+                }
+            }
+            
+            // 更新最后刷新时间
+            function updateLastRefreshTime() {
+                const now = new Date();
+                const formattedTime = now.toLocaleString('zh-CN', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                });
+                elements.refreshStatus.innerHTML = `上次刷新: ${formattedTime}`;
+            }
+            
+            // 显示错误信息
+            function showError(message) {
+                elements.logTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="5" style="text-align: center; padding: 40px; color: var(--error-color);">
+                            <i class="fas fa-exclamation-circle" style="font-size: 2rem; margin-bottom: 10px; display: block;"></i>
+                            ${message}
+                        </td>
+                    </tr>
+                `;
+            }
+            
+            // 窗口关闭时清理资源
+            window.addEventListener('beforeunload', function() {
+                stopAutoRefresh();
+                logManager.disconnectWebSocket();
+                logManager.clearCache();
+            });
+            
+            // 初始化应用
+            init();
+        });
+    </script>
+</body>
+</html>
