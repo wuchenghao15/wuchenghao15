@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>会话管理 - MTSCOS</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
+    <!-- 页面样式 -->
+    <style>
+        /* 背景动画效果 */
+        body {
+            background: linear-gradient(-45deg, #667eea 0%, #764ba2 100%);
+            background-size: 400% 400%;
+            animation: gradient 15s ease infinite;
+            min-height: 100vh;
+        }
+        
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        /* 卡片悬停效果 */
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+        
+        /* 按钮动画效果 */
+        .btn-animate {
+            transition: all 0.3s ease;
+        }
+        
+        .btn-animate:hover {
+            transform: scale(1.05);
+        }
+        
+        /* 滚动条样式 */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+    </style>
+</head>
+<body class="font-sans text-gray-900">
+    <!-- 导航栏 -->
+    <nav class="bg-white shadow-md">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <i class="fa fa-shield text-2xl text-indigo-600"></i>
+                <h1 class="text-xl font-bold text-indigo-600">MTSCOS 智能管理系统</h1>
+            </div>
+            
+            <div class="flex items-center space-x-4">
+                <div class="hidden md:flex items-center space-x-4">
+                    <a href="{{ url_for('index') }}" class="text-gray-600 hover:text-indigo-600 transition-colors">
+                        <i class="fa fa-home"></i> 首页
+                    </a>
+                    {% if session.user_level in ['hardware_vikey_admin', 'super_admin', 'admin'] %}
+                    <a href="{{ url_for('dashboard') }}" class="text-gray-600 hover:text-indigo-600 transition-colors">
+                        <i class="fa fa-tachometer"></i> 智能仪表盘
+                    </a>
+                    {% endif %}
+                    <a href="{{ url_for('index') }}" class="text-indigo-600 font-medium">
+                        <i class="fa fa-sessions"></i> 会话管理
+                    </a>
+                </div>
+                
+                <div class="flex items-center space-x-3">
+                    <div class="relative">
+                        <button class="flex items-center space-x-2 text-gray-600 hover:text-indigo-600 transition-colors focus:outline-none">
+                            <i class="fa fa-user-circle text-xl"></i>
+                            <span class="hidden md:inline">{{ session.username }}</span>
+                            <i class="fa fa-caret-down"></i>
+                        </button>
+                    </div>
+                    <a href="{{ url_for('logout') }}" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-md transition-colors btn-animate">
+                        <i class="fa fa-sign-out"></i> 登出
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主内容区域 -->
+    <main class="container mx-auto px-4 py-8">
+        <!-- 页面标题 -->
+        <div class="mb-8">
+            <h2 class="text-3xl font-bold text-white mb-2">会话管理</h2>
+            <p class="text-gray-200">查看和管理您的所有登录设备</p>
+        </div>
+        
+        <!-- 设备限制信息 -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-8 card-hover">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h3 class="text-xl font-semibold mb-1">设备限制</h3>
+                    <p class="text-gray-600">当前设备数量: <span class="font-medium">{{ sessions | length }}</span> / <span class="font-medium text-indigo-600">{{ device_limit }}</span></p>
+                </div>
+                <div class="bg-indigo-100 text-indigo-800 px-4 py-2 rounded-full">
+                    <i class="fa fa-mobile"></i> 多设备支持
+                </div>
+            </div>
+        </div>
+        
+        <!-- 会话列表 -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-8 card-hover">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-semibold">活跃会话</h3>
+                <!-- <form action="{{ url_for('session_management.invalidate_all_sessions') }}" method="POST" onsubmit="return confirm('确定要使所有设备的会话失效吗？这将导致您在所有设备上登出。')">
+                    <button type="submit" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md transition-colors btn-animate flex items-center space-x-2">
+                        <i class="fa fa-sign-out"></i>
+                        <span>登出所有设备</span>
+                    </button>
+                </form> -->
+            </div>
+            
+            {% if sessions | length == 0 %}
+            <div class="text-center py-12">
+                <i class="fa fa-sessions text-5xl text-gray-300 mb-4"></i>
+                <p class="text-gray-500">暂无活跃会话</p>
+            </div>
+            {% else %}
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">设备信息</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">登录类型</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IP地址</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">上次活动</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">状态</th>
+                            <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for session_item in sessions %}
+                        <tr class="hover:bg-gray-50 transition-colors">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0 h-10 w-10 bg-indigo-100 rounded-full flex items-center justify-center">
+                                        <i class="fa fa-computer text-indigo-600"></i>
+                                    </div>
+                                    <div class="ml-4">
+                                        <div class="text-sm font-medium text-gray-900">
+                                            {% if session_item.device_info %}
+                                            {{ session_item.device_info }}
+                                            {% else %}
+                                            未知设备
+                                            {% endif %}
+                                        </div>
+                                        <div class="text-xs text-gray-500">
+                                            会话ID: {{ session_item.session_id[:10] }}...
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                    {{ session_item.login_type }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-900">{{ session_item.ip_address }}</div>
+                                <div class="text-xs text-gray-500">{{ session_item.user_agent[:50] }}...</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-900">{{ session_item.last_activity }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                {% if session_item.is_active %}
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                    活跃
+                                </span>
+                                {% else %}
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                    已失效
+                                </span>
+                                {% endif %}
+                                {% if session_item.session_id == current_session_id %}
+                                <span class="ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                                    当前设备
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                {% if session_item.is_active %}
+                                {% if session_item.session_id != current_session_id %}
+                                <!-- <form action="{{ url_for('session_management.invalidate_session', session_id=session_item.session_id) }}" method="POST" onsubmit="return confirm('确定要使该设备的会话失效吗？')" class="inline">
+                                    <button type="submit" class="text-red-600 hover:text-red-900 transition-colors btn-animate">
+                                        <i class="fa fa-times"></i> 登出
+                                    </button>
+                                </form> -->
+                                {% else %}
+                                <span class="text-gray-400 cursor-not-allowed">
+                                    <i class="fa fa-times"></i> 当前设备
+                                </span>
+                                {% endif %}
+                                {% else %}
+                                <span class="text-gray-400">
+                                    <i class="fa fa-check"></i> 已登出
+                                </span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- 操作指南 -->
+        <div class="bg-white rounded-lg shadow-lg p-6 card-hover">
+            <h3 class="text-xl font-semibold mb-4">操作指南</h3>
+            <div class="grid md:grid-cols-3 gap-4">
+                <div class="bg-indigo-50 p-4 rounded-lg">
+                    <div class="flex items-center space-x-3 mb-2">
+                        <div class="bg-indigo-100 p-2 rounded-full">
+                            <i class="fa fa-info-circle text-indigo-600"></i>
+                        </div>
+                        <h4 class="font-medium text-indigo-800">查看会话</h4>
+                    </div>
+                    <p class="text-sm text-gray-600">在会话列表中，您可以查看所有登录设备的详细信息，包括设备类型、登录时间和IP地址。</p>
+                </div>
+                <div class="bg-green-50 p-4 rounded-lg">
+                    <div class="flex items-center space-x-3 mb-2">
+                        <div class="bg-green-100 p-2 rounded-full">
+                            <i class="fa fa-sign-out text-green-600"></i>
+                        </div>
+                        <h4 class="font-medium text-green-800">管理单个会话</h4>
+                    </div>
+                    <p class="text-sm text-gray-600">您可以选择使特定设备的会话失效，这将导致该设备上的用户立即登出。</p>
+                </div>
+                <div class="bg-red-50 p-4 rounded-lg">
+                    <div class="flex items-center space-x-3 mb-2">
+                        <div class="bg-red-100 p-2 rounded-full">
+                            <i class="fa fa-exclamation-triangle text-red-600"></i>
+                        </div>
+                        <h4 class="font-medium text-red-800">紧急登出</h4>
+                    </div>
+                    <p class="text-sm text-gray-600">如果您的账户可能被盗用，您可以使用"登出所有设备"功能，这将使您的所有会话立即失效。</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="bg-white shadow-inner py-6">
+        <div class="container mx-auto px-4 text-center text-gray-600">
+            <p>&copy; 2024 MTSCOS 智能管理系统. 保留所有权利.</p>
+        </div>
+    </footer>
+</body>
+</html>

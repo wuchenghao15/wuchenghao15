@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block title %}系统监控 - MTSCOS AI 系统{% endblock %}
+
+    <!-- 载入过渡动画组件 -->
+    <div class="transition-overlay" id="transition-overlay">
+        <div class="transition-content">
+            <div class="transition-spinner">
+                <div class="spinner-ring">
+                    <div class="spinner-inner"></div>
+                    <div class="spinner-dot"></div>
+                </div>
+            </div>
+            <div class="transition-text" id="transition-text">正在加载...</div>
+        </div>
+    </div>
+
+    {% block content %}
+    <div class="container">
+        <!-- 主内容区 -->
+        <div class="main-content">
+            <!-- 侧边菜单 -->
+            <aside class="sidebar">
+                <nav class="menu">
+                    <ul>
+                        <li class="menu-item">
+                            <a href="{{ url_for('main.dashboard') }}">仪表盘</a>
+                        </li>
+                        
+                        {% if user.role == 'hardware_vikey_admin' or user.role == 'super_admin' %}
+                        <li class="menu-item">
+                            <a href="{{ url_for('main.permissions') }}">权限管理</a>
+                        </li>
+                        {% endif %}
+                        
+                        <li class="menu-item">
+                            <a href="{{ url_for('main.ai_rules') }}">AI规则管理</a>
+                        </li>
+                        <li class="menu-item">
+                            <a href="{{ url_for('main.approval') }}">审批管理</a>
+                        </li>
+                        <li class="menu-item">
+                            <a href="{{ url_for('main.cleanup') }}">系统清理</a>
+                        </li>
+                        <li class="menu-item">
+                            <a href="{{ url_for('main.projects') }}">项目管理</a>
+                        </li>
+                        <li class="menu-item">
+                            <a href="{{ url_for('main.tasks') }}">任务管理</a>
+                        </li>
+                        <li class="menu-item active">
+                            <a href="{{ url_for('main.system_monitoring') }}">系统监控</a>
+                        </li>
+                        <li class="menu-item">
+                            <a href="{{ url_for('main.reports') }}">报告中心</a>
+                        </li>
+                    </ul>
+                </nav>
+            </aside>
+            
+            <!-- 内容区域 -->
+            <section class="content">
+                <div class="content-header">
+                    <h2>系统监控</h2>
+                    <p>监控系统性能和状态</p>
+                    <div class="action-buttons">
+                        <a href="{{ url_for('main.dashboard') }}" class="btn btn-primary"><i class="fas fa-home"></i> 返回主页</a>
+                    </div>
+                </div>
+                
+                <div class="dashboard-content">
+                    <h3>实时监控数据</h3>
+                    <div class="dashboard-stats">
+                        <div class="stat-card">
+                            <h3>CPU使用率</h3>
+                            <p class="stat-value" id="cpu-percent">-</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3>内存使用率</h3>
+                            <p class="stat-value" id="memory-percent">-</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3>磁盘使用率</h3>
+                            <p class="stat-value" id="disk-percent">-</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3>活跃用户</h3>
+                            <p class="stat-value" id="active-users">0</p>
+                        </div>
+                    </div>
+                    
+                    <h3>监控历史</h3>
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>时间戳</th>
+                                    <th>CPU使用率</th>
+                                    <th>内存使用率</th>
+                                    <th>磁盘使用率</th>
+                                    <th>网络发送</th>
+                                    <th>网络接收</th>
+                                </tr>
+                            </thead>
+                            <tbody id="monitoring-history">
+                                <!-- 历史数据将通过JavaScript动态加载 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+    <script>
+        // 模拟实时监控数据更新
+        setInterval(() => {
+            // 模拟CPU使用率
+            const cpuPercent = Math.floor(Math.random() * 100);
+            document.getElementById('cpu-percent').textContent = `${cpuPercent}%`;
+            
+            // 模拟内存使用率
+            const memoryPercent = Math.floor(Math.random() * 100);
+            document.getElementById('memory-percent').textContent = `${memoryPercent}%`;
+            
+            // 模拟磁盘使用率
+            const diskPercent = Math.floor(Math.random() * 100);
+            document.getElementById('disk-percent').textContent = `${diskPercent}%`;
+        }, 2000);
+    </script>
+{% endblock %}

@@ -1,0 +1,247 @@
+{% extends "base.html" %}
+
+{% block title %}学习面板 - 语言学习系统{% endblock %}
+
+{% block content %}
+<style>
+    /* 学生面板样式 */
+    .student-dashboard {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+    
+    .dashboard-header {
+        text-align: center;
+        margin-bottom: 40px;
+        padding: 30px;
+        background: linear-gradient(135deg, #4ecdc4 0%, #45b7d1 100%);
+        border-radius: 20px;
+        color: white;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+    
+    .dashboard-title {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 15px;
+    }
+    
+    .dashboard-description {
+        font-size: 1.1rem;
+        opacity: 0.9;
+    }
+    
+    .dashboard-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin-bottom: 40px;
+    }
+    
+    .stat-card {
+        background: white;
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+        text-align: center;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+    }
+    
+    .stat-icon {
+        font-size: 3rem;
+        margin-bottom: 15px;
+        color: #4ecdc4;
+    }
+    
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 5px;
+        color: #333;
+    }
+    
+    .stat-label {
+        font-size: 1rem;
+        color: #666;
+    }
+    
+    .dashboard-sections {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+        gap: 30px;
+    }
+    
+    .section-card {
+        background: white;
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+    
+    .section-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-bottom: 20px;
+        color: #4ecdc4;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .section-content {
+        margin-bottom: 20px;
+    }
+    
+    .action-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 50px;
+        background: linear-gradient(135deg, #4ecdc4 0%, #45b7d1 100%);
+        color: white;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+    }
+    
+    .action-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
+    
+    /* 响应式设计 */
+    @media (max-width: 768px) {
+        .student-dashboard {
+            padding: 0 20px;
+        }
+        
+        .dashboard-stats {
+            grid-template-columns: 1fr;
+        }
+        
+        .dashboard-sections {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<div class="student-dashboard">
+    <!-- 面板头部 -->
+    <div class="dashboard-header">
+        <h1 class="dashboard-title">
+            <i class="fas fa-user-graduate"></i>
+            学习面板
+        </h1>
+        <p class="dashboard-description">
+            欢迎回来，{{ user.username }}！这里是您的学习中心，您可以查看作业、参加考试、查看成绩和申请升级。
+        </p>
+    </div>
+    
+    <!-- 统计卡片 -->
+    <div class="dashboard-stats">
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-book"></i>
+            </div>
+            <div class="stat-value">3</div>
+            <div class="stat-label">未完成作业</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-clipboard-check"></i>
+            </div>
+            <div class="stat-value">2</div>
+            <div class="stat-label">待参加考试</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-award"></i>
+            </div>
+            <div class="stat-value">B+</div>
+            <div class="stat-label">平均成绩</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-star"></i>
+            </div>
+            <div class="stat-value">中级</div>
+            <div class="stat-label">当前等级</div>
+        </div>
+    </div>
+    
+    <!-- 学习区域 -->
+    <div class="dashboard-sections">
+        <!-- 我的作业 -->
+        <div class="section-card">
+            <h2 class="section-title">
+                <i class="fas fa-book"></i>
+                我的作业
+            </h2>
+            <div class="section-content">
+                <p>查看和完成老师布置的作业，巩固所学知识，提高语言水平。</p>
+            </div>
+            <a href="/student/homework" class="action-btn">
+                <i class="fas fa-edit"></i>
+                查看作业
+            </a>
+        </div>
+        
+        <!-- 我的考试 -->
+        <div class="section-card">
+            <h2 class="section-title">
+                <i class="fas fa-clipboard-check"></i>
+                我的考试
+            </h2>
+            <div class="section-content">
+                <p>参加各种考试，测试您的语言水平，申请升级考试，提升等级。</p>
+            </div>
+            <a href="/student/exams" class="action-btn">
+                <i class="fas fa-file-alt"></i>
+                参加考试
+            </a>
+        </div>
+        
+        <!-- 我的成绩 -->
+        <div class="section-card">
+            <h2 class="section-title">
+                <i class="fas fa-chart-line"></i>
+                我的成绩
+            </h2>
+            <div class="section-content">
+                <p>查看您的考试成绩，分析学习情况，了解自己的进步和不足。</p>
+            </div>
+            <a href="/student/grades" class="action-btn">
+                <i class="fas fa-list-alt"></i>
+                查看成绩
+            </a>
+        </div>
+        
+        <!-- 升级申请 -->
+        <div class="section-card">
+            <h2 class="section-title">
+                <i class="fas fa-arrow-up"></i>
+                升级申请
+            </h2>
+            <div class="section-content">
+                <p>申请升级考试，通过后提升您的语言等级，挑战更高难度的学习内容。</p>
+            </div>
+            <a href="/student/upgrade" class="action-btn">
+                <i class="fas fa-star"></i>
+                申请升级
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

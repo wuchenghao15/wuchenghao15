@@ -1,0 +1,805 @@
+{% extends "base.html" %}
+
+{% block title %}权限管理 - MTSCOS AI 系统{% endblock %}
+
+    <!-- 载入过渡动画组件 -->
+    <div class="transition-overlay" id="transition-overlay">
+        <div class="transition-content">
+            <div class="transition-spinner">
+                <div class="spinner-ring">
+                    <div class="spinner-inner"></div>
+                    <div class="spinner-dot"></div>
+                </div>
+            </div>
+            <div class="transition-text" id="transition-text">正在加载...</div>
+        </div>
+    </div>
+
+    {% block content %}
+    <!-- 主内容区 -->
+
+    <!-- 内容区域 -->
+    <section class="content">
+        <div class="content-header">
+            <h2>权限管理</h2>
+            <p>管理系统用户和权限角色</p>
+            <div class="action-buttons">
+                        <a href="{{ url_for('main.dashboard') }}" class="btn btn-primary"><i class="fas fa-home"></i> 返回主页</a>
+                    </div>
+        </div>
+        
+        <div class="content-body">
+            <div class="content-header-actions">
+                {% if user.role in ['super_admin', 'hardware_vikey_admin', 'admin'] %}
+                <button class="btn btn-primary" onclick="openAddUserModal()">添加用户</button>
+                {% endif %}
+            </div>
+            <h3>用户列表</h3>
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>用户名</th>
+                            <th>邮箱</th>
+                            <th>角色</th>
+                            <th>超级管理员审批</th>
+                            <th>硬件管理员审批</th>
+                            <th>状态</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user_data in users %}
+                        <tr>
+                            <td>{{ user_data.username }}</td>
+                            <td>{{ user_data.email }}</td>
+                            <td>{{ user_data.role }}</td>
+                            <td>
+                                {% if user_data.super_admin_approved %}
+                                <span class="status-badge status-approved">已批准</span>
+                                {% else %}
+                                <span class="status-badge status-pending">待审批</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if user_data.hardware_admin_approved %}
+                                <span class="status-badge status-approved">已批准</span>
+                                {% else %}
+                                <span class="status-badge status-pending">待审批</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if user_data.is_active %}
+                                <span class="status-badge status-active">已激活</span>
+                                {% else %}
+                                <span class="status-badge status-inactive">未激活</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <button class="btn btn-primary btn-sm" onclick="openEditUserModal('{{ user_data.username }}')">编辑</button>
+                                <button class="btn btn-danger btn-sm" onclick="deleteUser('{{ user_data.username }}')">删除</button>
+                                {% if not user_data.is_active %}
+                                <button class="btn btn-success btn-sm" onclick="approveUser('{{ user_data.username }}')">批准</button>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="role-definitions">
+                <h3>角色定义</h3>
+                <div class="role-grid">
+                    <div class="role-ai-card">
+                        <h4>硬件vikey管理员</h4>
+                        <p>最高权限，管理所有系统资源和硬件设备</p>
+                        <p class="role-level">权限级别：0</p>
+                    </div>
+                    <div class="role-ai-card">
+                        <h4>超级管理员</h4>
+                        <p>管理系统配置和用户权限</p>
+                        <p class="role-level">权限级别：1</p>
+                    </div>
+                    <div class="role-ai-card">
+                        <h4>管理员</h4>
+                        <p>管理AI规则和审批流程</p>
+                        <p class="role-level">权限级别：2</p>
+                    </div>
+                    <div class="role-ai-card">
+                        <h4>普通用户</h4>
+                        <p>使用系统功能，管理自己的项目</p>
+                        <p class="role-level">权限级别：3</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- 添加用户模态框 -->
+    <div id="add-user-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">添加用户</h2>
+                <span class="close" onclick="closeAddUserModal()">&times;</span>
+            </div>
+            <form id="add-user-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="add-username">用户名</label>
+                        <input type="text" id="add-username" name="username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="add-email">邮箱</label>
+                        <input type="email" id="add-email" name="email" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="add-password">密码</label>
+                        <input type="password" id="add-password" name="password" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="add-role">角色</label>
+                        <select id="add-role" name="role" required>
+                            <option value="user">普通用户</option>
+                            <option value="admin">管理员</option>
+                            {% if user.role in ['super_admin', 'hardware_vikey_admin'] %}
+                            <option value="super_admin">超级管理员</option>
+                            {% endif %}
+                        </select>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeAddUserModal()">取消</button>
+                    <button type="submit" class="btn btn-primary">添加</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- 编辑用户模态框 -->
+    <div id="edit-user-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">编辑用户</h2>
+                <span class="close" onclick="closeEditUserModal()">&times;</span>
+            </div>
+            <form id="edit-user-form">
+                <input type="hidden" id="edit-user-id">
+                
+                <!-- 头像上传区域 -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>用户头像</label>
+                        <div class="avatar-upload-section">
+                            <div class="avatar-preview" id="edit-avatar-preview">
+                                <!-- 头像预览将通过JavaScript动态添加 -->
+                            </div>
+                            <div class="avatar-upload-controls">
+                                <input type="file" id="edit-avatar-file" accept="image/*" style="display: none;">
+                                <button type="button" class="btn btn-secondary" onclick="document.getElementById('edit-avatar-file').click()">选择头像</button>
+                                <button type="button" class="btn btn-primary" onclick="uploadAvatar()">上传头像</button>
+                                <button type="button" class="btn btn-info" onclick="openAvatarSelectionModal()">选择推荐头像</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="edit-username">用户名</label>
+                        <input type="text" id="edit-username" name="username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-email">邮箱</label>
+                        <input type="email" id="edit-email" name="email" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="edit-password">密码（留空表示不修改）</label>
+                        <input type="password" id="edit-password" name="password">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-role">角色</label>
+                        <select id="edit-role" name="role" required>
+                            <option value="user">普通用户</option>
+                            <option value="admin">管理员</option>
+                            {% if user.role in ['super_admin', 'hardware_vikey_admin'] %}
+                            <option value="super_admin">超级管理员</option>
+                            {% endif %}
+                        </select>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeEditUserModal()">取消</button>
+                    <button type="submit" class="btn btn-primary">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- 推荐头像选择模态框 -->
+    <div id="avatar-selection-modal" class="modal">
+        <div class="modal-content" style="width: 80%; max-width: 1000px;">
+            <div class="modal-header">
+                <h2 class="modal-title">选择推荐头像</h2>
+                <span class="close" onclick="closeAvatarSelectionModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="avatar-selection-controls">
+                    <button type="button" class="btn btn-primary" onclick="refreshAvatars()">刷新推荐头像</button>
+                </div>
+                <div class="avatar-grid" id="avatar-grid">
+                    <!-- 推荐头像将通过JavaScript动态添加 -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeAvatarSelectionModal()">取消</button>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_css %}
+    <style>
+        /* 审批状态标签样式 */
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .status-approved {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status-pending {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+        }
+        
+        .status-active {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status-inactive {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        /* 头像上传区域样式 */
+        .avatar-upload-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .avatar-preview {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 3px solid #667eea;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .avatar-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .avatar-placeholder {
+            color: white;
+            font-size: 40px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .avatar-upload-controls {
+            display: flex;
+            gap: 10px;
+        }
+        
+        /* 推荐头像选择样式 */
+        .avatar-selection-controls {
+            margin-bottom: 20px;
+        }
+        
+        .avatar-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .avatar-item {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 3px solid transparent;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .avatar-item:hover {
+            border-color: #667eea;
+            transform: scale(1.05);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .avatar-item.selected {
+            border-color: #28a745;
+            box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.3);
+        }
+        
+        .avatar-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+    </style>
+{% endblock %}
+
+{% block extra_js %}
+    <script>
+        // 状态消息显示
+        function showMessage(message, isError = false) {
+            const statusDiv = document.createElement('div');
+            statusDiv.textContent = message;
+            statusDiv.className = `status-message ${isError ? 'status-error' : 'status-success'}`;
+            statusDiv.style.display = 'block';
+            statusDiv.style.marginBottom = '20px';
+            statusDiv.style.padding = '10px';
+            statusDiv.style.borderRadius = '4px';
+            statusDiv.style.fontSize = '14px';
+            
+            const contentBody = document.querySelector('.content-body');
+            contentBody.insertBefore(statusDiv, contentBody.firstChild);
+            
+            // 3秒后自动隐藏
+            setTimeout(() => {
+                statusDiv.remove();
+            }, 3000);
+        }
+        
+        // 添加用户模态框
+        function openAddUserModal() {
+            document.getElementById('add-user-modal').style.display = 'block';
+            document.getElementById('add-user-form').reset();
+        }
+        
+        function closeAddUserModal() {
+            document.getElementById('add-user-modal').style.display = 'none';
+        }
+        
+        // 编辑用户模态框
+        function openEditUserModal(username) {
+            // 首先获取用户数据
+            fetch(`/api/users/${username}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const user = data.user;
+                    // 填充表单数据
+                    document.getElementById('edit-user-id').value = user.id;
+                    document.getElementById('edit-username').value = user.username;
+                    document.getElementById('edit-email').value = user.email;
+                    document.getElementById('edit-role').value = user.role;
+                    
+                    // 加载用户头像
+                    const avatarPreview = document.getElementById('edit-avatar-preview');
+                    avatarPreview.innerHTML = '';
+                    
+                    if (user.avatar) {
+                        // 如果有头像，显示头像图片
+                        const img = document.createElement('img');
+                        img.src = user.avatar;
+                        img.alt = `${user.username}的头像`;
+                        avatarPreview.appendChild(img);
+                    } else {
+                        // 如果没有头像，显示占位符
+                        const placeholder = document.createElement('div');
+                        placeholder.className = 'avatar-placeholder';
+                        placeholder.textContent = user.username[0].toUpperCase();
+                        avatarPreview.appendChild(placeholder);
+                    }
+                    
+                    // 显示编辑模态框
+                    document.getElementById('edit-user-modal').style.display = 'block';
+                } else {
+                    MTSCOS_AI.showTip('获取用户数据失败: ' + data.message, 'error');
+                }
+            })
+            .catch(error => {
+                MTSCOS_AI.showTip('获取用户数据失败: ' + error.message, 'error');
+            });
+        }
+        
+        function closeEditUserModal() {
+            document.getElementById('edit-user-modal').style.display = 'none';
+        }
+        
+        // 头像预览功能
+        document.getElementById('edit-avatar-file').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const avatarPreview = document.getElementById('edit-avatar-preview');
+                    avatarPreview.innerHTML = '';
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.alt = '头像预览';
+                    avatarPreview.appendChild(img);
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+        
+        // 头像上传功能
+        function uploadAvatar() {
+            const userId = document.getElementById('edit-user-id').value;
+            const fileInput = document.getElementById('edit-avatar-file');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                MTSCOS_AI.showTip('请先选择要上传的头像', 'warning');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('avatar', file);
+            
+            fetch(`/api/users/${userId}/avatar`, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    MTSCOS_AI.showTip('头像上传成功！', 'success');
+                    // 清空文件输入
+                    fileInput.value = '';
+                    // 刷新页面以显示更新后的头像
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
+                } else {
+                    MTSCOS_AI.showTip('头像上传失败: ' + data.message, 'error');
+                }
+            })
+            .catch(error => {
+                MTSCOS_AI.showTip('头像上传失败: ' + error.message, 'error');
+            });
+        }
+        
+        // 删除用户
+        function deleteUser(username) {
+            if (confirm(`确定要删除用户 ${username} 吗？`)) {
+                // 首先获取用户ID
+                fetch(`/api/users/${username}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const user_id = data.user.id;
+                        // 执行删除操作
+                        fetch(`/api/users/${user_id}`, {
+                            method: 'DELETE',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            }
+                        })
+                        .then(response => response.json())
+                        .then(result => {
+                            if (result.success) {
+                                MTSCOS_AI.showTip('用户删除成功！', 'success');
+                                // 重新加载页面以显示更新后的用户列表
+                                setTimeout(() => {
+                                    location.reload();
+                                }, 1000);
+                            } else {
+                                MTSCOS_AI.showTip('用户删除失败: ' + result.message, 'error');
+                            }
+                        })
+                        .catch(error => {
+                            MTSCOS_AI.showTip('用户删除失败: ' + error.message, 'error');
+                        });
+                    } else {
+                        MTSCOS_AI.showTip('获取用户数据失败: ' + data.message, 'error');
+                    }
+                })
+                .catch(error => {
+                    MTSCOS_AI.showTip('获取用户数据失败: ' + error.message, 'error');
+                });
+            }
+        }
+        
+        // 批准用户
+        function approveUser(username) {
+            if (confirm(`确定要批准用户 ${username} 吗？`)) {
+                fetch(`/api/users/${username}/approve`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        MTSCOS_AI.showTip('用户批准成功！', 'success');
+                        // 重新加载页面以显示更新后的用户状态
+                        setTimeout(() => {
+                            location.reload();
+                        }, 1000);
+                    } else {
+                        MTSCOS_AI.showTip('用户批准失败: ' + data.message, 'error');
+                    }
+                })
+                .catch(error => {
+                    MTSCOS_AI.showTip('用户批准失败: ' + error.message, 'error');
+                });
+            }
+        }
+        
+        // 推荐头像选择模态框
+        let selectedAvatar = null;
+        
+        function openAvatarSelectionModal() {
+            document.getElementById('avatar-selection-modal').style.display = 'block';
+            loadScrapedAvatars();
+            selectedAvatar = null;
+        }
+        
+        function closeAvatarSelectionModal() {
+            document.getElementById('avatar-selection-modal').style.display = 'none';
+        }
+        
+        function loadScrapedAvatars() {
+            fetch('/api/avatars/scraped', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const avatarGrid = document.getElementById('avatar-grid');
+                    avatarGrid.innerHTML = '';
+                    
+                    data.avatars.forEach(avatar => {
+                        const avatarItem = document.createElement('div');
+                        avatarItem.className = 'avatar-item';
+                        avatarItem.dataset.avatarPath = avatar.path;
+                        
+                        const img = document.createElement('img');
+                        img.src = avatar.path;
+                        img.alt = '推荐头像';
+                        
+                        avatarItem.appendChild(img);
+                        avatarItem.addEventListener('click', () => selectAvatar(avatarItem));
+                        avatarGrid.appendChild(avatarItem);
+                    });
+                } else {
+                    MTSCOS_AI.showTip('获取推荐头像失败: ' + data.message, 'error');
+                }
+            })
+            .catch(error => {
+                MTSCOS_AI.showTip('获取推荐头像失败: ' + error.message, 'error');
+            });
+        }
+        
+        function selectAvatar(avatarItem) {
+            // 移除所有选中状态
+            document.querySelectorAll('.avatar-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            
+            // 添加当前选中状态
+            avatarItem.classList.add('selected');
+            selectedAvatar = avatarItem.dataset.avatarPath;
+            
+            // 更新预览
+            const avatarPreview = document.getElementById('edit-avatar-preview');
+            avatarPreview.innerHTML = '';
+            const img = document.createElement('img');
+            img.src = selectedAvatar;
+            img.alt = '选中的头像';
+            avatarPreview.appendChild(img);
+            
+            // 关闭模态框
+            closeAvatarSelectionModal();
+            
+            // 保存头像到用户
+            const userId = document.getElementById('edit-user-id').value;
+            saveSelectedAvatar(userId, selectedAvatar);
+        }
+        
+        function saveSelectedAvatar(userId, avatarPath) {
+            try {
+                const formData = new FormData();
+                
+                // 创建一个临时文件对象
+                const xhr = new XMLHttpRequest();
+                xhr.open('GET', avatarPath, false);
+                xhr.responseType = 'blob';
+                xhr.send();
+                
+                const blob = xhr.response;
+                const file = new File([blob], 'selected_avatar.png', { type: 'image/png' });
+                formData.append('avatar', file);
+                
+                // 上传头像
+                fetch(`/api/users/${userId}/avatar`, {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        MTSCOS_AI.showTip('头像设置成功！', 'success');
+                        // 刷新页面以显示更新后的头像
+                        setTimeout(() => {
+                            location.reload();
+                        }, 1000);
+                    } else {
+                        MTSCOS_AI.showTip('头像设置失败: ' + data.message, 'error');
+                    }
+                })
+                .catch(error => {
+                    MTSCOS_AI.showTip('头像设置失败: ' + error.message, 'error');
+                });
+            } catch (error) {
+                MTSCOS_AI.showTip('头像处理失败: ' + error.message, 'error');
+            }
+        }
+        
+        function refreshAvatars() {
+            fetch('/api/avatars/scrape', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    MTSCOS_AI.showTip('推荐头像已刷新！', 'success');
+                    loadScrapedAvatars();
+                } else {
+                    MTSCOS_AI.showTip('刷新推荐头像失败: ' + data.message, 'error');
+                }
+            })
+            .catch(error => {
+                MTSCOS_AI.showTip('刷新推荐头像失败: ' + error.message, 'error');
+            });
+        }
+        
+        // 点击模态框外部关闭
+        window.onclick = function(event) {
+            const addModal = document.getElementById('add-user-modal');
+            const editModal = document.getElementById('edit-user-modal');
+            const avatarModal = document.getElementById('avatar-selection-modal');
+            
+            if (event.target == addModal) {
+                closeAddUserModal();
+            } else if (event.target == editModal) {
+                closeEditUserModal();
+            } else if (event.target == avatarModal) {
+                closeAvatarSelectionModal();
+            }
+        }
+        
+        // 添加用户表单提交
+        document.getElementById('add-user-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = {
+                username: document.getElementById('add-username').value,
+                email: document.getElementById('add-email').value,
+                password: document.getElementById('add-password').value,
+                role: document.getElementById('add-role').value
+            };
+            
+            fetch('/api/users', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    MTSCOS_AI.showTip('用户添加成功！', 'success');
+                    closeAddUserModal();
+                    // 重新加载页面以显示新用户
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
+                } else {
+                    MTSCOS_AI.showTip('用户添加失败: ' + data.message, 'error');
+                }
+            })
+            .catch(error => {
+                MTSCOS_AI.showTip('用户添加失败: ' + error.message, 'error');
+            });
+        });
+        
+        // 编辑用户表单提交
+        document.getElementById('edit-user-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const user_id = document.getElementById('edit-user-id').value;
+            const formData = {
+                username: document.getElementById('edit-username').value,
+                email: document.getElementById('edit-email').value,
+                role: document.getElementById('edit-role').value
+            };
+            
+            // 只有在密码不为空时才添加到表单数据中
+            const password = document.getElementById('edit-password').value;
+            if (password) {
+                formData.password = password;
+            }
+            
+            fetch(`/api/users/${user_id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    MTSCOS_AI.showTip('用户编辑成功！', 'success');
+                    closeEditUserModal();
+                    // 重新加载页面以显示更新后的用户信息
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
+                } else {
+                    MTSCOS_AI.showTip('用户编辑失败: ' + data.message, 'error');
+                }
+            })
+            .catch(error => {
+                MTSCOS_AI.showTip('用户编辑失败: ' + error.message, 'error');
+            });
+        });
+    </script>
+{% endblock %}

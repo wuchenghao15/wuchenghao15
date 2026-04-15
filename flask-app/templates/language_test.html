@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>语言测试系统</title>
+    <style>
+        /* 基础样式重置 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 800px;
+            overflow: hidden;
+        }
+        
+        /* 头部样式 */
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        /* 内容区域 */
+        .content {
+            padding: 40px;
+        }
+        
+        /* 欢迎信息 */
+        .welcome-message {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .welcome-message h2 {
+            font-size: 20px;
+            color: #343a40;
+            margin-bottom: 10px;
+        }
+        
+        .welcome-message p {
+            color: #6c757d;
+        }
+        
+        /* 测试信息卡片 */
+        .test-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        
+        .test-info h3 {
+            font-size: 16px;
+            color: #343a40;
+            margin-bottom: 15px;
+        }
+        
+        .test-info-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        
+        .test-info-label {
+            color: #6c757d;
+        }
+        
+        .test-info-value {
+            font-weight: 600;
+            color: #343a40;
+        }
+        
+        /* 测试开始按钮 */
+        .test-actions {
+            text-align: center;
+        }
+        
+        .btn {
+            padding: 14px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        /* 侧边栏导航 */
+        .sidebar {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 30px;
+        }
+        
+        .sidebar h3 {
+            font-size: 16px;
+            color: #343a40;
+            margin-bottom: 15px;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+        }
+        
+        .sidebar li {
+            margin-bottom: 10px;
+        }
+        
+        .sidebar a {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+            transition: color 0.3s ease;
+        }
+        
+        .sidebar a:hover {
+            color: #764ba2;
+            text-decoration: underline;
+        }
+        
+        /* 错误信息 */
+        .error-message {
+            color: #dc3545;
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        /* 成功信息 */
+        .success-message {
+            color: #28a745;
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .content {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 20px;
+            }
+            
+            .welcome-message h2 {
+                font-size: 18px;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <!-- 头部 -->
+        <div class="header">
+            <h1>📚 语言测试系统</h1>
+            <p>学生专用语言测试平台</p>
+        </div>
+        
+        <!-- 内容区域 -->
+        <div class="content">
+            <!-- 欢迎信息 -->
+            <div class="welcome-message">
+                <h2>🎉 欢迎参加语言测试！</h2>
+                <p>你好，<strong>{{ username }}</strong>，请点击下方按钮开始测试</p>
+            </div>
+            
+            <!-- 错误信息显示 -->
+            {% if error %}
+                <div class="error-message">{{ error }}</div>
+            {% endif %}
+            
+            <!-- 成功信息显示 -->
+            {% if success %}
+                <div class="success-message">{{ success }}</div>
+            {% endif %}
+            
+            <!-- 测试信息卡片 -->
+            <div class="test-info">
+                <h3><i class="fas fa-info-circle"></i> 测试信息</h3>
+                <div class="test-info-item">
+                    <span class="test-info-label">用户ID:</span>
+                    <span class="test-info-value">{{ user_id }}</span>
+                </div>
+                <div class="test-info-item">
+                    <span class="test-info-label">用户名:</span>
+                    <span class="test-info-value">{{ username }}</span>
+                </div>
+                <div class="test-info-item">
+                    <span class="test-info-label">邮箱:</span>
+                    <span class="test-info-value">{{ email }}</span>
+                </div>
+                <div class="test-info-item">
+                    <span class="test-info-label">测试类型:</span>
+                    <span class="test-info-value">语言能力测试</span>
+                </div>
+                <div class="test-info-item">
+                    <span class="test-info-label">测试时长:</span>
+                    <span class="test-info-value">60分钟</span>
+                </div>
+                <div class="test-info-item">
+                    <span class="test-info-label">题目数量:</span>
+                    <span class="test-info-value">50题</span>
+                </div>
+            </div>
+            
+            <!-- 语言选择 -->
+            <div class="test-info" style="margin-top: 20px;">
+                <h3><i class="fas fa-language"></i> 选择测试语言</h3>
+                <div style="margin-top: 15px;">
+                    <form action="/language-test/start" method="POST">
+                        <div style="margin-bottom: 20px;">
+                            <label style="display: block; font-weight: 600; color: #495057; margin-bottom: 8px;">
+                                <i class="fas fa-globe"></i> 请选择您要参加的语言测试
+                            </label>
+                            <select name="language" style="width: 100%; padding: 12px; border: 2px solid #e9ecef; border-radius: 8px; font-size: 16px; background: white; cursor: pointer;">
+                                <option value="english">🇬🇧 英语</option>
+                                <option value="japanese">🇯🇵 日语</option>
+                            </select>
+                        </div>
+                        
+                        <!-- 测试开始按钮 -->
+                        <div class="test-actions">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-play-circle"></i> 开始测试
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- 侧边栏导航 -->
+            <div class="sidebar">
+                <h3><i class="fas fa-compass"></i> 测试导航</h3>
+                <ul>
+                    <li><a href="#"><i class="fas fa-list"></i> 测试列表</a></li>
+                    <li><a href="#"><i class="fas fa-history"></i> 历史记录</a></li>
+                    <li><a href="#"><i class="fas fa-chart-bar"></i> 成绩分析</a></li>
+                    <li><a href="#"><i class="fas fa-book"></i> 学习资源</a></li>
+                    <li><a href="{{ url_for('index') }}"><i class="fas fa-home"></i> 返回首页</a></li>
+                    <li>
+                        <form action="/auth/logout" method="POST" style="margin: 0; display: inline;">
+                            <button type="submit" style="background: none; border: none; color: #667eea; cursor: pointer; font-size: 14px; padding: 0;">
+                                <i class="fas fa-sign-out-alt"></i> 退出登录
+                            </button>
+                        </form>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

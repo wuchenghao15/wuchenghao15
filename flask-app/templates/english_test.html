@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>英语水平测试</title>
+    <style>
+        /* 基础样式 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* 头部样式 */
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header h1 {
+            color: #343a40;
+            font-size: 24px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .back-btn {
+            background: #f8f9fa;
+            color: #343a40;
+            border: 2px solid #dee2e6;
+            padding: 8px 16px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .back-btn:hover {
+            background: #e9ecef;
+            border-color: #adb5bd;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            font-size: 16px;
+        }
+        
+        .username {
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .logout-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .logout-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        /* 主要内容样式 */
+        .container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+        }
+        
+        .test-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+            max-width: 900px;
+            width: 100%;
+        }
+        
+        .test-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .test-title {
+            color: #343a40;
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+        
+        .test-subtitle {
+            color: #6c757d;
+            font-size: 16px;
+        }
+        
+        .test-info {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        
+        .info-row:last-child {
+            margin-bottom: 0;
+        }
+        
+        .info-label {
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .info-value {
+            color: #6c757d;
+        }
+        
+        .test-content {
+            margin-bottom: 30px;
+        }
+        
+        .question-section {
+            background: #e7f3ff;
+            border: 1px solid #b3d7ff;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+        
+        .question-number {
+            color: #0066cc;
+            font-weight: 700;
+            font-size: 18px;
+            margin-bottom: 15px;
+        }
+        
+        .question-text {
+            color: #343a40;
+            font-size: 20px;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+        
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .option {
+            background: white;
+            border: 2px solid #b3d7ff;
+            border-radius: 10px;
+            padding: 15px 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .option:hover {
+            border-color: #0066cc;
+            background: #f0f8ff;
+            transform: translateX(5px);
+        }
+        
+        .option.selected {
+            border-color: #28a745;
+            background: #d4edda;
+        }
+        
+        .option input[type="radio"] {
+            accent-color: #0066cc;
+            width: 18px;
+            height: 18px;
+        }
+        
+        .option-label {
+            font-size: 16px;
+            color: #343a40;
+        }
+        
+        .test-actions {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+        }
+        
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex: 1;
+            max-width: 200px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #c82333;
+            transform: translateY(-2px);
+        }
+        
+        /* 页脚样式 */
+        .footer {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            text-align: center;
+            color: #6c757d;
+            font-size: 14px;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .header {
+                padding: 15px 20px;
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .header-left {
+                flex-direction: column;
+                gap: 10px;
+                text-align: center;
+            }
+            
+            .header h1 {
+                font-size: 20px;
+            }
+            
+            .user-info {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .container {
+                padding: 20px;
+            }
+            
+            .test-container {
+                padding: 20px;
+            }
+            
+            .test-title {
+                font-size: 24px;
+            }
+            
+            .info-row {
+                flex-direction: column;
+                gap: 5px;
+            }
+            
+            .test-actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .btn {
+                max-width: none;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- 头部 -->
+    <header class="header">
+        <div class="header-left">
+            <a href="/test-system" class="back-btn">
+                <i class="fas fa-arrow-left"></i> 返回主页
+            </a>
+            <h1>
+                <span>🇬🇧</span>
+                英语水平测试
+            </h1>
+        </div>
+        <div class="user-info">
+            <span class="username">欢迎, {{ user.username }}！</span>
+            <a href="/auth/logout" class="logout-btn">退出登录</a>
+        </div>
+    </header>
+    
+    <!-- 主要内容 -->
+    <main class="container">
+        <div class="test-container">
+            <div class="test-header">
+                <h2 class="test-title">
+                    <span>📝</span>
+                    英语水平测试（B1级别）
+                </h2>
+                <p class="test-subtitle">测试您的英语听、说、读、写能力</p>
+            </div>
+            
+            <div class="test-info">
+                <div class="info-row">
+                    <span class="info-label">测试类型：</span>
+                    <span class="info-value">选择题</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">题目数量：</span>
+                    <span class="info-value">20题</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">测试时间：</span>
+                    <span class="info-value">30分钟</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">当前进度：</span>
+                    <span class="info-value">1/20</span>
+                </div>
+            </div>
+            
+            <div class="test-content">
+                <div class="question-section">
+                    <div class="question-number">Question 1/20</div>
+                    <div class="question-text">
+                        The food in this restaurant is very _____.
+                    </div>
+                    <div class="options">
+                        <label class="option">
+                            <input type="radio" name="question1" value="A">
+                            <span class="option-label">A. delicious</span>
+                        </label>
+                        <label class="option">
+                            <input type="radio" name="question1" value="B">
+                            <span class="option-label">B. taste</span>
+                        </label>
+                        <label class="option">
+                            <input type="radio" name="question1" value="C">
+                            <span class="option-label">C. tasting</span>
+                        </label>
+                        <label class="option">
+                            <input type="radio" name="question1" value="D">
+                            <span class="option-label">D. tasted</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="test-actions">
+                <button class="btn btn-secondary">
+                    <i class="fas fa-save"></i> Save
+                </button>
+                <button class="btn btn-primary">
+                    <i class="fas fa-arrow-right"></i> Next
+                </button>
+                <button class="btn btn-danger">
+                    <i class="fas fa-times"></i> End Test
+                </button>
+            </div>
+        </div>
+    </main>
+    
+    <!-- 页脚 -->
+    <footer class="footer">
+        <p>&copy; 2026 统一语言测试系统. All rights reserved.</p>
+    </footer>
+    
+    <script>
+        // 简单的选项选择逻辑
+        document.querySelectorAll('.option').forEach(option => {
+            option.addEventListener('click', function() {
+                // 移除其他选项的选中状态
+                this.closest('.options').querySelectorAll('.option').forEach(opt => {
+                    opt.classList.remove('selected');
+                });
+                // 添加当前选项的选中状态
+                this.classList.add('selected');
+            });
+        });
+    </script>
+</body>
+</html>

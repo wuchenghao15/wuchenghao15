@@ -1,0 +1,1335 @@
+{% extends "base.html" %}
+
+{% block title %}整合设计页面 - MTSCOS AI System{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* 整合设计页面样式 */
+    .integrated-design-container {
+        padding: 20px;
+    }
+    
+    .section-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #2c3e50;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #667eea;
+    }
+    
+    .ai-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        padding: 20px;
+        margin-bottom: 20px;
+        border: 1px solid #eaeaea;
+    }
+    
+    .ai-card-header {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 15px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .btn {
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: none;
+        text-decoration: none;
+        display: inline-block;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+    
+    .btn-success {
+        background: #28a745;
+        color: white;
+    }
+    
+    .btn-success:hover {
+        background: #218838;
+    }
+    
+    .btn-danger {
+        background: #dc3545;
+        color: white;
+    }
+    
+    .btn-danger:hover {
+        background: #c82333;
+    }
+    
+    .btn-info {
+        background: #17a2b8;
+        color: white;
+    }
+    
+    .btn-info:hover {
+        background: #138496;
+    }
+    
+    .btn-warning {
+        background: #ffc107;
+        color: #212529;
+    }
+    
+    .btn-warning:hover {
+        background: #e0a800;
+    }
+    
+    .table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+    }
+    
+    .table th,
+    .table td {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid #eaeaea;
+    }
+    
+    .table th {
+        background: #f8f9fa;
+        font-weight: 600;
+        color: #333;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+    
+    .table tr:hover {
+        background: #f8f9fa;
+    }
+    
+    .table input[type="text"],
+    .table input[type="number"],
+    .table select {
+        width: 100%;
+        padding: 6px 8px;
+        border: 1px solid #eaeaea;
+        border-radius: 4px;
+        font-size: 0.9rem;
+    }
+    
+    .table input[type="text"]:focus,
+    .table input[type="number"]:focus,
+    .table select:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+    }
+    
+    .actions {
+        display: flex;
+        gap: 8px;
+    }
+    
+    .success-message {
+        background: #d4edda;
+        color: #155724;
+        padding: 10px 15px;
+        border-radius: 6px;
+        margin-bottom: 15px;
+        border: 1px solid #c3e6cb;
+    }
+    
+    .error-message {
+        background: #f8d7da;
+        color: #721c24;
+        padding: 10px 15px;
+        border-radius: 6px;
+        margin-bottom: 15px;
+        border: 1px solid #f5c6cb;
+    }
+    
+    .tab-container {
+        margin-bottom: 20px;
+    }
+    
+    .tabs {
+        display: flex;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+        border: 1px solid #eaeaea;
+    }
+    
+    .tab {
+        padding: 12px 24px;
+        cursor: pointer;
+        border: none;
+        background: transparent;
+        font-size: 1rem;
+        font-weight: 500;
+        color: #666;
+        transition: all 0.3s ease;
+        border-right: 1px solid #eaeaea;
+    }
+    
+    .tab:last-child {
+        border-right: none;
+    }
+    
+    .tab.active {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    .tab:hover:not(.active) {
+        background: #f8f9fa;
+        color: #667eea;
+    }
+    
+    .tab-content {
+        display: none;
+        background: white;
+        border-radius: 0 0 12px 12px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        border: 1px solid #eaeaea;
+        border-top: none;
+        padding: 20px;
+    }
+    
+    .tab-content.active {
+        display: block;
+    }
+    
+    .status-indicator {
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        margin-right: 8px;
+    }
+    
+    .status-indicator.active {
+        background: #28a745;
+    }
+    
+    .status-indicator.inactive {
+        background: #dc3545;
+    }
+    
+    .status-indicator.pending {
+        background: #ffc107;
+    }
+    
+    .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+        margin-top: 15px;
+    }
+    
+    .stat-ai-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        padding: 20px;
+        border: 1px solid #eaeaea;
+        text-align: center;
+    }
+    
+    .stat-number {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #667eea;
+        margin-bottom: 8px;
+    }
+    
+    .stat-label {
+        font-size: 0.9rem;
+        color: #666;
+    }
+    
+    /* 响应式设计 */
+    @media (max-width: 768px) {
+        .tabs {
+            flex-direction: column;
+        }
+        
+        .tab {
+            border-right: none;
+            border-bottom: 1px solid #eaeaea;
+        }
+        
+        .tab:last-child {
+            border-bottom: none;
+        }
+        
+        .table {
+            display: block;
+            overflow-x: auto;
+        }
+        
+        .grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+    <!-- 主内容区 -->
+
+<div class="integrated-design-container">
+    <h1 class="section-title">整合设计管理</h1>
+    
+    <!-- 状态消息 -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="{{ category }}-message">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    
+    <!-- 统计卡片 -->
+    <div class="grid">
+        <div class="stat-ai-card">
+            <div class="stat-number">{{ system_configs|length }}</div>
+            <div class="stat-label">系统配置项</div>
+        </div>
+        <div class="stat-ai-card">
+            <div class="stat-number">{{ users|length }}</div>
+            <div class="stat-label">用户数量</div>
+        </div>
+        <div class="stat-ai-card">
+            <div class="stat-number">{{ ai_collections|length }}</div>
+            <div class="stat-label">AI集数量</div>
+        </div>
+        <div class="stat-ai-card">
+            <div class="stat-number">{{ ai_instances|length }}</div>
+            <div class="stat-label">AI实例数量</div>
+        </div>
+        <div class="stat-ai-card">
+            <div class="stat-number">{{ ai_stats.active_instances }}</div>
+            <div class="stat-label">活跃AI实例</div>
+        </div>
+        <div class="stat-ai-card">
+            <div class="stat-number">{{ ai_stats.bound_instances }}</div>
+            <div class="stat-label">已绑定AI实例</div>
+        </div>
+    </div>
+    
+    <!-- 标签页 -->
+    <div class="tab-container">
+        <div class="tabs">
+            <button class="tab active" data-tab="system-config">系统配置</button>
+            <button class="tab" data-tab="users">用户管理</button>
+            <button class="tab" data-tab="ai-employees">AI员工管理</button>
+            <button class="tab" data-tab="ai-ensembles">AI集管理</button>
+            <button class="tab" data-tab="thread-management">线程管理</button>
+        </div>
+        
+        <!-- 系统配置标签页内容 -->
+        <div id="system-config" class="tab-content active">
+            <div class="ai-card">
+                <div class="ai-card-header">
+                    <span>系统配置管理</span>
+                    <button class="btn btn-primary" onclick="addNewConfig()">添加配置</button>
+                </div>
+                
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>配置键</th>
+                            <th>配置值</th>
+                            <th>类型</th>
+                            <th>描述</th>
+                            <th>状态</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="config-table-body">
+                        {% for config in system_configs %}
+                        <tr>
+                            <td>{{ config.config_key }}</td>
+                            <td>
+                                <input type="text" id="config-value-{{ config.id }}" value="{{ config.config_value }}">
+                            </td>
+                            <td>{{ config.config_type }}</td>
+                            <td>{{ config.description }}</td>
+                            <td>
+                                <span class="status-indicator {{ 'active' if config.is_active else 'inactive' }}"></span>
+                                {{ '激活' if config.is_active else '停用' }}
+                            </td>
+                            <td class="actions">
+                                <button class="btn btn-success btn-sm" onclick="saveConfig({{ config.id }})">保存</button>
+                                <button class="btn btn-warning btn-sm" onclick="toggleConfigStatus({{ config.id }})">{{ '停用' if config.is_active else '激活' }}</button>
+                                <button class="btn btn-danger btn-sm" onclick="deleteConfig({{ config.id }})")">删除</button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- 用户管理标签页内容 -->
+        <div id="users" class="tab-content">
+            <div class="ai-card">
+                <div class="ai-card-header">
+                    <span>用户数据管理</span>
+                    <button class="btn btn-primary" onclick="addNewUser()">添加用户</button>
+                </div>
+                
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>用户名</th>
+                            <th>邮箱</th>
+                            <th>角色</th>
+                            <th>状态</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="users-table-body">
+                        {% for user in users %}
+                        <tr>
+                            <td>{{ user.username }}</td>
+                            <td>
+                                <input type="text" id="user-email-{{ user.id }}" value="{{ user.email }}">
+                            </td>
+                            <td>
+                                <select id="user-role-{{ user.id }}">
+                                    <option value="user" {% if user.role == 'user' %}selected{% endif %}>普通用户</option>
+                                    <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>管理员</option>
+                                    <option value="super_admin" {% if user.role == 'super_admin' %}selected{% endif %}>超级管理员</option>
+                                    <option value="hardware_vikey_admin" {% if user.role == 'hardware_vikey_admin' %}selected{% endif %}>硬件管理员</option>
+                                </select>
+                            </td>
+                            <td>
+                                <span class="status-indicator {{ 'active' if user.is_active else 'inactive' }}"></span>
+                                {{ '激活' if user.is_active else '停用' }}
+                                <input type="hidden" id="user-status-{{ user.id }}" value="{{ user.is_active }}">
+                            </td>
+                            <td class="actions">
+                                <button class="btn btn-success btn-sm" onclick="saveUser({{ user.id }})">保存</button>
+                                <button class="btn btn-warning btn-sm" onclick="toggleUserStatus({{ user.id }})">{{ '停用' if user.is_active else '激活' }}</button>
+                                <button class="btn btn-danger btn-sm" onclick="deleteUser({{ user.id }})")">删除</button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- AI员工管理标签页内容 -->
+        <div id="ai-employees" class="tab-content">
+            <div class="ai-card">
+                <div class="ai-card-header">
+                    <span>AI员工管理</span>
+                    <button class="btn btn-primary" onclick="createAIEmployee()">创建AI员工</button>
+                </div>
+                
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>AI ID</th>
+                            <th>名称</th>
+                            <th>类型</th>
+                            <th>AI集</th>
+                            <th>状态</th>
+                            <th>绑定用户</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ai in ai_instances %}
+                        <tr>
+                            <td>{{ ai.instance_id }}</td>
+                            <td>{{ ai.name }}</td>
+                            <td>{{ ai.ai_type }}</td>
+                            <td>{{ ai.collection_id if ai.collection_id else '无' }}</td>
+                            <td>
+                                <span class="status-indicator {{ 'active' if ai.status == 'active' else 'inactive' }}"></span>
+                                {{ ai.status }}
+                            </td>
+                            <td>{{ ai.bound_user if ai.bound_user else '无' }}</td>
+                            <td class="actions">
+                                {% if ai.status == 'active' %}
+                                <button class="btn btn-warning btn-sm" onclick="manageAIEmployee('{{ ai.instance_id }}', 'stop')">停止</button>
+                                {% else %}
+                                <button class="btn btn-success btn-sm" onclick="manageAIEmployee('{{ ai.instance_id }}', 'start')">启动</button>
+                                {% endif %}
+                                <button class="btn btn-info btn-sm" onclick="manageAIEmployee('{{ ai.instance_id }}', 'restart')">重启</button>
+                                <button class="btn btn-primary btn-sm" onclick="editAIEmployee('{{ ai.instance_id }}')">编辑</button>
+                                <button class="btn btn-danger btn-sm" onclick="deleteAIEmployee('{{ ai.instance_id }}')">删除</button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- AI集管理标签页内容 -->
+        <div id="ai-ensembles" class="tab-content">
+            <div class="ai-card">
+                <div class="ai-card-header">
+                    <span>AI集管理</span>
+                    <button class="btn btn-primary" onclick="createAIEnsemble()">创建AI集</button>
+                </div>
+                
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>AI集ID</th>
+                            <th>名称</th>
+                            <th>描述</th>
+                            <th>状态</th>
+                            <th>AI实例数量</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for collection in ai_collections %}
+                        <tr>
+                            <td>{{ collection.collection_id }}</td>
+                            <td>{{ collection.name }}</td>
+                            <td>{{ collection.description }}</td>
+                            <td>
+                                <span class="status-indicator {{ 'active' if collection.status == 'active' else 'inactive' }}"></span>
+                                {{ collection.status }}
+                            </td>
+                            <td>{{ ai_instance_manager.get_instances_by_collection(collection.collection_id)|length }}</td>
+                            <td class="actions">
+                                {% if collection.status == 'active' %}
+                                <button class="btn btn-warning btn-sm" onclick="updateCollectionStatus('{{ collection.collection_id }}', 'inactive')">停用</button>
+                                {% else %}
+                                <button class="btn btn-success btn-sm" onclick="updateCollectionStatus('{{ collection.collection_id }}', 'active')">激活</button>
+                                {% endif %}
+                                <button class="btn btn-info btn-sm" onclick="editCollection('{{ collection.collection_id }}')">编辑</button>
+                                <button class="btn btn-danger btn-sm" onclick="deleteCollection('{{ collection.collection_id }}')">删除</button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- 线程管理标签页内容 -->
+        <div id="thread-management" class="tab-content">
+            <!-- 线程AI管理 -->
+            <div class="ai-card">
+                <div class="ai-card-header">
+                    <span>线程AI管理</span>
+                    <button class="btn btn-primary" onclick="createThreadAI()">创建线程AI</button>
+                </div>
+                
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>线程AI ID</th>
+                            <th>名称</th>
+                            <th>状态</th>
+                            <th>线程数</th>
+                            <th>最大线程数</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="thread-ai-table-body">
+                        <!-- 线程AI数据将通过AJAX加载 -->
+                        <tr>
+                            <td colspan="6" style="text-align: center; padding: 20px; color: #666;">
+                                线程AI数据将通过AJAX加载
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- 系统线程监控 -->
+            <div class="ai-card" style="margin-top: 20px;">
+                <div class="ai-card-header">
+                    <span>系统线程监控</span>
+                </div>
+                
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>线程ID</th>
+                            <th>名称</th>
+                            <th>类型</th>
+                            <th>状态</th>
+                            <th>创建时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="system-threads-table-body">
+                        <!-- 系统线程数据将通过AJAX加载 -->
+                        <tr>
+                            <td colspan="6" style="text-align: center; padding: 20px; color: #666;">
+                                系统线程数据将通过AJAX加载
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- 运行线程任务 -->
+            <div class="ai-card" style="margin-top: 20px;">
+                <div class="ai-card-header">
+                    <span>运行线程任务</span>
+                </div>
+                <div style="padding: 20px;">
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <select id="task-type" style="padding: 8px; border-radius: 4px; border: 1px solid #eaeaea;">
+                            <option value="data_sync">数据同步</option>
+                            <option value="backup">备份</option>
+                            <option value="optimize">系统优化</option>
+                            <option value="report">生成报告</option>
+                        </select>
+                        <button class="btn btn-primary" onclick="runThreadedTask()">运行任务</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // 标签切换功能
+        const tabs = document.querySelectorAll('.tab');
+        const tabContents = document.querySelectorAll('.tab-content');
+        
+        tabs.forEach(tab => {
+            tab.addEventListener('click', function() {
+                const targetTab = this.getAttribute('data-tab');
+                
+                // 移除所有活动状态
+                tabs.forEach(t => t.classList.remove('active'));
+                tabContents.forEach(content => content.classList.remove('active'));
+                
+                // 添加当前活动状态
+                this.classList.add('active');
+                document.getElementById(targetTab).classList.add('active');
+                
+                // 如果是线程管理标签，加载线程数据
+                if (targetTab === 'thread-management') {
+                    loadThreads();
+                }
+            });
+        });
+    });
+    
+    // 保存配置
+    function saveConfig(configId) {
+        const value = document.getElementById(`config-value-${configId}`).value;
+        
+        fetch('/integrated-design/update-config', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                'config_id': configId,
+                'config_value': value
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showMessage('配置更新成功', 'success');
+            } else {
+                showMessage(`更新失败: ${data.message}`, 'error');
+            }
+        })
+        .catch(error => {
+            showMessage(`更新失败: ${error.message}`, 'error');
+        });
+    }
+
+    // 切换配置状态
+    function toggleConfigStatus(configId) {
+        fetch('/integrated-design/toggle-config-status', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                'config_id': configId
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showMessage('配置状态已切换', 'success');
+                window.location.reload();
+            } else {
+                showMessage(`切换失败: ${data.message}`, 'error');
+            }
+        })
+        .catch(error => {
+            showMessage(`切换失败: ${error.message}`, 'error');
+        });
+    }
+
+    // 删除配置
+    function deleteConfig(configId) {
+        if (confirm('确定要删除这个配置吗？')) {
+            fetch('/integrated-design/delete-config', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    'config_id': configId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showMessage('配置已删除', 'success');
+                    window.location.reload();
+                } else {
+                    showMessage(`删除失败: ${data.message}`, 'error');
+                }
+            })
+            .catch(error => {
+                showMessage(`删除失败: ${error.message}`, 'error');
+            });
+        }
+    }
+
+    // 添加新配置
+    function addNewConfig() {
+        const configKey = prompt('请输入配置键:');
+        if (configKey) {
+            const configValue = prompt('请输入配置值:');
+            if (configValue) {
+                const description = prompt('请输入配置描述:');
+                const configType = prompt('请输入配置类型 (string/number/boolean):', 'string');
+                
+                fetch('/integrated-design/add-config', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        'config_key': configKey,
+                        'config_value': configValue,
+                        'description': description || '',
+                        'config_type': configType || 'string'
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showMessage('配置添加成功', 'success');
+                        window.location.reload();
+                    } else {
+                        showMessage(`添加失败: ${data.message}`, 'error');
+                    }
+                })
+                .catch(error => {
+                    showMessage(`添加失败: ${error.message}`, 'error');
+                });
+            }
+        }
+    }
+    
+    // 保存用户
+    function saveUser(userId) {
+        const email = document.getElementById(`user-email-${userId}`).value;
+        const role = document.getElementById(`user-role-${userId}`).value;
+        const isActive = document.getElementById(`user-status-${userId}`).value;
+        
+        fetch('/integrated-design/update-user', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                'user_id': userId,
+                'email': email,
+                'role': role,
+                'is_active': isActive
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showMessage('用户数据更新成功', 'success');
+            } else {
+                showMessage(`更新失败: ${data.message}`, 'error');
+            }
+        })
+        .catch(error => {
+            showMessage(`更新失败: ${error.message}`, 'error');
+        });
+    }
+
+    // 切换用户状态
+    function toggleUserStatus(userId) {
+        const currentStatus = document.getElementById(`user-status-${userId}`).value;
+        const newStatus = currentStatus == '1' ? '0' : '1';
+        
+        fetch('/integrated-design/toggle-user-status', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                'user_id': userId,
+                'is_active': newStatus
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById(`user-status-${userId}`).value = newStatus;
+                showMessage('用户状态已切换', 'success');
+                window.location.reload();
+            } else {
+                showMessage(`切换失败: ${data.message}`, 'error');
+            }
+        })
+        .catch(error => {
+            showMessage(`切换失败: ${error.message}`, 'error');
+        });
+    }
+
+    // 删除用户
+    function deleteUser(userId) {
+        if (confirm('确定要删除这个用户吗？')) {
+            fetch('/integrated-design/delete-user', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    'user_id': userId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showMessage('用户已删除', 'success');
+                    window.location.reload();
+                } else {
+                    showMessage(`删除失败: ${data.message}`, 'error');
+                }
+            })
+            .catch(error => {
+                showMessage(`删除失败: ${error.message}`, 'error');
+            });
+        }
+    }
+
+    // 添加新用户
+    function addNewUser() {
+        const username = prompt('请输入用户名:');
+        if (username) {
+            const email = prompt('请输入邮箱:');
+            if (email) {
+                const password = prompt('请输入密码:');
+                if (password) {
+                    const role = prompt('请输入角色 (user/admin/super_admin/hardware_vikey_admin):', 'user');
+                    
+                    fetch('/integrated-design/add-user', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: new URLSearchParams({
+                            'username': username,
+                            'email': email,
+                            'password': password,
+                            'role': role || 'user'
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            showMessage('用户添加成功', 'success');
+                            window.location.reload();
+                        } else {
+                            showMessage(`添加失败: ${data.message}`, 'error');
+                        }
+                    })
+                    .catch(error => {
+                        showMessage(`添加失败: ${error.message}`, 'error');
+                    });
+                }
+            }
+        }
+    }
+    
+    // 管理AI员工
+    function manageAIEmployee(aiId, action) {
+        fetch('/integrated-design/manage-ai-employee', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                'ai_id': aiId,
+                'action': action
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showMessage(`AI员工${action}成功`, 'success');
+                // 刷新页面
+                window.location.reload();
+            } else {
+                showMessage(`AI员工${action}失败: ${data.message}`, 'error');
+            }
+        })
+        .catch(error => {
+            showMessage(`AI员工${action}失败: ${error.message}`, 'error');
+        });
+    }
+    
+    // 更新AI集状态
+    function updateCollectionStatus(collectionId, status) {
+        fetch('/integrated-design/update-collection-status', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                'collection_id': collectionId,
+                'status': status
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showMessage(`AI集${status == 'active' ? '激活' : '停用'}成功`, 'success');
+                // 刷新页面
+                window.location.reload();
+            } else {
+                showMessage(`AI集${status == 'active' ? '激活' : '停用'}失败: ${data.message}`, 'error');
+            }
+        })
+        .catch(error => {
+            showMessage(`AI集${status == 'active' ? '激活' : '停用'}失败: ${error.message}`, 'error');
+        });
+    }
+
+    // 编辑AI集
+    function editCollection(collectionId) {
+        showMessage('编辑AI集功能将在后续实现', 'info');
+    }
+
+    // 删除AI集
+    function deleteCollection(collectionId) {
+        if (confirm('确定要删除这个AI集吗？')) {
+            fetch('/integrated-design/delete-collection', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    'collection_id': collectionId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showMessage('AI集删除成功', 'success');
+                    // 刷新页面
+                    window.location.reload();
+                } else {
+                    showMessage(`AI集删除失败: ${data.message}`, 'error');
+                }
+            })
+            .catch(error => {
+                showMessage(`AI集删除失败: ${error.message}`, 'error');
+            });
+        }
+    }
+
+    // 编辑AI员工
+    function editAIEmployee(aiId) {
+        showMessage('编辑AI员工功能将在后续实现', 'info');
+    }
+
+    // 删除AI员工
+    function deleteAIEmployee(aiId) {
+        if (confirm('确定要删除这个AI员工吗？')) {
+            fetch('/integrated-design/delete-ai-employee', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    'ai_id': aiId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showMessage('AI员工删除成功', 'success');
+                    // 刷新页面
+                    window.location.reload();
+                } else {
+                    showMessage(`AI员工删除失败: ${data.message}`, 'error');
+                }
+            })
+            .catch(error => {
+                showMessage(`AI员工删除失败: ${error.message}`, 'error');
+            });
+        }
+    }
+    
+    // 运行线程任务
+    function runThreadedTask() {
+        const taskType = document.getElementById('task-type').value;
+        
+        fetch('/integrated-design/run-threaded-task', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                'task_type': taskType
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showMessage('线程任务已启动', 'success');
+            } else {
+                showMessage(`启动失败: ${data.message}`, 'error');
+            }
+        })
+        .catch(error => {
+            showMessage(`启动失败: ${error.message}`, 'error');
+        });
+    }
+    
+    // 加载线程AI数据
+    function loadThreadAI() {
+        fetch('/integrated-design/get-thread-ai')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const threadAITable = document.getElementById('thread-ai-table-body');
+                    if (data.thread_ai.length > 0) {
+                        let html = '';
+                        data.thread_ai.forEach(ai => {
+                            html += `
+                                <tr>
+                                    <td>${ai.instance_id}</td>
+                                    <td>${ai.name}</td>
+                                    <td>
+                                        <span class="status-indicator ${ai.status === 'active' ? 'active' : 'inactive'}"></span>
+                                        ${ai.status}
+                                    </td>
+                                    <td>${ai.current_threads}</td>
+                                    <td>${ai.max_threads}</td>
+                                    <td class="actions">
+                                        ${ai.status === 'active' ? 
+                                            '<button class="btn btn-warning btn-sm" onclick="stopThreadAI(\'' + ai.instance_id + '\')">停止</button>' : 
+                                            '<button class="btn btn-success btn-sm" onclick="startThreadAI(\'' + ai.instance_id + '\')">启动</button>'
+                                        }
+                                        <button class="btn btn-info btn-sm" onclick="editThreadAI(\'' + ai.instance_id + '\')">编辑</button>
+                                        <button class="btn btn-danger btn-sm" onclick="deleteThreadAI(\'' + ai.instance_id + '\')">删除</button>
+                                    </td>
+                                </tr>
+                            `;
+                        });
+                        threadAITable.innerHTML = html;
+                    } else {
+                        threadAITable.innerHTML = `
+                            <tr>
+                                <td colspan="6" style="text-align: center; padding: 20px; color: #666;">
+                                    暂无线程AI数据
+                                </td>
+                            </tr>
+                        `;
+                    }
+                } else {
+                    showMessage(`加载线程AI数据失败: ${data.message}`, 'error');
+                }
+            })
+            .catch(error => {
+                showMessage(`加载线程AI数据失败: ${error.message}`, 'error');
+            });
+    }
+
+    // 加载系统线程数据
+    function loadSystemThreads() {
+        fetch('/integrated-design/get-system-threads')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const systemThreadsTable = document.getElementById('system-threads-table-body');
+                    if (data.threads.length > 0) {
+                        let html = '';
+                        data.threads.forEach(thread => {
+                            html += `
+                                <tr>
+                                    <td>${thread.thread_id}</td>
+                                    <td>${thread.name}</td>
+                                    <td>${thread.type}</td>
+                                    <td>
+                                        <span class="status-indicator ${thread.status === 'running' ? 'active' : 'inactive'}"></span>
+                                        ${thread.status}
+                                    </td>
+                                    <td>${thread.created_at}</td>
+                                    <td class="actions">
+                                        ${thread.status === 'running' ? 
+                                            '<button class="btn btn-warning btn-sm" onclick="pauseSystemThread(\'' + thread.thread_id + '\')">暂停</button>' : 
+                                            '<button class="btn btn-success btn-sm" onclick="resumeSystemThread(\'' + thread.thread_id + '\')">恢复</button>'
+                                        }
+                                        <button class="btn btn-danger btn-sm" onclick="stopSystemThread(\'' + thread.thread_id + '\')">停止</button>
+                                    </td>
+                                </tr>
+                            `;
+                        });
+                        systemThreadsTable.innerHTML = html;
+                    } else {
+                        systemThreadsTable.innerHTML = `
+                            <tr>
+                                <td colspan="6" style="text-align: center; padding: 20px; color: #666;">
+                                    暂无系统线程数据
+                                </td>
+                            </tr>
+                        `;
+                    }
+                } else {
+                    showMessage(`加载系统线程数据失败: ${data.message}`, 'error');
+                }
+            })
+            .catch(error => {
+                showMessage(`加载系统线程数据失败: ${error.message}`, 'error');
+            });
+    }
+
+    // 标签切换功能
+    document.addEventListener('DOMContentLoaded', function() {
+        // 标签切换功能
+        const tabs = document.querySelectorAll('.tab');
+        const tabContents = document.querySelectorAll('.tab-content');
+        
+        tabs.forEach(tab => {
+            tab.addEventListener('click', function() {
+                const targetTab = this.getAttribute('data-tab');
+                
+                // 移除所有活动状态
+                tabs.forEach(t => t.classList.remove('active'));
+                tabContents.forEach(content => content.classList.remove('active'));
+                
+                // 添加当前活动状态
+                this.classList.add('active');
+                document.getElementById(targetTab).classList.add('active');
+                
+                // 如果是线程管理标签，加载线程AI和系统线程数据
+                if (targetTab === 'thread-management') {
+                    loadThreadAI();
+                    loadSystemThreads();
+                }
+            });
+        });
+    });
+
+    // 创建线程AI
+    function createThreadAI() {
+        fetch('/integrated-design/create-thread-ai', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showMessage('线程AI创建成功', 'success');
+                loadThreadAI();
+            } else {
+                showMessage(`创建失败: ${data.message}`, 'error');
+            }
+        })
+        .catch(error => {
+            showMessage(`创建失败: ${error.message}`, 'error');
+        });
+    }
+
+    // 启动线程AI
+    function startThreadAI(aiId) {
+        fetch('/integrated-design/manage-thread-ai', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                'ai_id': aiId,
+                'action': 'start'
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showMessage('线程AI启动成功', 'success');
+                loadThreadAI();
+            } else {
+                showMessage(`启动失败: ${data.message}`, 'error');
+            }
+        })
+        .catch(error => {
+            showMessage(`启动失败: ${error.message}`, 'error');
+        });
+    }
+
+    // 停止线程AI
+    function stopThreadAI(aiId) {
+        fetch('/integrated-design/manage-thread-ai', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                'ai_id': aiId,
+                'action': 'stop'
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showMessage('线程AI停止成功', 'success');
+                loadThreadAI();
+            } else {
+                showMessage(`停止失败: ${data.message}`, 'error');
+            }
+        })
+        .catch(error => {
+            showMessage(`停止失败: ${error.message}`, 'error');
+        });
+    }
+
+    // 编辑线程AI
+    function editThreadAI(aiId) {
+        showMessage('编辑线程AI功能将在后续实现', 'info');
+    }
+
+    // 删除线程AI
+    function deleteThreadAI(aiId) {
+        if (confirm('确定要删除这个线程AI吗？')) {
+            fetch('/integrated-design/delete-thread-ai', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    'ai_id': aiId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showMessage('线程AI删除成功', 'success');
+                    loadThreadAI();
+                } else {
+                    showMessage(`删除失败: ${data.message}`, 'error');
+                }
+            })
+            .catch(error => {
+                showMessage(`删除失败: ${error.message}`, 'error');
+            });
+        }
+    }
+
+    // 暂停系统线程
+    function pauseSystemThread(threadId) {
+        showMessage('暂停系统线程功能将在后续实现', 'info');
+    }
+
+    // 恢复系统线程
+    function resumeSystemThread(threadId) {
+        showMessage('恢复系统线程功能将在后续实现', 'info');
+    }
+
+    // 停止系统线程
+    function stopSystemThread(threadId) {
+        showMessage('停止系统线程功能将在后续实现', 'info');
+    }
+    
+    // 显示消息
+    function showMessage(message, type) {
+        // 创建消息元素
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `${type}-message`;
+        messageDiv.textContent = message;
+        
+        // 添加到页面
+        const container = document.querySelector('.integrated-design-container');
+        const firstChild = container.firstElementChild;
+        container.insertBefore(messageDiv, firstChild.nextElementSibling);
+        
+        // 3秒后移除消息
+        setTimeout(() => {
+            messageDiv.remove();
+        }, 3000);
+    }
+    
+    // 以下是未实现的功能，将在后续添加
+    function addNewConfig() {
+        showMessage('添加配置功能将在后续实现', 'info');
+    }
+    
+    function toggleConfigStatus(configId) {
+        showMessage('切换配置状态功能将在后续实现', 'info');
+    }
+    
+    function deleteConfig(configId) {
+        showMessage('删除配置功能将在后续实现', 'info');
+    }
+    
+    function addNewUser() {
+        showMessage('添加用户功能将在后续实现', 'info');
+    }
+    
+    function toggleUserStatus(userId) {
+        showMessage('切换用户状态功能将在后续实现', 'info');
+    }
+    
+    function deleteUser(userId) {
+        showMessage('删除用户功能将在后续实现', 'info');
+    }
+    
+    function createAIEmployee() {
+        showMessage('创建AI员工功能将在后续实现', 'info');
+    }
+    
+    function createAIEnsemble() {
+        showMessage('创建AI集功能将在后续实现', 'info');
+    }
+    
+    function createThread() {
+        showMessage('创建线程功能将在后续实现', 'info');
+    }
+</script>
+{% endblock %}

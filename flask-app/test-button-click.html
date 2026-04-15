@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试按钮点击功能</title>
+    <link href="/static/css/mtscos-design-system.css" rel="stylesheet">
+    <link href="/static/css/style.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <style>
+        /* 登录区域更完美的隐藏效果 */
+        #login-section {
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(30px) scale(0.95);
+            pointer-events: none;
+            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            max-height: 0;
+            overflow: hidden;
+            position: fixed;
+            inset: 0;
+            z-index: 50;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.5), rgba(0,0,0,0.5));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        #login-section.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0) scale(1);
+            pointer-events: auto;
+            max-height: 2000px;
+            overflow: visible;
+        }
+        
+        .login-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+    <main class="flex-grow py-24 px-4">
+        <!-- 英雄区域 -->
+        <section class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-16 mb-12">
+            <div class="container mx-auto px-4">
+                <div class="max-w-4xl mx-auto text-center">
+                    <h2 class="text-4xl md:text-5xl font-bold mb-6">
+                        智能管理，<span class="text-yellow-300">未来已来</span>
+                    </h2>
+                    <p class="text-xl mb-10 opacity-90">
+                        基于AI脑库的智能项目管理系统
+                    </p>
+                    <div class="flex flex-col sm:flex-row justify-center gap-4">
+                        <button id="get-started-btn" class="bg-white text-indigo-600 px-8 py-3 rounded-lg font-bold hover:shadow-xl transition-all transform hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white" aria-label="立即开始使用系统，点击后将进入登录界面">
+                            <i class="fas fa-rocket mr-2"></i>立即开始
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+    
+    <!-- 登录区域 -->
+    <section id="login-section">
+        <div class="login-content">
+            <h3 class="text-2xl font-bold mb-4">登录界面</h3>
+            <p>这是登录界面内容...</p>
+            <button id="close-login" class="mt-4 bg-red-500 text-white px-4 py-2 rounded">关闭</button>
+        </div>
+    </section>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM加载完成');
+            
+            // 立即开始按钮点击事件 - 显示全屏登录界面
+            var getStartedBtn = document.getElementById('get-started-btn');
+            console.log('获取到的按钮元素:', getStartedBtn);
+            
+            if (getStartedBtn) {
+                console.log('为按钮添加点击事件监听器');
+                
+                // 添加点击事件监听器
+                getStartedBtn.addEventListener('click', function(e) {
+                    console.log('按钮被点击了!');
+                    e.stopPropagation();
+                    
+                    // 显示登录区域
+                    var loginSection = document.querySelector('#login-section');
+                    console.log('获取到的登录区域:', loginSection);
+                    
+                    if (loginSection) {
+                        console.log('添加active类到登录区域');
+                        // 使用CSS类来显示登录区域
+                        loginSection.classList.add('active');
+                        console.log('登录区域的类列表:', loginSection.classList);
+                        console.log('登录区域的显示状态:', loginSection.style.display);
+                    }
+                });
+            }
+            
+            // 关闭登录按钮
+            var closeLoginBtn = document.getElementById('close-login');
+            if (closeLoginBtn) {
+                closeLoginBtn.addEventListener('click', function() {
+                    var loginSection = document.querySelector('#login-section');
+                    if (loginSection) {
+                        loginSection.classList.remove('active');
+                    }
+                });
+            }
+            
+            // 点击登录区域外部关闭登录界面
+            document.addEventListener('click', function(e) {
+                var loginSection = document.querySelector('#login-section');
+                var loginContent = document.querySelector('.login-content');
+                if (loginSection && !loginContent.contains(e.target) && !getStartedBtn.contains(e.target)) {
+                    loginSection.classList.remove('active');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

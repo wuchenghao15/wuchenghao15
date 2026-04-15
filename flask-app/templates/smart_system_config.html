@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能系统配置 - 后台管理系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    
+    <!-- Tailwind 配置 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#6B7280',
+                        success: '#10B981',
+                        danger: '#EF4444',
+                        warning: '#F59E0B',
+                        info: '#3B82F6',
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .scrollbar-hide {
+                scrollbar-width: none;
+                -ms-overflow-style: none;
+            }
+            .scrollbar-hide::-webkit-scrollbar {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans">
+    <!-- 顶部导航栏 -->
+    <header class="bg-white shadow-md fixed top-0 left-0 right-0 z-50">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-4">
+                <button id="sidebar-toggle" class="lg:hidden text-gray-600 hover:text-primary">
+                    <i class="fa fa-bars text-xl"></i>
+                </button>
+                <h1 class="text-xl font-bold text-gray-800">智能系统配置</h1>
+            </div>
+            
+            <div class="flex items-center space-x-4">
+                <!-- 通知图标 -->
+                <button class="relative text-gray-600 hover:text-primary">
+                    <i class="fa fa-bell text-xl"></i>
+                    <span class="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
+                </button>
+                
+                <!-- 用户信息 -->
+                <div class="flex items-center space-x-3">
+                    <div class="h-10 w-10 bg-primary rounded-full flex items-center justify-center text-white font-bold">
+                        {{ user.username[0].upper() }}
+                    </div>
+                    <div class="hidden md:block">
+                        <p class="text-sm font-medium text-gray-800">{{ user.username }}</p>
+                        <p class="text-xs text-gray-500">{{ user.role }}</p>
+                    </div>
+                    <i class="fa fa-caret-down text-gray-600"></i>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主要内容区 -->
+    <main class="flex mt-16">
+        <!-- 侧边栏 -->
+        <aside id="sidebar" class="bg-white shadow-md w-64 fixed left-0 top-16 bottom-0 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 z-40 overflow-y-auto scrollbar-hide">
+            <nav class="p-4">
+                <ul class="space-y-2">
+                    <li>
+                        <a href="/dashboard" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-blue-50 text-gray-700 hover:text-primary transition-colors">
+                            <i class="fa fa-tachometer"></i>
+                            <span>仪表盘</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/smart-dashboard" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-blue-50 text-gray-700 hover:text-primary transition-colors">
+                            <i class="fa fa-cogs"></i>
+                            <span>智能仪表盘</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/smart-user-management" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-blue-50 text-gray-700 hover:text-primary transition-colors">
+                            <i class="fa fa-users"></i>
+                            <span>智能用户管理</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/smart-permission-management" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-blue-50 text-gray-700 hover:text-primary transition-colors">
+                            <i class="fa fa-key"></i>
+                            <span>智能权限管理</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/enhanced-monitoring" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-blue-50 text-gray-700 hover:text-primary transition-colors">
+                            <i class="fa fa-line-chart"></i>
+                            <span>增强型系统监控</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/smart-system-config" class="flex items-center space-x-3 p-3 rounded-lg bg-blue-50 text-primary font-medium">
+                            <i class="fa fa-sliders"></i>
+                            <span>智能系统配置</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/users" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-blue-50 text-gray-700 hover:text-primary transition-colors">
+                            <i class="fa fa-user"></i>
+                            <span>用户管理</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/settings" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-blue-50 text-gray-700 hover:text-primary transition-colors">
+                            <i class="fa fa-gear"></i>
+                            <span>系统设置</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- 内容区 -->
+        <section class="flex-1 lg:ml-64 p-4">
+            <!-- 覆盖层，用于在移动端点击时关闭侧边栏 -->
+            <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 lg:hidden hidden z-30"></div>
+            
+            <div class="container mx-auto">
+                <!-- 配置概览卡片 -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div class="bg-white rounded-xl shadow-md p-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-500">配置建议数</p>
+                                <h3 class="text-2xl font-bold text-gray-800" id="recommendation-count">0</h3>
+                            </div>
+                            <div class="h-12 w-12 bg-blue-100 rounded-full flex items-center justify-center">
+                                <i class="fa fa-lightbulb-o text-primary text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white rounded-xl shadow-md p-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-500">自动优化状态</p>
+                                <h3 class="text-2xl font-bold text-gray-800" id="auto-optimize-status">-</h3>
+                            </div>
+                            <div class="h-12 w-12 bg-green-100 rounded-full flex items-center justify-center">
+                                <i class="fa fa-refresh text-green-500 text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white rounded-xl shadow-md p-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-500">优化历史记录</p>
+                                <h3 class="text-2xl font-bold text-gray-800" id="history-count">0</h3>
+                            </div>
+                            <div class="h-12 w-12 bg-yellow-100 rounded-full flex items-center justify-center">
+                                <i class="fa fa-history text-yellow-500 text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 主要内容 -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- 左侧：当前配置 -->
+                    <div class="lg:col-span-2 space-y-6">
+                        <!-- 当前配置卡片 -->
+                        <div class="bg-white rounded-xl shadow-md p-4">
+                            <h2 class="text-lg font-semibold text-gray-800 mb-4">当前系统配置</h2>
+                            
+                            <!-- 配置标签页 -->
+                            <div class="border-b mb-4">
+                                <nav class="flex space-x-8" aria-label="Tabs">
+                                    <button class="tab-btn active py-2 px-1 border-b-2 border-primary text-primary font-medium" data-tab="app-config">应用配置</button>
+                                    <button class="tab-btn py-2 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="ai-config">AI配置</button>
+                                    <button class="tab-btn py-2 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="system-config">系统配置</button>
+                                </nav>
+                            </div>
+                            
+                            <!-- 配置内容 -->
+                            <div id="app-config" class="tab-content block">
+                                <div id="app-config-content" class="space-y-3">
+                                    <!-- 应用配置将通过JS动态加载 -->
+                                </div>
+                            </div>
+                            
+                            <div id="ai-config" class="tab-content hidden">
+                                <div id="ai-config-content" class="space-y-3">
+                                    <!-- AI配置将通过JS动态加载 -->
+                                </div>
+                            </div>
+                            
+                            <div id="system-config" class="tab-content hidden">
+                                <div id="system-config-content" class="space-y-3">
+                                    <!-- 系统配置将通过JS动态加载 -->
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 配置变更影响分析卡片 -->
+                        <div class="bg-white rounded-xl shadow-md p-4">
+                            <h2 class="text-lg font-semibold text-gray-800 mb-4">配置变更影响分析</h2>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                                <div class="md:col-span-2">
+                                    <div class="space-y-2">
+                                        <label class="block text-sm font-medium text-gray-700">配置项</label>
+                                        <select id="config-key-select" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                                            <!-- 配置项将通过JS动态加载 -->
+                                        </select>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="space-y-2">
+                                        <label class="block text-sm font-medium text-gray-700">新值</label>
+                                        <input type="text" id="new-value-input" placeholder="输入新值" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button id="analyze-impact-btn" class="w-full py-2 px-4 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors">
+                                <i class="fa fa-search mr-2"></i>分析影响
+                            </button>
+                            
+                            <div id="impact-analysis-result" class="mt-4 p-3 bg-gray-50 rounded-lg hidden">
+                                <!-- 影响分析结果将通过JS动态加载 -->
+                            </div>
+                        </div>
+                        
+                        <!-- 优化历史记录卡片 -->
+                        <div class="bg-white rounded-xl shadow-md p-4">
+                            <h2 class="text-lg font-semibold text-gray-800 mb-4">优化历史记录</h2>
+                            
+                            <div id="optimization-history" class="max-h-96 overflow-y-auto scrollbar-hide">
+                                <!-- 优化历史记录将通过JS动态加载 -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 右侧：配置建议和自动优化 -->
+                    <div class="space-y-6">
+                        <!-- 配置优化建议卡片 -->
+                        <div class="bg-white rounded-xl shadow-md p-4">
+                            <h2 class="text-lg font-semibold text-gray-800 mb-4">配置优化建议</h2>
+                            
+                            <div id="config-recommendations" class="space-y-3 max-h-96 overflow-y-auto scrollbar-hide">
+                                <!-- 配置优化建议将通过JS动态加载 -->
+                            </div>
+                        </div>
+                        
+                        <!-- 自动优化卡片 -->
+                        <div class="bg-white rounded-xl shadow-md p-4">
+                            <h2 class="text-lg font-semibold text-gray-800 mb-4">自动优化</h2>
+                            
+                            <div class="space-y-4">
+                                <div>
+                                    <h3 class="text-sm font-medium text-gray-700 mb-2">优化类型</h3>
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <button class="py-2 px-3 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors" data-optimize-type="all">全部优化</button>
+                                        <button class="py-2 px-3 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors" data-optimize-type="performance">性能优化</button>
+                                        <button class="py-2 px-3 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors" data-optimize-type="security">安全优化</button>
+                                        <button class="py-2 px-3 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors" data-optimize-type="resource">资源优化</button>
+                                    </div>
+                                </div>
+                                
+                                <button id="auto-optimize-btn" class="w-full py-2 px-4 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors">
+                                    <i class="fa fa-magic mr-2"></i>执行自动优化
+                                </button>
+                                
+                                <div id="auto-optimize-result" class="p-3 bg-gray-50 rounded-lg hidden">
+                                    <!-- 自动优化结果将通过JS动态加载 -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // 加载当前配置
+        async function loadCurrentConfig() {
+            try {
+                const response = await axios.get('/api/smart-system-config/current-config');
+                const config = response.data.config;
+                
+                // 更新应用配置
+                const appConfigContent = document.getElementById('app-config-content');
+                appConfigContent.innerHTML = generateConfigItems(config.app_config, 'app');
+                
+                // 更新AI配置
+                const aiConfigContent = document.getElementById('ai-config-content');
+                aiConfigContent.innerHTML = generateConfigItems(config.ai_config, 'ai');
+                
+                // 更新系统配置
+                const systemConfigContent = document.getElementById('system-config-content');
+                systemConfigContent.innerHTML = generateConfigItems(config.system_config, 'system');
+                
+                // 更新自动优化状态
+                document.getElementById('auto-optimize-status').textContent = config.ai_config.auto_optimize_enabled ? '已启用' : '已禁用';
+                
+                // 更新配置选择器
+                updateConfigKeySelect(config);
+            } catch (error) {
+                console.error('加载当前配置失败:', error);
+            }
+        }
+        
+        // 生成配置项HTML
+        function generateConfigItems(configObj, configType) {
+            let html = '';
+            
+            for (const [key, value] of Object.entries(configObj)) {
+                html += `
+                    <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                        <div>
+                            <p class="text-sm font-medium text-gray-800">${key.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</p>
+                            <p class="text-xs text-gray-500">${configType} 配置</p>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-sm font-medium text-gray-600">${value}</span>
+                            <button class="text-primary hover:text-primary-dark">
+                                <i class="fa fa-edit"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            return html;
+        }
+        
+        // 更新配置选择器
+        function updateConfigKeySelect(config) {
+            const select = document.getElementById('config-key-select');
+            select.innerHTML = '<option value="">选择配置项</option>';
+            
+            // 合并所有配置项
+            const allConfig = {
+                ...config.app_config,
+                ...config.ai_config,
+                ...config.system_config
+            };
+            
+            for (const key of Object.keys(allConfig)) {
+                const option = document.createElement('option');
+                option.value = key;
+                option.textContent = key.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+                select.appendChild(option);
+            }
+        }
+        
+        // 加载配置建议
+        async function loadConfigRecommendations() {
+            try {
+                const response = await axios.get('/api/smart-system-config/recommendations');
+                const recommendations = response.data.recommendations;
+                
+                // 更新建议数量
+                document.getElementById('recommendation-count').textContent = recommendations.length;
+                
+                const container = document.getElementById('config-recommendations');
+                container.innerHTML = '';
+                
+                if (recommendations.length === 0) {
+                    container.innerHTML = '<p class="text-sm text-gray-500 text-center py-4">暂无配置建议</p>';
+                    return;
+                }
+                
+                recommendations.forEach(rec => {
+                    const recDiv = document.createElement('div');
+                    recDiv.className = 'p-3 bg-gray-50 rounded-lg border-l-4 border-blue-500';
+                    recDiv.innerHTML = `
+                        <div class="flex justify-between items-start mb-2">
+                            <p class="text-sm font-medium text-gray-800">${rec.title || '配置建议'}</p>
+                            <button class="text-primary hover:text-primary-dark" onclick="applyRecommendation('${rec.id}')">
+                                <i class="fa fa-check"></i>
+                            </button>
+                        </div>
+                        <p class="text-xs text-gray-600 mb-2">${rec.description || '暂无描述'}</p>
+                        ${rec.details ? `<p class="text-xs text-gray-500 mb-2">${rec.details}</p>` : ''}
+                        <div class="flex justify-between items-center text-xs text-gray-500">
+                            <span>类型: ${rec.type || 'general'}</span>
+                            <span>可信度: ${(rec.confidence * 100).toFixed(0)}%</span>
+                        </div>
+                    `;
+                    container.appendChild(recDiv);
+                });
+            } catch (error) {
+                console.error('加载配置建议失败:', error);
+            }
+        }
+        
+        // 加载优化历史
+        async function loadOptimizationHistory() {
+            try {
+                const response = await axios.get('/api/smart-system-config/optimization-history');
+                const history = response.data.history;
+                
+                // 更新历史记录数量
+                document.getElementById('history-count').textContent = history.length;
+                
+                const container = document.getElementById('optimization-history');
+                container.innerHTML = '';
+                
+                if (history.length === 0) {
+                    container.innerHTML = '<p class="text-sm text-gray-500 text-center py-4">暂无优化历史</p>';
+                    return;
+                }
+                
+                history.forEach(record => {
+                    const recordDiv = document.createElement('div');
+                    recordDiv.className = 'p-3 bg-gray-50 rounded-lg mb-2';
+                    
+                    const changeDetails = record.config_changes.map(change => 
+                        `${change.key}: ${change.old_value} → ${change.new_value}`
+                    ).join(', ');
+                    
+                    recordDiv.innerHTML = `
+                        <div class="flex justify-between items-start mb-1">
+                            <p class="text-sm font-medium text-gray-800">${record.type === 'auto_optimize' ? '自动优化' : '手动变更'}</p>
+                            <span class="text-xs text-gray-500">${new Date(record.timestamp * 1000).toLocaleString()}</span>
+                        </div>
+                        <p class="text-xs text-gray-600 mb-1">执行人员: ${record.performed_by}</p>
+                        <p class="text-xs text-gray-600 mb-1">状态: <span class="text-green-600">${record.status}</span></p>
+                        <p class="text-xs text-gray-600">变更内容: ${changeDetails}</p>
+                    `;
+                    container.appendChild(recordDiv);
+                });
+            } catch (error) {
+                console.error('加载优化历史失败:', error);
+            }
+        }
+        
+        // 应用配置建议
+        async function applyRecommendation(recommendationId) {
+            try {
+                const response = await axios.post('/api/smart-system-config/apply-recommendation', {
+                    recommendation_id: recommendationId
+                });
+                
+                if (response.data.success) {
+                    // 重新加载配置和建议
+                    loadCurrentConfig();
+                    loadConfigRecommendations();
+                    loadOptimizationHistory();
+                    
+                    // 显示成功消息
+                    alert('配置建议已应用');
+                    
+                    // 如果需要重启，提示用户
+                    if (response.data.result.restart_required) {
+                        alert('配置变更已保存，需要重启系统才能生效');
+                    }
+                }
+            } catch (error) {
+                console.error('应用配置建议失败:', error);
+                alert('应用配置建议失败');
+            }
+        }
+        
+        // 分析配置变更影响
+        async function analyzeConfigImpact() {
+            const configKey = document.getElementById('config-key-select').value;
+            const newValue = document.getElementById('new-value-input').value;
+            
+            if (!configKey || !newValue) {
+                alert('请选择配置项并输入新值');
+                return;
+            }
+            
+            try {
+                const response = await axios.get(`/api/smart-system-config/config-impact?config_key=${configKey}&new_value=${newValue}`);
+                const impact = response.data.impact_analysis;
+                
+                const resultDiv = document.getElementById('impact-analysis-result');
+                resultDiv.className = 'mt-4 p-3 bg-gray-50 rounded-lg block';
+                
+                // 获取影响级别对应的样式
+                const impactLevelMap = {
+                    'high': { class: 'text-red-600', text: '高' },
+                    'medium': { class: 'text-yellow-600', text: '中' },
+                    'low': { class: 'text-green-600', text: '低' }
+                };
+                const impactLevel = impactLevelMap[impact.impact_level] || { class: 'text-gray-600', text: '未知' };
+                
+                // 获取影响类型对应的样式
+                const impactTypeMap = {
+                    'positive': { class: 'text-green-600', icon: 'fa-arrow-up' },
+                    'negative': { class: 'text-red-600', icon: 'fa-arrow-down' },
+                    'neutral': { class: 'text-gray-600', icon: 'fa-minus' }
+                };
+                const performanceImpact = impactTypeMap[impact.performance_impact] || { class: 'text-gray-600', icon: 'fa-minus' };
+                const securityImpact = impactTypeMap[impact.security_impact] || { class: 'text-gray-600', icon: 'fa-minus' };
+                const resourceImpact = impactTypeMap[impact.resource_impact] || { class: 'text-gray-600', icon: 'fa-minus' };
+                
+                resultDiv.innerHTML = `
+                    <h3 class="text-sm font-medium text-gray-800 mb-2">影响分析结果</h3>
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs text-gray-600">配置项</span>
+                            <span class="text-xs font-medium text-gray-800">${impact.config_key}</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs text-gray-600">新值</span>
+                            <span class="text-xs font-medium text-gray-800">${impact.new_value}</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs text-gray-600">影响级别</span>
+                            <span class="text-xs font-medium ${impactLevel.class}">${impactLevel.text}</span>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2 mt-2">
+                            <div class="text-center p-2 bg-gray-100 rounded">
+                                <p class="text-xs text-gray-600">性能影响</p>
+                                <p class="text-xs font-medium ${performanceImpact.class}">
+                                    <i class="${performanceImpact.icon} mr-1"></i>${impact.performance_impact}
+                                </p>
+                            </div>
+                            <div class="text-center p-2 bg-gray-100 rounded">
+                                <p class="text-xs text-gray-600">安全影响</p>
+                                <p class="text-xs font-medium ${securityImpact.class}">
+                                    <i class="${securityImpact.icon} mr-1"></i>${impact.security_impact}
+                                </p>
+                            </div>
+                            <div class="text-center p-2 bg-gray-100 rounded">
+                                <p class="text-xs text-gray-600">资源影响</p>
+                                <p class="text-xs font-medium ${resourceImpact.class}">
+                                    <i class="${resourceImpact.icon} mr-1"></i>${impact.resource_impact}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <p class="text-xs text-gray-600">是否需要重启</p>
+                            <p class="text-xs font-medium ${impact.restart_required ? 'text-red-600' : 'text-green-600'}">
+                                ${impact.restart_required ? '是' : '否'}
+                            </p>
+                        </div>
+                        <div class="mt-2">
+                            <p class="text-xs text-gray-600">受影响组件</p>
+                            <div class="flex flex-wrap gap-1 mt-1">
+                                ${impact.affected_components.map(comp => `
+                                    <span class="px-2 py-0.5 text-xs rounded-full bg-blue-100 text-primary">
+                                        ${comp}
+                                    </span>
+                                `).join('')}
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <p class="text-xs text-gray-600">建议</p>
+                            <p class="text-xs text-gray-700 mt-1">${impact.recommendation}</p>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('分析配置变更影响失败:', error);
+                alert('分析配置变更影响失败');
+            }
+        }
+        
+        // 执行自动优化
+        async function performAutoOptimization(type) {
+            try {
+                const response = await axios.post('/api/smart-system-config/auto-optimize', {
+                    optimization_type: type
+                });
+                
+                if (response.data.success) {
+                    const resultDiv = document.getElementById('auto-optimize-result');
+                    resultDiv.className = 'p-3 bg-gray-50 rounded-lg block';
+                    
+                    const optimizedConfigs = response.data.result.optimized_configs;
+                    
+                    let html = '<h3 class="text-sm font-medium text-gray-800 mb-2">优化结果</h3>';
+                    
+                    if (optimizedConfigs.length === 0) {
+                        html += '<p class="text-xs text-gray-600">没有需要优化的配置项</p>';
+                    } else {
+                        html += '<div class="space-y-2">';
+                        
+                        for (const config of optimizedConfigs) {
+                            html += `
+                                <div class="p-2 bg-white rounded border border-gray-200">
+                                    <div class="flex justify-between items-center">
+                                        <p class="text-xs font-medium text-gray-800">${config.config_key}</p>
+                                        <div class="text-xs">
+                                            <span class="text-gray-500">${config.old_value}</span>
+                                            <i class="fa fa-arrow-right mx-1 text-gray-400"></i>
+                                            <span class="text-green-600 font-medium">${config.new_value}</span>
+                                        </div>
+                                    </div>
+                                    <p class="text-xs text-gray-600 mt-1">${config.reason}</p>
+                                </div>
+                            `;
+                        }
+                        
+                        html += '</div>';
+                        
+                        // 如果需要重启，提示用户
+                        if (response.data.result.restart_required) {
+                            html += '<p class="text-xs text-red-600 mt-2">配置变更已保存，需要重启系统才能生效</p>';
+                        }
+                    }
+                    
+                    resultDiv.innerHTML = html;
+                    
+                    // 重新加载配置和历史记录
+                    loadCurrentConfig();
+                    loadOptimizationHistory();
+                }
+            } catch (error) {
+                console.error('执行自动优化失败:', error);
+                alert('执行自动优化失败');
+            }
+        }
+        
+        // 初始化页面
+        function init() {
+            // 加载数据
+            loadCurrentConfig();
+            loadConfigRecommendations();
+            loadOptimizationHistory();
+            
+            // 标签页切换
+            const tabBtns = document.querySelectorAll('.tab-btn');
+            tabBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    // 移除所有激活状态
+                    tabBtns.forEach(b => {
+                        b.classList.remove('active', 'border-primary', 'text-primary');
+                        b.classList.add('border-transparent', 'text-gray-500');
+                    });
+                    
+                    // 添加当前激活状态
+                    btn.classList.add('active', 'border-primary', 'text-primary');
+                    btn.classList.remove('border-transparent', 'text-gray-500');
+                    
+                    // 隐藏所有内容
+                    const tabContents = document.querySelectorAll('.tab-content');
+                    tabContents.forEach(content => content.classList.add('hidden'));
+                    
+                    // 显示当前内容
+                    const targetTab = btn.dataset.tab;
+                    document.getElementById(targetTab).classList.remove('hidden');
+                });
+            });
+            
+            // 分析影响按钮点击事件
+            document.getElementById('analyze-impact-btn').addEventListener('click', analyzeConfigImpact);
+            
+            // 自动优化按钮点击事件
+            document.getElementById('auto-optimize-btn').addEventListener('click', () => {
+                // 获取选中的优化类型
+                const activeBtn = document.querySelector('[data-optimize-type].bg-primary');
+                const optimizeType = activeBtn ? activeBtn.dataset.optimizeType : 'all';
+                performAutoOptimization(optimizeType);
+            });
+            
+            // 优化类型按钮点击事件
+            const optimizeTypeBtns = document.querySelectorAll('[data-optimize-type]');
+            optimizeTypeBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    // 移除所有选中状态
+                    optimizeTypeBtns.forEach(b => {
+                        b.classList.remove('bg-primary', 'text-white', 'border-primary');
+                        b.classList.add('border-gray-300', 'hover:bg-gray-50');
+                    });
+                    
+                    // 添加当前选中状态
+                    btn.classList.add('bg-primary', 'text-white', 'border-primary');
+                    btn.classList.remove('border-gray-300', 'hover:bg-gray-50');
+                });
+            });
+            
+            // 侧边栏切换
+            const sidebarToggle = document.getElementById('sidebar-toggle');
+            const sidebarOverlay = document.getElementById('sidebar-overlay');
+            const sidebar = document.getElementById('sidebar');
+            
+            sidebarToggle.addEventListener('click', () => {
+                sidebar.classList.toggle('-translate-x-full');
+                sidebarOverlay.classList.toggle('hidden');
+            });
+            
+            sidebarOverlay.addEventListener('click', () => {
+                sidebar.classList.add('-translate-x-full');
+                sidebarOverlay.classList.add('hidden');
+            });
+        }
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

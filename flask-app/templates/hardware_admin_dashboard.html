@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta name="theme-color" content="#3b82f6">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>硬件管理员 - MTSCOS AI 系统</title>
+    
+    <!-- 现代CSS框架 -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <!-- 图标库 -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 text-gray-900 min-h-screen">
+    <!-- 顶部导航栏 -->
+    <header class="bg-white shadow-md fixed w-full top-0 z-50">
+    <meta name="theme-color" content="#3b82f6">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <!-- Logo -->
+            <div class="flex items-center space-x-2">
+                <div class="w-10 h-10 bg-gradient-primary-to-r from-green-500 to-teal-600 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-microchip text-white text-xl"></i>
+                </div>
+                <h1 class="text-2xl font-bold text-gray-800">MTSCOS AI</h1>
+            </div>
+            
+            <!-- 用户信息 -->
+            <div class="flex items-center space-x-4">
+                <span class="text-gray-700 font-medium">欢迎，硬件管理员 {{ username }}</span>
+                <div class="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+                    <i class="fas fa-user-cog text-gray-600"></i>
+                </div>
+                <a href="/auth/logout" class="text-gray-600 hover:text-indigo-600 transition-colors">
+                    <i class="fas fa-sign-out-alt"></i>
+                </a>
+            </div>
+        </div>
+    </header>
+    
+    <!-- 主内容区域 -->
+    <main class="pt-20 pb-10">
+        <div class="container mx-auto px-4">
+            <!-- 页面标题 -->
+            <div class="mb-8">
+                <h2 class="text-3xl font-bold text-gray-800">硬件管理员仪表板</h2>
+                <p class="text-gray-600 mt-2">管理系统硬件设备和资源</p>
+            </div>
+            
+            <!-- 消息提示区域 -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="mb-6">
+                        {% for category, message in messages %}
+                            <div class="bg-{{ 'green' if category == 'success' else 'red' }}-100 border-l-4 border-{{ 'green' if category == 'success' else 'red' }}-500 text-{{ 'green' if category == 'success' else 'red' }}-700 p-4 rounded" role="alert">
+                                <p class="font-bold">
+                                    {% if category == 'success' %}成功{% else %}错误{% endif %}
+                                </p>
+                                <p>{{ message }}</p>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+            
+            <!-- 统计卡片 -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <!-- 设备总数 -->
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-600 mb-1">设备总数</h3>
+                            <p class="text-3xl font-bold text-gray-800">0</p>
+                        </div>
+                        <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                            <i class="fas fa-server text-blue-600 text-xl"></i>
+                        </div>
+                    </div>
+                    <div class="mt-4 text-sm text-gray-600">
+                        暂无设备数据
+                    </div>
+                </div>
+                
+                <!-- 角色信息 -->
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-600 mb-1">当前角色</h3>
+                            <p class="text-3xl font-bold text-gray-800">硬件管理员</p>
+                        </div>
+                        <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                            <i class="fas fa-user-cog text-purple-600 text-xl"></i>
+                        </div>
+                    </div>
+                    <div class="mt-4 text-sm text-gray-600">
+                        管理系统硬件设备
+                    </div>
+                </div>
+                
+                <!-- 系统状态 -->
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-600 mb-1">系统状态</h3>
+                            <p class="text-3xl font-bold text-green-600">正常</p>
+                        </div>
+                        <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                            <i class="fas fa-check-circle text-green-600 text-xl"></i>
+                        </div>
+                    </div>
+                    <div class="mt-4 text-sm text-gray-600">
+                        所有服务运行正常
+                    </div>
+                </div>
+                
+                <!-- AI服务状态 -->
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-600 mb-1">AI服务</h3>
+                            <p class="text-3xl font-bold text-indigo-600">运行中</p>
+                        </div>
+                        <div class="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center">
+                            <i class="fas fa-brain text-indigo-600 text-xl"></i>
+                        </div>
+                    </div>
+                    <div class="mt-4 text-sm text-gray-600">
+                        AI服务正常运行
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 功能区域 -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- 左侧：硬件管理 -->
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                        <i class="fas fa-microchip text-indigo-600 mr-2"></i>
+                        硬件管理
+                    </h3>
+                    
+                    <div class="space-y-4">
+                        <a href="#" class="block bg-gray-50 hover:bg-gray-100 p-4 rounded-lg transition-colors">
+                            <h4 class="font-medium text-gray-800 flex items-center">
+                                <i class="fas fa-server text-blue-600 mr-2"></i>
+                                设备管理
+                            </h4>
+                            <p class="text-sm text-gray-600 mt-1">管理系统硬件设备</p>
+                        </a>
+                        
+                        <a href="#" class="block bg-gray-50 hover:bg-gray-100 p-4 rounded-lg transition-colors">
+                            <h4 class="font-medium text-gray-800 flex items-center">
+                                <i class="fas fa-chart-line text-green-600 mr-2"></i>
+                                性能监控
+                            </h4>
+                            <p class="text-sm text-gray-600 mt-1">监控硬件性能指标</p>
+                        </a>
+                        
+                        <a href="#" class="block bg-gray-50 hover:bg-gray-100 p-4 rounded-lg transition-colors">
+                            <h4 class="font-medium text-gray-800 flex items-center">
+                                <i class="fas fa-cogs text-orange-600 mr-2"></i>
+                                硬件配置
+                            </h4>
+                            <p class="text-sm text-gray-600 mt-1">配置硬件参数</p>
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- 右侧：资源管理 -->
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                        <i class="fas fa-database text-indigo-600 mr-2"></i>
+                        资源管理
+                    </h3>
+                    
+                    <div class="space-y-4">
+                        <a href="#" class="block bg-gray-50 hover:bg-gray-100 p-4 rounded-lg transition-colors">
+                            <h4 class="font-medium text-gray-800 flex items-center">
+                                <i class="fas fa-memory text-blue-600 mr-2"></i>
+                                内存管理
+                            </h4>
+                            <p class="text-sm text-gray-600 mt-1">监控和管理系统内存</p>
+                        </a>
+                        
+                        <a href="#" class="block bg-gray-50 hover:bg-gray-100 p-4 rounded-lg transition-colors">
+                            <h4 class="font-medium text-gray-800 flex items-center">
+                                <i class="fas fa-hdd text-green-600 mr-2"></i>
+                                存储管理
+                            </h4>
+                            <p class="text-sm text-gray-600 mt-1">管理系统存储资源</p>
+                        </a>
+                        
+                        <a href="#" class="block bg-gray-50 hover:bg-gray-100 p-4 rounded-lg transition-colors">
+                            <h4 class="font-medium text-gray-800 flex items-center">
+                                <i class="fas fa-network-wired text-red-600 mr-2"></i>
+                                网络配置
+                            </h4>
+                            <p class="text-sm text-gray-600 mt-1">配置系统网络参数</p>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <!-- 页脚 -->
+    <footer class="bg-white border-t border-gray-200 py-6">
+        <div class="container mx-auto px-4 text-center text-gray-600 text-sm">
+            <p>&copy; 2026 MTSCOS AI Project. All rights reserved.</p>
+        </div>
+    </footer>
+
+    {% block footer %}{% endblock %}
+
+</html>

@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>日语等级测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .test-info {
+            text-align: center;
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #e8f4f8;
+            border-radius: 4px;
+        }
+        .test-start {
+            text-align: center;
+            margin: 30px 0;
+        }
+        .btn {
+            padding: 12px 30px;
+            font-size: 18px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .btn:hover {
+            background-color: #45a049;
+        }
+        .test-progress {
+            margin: 20px 0;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background-color: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background-color: #4CAF50;
+            width: 0%;
+            transition: width 0.3s;
+        }
+        .question-container {
+            margin: 20px 0;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            border-left: 4px solid #4CAF50;
+        }
+        .question-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        .question-options {
+            margin: 15px 0;
+        }
+        .option {
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .option:hover {
+            background-color: #f0f0f0;
+        }
+        .option.selected {
+            background-color: #e8f4f8;
+            border-color: #4CAF50;
+        }
+        .test-controls {
+            display: flex;
+            justify-content: space-between;
+            margin: 30px 0;
+        }
+        .btn-secondary {
+            background-color: #6c757d;
+        }
+        .btn-secondary:hover {
+            background-color: #5a6268;
+        }
+        .result-container {
+            margin: 20px 0;
+            padding: 20px;
+            background-color: #e8f4f8;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .score {
+            font-size: 24px;
+            font-weight: bold;
+            color: #4CAF50;
+        }
+        .level {
+            font-size: 20px;
+            margin: 15px 0;
+            color: #2196F3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>日语等级测试</h1>
+        
+        <div class="test-info">
+            <p>欢迎参加日语等级测试！</p>
+            <p>本次测试将评估您的日语水平，为您推荐适合的学习内容。</p>
+            <p>测试包含多种题型，共20道题目，请认真作答。</p>
+        </div>
+        
+        <!-- 测试开始界面 -->
+        <div id="testStart" class="test-start">
+            <button class="btn" onclick="startTest()">开始测试</button>
+        </div>
+        
+        <!-- 测试进行界面 -->
+        <div id="testContent" style="display: none;">
+            <div class="test-progress">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div style="text-align: right; margin-top: 5px;">
+                    <span id="currentQuestion">1</span>/20
+                </div>
+            </div>
+            
+            <div class="question-container">
+                <div class="question-title" id="questionTitle">题目加载中...</div>
+                <div class="question-options" id="questionOptions"></div>
+            </div>
+            
+            <div class="test-controls">
+                <button class="btn btn-secondary" onclick="previousQuestion()">上一题</button>
+                <button class="btn btn-secondary" onclick="nextQuestion()">下一题</button>
+                <button class="btn" onclick="submitTest()">提交测试</button>
+            </div>
+        </div>
+        
+        <!-- 测试结果界面 -->
+        <div id="testResult" style="display: none;">
+            <div class="result-container">
+                <h2>测试结果</h2>
+                <div class="score" id="finalScore">得分：--/100</div>
+                <div class="level" id="finalLevel">评估等级：--</div>
+                <p id="levelDescription">等级描述：--</p>
+                <button class="btn" onclick="window.location.href='/japanese_test'">进入日语测试</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 模拟测试数据
+        const sampleQuestions = [
+            {
+                id: 'sample_1',
+                type: 'multiple_choice',
+                content: '「こんにちは」の意味は何ですか？',
+                options: [
+                    { id: 'A', text: '早上好' },
+                    { id: 'B', text: '下午好' },
+                    { id: 'C', text: '晚上好' },
+                    { id: 'D', text: '再见' }
+                ],
+                correct_answer: 'B'
+            },
+            {
+                id: 'sample_2',
+                type: 'true_false',
+                content: '「ありがとう」は「谢谢」の意味です。',
+                options: [
+                    { id: 'A', text: '正确' },
+                    { id: 'B', text: '错误' }
+                ],
+                correct_answer: 'A'
+            },
+            {
+                id: 'sample_3',
+                type: 'multiple_choice',
+                content: '「日本語」の読み方は何ですか？',
+                options: [
+                    { id: 'A', text: 'にほんご' },
+                    { id: 'B', text: 'にほんじ' },
+                    { id: 'C', text: 'にっぽんご' },
+                    { id: 'D', text: 'にっぽんじ' }
+                ],
+                correct_answer: 'A'
+            }
+        ];
+        
+        let currentQuestionIndex = 0;
+        let answers = {};
+        let questions = [];
+        
+        function startTest() {
+            // 生成测试题目
+            questions = sampleQuestions;
+            
+            // 显示测试内容
+            document.getElementById('testStart').style.display = 'none';
+            document.getElementById('testContent').style.display = 'block';
+            
+            // 加载第一题
+            loadQuestion(currentQuestionIndex);
+        }
+        
+        function loadQuestion(index) {
+            if (index < 0 || index >= questions.length) return;
+            
+            const question = questions[index];
+            document.getElementById('questionTitle').textContent = question.content;
+            
+            const optionsContainer = document.getElementById('questionOptions');
+            optionsContainer.innerHTML = '';
+            
+            question.options.forEach(option => {
+                const optionDiv = document.createElement('div');
+                optionDiv.className = 'option';
+                optionDiv.innerHTML = `<input type="radio" name="question_${question.id}" value="${option.id}" ${answers[question.id] === option.id ? 'checked' : ''}> ${option.text}`;
+                optionDiv.addEventListener('click', () => {
+                    answers[question.id] = option.id;
+                    // 更新选项样式
+                    document.querySelectorAll('.option').forEach(opt => {
+                        opt.classList.remove('selected');
+                    });
+                    optionDiv.classList.add('selected');
+                });
+                optionsContainer.appendChild(optionDiv);
+            });
+            
+            // 更新进度
+            document.getElementById('currentQuestion').textContent = index + 1;
+            document.getElementById('progressFill').style.width = `${((index + 1) / questions.length) * 100}%`;
+        }
+        
+        function previousQuestion() {
+            if (currentQuestionIndex > 0) {
+                currentQuestionIndex--;
+                loadQuestion(currentQuestionIndex);
+            }
+        }
+        
+        function nextQuestion() {
+            if (currentQuestionIndex < questions.length - 1) {
+                currentQuestionIndex++;
+                loadQuestion(currentQuestionIndex);
+            }
+        }
+        
+        function submitTest() {
+            // 计算得分
+            let correctCount = 0;
+            questions.forEach(question => {
+                if (answers[question.id] === question.correct_answer) {
+                    correctCount++;
+                }
+            });
+            
+            const score = Math.round((correctCount / questions.length) * 100);
+            
+            // 确定等级
+            let level = 'beginner';
+            let levelDescription = '';
+            if (score >= 85) {
+                level = 'advanced';
+                levelDescription = '等级描述：您已经掌握了高级的日语语法和词汇，可以进行流畅的日常交流和商务对话。';
+            } else if (score >= 70) {
+                level = 'intermediate';
+                levelDescription = '等级描述：您已经掌握了中级的日语语法和词汇，可以进行基本的日常交流。';
+            } else {
+                level = 'beginner';
+                levelDescription = '等级描述：您已经掌握了基础的日语语法和词汇，建议从基础开始学习。';
+            }
+            
+            // 显示结果
+            document.getElementById('testContent').style.display = 'none';
+            document.getElementById('testResult').style.display = 'block';
+            
+            document.getElementById('finalScore').textContent = `得分：${score}/100`;
+            document.getElementById('finalLevel').textContent = `评估等级：${level}`;
+            document.getElementById('levelDescription').textContent = levelDescription;
+            
+            // 保存用户等级到服务器
+            fetch('/api/save-language-level', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    language: 'japanese',
+                    level: level,
+                    score: score
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('用户等级保存成功');
+                } else {
+                    console.error('用户等级保存失败:', data.error);
+                }
+            })
+            .catch(error => {
+                console.error('保存用户等级时出错:', error);
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能用户管理 - 后台管理系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    
+    <!-- Tailwind 配置 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#6B7280',
+                        success: '#10B981',
+                        danger: '#EF4444',
+                        warning: '#F59E0B',
+                        info: '#3B82F6',
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .scrollbar-hide {
+                scrollbar-width: none;
+                -ms-overflow-style: none;
+            }
+            .scrollbar-hide::-webkit-scrollbar {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans">
+    <!-- 顶部导航栏 -->
+    <header class="bg-white shadow-md fixed top-0 left-0 right-0 z-50">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-4">
+                <button id="sidebar-toggle" class="lg:hidden text-gray-600 hover:text-primary">
+                    <i class="fa fa-bars text-xl"></i>
+                </button>
+                <h1 class="text-xl font-bold text-gray-800">智能用户管理</h1>
+            </div>
+            
+            <div class="flex items-center space-x-4">
+                <!-- 通知图标 -->
+                <button class="relative text-gray-600 hover:text-primary">
+                    <i class="fa fa-bell text-xl"></i>
+                    <span class="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
+                </button>
+                
+                <!-- 用户信息 -->
+                <div class="flex items-center space-x-3">
+                    <div class="h-10 w-10 bg-primary rounded-full flex items-center justify-center text-white font-bold">
+                        {{ user.username[0].upper() }}
+                    </div>
+                    <div class="hidden md:block">
+                        <p class="text-sm font-medium text-gray-800">{{ user.username }}</p>
+                        <p class="text-xs text-gray-500">{{ user.role }}</p>
+                    </div>
+                    <i class="fa fa-caret-down text-gray-600"></i>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主要内容区 -->
+    <main class="flex mt-16">
+        <!-- 侧边栏 -->
+        <aside id="sidebar" class="bg-white shadow-md w-64 fixed left-0 top-16 bottom-0 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 z-40 overflow-y-auto scrollbar-hide">
+            <nav class="p-4">
+                <ul class="space-y-2">
+                    <li>
+                        <a href="/dashboard" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-blue-50 text-gray-700 hover:text-primary transition-colors">
+                            <i class="fa fa-tachometer"></i>
+                            <span>仪表盘</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/smart-dashboard" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-blue-50 text-gray-700 hover:text-primary transition-colors">
+                            <i class="fa fa-cogs"></i>
+                            <span>智能仪表盘</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/smart-user-management" class="flex items-center space-x-3 p-3 rounded-lg bg-blue-50 text-primary font-medium">
+                            <i class="fa fa-users"></i>
+                            <span>智能用户管理</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/users" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-blue-50 text-gray-700 hover:text-primary transition-colors">
+                            <i class="fa fa-user"></i>
+                            <span>用户管理</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/settings" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-blue-50 text-gray-700 hover:text-primary transition-colors">
+                            <i class="fa fa-gear"></i>
+                            <span>系统设置</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- 内容区 -->
+        <section class="flex-1 lg:ml-64 p-4">
+            <!-- 覆盖层，用于在移动端点击时关闭侧边栏 -->
+            <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 lg:hidden hidden z-30"></div>
+            
+            <div class="container mx-auto">
+                <!-- 系统概览卡片 -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div class="bg-white rounded-xl shadow-md p-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-500">总用户数</p>
+                                <h3 class="text-2xl font-bold text-gray-800" id="total-users">0</h3>
+                            </div>
+                            <div class="h-12 w-12 bg-blue-100 rounded-full flex items-center justify-center">
+                                <i class="fa fa-users text-primary text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white rounded-xl shadow-md p-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-500">异常用户</p>
+                                <h3 class="text-2xl font-bold text-gray-800" id="anomaly-users">0</h3>
+                            </div>
+                            <div class="h-12 w-12 bg-yellow-100 rounded-full flex items-center justify-center">
+                                <i class="fa fa-exclamation-triangle text-yellow-500 text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white rounded-xl shadow-md p-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-500">高风险用户</p>
+                                <h3 class="text-2xl font-bold text-gray-800" id="high-risk-users">0</h3>
+                            </div>
+                            <div class="h-12 w-12 bg-red-100 rounded-full flex items-center justify-center">
+                                <i class="fa fa-fire text-red-500 text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 主要内容 -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- 左侧：用户列表 -->
+                    <div class="lg:col-span-2 space-y-6">
+                        <!-- 用户列表卡片 -->
+                        <div class="bg-white rounded-xl shadow-md p-4">
+                            <div class="flex justify-between items-center mb-4">
+                                <h2 class="text-lg font-semibold text-gray-800">用户列表</h2>
+                                <div class="relative">
+                                    <input type="text" placeholder="搜索用户..." class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent w-64">
+                                    <i class="fa fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                                </div>
+                            </div>
+                            
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full">
+                                    <thead>
+                                        <tr class="border-b">
+                                            <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">用户名</th>
+                                            <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">角色</th>
+                                            <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">风险评分</th>
+                                            <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">状态</th>
+                                            <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="user-table-body">
+                                        <!-- 用户数据将通过JS动态加载 -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <!-- 用户行为趋势图表 -->
+                        <div class="bg-white rounded-xl shadow-md p-4">
+                            <h2 class="text-lg font-semibold text-gray-800 mb-4">用户行为趋势</h2>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <h3 class="text-sm font-medium text-gray-600 mb-2">登录频率</h3>
+                                    <canvas id="login-frequency-chart" height="200"></canvas>
+                                </div>
+                                <div>
+                                    <h3 class="text-sm font-medium text-gray-600 mb-2">操作频率</h3>
+                                    <canvas id="action-frequency-chart" height="200"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 右侧：用户分析和推荐 -->
+                    <div class="space-y-6">
+                        <!-- 风险评分分布 -->
+                        <div class="bg-white rounded-xl shadow-md p-4">
+                            <h2 class="text-lg font-semibold text-gray-800 mb-4">风险评分分布</h2>
+                            <canvas id="risk-score-chart" height="200"></canvas>
+                        </div>
+                        
+                        <!-- 用户推荐 -->
+                        <div class="bg-white rounded-xl shadow-md p-4">
+                            <h2 class="text-lg font-semibold text-gray-800 mb-4">智能推荐</h2>
+                            <div id="recommendations" class="space-y-3 max-h-96 overflow-y-auto scrollbar-hide">
+                                <!-- 推荐数据将通过JS动态加载 -->
+                            </div>
+                        </div>
+                        
+                        <!-- 用户分组建议 -->
+                        <div class="bg-white rounded-xl shadow-md p-4">
+                            <h2 class="text-lg font-semibold text-gray-800 mb-4">分组建议</h2>
+                            <div id="group-suggestions" class="space-y-3 max-h-96 overflow-y-auto scrollbar-hide">
+                                <!-- 分组建议将通过JS动态加载 -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 用户详情模态框 -->
+    <div id="user-detail-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-xl shadow-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div class="p-6 border-b">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-xl font-bold text-gray-800" id="modal-title">用户详情</h2>
+                    <button id="close-modal" class="text-gray-500 hover:text-gray-700">
+                        <i class="fa fa-times text-xl"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="p-6" id="user-detail-content">
+                <!-- 用户详情内容将通过JS动态加载 -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 加载用户数据
+        async function loadUserData() {
+            try {
+                const response = await axios.get('/api/smart-user-management/users');
+                const users = response.data.users;
+                
+                // 更新用户统计
+                document.getElementById('total-users').textContent = users.length;
+                const anomalyUsers = users.filter(user => user.has_anomalies).length;
+                const highRiskUsers = users.filter(user => user.risk_score > 70).length;
+                document.getElementById('anomaly-users').textContent = anomalyUsers;
+                document.getElementById('high-risk-users').textContent = highRiskUsers;
+                
+                // 更新用户表格
+                const tableBody = document.getElementById('user-table-body');
+                tableBody.innerHTML = '';
+                
+                users.forEach(user => {
+                    const row = document.createElement('tr');
+                    row.className = 'border-b hover:bg-gray-50';
+                    row.innerHTML = `
+                        <td class="px-4 py-3">
+                            <div class="flex items-center">
+                                <div class="h-8 w-8 bg-primary rounded-full flex items-center justify-center text-white text-sm font-bold mr-3">
+                                    ${user.username[0].toUpperCase()}
+                                </div>
+                                <div>
+                                    <p class="text-sm font-medium text-gray-800">${user.username}</p>
+                                    <p class="text-xs text-gray-500">${user.email}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-4 py-3">
+                            <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-primary">${user.role}</span>
+                        </td>
+                        <td class="px-4 py-3">
+                            <div class="flex items-center">
+                                <div class="w-20 bg-gray-200 rounded-full h-2.5 mr-2">
+                                    <div 
+                                        class="h-2.5 rounded-full ${user.risk_score > 70 ? 'bg-red-500' : user.risk_score > 50 ? 'bg-yellow-500' : 'bg-green-500'}" 
+                                        style="width: ${user.risk_score}%">
+                                    </div>
+                                </div>
+                                <span class="text-sm font-medium text-gray-800">${user.risk_score}</span>
+                            </div>
+                        </td>
+                        <td class="px-4 py-3">
+                            <span class="px-2 py-1 text-xs rounded-full ${user.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">
+                                ${user.is_active ? '活跃' : '禁用'}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3">
+                            <button class="text-primary hover:text-primary-dark mr-2" onclick="viewUserDetails('${user.username}')">
+                                <i class="fa fa-eye"></i>
+                            </button>
+                            <button class="text-gray-500 hover:text-gray-700">
+                                <i class="fa fa-edit"></i>
+                            </button>
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+                
+                // 更新风险评分分布图表
+                updateRiskScoreChart(users);
+            } catch (error) {
+                console.error('加载用户数据失败:', error);
+            }
+        }
+        
+        // 更新风险评分分布图表
+        function updateRiskScoreChart(users) {
+            const riskScores = users.map(user => user.risk_score);
+            const lowRisk = riskScores.filter(score => score <= 30).length;
+            const mediumRisk = riskScores.filter(score => score > 30 && score <= 70).length;
+            const highRisk = riskScores.filter(score => score > 70).length;
+            
+            const ctx = document.getElementById('risk-score-chart').getContext('2d');
+            if (window.riskScoreChart) {
+                window.riskScoreChart.destroy();
+            }
+            window.riskScoreChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['低风险', '中风险', '高风险'],
+                    datasets: [{
+                        data: [lowRisk, mediumRisk, highRisk],
+                        backgroundColor: ['#10B981', '#F59E0B', '#EF4444'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+        
+        // 加载推荐数据
+        async function loadRecommendations() {
+            try {
+                const response = await axios.get('/api/smart-user-management/recommendations');
+                const recommendations = response.data.recommendations;
+                
+                const recommendationsContainer = document.getElementById('recommendations');
+                recommendationsContainer.innerHTML = '';
+                
+                recommendations.forEach(rec => {
+                    const recElement = document.createElement('div');
+                    recElement.className = 'p-3 bg-gray-50 rounded-lg border-l-4 ' + 
+                        (rec.priority === 'high' ? 'border-red-500' : rec.priority === 'medium' ? 'border-yellow-500' : 'border-green-500');
+                    recElement.innerHTML = `
+                        <p class="text-sm text-gray-800">${rec.description}</p>
+                        <p class="text-xs text-gray-500 mt-1">
+                            <i class="fa fa-clock-o mr-1"></i>${new Date().toLocaleTimeString()}
+                        </p>
+                    `;
+                    recommendationsContainer.appendChild(recElement);
+                });
+            } catch (error) {
+                console.error('加载推荐数据失败:', error);
+            }
+        }
+        
+        // 加载分组建议
+        async function loadGroupSuggestions() {
+            try {
+                const response = await axios.get('/api/smart-user-management/groups/suggestions');
+                const groupSuggestions = response.data.group_suggestions;
+                
+                const groupContainer = document.getElementById('group-suggestions');
+                groupContainer.innerHTML = '';
+                
+                groupSuggestions.forEach(group => {
+                    const groupElement = document.createElement('div');
+                    groupElement.className = 'p-3 bg-gray-50 rounded-lg';
+                    groupElement.innerHTML = `
+                        <h3 class="text-sm font-medium text-gray-800">${group.group_name}</h3>
+                        <p class="text-xs text-gray-500 mt-1">${group.description}</p>
+                        <p class="text-xs text-gray-500 mt-1"><strong>建议成员:</strong> ${group.suggested_members.join(', ')}</p>
+                        <p class="text-xs text-gray-500 mt-1"><strong>原因:</strong> ${group.reason}</p>
+                    `;
+                    groupContainer.appendChild(groupElement);
+                });
+            } catch (error) {
+                console.error('加载分组建议失败:', error);
+            }
+        }
+        
+        // 加载用户行为趋势数据
+        async function loadUserBehaviorTrends() {
+            try {
+                // 获取第一个用户的行为趋势数据作为示例
+                const response = await axios.get('/api/smart-user-management/users');
+                const users = response.data.users;
+                
+                if (users.length > 0) {
+                    const username = users[0].username;
+                    const trendsResponse = await axios.get(`/api/smart-user-management/user/${username}/behavior-trends`);
+                    const trends = trendsResponse.data.trends;
+                    
+                    // 更新登录频率图表
+                    const loginCtx = document.getElementById('login-frequency-chart').getContext('2d');
+                    if (window.loginFrequencyChart) {
+                        window.loginFrequencyChart.destroy();
+                    }
+                    window.loginFrequencyChart = new Chart(loginCtx, {
+                        type: 'line',
+                        data: {
+                            labels: trends.login_frequency.labels,
+                            datasets: [{
+                                label: '登录次数',
+                                data: trends.login_frequency.data,
+                                borderColor: '#3B82F6',
+                                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                                tension: 0.3,
+                                fill: true
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: {
+                                    display: false
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true
+                                }
+                            }
+                        }
+                    });
+                    
+                    // 更新操作频率图表
+                    const actionCtx = document.getElementById('action-frequency-chart').getContext('2d');
+                    if (window.actionFrequencyChart) {
+                        window.actionFrequencyChart.destroy();
+                    }
+                    window.actionFrequencyChart = new Chart(actionCtx, {
+                        type: 'bar',
+                        data: {
+                            labels: trends.action_frequency.labels,
+                            datasets: [{
+                                label: '操作次数',
+                                data: trends.action_frequency.data,
+                                backgroundColor: '#3B82F6',
+                                borderRadius: 4
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: {
+                                    display: false
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true
+                                }
+                            }
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('加载用户行为趋势失败:', error);
+            }
+        }
+        
+        // 查看用户详情
+        async function viewUserDetails(username) {
+            try {
+                const response = await axios.get(`/api/smart-user-management/user/${username}/behavior`);
+                const userData = response.data;
+                
+                const modal = document.getElementById('user-detail-modal');
+                const modalTitle = document.getElementById('modal-title');
+                const content = document.getElementById('user-detail-content');
+                
+                modalTitle.textContent = `${username} 的用户详情`;
+                
+                // 格式化登录历史
+                const formattedLoginHistory = userData.behavior_data.login_history.map(login => {
+                    const date = new Date(login.timestamp * 1000);
+                    return `
+                        <tr class="border-b">
+                            <td class="px-4 py-2 text-sm text-gray-600">${date.toLocaleString()}</td>
+                            <td class="px-4 py-2 text-sm text-gray-600">${login.ip}</td>
+                            <td class="px-4 py-2 text-sm text-gray-600">${login.device}</td>
+                            <td class="px-4 py-2 text-sm text-gray-600">${login.location}</td>
+                            <td class="px-4 py-2 text-sm text-gray-600">
+                                <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-700">${login.status}</span>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+                
+                // 格式化操作历史
+                const formattedActionHistory = userData.behavior_data.action_history.map(action => {
+                    const date = new Date(action.timestamp * 1000);
+                    return `
+                        <tr class="border-b">
+                            <td class="px-4 py-2 text-sm text-gray-600">${date.toLocaleString()}</td>
+                            <td class="px-4 py-2 text-sm text-gray-600">${action.action}</td>
+                            <td class="px-4 py-2 text-sm text-gray-600">${action.resource}</td>
+                            <td class="px-4 py-2 text-sm text-gray-600">
+                                <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-700">${action.status}</span>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+                
+                content.innerHTML = `
+                    <div class="space-y-6">
+                        <!-- 基本信息 -->
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-800 mb-3">基本信息</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <p class="text-sm text-gray-500">用户名</p>
+                                    <p class="text-base font-medium text-gray-800">${username}</p>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-500">行为模式</p>
+                                    <p class="text-base font-medium text-gray-800">${userData.analysis.behavior_pattern}</p>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-500">登录时间模式</p>
+                                    <p class="text-base font-medium text-gray-800">${userData.analysis.login_time_pattern}</p>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-500">操作模式</p>
+                                    <p class="text-base font-medium text-gray-800">${userData.analysis.action_pattern}</p>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-500">异常评分</p>
+                                    <p class="text-base font-medium text-gray-800">${userData.analysis.anomaly_score}</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 登录历史 -->
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-800 mb-3">登录历史</h3>
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full">
+                                    <thead>
+                                        <tr class="border-b">
+                                            <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">时间</th>
+                                            <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">IP</th>
+                                            <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">设备</th>
+                                            <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">位置</th>
+                                            <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">状态</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${formattedLoginHistory}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <!-- 操作历史 -->
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-800 mb-3">操作历史</h3>
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full">
+                                    <thead>
+                                        <tr class="border-b">
+                                            <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">时间</th>
+                                            <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">操作</th>
+                                            <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">资源</th>
+                                            <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">状态</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${formattedActionHistory}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <!-- 分析建议 -->
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-800 mb-3">分析建议</h3>
+                            <ul class="space-y-2">
+                                ${userData.analysis.recommendations.map(rec => `<li class="text-sm text-gray-600"><i class="fa fa-arrow-right text-primary mr-2"></i>${rec}</li>`).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                `;
+                
+                modal.classList.remove('hidden');
+            } catch (error) {
+                console.error('加载用户详情失败:', error);
+            }
+        }
+        
+        // 初始化页面
+        function init() {
+            // 加载数据
+            loadUserData();
+            loadRecommendations();
+            loadGroupSuggestions();
+            loadUserBehaviorTrends();
+            
+            // 每30秒刷新一次数据
+            setInterval(() => {
+                loadUserData();
+                loadRecommendations();
+                loadGroupSuggestions();
+            }, 30000);
+            
+            // 侧边栏切换
+            const sidebarToggle = document.getElementById('sidebar-toggle');
+            const sidebarOverlay = document.getElementById('sidebar-overlay');
+            const sidebar = document.getElementById('sidebar');
+            
+            sidebarToggle.addEventListener('click', () => {
+                sidebar.classList.toggle('-translate-x-full');
+                sidebarOverlay.classList.toggle('hidden');
+            });
+            
+            sidebarOverlay.addEventListener('click', () => {
+                sidebar.classList.add('-translate-x-full');
+                sidebarOverlay.classList.add('hidden');
+            });
+            
+            // 关闭模态框
+            document.getElementById('close-modal').addEventListener('click', () => {
+                document.getElementById('user-detail-modal').classList.add('hidden');
+            });
+            
+            // 点击模态框外部关闭
+            document.getElementById('user-detail-modal').addEventListener('click', (e) => {
+                if (e.target.id === 'user-detail-modal') {
+                    e.target.classList.add('hidden');
+                }
+            });
+        }
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

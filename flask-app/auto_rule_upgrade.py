@@ -1,0 +1,722 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+规则决策自动升级系统
+自动管理和升级系统中的规则和决策逻辑
+"""
+
+import os
+import logging
+import json
+import time
+from datetime import datetime
+import shutil
+import threading
+import sqlite3
+
+# 配置日志
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('auto_rule_upgrade.log'),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
+
+class AutoRuleUpgrader:
+    """规则决策自动升级器"""
+    
+    def __init__(self):
+        self.running = True
+        self.rule_config_file = 'rule_config.json'
+        self.rules_dir = 'rules'
+        self.backups_dir = 'rule_backups'
+        self.db_path = 'rule_database.db'
+        
+        # 初始化配置
+        self.init_config()
+    
+    def init_config(self):
+        """初始化规则配置"""
+        if not os.path.exists(self.rule_config_file):
+            default_config = {
+                'current_version': '1.0.0',
+                'last_upgraded': datetime.now().isoformat(),
+                'upgrade_check_interval': 86400,  # 24小时
+                'rule_types': [
+                    'color_selection_rules',
+                    'layout_generation_rules',
+                    'security_rules',
+                    'upgrade_rules',
+                    'decision_rules'
+                ],
+                'auto_upgrade_enabled': True,
+                'upgrade_history': []
+            }
+            with open(self.rule_config_file, 'w') as f:
+                json.dump(default_config, f, indent=2)
+            logger.info(f"已创建默认规则配置文件: {self.rule_config_file}")
+        
+        # 创建规则目录
+        if not os.path.exists(self.rules_dir):
+            os.makedirs(self.rules_dir)
+            logger.info(f"已创建规则目录: {self.rules_dir}")
+        
+        # 创建备份目录
+        if not os.path.exists(self.backups_dir):
+            os.makedirs(self.backups_dir)
+            logger.info(f"已创建备份目录: {self.backups_dir}")
+        
+        # 初始化规则数据库
+        self.init_rule_database()
+        
+        # 创建初始规则
+        self.create_initial_rules()
+    
+    def init_rule_database(self):
+        """初始化规则数据库"""
+        logger.info("初始化规则数据库...")
+        
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        # 创建规则表
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS rules (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            rule_name TEXT UNIQUE,
+            rule_type TEXT,
+            rule_content TEXT,
+            version TEXT,
+            created_at TEXT,
+            updated_at TEXT,
+            is_active INTEGER DEFAULT 0,
+            priority INTEGER DEFAULT 0
+        )
+        ''')
+        
+        # 创建规则版本表
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS rule_versions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            rule_id INTEGER,
+            version TEXT,
+            rule_content TEXT,
+            created_at TEXT,
+            FOREIGN KEY (rule_id) REFERENCES rules (id)
+        )
+        ''')
+        
+        # 创建规则执行日志表
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS rule_execution_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            rule_id INTEGER,
+            rule_name TEXT,
+            execution_time TEXT,
+            result TEXT,
+            status TEXT,
+            FOREIGN KEY (rule_id) REFERENCES rules (id)
+        )
+        ''')
+        
+        conn.commit()
+        conn.close()
+        
+        logger.info(f"规则数据库已初始化: {self.db_path}")
+    
+    def create_initial_rules(self):
+        """创建初始规则"""
+        logger.info("创建初始规则...")
+        
+        # 创建颜色选择规则
+        color_rules = {
+            "name": "color_selection_rules",
+            "type": "color_selection",
+            "version": "1.0.0",
+            "rules": [
+                {
+                    "name": "complementary_colors",
+                    "description": "选择互补色配色方案",
+                    "priority": 1,
+                    "condition": "if color_count >= 4",
+                    "action": "select complementary color scheme"
+                },
+                {
+                    "name": "monochromatic_colors",
+                    "description": "选择单色配色方案",
+                    "priority": 2,
+                    "condition": "if color_count < 4",
+                    "action": "select monochromatic color scheme"
+                }
+            ]
+        }
+        
+        # 创建布局生成规则
+        layout_rules = {
+            "name": "layout_generation_rules",
+            "type": "layout_generation",
+            "version": "1.0.0",
+            "rules": [
+                {
+                    "name": "responsive_layout",
+                    "description": "生成响应式布局",
+                    "priority": 1,
+                    "condition": "always",
+                    "action": "generate responsive layout with Tailwind CSS"
+                },
+                {
+                    "name": "mobile_first",
+                    "description": "采用移动优先设计",
+                    "priority": 2,
+                    "condition": "always",
+                    "action": "use mobile-first design approach"
+                }
+            ]
+        }
+        
+        # 创建安全规则
+        security_rules = {
+            "name": "security_rules",
+            "type": "security",
+            "version": "1.0.0",
+            "rules": [
+                {
+                    "name": "input_validation",
+                    "description": "验证所有用户输入",
+                    "priority": 1,
+                    "condition": "on user input",
+                    "action": "validate input against security rules"
+                },
+                {
+                    "name": "rate_limiting",
+                    "description": "限制请求速率",
+                    "priority": 2,
+                    "condition": "on request",
+                    "action": "apply rate limiting"
+                }
+            ]
+        }
+        
+        # 保存初始规则
+        self.save_rule_to_file(color_rules)
+        self.save_rule_to_file(layout_rules)
+        self.save_rule_to_file(security_rules)
+        
+        # 保存到数据库
+        self.save_rule_to_database(color_rules)
+        self.save_rule_to_database(layout_rules)
+        self.save_rule_to_database(security_rules)
+        
+        logger.info("初始规则已创建")
+    
+    def save_rule_to_file(self, rule_data):
+        """保存规则到文件"""
+        rule_file = os.path.join(self.rules_dir, f"{rule_data['name']}.json")
+        with open(rule_file, 'w') as f:
+            json.dump(rule_data, f, indent=2)
+        logger.info(f"已保存规则到文件: {rule_file}")
+    
+    def save_rule_to_database(self, rule_data):
+        """保存规则到数据库"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        # 检查规则是否已存在
+        cursor.execute("SELECT id FROM rules WHERE rule_name = ?", (rule_data['name'],))
+        existing_rule = cursor.fetchone()
+        
+        if existing_rule:
+            # 更新现有规则
+            cursor.execute('''
+            UPDATE rules SET rule_type = ?, rule_content = ?, version = ?, updated_at = ?, is_active = 1
+            WHERE id = ?
+            ''', (rule_data['type'], json.dumps(rule_data), rule_data['version'], datetime.now().isoformat(), existing_rule[0]))
+            
+            # 保存版本历史
+            cursor.execute('''
+            INSERT INTO rule_versions (rule_id, version, rule_content, created_at)
+            VALUES (?, ?, ?, ?)
+            ''', (existing_rule[0], rule_data['version'], json.dumps(rule_data), datetime.now().isoformat()))
+            
+            logger.info(f"已更新规则: {rule_data['name']} 到版本 {rule_data['version']}")
+        else:
+            # 插入新规则
+            cursor.execute('''
+            INSERT INTO rules (rule_name, rule_type, rule_content, version, created_at, updated_at, is_active)
+            VALUES (?, ?, ?, ?, ?, ?, 1)
+            ''', (rule_data['name'], rule_data['type'], json.dumps(rule_data), rule_data['version'], datetime.now().isoformat(), datetime.now().isoformat()))
+            
+            rule_id = cursor.lastrowid
+            
+            # 保存版本历史
+            cursor.execute('''
+            INSERT INTO rule_versions (rule_id, version, rule_content, created_at)
+            VALUES (?, ?, ?, ?)
+            ''', (rule_id, rule_data['version'], json.dumps(rule_data), datetime.now().isoformat()))
+            
+            logger.info(f"已创建新规则: {rule_data['name']} 版本 {rule_data['version']}")
+        
+        conn.commit()
+        conn.close()
+    
+    def load_config(self):
+        """加载规则配置"""
+        try:
+            with open(self.rule_config_file, 'r') as f:
+                return json.load(f)
+        except Exception as e:
+            logger.error(f"加载规则配置失败: {str(e)}")
+            return {
+                'current_version': '1.0.0',
+                'last_upgraded': datetime.now().isoformat(),
+                'upgrade_check_interval': 86400,
+                'rule_types': [
+                    'color_selection_rules',
+                    'layout_generation_rules',
+                    'security_rules',
+                    'upgrade_rules',
+                    'decision_rules'
+                ],
+                'auto_upgrade_enabled': True,
+                'upgrade_history': []
+            }
+    
+    def save_config(self, config):
+        """保存规则配置"""
+        try:
+            with open(self.rule_config_file, 'w') as f:
+                json.dump(config, f, indent=2)
+            logger.info(f"已保存规则配置到 {self.rule_config_file}")
+        except Exception as e:
+            logger.error(f"保存规则配置失败: {str(e)}")
+    
+    def start_upgrade_monitor(self, interval=86400):
+        """开始升级监控"""
+        logger.info("启动规则决策自动升级监控...")
+        
+        while self.running:
+            try:
+                # 检查是否需要升级
+                if self.should_upgrade():
+                    logger.info("开始规则决策自动升级...")
+                    self.run_upgrade()
+                else:
+                    logger.info("规则决策版本已是最新，无需升级")
+                
+                # 等待指定时间
+                time.sleep(interval)
+                
+            except Exception as e:
+                logger.error(f"升级监控发生错误: {str(e)}")
+                import traceback
+                traceback.print_exc()
+        
+        logger.info("规则决策自动升级监控已停止")
+    
+    def stop(self, signum=None, frame=None):
+        """停止监控系统"""
+        logger.info("正在停止规则决策自动升级监控...")
+        self.running = False
+    
+    def should_upgrade(self):
+        """检查是否需要升级"""
+        config = self.load_config()
+        
+        if not config.get('auto_upgrade_enabled', True):
+            logger.info("规则决策自动升级已禁用")
+            return False
+        
+        # 检查距离上次升级的时间
+        last_upgraded = datetime.fromisoformat(config.get('last_upgraded', datetime.now().isoformat()))
+        interval = config.get('upgrade_check_interval', 86400)
+        
+        if (datetime.now() - last_upgraded).total_seconds() < interval:
+            logger.debug(f"距离上次升级时间不足 {interval} 秒，跳过升级检查")
+            return False
+        
+        # 检查是否有新版本
+        current_version = config.get('current_version', '1.0.0')
+        latest_version = self.get_latest_version()
+        
+        if latest_version and self.is_newer_version(latest_version, current_version):
+            logger.info(f"发现新版本: {latest_version} (当前版本: {current_version})")
+            return True
+        
+        return False
+    
+    def get_latest_version(self):
+        """获取最新版本信息"""
+        logger.info("检查最新规则决策版本...")
+        
+        # 这里可以从GitHub、PyPI或自定义API获取最新版本
+        # 目前使用模拟数据
+        try:
+            # 模拟从API获取版本
+            # response = requests.get('https://api.example.com/rule/version', timeout=10)
+            # response.raise_for_status()
+            # return response.json().get('version')
+            
+            # 模拟返回最新版本
+            return '2.0.0'
+        except Exception as e:
+            logger.error(f"获取最新版本失败: {str(e)}")
+            return None
+    
+    def is_newer_version(self, latest, current):
+        """检查是否是更新的版本"""
+        try:
+            latest_parts = list(map(int, latest.split('.')))
+            current_parts = list(map(int, current.split('.')))
+            
+            for l, c in zip(latest_parts, current_parts):
+                if l > c:
+                    return True
+                elif l < c:
+                    return False
+            
+            # 如果前面的版本号相同，检查长度
+            return len(latest_parts) > len(current_parts)
+        except Exception as e:
+            logger.error(f"版本比较失败: {str(e)}")
+            return False
+    
+    def run_upgrade(self):
+        """执行升级"""
+        logger.info("开始执行规则决策升级...")
+        
+        config = self.load_config()
+        current_version = config.get('current_version', '1.0.0')
+        latest_version = self.get_latest_version()
+        
+        if not latest_version:
+            logger.error("无法获取最新版本，升级失败")
+            return False
+        
+        try:
+            # 1. 备份当前规则
+            backup_path = self.backup_rules()
+            
+            # 2. 下载并安装最新规则
+            self.download_and_install_rules(latest_version)
+            
+            # 3. 更新配置
+            config['current_version'] = latest_version
+            config['last_upgraded'] = datetime.now().isoformat()
+            
+            # 记录升级历史
+            upgrade_record = {
+                'from_version': current_version,
+                'to_version': latest_version,
+                'upgraded_at': datetime.now().isoformat(),
+                'backup_path': backup_path,
+                'status': 'success'
+            }
+            
+            if 'upgrade_history' not in config:
+                config['upgrade_history'] = []
+            config['upgrade_history'].append(upgrade_record)
+            
+            self.save_config(config)
+            
+            # 4. 验证升级结果
+            self.verify_upgrade(latest_version)
+            
+            logger.info(f"规则决策升级成功，已从版本 {current_version} 升级到 {latest_version}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"规则决策升级失败: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            
+            # 尝试恢复备份
+            self.restore_from_backup(backup_path)
+            return False
+    
+    def backup_rules(self):
+        """备份当前规则"""
+        logger.info("备份当前规则...")
+        
+        backup_file = f"rule_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.zip"
+        backup_path = os.path.join(self.backups_dir, backup_file)
+        
+        # 备份规则文件
+        rule_files_backup = os.path.join(self.backups_dir, f"rule_files_{datetime.now().strftime('%Y%m%d_%H%M%S')}")
+        shutil.copytree(self.rules_dir, rule_files_backup)
+        
+        # 备份规则数据库
+        db_backup = os.path.join(self.backups_dir, f"rule_db_{datetime.now().strftime('%Y%m%d_%H%M%S')}.db")
+        shutil.copy2(self.db_path, db_backup)
+        
+        logger.info(f"规则已备份到目录: {self.backups_dir}")
+        return self.backups_dir
+    
+    def restore_from_backup(self, backup_path):
+        """从备份恢复规则"""
+        logger.info("尝试从备份恢复规则...")
+        
+        if not backup_path or not os.path.exists(backup_path):
+            logger.error(f"备份目录不存在: {backup_path}")
+            return False
+        
+        # 查找最新的规则文件备份
+        rule_backups = sorted([d for d in os.listdir(backup_path) if d.startswith('rule_files_')], reverse=True)
+        if rule_backups:
+            latest_rule_backup = os.path.join(backup_path, rule_backups[0])
+            try:
+                # 清空当前规则目录
+                shutil.rmtree(self.rules_dir)
+                os.makedirs(self.rules_dir)
+                # 恢复规则文件
+                for file in os.listdir(latest_rule_backup):
+                    shutil.copy2(os.path.join(latest_rule_backup, file), os.path.join(self.rules_dir, file))
+                logger.info("已从备份恢复规则文件")
+            except Exception as e:
+                logger.error(f"恢复规则文件失败: {str(e)}")
+        
+        # 查找最新的规则数据库备份
+        db_backups = sorted([f for f in os.listdir(backup_path) if f.startswith('rule_db_') and f.endswith('.db')], reverse=True)
+        if db_backups:
+            latest_db_backup = os.path.join(backup_path, db_backups[0])
+            try:
+                shutil.copy2(latest_db_backup, self.db_path)
+                logger.info("已从备份恢复规则数据库")
+            except Exception as e:
+                logger.error(f"恢复规则数据库失败: {str(e)}")
+        
+        logger.info("规则恢复完成")
+        return True
+    
+    def download_and_install_rules(self, version):
+        """下载并安装最新规则"""
+        logger.info(f"下载并安装规则版本 {version}...")
+        
+        # 模拟下载最新规则
+        # 在实际应用中，这里会从远程服务器下载规则包
+        # 目前使用模拟数据
+        
+        # 生成新版本规则
+        updated_rules = [
+            {
+                "name": "color_selection_rules",
+                "type": "color_selection",
+                "version": version,
+                "rules": [
+                    {
+                        "name": "complementary_colors",
+                        "description": "选择互补色配色方案",
+                        "priority": 1,
+                        "condition": "if color_count >= 4",
+                        "action": "select complementary color scheme"
+                    },
+                    {
+                        "name": "monochromatic_colors",
+                        "description": "选择单色配色方案",
+                        "priority": 2,
+                        "condition": "if color_count < 4",
+                        "action": "select monochromatic color scheme"
+                    },
+                    {
+                        "name": "triadic_colors",
+                        "description": "选择三元色配色方案",
+                        "priority": 3,
+                        "condition": "if color_count >= 3",
+                        "action": "select triadic color scheme"
+                    }
+                ]
+            },
+            {
+                "name": "layout_generation_rules",
+                "type": "layout_generation",
+                "version": version,
+                "rules": [
+                    {
+                        "name": "responsive_layout",
+                        "description": "生成响应式布局",
+                        "priority": 1,
+                        "condition": "always",
+                        "action": "generate responsive layout with Tailwind CSS"
+                    },
+                    {
+                        "name": "mobile_first",
+                        "description": "采用移动优先设计",
+                        "priority": 2,
+                        "condition": "always",
+                        "action": "use mobile-first design approach"
+                    },
+                    {
+                        "name": "minimalist_design",
+                        "description": "采用极简设计风格",
+                        "priority": 3,
+                        "condition": "always",
+                        "action": "use minimalist design principles"
+                    }
+                ]
+            },
+            {
+                "name": "security_rules",
+                "type": "security",
+                "version": version,
+                "rules": [
+                    {
+                        "name": "input_validation",
+                        "description": "验证所有用户输入",
+                        "priority": 1,
+                        "condition": "on user input",
+                        "action": "validate input against security rules"
+                    },
+                    {
+                        "name": "rate_limiting",
+                        "description": "限制请求速率",
+                        "priority": 2,
+                        "condition": "on request",
+                        "action": "apply rate limiting"
+                    },
+                    {
+                        "name": "csrf_protection",
+                        "description": "添加CSRF保护",
+                        "priority": 3,
+                        "condition": "on form submission",
+                        "action": "add CSRF token to form"
+                    }
+                ]
+            }
+        ]
+        
+        # 保存更新后的规则
+        for rule in updated_rules:
+            self.save_rule_to_file(rule)
+            self.save_rule_to_database(rule)
+        
+        logger.info(f"规则版本 {version} 安装完成")
+    
+    def verify_upgrade(self, version):
+        """验证升级结果"""
+        logger.info(f"验证规则决策升级结果，版本: {version}")
+        
+        # 检查规则文件是否存在
+        rule_files = os.listdir(self.rules_dir)
+        for rule_file in rule_files:
+            if rule_file.endswith('.json'):
+                logger.info(f"规则文件 {rule_file} 存在，验证通过")
+        
+        # 检查数据库中的规则
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        cursor.execute("SELECT COUNT(*) FROM rules WHERE version = ?", (version,))
+        rule_count = cursor.fetchone()[0]
+        
+        if rule_count > 0:
+            logger.info(f"数据库中存在 {rule_count} 条版本为 {version} 的规则，验证通过")
+        else:
+            logger.error(f"数据库中没有版本为 {version} 的规则，验证失败")
+            conn.close()
+            raise Exception(f"数据库中没有版本为 {version} 的规则")
+        
+        conn.close()
+        logger.info("规则决策升级验证全部通过")
+    
+    def get_active_rules(self, rule_type=None):
+        """获取激活的规则"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        if rule_type:
+            cursor.execute("SELECT * FROM rules WHERE is_active = 1 AND rule_type = ? ORDER BY priority DESC", (rule_type,))
+        else:
+            cursor.execute("SELECT * FROM rules WHERE is_active = 1 ORDER BY priority DESC")
+        
+        rules = cursor.fetchall()
+        conn.close()
+        
+        return rules
+    
+    def execute_rule(self, rule_name, data):
+        """执行规则"""
+        logger.info(f"执行规则: {rule_name}，数据: {data}")
+        
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        # 获取规则
+        cursor.execute("SELECT * FROM rules WHERE rule_name = ? AND is_active = 1", (rule_name,))
+        rule = cursor.fetchone()
+        
+        if not rule:
+            logger.error(f"规则 {rule_name} 不存在或未激活")
+            conn.close()
+            return None
+        
+        rule_content = json.loads(rule[3])
+        result = {}
+        
+        # 执行规则
+        try:
+            # 这里可以根据规则内容执行不同的逻辑
+            # 目前使用模拟执行
+            result = {
+                "rule_name": rule_name,
+                "rule_type": rule[2],
+                "version": rule[4],
+                "result": "success",
+                "output": f"规则 {rule_name} 执行成功，处理数据: {data}",
+                "timestamp": datetime.now().isoformat()
+            }
+            
+            # 记录执行日志
+            cursor.execute('''
+            INSERT INTO rule_execution_logs (rule_id, rule_name, execution_time, result, status)
+            VALUES (?, ?, ?, ?, ?)
+            ''', (rule[0], rule_name, datetime.now().isoformat(), json.dumps(result), "success"))
+            
+            conn.commit()
+            
+        except Exception as e:
+            logger.error(f"执行规则 {rule_name} 失败: {str(e)}")
+            
+            # 记录执行日志
+            cursor.execute('''
+            INSERT INTO rule_execution_logs (rule_id, rule_name, execution_time, result, status)
+            VALUES (?, ?, ?, ?, ?)
+            ''', (rule[0], rule_name, datetime.now().isoformat(), str(e), "error"))
+            
+            conn.commit()
+            result = {"error": str(e)}
+        
+        conn.close()
+        return result
+    
+    def manual_upgrade(self):
+        """手动触发升级"""
+        logger.info("手动触发规则决策升级...")
+        return self.run_upgrade()
+
+
+def main():
+    """主函数"""
+    upgrader = AutoRuleUpgrader()
+    
+    # 启动监控线程
+    monitor_thread = threading.Thread(target=upgrader.start_upgrade_monitor, args=(86400,))
+    monitor_thread.daemon = True
+    monitor_thread.start()
+    
+    logger.info("规则决策自动升级系统已启动，按Ctrl+C停止")
+    
+    try:
+        # 主线程保持运行
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        logger.info("收到停止信号")
+    finally:
+        upgrader.stop()
+        monitor_thread.join(timeout=5)
+
+
+if __name__ == "__main__":
+    main()

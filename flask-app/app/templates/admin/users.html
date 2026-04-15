@@ -1,0 +1,348 @@
+{% extends "base.html" %}
+
+{% block title %}用户管理 - 语言学习系统{% endblock %}
+
+{% block content %}
+<style>
+    /* 用户管理页面样式 */
+    .user-management {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+    
+    .management-header {
+        text-align: center;
+        margin-bottom: 40px;
+        padding: 30px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 20px;
+        color: white;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+    
+    .management-title {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 15px;
+    }
+    
+    .management-description {
+        font-size: 1.1rem;
+        opacity: 0.9;
+    }
+    
+    .action-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+        padding: 20px;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    .search-box {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .search-input {
+        padding: 10px 15px;
+        border: 2px solid #e0e0e0;
+        border-radius: 50px;
+        font-size: 1rem;
+        width: 300px;
+        transition: all 0.3s ease;
+    }
+    
+    .search-input:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    
+    .add-user-btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 50px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        text-decoration: none;
+    }
+    
+    .add-user-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
+    
+    .user-table {
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+    }
+    
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    th, td {
+        padding: 15px;
+        text-align: left;
+        border-bottom: 1px solid #e0e0e0;
+    }
+    
+    th {
+        background: #f8f9fa;
+        font-weight: 600;
+        color: #333;
+    }
+    
+    tr:hover {
+        background: #f8f9fa;
+    }
+    
+    .role-badge {
+        padding: 5px 10px;
+        border-radius: 50px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+    
+    .role-super_admin {
+        background: #ff6b6b;
+        color: white;
+    }
+    
+    .role-admin {
+        background: #4ecdc4;
+        color: white;
+    }
+    
+    .role-hardware_admin {
+        background: #45b7d1;
+        color: white;
+    }
+    
+    .role-designer {
+        background: #96ceb4;
+        color: white;
+    }
+    
+    .role-student {
+        background: #ffeaa7;
+        color: #333;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 10px;
+    }
+    
+    .action-button {
+        padding: 5px 10px;
+        border: none;
+        border-radius: 5px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+    }
+    
+    .edit-btn {
+        background: #667eea;
+        color: white;
+    }
+    
+    .edit-btn:hover {
+        background: #5a6fd8;
+    }
+    
+    .delete-btn {
+        background: #ff6b6b;
+        color: white;
+    }
+    
+    .delete-btn:hover {
+        background: #ee5a52;
+    }
+    
+    .status-badge {
+        padding: 5px 10px;
+        border-radius: 50px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+    
+    .status-active {
+        background: #2ecc71;
+        color: white;
+    }
+    
+    .status-inactive {
+        background: #95a5a6;
+        color: white;
+    }
+    
+    /* 响应式设计 */
+    @media (max-width: 768px) {
+        .user-management {
+            padding: 0 20px;
+        }
+        
+        .action-bar {
+            flex-direction: column;
+            gap: 15px;
+            align-items: stretch;
+        }
+        
+        .search-input {
+            width: 100%;
+        }
+        
+        table {
+            font-size: 0.9rem;
+        }
+        
+        th, td {
+            padding: 10px;
+        }
+        
+        .action-buttons {
+            flex-direction: column;
+        }
+    }
+</style>
+
+<div class="user-management">
+    <!-- 管理头部 -->
+    <div class="management-header">
+        <h1 class="management-title">
+            <i class="fas fa-users-cog"></i>
+            用户管理
+        </h1>
+        <p class="management-description">
+            管理系统用户，包括添加、编辑、删除用户，以及设置用户角色和权限。
+        </p>
+    </div>
+    
+    <!-- 操作栏 -->
+    <div class="action-bar">
+        <div class="search-box">
+            <input type="text" class="search-input" placeholder="搜索用户...">
+            <button class="add-user-btn">
+                <i class="fas fa-search"></i>
+                搜索
+            </button>
+        </div>
+        <a href="/admin/users/add" class="add-user-btn">
+            <i class="fas fa-plus"></i>
+            添加用户
+        </a>
+    </div>
+    
+    <!-- 用户表格 -->
+    <div class="user-table">
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>用户名</th>
+                    <th>邮箱</th>
+                    <th>角色</th>
+                    <th>状态</th>
+                    <th>创建时间</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- 示例用户数据 -->
+                <tr>
+                    <td>1</td>
+                    <td>wuchenghao</td>
+                    <td>wuchenghao@example.com</td>
+                    <td><span class="role-badge role-super_admin">超级管理员</span></td>
+                    <td><span class="status-badge status-active">活跃</span></td>
+                    <td>2026-04-14</td>
+                    <td>
+                        <div class="action-buttons">
+                            <a href="/admin/users/edit/1" class="action-button edit-btn">编辑</a>
+                            <a href="/admin/users/delete/1" class="action-button delete-btn">删除</a>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>2</td>
+                    <td>wuchenghao15</td>
+                    <td>wuchenghao15@example.com</td>
+                    <td><span class="role-badge role-hardware_admin">硬件管理员</span></td>
+                    <td><span class="status-badge status-active">活跃</span></td>
+                    <td>2026-04-14</td>
+                    <td>
+                        <div class="action-buttons">
+                            <a href="/admin/users/edit/2" class="action-button edit-btn">编辑</a>
+                            <a href="/admin/users/delete/2" class="action-button delete-btn">删除</a>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>3</td>
+                    <td>wuchnenghao16</td>
+                    <td>wuchnenghao16@example.com</td>
+                    <td><span class="role-badge role-admin">管理员</span></td>
+                    <td><span class="status-badge status-active">活跃</span></td>
+                    <td>2026-04-14</td>
+                    <td>
+                        <div class="action-buttons">
+                            <a href="/admin/users/edit/3" class="action-button edit-btn">编辑</a>
+                            <a href="/admin/users/delete/3" class="action-button delete-btn">删除</a>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>4</td>
+                    <td>caopinwen</td>
+                    <td>caopinwen@example.com</td>
+                    <td><span class="role-badge role-designer">设计师</span></td>
+                    <td><span class="status-badge status-active">活跃</span></td>
+                    <td>2026-04-14</td>
+                    <td>
+                        <div class="action-buttons">
+                            <a href="/admin/users/edit/4" class="action-button edit-btn">编辑</a>
+                            <a href="/admin/users/delete/4" class="action-button delete-btn">删除</a>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>5</td>
+                    <td>caopw</td>
+                    <td>caopw@example.com</td>
+                    <td><span class="role-badge role-student">学生</span></td>
+                    <td><span class="status-badge status-active">活跃</span></td>
+                    <td>2026-04-14</td>
+                    <td>
+                        <div class="action-buttons">
+                            <a href="/admin/users/edit/5" class="action-button edit-btn">编辑</a>
+                            <a href="/admin/users/delete/5" class="action-button delete-btn">删除</a>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

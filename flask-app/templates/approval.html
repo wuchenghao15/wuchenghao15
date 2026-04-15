@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+
+{% block title %}审批管理 - MTSCOS AI 系统{% endblock %}
+
+    <!-- 载入过渡动画组件 -->
+    <div class="transition-overlay" id="transition-overlay">
+        <div class="transition-content">
+            <div class="transition-spinner">
+                <div class="spinner-ring">
+                    <div class="spinner-inner"></div>
+                    <div class="spinner-dot"></div>
+                </div>
+            </div>
+            <div class="transition-text" id="transition-text">正在加载...</div>
+        </div>
+    </div>
+
+    {% block content %}
+    <div class="container">
+        <!-- 顶部导航栏 -->
+        <header class="header">
+            <div class="header-left">
+                <h1>MTSCOS AI 系统</h1>
+            </div>
+            <div class="header-right">
+                <div class="user-info">
+                    <span class="username">{{ user.username }}</span>
+                    <span class="role">{{ user.role }}</span>
+                </div>
+                <a href="{{ url_for('main.dashboard') }}" class="btn btn-primary"><i class="fas fa-home"></i> 返回主页</a>
+                <a href="#" onclick="MTSCOS_AI.transition.navigate('{{ url_for('auth.logout') }}', '正在退出系统...')" class="btn btn-secondary">登出</a>
+            </div>
+        </header>
+        
+        <!-- 主内容区 -->
+        <div class="main-content">
+            <!-- 侧边菜单 -->
+            <aside class="sidebar">
+                <nav class="menu">
+                    <ul>
+                        <li class="menu-item">
+                            <a href="{{ url_for('main.dashboard') }}">仪表盘</a>
+                        </li>
+                        
+                        {% if user.role == 'hardware_vikey_admin' or user.role == 'super_admin' %}
+                        <li class="menu-item">
+                            <a href="{{ url_for('main.permissions') }}">权限管理</a>
+                        </li>
+                        {% endif %}
+                        
+                        <li class="menu-item">
+                            <a href="{{ url_for('main.ai_rules') }}">AI规则管理</a>
+                        </li>
+                        <li class="menu-item active">
+                            <a href="{{ url_for('main.approval') }}">审批管理</a>
+                        </li>
+                        <li class="menu-item">
+                            <a href="{{ url_for('main.cleanup') }}">系统清理</a>
+                        </li>
+                    </ul>
+                </nav>
+            </aside>
+            
+            <!-- 内容区域 -->
+            <section class="content">
+                <div class="content-header">
+                    <h2>审批管理</h2>
+                    <p>处理权限和功能申请</p>
+                </div>
+                
+                <div class="content-body">
+                    <h3>待审批列表</h3>
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>申请类型</th>
+                                    <th>申请人</th>
+                                    <th>申请内容</th>
+                                    <th>状态</th>
+                                    <th>申请时间</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for approval in approvals %}
+                                <tr>
+                                    <td>{{ approval.id }}</td>
+                                    <td>{{ approval.type }}</td>
+                                    <td>{{ approval.user }}</td>
+                                    <td>{{ approval.request }}</td>
+                                    <td>{{ approval.status }}</td>
+                                    <td>{{ approval.created_at }}</td>
+                                    <td>
+                                        {% if approval.status == 'pending' %}
+                                        <button class="btn btn-success btn-sm" onclick="handleApproval('approve', {{ approval.id }})">批准</button>
+                                        <button class="btn btn-danger btn-sm" onclick="handleApproval('reject', {{ approval.id }})">拒绝</button>
+                                        {% else %}
+                                        <span class="status-badge">{{ approval.status }}</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="approval-stats">
+                        <h3>审批统计</h3>
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <div class="stat-number">12</div>
+                                <div class="stat-label">待审批</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number">45</div>
+                                <div class="stat-label">已批准</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number">8</div>
+                                <div class="stat-label">已拒绝</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number">65</div>
+                                <div class="stat-label">总计</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+    <script>
+        // 处理审批操作
+        function handleApproval(action, approvalId) {
+            // 显示确认对话框
+            if (confirm(`确定要${action === 'approve' ? '批准' : '拒绝'}此申请吗？`)) {
+                // 这里可以添加实际的审批处理逻辑，例如发送API请求
+                MTSCOS_AI.showTip(`成功${action === 'approve' ? '批准' : '拒绝'}了申请 #${approvalId}`, 'success');
+                
+                // 模拟刷新页面
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+            }
+        }
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 为审批按钮添加悬停效果
+            document.querySelectorAll('.btn-success, .btn-danger').forEach(btn => {
+                btn.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-2px)';
+                    this.style.transition = 'transform 0.2s ease';
+                });
+                btn.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0)';
+                });
+            });
+        });
+    </script>
+{% endblock %}

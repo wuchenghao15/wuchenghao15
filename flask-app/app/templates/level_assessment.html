@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>语言等级评估测试</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* 语言等级评估测试样式 */
+        .assessment-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        /* 评估头部 */
+        .assessment-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .assessment-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .assessment-title span {
+            font-size: 3rem;
+        }
+
+        .assessment-description {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            opacity: 0.9;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* 通用部分标题 */
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+            padding-bottom: 10px;
+        }
+
+        /* 语言选择 */
+        .language-selection {
+            margin-bottom: 40px;
+        }
+
+        .language-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .language-option {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .language-option:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .language-option.selected {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: white;
+        }
+
+        .language-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+
+        .language-name {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .language-description {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        /* 测试信息 */
+        .test-info {
+            margin-bottom: 40px;
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            margin-bottom: 10px;
+            transition: background 0.3s ease;
+        }
+
+        .info-item:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .info-label {
+            font-weight: 600;
+        }
+
+        .info-value {
+            opacity: 0.9;
+        }
+
+        /* 开始按钮 */
+        .start-section {
+            text-align: center;
+        }
+
+        .start-btn {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 20px 40px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin: 0 auto;
+        }
+
+        .start-btn:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .start-btn:disabled {
+            background: rgba(255, 255, 255, 0.3);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .assessment-container {
+                padding: 20px;
+                margin: 20px;
+            }
+            
+            .assessment-title {
+                font-size: 2rem;
+            }
+            
+            .assessment-title span {
+                font-size: 2.5rem;
+            }
+            
+            .language-options {
+                grid-template-columns: 1fr;
+            }
+            
+            .start-btn {
+                width: 100%;
+                padding: 15px;
+            }
+        }
+
+        /* 动画效果 */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .assessment-container {
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        .language-option {
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .language-option:nth-child(1) {
+            animation-delay: 0.1s;
+        }
+
+        .language-option:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .test-info {
+            animation: fadeIn 0.5s ease-out 0.3s both;
+        }
+
+        .start-section {
+            animation: fadeIn 0.5s ease-out 0.4s both;
+        }
+    </style>
+</head>
+<body>
+    {% extends "base.html" %}
+    
+    {% block content %}
+    <div class="assessment-container trae-browser-inspect-draggable">
+        <!-- 评估头部 -->
+        <div class="assessment-header">
+            <h2 class="assessment-title">
+                <span>🎯</span>
+                语言等级评估测试
+            </h2>
+            <p class="assessment-description">
+                请选择您要评估的语言，系统将根据您的表现确定您的语言水平等级。
+                评估测试通常需要10-15分钟完成，请确保您有足够的时间。
+            </p>
+        </div>
+        
+        <!-- 语言选择 -->
+        <div class="language-selection">
+            <h3 class="section-title">
+                <i class="fas fa-language"></i>
+                选择评估语言
+            </h3>
+            <div class="language-options">
+                <div class="language-option" data-language="japanese">
+                    <div class="language-icon">
+                        <i class="fas fa-flag-jp"></i>
+                    </div>
+                    <div class="language-name">日语</div>
+                    <div class="language-description">评估您的日语水平等级</div>
+                </div>
+                <div class="language-option" data-language="english">
+                    <div class="language-icon">
+                        <i class="fas fa-flag-us"></i>
+                    </div>
+                    <div class="language-name">英语</div>
+                    <div class="language-description">评估您的英语水平等级</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 测试信息 -->
+        <div class="test-info">
+            <h3 class="section-title">
+                <i class="fas fa-info-circle"></i>
+                测试信息
+            </h3>
+            <div class="info-item">
+                <span class="info-label">测试时长</span>
+                <span class="info-value" id="test-duration">10-15分钟</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">题目数量</span>
+                <span class="info-value" id="test-question-count">20题</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">测试类型</span>
+                <span class="info-value" id="test-type">等级评估</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">评估标准</span>
+                <span class="info-value">国际语言水平标准</span>
+            </div>
+        </div>
+        
+        <!-- 开始按钮 -->
+        <div class="start-section">
+            <button class="start-btn" id="start-assessment" disabled>
+                <i class="fas fa-play-circle"></i> 开始评估
+            </button>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const languageOptions = document.querySelectorAll('.language-option');
+            const startButton = document.getElementById('start-assessment');
+            
+            let selectedLanguage = null;
+            
+            // 语言选择事件
+            languageOptions.forEach(option => {
+                option.addEventListener('click', function() {
+                    // 移除所有选项的选中状态
+                    languageOptions.forEach(opt => opt.classList.remove('selected'));
+                    // 添加当前选项的选中状态
+                    this.classList.add('selected');
+                    // 设置选中的语言
+                    selectedLanguage = this.dataset.language;
+                    // 启用开始按钮
+                    startButton.disabled = false;
+                    
+                    // 更新测试信息
+                    updateTestInfo(selectedLanguage);
+                });
+            });
+            
+            // 开始评估按钮点击事件
+            startButton.addEventListener('click', function() {
+                if (selectedLanguage) {
+                    // 跳转到对应的语言测试页面
+                    if (selectedLanguage === 'japanese') {
+                        window.location.href = '/japanese-level-test';
+                    } else if (selectedLanguage === 'english') {
+                        window.location.href = '/english-test';
+                    }
+                }
+            });
+            
+            // 更新测试信息
+            function updateTestInfo(language) {
+                const testDuration = document.getElementById('test-duration');
+                const testQuestionCount = document.getElementById('test-question-count');
+                const testType = document.getElementById('test-type');
+                
+                if (language === 'japanese') {
+                    testDuration.textContent = '10-15分钟';
+                    testQuestionCount.textContent = '20题';
+                    testType.textContent = '日语等级评估';
+                } else if (language === 'english') {
+                    testDuration.textContent = '10-15分钟';
+                    testQuestionCount.textContent = '20题';
+                    testType.textContent = '英语等级评估';
+                }
+            }
+        });
+    </script>
+    {% endblock %}
+</body>
+</html>

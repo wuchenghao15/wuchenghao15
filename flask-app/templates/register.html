@@ -1,0 +1,386 @@
+{% extends "base.html" %}
+
+{% block title %}注册 - MTSCOS AI 系统{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* 移除预加载动画样式 */
+    .preloader {
+        display: none !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <div class="auth-logo">
+                    <img src="{{ url_for('static', filename='images/logo.svg') }}" alt="MTSCOS AI Logo" width="80" height="80">
+                </div>
+                <h2>注册账号</h2>
+                <p>MTSCOS AI 智能考试系统</p>
+            </div>
+            
+            {% if error %}
+            <div class="error-message">{{ error }}</div>
+            {% endif %}
+            
+            <form class="auth-form active" method="POST" id="registerForm">
+                <div class="form-group">
+                    <label for="username">用户名</label>
+                    <div class="input-group">
+                        <input type="text" id="username" name="username" required placeholder="请输入用户名">
+                        <button type="button" class="btn btn-secondary" id="generateUsername">生成</button>
+                    </div>
+                    <div class="form-hint" id="usernameHint"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="email">邮箱</label>
+                    <div class="input-group">
+                        <input type="email" id="email" name="email" required placeholder="请输入邮箱">
+                        <button type="button" class="btn btn-secondary" id="suggestEmail">建议</button>
+                    </div>
+                    <div class="form-hint" id="emailHint"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">密码</label>
+                    <div class="input-group">
+                        <input type="password" id="password" name="password" required placeholder="请输入密码">
+                        <button type="button" class="btn btn-secondary" id="togglePassword">显示</button>
+                        <button type="button" class="btn btn-secondary" id="generatePassword">生成</button>
+                    </div>
+                    <div class="password-strength" id="passwordStrength">
+                        <div class="strength-bar" id="strengthBar"></div>
+                        <div class="strength-text" id="strengthText">密码强度</div>
+                    </div>
+                    <div class="password-requirements">
+                        <div class="requirement-item" id="req-length">至少8个字符</div>
+                        <div class="requirement-item" id="req-uppercase">包含大写字母</div>
+                        <div class="requirement-item" id="req-lowercase">包含小写字母</div>
+                        <div class="requirement-item" id="req-number">包含数字</div>
+                        <div class="requirement-item" id="req-special">包含特殊字符</div>
+                        <div class="requirement-item" id="req-common">不能使用常见密码</div>
+                    </div>
+                    <div class="form-hint" id="passwordHint"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="confirm_password">确认密码</label>
+                    <div class="input-group">
+                        <input type="password" id="confirm_password" name="confirm_password" required placeholder="请确认密码">
+                        <button type="button" class="btn btn-secondary" id="toggleConfirmPassword">显示</button>
+                    </div>
+                    <div class="form-hint" id="confirmPasswordHint"></div>
+                </div>
+                
+                <div class="form-group checkbox-group">
+                    <input type="checkbox" id="agree_user_agreement" name="agree_user_agreement" required>
+                    <label for="agree_user_agreement">我已阅读并同意 <a href="#" class="text-blue-500">用户协议</a></label>
+                </div>
+                
+                <div class="form-group checkbox-group">
+                    <input type="checkbox" id="agree_user_manual" name="agree_user_manual" required>
+                    <label for="agree_user_manual">我已阅读并同意 <a href="#" class="text-blue-500">用户手册</a></label>
+                </div>
+                
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary w-full" id="registerButton">注册</button>
+                </div>
+                
+                <div class="form-group">
+                    <button type="button" class="btn btn-outline w-full" id="autoFillForm">AI自动填充</button>
+                </div>
+            </form>
+            
+            <div class="auth-footer">
+                <p>已有账号？ <a href="{{ url_for('auth.login') }}">立即登录</a></p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 自动填充脚本 -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // 生成随机用户名
+        function generateRandomUsername() {
+            const prefixes = ['user', 'dev', 'ai', 'tech', 'data', 'cloud', 'web', 'app'];
+            const suffix = Math.random().toString(36).substring(2, 8);
+            return prefixes[Math.floor(Math.random() * prefixes.length)] + '_' + suffix;
+        }
+        
+        // 生成随机密码
+        function generateRandomPassword() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()';
+            let password = '';
+            for (let i = 0; i < 12; i++) {
+                password += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return password;
+        }
+        
+        // 检测密码强度
+        function checkPasswordStrength(password) {
+            let strength = 0;
+            if (password.length >= 8) strength++;
+            if (password.match(/[A-Z]/)) strength++;
+            if (password.match(/[a-z]/)) strength++;
+            if (password.match(/\d/)) strength++;
+            if (password.match(/[!@#$%^&*()]/)) strength++;
+            
+            const strengthText = ['弱', '一般', '良好', '强', '非常强'];
+            const strengthColor = ['#ef4444', '#f59e0b', '#3b82f6', '#10b981', '#059669'];
+            
+            return {
+                level: strength,
+                text: strengthText[strength],
+                color: strengthColor[strength]
+            };
+        }
+        
+        // 生成用户名按钮
+        document.getElementById('generateUsername').addEventListener('click', function() {
+            const username = generateRandomUsername();
+            document.getElementById('username').value = username;
+            document.getElementById('usernameHint').textContent = '生成的用户名: ' + username;
+            document.getElementById('usernameHint').style.color = '#10b981';
+        });
+        
+        // 用户名实时验证
+        let usernameTimeout;
+        document.getElementById('username').addEventListener('input', function() {
+            const username = this.value.trim();
+            const hint = document.getElementById('usernameHint');
+            
+            clearTimeout(usernameTimeout);
+            
+            if (username.length < 3) {
+                hint.textContent = '用户名至少需要3个字符';
+                hint.style.color = '#f59e0b';
+                return;
+            }
+            
+            hint.textContent = '检查用户名可用性...';
+            hint.style.color = '#3b82f6';
+            
+            // 模拟服务器验证（实际项目中应该使用AJAX请求）
+            usernameTimeout = setTimeout(function() {
+                // 这里可以替换为实际的API调用
+                const isAvailable = Math.random() > 0.1; // 90%的概率可用
+                
+                if (isAvailable) {
+                    hint.textContent = '用户名可用';
+                    hint.style.color = '#10b981';
+                } else {
+                    hint.textContent = '用户名已被使用';
+                    hint.style.color = '#ef4444';
+                }
+            }, 500);
+        });
+        
+        // 建议邮箱按钮
+        document.getElementById('suggestEmail').addEventListener('click', function() {
+            const username = document.getElementById('username').value || generateRandomUsername();
+            const email = username + '@example.com';
+            document.getElementById('email').value = email;
+            document.getElementById('emailHint').textContent = '建议的邮箱: ' + email;
+            document.getElementById('emailHint').style.color = '#10b981';
+        });
+        
+        // 邮箱格式验证
+        document.getElementById('email').addEventListener('input', function() {
+            const email = this.value.trim();
+            const hint = document.getElementById('emailHint');
+            
+            if (!email) {
+                hint.textContent = '';
+                return;
+            }
+            
+            const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+            if (emailPattern.test(email)) {
+                hint.textContent = '邮箱格式正确';
+                hint.style.color = '#10b981';
+            } else {
+                hint.textContent = '请输入有效的邮箱地址';
+                hint.style.color = '#ef4444';
+            }
+        });
+        
+        // 生成密码按钮
+        document.getElementById('generatePassword').addEventListener('click', function() {
+            const password = generateRandomPassword();
+            document.getElementById('password').value = password;
+            updatePasswordStrength(password);
+            updatePasswordRequirements(password);
+            document.getElementById('passwordHint').textContent = '生成的密码已自动填充';
+            document.getElementById('passwordHint').style.color = '#10b981';
+        });
+        
+        // 切换密码显示
+        document.getElementById('togglePassword').addEventListener('click', function() {
+            const passwordInput = document.getElementById('password');
+            const button = this;
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                button.textContent = '隐藏';
+            } else {
+                passwordInput.type = 'password';
+                button.textContent = '显示';
+            }
+        });
+        
+        // 切换确认密码显示
+        document.getElementById('toggleConfirmPassword').addEventListener('click', function() {
+            const passwordInput = document.getElementById('confirm_password');
+            const button = this;
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                button.textContent = '隐藏';
+            } else {
+                passwordInput.type = 'password';
+                button.textContent = '显示';
+            }
+        });
+        
+        // 密码强度检测
+        document.getElementById('password').addEventListener('input', function() {
+            const password = this.value;
+            updatePasswordStrength(password);
+            updatePasswordRequirements(password);
+        });
+        
+        // 更新密码强度显示
+        function updatePasswordStrength(password) {
+            const strength = checkPasswordStrength(password);
+            const strengthBar = document.getElementById('strengthBar');
+            const strengthText = document.getElementById('strengthText');
+            
+            strengthBar.style.width = (strength.level * 20) + '%';
+            strengthBar.style.backgroundColor = strength.color;
+            strengthText.textContent = '密码强度: ' + strength.text;
+            strengthText.style.color = strength.color;
+        }
+        
+        // 更新密码要求状态
+        function updatePasswordRequirements(password) {
+            const requirements = {
+                length: password.length >= 8,
+                uppercase: /[A-Z]/.test(password),
+                lowercase: /[a-z]/.test(password),
+                number: /\d/.test(password),
+                special: /[!@#$%^&*()]/.test(password)
+            };
+            
+            // 更新每个要求的状态
+            document.getElementById('req-length').classList.toggle('fulfilled', requirements.length);
+            document.getElementById('req-uppercase').classList.toggle('fulfilled', requirements.uppercase);
+            document.getElementById('req-lowercase').classList.toggle('fulfilled', requirements.lowercase);
+            document.getElementById('req-number').classList.toggle('fulfilled', requirements.number);
+            document.getElementById('req-special').classList.toggle('fulfilled', requirements.special);
+        }
+        
+        // 确认密码验证
+        document.getElementById('confirm_password').addEventListener('input', function() {
+            const password = document.getElementById('password').value;
+            const confirmPassword = this.value;
+            const hint = document.getElementById('confirmPasswordHint');
+            
+            if (password && confirmPassword) {
+                if (password === confirmPassword) {
+                    hint.textContent = '密码一致';
+                    hint.style.color = '#10b981';
+                } else {
+                    hint.textContent = '密码不一致';
+                    hint.style.color = '#ef4444';
+                }
+            } else {
+                hint.textContent = '';
+            }
+        });
+        
+        // AI自动填充
+        document.getElementById('autoFillForm').addEventListener('click', function() {
+            // 生成随机数据
+            const username = generateRandomUsername();
+            const email = username + '@example.com';
+            const password = generateRandomPassword();
+            
+            // 填充表单
+            document.getElementById('username').value = username;
+            document.getElementById('email').value = email;
+            document.getElementById('password').value = password;
+            document.getElementById('confirm_password').value = password;
+            document.getElementById('agree_user_agreement').checked = true;
+            document.getElementById('agree_user_manual').checked = true;
+            
+            // 更新提示
+            document.getElementById('usernameHint').textContent = 'AI自动填充: ' + username;
+            document.getElementById('usernameHint').style.color = '#3b82f6';
+            document.getElementById('emailHint').textContent = 'AI自动填充: ' + email;
+            document.getElementById('emailHint').style.color = '#3b82f6';
+            document.getElementById('passwordHint').textContent = 'AI自动填充: 已生成强密码';
+            document.getElementById('passwordHint').style.color = '#3b82f6';
+            document.getElementById('confirmPasswordHint').textContent = 'AI自动填充: 密码已确认';
+            document.getElementById('confirmPasswordHint').style.color = '#3b82f6';
+            
+            // 更新密码强度和要求
+            updatePasswordStrength(password);
+            updatePasswordRequirements(password);
+            
+            // 显示成功提示
+            alert('AI自动填充完成，正在自动提交注册...');
+            
+            // 自动提交表单
+            setTimeout(function() {
+                document.getElementById('registerForm').submit();
+            }, 1000);
+        });
+        
+        // 表单提交验证
+        document.getElementById('registerForm').addEventListener('submit', function(e) {
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirm_password').value;
+            
+            if (password !== confirmPassword) {
+                e.preventDefault();
+                alert('两次输入的密码不一致，请检查');
+                return false;
+            }
+            
+            const strength = checkPasswordStrength(password);
+            if (strength.level < 3) {
+                if (!confirm('密码强度较低，是否继续注册？')) {
+                    e.preventDefault();
+                    return false;
+                }
+            }
+            
+
+        });
+        
+        // 键盘导航支持
+        const formInputs = document.querySelectorAll('input, button');
+        formInputs.forEach((input, index) => {
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const nextIndex = (index + 1) % formInputs.length;
+                    formInputs[nextIndex].focus();
+                }
+            });
+        });
+        
+        // 初始化密码要求状态
+        updatePasswordRequirements('');
+        
+        // 平滑滚动到表单
+        window.addEventListener('load', function() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    });
+    </script>
+{% endblock %}

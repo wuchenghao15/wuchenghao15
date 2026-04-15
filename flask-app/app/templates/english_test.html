@@ -1,0 +1,407 @@
+{% extends "base.html" %}
+
+{% block title %}英语等级评估测试{% endblock %}
+
+{% block content %}
+<style>
+    /* 测试页面样式 */
+    .test-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 30px;
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+    
+    .test-header {
+        text-align: center;
+        margin-bottom: 40px;
+        padding-bottom: 20px;
+        border-bottom: 2px solid #667eea;
+    }
+    
+    .test-title {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #667eea;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 15px;
+    }
+    
+    .test-info {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 30px;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 10px;
+    }
+    
+    .info-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .info-label {
+        font-size: 0.9rem;
+        color: #666;
+        margin-bottom: 5px;
+    }
+    
+    .info-value {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #667eea;
+    }
+    
+    .question-container {
+        margin-bottom: 40px;
+    }
+    
+    .question-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #e0e0e0;
+    }
+    
+    .question-number {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: #667eea;
+    }
+    
+    .question-score {
+        font-size: 1rem;
+        color: #666;
+    }
+    
+    .question-content {
+        font-size: 1.1rem;
+        margin-bottom: 20px;
+        line-height: 1.6;
+    }
+    
+    .options {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .option {
+        padding: 15px;
+        border: 2px solid #e0e0e0;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .option:hover {
+        border-color: #667eea;
+        background: #f0f4ff;
+    }
+    
+    .option.selected {
+        border-color: #667eea;
+        background: #e6f0ff;
+    }
+    
+    .option input {
+        cursor: pointer;
+    }
+    
+    .option-label {
+        cursor: pointer;
+    }
+    
+    .navigation {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 40px;
+        padding-top: 20px;
+        border-top: 2px solid #667eea;
+    }
+    
+    .nav-btn {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 50px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .prev-btn {
+        background: #f0f0f0;
+        color: #333;
+    }
+    
+    .prev-btn:hover {
+        background: #e0e0e0;
+    }
+    
+    .next-btn {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    .next-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
+    
+    .submit-btn {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        color: white;
+    }
+    
+    .submit-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
+    
+    .progress-bar {
+        width: 100%;
+        height: 10px;
+        background: #f0f0f0;
+        border-radius: 5px;
+        margin-bottom: 30px;
+        overflow: hidden;
+    }
+    
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+        border-radius: 5px;
+        transition: width 0.3s ease;
+    }
+    
+    /* 响应式设计 */
+    @media (max-width: 768px) {
+        .test-container {
+            padding: 20px;
+            margin: 20px;
+        }
+        
+        .test-title {
+            font-size: 1.5rem;
+        }
+        
+        .test-info {
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .nav-btn {
+            padding: 10px 20px;
+            font-size: 0.9rem;
+        }
+    }
+</style>
+
+<div class="test-container">
+    <!-- 测试头部 -->
+    <div class="test-header">
+        <h1 class="test-title">
+            <i class="fas fa-flag-us"></i>
+            英语等级评估测试
+        </h1>
+        <p>Please answer the following questions, and the system will assess your English proficiency level based on your performance.</p>
+    </div>
+    
+    <!-- 测试信息 -->
+    <div class="test-info">
+        <div class="info-item">
+            <span class="info-label">Total Questions</span>
+            <span class="info-value">20</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">Current Question</span>
+            <span class="info-value" id="current-question">1/20</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">Time Remaining</span>
+            <span class="info-value" id="time-remaining">15:00</span>
+        </div>
+    </div>
+    
+    <!-- 进度条 -->
+    <div class="progress-bar">
+        <div class="progress-fill" style="width: 5%;"></div>
+    </div>
+    
+    <!-- 题目容器 -->
+    <div class="question-container">
+        <div class="question-header">
+            <span class="question-number">Question 1</span>
+            <span class="question-score">10 points</span>
+        </div>
+        <div class="question-content">
+            What is the correct English word for "你好"?
+        </div>
+        <div class="options">
+            <div class="option">
+                <input type="radio" name="q1" value="a" id="q1-a">
+                <label for="q1-a" class="option-label">A. Hello</label>
+            </div>
+            <div class="option">
+                <input type="radio" name="q1" value="b" id="q1-b">
+                <label for="q1-b" class="option-label">B. Goodbye</label>
+            </div>
+            <div class="option">
+                <input type="radio" name="q1" value="c" id="q1-c">
+                <label for="q1-c" class="option-label">C. Thank you</label>
+            </div>
+            <div class="option">
+                <input type="radio" name="q1" value="d" id="q1-d">
+                <label for="q1-d" class="option-label">D. Sorry</label>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 导航按钮 -->
+    <div class="navigation">
+        <button class="nav-btn prev-btn" disabled>
+            <i class="fas fa-arrow-left"></i> Previous
+        </button>
+        <button class="nav-btn next-btn">
+            Next <i class="fas fa-arrow-right"></i>
+        </button>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const options = document.querySelectorAll('.option');
+        const prevBtn = document.querySelector('.prev-btn');
+        const nextBtn = document.querySelector('.next-btn');
+        const currentQuestionEl = document.getElementById('current-question');
+        const progressFill = document.querySelector('.progress-fill');
+        
+        let currentQuestion = 1;
+        const totalQuestions = 20;
+        
+        // 选项点击事件
+        options.forEach(option => {
+            option.addEventListener('click', function() {
+                // 移除所有选项的选中状态
+                options.forEach(opt => opt.classList.remove('selected'));
+                // 添加当前选项的选中状态
+                this.classList.add('selected');
+                // 选中对应的单选按钮
+                const radio = this.querySelector('input[type="radio"]');
+                radio.checked = true;
+            });
+        });
+        
+        // 下一题按钮点击事件
+        nextBtn.addEventListener('click', function() {
+            if (currentQuestion < totalQuestions) {
+                currentQuestion++;
+                updateQuestion();
+            } else {
+                // 最后一题，切换为提交按钮
+                nextBtn.textContent = 'Submit Test';
+                nextBtn.className = 'nav-btn submit-btn';
+                nextBtn.innerHTML = '<i class="fas fa-check"></i> Submit Test';
+                nextBtn.addEventListener('click', function() {
+                    alert('Test submitted successfully!');
+                    window.location.href = '/test-system';
+                });
+            }
+        });
+        
+        // 上一题按钮点击事件
+        prevBtn.addEventListener('click', function() {
+            if (currentQuestion > 1) {
+                currentQuestion--;
+                updateQuestion();
+            }
+        });
+        
+        // 更新题目
+        function updateQuestion() {
+            // 更新当前题目显示
+            currentQuestionEl.textContent = `${currentQuestion}/${totalQuestions}`;
+            
+            // 更新进度条
+            const progress = (currentQuestion / totalQuestions) * 100;
+            progressFill.style.width = `${progress}%`;
+            
+            // 更新上一题按钮状态
+            prevBtn.disabled = currentQuestion === 1;
+            
+            // 模拟更新题目内容
+            const questionContent = document.querySelector('.question-content');
+            const questionNumber = document.querySelector('.question-number');
+            
+            questionNumber.textContent = `Question ${currentQuestion}`;
+            
+            // 简单的题目内容模拟
+            const questions = [
+                'What is the correct English word for "你好"?',
+                'What is the correct English word for "谢谢"?',
+                'What is the correct English word for "再见"?',
+                'What is the correct English word for "是的"?',
+                'What is the correct English word for "不是"?',
+                'What is the correct English word for "对不起"?',
+                'What is the correct English word for "请"?',
+                'What is the correct English word for "我"?',
+                'What is the correct English word for "你"?',
+                'What is the correct English word for "他"?',
+                'What is the correct English word for "她"?',
+                'What is the correct English word for "朋友"?',
+                'What is the correct English word for "家人"?',
+                'What is the correct English word for "学校"?',
+                'What is the correct English word for "工作"?',
+                'What is the correct English word for "食物"?',
+                'What is the correct English word for "水"?',
+                'What is the correct English word for "时间"?',
+                'What is the correct English word for "地方"?',
+                'What is the correct English word for "爱"?'
+            ];
+            
+            questionContent.textContent = questions[currentQuestion - 1];
+            
+            // 重置选项状态
+            options.forEach(option => {
+                option.classList.remove('selected');
+                const radio = option.querySelector('input[type="radio"]');
+                radio.checked = false;
+            });
+        }
+        
+        // 倒计时功能
+        let timeRemaining = 15 * 60; // 15 minutes
+        const timeRemainingEl = document.getElementById('time-remaining');
+        
+        const timer = setInterval(function() {
+            timeRemaining--;
+            const minutes = Math.floor(timeRemaining / 60);
+            const seconds = timeRemaining % 60;
+            timeRemainingEl.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            
+            if (timeRemaining <= 0) {
+                clearInterval(timer);
+                alert('Time is up! Test submitted automatically.');
+                window.location.href = '/test-system';
+            }
+        }, 1000);
+    });
+</script>
+{% endblock %}

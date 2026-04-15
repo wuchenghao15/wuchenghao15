@@ -1,0 +1,156 @@
+{
+  "permission_rules": {
+    "test_access": {
+      "description": "测试访问权限规则",
+      "allowed_roles": ["student", "guest"],
+      "denied_roles": ["admin", "super_admin", "hardware_admin", "designer"],
+      "message": "管理员、超级管理员、硬件管理员和设计师不能参加测试"
+    },
+    "system_config_access": {
+      "description": "系统配置访问权限规则",
+      "allowed_roles": ["hardware_admin", "super_admin"],
+      "denied_roles": ["admin", "student", "guest", "designer"],
+      "message": "只有硬件管理员和超级管理员可以访问系统配置"
+    },
+    "sandbox_config_access": {
+      "description": "沙盒配置访问权限规则",
+      "allowed_roles": ["hardware_admin", "super_admin", "admin"],
+      "denied_roles": ["student", "guest", "designer"],
+      "message": "管理员、超级管理员和硬件管理员都可以访问沙盒配置"
+    },
+    "admin_approval": {
+      "description": "管理员审批权限规则",
+      "allowed_roles": ["admin"],
+      "denied_roles": ["super_admin", "hardware_admin", "student", "guest", "designer"],
+      "message": "只有管理员可以进行审批操作"
+    },
+    "super_admin_approval": {
+      "description": "超级管理员审批权限规则",
+      "allowed_roles": ["super_admin"],
+      "denied_roles": ["hardware_admin", "admin", "student", "guest", "designer"],
+      "message": "只有超级管理员可以进行超级审批操作"
+    },
+    "hardware_admin_approval": {
+      "description": "硬件管理员审批权限规则",
+      "allowed_roles": ["hardware_admin"],
+      "denied_roles": ["super_admin", "admin", "student", "guest", "designer"],
+      "message": "只有硬件管理员可以进行最终审批操作"
+    },
+    "arduino_design_access": {
+      "description": "Arduino设计系统访问权限规则",
+      "allowed_roles": ["designer"],
+      "denied_roles": ["hardware_admin", "super_admin", "admin", "student", "guest"],
+      "message": "只有设计师组可以访问Arduino设计系统"
+    },
+    "pcb_design_access": {
+      "description": "PCB设计系统访问权限规则",
+      "allowed_roles": ["designer"],
+      "denied_roles": ["hardware_admin", "super_admin", "admin", "student", "guest"],
+      "message": "只有设计师组可以访问PCB设计系统"
+    },
+    "new_design_integration_access": {
+      "description": "新设计集成系统访问权限规则",
+      "allowed_roles": ["designer"],
+      "denied_roles": ["hardware_admin", "super_admin", "admin", "student", "guest"],
+      "message": "只有设计师组可以访问新设计集成系统"
+    },
+    "sandbox_full_control": {
+      "description": "沙盒完全控制权限规则",
+      "allowed_roles": ["hardware_admin"],
+      "denied_roles": ["super_admin", "admin", "student", "guest", "designer"],
+      "message": "只有硬件管理员拥有沙盒所有操作、修改、删除权限，可删除沙盒操作日志"
+    },
+    "sandbox_log_view": {
+      "description": "沙盒日志查看权限规则",
+      "allowed_roles": ["hardware_admin", "super_admin"],
+      "denied_roles": ["admin", "student", "guest", "designer"],
+      "message": "只有硬件管理员和超级管理员可以查看沙盒日志"
+    },
+    "sandbox_log_delete": {
+      "description": "沙盒日志删除权限规则",
+      "allowed_roles": ["hardware_admin"],
+      "denied_roles": ["super_admin", "admin", "student", "guest", "designer"],
+      "message": "只有硬件管理员可以删除沙盒日志，删除前将自动双备份"
+    },
+    "sandbox_parameter_edit": {
+      "description": "沙盒参数编辑权限规则",
+      "allowed_roles": ["hardware_admin", "super_admin", "admin"],
+      "denied_roles": ["student", "guest", "designer"],
+      "message": "管理员可以操作修改沙盒系统参数，需要管理员以上权限审批才能生效"
+    },
+    "sandbox_use_only": {
+      "description": "沙盒仅使用权限规则",
+      "allowed_roles": ["student", "guest", "designer", "user"],
+      "denied_roles": [],
+      "message": "普通用户只能使用沙盒系统，不能做任何修改和查看日志"
+    }
+  },
+  "role_hierarchy": {
+    "hardware_admin": "最高权限",
+    "super_admin": "次级权限",
+    "admin": "中级权限",
+    "designer": "设计权限",
+    "student": "学生权限",
+    "guest": "游客权限"
+  },
+  "approval_workflow": {
+    "admin_approval": {
+      "steps": [
+        {
+          "role": "admin",
+          "action": "approve_guest_to_student",
+          "notification_roles": ["super_admin", "hardware_admin"],
+          "next_step": "super_admin_approval"
+        },
+        {
+          "role": "super_admin",
+          "action": "review_admin_approval",
+          "next_step": "hardware_admin_approval"
+        },
+        {
+          "role": "hardware_admin",
+          "action": "final_approval",
+          "next_step": "execute"
+        }
+      ]
+    },
+    "super_admin_approval": {
+      "steps": [
+        {
+          "role": "super_admin",
+          "action": "modify_system_config",
+          "next_step": "hardware_admin_approval"
+        },
+        {
+          "role": "hardware_admin",
+          "action": "review_super_admin_changes",
+          "next_step": "execute"
+        }
+      ]
+    },
+    "hardware_admin_approval": {
+      "steps": [
+        {
+          "role": "hardware_admin",
+          "action": "direct_system_modification",
+          "next_step": "execute"
+        }
+      ]
+    }
+  },
+  "change_management": {
+    "sandbox_required": ["super_admin", "admin"],
+    "direct_execution": ["hardware_admin"],
+    "audit_required": true,
+    "log_all_changes": true,
+    "rollback_support": true,
+    "sandbox_log_dual_backup": {
+      "enabled": true,
+      "trigger": "delete_sandbox_logs",
+      "roles": ["hardware_admin"],
+      "destinations": ["primary_backup", "secondary_backup"],
+      "immutable_backup": true,
+      "message": "删除沙盒日志前必须自动双备份，被备份记录任何组别权限都不能删除修改"
+    }
+  }
+}

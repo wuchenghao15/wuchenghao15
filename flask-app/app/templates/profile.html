@@ -1,0 +1,263 @@
+{% extends "base.html" %}
+
+{% block title %}个人资料 - 语言学习系统{% endblock %}
+
+{% block content %}
+<style>
+    /* 个人资料页面样式 */
+    .profile-container {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    
+    .profile-header {
+        text-align: center;
+        margin-bottom: 40px;
+        padding: 30px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 20px;
+        color: white;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+    
+    .profile-title {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 15px;
+    }
+    
+    .profile-description {
+        font-size: 1.1rem;
+        opacity: 0.9;
+    }
+    
+    .profile-content {
+        background: white;
+        border-radius: 20px;
+        padding: 40px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+    
+    .profile-info {
+        margin-bottom: 40px;
+    }
+    
+    .info-section {
+        margin-bottom: 30px;
+    }
+    
+    .section-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-bottom: 20px;
+        color: #667eea;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #e0e0e0;
+    }
+    
+    .info-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+        padding: 10px;
+        background: #f8f9fa;
+        border-radius: 10px;
+    }
+    
+    .info-label {
+        font-weight: 600;
+        width: 120px;
+        color: #333;
+    }
+    
+    .info-value {
+        flex: 1;
+        color: #666;
+    }
+    
+    .role-badge {
+        padding: 5px 10px;
+        border-radius: 50px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+    
+    .role-super_admin {
+        background: #ff6b6b;
+        color: white;
+    }
+    
+    .role-admin {
+        background: #4ecdc4;
+        color: white;
+    }
+    
+    .role-hardware_admin {
+        background: #45b7d1;
+        color: white;
+    }
+    
+    .role-designer {
+        background: #96ceb4;
+        color: white;
+    }
+    
+    .role-student {
+        background: #ffeaa7;
+        color: #333;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 20px;
+        justify-content: center;
+        margin-top: 40px;
+    }
+    
+    .action-btn {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 50px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
+    
+    .btn-secondary {
+        background: #f0f0f0;
+        color: #333;
+    }
+    
+    .btn-secondary:hover {
+        background: #e0e0e0;
+    }
+    
+    /* 响应式设计 */
+    @media (max-width: 768px) {
+        .profile-container {
+            padding: 0 20px;
+        }
+        
+        .profile-content {
+            padding: 30px 20px;
+        }
+        
+        .action-buttons {
+            flex-direction: column;
+        }
+        
+        .action-btn {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+</style>
+
+<div class="profile-container">
+    <!-- 个人资料头部 -->
+    <div class="profile-header">
+        <h1 class="profile-title">
+            <i class="fas fa-user"></i>
+            个人资料
+        </h1>
+        <p class="profile-description">
+            查看和管理您的个人信息
+        </p>
+    </div>
+    
+    <!-- 个人资料内容 -->
+    <div class="profile-content">
+        <!-- 基本信息 -->
+        <div class="info-section">
+            <h2 class="section-title">
+                <i class="fas fa-info-circle"></i>
+                基本信息
+            </h2>
+            <div class="info-item">
+                <span class="info-label">用户名</span>
+                <span class="info-value">{{ user.username }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">邮箱</span>
+                <span class="info-value">{{ user.email }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">角色</span>
+                <span class="info-value">
+                    {% if user.role == 'super_admin' %}
+                    <span class="role-badge role-super_admin">超级管理员</span>
+                    {% elif user.role == 'admin' %}
+                    <span class="role-badge role-admin">管理员</span>
+                    {% elif user.role == 'hardware_admin' %}
+                    <span class="role-badge role-hardware_admin">硬件管理员</span>
+                    {% elif user.role == 'designer' %}
+                    <span class="role-badge role-designer">设计师</span>
+                    {% else %}
+                    <span class="role-badge role-student">学生</span>
+                    {% endif %}
+                </span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">状态</span>
+                <span class="info-value">
+                    {% if user.is_active == 1 %}
+                    <span style="color: #2ecc71;">活跃</span>
+                    {% else %}
+                    <span style="color: #95a5a6;">非活跃</span>
+                    {% endif %}
+                </span>
+            </div>
+        </div>
+        
+        <!-- 账户设置 -->
+        <div class="info-section">
+            <h2 class="section-title">
+                <i class="fas fa-cog"></i>
+                账户设置
+            </h2>
+            <div class="info-item">
+                <span class="info-label">创建时间</span>
+                <span class="info-value">2026-04-14</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">上次登录</span>
+                <span class="info-value">2026-04-14 12:00:00</span>
+            </div>
+        </div>
+        
+        <!-- 操作按钮 -->
+        <div class="action-buttons">
+            <a href="/profile/edit" class="action-btn btn-primary">
+                <i class="fas fa-edit"></i>
+                编辑资料
+            </a>
+            <a href="/profile/change-password" class="action-btn btn-secondary">
+                <i class="fas fa-key"></i>
+                修改密码
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

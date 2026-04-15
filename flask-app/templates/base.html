@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}MTSCOS AI 系统{% endblock %}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% if request.path.startswith('/test-system') or request.path.startswith('/level-assessment') or request.path.startswith('/ai-generated-test') or request.path.startswith('/bilingual-test') or request.path.startswith('/english-test') or request.path.startswith('/japanese-test') %}
+    <!-- 预加载动画样式 -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/preloader.css') }}">
+    <!-- 预加载动画脚本 -->
+    <script src="{{ url_for('static', filename='js/preloader.js') }}"></script>
+    {% endif %}
+    <!-- Web App支持 -->
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <meta name="theme-color" content="#667eea">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="MTSCOS AI">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/logo.svg') }}">
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='images/logo.svg') }}">
+    <style>
+        /* 仅保留必要的本地样式，主要样式已移至外部CSS文件 */
+        .flash-messages {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            width: 380px;
+            max-width: calc(100% - 40px);
+            pointer-events: none;
+        }
+        
+        /* 基础消息样式 */
+        .flash-message {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px 20px;
+            border-radius: 16px;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+            animation: flashSlideIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards, flashFadeOut 0.6s ease 4s forwards;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            cursor: pointer;
+            border-left: 4px solid transparent;
+            background-clip: padding-box;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            pointer-events: all;
+        }
+        
+        /* 消息动画 */
+        @keyframes flashSlideIn {
+            0% {
+                transform: translateX(100%) scale(0.8);
+                opacity: 0;
+                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            }
+            50% {
+                transform: translateX(-10px) scale(1.05);
+                opacity: 0.9;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            }
+            100% {
+                transform: translateX(0) scale(1);
+                opacity: 1;
+                box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+            }
+        }
+        
+        @keyframes flashFadeOut {
+            0% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+                box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+            }
+            50% {
+                opacity: 0.5;
+                transform: translateY(-10px) scale(0.95);
+                box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-20px) scale(0.9);
+                box-shadow: 0 1px 5px rgba(0, 0, 0, 0.02);
+            }
+        }
+        
+        /* 消息内容淡入动画 */
+        @keyframes messageContentFadeIn {
+            from {
+                opacity: 0;
+                transform: translateX(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        /* 堆叠动画延迟 */
+        .flash-message:nth-child(2) {
+            animation-delay: 0.15s, 3.65s;
+        }
+        
+        .flash-message:nth-child(3) {
+            animation-delay: 0.3s, 3.8s;
+        }
+        
+        .flash-message:nth-child(n+4) {
+            animation-delay: 0.45s, 3.95s;
+        }
+        
+        /* 消息内容动画 */
+        .flash-message .message-content {
+            animation: messageContentFadeIn 0.3s ease 0.2s forwards;
+            opacity: 0;
+        }
+        
+        /* 移动端适配 */
+        @media (max-width: 768px) {
+            .flash-messages {
+                top: 60px;
+                right: 15px;
+                left: 15px;
+                width: auto;
+                max-width: none;
+            }
+            
+            .flash-message {
+                padding: 14px 16px;
+                font-size: 13px;
+                gap: 10px;
+            }
+            
+            .flash-message::before {
+                font-size: 16px;
+            }
+        }
+        
+        .flash-message:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+        
+        /* 状态样式 */
+        .success-message {
+            background: linear-gradient(135deg, rgba(212, 237, 218, 0.95) 0%, rgba(195, 230, 203, 0.95) 100%);
+            color: #155724;
+            border-left-color: #28a745;
+            box-shadow: 0 6px 20px rgba(40, 167, 69, 0.15);
+        }
+
+        .error-message {
+            background: linear-gradient(135deg, rgba(248, 215, 218, 0.95) 0%, rgba(245, 198, 203, 0.95) 100%);
+            color: #721c24;
+            border-left-color: #dc3545;
+            box-shadow: 0 6px 20px rgba(220, 53, 69, 0.15);
+        }
+
+        .warning-message {
+            background: linear-gradient(135deg, rgba(255, 243, 205, 0.95) 0%, rgba(255, 238, 186, 0.95) 100%);
+            color: #856404;
+            border-left-color: #ffc107;
+            box-shadow: 0 6px 20px rgba(255, 193, 7, 0.15);
+        }
+
+        .info-message {
+            background: linear-gradient(135deg, rgba(209, 236, 241, 0.95) 0%, rgba(190, 229, 235, 0.95) 100%);
+            color: #0c5460;
+            border-left-color: #17a2b8;
+            box-shadow: 0 6px 20px rgba(23, 162, 184, 0.15);
+        }
+        
+        /* 状态悬停效果 */
+        .success-message:hover {
+            box-shadow: 0 8px 25px rgba(40, 167, 69, 0.25);
+            border-left-color: #218838;
+        }
+        
+        .error-message:hover {
+            box-shadow: 0 8px 25px rgba(220, 53, 69, 0.25);
+            border-left-color: #c82333;
+        }
+        
+        .warning-message:hover {
+            box-shadow: 0 8px 25px rgba(255, 193, 7, 0.25);
+            border-left-color: #e0a800;
+        }
+        
+        .info-message:hover {
+            box-shadow: 0 8px 25px rgba(23, 162, 184, 0.25);
+            border-left-color: #138496;
+        }
+        
+        /* 消息图标 */
+        .flash-message::before {
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+        
+        .success-message::before {
+            content: '\f058';
+            color: #28a745;
+        }
+        
+        .error-message::before {
+            content: '\f06a';
+            color: #dc3545;
+        }
+        
+        .warning-message::before {
+            content: '\f06e';
+            color: #ffc107;
+        }
+        
+        .info-message::before {
+            content: '\f05a';
+            color: #17a2b8;
+        }
+        
+        /* 关闭按钮 */
+        .flash-message .close-btn {
+            margin-left: auto;
+            background: transparent;
+            border: none;
+            color: inherit;
+            font-size: 16px;
+            cursor: pointer;
+            opacity: 0.7;
+            transition: opacity 0.2s ease;
+            padding: 0;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .flash-message .close-btn:hover {
+            opacity: 1;
+        }
+        
+        /* 环境标识样式 */
+        .env-badge {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 10000;
+            background: #dc3545;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            text-transform: uppercase;
+        }
+        
+        /* 时间显示样式 */
+        .time-display-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 8px 16px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            font-size: 14px;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+
+        
+        .time-display {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 2px;
+        }
+        
+        .current-time {
+            font-weight: 600;
+            color: #1976d2;
+        }
+        
+        .lunar-time {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .lunar-time.lunar-special {
+            color: #dc3545;
+            font-weight: 600;
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- 环境标识 -->
+    {% if config.ENV == 'test' %}
+        <div class="env-badge">测试环境</div>
+    {% elif config.ENV == 'development' %}
+        <div class="env-badge" style="background: #ffc107; color: #212529;">开发环境</div>
+    {% endif %}
+    
+    <!-- Flash消息显示 -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flash-messages">
+                {% for category, message in messages %}
+                    <div class="flash-message {{ category }}-message">
+                        <span class="message-content">{{ message }}</span>
+                        <button class="close-btn" onclick="this.parentElement.remove()">&times;</button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+    
+    <!-- 时间显示组件 -->
+    <div class="time-display-container">
+        <div class="time-display" id="time-display">
+            <span class="current-time"></span>
+            <span class="lunar-time"></span>
+        </div>
+    </div>
+    
+
+    
+    {% block content %}
+    <!-- 主内容区 -->
+{% endblock %}
+    
+    <!-- 加载JavaScript AI实例代码 -->
+    <!-- <script src="#"></script> -->
+    
+    <script>
+        // 时间显示功能
+        function updateTimeDisplay() {
+            const now = new Date();
+            
+            // 格式化24小时制时间
+            const hours = now.getHours().toString().padStart(2, '0');
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            const seconds = now.getSeconds().toString().padStart(2, '0');
+            const currentTimeStr = `${hours}:${minutes}:${seconds}`;
+            
+            // 获取农历日期
+            const lunar = {
+                year: now.getFullYear(),
+                month: now.getMonth() + 1,
+                day: now.getDate()
+            };
+            
+            const lunarTimeStr = `${lunar.year}年${lunar.month}月${lunar.day}日`;
+            
+            // 更新DOM
+            const currentTimeElement = document.querySelector('.current-time');
+            const lunarTimeElement = document.querySelector('.lunar-time');
+            
+            if (currentTimeElement && lunarTimeElement) {
+                currentTimeElement.textContent = currentTimeStr;
+                lunarTimeElement.textContent = lunarTimeStr;
+            }
+        }
+        
+        // 初始化时间显示
+        document.addEventListener('DOMContentLoaded', function() {
+            // 立即更新一次
+            updateTimeDisplay();
+            // 每秒更新一次
+            setInterval(updateTimeDisplay, 1000);
+        });
+    </script>
+    <script src="{{ url_for('static', filename='js/mobile-interactions.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+
+    {% block footer %}{% endblock %}
+
+    <!-- 锁定遮罩和解锁界面 -->
+    <div id="lock-overlay" class="lock-overlay" style="display: none;">
+        <div class="lock-container">
+            <div class="lock-header">
+                <h2><i class="fas fa-lock"></i> 系统已锁定</h2>
+                <p>请使用密码或硬件ID解锁</p>
+            </div>
+            <div class="lock-tabs">
+                <button class="lock-tab active" data-tab="password">密码解锁</button>
+                <button class="lock-tab" data-tab="hardware">硬件ID解锁</button>
+            </div>
+            <div class="lock-content">
+                <!-- 密码解锁表单 -->
+                <div class="lock-form active" id="password-form">
+                    <div class="form-group">
+                        <label for="unlock-password"><i class="fas fa-key"></i> 密码</label>
+                        <input type="password" id="unlock-password" placeholder="请输入密码" autocomplete="current-password">
+                    </div>
+                    <button class="unlock-btn" onclick="unlockWithPassword()"><i class="fas fa-unlock"></i> 解锁</button>
+                    <div class="error-message" id="password-error" style="display: none;"></div>
+                </div>
+                <!-- 硬件ID解锁表单 -->
+                <div class="lock-form" id="hardware-form">
+                    <div class="form-group">
+                        <label for="vikey-id"><i class="fas fa-microchip"></i> 硬件ID</label>
+                        <input type="text" id="vikey-id" placeholder="请输入硬件ID">
+                    </div>
+                    <button class="unlock-btn" onclick="unlockWithHardware()"><i class="fas fa-unlock"></i> 解锁</button>
+                    <div class="error-message" id="hardware-error" style="display: none;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        /* 锁定遮罩样式 */
+        .lock-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8); /* 默认透明度80% */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 99999;
+            backdrop-filter: blur(5px);
+        }
+
+        .lock-container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            width: 90%;
+            max-width: 400px;
+            padding: 30px;
+            animation: lockSlideIn 0.5s ease-out;
+        }
+
+        @keyframes lockSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px) scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .lock-header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .lock-header h2 {
+            color: #333;
+            font-size: 24px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .lock-header i {
+            color: #667eea;
+        }
+
+        .lock-header p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .lock-tabs {
+            display: flex;
+            margin-bottom: 25px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .lock-tab {
+            flex: 1;
+            padding: 12px;
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid transparent;
+            color: #666;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .lock-tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .lock-tab:hover {
+            color: #667eea;
+        }
+
+        .lock-content {
+            position: relative;
+        }
+
+        .lock-form {
+            display: none;
+        }
+
+        .lock-form.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .form-group i {
+            color: #667eea;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .unlock-btn {
+            width: 100%;
+            padding: 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .unlock-btn:hover {
+            background: #5a6fd8;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .error-message {
+            margin-top: 15px;
+            padding: 10px;
+            background: #fee;
+            color: #dc3545;
+            border: 1px solid #fcc;
+            border-radius: 6px;
+            font-size: 13px;
+            text-align: center;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 480px) {
+            .lock-container {
+                padding: 20px;
+                width: 95%;
+            }
+
+            .lock-header h2 {
+                font-size: 20px;
+            }
+
+            .lock-form input {
+                padding: 10px;
+                font-size: 14px;
+            }
+
+            .unlock-btn {
+                padding: 10px;
+                font-size: 14px;
+            }
+        }
+    </style>
+
+    <script>
+        // 锁定机制相关变量
+        let lockCheckInterval;
+        let lastActivityTime = Date.now();
+        let lockSettings = { 
+            lock_mask_opacity: 0.8,
+            idle_timeout_minutes: 15,  // 15分钟无活动自动锁定
+            max_idle_time_minutes: 30  // 30分钟无活动自动退出
+        };
+
+        // 初始化锁定机制
+        function initLockMechanism() {
+            // 设置遮罩透明度
+            document.getElementById('lock-overlay').style.backgroundColor = `rgba(0, 0, 0, ${lockSettings.lock_mask_opacity})`;
+
+            // 定期检查锁定状态（每5秒）
+            lockCheckInterval = setInterval(checkLockStatus, 5000);
+
+            // 监听用户活动
+            document.addEventListener('mousemove', handleUserActivity);
+            document.addEventListener('keydown', handleUserActivity);
+            document.addEventListener('click', handleUserActivity);
+            document.addEventListener('scroll', handleUserActivity);
+        }
+
+        // 检查用户锁定状态
+        function checkLockStatus() {
+            const currentTime = Date.now();
+            const idleTime = (currentTime - lastActivityTime) / (1000 * 60); // 转换为分钟
+            
+            if (idleTime >= lockSettings.max_idle_time_minutes) {
+                // 超时退出，刷新页面
+                window.location.reload();
+            } else if (idleTime >= lockSettings.idle_timeout_minutes) {
+                // 自动锁定
+                document.getElementById('lock-overlay').style.display = 'flex';
+            } else {
+                // 未锁定
+                document.getElementById('lock-overlay').style.display = 'none';
+            }
+        }
+
+        // 处理用户活动
+        function handleUserActivity() {
+            lastActivityTime = Date.now();
+        }
+
+        // 密码解锁
+        function unlockWithPassword() {
+            const password = document.getElementById('unlock-password').value;
+            const errorElement = document.getElementById('password-error');
+            
+            if (!password) {
+                errorElement.textContent = '请输入密码';
+                errorElement.style.display = 'block';
+                return;
+            }
+
+            // 简单的密码验证（实际项目中应该使用更安全的验证方式）
+            if (password === 'admin123') { // 示例密码
+                // 解锁成功，隐藏遮罩
+                document.getElementById('lock-overlay').style.display = 'none';
+                document.getElementById('unlock-password').value = '';
+                errorElement.style.display = 'none';
+                // 重置活动时间
+                lastActivityTime = Date.now();
+            } else {
+                // 解锁失败，显示错误
+                errorElement.textContent = '密码错误';
+                errorElement.style.display = 'block';
+            }
+        }
+
+        // 硬件ID解锁
+        function unlockWithHardware() {
+            const vikeyId = document.getElementById('vikey-id').value;
+            const errorElement = document.getElementById('hardware-error');
+            
+            if (!vikeyId) {
+                errorElement.textContent = '请输入硬件ID';
+                errorElement.style.display = 'block';
+                return;
+            }
+
+            // 简单的硬件ID验证（实际项目中应该使用更安全的验证方式）
+            if (vikeyId === '123456') { // 示例硬件ID
+                // 解锁成功，隐藏遮罩
+                document.getElementById('lock-overlay').style.display = 'none';
+                document.getElementById('vikey-id').value = '';
+                errorElement.style.display = 'none';
+                // 重置活动时间
+                lastActivityTime = Date.now();
+            } else {
+                // 解锁失败，显示错误
+                errorElement.textContent = '硬件ID错误';
+                errorElement.style.display = 'block';
+            }
+        }
+
+        // 切换解锁选项卡
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('lock-tab')) {
+                // 移除所有活动状态
+                document.querySelectorAll('.lock-tab').forEach(tab => tab.classList.remove('active'));
+                document.querySelectorAll('.lock-form').forEach(form => form.classList.remove('active'));
+                
+                // 添加当前标签活动状态
+                e.target.classList.add('active');
+                
+                // 显示对应表单
+                const tabId = e.target.dataset.tab;
+                document.getElementById(`${tabId}-form`).classList.add('active');
+            }
+        });
+
+        // 密码输入框回车事件
+        document.addEventListener('keypress', function(e) {
+            if (e.target.id === 'unlock-password' && e.key === 'Enter') {
+                unlockWithPassword();
+            } else if (e.target.id === 'vikey-id' && e.key === 'Enter') {
+                unlockWithHardware();
+            }
+        });
+
+        // 页面加载完成后初始化锁定机制
+        document.addEventListener('DOMContentLoaded', function() {
+            // 检查是否为首页或注册页面，这些页面不启用锁定机制
+            const path = window.location.pathname;
+            if (path !== '/' && !path.includes('/auth/register') && !path.includes('/auth/login')) {
+                initLockMechanism();
+            }
+        });
+
+        // 页面卸载时清理定时器
+        window.addEventListener('beforeunload', function() {
+            if (lockCheckInterval) {
+                clearInterval(lockCheckInterval);
+            }
+        });
+    </script>
+    
+    <!-- JSON语法高亮脚本 -->
+    <script src="{{ url_for('static', filename='js/json-highlight.js') }}"></script>
+</html>

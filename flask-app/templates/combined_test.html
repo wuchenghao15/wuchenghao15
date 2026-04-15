@@ -1,0 +1,1259 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta name="theme-color" content="#3b82f6">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>综合语言测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 900px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .test-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #e8f4f8;
+            border-radius: 4px;
+        }
+        .user-info {
+            font-size: 16px;
+        }
+        .level-info {
+            display: flex;
+            gap: 20px;
+            font-size: 16px;
+            font-weight: bold;
+            color: #2196F3;
+        }
+        .language-tabs {
+            display: flex;
+            margin: 20px 0;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        .tab {
+            padding: 12px 24px;
+            background-color: #f5f5f5;
+            border: none;
+            border-radius: 8px 8px 0 0;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-right: 5px;
+        }
+        .tab.active {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .tab:hover {
+            background-color: #ddd;
+        }
+        .tab.active:hover {
+            background-color: #45a049;
+        }
+        .test-settings {
+            margin: 20px 0;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+        }
+        .settings-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin: 15px 0;
+        }
+        .setting-item {
+            flex: 1;
+            min-width: 200px;
+        }
+        .setting-label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .setting-input,
+        .setting-select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .btn {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .btn:hover {
+            background-color: #45a049;
+        }
+        .btn-secondary {
+            background-color: #6c757d;
+        }
+        .btn-secondary:hover {
+            background-color: #5a6268;
+        }
+        .btn-danger {
+            background-color: #dc3545;
+        }
+        .btn-danger:hover {
+            background-color: #c82333;
+        }
+        .test-container {
+            margin: 20px 0;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+        }
+        .test-status {
+            margin: 15px 0;
+            padding: 10px;
+            background-color: #e3f2fd;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .test-section {
+            display: none;
+        }
+        .test-section.active {
+            display: block;
+        }
+        .test-question {
+            margin: 20px 0;
+            padding: 20px;
+            background-color: white;
+            border-radius: 8px;
+            border-left: 4px solid #4CAF50;
+        }
+        .question-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .question-number {
+            font-weight: bold;
+            color: #4CAF50;
+        }
+        .question-type {
+            font-size: 14px;
+            color: #666;
+            background-color: #f0f0f0;
+            padding: 3px 8px;
+            border-radius: 12px;
+        }
+        .question-content {
+            font-size: 18px;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+        .question-options {
+            margin: 15px 0;
+        }
+        .option {
+            margin: 10px 0;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .option:hover {
+            background-color: #f0f0f0;
+        }
+        .option.selected {
+            background-color: #e8f4f8;
+            border-color: #4CAF50;
+        }
+        .option.correct {
+            background-color: #d4edda;
+            border-color: #28a745;
+        }
+        .option.incorrect {
+            background-color: #f8d7da;
+            border-color: #dc3545;
+        }
+        .question-answer {
+            margin: 15px 0;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+        }
+        .answer-label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            display: block;
+        }
+        .answer-text {
+            margin-left: 10px;
+        }
+        .question-explanation {
+            margin: 15px 0;
+            padding: 15px;
+            background-color: #fff3cd;
+            border-radius: 4px;
+            border-left: 4px solid #ffc107;
+        }
+        .explanation-label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            display: block;
+        }
+        .explanation-text {
+            margin-left: 10px;
+        }
+        .test-navigation {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 30px 0;
+        }
+        .question-progress {
+            display: flex;
+            gap: 5px;
+            margin: 20px 0;
+        }
+        .progress-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: #e0e0e0;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .progress-dot.active {
+            background-color: #4CAF50;
+        }
+        .progress-dot.answered {
+            background-color: #2196F3;
+        }
+        .progress-dot.reviewed {
+            background-color: #ff9800;
+        }
+        .result-summary {
+            margin: 20px 0;
+            padding: 20px;
+            background-color: #d4edda;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .score {
+            font-size: 36px;
+            font-weight: bold;
+            color: #28a745;
+        }
+        .result-stats {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+        }
+        .stat-item {
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+        }
+        .stat-label {
+            font-size: 14px;
+            color: #666;
+        }
+        .hidden {
+            display: none;
+        }
+        .combined-test-overview {
+            margin: 20px 0;
+            padding: 20px;
+            background-color: #e8f4f8;
+            border-radius: 8px;
+        }
+        .overview-item {
+            margin: 10px 0;
+        }
+        .overview-label {
+            font-weight: bold;
+        }
+        
+        /* 时间显示样式 */
+        .time-display-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 8px 16px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            font-size: 14px;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+        .time-display {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 2px;
+        }
+        
+        .current-time {
+            font-weight: 600;
+            color: #1976d2;
+        }
+        
+        .lunar-time {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .lunar-time.lunar-special {
+            color: #dc3545;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <!-- 时间显示组件 -->
+    <div class="time-display-container">
+        <div class="time-display" id="time-display">
+            <span class="current-time"></span>
+            <span class="lunar-time"></span>
+        </div>
+    </div>
+    
+    <div class="container">
+        <h1>综合语言测试</h1>
+        
+        <div class="test-header">
+            <div class="user-info">
+                <span>用户名: <strong>{{ user.username }}</strong></span>
+            </div>
+            <div class="level-info">
+                <span>日语等级: <strong id="japaneseLevel">--</strong></span>
+                <span>英语等级: <strong id="englishLevel">--</strong></span>
+            </div>
+        </div>
+        
+        <!-- 综合测试概览 -->
+        <div class="combined-test-overview">
+            <h2>测试概览</h2>
+            <div class="overview-item">
+                <span class="overview-label">测试类型:</span> 综合语言测试（日语 + 英语）
+            </div>
+            <div class="overview-item">
+                <span class="overview-label">测试目的:</span> 评估您的日语和英语综合水平
+            </div>
+            <div class="overview-item">
+                <span class="overview-label">测试流程:</span> 先进行日语测试，再进行英语测试，最后查看综合结果
+            </div>
+            <div style="margin-top: 20px;">
+                <button class="btn btn-danger" onclick="exitTest()">退出测试</button>
+            </div>
+        </div>
+        
+        <!-- 语言选择标签 -->
+        <div class="language-tabs">
+            <button class="tab active" onclick="switchLanguage('japanese')">日语测试</button>
+            <button class="tab" onclick="switchLanguage('english')">英语测试</button>
+            <button class="tab" onclick="switchLanguage('result')">测试结果</button>
+        </div>
+        
+        <!-- 日语测试部分 -->
+        <div class="test-section active" id="japaneseSection">
+            <div class="test-settings">
+                <h2>日语测试设置</h2>
+                <div class="settings-row">
+                    <div class="setting-item">
+                        <label class="setting-label">测试类型</label>
+                        <select class="setting-select" id="japaneseTestType">
+                            <option value="practice">练习测试</option>
+                            <option value="exam">模拟考试</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <label class="setting-label">题目数量</label>
+                        <select class="setting-select" id="japaneseQuestionCount">
+                            <option value="10">10题</option>
+                            <option value="20">20题</option>
+                            <option value="30">30题</option>
+                            <option value="50">50题</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="settings-row">
+                    <div class="setting-item">
+                        <label class="setting-label">难度等级</label>
+                        <select class="setting-select" id="japaneseDifficultyLevel">
+                            <option value="all">全部等级</option>
+                            <option value="1">N5</option>
+                            <option value="2">N4</option>
+                            <option value="3">N3</option>
+                            <option value="4">N2</option>
+                            <option value="5">N1</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <label class="setting-label">题目类型</label>
+                        <select class="setting-select" id="japaneseQuestionType">
+                            <option value="all">全部题型</option>
+                            <option value="multiple_choice">选择题</option>
+                            <option value="fill_in_blank">填空题</option>
+                            <option value="true_false">判断题</option>
+                            <option value="short_answer">简答题</option>
+                        </select>
+                    </div>
+                </div>
+                <button class="btn" onclick="generateJapaneseTest()">生成日语测试</button>
+            </div>
+            
+            <!-- 日语测试内容 -->
+            <div class="test-container hidden" id="japaneseTestContainer">
+                <div class="test-status" id="japaneseTestStatus">测试准备中...</div>
+                <div class="question-progress" id="japaneseQuestionProgress"></div>
+                <div class="test-question" id="japaneseTestQuestion">
+                    <div class="question-header">
+                        <span class="question-number" id="japaneseQuestionNumber">第1题</span>
+                        <span class="question-type" id="japaneseQuestionTypeDisplay">选择题</span>
+                    </div>
+                    <div class="question-content" id="japaneseQuestionContent">题目加载中...</div>
+                    <div class="question-options" id="japaneseQuestionOptions"></div>
+                    <div class="question-answer hidden" id="japaneseQuestionAnswer">
+                        <span class="answer-label">正确答案:</span>
+                        <span class="answer-text" id="japaneseCorrectAnswer"></span>
+                    </div>
+                    <div class="question-explanation hidden" id="japaneseQuestionExplanation">
+                        <span class="explanation-label">解析:</span>
+                        <span class="explanation-text" id="japaneseExplanationText"></span>
+                    </div>
+                </div>
+                <div class="test-navigation">
+                    <button class="btn btn-secondary" onclick="previousJapaneseQuestion()">上一题</button>
+                    <div>
+                        <button class="btn btn-secondary" onclick="showJapaneseAnswer()">查看答案</button>
+                        <button class="btn btn-secondary" onclick="toggleJapaneseReview()">标记/取消标记</button>
+                    </div>
+                    <button class="btn" onclick="nextJapaneseQuestion()">下一题</button>
+                </div>
+                <div class="test-navigation">
+                    <button class="btn btn-danger" onclick="resetJapaneseTest()">重新开始</button>
+                    <button class="btn" onclick="submitJapaneseTest()">提交日语测试</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 英语测试部分 -->
+        <div class="test-section" id="englishSection">
+            <div class="test-settings">
+                <h2>英语测试设置</h2>
+                <div class="settings-row">
+                    <div class="setting-item">
+                        <label class="setting-label">测试类型</label>
+                        <select class="setting-select" id="englishTestType">
+                            <option value="practice">练习测试</option>
+                            <option value="exam">模拟考试</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <label class="setting-label">题目数量</label>
+                        <select class="setting-select" id="englishQuestionCount">
+                            <option value="10">10题</option>
+                            <option value="20">20题</option>
+                            <option value="30">30题</option>
+                            <option value="50">50题</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="settings-row">
+                    <div class="setting-item">
+                        <label class="setting-label">难度等级</label>
+                        <select class="setting-select" id="englishDifficultyLevel">
+                            <option value="all">全部等级</option>
+                            <option value="beginner">初级</option>
+                            <option value="intermediate">中级</option>
+                            <option value="advanced">高级</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <label class="setting-label">题目类型</label>
+                        <select class="setting-select" id="englishQuestionType">
+                            <option value="all">全部题型</option>
+                            <option value="multiple_choice">选择题</option>
+                            <option value="fill_in_blank">填空题</option>
+                            <option value="true_false">判断题</option>
+                            <option value="short_answer">简答题</option>
+                        </select>
+                    </div>
+                </div>
+                <button class="btn" onclick="generateEnglishTest()">生成英语测试</button>
+            </div>
+            
+            <!-- 英语测试内容 -->
+            <div class="test-container hidden" id="englishTestContainer">
+                <div class="test-status" id="englishTestStatus">测试准备中...</div>
+                <div class="question-progress" id="englishQuestionProgress"></div>
+                <div class="test-question" id="englishTestQuestion">
+                    <div class="question-header">
+                        <span class="question-number" id="englishQuestionNumber">第1题</span>
+                        <span class="question-type" id="englishQuestionTypeDisplay">选择题</span>
+                    </div>
+                    <div class="question-content" id="englishQuestionContent">题目加载中...</div>
+                    <div class="question-options" id="englishQuestionOptions"></div>
+                    <div class="question-answer hidden" id="englishQuestionAnswer">
+                        <span class="answer-label">正确答案:</span>
+                        <span class="answer-text" id="englishCorrectAnswer"></span>
+                    </div>
+                    <div class="question-explanation hidden" id="englishQuestionExplanation">
+                        <span class="explanation-label">解析:</span>
+                        <span class="explanation-text" id="englishExplanationText"></span>
+                    </div>
+                </div>
+                <div class="test-navigation">
+                    <button class="btn btn-secondary" onclick="previousEnglishQuestion()">上一题</button>
+                    <div>
+                        <button class="btn btn-secondary" onclick="showEnglishAnswer()">查看答案</button>
+                        <button class="btn btn-secondary" onclick="toggleEnglishReview()">标记/取消标记</button>
+                    </div>
+                    <button class="btn" onclick="nextEnglishQuestion()">下一题</button>
+                </div>
+                <div class="test-navigation">
+                    <button class="btn btn-danger" onclick="resetEnglishTest()">重新开始</button>
+                    <button class="btn" onclick="submitEnglishTest()">提交英语测试</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 测试结果部分 -->
+        <div class="test-section" id="resultSection">
+            <div class="result-summary">
+                <h2>综合测试结果</h2>
+                <div class="score" id="finalCombinedScore">综合得分: --/100</div>
+                <div class="result-stats">
+                    <div class="stat-item">
+                        <div class="stat-value" id="japaneseScore">0</div>
+                        <div class="stat-label">日语得分</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="englishScore">0</div>
+                        <div class="stat-label">英语得分</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="totalQuestions">0</div>
+                        <div class="stat-label">总题数</div>
+                    </div>
+                </div>
+                <div class="result-stats">
+                    <div class="stat-item">
+                        <div class="stat-value" id="japaneseCorrect">0</div>
+                        <div class="stat-label">日语正确题数</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="englishCorrect">0</div>
+                        <div class="stat-label">英语正确题数</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="combinedAccuracy">0%</div>
+                        <div class="stat-label">综合正确率</div>
+                    </div>
+                </div>
+            </div>
+            <div class="test-navigation">
+                <button class="btn" onclick="restartCombinedTest()">重新开始综合测试</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 全局变量
+        let currentLanguage = 'japanese';
+        
+        // 日语测试变量
+        let japaneseTest = null;
+        let japaneseCurrentQuestionIndex = 0;
+        let japaneseUserAnswers = {};
+        let japaneseReviewedQuestions = new Set();
+        let japaneseTestStarted = false;
+        
+        // 英语测试变量
+        let englishTest = null;
+        let englishCurrentQuestionIndex = 0;
+        let englishUserAnswers = {};
+        let englishReviewedQuestions = new Set();
+        let englishTestStarted = false;
+        
+        // 测试结果变量
+        let testResults = {
+            japanese: null,
+            english: null
+        };
+        
+        // 模拟日语测试数据
+        const mockJapaneseTestPaper = {
+            test_id: 'sample_japanese_test_1',
+            username: '"+"{{ user.username }}"+"',
+            language: 'japanese',
+            test_type: 'practice',
+            level: 'N3',
+            generated_at: new Date().toISOString(),
+            questions: [
+                {
+                    question_id: 'japanese_sample_1',
+                    question_type: 'multiple_choice',
+                    content: '「こんにちは」の意味は何ですか？',
+                    options: {
+                        'A': '早上好',
+                        'B': '下午好',
+                        'C': '晚上好',
+                        'D': '再见'
+                    },
+                    correct_answer: 'B',
+                    explanation: '「こんにちは」是日语中常用的问候语，意思是"下午好"或"你好"，用于白天的问候。'
+                },
+                {
+                    question_id: 'japanese_sample_2',
+                    question_type: 'true_false',
+                    content: '「ありがとう」は「谢谢」の意味です。',
+                    options: {
+                        'A': '正确',
+                        'B': '错误'
+                    },
+                    correct_answer: 'A',
+                    explanation: '「ありがとう」是日语中表达感谢的常用语，意思是"谢谢"。'
+                },
+                {
+                    question_id: 'japanese_sample_3',
+                    question_type: 'multiple_choice',
+                    content: '「日本語」の読み方は何ですか？',
+                    options: {
+                        'A': 'にほんご',
+                        'B': 'にほんじ',
+                        'C': 'にっぽんご',
+                        'D': 'にっぽんじ'
+                    },
+                    correct_answer: 'A',
+                    explanation: '「日本語」的标准读音是「にほんご」，意思是"日语"。'
+                }
+            ]
+        };
+        
+        // 模拟英语测试数据
+        const mockEnglishTestPaper = {
+            test_id: 'sample_english_test_1',
+            username: '"+"{{ user.username }}"+"',
+            language: 'english',
+            test_type: 'practice',
+            level: 'intermediate',
+            generated_at: new Date().toISOString(),
+            questions: [
+                {
+                    question_id: 'english_sample_1',
+                    question_type: 'multiple_choice',
+                    content: 'What does "Hello" mean in Chinese?',
+                    options: {
+                        'A': '你好',
+                        'B': '再见',
+                        'C': '谢谢',
+                        'D': '对不起'
+                    },
+                    correct_answer: 'A',
+                    explanation: '"Hello" is a common greeting in English, corresponding to "你好" in Chinese.'
+                },
+                {
+                    question_id: 'english_sample_2',
+                    question_type: 'true_false',
+                    content: '"Thank you" means "谢谢" in Chinese.',
+                    options: {
+                        'A': 'True',
+                        'B': 'False'
+                    },
+                    correct_answer: 'A',
+                    explanation: '"Thank you" is the English expression for gratitude, which translates to "谢谢" in Chinese.'
+                },
+                {
+                    question_id: 'english_sample_3',
+                    question_type: 'multiple_choice',
+                    content: 'How do you say "Goodbye" in Chinese?',
+                    options: {
+                        'A': '你好',
+                        'B': '再见',
+                        'C': '早上好',
+                        'D': '晚上好'
+                    },
+                    correct_answer: 'B',
+                    explanation: '"Goodbye" is used when parting, and the Chinese equivalent is "再见".'
+                }
+            ]
+        };
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 模拟获取用户语言等级
+            setTimeout(() => {
+                document.getElementById('japaneseLevel').textContent = 'N3';
+                document.getElementById('englishLevel').textContent = 'Intermediate';
+            }, 500);
+        });
+        
+        // 切换语言标签
+        function switchLanguage(language) {
+            currentLanguage = language;
+            
+            // 更新标签状态
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelector(`[onclick="switchLanguage('${language}')"]`).classList.add('active');
+            
+            // 更新测试部分显示
+            document.querySelectorAll('.test-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            document.getElementById(`${language}Section`).classList.add('active');
+        }
+        
+        // 生成日语测试
+        function generateJapaneseTest() {
+            const testType = document.getElementById('japaneseTestType').value;
+            const questionCount = document.getElementById('japaneseQuestionCount').value;
+            const difficultyLevel = document.getElementById('japaneseDifficultyLevel').value;
+            const questionType = document.getElementById('japaneseQuestionType').value;
+            
+            // 显示加载状态
+            document.getElementById('japaneseTestStatus').textContent = '正在生成日语测试试卷...';
+            document.querySelector('#japaneseSection .test-settings').classList.add('hidden');
+            document.getElementById('japaneseTestContainer').classList.remove('hidden');
+            
+            // 调用后端API生成测试试卷
+            fetch('/api/japanese-test/generate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    test_type: testType,
+                    question_count: questionCount,
+                    level: difficultyLevel === 'all' ? null : difficultyLevel,
+                    categories: questionType === 'all' ? [] : [questionType]
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    japaneseTest = data.test_paper;
+                    japaneseCurrentQuestionIndex = 0;
+                    japaneseUserAnswers = {};
+                    japaneseReviewedQuestions.clear();
+                    japaneseTestStarted = true;
+                    
+                    document.getElementById('japaneseTestStatus').textContent = '日语测试已生成，共 ' + japaneseTest.questions.length + ' 题';
+                    
+                    generateJapaneseProgressDots();
+                    loadJapaneseQuestion(japaneseCurrentQuestionIndex);
+                } else {
+                    document.getElementById('japaneseTestStatus').textContent = '生成日语测试失败: ' + (data.error || '未知错误');
+                }
+            })
+            .catch(error => {
+                console.error('生成日语测试失败:', error);
+                document.getElementById('japaneseTestStatus').textContent = '生成日语测试失败: 网络错误';
+            });
+        }
+        
+        // 生成日语测试进度点
+        function generateJapaneseProgressDots() {
+            const progressContainer = document.getElementById('japaneseQuestionProgress');
+            progressContainer.innerHTML = '';
+            
+            for (let i = 0; i < japaneseTest.questions.length; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'progress-dot';
+                dot.onclick = () => jumpToJapaneseQuestion(i);
+                progressContainer.appendChild(dot);
+            }
+        }
+        
+        // 加载日语题目
+        function loadJapaneseQuestion(index) {
+            if (index < 0 || index >= japaneseTest.questions.length) return;
+            
+            const question = japaneseTest.questions[index];
+            
+            document.getElementById('japaneseQuestionNumber').textContent = '第' + (index + 1) + '题';
+            document.getElementById('japaneseQuestionTypeDisplay').textContent = getQuestionTypeName(question.question_type);
+            document.getElementById('japaneseQuestionContent').textContent = question.content;
+            
+            renderJapaneseOptions(question);
+            
+            document.getElementById('japaneseQuestionAnswer').classList.add('hidden');
+            document.getElementById('japaneseQuestionExplanation').classList.add('hidden');
+            
+            updateJapaneseProgressDots(index);
+            japaneseCurrentQuestionIndex = index;
+        }
+        
+        // 获取题目类型名称
+        function getQuestionTypeName(type) {
+            const typeNames = {
+                'multiple_choice': '选择题',
+                'fill_in_blank': '填空题',
+                'true_false': '判断题',
+                'short_answer': '简答题'
+            };
+            return typeNames[type] || type;
+        }
+        
+        // 渲染日语选项
+        function renderJapaneseOptions(question) {
+            const optionsContainer = document.getElementById('japaneseQuestionOptions');
+            optionsContainer.innerHTML = '';
+            
+            for (const [key, value] of Object.entries(question.options)) {
+                const optionDiv = document.createElement('div');
+                optionDiv.className = 'option';
+                optionDiv.innerHTML = `<input type="radio" name="question_${question.question_id}" value="${key}" ${japaneseUserAnswers[question.question_id] === key ? 'checked' : ''}> ${key}. ${value}`;
+                optionDiv.addEventListener('click', () => {
+                    japaneseUserAnswers[question.question_id] = key;
+                    document.querySelectorAll('#japaneseQuestionOptions .option').forEach(opt => {
+                        opt.classList.remove('selected');
+                    });
+                    optionDiv.classList.add('selected');
+                    updateJapaneseProgressDots(japaneseCurrentQuestionIndex);
+                });
+                optionsContainer.appendChild(optionDiv);
+            }
+        }
+        
+        // 更新日语进度点
+        function updateJapaneseProgressDots(currentIndex) {
+            const dots = document.querySelectorAll('#japaneseQuestionProgress .progress-dot');
+            dots.forEach((dot, index) => {
+                dot.classList.remove('active', 'answered', 'reviewed');
+                if (index === currentIndex) dot.classList.add('active');
+                if (japaneseUserAnswers[japaneseTest.questions[index].question_id] !== undefined) dot.classList.add('answered');
+                if (japaneseReviewedQuestions.has(index)) dot.classList.add('reviewed');
+            });
+        }
+        
+        // 上一题（日语）
+        function previousJapaneseQuestion() {
+            if (japaneseCurrentQuestionIndex > 0) {
+                loadJapaneseQuestion(japaneseCurrentQuestionIndex - 1);
+            }
+        }
+        
+        // 下一题（日语）
+        function nextJapaneseQuestion() {
+            if (japaneseCurrentQuestionIndex < japaneseTest.questions.length - 1) {
+                loadJapaneseQuestion(japaneseCurrentQuestionIndex + 1);
+            }
+        }
+        
+        // 跳转到指定日语题目
+        function jumpToJapaneseQuestion(index) {
+            loadJapaneseQuestion(index);
+        }
+        
+        // 查看日语答案
+        function showJapaneseAnswer() {
+            const question = japaneseTest.questions[japaneseCurrentQuestionIndex];
+            
+            document.getElementById('japaneseCorrectAnswer').textContent = question.correct_answer + '. ' + question.options[question.correct_answer];
+            document.getElementById('japaneseQuestionAnswer').classList.remove('hidden');
+            
+            document.getElementById('japaneseExplanationText').textContent = question.explanation;
+            document.getElementById('japaneseQuestionExplanation').classList.remove('hidden');
+            
+            const options = document.querySelectorAll('#japaneseQuestionOptions .option');
+            options.forEach(option => {
+                option.classList.remove('correct', 'incorrect');
+                const optionValue = option.querySelector('input').value;
+                if (optionValue === question.correct_answer) {
+                    option.classList.add('correct');
+                } else if (japaneseUserAnswers[question.question_id] === optionValue) {
+                    option.classList.add('incorrect');
+                }
+            });
+        }
+        
+        // 标记/取消标记日语题目
+        function toggleJapaneseReview() {
+            if (japaneseReviewedQuestions.has(japaneseCurrentQuestionIndex)) {
+                japaneseReviewedQuestions.delete(japaneseCurrentQuestionIndex);
+            } else {
+                japaneseReviewedQuestions.add(japaneseCurrentQuestionIndex);
+            }
+            updateJapaneseProgressDots(japaneseCurrentQuestionIndex);
+        }
+        
+        // 提交日语测试
+        function submitJapaneseTest() {
+            if (!confirm('确定要提交日语测试吗？提交后将无法修改答案。')) {
+                return;
+            }
+            
+            let correctCount = 0;
+            const totalCount = japaneseTest.questions.length;
+            
+            for (const question of japaneseTest.questions) {
+                if (japaneseUserAnswers[question.question_id] === question.correct_answer) {
+                    correctCount++;
+                }
+            }
+            
+            const score = Math.round((correctCount / totalCount) * 100);
+            const accuracy = Math.round((correctCount / totalCount) * 100);
+            
+            testResults.japanese = {
+                score: score,
+                correctCount: correctCount,
+                totalCount: totalCount,
+                accuracy: accuracy
+            };
+            
+            alert(`日语测试提交成功！得分：${score}/100`);
+            switchLanguage('english');
+        }
+        
+        // 重置日语测试
+        function resetJapaneseTest() {
+            if (!confirm('确定要重新开始日语测试吗？当前进度将丢失。')) {
+                return;
+            }
+            
+            document.querySelector('#japaneseSection .test-settings').classList.remove('hidden');
+            document.getElementById('japaneseTestContainer').classList.add('hidden');
+            
+            japaneseTest = null;
+            japaneseCurrentQuestionIndex = 0;
+            japaneseUserAnswers = {};
+            japaneseReviewedQuestions.clear();
+            japaneseTestStarted = false;
+        }
+        
+        // 生成英语测试
+        function generateEnglishTest() {
+            const testType = document.getElementById('englishTestType').value;
+            const questionCount = document.getElementById('englishQuestionCount').value;
+            const difficultyLevel = document.getElementById('englishDifficultyLevel').value;
+            const questionType = document.getElementById('englishQuestionType').value;
+            
+            // 显示加载状态
+            document.getElementById('englishTestStatus').textContent = '正在生成英语测试试卷...';
+            document.querySelector('#englishSection .test-settings').classList.add('hidden');
+            document.getElementById('englishTestContainer').classList.remove('hidden');
+            
+            // 调用后端API生成测试试卷
+            fetch('/api/english-test/generate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    test_type: testType,
+                    question_count: questionCount,
+                    level: difficultyLevel === 'all' ? null : difficultyLevel,
+                    categories: questionType === 'all' ? [] : [questionType]
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    englishTest = data.test_paper;
+                    englishCurrentQuestionIndex = 0;
+                    englishUserAnswers = {};
+                    englishReviewedQuestions.clear();
+                    englishTestStarted = true;
+                    
+                    document.getElementById('englishTestStatus').textContent = '英语测试已生成，共 ' + englishTest.questions.length + ' 题';
+                    
+                    generateEnglishProgressDots();
+                    loadEnglishQuestion(englishCurrentQuestionIndex);
+                } else {
+                    document.getElementById('englishTestStatus').textContent = '生成英语测试失败: ' + (data.error || '未知错误');
+                }
+            })
+            .catch(error => {
+                console.error('生成英语测试失败:', error);
+                document.getElementById('englishTestStatus').textContent = '生成英语测试失败: 网络错误';
+            });
+        }
+        
+        // 生成英语测试进度点
+        function generateEnglishProgressDots() {
+            const progressContainer = document.getElementById('englishQuestionProgress');
+            progressContainer.innerHTML = '';
+            
+            for (let i = 0; i < englishTest.questions.length; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'progress-dot';
+                dot.onclick = () => jumpToEnglishQuestion(i);
+                progressContainer.appendChild(dot);
+            }
+        }
+        
+        // 加载英语题目
+        function loadEnglishQuestion(index) {
+            if (index < 0 || index >= englishTest.questions.length) return;
+            
+            const question = englishTest.questions[index];
+            
+            document.getElementById('englishQuestionNumber').textContent = '第' + (index + 1) + '题';
+            document.getElementById('englishQuestionTypeDisplay').textContent = getQuestionTypeName(question.question_type);
+            document.getElementById('englishQuestionContent').textContent = question.content;
+            
+            renderEnglishOptions(question);
+            
+            document.getElementById('englishQuestionAnswer').classList.add('hidden');
+            document.getElementById('englishQuestionExplanation').classList.add('hidden');
+            
+            updateEnglishProgressDots(index);
+            englishCurrentQuestionIndex = index;
+        }
+        
+        // 渲染英语选项
+        function renderEnglishOptions(question) {
+            const optionsContainer = document.getElementById('englishQuestionOptions');
+            optionsContainer.innerHTML = '';
+            
+            for (const [key, value] of Object.entries(question.options)) {
+                const optionDiv = document.createElement('div');
+                optionDiv.className = 'option';
+                optionDiv.innerHTML = `<input type="radio" name="question_${question.question_id}" value="${key}" ${englishUserAnswers[question.question_id] === key ? 'checked' : ''}> ${key}. ${value}`;
+                optionDiv.addEventListener('click', () => {
+                    englishUserAnswers[question.question_id] = key;
+                    document.querySelectorAll('#englishQuestionOptions .option').forEach(opt => {
+                        opt.classList.remove('selected');
+                    });
+                    optionDiv.classList.add('selected');
+                    updateEnglishProgressDots(englishCurrentQuestionIndex);
+                });
+                optionsContainer.appendChild(optionDiv);
+            }
+        }
+        
+        // 更新英语进度点
+        function updateEnglishProgressDots(currentIndex) {
+            const dots = document.querySelectorAll('#englishQuestionProgress .progress-dot');
+            dots.forEach((dot, index) => {
+                dot.classList.remove('active', 'answered', 'reviewed');
+                if (index === currentIndex) dot.classList.add('active');
+                if (englishUserAnswers[englishTest.questions[index].question_id] !== undefined) dot.classList.add('answered');
+                if (englishReviewedQuestions.has(index)) dot.classList.add('reviewed');
+            });
+        }
+        
+        // 上一题（英语）
+        function previousEnglishQuestion() {
+            if (englishCurrentQuestionIndex > 0) {
+                loadEnglishQuestion(englishCurrentQuestionIndex - 1);
+            }
+        }
+        
+        // 下一题（英语）
+        function nextEnglishQuestion() {
+            if (englishCurrentQuestionIndex < englishTest.questions.length - 1) {
+                loadEnglishQuestion(englishCurrentQuestionIndex + 1);
+            }
+        }
+        
+        // 跳转到指定英语题目
+        function jumpToEnglishQuestion(index) {
+            loadEnglishQuestion(index);
+        }
+        
+        // 查看英语答案
+        function showEnglishAnswer() {
+            const question = englishTest.questions[englishCurrentQuestionIndex];
+            
+            document.getElementById('englishCorrectAnswer').textContent = question.correct_answer + '. ' + question.options[question.correct_answer];
+            document.getElementById('englishQuestionAnswer').classList.remove('hidden');
+            
+            document.getElementById('englishExplanationText').textContent = question.explanation;
+            document.getElementById('englishQuestionExplanation').classList.remove('hidden');
+            
+            const options = document.querySelectorAll('#englishQuestionOptions .option');
+            options.forEach(option => {
+                option.classList.remove('correct', 'incorrect');
+                const optionValue = option.querySelector('input').value;
+                if (optionValue === question.correct_answer) {
+                    option.classList.add('correct');
+                } else if (englishUserAnswers[question.question_id] === optionValue) {
+                    option.classList.add('incorrect');
+                }
+            });
+        }
+        
+        // 标记/取消标记英语题目
+        function toggleEnglishReview() {
+            if (englishReviewedQuestions.has(englishCurrentQuestionIndex)) {
+                englishReviewedQuestions.delete(englishCurrentQuestionIndex);
+            } else {
+                englishReviewedQuestions.add(englishCurrentQuestionIndex);
+            }
+            updateEnglishProgressDots(englishCurrentQuestionIndex);
+        }
+        
+        // 提交英语测试
+        function submitEnglishTest() {
+            if (!confirm('确定要提交英语测试吗？提交后将无法修改答案。')) {
+                return;
+            }
+            
+            let correctCount = 0;
+            const totalCount = englishTest.questions.length;
+            
+            for (const question of englishTest.questions) {
+                if (englishUserAnswers[question.question_id] === question.correct_answer) {
+                    correctCount++;
+                }
+            }
+            
+            const score = Math.round((correctCount / totalCount) * 100);
+            const accuracy = Math.round((correctCount / totalCount) * 100);
+            
+            testResults.english = {
+                score: score,
+                correctCount: correctCount,
+                totalCount: totalCount,
+                accuracy: accuracy
+            };
+            
+            alert(`英语测试提交成功！得分：${score}/100`);
+            showCombinedResult();
+        }
+        
+        // 重置英语测试
+        function resetEnglishTest() {
+            if (!confirm('确定要重新开始英语测试吗？当前进度将丢失。')) {
+                return;
+            }
+            
+            document.querySelector('#englishSection .test-settings').classList.remove('hidden');
+            document.getElementById('englishTestContainer').classList.add('hidden');
+            
+            englishTest = null;
+            englishCurrentQuestionIndex = 0;
+            englishUserAnswers = {};
+            englishReviewedQuestions.clear();
+            englishTestStarted = false;
+        }
+        
+        // 显示综合测试结果
+        function showCombinedResult() {
+            if (!testResults.japanese || !testResults.english) {
+                alert('请先完成日语和英语测试！');
+                return;
+            }
+            
+            const japaneseScore = testResults.japanese.score;
+            const englishScore = testResults.english.score;
+            const combinedScore = Math.round((japaneseScore + englishScore) / 2);
+            
+            const totalQuestions = testResults.japanese.totalCount + testResults.english.totalCount;
+            const totalCorrect = testResults.japanese.correctCount + testResults.english.correctCount;
+            const combinedAccuracy = Math.round((totalCorrect / totalQuestions) * 100);
+            
+            document.getElementById('finalCombinedScore').textContent = `综合得分: ${combinedScore}/100`;
+            document.getElementById('japaneseScore').textContent = japaneseScore;
+            document.getElementById('englishScore').textContent = englishScore;
+            document.getElementById('totalQuestions').textContent = totalQuestions;
+            document.getElementById('japaneseCorrect').textContent = testResults.japanese.correctCount;
+            document.getElementById('englishCorrect').textContent = testResults.english.correctCount;
+            document.getElementById('combinedAccuracy').textContent = `${combinedAccuracy}%`;
+            
+            switchLanguage('result');
+        }
+        
+        // 重新开始综合测试
+        function restartCombinedTest() {
+            if (!confirm('确定要重新开始综合测试吗？所有测试进度将丢失。')) {
+                return;
+            }
+            
+            // 重置所有测试数据
+            testResults = {
+                japanese: null,
+                english: null
+            };
+            
+            resetJapaneseTest();
+            resetEnglishTest();
+            
+            // 返回日语测试
+            switchLanguage('japanese');
+        }
+        
+        // 退出测试
+        function exitTest() {
+            if (confirm('确定要退出测试吗？当前进度将丢失。')) {
+                // 重定向到主页面或仪表盘
+                window.location.href = '/';
+            }
+        }
+        
+        // 时间显示功能
+        function updateTimeDisplay() {
+            const now = new Date();
+            
+            // 格式化24小时制时间
+            const hours = now.getHours().toString().padStart(2, '0');
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            const seconds = now.getSeconds().toString().padStart(2, '0');
+            const currentTimeStr = `${hours}:${minutes}:${seconds}`;
+            
+            // 获取农历日期
+            const lunar = {
+                year: now.getFullYear(),
+                month: now.getMonth() + 1,
+                day: now.getDate()
+            };
+            
+            const lunarTimeStr = `${lunar.year}年${lunar.month}月${lunar.day}日`;
+            
+            // 更新DOM
+            const currentTimeElement = document.querySelector('.current-time');
+            const lunarTimeElement = document.querySelector('.lunar-time');
+            
+            if (currentTimeElement && lunarTimeElement) {
+                currentTimeElement.textContent = currentTimeStr;
+                lunarTimeElement.textContent = lunarTimeStr;
+            }
+        }
+        
+        // 初始化时间显示
+        document.addEventListener('DOMContentLoaded', function() {
+            // 立即更新一次
+            updateTimeDisplay();
+            // 每秒更新一次
+            setInterval(updateTimeDisplay, 1000);
+        });
+    </script>
+
+    {% block footer %}{% endblock %}
+
+</html>

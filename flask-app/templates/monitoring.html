@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系统监控面板 - MTSCOS AI</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1e3a8a;
+            margin-bottom: 8px;
+        }
+        
+        .header p {
+            font-size: 16px;
+            color: #6b7280;
+        }
+        
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+        
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+        }
+        
+        .card h2 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1e3a8a;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .card h2 i {
+            color: #3b82f6;
+        }
+        
+        .status-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        
+        .status-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+        .status-label {
+            font-size: 14px;
+            color: #6b7280;
+        }
+        
+        .status-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1e3a8a;
+        }
+        
+        .status-value.warning {
+            color: #f59e0b;
+        }
+        
+        .status-value.error {
+            color: #ef4444;
+        }
+        
+        .status-value.success {
+            color: #10b981;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 200px;
+            margin-top: 16px;
+        }
+        
+        .service-list {
+            list-style: none;
+            margin-top: 16px;
+        }
+        
+        .service-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: rgba(249, 250, 251, 0.8);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            border-left: 4px solid #3b82f6;
+        }
+        
+        .service-item.running {
+            border-left-color: #10b981;
+        }
+        
+        .service-item.stopped {
+            border-left-color: #ef4444;
+        }
+        
+        .service-item.error {
+            border-left-color: #f59e0b;
+        }
+        
+        .service-name {
+            font-weight: 500;
+        }
+        
+        .service-status {
+            font-size: 14px;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-weight: 500;
+        }
+        
+        .service-status.running {
+            background: rgba(16, 185, 129, 0.1);
+            color: #10b981;
+        }
+        
+        .service-status.stopped {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+        }
+        
+        .service-status.error {
+            background: rgba(245, 158, 11, 0.1);
+            color: #f59e0b;
+        }
+        
+        .ai-engine-list {
+            list-style: none;
+            margin-top: 16px;
+        }
+        
+        .ai-engine-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: rgba(249, 250, 251, 0.8);
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+        
+        .ai-engine-item.healthy {
+            border-left: 4px solid #10b981;
+        }
+        
+        .ai-engine-item.unhealthy {
+            border-left: 4px solid #ef4444;
+        }
+        
+        .ai-engine-name {
+            font-weight: 500;
+        }
+        
+        .ai-engine-status {
+            font-size: 14px;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-weight: 500;
+        }
+        
+        .ai-engine-status.healthy {
+            background: rgba(16, 185, 129, 0.1);
+            color: #10b981;
+        }
+        
+        .ai-engine-status.unhealthy {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+        }
+        
+        .refresh-btn {
+            background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 16px;
+        }
+        
+        .refresh-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+        
+        .refresh-btn:active {
+            transform: translateY(0);
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #3b82f6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .loading-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 16px;
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+            
+            .status-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-chart-line"></i> 系统监控面板</h1>
+            <p>实时监控系统资源使用情况、服务状态和AI引擎健康状态</p>
+            <button class="refresh-btn" onclick="refreshData()">
+                <i class="fas fa-sync-alt"></i> 刷新数据
+            </button>
+        </div>
+        
+        <div class="dashboard">
+            <!-- 系统资源监控 -->
+            <div class="card">
+                <h2><i class="fas fa-server"></i> 系统资源</h2>
+                <div class="status-grid">
+                    <div class="status-item">
+                        <span class="status-label">CPU使用率</span>
+                        <span class="status-value" id="cpu-usage">0%</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">内存使用率</span>
+                        <span class="status-value" id="memory-usage">0%</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">磁盘使用率</span>
+                        <span class="status-value" id="disk-usage">0%</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">网络流量</span>
+                        <span class="status-value" id="network-usage">0 MB</span>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="resource-chart"></canvas>
+                </div>
+            </div>
+            
+            <!-- 服务状态监控 -->
+            <div class="card">
+                <h2><i class="fas fa-cogs"></i> 服务状态</h2>
+                <ul class="service-list" id="service-list">
+                    <!-- 服务列表将通过JavaScript动态生成 -->
+                </ul>
+            </div>
+            
+            <!-- AI引擎状态监控 -->
+            <div class="card">
+                <h2><i class="fas fa-brain"></i> AI引擎状态</h2>
+                <ul class="ai-engine-list" id="ai-engine-list">
+                    <!-- AI引擎列表将通过JavaScript动态生成 -->
+                </ul>
+            </div>
+            
+            <!-- 系统组件状态 -->
+            <div class="card">
+                <h2><i class="fas fa-puzzle-piece"></i> 系统组件</h2>
+                <ul class="service-list" id="component-list">
+                    <!-- 组件列表将通过JavaScript动态生成 -->
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 全局变量
+        let resourceChart;
+        let resourceData = {
+            labels: [],
+            cpu: [],
+            memory: [],
+            disk: []
+        };
+        
+        // 初始化图表
+        function initChart() {
+            const ctx = document.getElementById('resource-chart').getContext('2d');
+            resourceChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: resourceData.labels,
+                    datasets: [
+                        {
+                            label: 'CPU使用率',
+                            data: resourceData.cpu,
+                            borderColor: '#3b82f6',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        },
+                        {
+                            label: '内存使用率',
+                            data: resourceData.memory,
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        },
+                        {
+                            label: '磁盘使用率',
+                            data: resourceData.disk,
+                            borderColor: '#f59e0b',
+                            backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            title: {
+                                display: true,
+                                text: '使用率 (%)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: '时间'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // 更新图表数据
+        function updateChart(data) {
+            const now = new Date().toLocaleTimeString();
+            
+            // 添加新数据点
+            resourceData.labels.push(now);
+            resourceData.cpu.push(data.cpu);
+            resourceData.memory.push(data.memory);
+            resourceData.disk.push(data.disk);
+            
+            // 保持数据点数量在合理范围内
+            if (resourceData.labels.length > 20) {
+                resourceData.labels.shift();
+                resourceData.cpu.shift();
+                resourceData.memory.shift();
+                resourceData.disk.shift();
+            }
+            
+            // 更新图表
+            resourceChart.data.labels = resourceData.labels;
+            resourceChart.data.datasets[0].data = resourceData.cpu;
+            resourceChart.data.datasets[1].data = resourceData.memory;
+            resourceChart.data.datasets[2].data = resourceData.disk;
+            resourceChart.update();
+        }
+        
+        // 更新系统资源状态
+        function updateResourceStatus(data) {
+            document.getElementById('cpu-usage').textContent = `${data.cpu}%`;
+            document.getElementById('memory-usage').textContent = `${data.memory}%`;
+            document.getElementById('disk-usage').textContent = `${data.disk}%`;
+            document.getElementById('network-usage').textContent = `${data.network.toFixed(2)} MB`;
+            
+            // 添加状态类
+            const cpuElement = document.getElementById('cpu-usage');
+            const memoryElement = document.getElementById('memory-usage');
+            const diskElement = document.getElementById('disk-usage');
+            
+            // 移除所有状态类
+            [cpuElement, memoryElement, diskElement].forEach(el => {
+                el.classList.remove('warning', 'error', 'success');
+            });
+            
+            // 添加状态类
+            if (data.cpu > 80) {
+                cpuElement.classList.add('error');
+            } else if (data.cpu > 60) {
+                cpuElement.classList.add('warning');
+            } else {
+                cpuElement.classList.add('success');
+            }
+            
+            if (data.memory > 80) {
+                memoryElement.classList.add('error');
+            } else if (data.memory > 60) {
+                memoryElement.classList.add('warning');
+            } else {
+                memoryElement.classList.add('success');
+            }
+            
+            if (data.disk > 80) {
+                diskElement.classList.add('error');
+            } else if (data.disk > 60) {
+                diskElement.classList.add('warning');
+            } else {
+                diskElement.classList.add('success');
+            }
+        }
+        
+        // 更新服务状态
+        function updateServiceStatus(services) {
+            const serviceList = document.getElementById('service-list');
+            serviceList.innerHTML = '';
+            
+            Object.entries(services).forEach(([serviceName, service]) => {
+                const li = document.createElement('li');
+                li.className = `service-item ${service.status}`;
+                li.innerHTML = `
+                    <div>
+                        <div class="service-name">${service.name}</div>
+                        <div class="status-label">PID: ${service.pid || 'N/A'}</div>
+                    </div>
+                    <div class="service-status ${service.status}">${service.status}</div>
+                `;
+                serviceList.appendChild(li);
+            });
+        }
+        
+        // 更新AI引擎状态
+        function updateAIEngineStatus(engines) {
+            const engineList = document.getElementById('ai-engine-list');
+            engineList.innerHTML = '';
+            
+            Object.entries(engines).forEach(([engineName, status]) => {
+                const li = document.createElement('li');
+                li.className = `ai-engine-item ${status.is_healthy ? 'healthy' : 'unhealthy'}`;
+                li.innerHTML = `
+                    <div>
+                        <div class="ai-engine-name">${engineName}</div>
+                        <div class="status-label">错误计数: ${status.error_count}</div>
+                    </div>
+                    <div class="ai-engine-status ${status.is_healthy ? 'healthy' : 'unhealthy'}">
+                        ${status.is_healthy ? '健康' : '不健康'}
+                    </div>
+                `;
+                engineList.appendChild(li);
+            });
+        }
+        
+        // 更新系统组件状态
+        function updateComponentStatus(components) {
+            const componentList = document.getElementById('component-list');
+            componentList.innerHTML = '';
+            
+            Object.entries(components).forEach(([componentName, status]) => {
+                const li = document.createElement('li');
+                li.className = `service-item ${status.status.includes('error') ? 'error' : status.status}`;
+                li.innerHTML = `
+                    <div>
+                        <div class="service-name">${componentName}</div>
+                        <div class="status-label">最后检查: ${new Date(status.last_check).toLocaleTimeString()}</div>
+                    </div>
+                    <div class="service-status ${status.status.includes('error') ? 'error' : status.status}">
+                        ${status.status}
+                    </div>
+                `;
+                componentList.appendChild(li);
+            });
+        }
+        
+        // 刷新数据
+        function refreshData() {
+            // 显示加载状态
+            const refreshBtn = document.querySelector('.refresh-btn');
+            const originalText = refreshBtn.innerHTML;
+            refreshBtn.innerHTML = '<div class="loading"></div> 刷新中...';
+            refreshBtn.disabled = true;
+            
+            // 模拟获取数据（实际项目中应该通过API获取）
+            setTimeout(() => {
+                // 模拟系统资源数据
+                const resourceData = {
+                    cpu: Math.random() * 100,
+                    memory: Math.random() * 100,
+                    disk: Math.random() * 100,
+                    network: Math.random() * 100
+                };
+                
+                // 模拟服务状态
+                const serviceData = {
+                    flask_app: {
+                        name: 'Flask应用服务',
+                        status: Math.random() > 0.1 ? 'running' : 'stopped',
+                        pid: Math.floor(Math.random() * 10000)
+                    },
+                    ai_engine: {
+                        name: 'AI引擎服务',
+                        status: Math.random() > 0.1 ? 'running' : 'stopped',
+                        pid: Math.floor(Math.random() * 10000)
+                    },
+                    thread_manager: {
+                        name: '线程管理服务',
+                        status: Math.random() > 0.1 ? 'running' : 'stopped',
+                        pid: Math.floor(Math.random() * 10000)
+                    }
+                };
+                
+                // 模拟AI引擎状态
+                const aiEngineData = {
+                    minimax: {
+                        is_healthy: Math.random() > 0.1,
+                        error_count: Math.floor(Math.random() * 5)
+                    },
+                    doubao: {
+                        is_healthy: Math.random() > 0.1,
+                        error_count: Math.floor(Math.random() * 5)
+                    },
+                    zhipu: {
+                        is_healthy: Math.random() > 0.1,
+                        error_count: Math.floor(Math.random() * 5)
+                    },
+                    openai: {
+                        is_healthy: Math.random() > 0.3,
+                        error_count: Math.floor(Math.random() * 5)
+                    }
+                };
+                
+                // 模拟系统组件状态
+                const componentData = {
+                    ai_route_optimizer: {
+                        status: Math.random() > 0.1 ? 'running' : 'error: 组件失败',
+                        last_check: new Date().toISOString()
+                    },
+                    ai_question_generator: {
+                        status: Math.random() > 0.1 ? 'running' : 'error: 组件失败',
+                        last_check: new Date().toISOString()
+                    },
+                    ai_self_learning_system: {
+                        status: Math.random() > 0.1 ? 'running' : 'error: 组件失败',
+                        last_check: new Date().toISOString()
+                    },
+                    ai_monitoring: {
+                        status: Math.random() > 0.1 ? 'running' : 'error: 组件失败',
+                        last_check: new Date().toISOString()
+                    }
+                };
+                
+                // 更新数据
+                updateResourceStatus(resourceData);
+                updateServiceStatus(serviceData);
+                updateAIEngineStatus(aiEngineData);
+                updateComponentStatus(componentData);
+                updateChart(resourceData);
+                
+                // 恢复按钮状态
+                refreshBtn.innerHTML = originalText;
+                refreshBtn.disabled = false;
+            }, 1000);
+        }
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initChart();
+            refreshData();
+            
+            // 每30秒自动刷新数据
+            setInterval(refreshData, 30000);
+        });
+    </script>
+    
+    <!-- Font Awesome -->
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+</body>
+</html>

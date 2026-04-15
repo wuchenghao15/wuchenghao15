@@ -1,0 +1,247 @@
+{% extends "base.html" %}
+
+{% block title %}教师面板 - 语言学习系统{% endblock %}
+
+{% block content %}
+<style>
+    /* 教师面板样式 */
+    .teacher-dashboard {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+    
+    .dashboard-header {
+        text-align: center;
+        margin-bottom: 40px;
+        padding: 30px;
+        background: linear-gradient(135deg, #ff6b6b 0%, #4ecdc4 100%);
+        border-radius: 20px;
+        color: white;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+    
+    .dashboard-title {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 15px;
+    }
+    
+    .dashboard-description {
+        font-size: 1.1rem;
+        opacity: 0.9;
+    }
+    
+    .dashboard-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin-bottom: 40px;
+    }
+    
+    .stat-card {
+        background: white;
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+        text-align: center;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+    }
+    
+    .stat-icon {
+        font-size: 3rem;
+        margin-bottom: 15px;
+        color: #ff6b6b;
+    }
+    
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 5px;
+        color: #333;
+    }
+    
+    .stat-label {
+        font-size: 1rem;
+        color: #666;
+    }
+    
+    .dashboard-sections {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+        gap: 30px;
+    }
+    
+    .section-card {
+        background: white;
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+    
+    .section-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-bottom: 20px;
+        color: #ff6b6b;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .section-content {
+        margin-bottom: 20px;
+    }
+    
+    .action-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 50px;
+        background: linear-gradient(135deg, #ff6b6b 0%, #4ecdc4 100%);
+        color: white;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+    }
+    
+    .action-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
+    
+    /* 响应式设计 */
+    @media (max-width: 768px) {
+        .teacher-dashboard {
+            padding: 0 20px;
+        }
+        
+        .dashboard-stats {
+            grid-template-columns: 1fr;
+        }
+        
+        .dashboard-sections {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<div class="teacher-dashboard">
+    <!-- 面板头部 -->
+    <div class="dashboard-header">
+        <h1 class="dashboard-title">
+            <i class="fas fa-chalkboard-teacher"></i>
+            教师面板
+        </h1>
+        <p class="dashboard-description">
+            欢迎回来，{{ user.username }}！这里是教师管理中心，您可以管理学生、布置作业、组织考试和查看成绩。
+        </p>
+    </div>
+    
+    <!-- 统计卡片 -->
+    <div class="dashboard-stats">
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-users"></i>
+            </div>
+            <div class="stat-value">5</div>
+            <div class="stat-label">学生数量</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-book"></i>
+            </div>
+            <div class="stat-value">10</div>
+            <div class="stat-label">未批改作业</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-clipboard-check"></i>
+            </div>
+            <div class="stat-value">5</div>
+            <div class="stat-label">待组织考试</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-award"></i>
+            </div>
+            <div class="stat-value">2</div>
+            <div class="stat-label">升级申请</div>
+        </div>
+    </div>
+    
+    <!-- 管理区域 -->
+    <div class="dashboard-sections">
+        <!-- 学生管理 -->
+        <div class="section-card">
+            <h2 class="section-title">
+                <i class="fas fa-user-graduate"></i>
+                学生管理
+            </h2>
+            <div class="section-content">
+                <p>管理学生信息，查看学生学习情况，提出升级审批，组织升级摸底测试。</p>
+            </div>
+            <a href="/teacher/students" class="action-btn">
+                <i class="fas fa-users-cog"></i>
+                管理学生
+            </a>
+        </div>
+        
+        <!-- 作业管理 -->
+        <div class="section-card">
+            <h2 class="section-title">
+                <i class="fas fa-book"></i>
+                作业管理
+            </h2>
+            <div class="section-content">
+                <p>布置作业，只能是学生目前等级以下的巩固和错题加强练习，批改作业和查看作业完成情况。</p>
+            </div>
+            <a href="/teacher/homework" class="action-btn">
+                <i class="fas fa-edit"></i>
+                管理作业
+            </a>
+        </div>
+        
+        <!-- 考试管理 -->
+        <div class="section-card">
+            <h2 class="section-title">
+                <i class="fas fa-clipboard-check"></i>
+                考试管理
+            </h2>
+            <div class="section-content">
+                <p>组织考试，管理考试进度，审批考试暂停申请，查看考试成绩和分析。</p>
+            </div>
+            <a href="/teacher/exams" class="action-btn">
+                <i class="fas fa-file-alt"></i>
+                管理考试
+            </a>
+        </div>
+        
+        <!-- 成绩管理 -->
+        <div class="section-card">
+            <h2 class="section-title">
+                <i class="fas fa-chart-line"></i>
+                成绩管理
+            </h2>
+            <div class="section-content">
+                <p>查看学生成绩，分析学生学习情况，针对学生讲解错题分析和解题思路。</p>
+            </div>
+            <a href="/teacher/grades" class="action-btn">
+                <i class="fas fa-list-alt"></i>
+                查看成绩
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>进行语言测试 - 语言测试系统</title>
+    <style>
+        /* 基础样式重置 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 800px;
+            overflow: hidden;
+        }
+        
+        /* 头部样式 */
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+        
+        /* 内容区域 */
+        .content {
+            padding: 40px;
+        }
+        
+        /* 测试进度 */
+        .test-progress {
+            margin-bottom: 30px;
+        }
+        
+        .progress-bar {
+            background: #e9ecef;
+            border-radius: 8px;
+            height: 8px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+        
+        .progress-fill {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100%;
+            border-radius: 8px;
+            transition: width 0.3s ease;
+        }
+        
+        .progress-text {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            color: #6c757d;
+        }
+        
+        /* 题目区域 */
+        .question-area {
+            margin-bottom: 30px;
+        }
+        
+        .question-number {
+            font-size: 16px;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+        
+        .question-content {
+            font-size: 18px;
+            line-height: 1.6;
+            color: #343a40;
+            margin-bottom: 25px;
+        }
+        
+        /* 选项区域 */
+        .options {
+            margin-bottom: 30px;
+        }
+        
+        .option {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .option:hover {
+            border-color: #667eea;
+            background: #f0f2ff;
+        }
+        
+        .option.selected {
+            border-color: #667eea;
+            background: #f0f2ff;
+        }
+        
+        .option input[type="radio"] {
+            margin-right: 10px;
+            transform: scale(1.2);
+        }
+        
+        .option-label {
+            font-weight: 600;
+            color: #667eea;
+            margin-right: 10px;
+        }
+        
+        .option-content {
+            color: #343a40;
+        }
+        
+        /* 导航按钮 */
+        .nav-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 40px;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-secondary {
+            background: #f8f9fa;
+            color: #343a40;
+            border: 2px solid #e9ecef;
+        }
+        
+        .btn-secondary:hover {
+            background: #e9ecef;
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        /* 侧边栏 */
+        .sidebar {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 30px;
+        }
+        
+        .sidebar h3 {
+            font-size: 16px;
+            color: #343a40;
+            margin-bottom: 15px;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+        }
+        
+        .sidebar li {
+            margin-bottom: 10px;
+        }
+        
+        .sidebar a {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+            transition: color 0.3s ease;
+        }
+        
+        .sidebar a:hover {
+            color: #764ba2;
+            text-decoration: underline;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .content {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 20px;
+            }
+            
+            .question-content {
+                font-size: 16px;
+            }
+            
+            .nav-buttons {
+                flex-direction: column;
+                gap: 15px;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <!-- 头部 -->
+        <div class="header">
+            <h1>📚 语言测试系统</h1>
+            <p>正在进行语言测试</p>
+        </div>
+        
+        <!-- 内容区域 -->
+        <div class="content">
+            <!-- 测试进度 -->
+            <div class="test-progress">
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: {{ (current_index / total_questions) * 100 }}%"></div>
+                </div>
+                <div class="progress-text">
+                    <span>题目 {{ current_index }} / {{ total_questions }}</span>
+                    <span>剩余时间: {{ test_duration }}分钟</span>
+                </div>
+            </div>
+            
+            <!-- 测试表单 -->
+            <form id="test-form" action="/language-test/submit-answer" method="POST">
+                <!-- 题目编号 -->
+                <div class="question-number">
+                    <i class="fas fa-question-circle"></i> 题目 {{ current_index }}
+                </div>
+                
+                <!-- 题目内容 -->
+                <div class="question-content">
+                    {{ question_content }}
+                </div>
+                
+                <!-- 选项 -->
+                <div class="options">
+                    {% for option in options %}
+                        <div class="option" onclick="selectOption(this)">
+                            <label>
+                                <input type="radio" name="answer" value="{{ option[0] }}" required>
+                                <span class="option-label">{{ option[0] }}</span>
+                                <span class="option-content">{{ option[1] }}</span>
+                            </label>
+                        </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- 导航按钮 -->
+                <div class="nav-buttons">
+                    <a href="{{ url_for('language_test') }}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> 退出测试
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        {% if current_index == total_questions %}
+                            <i class="fas fa-check"></i> 提交测试
+                        {% else %}
+                            <i class="fas fa-arrow-right"></i> 下一题
+                        {% endif %}
+                    </button>
+                </div>
+            </form>
+            
+            <!-- 侧边栏导航 -->
+            <div class="sidebar">
+                <h3><i class="fas fa-compass"></i> 测试导航</h3>
+                <ul>
+                    <li><a href="{{ url_for('language_test') }}"><i class="fas fa-home"></i> 返回测试首页</a></li>
+                    <li>
+                        <form action="/auth/logout" method="POST" style="margin: 0; display: inline;">
+                            <button type="submit" style="background: none; border: none; color: #667eea; cursor: pointer; font-size: 14px; padding: 0;">
+                                <i class="fas fa-sign-out-alt"></i> 退出登录
+                            </button>
+                        </form>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 选项选择功能
+        function selectOption(optionElement) {
+            // 移除所有选项的选中状态
+            document.querySelectorAll('.option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            
+            // 添加当前选项的选中状态
+            optionElement.classList.add('selected');
+            
+            // 选中对应的单选按钮
+            const radio = optionElement.querySelector('input[type="radio"]');
+            radio.checked = true;
+        }
+        
+        // 自动提交表单
+        document.getElementById('test-form').addEventListener('submit', function(e) {
+            // 检查是否有选中的选项
+            const selectedOption = document.querySelector('input[name="answer"]:checked');
+            if (!selectedOption) {
+                e.preventDefault();
+                alert('请选择一个答案');
+            }
+        });
+    </script>
+</body>
+</html>
