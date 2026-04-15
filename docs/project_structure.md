@@ -1,0 +1,37 @@
+# MTSCOS_AI_Project 项目结构说明
+生成时间: 2025-11-09 20:48:07
+\n## 项目目录结构:
+\n### .alpackages
+文件数量:        0
+\n### .snapshots
+文件数量:        0
+\n### .vscode
+文件数量:        1
+\n### Backups
+文件数量:    50636
+\n### CSS
+文件数量:       31
+\n### Documentation
+文件数量:       17
+\n### Encrypted_JS
+文件数量:       12
+\n### HTML
+文件数量:       78
+\n### JavaScript
+文件数量:       60
+\n### Logs
+文件数量:       56
+\n### PHP
+文件数量:        3
+\n### Reports
+文件数量:        0
+\n### Scripts
+文件数量:       62
+\n### ViKey
+文件数量:        7
+\n### config
+文件数量:        1
+\n### encrypted
+文件数量:        0
+\n### 整理后的备份文件
+文件数量:        2

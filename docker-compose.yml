@@ -1,0 +1,120 @@
+version: '3.8'
+
+services:
+  # 主数据库服务
+  db-primary:
+    image: postgres:14-alpine
+    container_name: mtscos-db-primary
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - db-primary-data:/var/lib/postgresql/data
+      - ./db_backups:/backups
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - mtscos-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+
+  # 备份数据库服务（热备）
+  db-secondary:
+    image: postgres:14-alpine
+    container_name: mtscos-db-secondary
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - db-secondary-data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    networks:
+      - mtscos-network
+    restart: unless-stopped
+    depends_on:
+      - db-primary
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # 应用服务
+  app:
+    build: .
+    container_name: mtscos-app
+    environment:
+      FLASK_APP: flask-app/app.py
+      FLASK_ENV: production
+      DB_HOST: db-primary
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      SECRET_KEY: ${SECRET_KEY}
+    volumes:
+      - ./flask-app:/app/flask-app
+      - ./logs:/app/logs
+    ports:
+      - "8888:8888"
+    networks:
+      - mtscos-network
+    restart: unless-stopped
+    depends_on:
+      - db-primary
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8888/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # 备份服务
+  backup-service:
+    image: postgres:14-alpine
+    container_name: mtscos-backup-service
+    environment:
+      DB_HOST: db-primary
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - ./db_backups:/backups
+      - ./backup-script.sh:/backup-script.sh
+    networks:
+      - mtscos-network
+    restart: unless-stopped
+    depends_on:
+      - db-primary
+    command: ["/bin/sh", "-c", "while true; do /backup-script.sh; sleep 86400; done"]
+
+volumes:
+  db-primary-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./db-primary-data
+  db-secondary-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./db-secondary-data
+
+networks:
+  mtscos-network:
+    driver: bridge
