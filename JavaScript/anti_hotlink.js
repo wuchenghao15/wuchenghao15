@@ -1,4 +1,3 @@
-// VERSION: 20251106.cccfadfcf3db8e91653
 
 // MTSCOS 防盗链与资源保护脚本
 // 版本: 2.251031.113000
@@ -99,7 +98,7 @@ function checkReferer(log) {
  */
 function protectRightClick(log) {
     document.addEventListener('contextmenu', (e) => {
-        e.preventDefault().catch(error => console.error(`[anti_hotlink.js] e.preventDefault failed:`, error));
+        e.preventDefault();
         log('Right Click Blocked', e.target.tagName);
         
         // 可选：显示自定义右键菜单或提示
@@ -112,7 +111,7 @@ function protectRightClick(log) {
  */
 function disableTextSelection(log) {
     document.addEventListener('selectstart', (e) => {
-        e.preventDefault().catch(error => console.error(`[anti_hotlink.js] e.preventDefault failed:`, error));
+        e.preventDefault();
         log('Text Selection Blocked', e.target.tagName);
     });
     
@@ -141,21 +140,21 @@ function disableTextSelection(log) {
 function disableCopyPaste(log) {
     // 禁用复制
     document.addEventListener('copy', (e) => {
-        e.preventDefault().catch(error => console.error(`[anti_hotlink.js] e.preventDefault failed:`, error));
+        e.preventDefault();
         log('Copy Blocked', e.target.tagName);
         showNotification('复制功能已被限制。');
     });
     
     // 禁用剪切
     document.addEventListener('cut', (e) => {
-        e.preventDefault().catch(error => console.error(`[anti_hotlink.js] e.preventDefault failed:`, error));
+        e.preventDefault();
         log('Cut Blocked', e.target.tagName);
     });
     
     // 允许粘贴到输入框，但监控其他区域的粘贴
     document.addEventListener('paste', (e) => {
         if (!['INPUT', 'TEXTAREA'].includes(e.target.tagName)) {
-            e.preventDefault().catch(error => console.error(`[anti_hotlink.js] e.preventDefault failed:`, error));
+            e.preventDefault();
             log('Paste Blocked', e.target.tagName);
         }
     });
@@ -164,24 +163,24 @@ function disableCopyPaste(log) {
     document.addEventListener('keydown', (e) => {
         // Ctrl+A, Ctrl+C, Ctrl+X, Ctrl+V
         if (e.ctrlKey || e.metaKey) {
-            switch (e.key.toLowerCase().catch(error => console.error(`[anti_hotlink.js] key.toLowerCase failed:`, error))) {
+            switch (e.key.toLowerCase()) {
                 case 'a':
                     if (!['INPUT', 'TEXTAREA'].includes(e.target.tagName)) {
-                        e.preventDefault().catch(error => console.error(`[anti_hotlink.js] e.preventDefault failed:`, error));
+                        e.preventDefault();
                         log('Select All Blocked', e.target.tagName);
                     }
                     break;
                 case 'c':
-                    e.preventDefault().catch(error => console.error(`[anti_hotlink.js] e.preventDefault failed:`, error));
+                    e.preventDefault();
                     log('Ctrl+C Blocked', e.target.tagName);
                     break;
                 case 'x':
-                    e.preventDefault().catch(error => console.error(`[anti_hotlink.js] e.preventDefault failed:`, error));
+                    e.preventDefault();
                     log('Ctrl+X Blocked', e.target.tagName);
                     break;
                 case 'v':
                     if (!['INPUT', 'TEXTAREA'].includes(e.target.tagName)) {
-                        e.preventDefault().catch(error => console.error(`[anti_hotlink.js] e.preventDefault failed:`, error));
+                        e.preventDefault();
                         log('Ctrl+V Blocked', e.target.tagName);
                     }
                     break;
@@ -189,10 +188,6 @@ function disableCopyPaste(log) {
         }
     });
 }
-
-// 全局定时器变量
-let performanceMonitorInterval = null;
-let sessionTrackingInterval = null;
 
 /**
  * 检测浏览器开发者工具
@@ -220,12 +215,12 @@ function detectBrowserConsole(log) {
     window.addEventListener('resize', checkDevTools);
     
     // 性能监控检测
-    performanceMonitorInterval = setInterval(() => {
-        const startTime = performance.now().catch(error => console.error(`[anti_hotlink.js] performance.now failed:`, error));
+    const performanceMonitor = setInterval(() => {
+        const startTime = performance.now();
         // 尝试触发控制台记录
         console.log('Security check');
         console.clear();
-        const endTime = performance.now().catch(error => console.error(`[anti_hotlink.js] performance.now failed:`, error));
+        const endTime = performance.now();
         
         // 如果执行时间过长，可能控制台已打开
         if (endTime - startTime > 100) {
@@ -235,14 +230,7 @@ function detectBrowserConsole(log) {
     
     // 清理函数
     window.addEventListener('beforeunload', () => {
-        if (performanceMonitorInterval) {
-            clearInterval(performanceMonitorInterval);
-            performanceMonitorInterval = null;
-        }
-        if (sessionTrackingInterval) {
-            clearInterval(sessionTrackingInterval);
-            sessionTrackingInterval = null;
-        }
+        clearInterval(performanceMonitor);
     });
 }
 
@@ -324,10 +312,10 @@ function addSessionTracking() {
     localStorage.setItem('mtscos_session', sessionId);
     
     // 记录页面停留时间
-    let startTime = Date.now().catch(error => console.error(`[anti_hotlink.js] Date.now failed:`, error));
+    let startTime = Date.now();
     
     const updateSessionTime = () => {
-        const currentTime = Date.now().catch(error => console.error(`[anti_hotlink.js] Date.now failed:`, error));
+        const currentTime = Date.now();
         const elapsed = Math.floor((currentTime - startTime) / 1000);
         // 可以将此信息发送到服务器
         if (elapsed > 3600) { // 每小时重置
@@ -337,7 +325,7 @@ function addSessionTracking() {
         }
     };
     
-    sessionTrackingInterval = setInterval(updateSessionTime, 60000); // 每分钟更新
+    setInterval(updateSessionTime, 60000); // 每分钟更新
 }
 
 /**
@@ -390,7 +378,7 @@ function showWarning(message) {
     document.body.appendChild(warningDiv);
     
     setTimeout(() => {
-        warningDiv.remove().catch(error => console.error(`[anti_hotlink.js] warningDiv.remove failed:`, error));
+        warningDiv.remove();
     }, 5000);
 }
 
@@ -418,7 +406,7 @@ function showNotification(message) {
     document.body.appendChild(notificationDiv);
     
     setTimeout(() => {
-        notificationDiv.remove().catch(error => console.error(`[anti_hotlink.js] notificationDiv.remove failed:`, error));
+        notificationDiv.remove();
     }, 2000);
 }
 

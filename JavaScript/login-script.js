@@ -1,10 +1,9 @@
-// VERSION: 20251106.b6d43497aebeecf8c
 // MTSCOS 登录系统核心脚本 - v2.251031.113000
 // 增强版登录功能实现，包含高级安全特性和用户体验优化
 
 // 全局变量
-const LOG_DIR = '../Logs/Login';
-// sessionTimeout 变量已移至 window.sessionTimeout 避免全局冲突
+const LOG_DIR = 'Logs/Login';
+let sessionTimeout;
 let loginAttempts = 0; // 记录登录尝试次数
 const MAX_ATTEMPTS = 5; // 最大尝试次数限制
 const LOCK_DURATION = 300000; // 锁定时间(毫秒) - 5分钟
@@ -17,13 +16,13 @@ function safeExecute(funcName, defaultReturn, callback) {
             try {
                 return callback();
             } catch (innerError) {
-                console.error(`[login-script.js] 执行回调函数 ${funcName} 失败:`, innerError);
+                console.error(`执行回调函数 ${funcName} 失败:`, innerError);
                 return defaultReturn;
             }
         }
         return defaultReturn;
     } catch (error) {
-        console.error(`[login-script.js] 安全执行函数 ${funcName} 失败:`, error);
+        console.error(`安全执行函数 ${funcName} 失败:`, error);
         return defaultReturn;
     }
 }
@@ -56,14 +55,14 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined' && document
             initFunctions.forEach(item => {
                 if (item.func) {
                     try {
-                        item.func().catch(error => console.error(`[login-script.js] item.func failed:`, error));
+                        item.func();
                     } catch (error) {
-                        console.error(`[login-script.js] 初始化 ${item.name} 失败:`, error);
+                        console.error(`初始化 ${item.name} 失败:`, error);
                     }
                 }
             });
         } catch (globalError) {
-            console.error(`[login-script.js] DOM加载完成初始化过程中发生全局错误:, globalError`);
+            console.error('DOM加载完成初始化过程中发生全局错误:', globalError);
             // 即使发生错误也尝试显示基本的错误提示
             try {
                 const errorElement = document.getElementById ? document.getElementById('loginError') : null;
@@ -106,7 +105,7 @@ function initTheme() {
         }
         
         const now = new Date();
-        const hour = now.getHours().catch(error => console.error(`[login-script.js] now.getHours failed:`, error));
+        const hour = now.getHours();
         const isEvening = hour >= 18 || hour < 6;
         
         if (savedTheme === 'dark') {
@@ -126,16 +125,16 @@ function initTheme() {
             if (themeBtn && typeof themeBtn.addEventListener === 'function' && typeof toggleTheme === 'function') {
                 themeBtn.addEventListener('click', function(event) {
                     if (event && typeof event.preventDefault === 'function') {
-                        event.preventDefault().catch(error => console.error(`[login-script.js] event.preventDefault failed:`, error));
+                        event.preventDefault();
                     }
                     toggleTheme();
                 });
             }
         } catch (listenerError) {
-            console.error(`[login-script.js] 添加主题切换事件监听器失败:, listenerError`);
+            console.error('添加主题切换事件监听器失败:', listenerError);
         }
     } catch (error) {
-        console.error(`[login-script.js] 初始化主题失败:, error`);
+        console.error('初始化主题失败:', error);
         // 应用默认浅色主题作为后备
         try {
             if (document && document.body && document.body.classList) {
@@ -191,7 +190,7 @@ function toggleTheme() {
             }
         });
     } catch (error) {
-        console.error(`[login-script.js] 切换主题失败:, error`);
+        console.error('切换主题失败:', error);
     }
 }
 
@@ -229,7 +228,7 @@ function applyLightTheme() {
             }
         }
     } catch (error) {
-        console.error(`[login-script.js] 应用浅色主题失败:, error`);
+        console.error('应用浅色主题失败:', error);
     }
 }
 
@@ -268,7 +267,7 @@ function applyDarkTheme() {
             }
         }
     } catch (error) {
-        console.error(`[login-script.js] 应用深色主题失败:, error`);
+        console.error('应用深色主题失败:', error);
     }
 }
 
@@ -307,7 +306,7 @@ function applyBrownTheme() {
             }
         }
     } catch (error) {
-        console.error(`[login-script.js] 应用褐色主题失败:, error`);
+        console.error('应用褐色主题失败:', error);
     }
 }
 
@@ -315,7 +314,7 @@ function applyBrownTheme() {
 function isMourningDay() {
     try {
         const today = new Date();
-        const month = today.getMonth().catch(error => console.error(`[login-script.js] today.getMonth failed:`, error)) + 1;
+        const month = today.getMonth() + 1;
         const day = today.getDate();
         
         // 国家公祭日列表
@@ -327,7 +326,7 @@ function isMourningDay() {
         
         return mourningDays.some(date => date.month === month && date.day === day);
     } catch (error) {
-        console.error(`[login-script.js] 检查公祭日失败:, error`);
+        console.error('检查公祭日失败:', error);
         return false;
     }
 }
@@ -351,20 +350,20 @@ function updateDateTime() {
             day: '2-digit',
             weekday: 'long'
         });
-        const hours = now.getHours().catch(error => console.error(`[login-script.js] now.getHours failed:`, error)).toString().padStart(2, '0');
+        const hours = now.getHours().toString().padStart(2, '0');
         const minutes = now.getMinutes().toString().padStart(2, '0');
-        const seconds = now.getSeconds().catch(error => console.error(`[login-script.js] now.getSeconds failed:`, error)).toString().padStart(2, '0');
+        const seconds = now.getSeconds().toString().padStart(2, '0');
         currentTimeElement.textContent = `${dateStr} ${hours}:${minutes}:${seconds}`;
     }
     
     if (timezoneInfoElement) {
         try {
-            const userTimezone = Intl.DateTimeFormat().catch(error => console.error(`[login-script.js] Intl.DateTimeFormat failed:`, error)).resolvedOptions().timeZone;
+            const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
             const offset = now.getTimezoneOffset();
             const hours = Math.abs(offset / 60);
             const minutes = Math.abs(offset % 60);
             const sign = offset > 0 ? '-' : '+';
-            const formattedOffset = `${sign}${hours.toString().catch(error => console.error(`[login-script.js] hours.toString failed:`, error)).padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+            const formattedOffset = `${sign}${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
             timezoneInfoElement.textContent = `时区: ${userTimezone} (GMT${formattedOffset})`;
         } catch (error) {
             timezoneInfoElement.textContent = '时区: 获取失败';
@@ -406,41 +405,41 @@ function generateCaptcha() {
     
     // 添加验证码文本
     for (let i = 0; i < 5; i++) { // 增加到5位验证码
-        const char = chars.charAt(Math.floor(Math.random().catch(error => console.error(`[login-script.js] Math.random failed:`, error)) * chars.length));
+        const char = chars.charAt(Math.floor(Math.random() * chars.length));
         captcha += char;
         
         // 随机颜色
         ctx.fillStyle = getRandomColor(50, 150);
         
         // 随机旋转角度
-        const angle = Math.random().catch(error => console.error(`[login-script.js] Math.random failed:`, error)) * 0.4 - 0.2;
+        const angle = Math.random() * 0.4 - 0.2;
         
         // 绘制文本
-        ctx.save().catch(error => console.error(`[login-script.js] ctx.save failed:`, error));
+        ctx.save();
         ctx.translate(20 + i * 18, 25);
         ctx.rotate(angle);
         ctx.font = `${fontSize}px Arial`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(char, 0, 0);
-        ctx.restore().catch(error => console.error(`[login-script.js] ctx.restore failed:`, error));
+        ctx.restore();
     }
     
     // 添加干扰线
     for (let i = 0; i < 6; i++) {
         ctx.strokeStyle = getRandomColor(100, 200);
-        ctx.lineWidth = Math.random().catch(error => console.error(`[login-script.js] Math.random failed:`, error)) * 2 + 1;
+        ctx.lineWidth = Math.random() * 2 + 1;
         ctx.beginPath();
-        ctx.moveTo(Math.random().catch(error => console.error(`[login-script.js] Math.random failed:`, error)) * canvas.width, Math.random() * canvas.height);
-        ctx.lineTo(Math.random().catch(error => console.error(`[login-script.js] Math.random failed:`, error)) * canvas.width, Math.random() * canvas.height);
+        ctx.moveTo(Math.random() * canvas.width, Math.random() * canvas.height);
+        ctx.lineTo(Math.random() * canvas.width, Math.random() * canvas.height);
         ctx.stroke();
     }
     
     // 添加干扰点
     for (let i = 0; i < 100; i++) {
         ctx.fillStyle = getRandomColor(100, 200);
-        ctx.beginPath().catch(error => console.error(`[login-script.js] ctx.beginPath failed:`, error));
-        ctx.arc(Math.random().catch(error => console.error(`[login-script.js] Math.random failed:`, error)) * canvas.width, Math.random() * canvas.height, 1, 0, 2 * Math.PI);
+        ctx.beginPath();
+        ctx.arc(Math.random() * canvas.width, Math.random() * canvas.height, 1, 0, 2 * Math.PI);
         ctx.fill();
     }
     
@@ -450,9 +449,9 @@ function generateCaptcha() {
 
 // 获取随机颜色
 function getRandomColor(min, max) {
-    const r = Math.floor(Math.random().catch(error => console.error(`[login-script.js] Math.random failed:`, error)) * (max - min + 1)) + min;
+    const r = Math.floor(Math.random() * (max - min + 1)) + min;
     const g = Math.floor(Math.random() * (max - min + 1)) + min;
-    const b = Math.floor(Math.random().catch(error => console.error(`[login-script.js] Math.random failed:`, error)) * (max - min + 1)) + min;
+    const b = Math.floor(Math.random() * (max - min + 1)) + min;
     return `rgb(${r}, ${g}, ${b})`;
 }
 
@@ -464,17 +463,17 @@ function initLoginForm() {
     // 移除HTML中的onsubmit属性，使用JS事件监听
     loginForm.removeAttribute('onsubmit');
     loginForm.addEventListener('submit', function(e) {
-        e.preventDefault().catch(error => console.error(`[login-script.js] e.preventDefault failed:`, error));
+        e.preventDefault();
         handleLogin();
     });
     
-    // 获取HardwareKey按钮
-    const getVKeyBtn = document.getElementById('requestHardwareKey');
+    // 获取vKey按钮
+    const getVKeyBtn = document.getElementById('requestVkey');
     if (getVKeyBtn) {
         // 移除HTML中的onclick属性
         getVKeyBtn.removeAttribute('onclick');
         getVKeyBtn.addEventListener('click', function() {
-            requestHardwareKey();
+            requestVKey();
         });
     }
     
@@ -511,50 +510,6 @@ function handleLoginFailure(response, username) {
         response = response || {};
         username = String(username || 'unknown_user');
         
-        // 使用统一认证管理器处理登录失败（如果可用）
-        if (window.authManager && typeof window.authManager.handleLoginFailure === 'function') {
-            try {
-                window.authManager.handleLoginFailure(response, username);
-                
-                // 显示错误信息
-                const errorMessage = response.message || `登录失败，您还有 ${window.authManager.getRemainingAttempts().catch(error => console.error(`[login-script.js] authManager.getRemainingAttempts failed:`, error))} 次尝试机会`;
-                showError(errorMessage);
-                
-                // 生成新的验证码
-                try {
-                    if (typeof generateCaptcha === 'function') {
-                        generateCaptcha();
-                    } else {
-                        // 尝试直接刷新验证码图片（如果存在）
-                        try {
-                            const captchaImage = document.getElementById ? document.getElementById('captchaImage') : null;
-                            if (captchaImage && captchaImage.src !== undefined) {
-                                captchaImage.src = captchaImage.src.split('?')[0] + '?t=' + Date.now().catch(error => console.error(`[login-script.js] Date.now failed:`, error));
-                            }
-                        } catch (imageError) {
-                            console.warn('刷新验证码图片失败:', imageError);
-                        }
-                    }
-                } catch (captchaError) {
-                    console.warn('刷新验证码失败:', captchaError);
-                }
-                
-                // 重置加载状态
-                try {
-                    if (typeof showLoading === 'function') {
-                        showLoading(false);
-                    }
-                } catch (loadingError) {
-                    console.warn('重置加载状态失败:', loadingError);
-                }
-                
-                return;
-            } catch (authManagerError) {
-                console.warn('统一认证管理器处理登录失败失败，使用原有逻辑:', authManagerError);
-                // 继续执行原有的处理逻辑
-            }
-        }
-        
         // 增加登录失败计数 - 添加完整错误处理
         try {
             // 安全获取当前尝试次数
@@ -576,7 +531,7 @@ function handleLoginFailure(response, username) {
             // 安全更新登录尝试次数
             try {
                 if (typeof localStorage !== 'undefined' && localStorage !== null && typeof localStorage.setItem === 'function') {
-                    localStorage.setItem('login_attempts', currentAttempts.toString().catch(error => console.error(`[login-script.js] currentAttempts.toString failed:`, error)));
+                    localStorage.setItem('login_attempts', currentAttempts.toString());
                 }
             } catch (storageWriteError) {
                 console.warn('写入登录尝试次数失败，仅更新内存值:', storageWriteError);
@@ -591,12 +546,6 @@ function handleLoginFailure(response, username) {
                 if (attemptCountElement && attemptCountElement.textContent !== undefined) {
                     const attemptsLeft = Math.max(0, MAX_ATTEMPTS - currentAttempts);
                     attemptCountElement.textContent = `剩余登录次数: ${attemptsLeft}`;
-                    // 添加颜色提示
-                    if (attemptsLeft <= 1) {
-                        attemptCountElement.style.color = '#dc3545'; // 红色警告
-                    } else if (attemptsLeft <= 2) {
-                        attemptCountElement.style.color = '#ffc107'; // 黄色警告
-                    }
                 }
             } catch (domError) {
                 console.warn('更新尝试次数显示失败:', domError);
@@ -604,12 +553,12 @@ function handleLoginFailure(response, username) {
             
             // 检查是否需要锁定账户
             if (currentAttempts >= MAX_ATTEMPTS) {
-                const lockUntil = Date.now().catch(error => console.error(`[login-script.js] Date.now failed:`, error)) + (LOCK_DURATION * 1000);
+                const lockUntil = Date.now() + (LOCK_DURATION * 1000);
                 
                 // 安全存储锁定时间
                 try {
                     if (typeof localStorage !== 'undefined' && localStorage !== null && typeof localStorage.setItem === 'function') {
-                        localStorage.setItem('account_locked_until', lockUntil.toString().catch(error => console.error(`[login-script.js] lockUntil.toString failed:`, error)));
+                        localStorage.setItem('account_locked_until', lockUntil.toString());
                     }
                 } catch (lockStorageError) {
                     console.warn('存储账户锁定信息失败，仅更新内存值:', lockStorageError);
@@ -620,14 +569,7 @@ function handleLoginFailure(response, username) {
                 
                 // 记录账户锁定
                 try {
-                    if (window.authManager && typeof window.authManager.logActivity === 'function') {
-                        window.authManager.logActivity('account_locked', {
-                            username: username,
-                            timestamp: new Date().toISOString(),
-                            reason: '多次登录失败',
-                            lockDuration: LOCK_DURATION
-                        });
-                    } else if (typeof logAction === 'function') {
+                    if (typeof logAction === 'function') {
                         logAction('account_locked', `账户 ${username} 因多次登录失败被锁定`);
                     }
                 } catch (logError) {
@@ -639,7 +581,7 @@ function handleLoginFailure(response, username) {
                 // 自动解锁倒计时
                 if (typeof setInterval === 'function' && typeof clearInterval === 'function') {
                     const unlockInterval = setInterval(() => {
-                        const remainingSeconds = Math.ceil((accountLockedUntil - Date.now().catch(error => console.error(`[login-script.js] Date.now failed:`, error))) / 1000);
+                        const remainingSeconds = Math.ceil((accountLockedUntil - Date.now()) / 1000);
                         if (remainingSeconds <= 0) {
                             clearInterval(unlockInterval);
                             // 解锁账户
@@ -658,13 +600,13 @@ function handleLoginFailure(response, username) {
                                 const attemptCountElement = document.getElementById ? document.getElementById('attemptCount') : null;
                                 if (attemptCountElement) {
                                     attemptCountElement.textContent = `剩余登录次数: ${MAX_ATTEMPTS}`;
-                                    attemptCountElement.style.color = ''; // 重置颜色
                                 }
                             } catch (e) {
                                 console.warn('更新解锁后的尝试次数显示失败:', e);
                             }
                         }
                     }, 1000);
+            // 修复语法错误 - 添加分号
                 }
             } else {
                 // 显示错误信息
@@ -672,7 +614,7 @@ function handleLoginFailure(response, username) {
                 showError(errorMessage);
             }
         } catch (countingError) {
-            console.error(`[login-script.js] 处理登录失败计数时发生错误:, countingError`);
+            console.error('处理登录失败计数时发生错误:', countingError);
             // 回退方案：简单显示错误
             showError(response.message || '登录失败，请重试');
         }
@@ -686,7 +628,7 @@ function handleLoginFailure(response, username) {
                 try {
                     const captchaImage = document.getElementById ? document.getElementById('captchaImage') : null;
                     if (captchaImage && captchaImage.src !== undefined) {
-                        captchaImage.src = captchaImage.src.split('?')[0] + '?t=' + Date.now().catch(error => console.error(`[login-script.js] Date.now failed:`, error));
+                        captchaImage.src = captchaImage.src.split('?')[0] + '?t=' + Date.now();
                     }
                 } catch (imageError) {
                     console.warn('刷新验证码图片失败:', imageError);
@@ -707,22 +649,14 @@ function handleLoginFailure(response, username) {
         
         // 记录登录失败
         try {
-            if (window.authManager && typeof window.authManager.logActivity === 'function') {
-                window.authManager.logActivity('login_failure', {
-                    username: username,
-                    timestamp: new Date().toISOString(),
-                    reason: response.message || '未知错误',
-                    ip: 'local',
-                    userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown'
-                });
-            } else if (typeof logAction === 'function') {
+            if (typeof logAction === 'function') {
                 logAction('login_failure', `用户 ${username} 登录失败: ${response.message || '未知错误'}`);
             }
         } catch (logError) {
             console.warn('记录登录失败日志失败:', logError);
         }
     } catch (error) {
-        console.error(`[login-script.js] 处理登录失败时发生错误:, error`);
+        console.error('处理登录失败时发生错误:', error);
         try {
             if (typeof showLoading === 'function') {
                 showLoading(false);
@@ -759,7 +693,7 @@ function checkAccountLockStatus() {
                 }
             }
         } catch (storageError) {
-            console.error(`[login-script.js] 获取锁定时间失败:, storageError`);
+            console.error('获取锁定时间失败:', storageError);
             accountLockedUntil = 0;
         }
         
@@ -782,12 +716,12 @@ function checkAccountLockStatus() {
                 }
             }
         } catch (storageError) {
-            console.error(`[login-script.js] 获取尝试次数失败:, storageError`);
+            console.error('获取尝试次数失败:', storageError);
             loginAttempts = 0;
         }
         
         // 如果锁定已过期，重置状态
-        if (Date.now().catch(error => console.error(`[login-script.js] Date.now failed:`, error)) > accountLockedUntil) {
+        if (Date.now() > accountLockedUntil) {
             accountLockedUntil = 0;
             loginAttempts = 0;
             try {
@@ -804,8 +738,8 @@ function checkAccountLockStatus() {
         try {
             const attemptCountElement = document.getElementById ? document.getElementById('attemptCount') : null;
             if (attemptCountElement) {
-                if (accountLockedUntil > Date.now().catch(error => console.error(`[login-script.js] Date.now failed:`, error))) {
-                    const remainingSeconds = Math.ceil((accountLockedUntil - Date.now().catch(error => console.error(`[login-script.js] Date.now failed:`, error))) / 1000);
+                if (accountLockedUntil > Date.now()) {
+                    const remainingSeconds = Math.ceil((accountLockedUntil - Date.now()) / 1000);
                     const minutes = Math.floor(remainingSeconds / 60);
                     const seconds = remainingSeconds % 60;
                     attemptCountElement.textContent = `账户已锁定 ${minutes}分${seconds}秒`;
@@ -824,7 +758,7 @@ function checkAccountLockStatus() {
             console.warn('更新锁定状态UI失败:', uiError);
         }
     } catch (error) {
-        console.error(`[login-script.js] 检查账户锁定状态过程中发生错误:, error`);
+        console.error('检查账户锁定状态过程中发生错误:', error);
         // 出错时重置为安全状态
         accountLockedUntil = 0;
         loginAttempts = 0;
@@ -846,7 +780,7 @@ function validateForm(username, password, captcha) {
             try {
                 const usernameInput = document.getElementById ? document.getElementById('username') : null;
                 if (usernameInput && usernameInput.focus && typeof usernameInput.focus === 'function') {
-                    usernameInput.focus().catch(error => console.error(`[login-script.js] usernameInput.focus failed:`, error));
+                    usernameInput.focus();
                 }
             } catch (focusError) {
                 console.warn('聚焦到用户名输入框失败:', focusError);
@@ -860,7 +794,7 @@ function validateForm(username, password, captcha) {
             try {
                 const usernameInput = document.getElementById ? document.getElementById('username') : null;
                 if (usernameInput && usernameInput.focus && typeof usernameInput.focus === 'function') {
-                    usernameInput.focus().catch(error => console.error(`[login-script.js] usernameInput.focus failed:`, error));
+                    usernameInput.focus();
                 }
             } catch (focusError) {
                 console.warn('聚焦到用户名输入框失败:', focusError);
@@ -874,7 +808,7 @@ function validateForm(username, password, captcha) {
             try {
                 const passwordInput = document.getElementById ? document.getElementById('password') : null;
                 if (passwordInput && passwordInput.focus && typeof passwordInput.focus === 'function') {
-                    passwordInput.focus().catch(error => console.error(`[login-script.js] passwordInput.focus failed:`, error));
+                    passwordInput.focus();
                 }
             } catch (focusError) {
                 console.warn('聚焦到密码输入框失败:', focusError);
@@ -887,7 +821,7 @@ function validateForm(username, password, captcha) {
             try {
                 const passwordInput = document.getElementById ? document.getElementById('password') : null;
                 if (passwordInput && passwordInput.focus && typeof passwordInput.focus === 'function') {
-                    passwordInput.focus().catch(error => console.error(`[login-script.js] passwordInput.focus failed:`, error));
+                    passwordInput.focus();
                 }
             } catch (focusError) {
                 console.warn('聚焦到密码输入框失败:', focusError);
@@ -901,7 +835,7 @@ function validateForm(username, password, captcha) {
             try {
                 const captchaInput = document.getElementById ? document.getElementById('captcha') : null;
                 if (captchaInput && captchaInput.focus && typeof captchaInput.focus === 'function') {
-                    captchaInput.focus().catch(error => console.error(`[login-script.js] captchaInput.focus failed:`, error));
+                    captchaInput.focus();
                 }
             } catch (focusError) {
                 console.warn('聚焦到验证码输入框失败:', focusError);
@@ -916,7 +850,7 @@ function validateForm(username, password, captcha) {
                 storedCaptcha = sessionStorage.getItem('captcha') || '';
             }
         } catch (storageError) {
-            console.error(`[login-script.js] 获取验证码存储失败:, storageError`);
+            console.error('获取验证码存储失败:', storageError);
             showError('验证码验证失败，请刷新页面重试');
             try {
                 if (typeof generateCaptcha === 'function') {
@@ -928,7 +862,7 @@ function validateForm(username, password, captcha) {
             return false;
         }
         
-        if (captcha.toUpperCase().catch(error => console.error(`[login-script.js] captcha.toUpperCase failed:`, error)) !== storedCaptcha.toUpperCase()) {
+        if (captcha.toUpperCase() !== storedCaptcha.toUpperCase()) {
             showError('验证码错误，请重新输入');
             try {
                 if (typeof generateCaptcha === 'function') {
@@ -940,7 +874,7 @@ function validateForm(username, password, captcha) {
             try {
                 const captchaInput = document.getElementById ? document.getElementById('captcha') : null;
                 if (captchaInput && captchaInput.focus && typeof captchaInput.focus === 'function') {
-                    captchaInput.focus().catch(error => console.error(`[login-script.js] captchaInput.focus failed:`, error));
+                    captchaInput.focus();
                 }
             } catch (focusError) {
                 console.warn('聚焦到验证码输入框失败:', focusError);
@@ -949,28 +883,28 @@ function validateForm(username, password, captcha) {
         }
         
         // 检查账户是否被锁定
-        if (accountLockedUntil > Date.now().catch(error => console.error(`[login-script.js] Date.now failed:`, error))) {
-            const remainingSeconds = Math.ceil((accountLockedUntil - Date.now().catch(error => console.error(`[login-script.js] Date.now failed:`, error))) / 1000);
+        if (accountLockedUntil > Date.now()) {
+            const remainingSeconds = Math.ceil((accountLockedUntil - Date.now()) / 1000);
             showError(`账户已被锁定，请在 ${remainingSeconds} 秒后重试`);
             return false;
         }
         
         return true;
     } catch (error) {
-        console.error(`[login-script.js] 表单验证过程中发生错误:, error`);
+        console.error('表单验证过程中发生错误:', error);
         showError('表单验证过程中发生错误，请重试');
         return false;
     }
 }
 
 // 模拟登录API调用 (增强版)
-async function simulateLogin(username, password, captcha, HardwareKey) {
+async function simulateLogin(username, password, captcha, vKey) {
     try {
         // 安全地进行参数验证和类型转换
         username = username !== undefined && username !== null ? String(username).trim() : '';
         password = password !== undefined && password !== null ? String(password) : '';
         captcha = captcha !== undefined && captcha !== null ? String(captcha).trim() : '';
-        HardwareKey = HardwareKey !== undefined && HardwareKey !== null ? String(HardwareKey).trim() : '';
+        vKey = vKey !== undefined && vKey !== null ? String(vKey).trim() : '';
         
         // 参数有效性检查
         if (!username) {
@@ -1008,12 +942,12 @@ async function simulateLogin(username, password, captcha, HardwareKey) {
                 await new Promise(resolve => setTimeout(resolve, 1000));
             } else {
                 // 降级方案：使用同步延迟，并添加安全检查避免死循环
-                const startTime = Date.now().catch(error => console.error(`[login-script.js] Date.now failed:`, error));
+                const startTime = Date.now();
                 const maxDelayMs = 2000; // 设置最大延迟时间，防止无限循环
-                while (Date.now().catch(error => console.error(`[login-script.js] Date.now failed:`, error)) - startTime < 1000 && Date.now() - startTime < maxDelayMs) {
+                while (Date.now() - startTime < 1000 && Date.now() - startTime < maxDelayMs) {
                     // 空循环，等待时间过去
                 }
-                if (Date.now().catch(error => console.error(`[login-script.js] Date.now failed:`, error)) - startTime >= maxDelayMs) {
+                if (Date.now() - startTime >= maxDelayMs) {
                     console.warn('同步延迟超时');
                 }
             }
@@ -1043,7 +977,7 @@ async function simulateLogin(username, password, captcha, HardwareKey) {
         }
         
         // 模拟服务器负载检查
-        if (Math.random().catch(error => console.error(`[login-script.js] Math.random failed:`, error)) < 0.03) {
+        if (Math.random() < 0.03) {
             return { success: false, message: '服务器暂时繁忙，请稍后重试' };
         }
         
@@ -1066,7 +1000,7 @@ async function simulateLogin(username, password, captcha, HardwareKey) {
         if (username === 'demo' && (password === 'password' || encryptedPassword === expectedPasswordHash)) {
             return { 
                 success: true, 
-                token: 'mock_token_' + Date.now().catch(error => console.error(`[login-script.js] Date.now failed:`, error)),
+                token: 'mock_token_' + Date.now(),
                 userInfo: { 
                     username: 'demo', 
                     role: 'user',
@@ -1077,7 +1011,7 @@ async function simulateLogin(username, password, captcha, HardwareKey) {
         } else if (username === 'admin' && (password === 'admin123' || (typeof md5 === 'function' && md5(password) === md5('admin123')))) {
             return { 
                 success: true, 
-                token: 'admin_token_' + Date.now().catch(error => console.error(`[login-script.js] Date.now failed:`, error)),
+                token: 'admin_token_' + Date.now(),
                 userInfo: { 
                     username: 'admin', 
                     role: 'admin',
@@ -1092,11 +1026,11 @@ async function simulateLogin(username, password, captcha, HardwareKey) {
                 '认证失败，请检查输入信息',
                 '登录信息不匹配'
             ];
-            const randomIndex = Math.floor(Math.random().catch(error => console.error(`[login-script.js] Math.random failed:`, error)) * errorMessages.length);
+            const randomIndex = Math.floor(Math.random() * errorMessages.length);
             return { success: false, message: errorMessages[randomIndex] };
         }
     } catch (error) {
-        console.error(`[login-script.js] 登录验证过程中发生错误:, error`);
+        console.error('登录验证过程中发生错误:', error);
         // 确保返回标准格式的错误对象
         return { 
             success: false, 
@@ -1222,7 +1156,7 @@ function md5(str) {
         
         return md5simple(str);
     } catch (error) {
-        console.error(`[login-script.js] MD5加密过程中发生错误:, error`);
+        console.error('MD5加密过程中发生错误:', error);
         // 返回一个错误字符串作为后备
         return 'md5_error_' + Date.now();
     }
@@ -1238,7 +1172,7 @@ function handleLoginSuccess(response, username, rememberMe) {
         
         // 验证响应包含必要的成功信息
         if (!response.success || !response.token) {
-            console.error(`[login-script.js] 登录成功响应不完整，缺少必要的认证信息`);
+            console.error('登录成功响应不完整，缺少必要的认证信息');
             showError('登录成功，但无法获取完整的认证信息');
             try {
                 if (typeof showLoading === 'function') {
@@ -1250,76 +1184,21 @@ function handleLoginSuccess(response, username, rememberMe) {
             return;
         }
         
-        // 使用统一认证管理器处理登录成功
-        if (window.authManager) {
-            try {
-                // 存储认证信息
-                window.authManager.storeAuthInfo(response.token, response.userInfo || { username }, rememberMe);
-                
-                // 记录登录成功日志
-                window.authManager.logActivity('login_success', {
-                    username: username,
-                    timestamp: new Date().toISOString(),
-                    ip: 'local',
-                    userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown'
-                });
-                
-                // 重置登录尝试状态
-                window.authManager.resetLoginAttempts().catch(error => console.error(`[login-script.js] authManager.resetLoginAttempts failed:`, error));
-                
-            } catch (authManagerError) {
-                console.warn('统一认证管理器处理失败，使用备用方案:', authManagerError);
-                // 回退到原有的存储逻辑
+        // 存储认证信息 - 添加增强的错误处理
+        try {
+            const isLocalStorageAvailable = typeof localStorage !== 'undefined' && localStorage !== null;
+            if (isLocalStorageAvailable) {
                 try {
-                    const isLocalStorageAvailable = typeof localStorage !== 'undefined' && localStorage !== null;
-                    if (isLocalStorageAvailable) {
-                        const STORAGE_PREFIX = 'mtscos_';
-                        
-                        if (response.token && typeof localStorage.setItem === 'function') {
-                            localStorage.setItem(`${STORAGE_PREFIX}auth_token`, response.token);
-                        }
-                        
-                        if (response.userInfo && typeof JSON !== 'undefined' && typeof JSON.stringify === 'function') {
-                            try {
-                                const userInfoStr = JSON.stringify(response.userInfo);
-                                localStorage.setItem(`${STORAGE_PREFIX}user_info`, userInfoStr);
-                            } catch (jsonError) {
-                                console.warn('JSON序列化用户信息失败:', jsonError);
-                            }
-                        }
-                        
-                        if (typeof localStorage.setItem === 'function' && typeof localStorage.removeItem === 'function') {
-                            if (rememberMe) {
-                                localStorage.setItem(`${STORAGE_PREFIX}remembered_username`, username);
-                            } else {
-                                localStorage.removeItem(`${STORAGE_PREFIX}remembered_username`);
-                            }
-                        }
-                        
-                        loginAttempts = 0;
-                        if (typeof localStorage.removeItem === 'function') {
-                            localStorage.removeItem('login_attempts');
-                            localStorage.removeItem('account_locked_until');
-                        }
-                        accountLockedUntil = 0;
-                    }
-                } catch (storageError) {
-                    console.error(`[login-script.js] 备用存储方案也失败:, storageError`);
-                }
-            }
-        } else {
-            console.warn('统一认证管理器不可用，使用原有逻辑');
-            // 原有的存储逻辑作为后备
-            try {
-                const isLocalStorageAvailable = typeof localStorage !== 'undefined' && localStorage !== null;
-                if (isLocalStorageAvailable) {
+                    // 设置安全的存储前缀，避免命名冲突
                     const STORAGE_PREFIX = 'mtscos_';
                     
+                    // 存储认证令牌
                     if (response.token && typeof localStorage.setItem === 'function') {
                         localStorage.setItem(`${STORAGE_PREFIX}auth_token`, response.token);
                     }
                     
-                    if (response.userInfo && typeof JSON !== 'undefined' && typeof JSON.stringify === 'function') {
+                    // 存储用户信息
+                    if (response.userInfo && typeof JSON !== 'undefined' && typeof JSON.stringify === 'function' && typeof localStorage.setItem === 'function') {
                         try {
                             const userInfoStr = JSON.stringify(response.userInfo);
                             localStorage.setItem(`${STORAGE_PREFIX}user_info`, userInfoStr);
@@ -1328,6 +1207,7 @@ function handleLoginSuccess(response, username, rememberMe) {
                         }
                     }
                     
+                    // 记住用户名功能
                     if (typeof localStorage.setItem === 'function' && typeof localStorage.removeItem === 'function') {
                         if (rememberMe) {
                             localStorage.setItem(`${STORAGE_PREFIX}remembered_username`, username);
@@ -1336,28 +1216,30 @@ function handleLoginSuccess(response, username, rememberMe) {
                         }
                     }
                     
+                    // 重置登录尝试次数
                     loginAttempts = 0;
                     if (typeof localStorage.removeItem === 'function') {
                         localStorage.removeItem('login_attempts');
                         localStorage.removeItem('account_locked_until');
                     }
                     accountLockedUntil = 0;
+                } catch (storageWriteError) {
+                    console.error('写入localStorage失败:', storageWriteError);
+                    // 即使存储失败也继续执行登录流程
                 }
-            } catch (storageError) {
-                console.error(`[login-script.js] localStorage操作失败:, storageError`);
             }
+        } catch (storageError) {
+            console.error('localStorage操作失败:', storageError);
+            // 即使存储失败也继续执行登录流程
         }
     
         // 设置防盗链Cookie - 更安全的实现
         try {
             if (typeof setAntiHotlinkCookie === 'function') {
                 setAntiHotlinkCookie();
-            } else if (window.authManager && typeof window.authManager.setAntiHotlinkCookie === 'function') {
-                // 使用统一认证管理器的防盗链功能
-                window.authManager.setAntiHotlinkCookie().catch(error => console.error(`[login-script.js] authManager.setAntiHotlinkCookie failed:`, error));
             } else {
-                // 如果两者都不存在，提供一个简单的实现
-                const timestamp = Date.now().catch(error => console.error(`[login-script.js] Date.now failed:`, error));
+                // 如果setAntiHotlinkCookie不存在，提供一个简单的实现
+                const timestamp = Date.now();
                 const random = Math.random().toString(36).substring(2, 15);
                 const antiHotlinkValue = btoa(`${timestamp}_${random}`);
                 
@@ -1373,22 +1255,12 @@ function handleLoginSuccess(response, username, rememberMe) {
     
         // 记录登录日志 - 更详细的日志信息
         try {
-            if (window.authManager && typeof window.authManager.logActivity === 'function') {
-                // 使用统一认证管理器的日志功能
-                window.authManager.logActivity('login_success', {
-                    username: username,
-                    role: response.userInfo?.role || 'unknown',
-                    ip: 'local',
-                    userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
-                    timestamp: new Date().toISOString()
-                });
-            } else if (typeof logAction === 'function') {
-                // 回退到原有的日志功能
+            if (typeof logAction === 'function') {
                 const userInfo = response.userInfo || { username };
                 const logDetails = {
                     username: userInfo.username,
                     role: userInfo.role || 'unknown',
-                    ip: 'local',
+                    ip: 'local', // 在服务器端获取真实IP
                     userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown'
                 };
                 logAction('login_success', `用户 ${userInfo.username} 登录成功`, logDetails);
@@ -1410,7 +1282,7 @@ function handleLoginSuccess(response, username, rememberMe) {
         try {
             const loginBtn = document.getElementById('loginBtn');
             if (loginBtn) {
-                loginBtn.innerHTML = '<i class="fas fa-check"i> 登录成功';
+                loginBtn.innerHTML = '<i class="fas fa-check"></i> 登录成功';
             }
         } catch (uiError) {
             console.warn('更新UI状态失败:', uiError);
@@ -1421,67 +1293,58 @@ function handleLoginSuccess(response, username, rememberMe) {
             setTimeout(() => {
                 try {
                     if (typeof window !== 'undefined' && window !== null && typeof window.location !== 'undefined') {
-                        const targetUrl = '../HTML/dashboard.html';
+                        const targetUrl = 'HTML/dashboard.html';
+                        // 尝试标准跳转
+                        window.location.href = targetUrl;
                         
-                        // 使用统一认证管理器的安全跳转功能（如果可用）
-                        if (window.authManager && typeof window.authManager.secureRedirect === 'function') {
-                            window.authManager.secureRedirect(targetUrl, {
-                                timeout: 3000,
-                                fallback: true
-                            });
-                        } else {
-                            // 标准跳转逻辑
-                            window.location.href = targetUrl;
-                            
-                            // 设置2秒超时检测，如果页面没有跳转则使用备用方案
-                            setTimeout(() => {
-                                try {
-                                    // 检查是否仍然在当前页面（简单检查URL是否包含login）
-                                    if (typeof window.location.href === 'string' && window.location.href.includes('login')) {
-                                        console.warn('页面跳转超时，尝试备用方案');
-                                        // 备用跳转方案1
-                                        window.location.replace(targetUrl);
-                                    }
-                                } catch (fallbackError) {
-                                    console.error(`[login-script.js] 备用跳转方案失败:, fallbackError`);
-                                    // 显示提示信息
-                                    if (typeof showError === 'function') {
-                                        showError('登录成功，但无法跳转到仪表盘，请手动访问仪表盘页面');
-                                    } else {
-                                        try {
-                                            alert('登录成功，请访问仪表盘页面');
-                                        } catch (alertError) {
-                                            console.error(`[login-script.js] 无法显示提示信息:, alertError`);
-                                        }
+                        // 设置2秒超时检测，如果页面没有跳转则使用备用方案
+                        setTimeout(() => {
+                            try {
+                                // 检查是否仍然在当前页面（简单检查URL是否包含login）
+                                if (typeof window.location.href === 'string' && window.location.href.includes('login')) {
+                                    console.warn('页面跳转超时，尝试备用方案');
+                                    // 备用跳转方案1
+                                    window.location.replace(targetUrl);
+                                }
+                            } catch (fallbackError) {
+                                console.error('备用跳转方案失败:', fallbackError);
+                                // 显示提示信息
+                                if (typeof showError === 'function') {
+                                    showError('登录成功，但无法跳转到仪表盘，请手动访问仪表盘页面');
+                                } else {
+                                    try {
+                                        alert('登录成功，请访问仪表盘页面');
+                                    } catch (alertError) {
+                                        console.error('无法显示提示信息:', alertError);
                                     }
                                 }
-                            }, 2000);
-                        }
+                            }
+                        }, 2000);
                     }
                 } catch (navError) {
-                    console.error(`[login-script.js] 页面跳转失败:, navError`);
+                    console.error('页面跳转失败:', navError);
                     // 尝试使用替代方式跳转
                     try {
                         if (typeof location !== 'undefined') {
-                            location.assign('../HTML/dashboard.html');
+                            location.assign('HTML/dashboard.html');
                         }
                     } catch (assignError) {
-                        console.error(`[login-script.js] 替代跳转方式也失败:, assignError`);
-                        try {
-                            if (typeof showError === 'function') {
-                                showError('登录成功，但页面跳转失败，请手动访问仪表盘页面');
-                            } else {
-                                alert('登录成功，请访问仪表盘页面');
+                            console.error('替代跳转方式也失败:', assignError);
+                            try {
+                                if (typeof showError === 'function') {
+                                    showError('登录成功，但页面跳转失败，请手动访问仪表盘页面');
+                                } else {
+                                    alert('登录成功，请访问仪表盘页面');
+                                }
+                            } catch (e) {
+                                console.error('无法显示提示信息:', e);
                             }
-                        } catch (e) {
-                            console.error(`[login-script.js] 无法显示提示信息:, e`);
                         }
-                    }
-                }
+                        }
             }, 1000);
         }
     } catch (error) {
-        console.error(`[login-script.js] 登录成功处理过程中发生错误:, error`);
+        console.error('登录成功处理过程中发生错误:', error);
         try {
             if (typeof showError === 'function') {
                 showError('登录成功，但处理过程中发生错误，请刷新页面重试');
@@ -1592,13 +1455,13 @@ function initAccessStatistics() {
             console.warn('无法更新访问时间:', storageError);
         }
     } catch (error) {
-        console.error(`[login-script.js] 初始化访问统计失败:, error`);
+        console.error('初始化访问统计失败:', error);
     }
 }
 
 // 设置防盗链Cookie
 function setAntiHotlinkCookie() {
-    const timestamp = Date.now().catch(error => console.error(`[login-script.js] Date.now failed:`, error));
+    const timestamp = Date.now();
     const random = Math.random().toString(36).substring(2);
     const antiHotlink = btoa(`${timestamp}_${random}`);
     
@@ -1662,7 +1525,7 @@ function generateRandomString(length = 32) {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     let result = '';
     for (let i = 0; i < length; i++) {
-        result += chars.charAt(Math.floor(Math.random().catch(error => console.error(`[login-script.js] Math.random failed:`, error)) * chars.length));
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     return result;
 }
@@ -1707,14 +1570,6 @@ function initSessionTimeout() {
     document.addEventListener('mousemove', resetSessionTimeout);
     document.addEventListener('keydown', resetSessionTimeout);
     document.addEventListener('click', resetSessionTimeout);
-    
-    // 页面卸载时清理定时器
-    window.addEventListener('beforeunload', () => {
-        if (sessionTimeout) {
-            clearTimeout(sessionTimeout);
-            sessionTimeout = null;
-        }
-    });
 }
 
 // 重置会话超时
@@ -1728,24 +1583,24 @@ function resetSessionTimeout() {
     }, 30 * 60 * 1000); // 30分钟
 }
 
-// 请求硬件密钥认证
-function requestHardwareKey() {
-    // 在实际应用中，应该调用硬件密钥API获取认证码
-    logAction('hardware_key_request', '用户请求硬件密钥认证码');
+// 请求vKey
+function requestVKey() {
+    // 在实际应用中，应该调用vKey API获取认证码
+    logAction('vkey_request', '用户请求vKey认证码');
     
-    // 模拟硬件密钥请求
+    // 模拟vKey请求
     showLoading(true);
     
     setTimeout(() => {
         showLoading(false);
-        alert('认证功能暂不可用，请联系管理员');
+        alert('请访问 www.ivikey.com 获取您的vKey认证码');
     }, 1000);
 }
 
 // 跳转到忘记密码页面
 function redirectToForgotPassword() {
     logAction('forgot_password_click', '用户点击忘记密码');
-    window.location.href = '../HTML/forgot-password.html';
+    window.location.href = 'HTML/forgot-password.html';
 }
 
 // 显示错误信息
@@ -1776,7 +1631,7 @@ function showLoading(isLoading) {
     if (loginBtn) {
         if (isLoading) {
             loginBtn.disabled = true;
-            loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"i> 登录中...';
+            loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 登录中...';
         } else {
             loginBtn.disabled = false;
             loginBtn.textContent = '登录';
@@ -1808,13 +1663,13 @@ function logAction(actionType, description) {
     // 模拟日志发送
     try {
         // 实际环境中，使用fetch API发送日志
-        // fetch(/* 增强错误处理 *//* 增强错误处理 */'/api/log', {
+        // fetch('/api/log', {
         //     method: 'POST',
         //     headers: { 'Content-Type': 'application/json' },
         //     body: JSON.stringify(logEntry)
         // });
     } catch (error) {
-        console.error(`[login-script.js] 日志发送失败:, error`);
+        console.error('日志发送失败:', error);
     }
 }
 
@@ -1832,23 +1687,6 @@ function initLoginPage() {
         // 定义常量
         window.MAX_ATTEMPTS = 5;
         window.LOCK_DURATION = 300; // 5分钟
-        
-        // 初始化统一认证管理器（如果可用）
-        if (typeof UnifiedAuthManager === 'function') {
-            try {
-                window.authManager = new UnifiedAuthManager({
-                    maxAttempts: MAX_ATTEMPTS,
-                    lockDuration: LOCK_DURATION * 1000, // 转换为毫秒
-                    sessionTimeout: 30 * 60 * 1000, // 30分钟会话超时
-                    storagePrefix: 'mtscos_'
-                });
-                console.log('统一认证管理器初始化成功');
-            } catch (authManagerError) {
-                console.warn('统一认证管理器初始化失败，使用原有逻辑:', authManagerError);
-            }
-        } else {
-            console.warn('统一认证管理器类不可用，使用原有逻辑');
-        }
         
         // 初始化功能模块
         const initFunctions = [
@@ -1881,7 +1719,7 @@ function initLoginPage() {
                 loginForm.addEventListener('submit', handleLogin);
             }
         } catch (eventError) {
-            console.error(`[login-script.js] 绑定登录事件失败:, eventError`);
+            console.error('绑定登录事件失败:', eventError);
         }
         
         // 添加密码强度检查
@@ -1912,35 +1750,24 @@ function initLoginPage() {
         } catch (rememberError) {
             console.warn('恢复记住的用户名失败:', rememberError);
         }
-        
-        // 初始化统一认证管理器的活动监听（如果可用）
-        if (window.authManager && typeof window.authManager.startActivityMonitoring === 'function') {
-            try {
-                window.authManager.startActivityMonitoring().catch(error => console.error(`[login-script.js] authManager.startActivityMonitoring failed:`, error));
-                console.log('活动监听已启动');
-            } catch (monitoringError) {
-                console.warn('启动活动监听失败:', monitoringError);
-            }
-        }
-        
     } catch (error) {
-        console.error(`[login-script.js] 登录页面初始化失败:, error`);
+        console.error('登录页面初始化失败:', error);
     }
 }
 
 // 主登录处理函数
 async function handleLogin() {
-    // 检查统一认证管理器是否可用
-    if (!window.authManager) {
-        console.error(`[login-script.js] 统一认证管理器未加载`);
-        showError('系统组件未加载，请刷新页面重试');
+    // 检查账户是否被锁定
+    if (Date.now() < accountLockedUntil) {
+        const remainingTime = Math.ceil((accountLockedUntil - Date.now()) / 1000);
+        showError(`账户已被锁定，请在 ${remainingTime} 秒后重试`);
         return;
     }
     
     const username = document.getElementById('username').value;
     const password = document.getElementById('password').value;
     const captchaInput = document.getElementById('verificationCode').value || document.getElementById('captcha').value;
-    const HardwareKeyInput = document.getElementById('HardwareKeyCode')?.value || '';
+    const vKeyInput = document.getElementById('vkeyCode')?.value || '';
     const rememberMe = document.getElementById('rememberMe').checked;
     
     // 表单验证
@@ -1949,30 +1776,25 @@ async function handleLogin() {
     }
     
     try {
+        // 密码MD5加密
+        const encryptedPassword = await md5(password);
+        
         // 显示加载状态
         showLoading(true);
         
-        // 使用统一认证管理器进行登录
-        const credentials = {
-            username: username,
-            password: password,
-            captcha: captchaInput
-        };
+        // 模拟API调用
+        const response = await simulateLogin(username, encryptedPassword, captchaInput, vKeyInput);
         
-        const loginResult = await window.authManager.login(credentials);
-        
-        if (loginResult.success) {
+        if (response.success) {
             // 登录成功处理
-            handleLoginSuccess(loginResult, username, rememberMe);
+            handleLoginSuccess(response, username, rememberMe);
         } else {
             // 登录失败处理
-            handleLoginFailure(loginResult, username);
+            handleLoginFailure(response, username);
         }
-        
     } catch (error) {
-        console.error(`[login-script.js] 登录错误:, error`);
+        console.error('登录错误:', error);
         showError('系统错误，请稍后重试');
-        logAction('login_error', `登录过程中发生错误: ${error.message}`);
     } finally {
         showLoading(false);
     }
@@ -1985,27 +1807,9 @@ window.addEventListener('beforeunload', function() {
         clearTimeout(window.sessionTimeout);
     }
     
-    // 清理统一认证管理器（如果可用）
-    if (window.authManager && typeof window.authManager.cleanup === 'function') {
-        try {
-            window.authManager.cleanup().catch(error => console.error(`[login-script.js] authManager.cleanup failed:`, error));
-        } catch (cleanupError) {
-            console.warn('清理统一认证管理器失败:', cleanupError);
-        }
-    }
-    
     // 记录页面离开日志
-    try {
-        if (window.authManager && typeof window.authManager.logActivity === 'function') {
-            window.authManager.logActivity('page_leave', {
-                timestamp: new Date().toISOString(),
-                page: 'login'
-            });
-        } else if (typeof logAction === 'function') {
-            logAction('page_leave', '用户离开登录页面');
-        }
-    } catch (logError) {
-        console.warn('记录页面离开日志失败:', logError);
+    if (typeof logAction === 'function') {
+        logAction('page_leave', '用户离开登录页面');
     }
 });
 

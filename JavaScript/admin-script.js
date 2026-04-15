@@ -13,7 +13,7 @@ class AdminManager {
     // 初始化管理后台
     async initialize() {
         // 验证管理员权限
-        if (!this.validateAdminAccess().catch(error => console.error(`[admin-script.js] this.validateAdminAccess failed:`, error))) {
+        if (!this.validateAdminAccess()) {
             window.location.href = '../HTML/index.html';
             return;
         }
@@ -22,13 +22,13 @@ class AdminManager {
         await this.loadSystemStatus();
 
         // 初始化动态链接库管理
-        this.initLLMModules().catch(error => console.error(`[admin-script.js] this.initLLMModules failed:`, error));
+        this.initLLMModules();
 
         // 初始化事件监听器
-        this.initEventListeners().catch(error => console.error(`[admin-script.js] this.initEventListeners failed:`, error));
+        this.initEventListeners();
 
         // 启动实时监控
-        this.startRealTimeMonitoring().catch(error => console.error(`[admin-script.js] this.startRealTimeMonitoring failed:`, error));
+        this.startRealTimeMonitoring();
     }
 
     // 验证管理员访问权限
@@ -72,7 +72,7 @@ class AdminManager {
             this.updateSystemStatusUI(systemStatus);
             this.runningServices = systemStatus.services;
         } catch (error) {
-            console.error(`[admin-script.js] 加载系统状态失败:, error`);
+            console.error('加载系统状态失败:', error);
             this.showNotification('系统状态加载失败', 'error');
         }
     }
@@ -121,7 +121,7 @@ class AdminManager {
 
         // 退出登录
         document.getElementById('logout')?.addEventListener('click', () => {
-            this.logout().catch(error => console.error(`[admin-script.js] this.logout failed:`, error));
+            this.logout();
         });
 
         // 日志选择器
@@ -164,12 +164,12 @@ class AdminManager {
             
             // 如果是终端页面，初始化终端
             if (route === 'terminal') {
-                this.initTerminal().catch(error => console.error(`[admin-script.js] this.initTerminal failed:`, error));
+                this.initTerminal();
             }
             
             // 如果是动态链接库管理页面
             if (route.includes('modules')) {
-                this.renderLLMModules().catch(error => console.error(`[admin-script.js] this.renderLLMModules failed:`, error));
+                this.renderLLMModules();
             }
         }
     }
@@ -187,10 +187,10 @@ class AdminManager {
                 service.status = 'running';
             });
             
-            this.updateServiceStatusUI().catch(error => console.error(`[admin-script.js] this.updateServiceStatusUI failed:`, error));
+            this.updateServiceStatusUI();
             this.showNotification('所有服务重启成功', 'success');
         } catch (error) {
-            console.error(`[admin-script.js] 服务重启失败:, error`);
+            console.error('服务重启失败:', error);
             this.showNotification('服务重启失败', 'error');
         }
     }
@@ -199,36 +199,22 @@ class AdminManager {
     updateServiceStatusUI() {
         const serviceRows = document.querySelectorAll('#system-services-view tbody tr');
         serviceRows.forEach((row, index) => {
-            if (this.runningServices && this.runningServices[index]) {
+            if (this.runningServices[index]) {
                 const statusCell = row.querySelector('td:nth-child(2)');
-                const statusIndicator = statusCell ? statusCell.querySelector('.status-indicator') : null;
-                const statusText = statusCell ? statusCell.textContent.trim().catch(error => console.error(`[admin-script.js] textContent.trim failed:`, error)) : '';
+                const statusIndicator = statusCell.querySelector('.status-indicator');
+                const statusText = statusCell.textContent.trim();
                 
                 if (this.runningServices[index].status === 'running') {
-                    if (statusIndicator) {
-                        statusIndicator.className = 'status-indicator status-online';
-                    }
-                    if (statusCell) {
-                        statusCell.innerHTML = '<span class="status-indicator status-online"></span> 运行中';
-                    }
+                    statusIndicator.className = 'status-indicator status-online';
+                    statusCell.innerHTML = '<span class="status-indicator status-online"></span> 运行中';
                 } else {
-                    if (statusIndicator) {
-                        statusIndicator.className = 'status-indicator status-offline';
-                    }
-                    if (statusCell) {
-                        statusCell.innerHTML = '<span class="status-indicator status-offline"></span> 已停止';
-                    }
+                    statusIndicator.className = 'status-indicator status-offline';
+                    statusCell.innerHTML = '<span class="status-indicator status-offline"></span> 已停止';
                 }
                 
                 // 更新资源使用情况
-                const cpuCell = row.querySelector('td:nth-child(3)');
-                const memoryCell = row.querySelector('td:nth-child(4)');
-                if (cpuCell && this.runningServices[index].cpu !== undefined) {
-                    cpuCell.textContent = `${this.runningServices[index].cpu}%`;
-                }
-                if (memoryCell && this.runningServices[index].memory !== undefined) {
-                    memoryCell.textContent = `${this.runningServices[index].memory} MB`;
-                }
+                row.querySelector('td:nth-child(3)').textContent = `${this.runningServices[index].cpu}%`;
+                row.querySelector('td:nth-child(4)').textContent = `${this.runningServices[index].memory} MB`;
             }
         });
     }
@@ -244,7 +230,7 @@ class AdminManager {
             
             let logs = '';
             const now = new Date();
-            const dateStr = now.toISOString().catch(error => console.error(`[admin-script.js] now.toISOString failed:`, error)).slice(0, 10);
+            const dateStr = now.toISOString().slice(0, 10);
             const timeStr = now.toTimeString().slice(0, 8);
             
             switch(filename) {
@@ -272,7 +258,7 @@ class AdminManager {
             
             logContent.innerHTML = logs;
         } catch (error) {
-            console.error(`[admin-script.js] 加载日志失败:, error`);
+            console.error('加载日志失败:', error);
             logContent.textContent = '日志加载失败';
         }
     }
@@ -330,7 +316,7 @@ class AdminManager {
         });
         
         // 添加事件监听器
-        this.addModuleEventListeners().catch(error => console.error(`[admin-script.js] this.addModuleEventListeners failed:`, error));
+        this.addModuleEventListeners();
     }
 
     // 添加模块操作事件监听器
@@ -357,50 +343,37 @@ class AdminManager {
         });
         
         document.getElementById('add-module')?.addEventListener('click', () => {
-            this.addNewModule().catch(error => console.error(`[admin-script.js] this.addNewModule failed:`, error));
+            this.addNewModule();
         });
     }
 
     // 切换模块状态
     toggleModule(moduleId) {
-        if (this.llmModules && this.llmModules[moduleId]) {
+        if (this.llmModules[moduleId]) {
             this.llmModules[moduleId].status = 
                 this.llmModules[moduleId].status === 'active' ? 'inactive' : 'active';
             
-            this.renderLLMModules().catch(error => console.error(`[admin-script.js] this.renderLLMModules failed:`, error));
+            this.renderLLMModules();
             this.showNotification(
                 `模块 ${this.llmModules[moduleId].name} ${this.llmModules[moduleId].status === 'active' ? '已启用' : '已禁用'}`, 
                 'success'
             );
-        } else {
-            this.showNotification('模块不存在', 'error');
         }
     }
 
     // 更新模块
     async updateModule(moduleId) {
-        if (!this.llmModules || !this.llmModules[moduleId]) {
-            this.showNotification('模块不存在', 'error');
-            return;
-        }
-        
         this.showNotification(`正在更新模块 ${this.llmModules[moduleId].name}...`, 'info');
         
         try {
             await this.sleep(2000);
             
             // 模拟版本更新
-            if (this.llmModules[moduleId].version) {
-                const versionParts = this.llmModules[moduleId].version.split('.');
-                if (versionParts.length >= 3) {
-                    const patch = parseInt(versionParts[2]) + 1;
-                    if (!isNaN(patch)) {
-                        this.llmModules[moduleId].version = `${versionParts[0]}.${versionParts[1]}.${patch}`;
-                    }
-                }
-            }
+            const versionParts = this.llmModules[moduleId].version.split('.');
+            const patch = parseInt(versionParts[2]) + 1;
+            this.llmModules[moduleId].version = `${versionParts[0]}.${versionParts[1]}.${patch}`;
             
-            this.renderLLMModules().catch(error => console.error(`[admin-script.js] this.renderLLMModules failed:`, error));
+            this.renderLLMModules();
             this.showNotification(`模块 ${this.llmModules[moduleId].name} 更新成功`, 'success');
         } catch (error) {
             this.showNotification(`模块更新失败`, 'error');
@@ -409,15 +382,9 @@ class AdminManager {
 
     // 删除模块
     deleteModule(moduleId) {
-        if (!this.llmModules || !this.llmModules[moduleId]) {
-            this.showNotification('模块不存在', 'error');
-            return;
-        }
-        
-        const moduleName = this.llmModules[moduleId].name || '未知模块';
-        if (confirm(`确定要删除模块 ${moduleName} 吗？`)) {
+        if (confirm(`确定要删除模块 ${this.llmModules[moduleId].name} 吗？`)) {
             delete this.llmModules[moduleId];
-            this.renderLLMModules().catch(error => console.error(`[admin-script.js] this.renderLLMModules failed:`, error));
+            this.renderLLMModules();
             this.showNotification('模块已删除', 'success');
         }
     }
@@ -429,11 +396,11 @@ class AdminManager {
             const moduleId = moduleName.toLowerCase().replace(/\s+/g, '-');
             this.llmModules[moduleId] = {
                 name: moduleName,
-                version: '1.3.0',
+                version: '1.0.0',
                 status: 'inactive'
             };
             
-            this.renderLLMModules().catch(error => console.error(`[admin-script.js] this.renderLLMModules failed:`, error));
+            this.renderLLMModules();
             this.showNotification('新模块已添加', 'success');
         }
     }
@@ -651,7 +618,7 @@ class AdminManager {
                         // 重新绑定事件监听器
                         if (e.key === 'Enter' && !this.isProcessingTerminal) {
                             // 简化版的事件处理
-                            const cmd = newInput.value.trim().catch(error => console.error(`[admin-script.js] value.trim failed:`, error));
+                            const cmd = newInput.value.trim();
                             if (cmd) {
                                 this.terminalHistory.push(cmd);
                                 this.executeTerminalCommand(cmd, outputElement);
@@ -659,7 +626,7 @@ class AdminManager {
                             }
                         }
                     });
-                    newInput.focus().catch(error => console.error(`[admin-script.js] newInput.focus failed:`, error));
+                    newInput.focus();
                     break;
                 case 'exit':
                 case 'quit':
@@ -673,7 +640,7 @@ class AdminManager {
                 outputElement.appendChild(response);
             }
         } catch (error) {
-            console.error(`[admin-script.js] 执行终端命令失败:, error`);
+            console.error('执行终端命令失败:', error);
             const errorLine = document.createElement('div');
             errorLine.className = 'terminal-output-line';
             errorLine.textContent = `错误: ${error.message}`;
@@ -763,7 +730,7 @@ class AdminManager {
 // 页面加载完成后初始化
 window.addEventListener('DOMContentLoaded', () => {
     const adminManager = new AdminManager();
-    adminManager.initialize().catch(error => console.error(`[admin-script.js] adminManager.initialize failed:`, error));
+    adminManager.initialize();
     
     // 暴露给全局，方便调试
     window.admin = adminManager;

@@ -19,37 +19,37 @@ function generateCaptcha() {
     // 绘制干扰线
     for (let i = 0; i < 4; i++) {
         ctx.strokeStyle = getRandomColor(100, 200);
-        ctx.beginPath().catch(error => console.error(`[index-inline.js] ctx.beginPath failed:`, error));
-        ctx.moveTo(Math.random().catch(error => console.error(`[index-inline.js] Math.random failed:`, error)) * canvas.width, Math.random() * canvas.height);
+        ctx.beginPath();
+        ctx.moveTo(Math.random() * canvas.width, Math.random() * canvas.height);
         ctx.lineTo(Math.random() * canvas.width, Math.random() * canvas.height);
-        ctx.lineWidth = Math.random().catch(error => console.error(`[index-inline.js] Math.random failed:`, error)) * 2 + 1;
+        ctx.lineWidth = Math.random() * 2 + 1;
         ctx.stroke();
     }
     
     // 绘制干扰点
     for (let i = 0; i < 50; i++) {
         ctx.fillStyle = getRandomColor(100, 200);
-        ctx.beginPath().catch(error => console.error(`[index-inline.js] ctx.beginPath failed:`, error));
-        ctx.arc(Math.random().catch(error => console.error(`[index-inline.js] Math.random failed:`, error)) * canvas.width, Math.random() * canvas.height, Math.random() * 2, 0, Math.PI * 2);
+        ctx.beginPath();
+        ctx.arc(Math.random() * canvas.width, Math.random() * canvas.height, Math.random() * 2, 0, Math.PI * 2);
         ctx.fill();
     }
     
     // 绘制验证码字符
     ctx.font = '20px Arial';
     for (let i = 0; i < 4; i++) {
-        const char = chars.charAt(Math.floor(Math.random().catch(error => console.error(`[index-inline.js] Math.random failed:`, error)) * chars.length));
+        const char = chars.charAt(Math.floor(Math.random() * chars.length));
         captchaCode += char;
         
         // 随机旋转角度
         const angle = Math.random() * 0.4 - 0.2; // -0.2到0.2之间的角度
         
-        ctx.save().catch(error => console.error(`[index-inline.js] ctx.save failed:`, error));
+        ctx.save();
         ctx.translate(10 + i * 12, 25);
         ctx.rotate(angle);
         ctx.fillStyle = getRandomColor(50, 150);
         ctx.textAlign = 'center';
         ctx.fillText(char, 0, 0);
-        ctx.restore().catch(error => console.error(`[index-inline.js] ctx.restore failed:`, error));
+        ctx.restore();
     }
     
     // 保存验证码到sessionStorage
@@ -58,9 +58,9 @@ function generateCaptcha() {
 
 // 生成随机颜色
 function getRandomColor(min, max) {
-    const r = Math.floor(Math.random().catch(error => console.error(`[index-inline.js] Math.random failed:`, error)) * (max - min + 1)) + min;
+    const r = Math.floor(Math.random() * (max - min + 1)) + min;
     const g = Math.floor(Math.random() * (max - min + 1)) + min;
-    const b = Math.floor(Math.random().catch(error => console.error(`[index-inline.js] Math.random failed:`, error)) * (max - min + 1)) + min;
+    const b = Math.floor(Math.random() * (max - min + 1)) + min;
     return `rgb(${r}, ${g}, ${b})`;
 }
 
@@ -73,7 +73,7 @@ function validateCaptcha(input) {
 // 表单验证函数（适配项目中的验证）
 function validateForm(username, password, captchaInput) {
     // 基本验证
-    if (!username || username.trim().catch(error => console.error(`[index-inline.js] username.trim failed:`, error)) === '') {
+    if (!username || username.trim() === '') {
         showError('请输入用户名');
         return false;
     }
@@ -139,8 +139,8 @@ function initPasswordToggle() {
 function initSocialLoginButtons() {
     const socialButtons = document.querySelectorAll('.social-button');
     socialButtons.forEach(button => {
-        // 跳过HardwareKey请求按钮
-        if (button.id === 'request-hardwareKey') return;
+        // 跳过ViKey请求按钮
+        if (button.id === 'request-vikey') return;
         
         button.addEventListener('click', function() {
             const provider = this.classList[1]; // 获取provider名称
@@ -154,23 +154,23 @@ function initSocialLoginButtons() {
     });
 }
 
-// HardwareKey验证功能
-function requestHardwareKey() {
-    // 模拟HardwareKey请求
-    const hardwareKeyCode = 'VIKEY-' + Math.random().catch(error => console.error(`[index-inline.js] Math.random failed:`, error)).toString(36).substring(2, 10).toUpperCase();
-    alert('HardwareKey认证码: ' + hardwareKeyCode);
-    return hardwareKeyCode;
+// ViKey验证功能
+function requestVikey() {
+    // 模拟ViKey请求
+    const vikeyCode = 'VIKEY-' + Math.random().toString(36).substring(2, 10).toUpperCase();
+    alert('ViKey认证码: ' + vikeyCode);
+    return vikeyCode;
 }
 
-// 初始化HardwareKey功能
-function initHardwareKey() {
-    const requestBtn = document.getElementById('request-hardwareKey');
+// 初始化ViKey功能
+function initVikey() {
+    const requestBtn = document.getElementById('request-vikey');
     if (requestBtn) {
         requestBtn.addEventListener('click', function() {
-            const hardwareKeyCode = requestHardwareKey();
-            const hardwareKeyInput = document.getElementById('HardwareKeyCode');
-            if (hardwareKeyInput) {
-                hardwareKeyInput.value = hardwareKeyCode;
+            const vikeyCode = requestVikey();
+            const vikeyInput = document.getElementById('VikeyCode');
+            if (vikeyInput) {
+                vikeyInput.value = vikeyCode;
             }
         });
     }
@@ -201,8 +201,8 @@ function init() {
     // 初始化密码切换
     initPasswordToggle();
     
-    // 初始化HardwareKey功能
-    initHardwareKey();
+    // 初始化ViKey功能
+    initVikey();
     
     // 初始化第三方登录
     initSocialLoginButtons();
@@ -274,11 +274,11 @@ function updateSystemTime() {
     if (!timeContainer) return;
     
     const now = new Date();
-    const dateStr = now.getFullYear().catch(error => console.error(`[index-inline.js] now.getFullYear failed:`, error)) + '/' + 
+    const dateStr = now.getFullYear() + '/' + 
                   String(now.getMonth() + 1).padStart(2, '0') + '/' + 
-                  String(now.getDate().catch(error => console.error(`[index-inline.js] now.getDate failed:`, error))).padStart(2, '0') + ' ' +
+                  String(now.getDate()).padStart(2, '0') + ' ' +
                   String(now.getHours()).padStart(2, '0') + ':' +
-                  String(now.getMinutes().catch(error => console.error(`[index-inline.js] now.getMinutes failed:`, error))).padStart(2, '0') + ':' +
+                  String(now.getMinutes()).padStart(2, '0') + ':' +
                   String(now.getSeconds()).padStart(2, '0');
     
     // 更新时间文本

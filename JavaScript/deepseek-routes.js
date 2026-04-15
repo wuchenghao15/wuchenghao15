@@ -10,7 +10,7 @@ async function initDeepSeek() {
         deepseekAI = new DeepSeekAI();
         console.log('DeepSeek AI module initialized');
     } catch (error) {
-        console.error('[deepseek-routes.js] Failed to initialize DeepSeek AI:', error);
+        console.error('Failed to initialize DeepSeek AI:', error);
     }
 }
 
@@ -63,7 +63,7 @@ router.post('/chat', checkDeepSeekConfig, async (req, res) => {
         });
 
     } catch (error) {
-        console.error('[deepseek-routes.js] Chat error:', error);
+        console.error('Chat error:', error);
         res.status(500).json({ 
             error: 'Chat failed',
             message: error.message 
@@ -92,7 +92,7 @@ router.post('/generate-code', checkDeepSeekConfig, async (req, res) => {
         });
 
     } catch (error) {
-        console.error('[deepseek-routes.js] Code generation error:', error);
+        console.error('Code generation error:', error);
         res.status(500).json({ 
             error: 'Code generation failed',
             message: error.message 
@@ -120,7 +120,7 @@ router.post('/analyze-text', checkDeepSeekConfig, async (req, res) => {
         });
 
     } catch (error) {
-        console.error('[deepseek-routes.js] Text analysis error:', error);
+        console.error('Text analysis error:', error);
         res.status(500).json({ 
             error: 'Text analysis failed',
             message: error.message 
@@ -150,7 +150,7 @@ router.post('/translate', checkDeepSeekConfig, async (req, res) => {
         });
 
     } catch (error) {
-        console.error('[deepseek-routes.js] Translation error:', error);
+        console.error('Translation error:', error);
         res.status(500).json({ 
             error: 'Translation failed',
             message: error.message 
@@ -180,7 +180,7 @@ router.post('/summarize', checkDeepSeekConfig, async (req, res) => {
         });
 
     } catch (error) {
-        console.error('[deepseek-routes.js] Summarization error:', error);
+        console.error('Summarization error:', error);
         res.status(500).json({ 
             error: 'Summarization failed',
             message: error.message 
@@ -201,14 +201,7 @@ router.get('/status', async (req, res) => {
 
         const isConfigured = await deepseekAI.isConfigured();
         const config = deepseekAI.getConfig();
-        // 错误处理：getCacheStats是同步方法，使用try-catch捕获可能的错误
-        let cacheStats;
-        try {
-            cacheStats = deepseekAI.getCacheStats();
-        } catch (error) {
-            console.error(`[deepseek-routes.js] deepseekAI.getCacheStats failed:`, error);
-            cacheStats = { size: 0, maxSize: 0, enabled: false };
-        }
+        const cacheStats = deepseekAI.getCacheStats();
 
         res.json({ 
             initialized: true,
@@ -219,7 +212,7 @@ router.get('/status', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('[deepseek-routes.js] Status check error:', error);
+        console.error('Status check error:', error);
         res.status(500).json({ 
             error: 'Status check failed',
             message: error.message 
@@ -247,7 +240,7 @@ router.put('/config', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('[deepseek-routes.js] Config update error:', error);
+        console.error('Config update error:', error);
         res.status(500).json({ 
             error: 'Config update failed',
             message: error.message 
@@ -265,7 +258,7 @@ router.delete('/cache', async (req, res) => {
             });
         }
 
-        deepseekAI.clearCache().catch(error => console.error(`[deepseek-routes.js] deepseekAI.clearCache failed:`, error));
+        deepseekAI.clearCache();
         res.json({ 
             success: true,
             message: '缓存已清除',
@@ -273,7 +266,7 @@ router.delete('/cache', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('[deepseek-routes.js] Cache clear error:', error);
+        console.error('Cache clear error:', error);
         res.status(500).json({ 
             error: 'Cache clear failed',
             message: error.message 
@@ -297,7 +290,7 @@ router.post('/suggest', checkDeepSeekConfig, async (req, res) => {
         });
 
     } catch (error) {
-        console.error('[deepseek-routes.js] AI suggestion error:', error);
+        console.error('AI suggestion error:', error);
         res.status(500).json({ 
             error: 'AI suggestion failed',
             message: error.message 
@@ -338,14 +331,14 @@ router.post('/chat-stream', checkDeepSeekConfig, async (req, res) => {
             } else {
                 res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
                 clearInterval(streamInterval);
-                res.end().catch(error => console.error(`[deepseek-routes.js] res.end failed:`, error));
+                res.end();
             }
         }, 100);
 
     } catch (error) {
-        console.error('[deepseek-routes.js] Stream chat error:', error);
+        console.error('Stream chat error:', error);
         res.write(`data: ${JSON.stringify({ error: error.message, done: true })}\n\n`);
-        res.end().catch(error => console.error(`[deepseek-routes.js] res.end failed:`, error));
+        res.end();
     }
 });
 
@@ -369,7 +362,7 @@ router.post('/autocomplete', checkDeepSeekConfig, async (req, res) => {
         });
 
     } catch (error) {
-        console.error('[deepseek-routes.js] Autocomplete error:', error);
+        console.error('Autocomplete error:', error);
         res.status(500).json({ 
             error: 'Autocomplete failed',
             message: error.message 
@@ -431,7 +424,7 @@ router.post('/batch-process', checkDeepSeekConfig, async (req, res) => {
         });
 
     } catch (error) {
-        console.error('[deepseek-routes.js] Batch process error:', error);
+        console.error('Batch process error:', error);
         res.status(500).json({ 
             error: 'Batch process failed',
             message: error.message 
@@ -489,7 +482,7 @@ router.get('/monitor', async (req, res) => {
     try {
         const status = await deepseekAI.getCacheStats();
         const healthCheck = {
-            uptime: process.uptime().catch(error => console.error(`[deepseek-routes.js] process.uptime failed:`, error)),
+            uptime: process.uptime(),
             memory: process.memoryUsage(),
             timestamp: new Date().toISOString(),
             apiStatus: 'healthy',
@@ -506,7 +499,7 @@ router.get('/monitor', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('[deepseek-routes.js] Monitor error:', error);
+        console.error('Monitor error:', error);
         res.status(500).json({ 
             error: 'Monitor failed',
             message: error.message 
@@ -529,7 +522,7 @@ router.get('/logs', async (req, res) => {
                 module: 'deepseek-ai'
             },
             {
-                timestamp: new Date(Date.now().catch(error => console.error(`[deepseek-routes.js] Date.now failed:`, error)) - 60000).toISOString(),
+                timestamp: new Date(Date.now() - 60000).toISOString(),
                 level: 'info',
                 message: 'API request processed successfully',
                 module: 'deepseek-routes'
@@ -543,7 +536,7 @@ router.get('/logs', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('[deepseek-routes.js] Logs error:', error);
+        console.error('Logs error:', error);
         res.status(500).json({ 
             error: 'Failed to retrieve logs',
             message: error.message 
@@ -556,14 +549,14 @@ router.get('/metrics', async (req, res) => {
     try {
         const metrics = {
             timestamp: new Date().toISOString(),
-            uptime: process.uptime().catch(error => console.error(`[deepseek-routes.js] process.uptime failed:`, error)),
+            uptime: process.uptime(),
             memory: {
-                used: Math.round(process.memoryUsage().catch(error => console.error(`[deepseek-routes.js] process.memoryUsage failed:`, error)).heapUsed / 1024 / 1024 * 100) / 100,
+                used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024 * 100) / 100,
                 total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024 * 100) / 100,
-                external: Math.round(process.memoryUsage().catch(error => console.error(`[deepseek-routes.js] process.memoryUsage failed:`, error)).external / 1024 / 1024 * 100) / 100
+                external: Math.round(process.memoryUsage().external / 1024 / 1024 * 100) / 100
             },
             cpu: {
-                usage: Math.round(process.cpuUsage().catch(error => console.error(`[deepseek-routes.js] process.cpuUsage failed:`, error)).user / 1000000 * 100) / 100
+                usage: Math.round(process.cpuUsage().user / 1000000 * 100) / 100
             },
             requests: {
                 total: 0, // 这里应该从实际的计数器获取
@@ -579,7 +572,7 @@ router.get('/metrics', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('[deepseek-routes.js] Metrics error:', error);
+        console.error('Metrics error:', error);
         res.status(500).json({ 
             error: 'Failed to retrieve metrics',
             message: error.message 
@@ -593,7 +586,7 @@ router.get('/health-detailed', async (req, res) => {
         const health = {
             status: 'healthy',
             timestamp: new Date().toISOString(),
-            uptime: process.uptime().catch(error => console.error(`[deepseek-routes.js] process.uptime failed:`, error)),
+            uptime: process.uptime(),
             version: '1.3.0',
             services: {
                 deepseek: {
@@ -611,9 +604,9 @@ router.get('/health-detailed', async (req, res) => {
                 }
             },
             performance: {
-                memory: process.memoryUsage().catch(error => console.error(`[deepseek-routes.js] process.memoryUsage failed:`, error)),
+                memory: process.memoryUsage(),
                 uptime: process.uptime(),
-                cpu: process.cpuUsage().catch(error => console.error(`[deepseek-routes.js] process.cpuUsage failed:`, error))
+                cpu: process.cpuUsage()
             }
         };
 
@@ -628,7 +621,7 @@ router.get('/health-detailed', async (req, res) => {
         res.status(health.statusCode).json(health);
 
     } catch (error) {
-        console.error('[deepseek-routes.js] Health check error:', error);
+        console.error('Health check error:', error);
         res.status(500).json({
             status: 'unhealthy',
             error: error.message,

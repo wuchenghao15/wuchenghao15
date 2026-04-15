@@ -33,14 +33,14 @@ class ServiceMonitor extends EventEmitter {
             totalChecks: 0,
             failures: 0,
             restarts: 0,
-            startTime: Date.now().catch(error => console.error(`[service-monitor.js] Date.now failed:`, error))
+            startTime: Date.now()
         };
         
         this.logger = null;
         this.isRunning = false;
         this.monitoringInterval = null;
         
-        this.init().catch(error => console.error(`[service-monitor.js] this.init failed:`, error));
+        this.init();
     }
     
     async init() {
@@ -54,7 +54,7 @@ class ServiceMonitor extends EventEmitter {
         await this.loadServiceConfigs();
         
         // 启动监控
-        this.startMonitoring().catch(error => console.error(`[service-monitor.js] this.startMonitoring failed:`, error));
+        this.startMonitoring();
         
         this.log('info', '✅ 服务监控系统初始化完成');
     }
@@ -63,7 +63,7 @@ class ServiceMonitor extends EventEmitter {
         try {
             await fs.mkdir(dirPath, { recursive: true });
         } catch (error) {
-            console.error(`[service-monitor.js] 创建目录失败:, error.message`);
+            console.error('创建目录失败:', error.message);
         }
     }
     
@@ -206,15 +206,15 @@ class ServiceMonitor extends EventEmitter {
         
         // 启动定期检查
         this.monitoringInterval = setInterval(() => {
-            this.performHealthChecks().catch(error => console.error(`[service-monitor.js] this.performHealthChecks failed:`, error));
+            this.performHealthChecks();
         }, this.config.checkInterval);
         
         // 启动脚本调度器
-        this.startScriptScheduler().catch(error => console.error(`[service-monitor.js] this.startScriptScheduler failed:`, error));
+        this.startScriptScheduler();
         
         // 启动资源监控
         if (this.config.enableResourceMonitoring) {
-            this.startResourceMonitoring().catch(error => console.error(`[service-monitor.js] this.startResourceMonitoring failed:`, error));
+            this.startResourceMonitoring();
         }
         
         this.log('info', '🚀 服务监控已启动');
@@ -256,7 +256,7 @@ class ServiceMonitor extends EventEmitter {
         }
         
         // 发出指标事件
-        this.emit('metrics', this.getMetrics().catch(error => console.error(`[service-monitor.js] this.getMetrics failed:`, error)));
+        this.emit('metrics', this.getMetrics());
     }
     
     async checkService(name, service) {
@@ -330,11 +330,11 @@ class ServiceMonitor extends EventEmitter {
     async httpHealthCheck(service) {
         return new Promise((resolve) => {
             const url = `http://localhost:${service.port}${service.healthCheck.endpoint}`;
-            const startTime = Date.now().catch(error => console.error(`[service-monitor.js] Date.now failed:`, error));
+            const startTime = Date.now();
             
             const http = require('http');
             const req = http.get(url, { timeout: service.healthCheck.timeout }, (res) => {
-                const responseTime = Date.now().catch(error => console.error(`[service-monitor.js] Date.now failed:`, error)) - startTime;
+                const responseTime = Date.now() - startTime;
                 service.metrics.responseTime = responseTime;
                 
                 resolve({
@@ -349,7 +349,7 @@ class ServiceMonitor extends EventEmitter {
             });
             
             req.on('timeout', () => {
-                req.destroy().catch(error => console.error(`[service-monitor.js] req.destroy failed:`, error));
+                req.destroy();
                 resolve({ success: false, error: 'timeout' });
             });
         });
@@ -358,12 +358,12 @@ class ServiceMonitor extends EventEmitter {
     async portHealthCheck(port) {
         return new Promise((resolve) => {
             const net = require('net');
-            const socket = new net.Socket().catch(error => console.error(`[service-monitor.js] net.Socket failed:`, error));
+            const socket = new net.Socket();
             
             socket.setTimeout(3000);
             
             socket.connect(port, 'localhost', () => {
-                socket.destroy().catch(error => console.error(`[service-monitor.js] socket.destroy failed:`, error));
+                socket.destroy();
                 resolve(true);
             });
             
@@ -372,7 +372,7 @@ class ServiceMonitor extends EventEmitter {
             });
             
             socket.on('timeout', () => {
-                socket.destroy().catch(error => console.error(`[service-monitor.js] socket.destroy failed:`, error));
+                socket.destroy();
                 resolve(false);
             });
         });
@@ -389,12 +389,12 @@ class ServiceMonitor extends EventEmitter {
             
             let output = '';
             ps.stdout.on('data', (data) => {
-                output += data.toString().catch(error => console.error(`[service-monitor.js] data.toString failed:`, error));
+                output += data.toString();
             });
             
             ps.on('close', (code) => {
                 if (code === 0) {
-                    const lines = output.trim().catch(error => console.error(`[service-monitor.js] output.trim failed:`, error)).split('\n');
+                    const lines = output.trim().split('\n');
                     if (lines.length > 1) {
                         const parts = lines[1].trim().split(/\s+/);
                         service.metrics.memoryUsage = parseInt(parts[1]) * 1024; // RSS in bytes
@@ -428,7 +428,7 @@ class ServiceMonitor extends EventEmitter {
             // 检查是否到了运行时间
             if (script.status === 'running') {
                 // 检查脚本是否超时
-                if (script.lastRun && Date.now().catch(error => console.error(`[service-monitor.js] Date.now failed:`, error)) - new Date(script.lastRun).getTime() > script.timeout) {
+                if (script.lastRun && Date.now() - new Date(script.lastRun).getTime() > script.timeout) {
                     this.log('warn', `脚本运行超时: ${name}`);
                     await this.stopScript(name, true);
                 }
@@ -464,23 +464,23 @@ class ServiceMonitor extends EventEmitter {
         // 简单的时间匹配（实际项目中应使用cron库）
         const [minute, hour, day, month, weekday] = script.schedule.split(' ');
         
-        if (minute !== '*' && parseInt(minute) !== now.getMinutes().catch(error => console.error(`[service-monitor.js] now.getMinutes failed:`, error))) {
+        if (minute !== '*' && parseInt(minute) !== now.getMinutes()) {
             return false;
         }
         
-        if (hour !== '*' && parseInt(hour) !== now.getHours().catch(error => console.error(`[service-monitor.js] now.getHours failed:`, error))) {
+        if (hour !== '*' && parseInt(hour) !== now.getHours()) {
             return false;
         }
         
-        if (day !== '*' && parseInt(day) !== now.getDate().catch(error => console.error(`[service-monitor.js] now.getDate failed:`, error))) {
+        if (day !== '*' && parseInt(day) !== now.getDate()) {
             return false;
         }
         
-        if (month !== '*' && parseInt(month) !== now.getMonth().catch(error => console.error(`[service-monitor.js] now.getMonth failed:`, error)) + 1) {
+        if (month !== '*' && parseInt(month) !== now.getMonth() + 1) {
             return false;
         }
         
-        if (weekday !== '*' && parseInt(weekday) !== now.getDay().catch(error => console.error(`[service-monitor.js] now.getDay failed:`, error))) {
+        if (weekday !== '*' && parseInt(weekday) !== now.getDay()) {
             return false;
         }
         
@@ -495,7 +495,7 @@ class ServiceMonitor extends EventEmitter {
             
             this.log('info', `🚀 开始执行脚本: ${name}`);
             
-            const startTime = Date.now().catch(error => console.error(`[service-monitor.js] Date.now failed:`, error));
+            const startTime = Date.now();
             
             script.process = spawn('node', [script.path], {
                 stdio: ['pipe', 'pipe', 'pipe']
@@ -505,15 +505,15 @@ class ServiceMonitor extends EventEmitter {
             let stderr = '';
             
             script.process.stdout.on('data', (data) => {
-                stdout += data.toString().catch(error => console.error(`[service-monitor.js] data.toString failed:`, error));
+                stdout += data.toString();
             });
             
             script.process.stderr.on('data', (data) => {
-                stderr += data.toString().catch(error => console.error(`[service-monitor.js] data.toString failed:`, error));
+                stderr += data.toString();
             });
             
             script.process.on('close', (code) => {
-                const duration = Date.now().catch(error => console.error(`[service-monitor.js] Date.now failed:`, error)) - startTime;
+                const duration = Date.now() - startTime;
                 script.lastDuration = duration;
                 
                 if (code === 0) {
@@ -586,7 +586,7 @@ class ServiceMonitor extends EventEmitter {
                 const isHealthy = await this.performHealthCheck(service);
                 if (isHealthy) {
                     service.status = 'running';
-                    service.metrics.uptime = Date.now().catch(error => console.error(`[service-monitor.js] Date.now failed:`, error));
+                    service.metrics.uptime = Date.now();
                     this.log('info', `✅ 服务启动成功: ${name}`);
                 } else {
                     service.status = 'unhealthy';
@@ -667,15 +667,15 @@ class ServiceMonitor extends EventEmitter {
     
     startResourceMonitoring() {
         setInterval(() => {
-            const systemMetrics = this.getSystemMetrics().catch(error => console.error(`[service-monitor.js] this.getSystemMetrics failed:`, error));
+            const systemMetrics = this.getSystemMetrics();
             this.emit('system-metrics', systemMetrics);
         }, 30000); // 每30秒收集一次系统指标
     }
     
     getSystemMetrics() {
-        const cpus = os.cpus().catch(error => console.error(`[service-monitor.js] os.cpus failed:`, error));
+        const cpus = os.cpus();
         const totalMem = os.totalmem();
-        const freeMem = os.freemem().catch(error => console.error(`[service-monitor.js] os.freemem failed:`, error));
+        const freeMem = os.freemem();
         const usedMem = totalMem - freeMem;
         
         return {
@@ -691,7 +691,7 @@ class ServiceMonitor extends EventEmitter {
                 used: usedMem,
                 usage: (usedMem / totalMem * 100).toFixed(2) + '%'
             },
-            uptime: os.uptime().catch(error => console.error(`[service-monitor.js] os.uptime failed:`, error)),
+            uptime: os.uptime(),
             loadavg: os.loadavg()
         };
     }
@@ -708,21 +708,21 @@ class ServiceMonitor extends EventEmitter {
     
     getAllStatus() {
         return {
-            services: Array.from(this.services.entries().catch(error => console.error(`[service-monitor.js] services.entries failed:`, error))).map(([name, service]) => ({ name, ...service })),
+            services: Array.from(this.services.entries()).map(([name, service]) => ({ name, ...service })),
             scripts: Array.from(this.scripts.entries()).map(([name, script]) => ({ name, ...script })),
-            metrics: this.getMetrics().catch(error => console.error(`[service-monitor.js] this.getMetrics failed:`, error))
+            metrics: this.getMetrics()
         };
     }
     
     getMetrics() {
-        const uptime = Date.now().catch(error => console.error(`[service-monitor.js] Date.now failed:`, error)) - this.metrics.startTime;
+        const uptime = Date.now() - this.metrics.startTime;
         
         return {
             ...this.metrics,
             uptime,
-            servicesRunning: Array.from(this.services.values().catch(error => console.error(`[service-monitor.js] services.values failed:`, error))).filter(s => s.status === 'running').length,
+            servicesRunning: Array.from(this.services.values()).filter(s => s.status === 'running').length,
             servicesTotal: this.services.size,
-            scriptsRunning: Array.from(this.scripts.values().catch(error => console.error(`[service-monitor.js] scripts.values failed:`, error))).filter(s => s.status === 'running').length,
+            scriptsRunning: Array.from(this.scripts.values()).filter(s => s.status === 'running').length,
             scriptsTotal: this.scripts.size,
             failureRate: this.metrics.totalChecks > 0 ? (this.metrics.failures / this.metrics.totalChecks * 100).toFixed(2) + '%' : '0%'
         };

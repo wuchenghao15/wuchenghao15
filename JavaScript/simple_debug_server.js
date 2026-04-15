@@ -80,7 +80,7 @@ const server = http.createServer((req, res) => {
     // 读取文件
     fs.readFile(fullPath, (err, content) => {
       if (err) {
-        console.error(`[simple_debug_server.js] `[${new Date(`).toISOString()}] 读取文件错误: ${err.message}`);
+        console.error(`[${new Date().toISOString()}] 读取文件错误: ${err.message}`);
         res.writeHead(500, { 'Content-Type': 'text/html' });
         res.end(`<h1>500 服务器错误</h1><p>错误信息: ${err.message}</p>`);
         return;
@@ -113,7 +113,7 @@ server.listen(PORT, '0.0.0.0', () => {
 
 // 监听错误
 server.on('error', (err) => {
-  console.error(`[simple_debug_server.js] `[${new Date(`).toISOString()}] 服务器错误: ${err.message}`);
+  console.error(`[${new Date().toISOString()}] 服务器错误: ${err.message}`);
 });
 
 console.log(`[${new Date().toISOString()}] 服务器初始化中...`);

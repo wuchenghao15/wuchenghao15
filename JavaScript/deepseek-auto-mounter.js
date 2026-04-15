@@ -36,7 +36,7 @@ class DeepSeekAutoMounter extends EventEmitter {
             responseTime: []
         };
         
-        this.init().catch(error => console.error(`[deepseek-auto-mounter.js] this.init failed:`, error));
+        this.init();
     }
     
     async init() {
@@ -53,7 +53,7 @@ class DeepSeekAutoMounter extends EventEmitter {
         }
         
         // 启动健康检查
-        this.startHealthCheck().catch(error => console.error(`[deepseek-auto-mounter.js] this.startHealthCheck failed:`, error));
+        this.startHealthCheck();
         
         this.log('✅ DeepSeek自动挂载系统初始化完成');
     }
@@ -102,11 +102,11 @@ class DeepSeekAutoMounter extends EventEmitter {
             ]);
             
             downloadProcess.stdout.on('data', (data) => {
-                this.log(`📥 下载进度: ${data.toString().catch(error => console.error(`[deepseek-auto-mounter.js] data.toString failed:`, error)).trim()}`);
+                this.log(`📥 下载进度: ${data.toString().trim()}`);
             });
             
             downloadProcess.stderr.on('data', (data) => {
-                this.log(`⚠️ 下载警告: ${data.toString().catch(error => console.error(`[deepseek-auto-mounter.js] data.toString failed:`, error)).trim()}`);
+                this.log(`⚠️ 下载警告: ${data.toString().trim()}`);
             });
             
             downloadProcess.on('close', (code) => {
@@ -134,7 +134,7 @@ class DeepSeekAutoMounter extends EventEmitter {
             this.modelProcess = spawn('python', [
                 '-m', 'deepseek.serve',
                 '--model-path', this.config.modelPath,
-                '--port', this.config.port.toString().catch(error => console.error(`[deepseek-auto-mounter.js] port.toString failed:`, error)),
+                '--port', this.config.port.toString(),
                 '--host', '0.0.0.0'
             ], {
                 stdio: ['pipe', 'pipe', 'pipe'],
@@ -142,12 +142,12 @@ class DeepSeekAutoMounter extends EventEmitter {
             });
             
             this.modelProcess.stdout.on('data', (data) => {
-                const output = data.toString().catch(error => console.error(`[deepseek-auto-mounter.js] data.toString failed:`, error)).trim();
+                const output = data.toString().trim();
                 this.log(`📤 模型输出: ${output}`);
                 
                 if (output.includes('Server started') || output.includes('Listening')) {
                     this.isMounted = true;
-                    this.metrics.startTime = Date.now().catch(error => console.error(`[deepseek-auto-mounter.js] Date.now failed:`, error));
+                    this.metrics.startTime = Date.now();
                     this.metrics.restartCount++;
                     this.log('✅ DeepSeek模型挂载成功');
                     this.emit('mounted', { port: this.config.port });
@@ -156,7 +156,7 @@ class DeepSeekAutoMounter extends EventEmitter {
             });
             
             this.modelProcess.stderr.on('data', (data) => {
-                const error = data.toString().catch(error => console.error(`[deepseek-auto-mounter.js] data.toString failed:`, error)).trim();
+                const error = data.toString().trim();
                 this.log(`❌ 模型错误: ${error}`);
                 this.metrics.errorCount++;
                 this.emit('error', error);
@@ -173,7 +173,7 @@ class DeepSeekAutoMounter extends EventEmitter {
                     
                     if (this.retryCount <= this.config.maxRetries) {
                         this.log(`🔄 尝试重新挂载 (${this.retryCount}/${this.config.maxRetries})`);
-                        setTimeout(() => this.mountModel().catch(error => console.error(`[deepseek-auto-mounter.js] this.mountModel failed:`, error)), 5000);
+                        setTimeout(() => this.mountModel(), 5000);
                     } else {
                         this.log('❌ 达到最大重试次数，停止挂载');
                         reject(new Error('挂载失败'));
@@ -181,7 +181,13 @@ class DeepSeekAutoMounter extends EventEmitter {
                 }
             });
             
-            // 取消挂载超时机制
+            // 设置超时
+            setTimeout(() => {
+                if (!this.isMounted) {
+                    this.log('⏰ 挂载超时');
+                    reject(new Error('挂载超时'));
+                }
+            }, 60000);
         });
     }
     
@@ -203,6 +209,13 @@ class DeepSeekAutoMounter extends EventEmitter {
             });
             
             this.modelProcess.kill('SIGTERM');
+            
+            // 强制终止
+            setTimeout(() => {
+                if (this.modelProcess) {
+                    this.modelProcess.kill('SIGKILL');
+                }
+            }, 10000);
         });
     }
     
@@ -220,7 +233,7 @@ class DeepSeekAutoMounter extends EventEmitter {
     
     async performHealthCheck() {
         try {
-            this.lastHealthCheck = Date.now().catch(error => console.error(`[deepseek-auto-mounter.js] Date.now failed:`, error));
+            this.lastHealthCheck = Date.now();
             
             if (!this.isMounted) {
                 this.log('⚠️ 模型未挂载，尝试挂载...');
@@ -237,13 +250,13 @@ class DeepSeekAutoMounter extends EventEmitter {
             }
             
             // 检查HTTP响应
-            const startTime = Date.now().catch(error => console.error(`[deepseek-auto-mounter.js] Date.now failed:`, error));
+            const startTime = Date.now();
             const response = await fetch(`http://localhost:${this.config.port}/health`);
-            const responseTime = Date.now().catch(error => console.error(`[deepseek-auto-mounter.js] Date.now failed:`, error)) - startTime;
+            const responseTime = Date.now() - startTime;
             
             this.metrics.responseTime.push(responseTime);
             if (this.metrics.responseTime.length > 100) {
-                this.metrics.responseTime.shift().catch(error => console.error(`[deepseek-auto-mounter.js] responseTime.shift failed:`, error));
+                this.metrics.responseTime.shift();
             }
             
             if (response.ok) {
@@ -268,7 +281,7 @@ class DeepSeekAutoMounter extends EventEmitter {
     }
     
     getMetrics() {
-        const now = Date.now().catch(error => console.error(`[deepseek-auto-mounter.js] Date.now failed:`, error));
+        const now = Date.now();
         const uptime = this.metrics.startTime ? now - this.metrics.startTime : 0;
         
         const avgResponseTime = this.metrics.responseTime.length > 0
@@ -296,7 +309,7 @@ class DeepSeekAutoMounter extends EventEmitter {
         // 写入日志文件
         fs.appendFile(this.config.logPath, logMessage + '\n', (err) => {
             if (err) {
-                console.error(`[deepseek-auto-mounter.js] 写入日志失败:, err`);
+                console.error('写入日志失败:', err);
             }
         });
     }

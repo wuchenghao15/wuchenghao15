@@ -30,9 +30,9 @@ const PORT = process.env.PORT || 3000;
 const logger = winston.createLogger({
     level: 'info',
     format: winston.format.combine(
-        winston.format.timestamp().catch(error => console.error(`[login-api-server_1763109829780.js] format.timestamp failed:`, error)),
+        winston.format.timestamp(),
         winston.format.errors({ stack: true }),
-        winston.format.json().catch(error => console.error(`[login-api-server_1763109829780.js] format.json failed:`, error))
+        winston.format.json()
     ),
     defaultMeta: { service: 'login-api' },
     transports: [
@@ -43,7 +43,7 @@ const logger = winston.createLogger({
 
 if (process.env.NODE_ENV !== 'production') {
     logger.add(new winston.transports.Console({
-        format: winston.format.simple().catch(error => console.error(`[login-api-server_1763109829780.js] format.simple failed:`, error))
+        format: winston.format.simple()
     }));
 }
 
@@ -216,7 +216,7 @@ app.get('/api/captcha', (req, res) => {
         });
         
         const captchaId = uuidv4();
-        const captchaText = captcha.text.toLowerCase().catch(error => console.error(`[login-api-server_1763109829780.js] text.toLowerCase failed:`, error));
+        const captchaText = captcha.text.toLowerCase();
         
         // 存储验证码到Redis
         redisClient.setEx(`captcha:${captchaId}`, 300, captchaText);
@@ -242,11 +242,11 @@ app.post('/api/login', loginLimiter, loginValidation, async (req, res) => {
     try {
         // 检查验证结果
         const errors = validationResult(req);
-        if (!errors.isEmpty().catch(error => console.error(`[login-api-server_1763109829780.js] errors.isEmpty failed:`, error))) {
+        if (!errors.isEmpty()) {
             return res.status(400).json({
                 success: false,
                 message: '输入验证失败',
-                errors: errors.array().catch(error => console.error(`[login-api-server_1763109829780.js] errors.array failed:`, error))
+                errors: errors.array()
             });
         }
 
@@ -254,7 +254,7 @@ app.post('/api/login', loginLimiter, loginValidation, async (req, res) => {
         
         // 验证验证码
         const storedCaptcha = await redisClient.get(`captcha:${captchaId}`);
-        if (!storedCaptcha || storedCaptcha !== captcha.toLowerCase().catch(error => console.error(`[login-api-server_1763109829780.js] captcha.toLowerCase failed:`, error))) {
+        if (!storedCaptcha || storedCaptcha !== captcha.toLowerCase()) {
             return res.status(400).json({
                 success: false,
                 message: '验证码错误'
@@ -490,11 +490,11 @@ app.post('/api/heartbeat', authenticateToken, async (req, res) => {
 app.post('/api/register', registerValidation, async (req, res) => {
     try {
         const errors = validationResult(req);
-        if (!errors.isEmpty().catch(error => console.error(`[login-api-server_1763109829780.js] errors.isEmpty failed:`, error))) {
+        if (!errors.isEmpty()) {
             return res.status(400).json({
                 success: false,
                 message: '输入验证失败',
-                errors: errors.array().catch(error => console.error(`[login-api-server_1763109829780.js] errors.array failed:`, error))
+                errors: errors.array()
             });
         }
 
@@ -543,11 +543,11 @@ app.post('/api/register', registerValidation, async (req, res) => {
 app.post('/api/password-reset-request', passwordResetValidation, async (req, res) => {
     try {
         const errors = validationResult(req);
-        if (!errors.isEmpty().catch(error => console.error(`[login-api-server_1763109829780.js] errors.isEmpty failed:`, error))) {
+        if (!errors.isEmpty()) {
             return res.status(400).json({
                 success: false,
                 message: '输入验证失败',
-                errors: errors.array().catch(error => console.error(`[login-api-server_1763109829780.js] errors.array failed:`, error))
+                errors: errors.array()
             });
         }
 
@@ -596,11 +596,11 @@ app.post('/api/password-reset-request', passwordResetValidation, async (req, res
 app.post('/api/password-reset-confirm', passwordUpdateValidation, async (req, res) => {
     try {
         const errors = validationResult(req);
-        if (!errors.isEmpty().catch(error => console.error(`[login-api-server_1763109829780.js] errors.isEmpty failed:`, error))) {
+        if (!errors.isEmpty()) {
             return res.status(400).json({
                 success: false,
                 message: '输入验证失败',
-                errors: errors.array().catch(error => console.error(`[login-api-server_1763109829780.js] errors.array failed:`, error))
+                errors: errors.array()
             });
         }
 

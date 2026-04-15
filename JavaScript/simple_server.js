@@ -52,7 +52,7 @@ const server = http.createServer((req, res) => {
   // 读取并发送文件
   fs.readFile(filePath, (error, content) => {
     if (error) {
-      console.error(`[simple_server.js] `错误: ${error.message}``);
+      console.error(`错误: ${error.message}`);
       
       if (error.code === 'ENOENT') {
         // 文件不存在

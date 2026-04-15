@@ -72,7 +72,7 @@ class LocalDeepSeekModel {
             return true;
 
         } catch (error) {
-            console.error(`[local-deepseek-model.js] 本地模型初始化失败:, error`);
+            console.error('本地模型初始化失败:', error);
             this.isInitialized = false;
             return false;
         }
@@ -124,7 +124,7 @@ class LocalDeepSeekModel {
             };
 
         } catch (error) {
-            console.error(`[local-deepseek-model.js] 生成响应失败:, error`);
+            console.error('生成响应失败:', error);
             throw error;
         }
     }

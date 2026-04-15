@@ -9,7 +9,7 @@ const PORT = process.env.DEEPSEEK_PORT || 3001;
 const deepseekAI = new DeepSeekAI();
 
 // 中间件
-app.use(express.json().catch(error => console.error(`[deepseek-server.js] express.json failed:`, error)));
+app.use(express.json());
 app.use(express.static(path.join(__dirname, '../HTML')));
 
 // 检查DeepSeek状态
@@ -17,14 +17,7 @@ app.get('/status', async (req, res) => {
     try {
         const isConfigured = await deepseekAI.isConfigured();
         const config = deepseekAI.getConfig();
-        // 错误处理：getCacheStats是同步方法，使用try-catch捕获可能的错误
-let cacheStats;
-try {
-    cacheStats = deepseekAI.getCacheStats();
-} catch (error) {
-    console.error(`[deepseek-server.js] deepseekAI.getCacheStats failed:`, error);
-    cacheStats = { size: 0, maxSize: 0, enabled: false };
-}
+        const cacheStats = deepseekAI.getCacheStats();
 
         res.json({ 
             initialized: true,
@@ -63,7 +56,7 @@ app.post('/chat', async (req, res) => {
             timestamp: new Date().toISOString()
         });
     } catch (error) {
-        console.error(`[deepseek-server.js] Chat error:, error`);
+        console.error('Chat error:', error);
         res.status(500).json({ 
             error: 'Chat failed',
             message: error.message 
@@ -90,7 +83,7 @@ app.post('/generate-code', async (req, res) => {
             timestamp: new Date().toISOString()
         });
     } catch (error) {
-        console.error(`[deepseek-server.js] Code generation error:, error`);
+        console.error('Code generation error:', error);
         res.status(500).json({ 
             error: 'Code generation failed',
             message: error.message 
@@ -116,7 +109,7 @@ app.post('/analyze', async (req, res) => {
             timestamp: new Date().toISOString()
         });
     } catch (error) {
-        console.error(`[deepseek-server.js] Text analysis error:, error`);
+        console.error('Text analysis error:', error);
         res.status(500).json({ 
             error: 'Text analysis failed',
             message: error.message 
@@ -133,7 +126,7 @@ app.listen(PORT, async () => {
     
     try {
         // 检查本地模型状态
-        const config = deepseekAI.getConfig().catch(error => console.error(`[deepseek-server.js] deepseekAI.getConfig failed:`, error));
+        const config = deepseekAI.getConfig();
         if (config.localModel?.enabled) {
             console.log(`🤖 本地模型已启用`);
             console.log(`📁 模型路径: ${config.localModel.modelPath}`);
@@ -141,7 +134,7 @@ app.listen(PORT, async () => {
             console.log(`🌐 使用云端API模式`);
         }
     } catch (error) {
-        console.error(`[deepseek-server.js] 初始化检查失败:, error`);
+        console.error('初始化检查失败:', error);
     }
 });
 

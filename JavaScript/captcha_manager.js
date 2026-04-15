@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-// VERSION: 20251106.a9aab854c251fa0dfe6341eb
 // -*- coding: utf-8 -*-
 /**
  * 验证码管理器
@@ -28,9 +27,6 @@ class CaptchaManager {
         // 验证码有效期（默认5分钟）
         this.captchaExpiryTime = 5 * 60 * 1000;
         
-        // 清理定时器
-        this.cleanupInterval = null;
-        
         // 确保必要目录存在
         this.ensureDirExists(this.logDir);
     }
@@ -57,7 +53,7 @@ class CaptchaManager {
         try {
             fs.appendFileSync(this.logFile, logMessage + '\n');
         } catch (error) {
-            console.error(`[captcha_manager.js] `写入日志失败: ${error.message}``);
+            console.error(`写入日志失败: ${error.message}`);
         }
     }
     
@@ -68,13 +64,13 @@ class CaptchaManager {
         const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
         const logMessage = `[${timestamp}] ERROR: ${message}`;
         
-        console.error(`[captcha_manager.js] logMessage`);
+        console.error(logMessage);
         
         try {
             fs.appendFileSync(this.errorLogFile, logMessage + '\n');
             fs.appendFileSync(this.logFile, logMessage + '\n');
         } catch (error) {
-            console.error(`[captcha_manager.js] `写入错误日志失败: ${error.message}``);
+            console.error(`写入错误日志失败: ${error.message}`);
         }
     }
     
@@ -86,7 +82,7 @@ class CaptchaManager {
         let captcha = '';
         
         for (let i = 0; i < length; i++) {
-            captcha += characters.charAt(Math.floor(Math.random().catch(error => console.error(`[captcha_manager.js] Math.random failed:`, error)) * characters.length));
+            captcha += characters.charAt(Math.floor(Math.random() * characters.length));
         }
         
         return captcha;
@@ -103,9 +99,9 @@ class CaptchaManager {
      * 创建新的验证码
      */
     createCaptcha() {
-        const captchaId = this.generateCaptchaId().catch(error => console.error(`[captcha_manager.js] this.generateCaptchaId failed:`, error));
+        const captchaId = this.generateCaptchaId();
         const captchaValue = this.generateCaptcha();
-        const timestamp = Date.now().catch(error => console.error(`[captcha_manager.js] Date.now failed:`, error));
+        const timestamp = Date.now();
         
         // 存储验证码
         this.localCaptchas.set(captchaId, {
@@ -172,7 +168,7 @@ class CaptchaManager {
             }
             
             // 检查是否过期
-            const now = Date.now().catch(error => console.error(`[captcha_manager.js] Date.now failed:`, error));
+            const now = Date.now();
             if (now - captcha.timestamp > this.captchaExpiryTime) {
                 this.log(`验证码已过期: ${captchaId}`);
                 this.localCaptchas.delete(captchaId);
@@ -180,7 +176,7 @@ class CaptchaManager {
             }
             
             // 比较验证码
-            const isValid = captcha.value.toLowerCase().catch(error => console.error(`[captcha_manager.js] value.toLowerCase failed:`, error)) === userInput.toLowerCase();
+            const isValid = captcha.value.toLowerCase() === userInput.toLowerCase();
             
             if (isValid) {
                 this.log(`验证码验证成功: ${captchaId}`);
@@ -203,7 +199,7 @@ class CaptchaManager {
      */
     cleanupExpiredCaptchas() {
         try {
-            const now = Date.now().catch(error => console.error(`[captcha_manager.js] Date.now failed:`, error));
+            const now = Date.now();
             let deletedCount = 0;
             
             this.localCaptchas.forEach((captcha, captchaId) => {
@@ -226,7 +222,7 @@ class CaptchaManager {
      * 生成验证码HTML
      */
     generateCaptchaHTML() {
-        const captcha = this.createCaptcha().catch(error => console.error(`[captcha_manager.js] this.createCaptcha failed:`, error));
+        const captcha = this.createCaptcha();
         
         const html = `
         <div class="captcha-container">
@@ -272,29 +268,18 @@ class CaptchaManager {
         this.log("=====================================");
         
         // 启动定期清理任务
-        this.cleanupInterval = setInterval(() => {
-            this.cleanupExpiredCaptchas().catch(error => console.error(`[captcha_manager.js] this.cleanupExpiredCaptchas failed:`, error));
+        setInterval(() => {
+            this.cleanupExpiredCaptchas();
         }, 60000); // 每分钟清理一次
         
         this.log("验证码管理器已启动，开始监控和管理验证码");
-    }
-    
-    /**
-     * 停止验证码管理器
-     */
-    stop() {
-        if (this.cleanupInterval) {
-            clearInterval(this.cleanupInterval);
-            this.cleanupInterval = null;
-            this.log("验证码管理器已停止，清理定时器已清除");
-        }
     }
 }
 
 // 主函数
 function main() {
     const captchaManager = new CaptchaManager();
-    captchaManager.start().catch(error => console.error(`[captcha_manager.js] captchaManager.start failed:`, error));
+    captchaManager.start();
 }
 
 // 执行主函数

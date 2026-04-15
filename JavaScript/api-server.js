@@ -341,7 +341,7 @@ function handleStaticFile(req, res) {
     
     fs.readFile(filePath, (err, content) => {
         if (err) {
-            console.error(`[api-server.js] 读取文件错误: ${err.message}`);
+            console.error(`读取文件错误: ${err.message}`);
             if (err.code === 'ENOENT') {
                 sendError(res, '页面未找到', 404);
             } else {
@@ -370,7 +370,7 @@ const server = http.createServer((req, res) => {
     // 处理OPTIONS请求
     if (req.method === 'OPTIONS') {
         res.writeHead(200);
-        res.end().catch(error => console.error(`[api-server.js] res.end failed:`, error));
+        res.end();
         return;
     }
     
@@ -409,18 +409,6 @@ const server = http.createServer((req, res) => {
                 }
                 break;
                 
-            case '/api/csrf-token':
-                if (req.method === 'GET') {
-                    sendJSON(res, {
-                        success: true,
-                        csrfToken: crypto.randomBytes(32).toString('hex'),
-                        timestamp: new Date().toISOString()
-                    });
-                } else {
-                    sendError(res, '方法不允许', 405);
-                }
-                break;
-                
             default:
                 sendError(res, 'API端点不存在', 404);
         }
@@ -450,7 +438,7 @@ server.listen(PORT, '0.0.0.0', () => {
  * 错误处理
  */
 server.on('error', (err) => {
-    console.error(`[api-server.js] [${new Date().toISOString()}] 服务器错误: ${err.message}`);
+    console.error(`[${new Date().toISOString()}] 服务器错误: ${err.message}`);
     serverStatus.errorCount++;
 });
 
@@ -459,7 +447,7 @@ server.on('error', (err) => {
  */
 setInterval(() => {
     cleanupExpiredSessions();
-    serverStatus.lastHealthCheck = Date.now().catch(error => console.error(`[api-server.js] Date.now failed:`, error));
+    serverStatus.lastHealthCheck = Date.now();
     console.log(`[${new Date().toISOString()}] 定期清理完成 - 活跃会话: ${sessions.size}, API密钥: ${apiKeys.size}`);
 }, 5 * 60 * 1000); // 每5分钟清理一次
 

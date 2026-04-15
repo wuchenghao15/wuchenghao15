@@ -1,7 +1,7 @@
 <?php
 // MTSCOS PHP页面
 // 转换自：/Users/wuchenghao/Library/CloudStorage/OneDrive-个人/文档/MTSCOS_AI_Project/HTML/admin.html
-// 转换时间：2025-11-14 17:06:33
+// 转换时间：2025-11-08 07:47:18
 
 // 加载配置
  = include 'config.php';
@@ -14,11 +14,11 @@ if (['REQUEST_METHOD'] === 'POST') {
     if (isset(['action']) && ['action'] === 'update_settings') {
         // 这里可以添加实际的设置更新逻辑
         ['message'] = '设置已更新';
-
+        
         // 记录到日志
         error_log("设置更新: " . json_encode(), 3, '../Logs/admin_actions.log');
     }
-
+    
     // 处理其他操作...
     echo json_encode();
     exit;
@@ -33,7 +33,7 @@ function generateDynamicContent() {
                 <span class='system-status'>系统状态: 正常</span>
                 <span class='last-update'>最后更新: " . date('Y-m-d H:i:s') . "</span>
             </div>";
-
+            
         case 'settings_panel':
             return "<div class='php-settings-panel'>
                 <h3>动态设置</h3>
@@ -54,7 +54,7 @@ function generateDynamicContent() {
                     <button type='submit'>保存设置</button>
                 </form>
             </div>";
-
+            
         case 'system_info':
             return "<div class='php-system-info'>
                 <h3>系统信息</h3>
@@ -63,7 +63,7 @@ function generateDynamicContent() {
                 <p>监控状态: " . (['config']['monitoring']['enabled'] ? '启用' : '禁用') . "</p>
                 <p>检查间隔: " . ['config']['monitoring']['check_interval'] . " 秒</p>
             </div>";
-
+            
         default:
             return '';
     }
@@ -131,7 +131,7 @@ function generateDynamicContent() {
 <body>
     <!-- 插入动态头部内容 -->
     <?php echo generateDynamicContent('header'); ?>
-
+    
     <!-- 保留原有的HTML内容，替换为动态版本 -->
     <div class='admin-container'>
         <div class='sidebar'>
@@ -150,7 +150,7 @@ function generateDynamicContent() {
                 </ul>
             </nav>
         </div>
-
+        
         <div class='main-content'>
             <!-- 主要内容区域 -->
             <div class='content-header'>
@@ -160,18 +160,18 @@ function generateDynamicContent() {
                     <button id='backup-btn'>备份系统</button>
                 </div>
             </div>
-
+            
             <!-- 插入动态内容区域 -->
             <?php echo generateDynamicContent('settings_panel'); ?>
             <?php echo generateDynamicContent('system_info'); ?>
-
+            
             <!-- 动态内容占位符，将被JavaScript填充 -->
             <div class='dynamic-content'>
                 <!-- 内容将通过AJAX动态加载 -->
             </div>
         </div>
     </div>
-
+    
     <!-- 保留原有的JavaScript引用 -->
     <script src='../JavaScript/admin-script.js'></script>
     <script>
@@ -183,7 +183,7 @@ function generateDynamicContent() {
                 settingsForm.addEventListener('submit', function(e) {
                     e.preventDefault();
                     const formData = new FormData(this);
-
+                    
                     fetch(window.location.href, {
                         method: 'POST',
                         body: formData
@@ -203,7 +203,7 @@ function generateDynamicContent() {
                     });
                 });
             }
-
+            
             // 刷新按钮功能
             const refreshBtn = document.getElementById('refresh-btn');
             if (refreshBtn) {
@@ -211,13 +211,13 @@ function generateDynamicContent() {
                     location.reload();
                 });
             }
-
+            
             // 动态加载内容
             function loadDynamicContent(section) {
                 // 这里可以添加AJAX加载内容的逻辑
                 console.log('加载动态内容:', section);
             }
-
+            
             // 根据URL哈希加载内容
             if (window.location.hash) {
                 loadDynamicContent(window.location.hash.substring(1));

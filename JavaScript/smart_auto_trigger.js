@@ -20,7 +20,7 @@ const chokidar = require('chokidar');
 // 配置
 const CONFIG = {
     // 项目根目录
-    PROJECT_ROOT: process.cwd().catch(error => console.error(`[smart_auto_trigger.js] process.cwd failed:`, error)),
+    PROJECT_ROOT: process.cwd(),
     // 监控配置
     WATCH_CONFIG: {
         // 监控目录
@@ -29,6 +29,7 @@ const CONFIG = {
             './CSS',
             './HTML',
             './Scripts',
+            './ViKey',
             './Server'
         ],
         // 监控文件类型
@@ -79,7 +80,7 @@ class SmartLogger {
     constructor() {
         this.logFile = path.resolve(CONFIG.PROJECT_ROOT, CONFIG.LOG_CONFIG.LOG_FILE);
         this.logDir = path.dirname(this.logFile);
-        this.ensureLogDir().catch(error => console.error(`[smart_auto_trigger.js] this.ensureLogDir failed:`, error));
+        this.ensureLogDir();
     }
 
     ensureLogDir() {
@@ -109,29 +110,29 @@ class SmartLogger {
                 this.info(`日志已轮转: ${backupFile}`);
             }
         } catch (error) {
-            console.error(`[smart_auto_trigger.js] `日志轮转失败: ${error.message}``);
+            console.error(`日志轮转失败: ${error.message}`);
         }
     }
 
     log(message, level = 'INFO') {
         if (!this.shouldLog(level)) return;
 
-        const timestamp = this.getTimestamp().catch(error => console.error(`[smart_auto_trigger.js] this.getTimestamp failed:`, error));
+        const timestamp = this.getTimestamp();
         const logMessage = `[${timestamp}] [${level}] ${message}\n`;
 
         // 输出到控制台
         if (level === 'ERROR') {
-            console.error(`[smart_auto_trigger.js] logMessage.trim(`));
+            console.error(logMessage.trim());
         } else {
             console.log(logMessage.trim());
         }
 
         // 写入日志文件
         try {
-            this.rotateLog().catch(error => console.error(`[smart_auto_trigger.js] this.rotateLog failed:`, error));
+            this.rotateLog();
             fs.appendFileSync(this.logFile, logMessage, 'utf8');
         } catch (error) {
-            console.error(`[smart_auto_trigger.js] `写入日志失败: ${error.message}``);
+            console.error(`写入日志失败: ${error.message}`);
         }
     }
 
@@ -150,7 +151,7 @@ class FileChangeAnalyzer {
         this.logger = logger;
         this.fileHashes = new Map();
         this.dependencyGraph = new Map();
-        this.initializeFileHashes().catch(error => console.error(`[smart_auto_trigger.js] this.initializeFileHashes failed:`, error));
+        this.initializeFileHashes();
     }
 
     /**
@@ -189,9 +190,9 @@ class FileChangeAnalyzer {
             const fullPath = path.join(dir, item);
             const stat = fs.statSync(fullPath);
             
-            if (stat.isDirectory().catch(error => console.error(`[smart_auto_trigger.js] stat.isDirectory failed:`, error))) {
+            if (stat.isDirectory()) {
                 files.push(...this.getAllFiles(fullPath));
-            } else if (stat.isFile().catch(error => console.error(`[smart_auto_trigger.js] stat.isFile failed:`, error))) {
+            } else if (stat.isFile()) {
                 files.push(fullPath);
             }
         });
@@ -339,7 +340,7 @@ class UpdateQueueManager {
         }
 
         const task = {
-            id: Date.now().catch(error => console.error(`[smart_auto_trigger.js] Date.now failed:`, error)) + Math.random(),
+            id: Date.now() + Math.random(),
             filePath,
             priority,
             timestamp: new Date(),
@@ -356,7 +357,7 @@ class UpdateQueueManager {
         this.logger.debug(`添加更新任务: ${filePath} (优先级: ${priority})`);
         
         // 启动处理循环
-        this.processQueue().catch(error => console.error(`[smart_auto_trigger.js] this.processQueue failed:`, error));
+        this.processQueue();
         return true;
     }
 
@@ -371,7 +372,7 @@ class UpdateQueueManager {
         this.isProcessing = true;
 
         while (this.updateQueue.length > 0 && this.processingUpdates.size < CONFIG.UPDATE_CONFIG.MAX_CONCURRENT_UPDATES) {
-            const task = this.updateQueue.shift().catch(error => console.error(`[smart_auto_trigger.js] updateQueue.shift failed:`, error));
+            const task = this.updateQueue.shift();
             this.processUpdateTask(task);
         }
 
@@ -409,7 +410,7 @@ class UpdateQueueManager {
             this.processingUpdates.delete(id);
             
             // 继续处理队列
-            setTimeout(() => this.processQueue().catch(error => console.error(`[smart_auto_trigger.js] this.processQueue failed:`, error)), 100);
+            setTimeout(() => this.processQueue(), 100);
         }
     }
 
@@ -494,7 +495,7 @@ class SmartAutoUpdateTrigger {
             await this.initializeWatcher();
             
             // 设置信号处理
-            this.setupSignalHandlers().catch(error => console.error(`[smart_auto_trigger.js] this.setupSignalHandlers failed:`, error));
+            this.setupSignalHandlers();
             
             this.logger.success('智能自动更新触发器已启动');
             this.logger.info(`监控目录: ${CONFIG.WATCH_CONFIG.WATCH_DIRS.join(', ')}`);
@@ -597,7 +598,7 @@ class SmartAutoUpdateTrigger {
             affectedFiles.forEach(file => this.pendingUpdates.add(file));
 
             // 批处理更新
-            this.batchUpdates().catch(error => console.error(`[smart_auto_trigger.js] this.batchUpdates failed:`, error));
+            this.batchUpdates();
 
         } catch (error) {
             this.logger.error(`处理文件更新失败 ${filePath}: ${error.message}`);
@@ -615,7 +616,7 @@ class SmartAutoUpdateTrigger {
 
         // 设置批处理定时器
         const timer = setTimeout(() => {
-            this.executeBatchUpdates().catch(error => console.error(`[smart_auto_trigger.js] this.executeBatchUpdates failed:`, error));
+            this.executeBatchUpdates();
             this.batchTimers.delete('batch');
         }, CONFIG.WATCH_CONFIG.BATCH_DELAY);
 
@@ -631,7 +632,7 @@ class SmartAutoUpdateTrigger {
         }
 
         const filesToUpdate = Array.from(this.pendingUpdates);
-        this.pendingUpdates.clear().catch(error => console.error(`[smart_auto_trigger.js] pendingUpdates.clear failed:`, error));
+        this.pendingUpdates.clear();
 
         this.logger.info(`开始批处理更新，共 ${filesToUpdate.length} 个文件`);
 
@@ -650,7 +651,7 @@ class SmartAutoUpdateTrigger {
 
         // 自动优化
         if (CONFIG.UPDATE_CONFIG.AUTO_OPTIMIZE) {
-            setTimeout(() => this.performAutoOptimization().catch(error => console.error(`[smart_auto_trigger.js] this.performAutoOptimization failed:`, error)), 10000);
+            setTimeout(() => this.performAutoOptimization(), 10000);
         }
     }
 
@@ -701,7 +702,7 @@ class SmartAutoUpdateTrigger {
             this.logger.info('正在关闭智能更新触发器...');
             
             if (this.watcher) {
-                this.watcher.close().catch(error => console.error(`[smart_auto_trigger.js] watcher.close failed:`, error));
+                this.watcher.close();
             }
             
             // 清理定时器
@@ -721,9 +722,9 @@ class SmartAutoUpdateTrigger {
      * 获取系统状态
      */
     getStatus() {
-        const queueStatus = this.queueManager.getQueueStatus().catch(error => console.error(`[smart_auto_trigger.js] queueManager.getQueueStatus failed:`, error));
+        const queueStatus = this.queueManager.getQueueStatus();
         return {
-            isRunning: this.watcher && this.watcher.getWatched().catch(error => console.error(`[smart_auto_trigger.js] watcher.getWatched failed:`, error)).size > 0,
+            isRunning: this.watcher && this.watcher.getWatched().size > 0,
             watchedPaths: this.watcher ? Array.from(this.watcher.getWatched().keys()) : [],
             pendingUpdates: this.pendingUpdates.size,
             debounceTimers: this.debounceTimers.size,
@@ -771,7 +772,7 @@ MTSCOS 智能自动更新触发器
 // 如果直接运行此脚本
 if (require.main === module) {
     main().catch(error => {
-        console.error(`[smart_auto_trigger.js] 启动失败:, error.message`);
+        console.error('启动失败:', error.message);
         process.exit(1);
     });
 }

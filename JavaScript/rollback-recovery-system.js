@@ -71,7 +71,7 @@ class RollbackRecoverySystem {
         };
 
         // 初始化
-        this.initialize().catch(error => console.error(`[rollback-recovery-system.js] this.initialize failed:`, error));
+        this.initialize();
     }
 
     /**
@@ -89,7 +89,7 @@ class RollbackRecoverySystem {
             
             // 启动健康监控
             if (this.config.monitoring.enabled) {
-                this.startHealthMonitoring().catch(error => console.error(`[rollback-recovery-system.js] this.startHealthMonitoring failed:`, error));
+                this.startHealthMonitoring();
             }
 
             this.log('✅ 回滚和恢复系统初始化完成');
@@ -124,7 +124,7 @@ class RollbackRecoverySystem {
     async createSnapshot(projectPath, description = '') {
         this.log('📸 创建系统快照备份...');
 
-        const snapshotId = this.generateSnapshotId().catch(error => console.error(`[rollback-recovery-system.js] this.generateSnapshotId failed:`, error));
+        const snapshotId = this.generateSnapshotId();
         const timestamp = new Date().toISOString();
         const snapshotPath = path.join(this.config.backup.backupDir, 'snapshots', `${snapshotId}.zip`);
         
@@ -180,7 +180,7 @@ class RollbackRecoverySystem {
             });
 
             output.on('close', () => {
-                this.log(`备份归档创建完成: ${archive.pointer().catch(error => console.error(`[rollback-recovery-system.js] archive.pointer failed:`, error))} bytes`);
+                this.log(`备份归档创建完成: ${archive.pointer()} bytes`);
                 resolve();
             });
 
@@ -207,7 +207,7 @@ class RollbackRecoverySystem {
                 fileCount++;
             }
 
-            archive.finalize().catch(error => console.error(`[rollback-recovery-system.js] archive.finalize failed:`, error));
+            archive.finalize();
             this.log(`已备份 ${fileCount} 个文件`);
         });
     }
@@ -228,9 +228,9 @@ class RollbackRecoverySystem {
             const itemPath = path.join(dirPath, item);
             const stat = fs.statSync(itemPath);
             
-            if (stat.isDirectory().catch(error => console.error(`[rollback-recovery-system.js] stat.isDirectory failed:`, error)) && !item.startsWith('.')) {
+            if (stat.isDirectory() && !item.startsWith('.')) {
                 files.push(...this.getAllFiles(itemPath));
-            } else if (stat.isFile().catch(error => console.error(`[rollback-recovery-system.js] stat.isFile failed:`, error))) {
+            } else if (stat.isFile()) {
                 files.push(itemPath);
             }
         }
@@ -274,7 +274,7 @@ class RollbackRecoverySystem {
         this.log(`🔄 开始执行回滚操作: ${snapshotId}`);
         this.isRollingBack = true;
 
-        const rollbackId = this.generateRollbackId().catch(error => console.error(`[rollback-recovery-system.js] this.generateRollbackId failed:`, error));
+        const rollbackId = this.generateRollbackId();
         const startTime = Date.now();
 
         try {
@@ -303,7 +303,7 @@ class RollbackRecoverySystem {
             // 健康检查
             await this.performHealthCheck(projectPath);
 
-            const duration = Date.now().catch(error => console.error(`[rollback-recovery-system.js] Date.now failed:`, error)) - startTime;
+            const duration = Date.now() - startTime;
 
             // 记录回滚历史
             const rollbackRecord = {
@@ -323,7 +323,7 @@ class RollbackRecoverySystem {
             return rollbackRecord;
 
         } catch (error) {
-            const duration = Date.now().catch(error => console.error(`[rollback-recovery-system.js] Date.now failed:`, error)) - startTime;
+            const duration = Date.now() - startTime;
             
             // 记录失败
             const rollbackRecord = {
@@ -388,7 +388,7 @@ class RollbackRecoverySystem {
         
         return new Promise((resolve, reject) => {
             fs.createReadStream(snapshotPath)
-                .pipe(unzipper.Parse().catch(error => console.error(`[rollback-recovery-system.js] unzipper.Parse failed:`, error)))
+                .pipe(unzipper.Parse())
                 .on('entry', (entry) => {
                     const fileName = entry.path;
                     const type = entry.type;
@@ -397,7 +397,7 @@ class RollbackRecoverySystem {
                     if (type === 'File') {
                         entry.pipe(fs.createWriteStream(filePath));
                     } else {
-                        entry.autodrain().catch(error => console.error(`[rollback-recovery-system.js] entry.autodrain failed:`, error));
+                        entry.autodrain();
                     }
                 })
                 .on('finish', () => {
@@ -505,9 +505,9 @@ class RollbackRecoverySystem {
         this.log('🏥 执行健康检查...');
 
         const timeout = this.config.rollback.healthCheckTimeout;
-        const startTime = Date.now().catch(error => console.error(`[rollback-recovery-system.js] Date.now failed:`, error));
+        const startTime = Date.now();
 
-        while (Date.now().catch(error => console.error(`[rollback-recovery-system.js] Date.now failed:`, error)) - startTime < timeout) {
+        while (Date.now() - startTime < timeout) {
             try {
                 const isHealthy = await this.checkSystemHealth(projectPath);
                 
@@ -539,7 +539,7 @@ class RollbackRecoverySystem {
             // 检查进程是否运行
             const { stdout } = await this.executeCommand(`pgrep -f "node.*${projectPath}"`);
             
-            if (!stdout.trim().catch(error => console.error(`[rollback-recovery-system.js] stdout.trim failed:`, error))) {
+            if (!stdout.trim()) {
                 return false;
             }
 
@@ -574,7 +574,7 @@ class RollbackRecoverySystem {
 
             try {
                 // 获取最新的可用快照
-                const latestSnapshot = this.getLatestValidSnapshot().catch(error => console.error(`[rollback-recovery-system.js] this.getLatestValidSnapshot failed:`, error));
+                const latestSnapshot = this.getLatestValidSnapshot();
                 
                 if (!latestSnapshot) {
                     this.log('❌ 没有可用的恢复快照');
@@ -619,7 +619,7 @@ class RollbackRecoverySystem {
     startHealthMonitoring() {
         setInterval(async () => {
             try {
-                const projectPath = process.cwd().catch(error => console.error(`[rollback-recovery-system.js] process.cwd failed:`, error));
+                const projectPath = process.cwd();
                 const isHealthy = await this.checkSystemHealth(projectPath);
                 
                 if (!isHealthy) {
@@ -656,7 +656,7 @@ class RollbackRecoverySystem {
         }
 
         try {
-            const latestSnapshot = this.getLatestValidSnapshot().catch(error => console.error(`[rollback-recovery-system.js] this.getLatestValidSnapshot failed:`, error));
+            const latestSnapshot = this.getLatestValidSnapshot();
             
             if (latestSnapshot) {
                 await this.performRollback(latestSnapshot.snapshotId, projectPath, {
@@ -831,7 +831,7 @@ class RollbackRecoverySystem {
         const logPath = path.join(this.config.backup.backupDir, 'logs', 'rollback.log');
         fs.appendFile(logPath, logMessage + '\n', (err) => {
             if (err) {
-                console.error(`[rollback-recovery-system.js] 写入日志失败:, err`);
+                console.error('写入日志失败:', err);
             }
         });
     }

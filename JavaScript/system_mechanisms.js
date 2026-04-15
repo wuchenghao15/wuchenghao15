@@ -19,9 +19,9 @@ MTSCOS.System.Security = {
     // 初始化安全机制
     init: function() {
         console.log('初始化安全机制...');
-        this.applyXSSProtection().catch(error => console.error(`[system_mechanisms.js] this.applyXSSProtection failed:`, error));
+        this.applyXSSProtection();
         this.setupCSRFToken();
-        this.enableSecureCookies().catch(error => console.error(`[system_mechanisms.js] this.enableSecureCookies failed:`, error));
+        this.enableSecureCookies();
     },
     
     // XSS防护
@@ -35,7 +35,7 @@ MTSCOS.System.Security = {
         }
         
         // 增强输入验证
-        this.enhanceInputValidation().catch(error => console.error(`[system_mechanisms.js] this.enhanceInputValidation failed:`, error));
+        this.enhanceInputValidation();
     },
     
     // 增强输入验证
@@ -84,7 +84,7 @@ MTSCOS.System.Security = {
     // 设置CSRF令牌
     setupCSRFToken: function() {
         // 生成CSRF令牌
-        const token = this.generateCSRFToken().catch(error => console.error(`[system_mechanisms.js] this.generateCSRFToken failed:`, error));
+        const token = this.generateCSRFToken();
         // 存储到sessionStorage
         sessionStorage.setItem('csrfToken', token);
         // 添加到所有表单
@@ -153,7 +153,7 @@ MTSCOS.System.Security = {
             }
             return result;
         } catch (error) {
-            console.error(`[system_mechanisms.js] 解密失败:, error`);
+            console.error('解密失败:', error);
             return null;
         }
     }
@@ -178,9 +178,9 @@ MTSCOS.System.Timeout = {
     // 初始化超时机制
     init: function() {
         console.log('初始化超时机制...');
-        this.loadConfig().catch(error => console.error(`[system_mechanisms.js] this.loadConfig failed:`, error));
+        this.loadConfig();
         this.startSessionTimeout();
-        this.setupActivityListeners().catch(error => console.error(`[system_mechanisms.js] this.setupActivityListeners failed:`, error));
+        this.setupActivityListeners();
     },
     
     // 加载配置
@@ -191,7 +191,7 @@ MTSCOS.System.Timeout = {
                 const config = JSON.parse(savedConfig);
                 this.config = { ...this.config, ...config };
             } catch (error) {
-                console.error(`[system_mechanisms.js] 加载超时配置失败:, error`);
+                console.error('加载超时配置失败:', error);
             }
         }
     },
@@ -200,7 +200,7 @@ MTSCOS.System.Timeout = {
     saveConfig: function(newConfig) {
         this.config = { ...this.config, ...newConfig };
         localStorage.setItem('timeoutConfig', JSON.stringify(this.config));
-        this.resetSessionTimeout().catch(error => console.error(`[system_mechanisms.js] this.resetSessionTimeout failed:`, error));
+        this.resetSessionTimeout();
     },
     
     // 开始会话超时计时
@@ -217,7 +217,7 @@ MTSCOS.System.Timeout = {
         
         // 设置会话超时
         this.timeoutId = setTimeout(() => {
-            this.handleSessionTimeout().catch(error => console.error(`[system_mechanisms.js] this.handleSessionTimeout failed:`, error));
+            this.handleSessionTimeout();
         }, timeoutMs);
     },
     
@@ -225,7 +225,7 @@ MTSCOS.System.Timeout = {
     resetSessionTimeout: function() {
         clearTimeout(this.timeoutId);
         clearTimeout(this.warningId);
-        this.startSessionTimeout().catch(error => console.error(`[system_mechanisms.js] this.startSessionTimeout failed:`, error));
+        this.startSessionTimeout();
     },
     
     // 处理会话超时
@@ -233,7 +233,7 @@ MTSCOS.System.Timeout = {
         console.log('会话已超时');
         
         // 清理会话数据
-        sessionStorage.clear().catch(error => console.error(`[system_mechanisms.js] sessionStorage.clear failed:`, error));
+        sessionStorage.clear();
         localStorage.removeItem('userSession');
         
         // 显示超时提示
@@ -247,28 +247,28 @@ MTSCOS.System.Timeout = {
     setupActivityListeners: function() {
         // 监听鼠标移动
         document.addEventListener('mousemove', () => {
-            this.resetSessionTimeout().catch(error => console.error(`[system_mechanisms.js] this.resetSessionTimeout failed:`, error));
+            this.resetSessionTimeout();
         }, { passive: true });
         
         // 监听键盘输入
         document.addEventListener('keypress', () => {
-            this.resetSessionTimeout().catch(error => console.error(`[system_mechanisms.js] this.resetSessionTimeout failed:`, error));
+            this.resetSessionTimeout();
         }, { passive: true });
         
         // 监听点击
         document.addEventListener('click', () => {
-            this.resetSessionTimeout().catch(error => console.error(`[system_mechanisms.js] this.resetSessionTimeout failed:`, error));
+            this.resetSessionTimeout();
         }, { passive: true });
         
         // 监听滚动
         window.addEventListener('scroll', () => {
-            this.resetSessionTimeout().catch(error => console.error(`[system_mechanisms.js] this.resetSessionTimeout failed:`, error));
+            this.resetSessionTimeout();
         }, { passive: true });
     },
     
     // 验证验证码是否超时
     isCaptchaExpired: function(captchaTimestamp) {
-        const now = Date.now().catch(error => console.error(`[system_mechanisms.js] Date.now failed:`, error));
+        const now = Date.now();
         const captchaTime = new Date(captchaTimestamp).getTime();
         const maxAge = this.config.captchaTimeout * 60 * 1000;
         
@@ -286,9 +286,9 @@ MTSCOS.System.Script = {
     // 初始化脚本机制
     init: function() {
         console.log('初始化脚本机制...');
-        this.registerLoadedScripts().catch(error => console.error(`[system_mechanisms.js] this.registerLoadedScripts failed:`, error));
+        this.registerLoadedScripts();
         this.setupScriptMonitoring();
-        this.preventScriptInjection().catch(error => console.error(`[system_mechanisms.js] this.preventScriptInjection failed:`, error));
+        this.preventScriptInjection();
     },
     
     // 注册已加载的脚本
@@ -312,7 +312,7 @@ MTSCOS.System.Script = {
         
         // 安全检查
         if (!this.isValidScriptUrl(url)) {
-            console.error(`[system_mechanisms.js] `不允许加载脚本: ${url}``);
+            console.error(`不允许加载脚本: ${url}`);
             return;
         }
         
@@ -325,7 +325,7 @@ MTSCOS.System.Script = {
             if (callback) callback();
         };
         script.onerror = () => {
-            console.error(`[system_mechanisms.js] `脚本 ${url} 加载失败``);
+            console.error(`脚本 ${url} 加载失败`);
         };
         
         document.head.appendChild(script);
@@ -382,7 +382,7 @@ MTSCOS.System.Script = {
         Object.defineProperty(Element.prototype, 'innerHTML', {
             set: function(value) {
                 if (MTSCOS.System.Script.containsDangerousTags(value)) {
-                    console.error(`[system_mechanisms.js] 检测到潜在的脚本注入尝试`);
+                    console.error('检测到潜在的脚本注入尝试');
                     throw new Error('不允许设置包含危险标签的内容');
                 }
                 return originalInnerHTML.set.call(this, value);
@@ -395,7 +395,7 @@ MTSCOS.System.Script = {
         Object.defineProperty(Element.prototype, 'outerHTML', {
             set: function(value) {
                 if (MTSCOS.System.Script.containsDangerousTags(value)) {
-                    console.error(`[system_mechanisms.js] 检测到潜在的脚本注入尝试`);
+                    console.error('检测到潜在的脚本注入尝试');
                     throw new Error('不允许设置包含危险标签的内容');
                 }
                 return originalOuterHTML.set.call(this, value);
@@ -438,7 +438,7 @@ MTSCOS.System.Script = {
             const sandbox = {};
             return new Function('context', safeCode)(sandbox);
         } catch (error) {
-            console.error(`[system_mechanisms.js] 执行安全代码失败:, error`);
+            console.error('执行安全代码失败:', error);
             return null;
         }
     }
@@ -454,7 +454,7 @@ MTSCOS.System.Rollback = {
     // 初始化回滚机制
     init: function() {
         console.log('初始化回滚机制...');
-        this.loadBackupsList().catch(error => console.error(`[system_mechanisms.js] this.loadBackupsList failed:`, error));
+        this.loadBackupsList();
         this.setupAutoBackup();
     },
     
@@ -495,9 +495,9 @@ MTSCOS.System.Rollback = {
             // 模拟备份过程
             setTimeout(() => {
                 const newBackup = {
-                    id: 'backup-' + Date.now().catch(error => console.error(`[system_mechanisms.js] Date.now failed:`, error)),
+                    id: 'backup-' + Date.now(),
                     date: new Date().toLocaleString(),
-                    size: (Math.random().catch(error => console.error(`[system_mechanisms.js] Math.random failed:`, error)) * 5 + 10).toFixed(1) + ' MB',
+                    size: (Math.random() * 5 + 10).toFixed(1) + ' MB',
                     description: description || '手动备份'
                 };
                 
@@ -554,7 +554,7 @@ MTSCOS.System.Version = {
     // 初始化版本机制
     init: function() {
         console.log(`初始化版本机制: ${this.current.version} (Build ${this.current.build})`);
-        this.checkForUpdates().catch(error => console.error(`[system_mechanisms.js] this.checkForUpdates failed:`, error));
+        this.checkForUpdates();
     },
     
     // 获取当前版本信息
@@ -631,19 +631,19 @@ MTSCOS.System.Manager = {
         
         // 按顺序初始化各个模块
         try {
-            MTSCOS.System.Security.init().catch(error => console.error(`[system_mechanisms.js] Security.init failed:`, error));
+            MTSCOS.System.Security.init();
             MTSCOS.System.Timeout.init();
-            MTSCOS.System.Script.init().catch(error => console.error(`[system_mechanisms.js] Script.init failed:`, error));
+            MTSCOS.System.Script.init();
             MTSCOS.System.Rollback.init();
-            MTSCOS.System.Version.init().catch(error => console.error(`[system_mechanisms.js] Version.init failed:`, error));
+            MTSCOS.System.Version.init();
             
             console.log('所有系统机制初始化完成');
-            this.setupGlobalErrorHandler().catch(error => console.error(`[system_mechanisms.js] this.setupGlobalErrorHandler failed:`, error));
+            this.setupGlobalErrorHandler();
             this.logSystemStart();
         } catch (error) {
-            console.error(`[system_mechanisms.js] 系统机制初始化失败:, error`);
+            console.error('系统机制初始化失败:', error);
             // 降级策略: 尝试单独初始化每个模块
-            this.tryInitializeModulesIndividually().catch(error => console.error(`[system_mechanisms.js] this.tryInitializeModulesIndividually failed:`, error));
+            this.tryInitializeModulesIndividually();
         }
     },
     
@@ -659,10 +659,10 @@ MTSCOS.System.Manager = {
         
         modules.forEach(({ name, module }) => {
             try {
-                module.init().catch(error => console.error(`[system_mechanisms.js] module.init failed:`, error));
+                module.init();
                 console.log(`${name} 模块初始化成功`);
             } catch (error) {
-                console.error(`[system_mechanisms.js] `${name} 模块初始化失败:`, error`);
+                console.error(`${name} 模块初始化失败:`, error);
             }
         });
     },
@@ -670,12 +670,12 @@ MTSCOS.System.Manager = {
     // 设置全局错误处理器
     setupGlobalErrorHandler: function() {
         window.addEventListener('error', (event) => {
-            console.error(`[system_mechanisms.js] 全局错误:, event.error, event.message`);
+            console.error('全局错误:', event.error, event.message);
             // 在实际应用中，这里应该将错误报告到服务器
         });
         
         window.addEventListener('unhandledrejection', (event) => {
-            console.error(`[system_mechanisms.js] 未处理的Promise拒绝:, event.reason`);
+            console.error('未处理的Promise拒绝:', event.reason);
             // 在实际应用中，这里应该将错误报告到服务器
         });
     },
@@ -683,7 +683,7 @@ MTSCOS.System.Manager = {
     // 记录系统启动信息
     logSystemStart: function() {
         const systemInfo = {
-            version: MTSCOS.System.Version.getCurrentVersion().catch(error => console.error(`[system_mechanisms.js] Version.getCurrentVersion failed:`, error)),
+            version: MTSCOS.System.Version.getCurrentVersion(),
             timestamp: new Date().toISOString(),
             userAgent: navigator.userAgent,
             screen: {
@@ -701,7 +701,7 @@ MTSCOS.System.Manager = {
     getSystemStatus: function() {
         return {
             version: MTSCOS.System.Version.current,
-            uptime: performance.now().catch(error => console.error(`[system_mechanisms.js] performance.now failed:`, error)),
+            uptime: performance.now(),
             memory: this.getMemoryInfo(),
             backups: MTSCOS.System.Rollback.backups.length,
             securityStatus: 'enabled',
@@ -726,9 +726,9 @@ MTSCOS.System.Manager = {
         console.log('执行系统诊断...');
         
         const results = {
-            network: this.testNetwork().catch(error => console.error(`[system_mechanisms.js] this.testNetwork failed:`, error)),
+            network: this.testNetwork(),
             security: this.testSecurity(),
-            performance: this.testPerformance().catch(error => console.error(`[system_mechanisms.js] this.testPerformance failed:`, error))
+            performance: this.testPerformance()
         };
         
         console.log('诊断结果:', results);
@@ -738,13 +738,13 @@ MTSCOS.System.Manager = {
     // 测试网络连接
     testNetwork: function() {
         return new Promise((resolve) => {
-            const startTime = Date.now().catch(error => console.error(`[system_mechanisms.js] Date.now failed:`, error));
+            const startTime = Date.now();
             const img = new Image();
             
             img.onload = function() {
                 resolve({
                     status: 'connected',
-                    latency: Date.now().catch(error => console.error(`[system_mechanisms.js] Date.now failed:`, error)) - startTime + 'ms'
+                    latency: Date.now() - startTime + 'ms'
                 });
             };
             
@@ -756,7 +756,7 @@ MTSCOS.System.Manager = {
             };
             
             // 使用1x1透明像素进行测试
-            img.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=' + '?' + Date.now().catch(error => console.error(`[system_mechanisms.js] Date.now failed:`, error));
+            img.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=' + '?' + Date.now();
         });
     },
     
@@ -773,7 +773,7 @@ MTSCOS.System.Manager = {
     
     // 测试性能
     testPerformance: function() {
-        const startTime = performance.now().catch(error => console.error(`[system_mechanisms.js] performance.now failed:`, error));
+        const startTime = performance.now();
         
         // 执行一些计算来测试性能
         let sum = 0;
@@ -781,18 +781,18 @@ MTSCOS.System.Manager = {
             sum += Math.sqrt(i);
         }
         
-        const endTime = performance.now().catch(error => console.error(`[system_mechanisms.js] performance.now failed:`, error));
+        const endTime = performance.now();
         
         return {
             calculationTime: (endTime - startTime).toFixed(2) + 'ms',
-            framesPerSecond: this.getFPS().catch(error => console.error(`[system_mechanisms.js] this.getFPS failed:`, error))
+            framesPerSecond: this.getFPS()
         };
     },
     
     // 获取FPS（每秒帧数）
     getFPS: function() {
         let frames = 0;
-        let lastTime = performance.now().catch(error => console.error(`[system_mechanisms.js] performance.now failed:`, error));
+        let lastTime = performance.now();
         
         const requestId = requestAnimationFrame(function countFrames(currentTime) {
             frames++;
@@ -819,11 +819,11 @@ MTSCOS.System.Manager = {
  */
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
-        MTSCOS.System.Manager.init().catch(error => console.error(`[system_mechanisms.js] Manager.init failed:`, error));
+        MTSCOS.System.Manager.init();
     });
 } else {
     // 页面已经加载完成，直接初始化
-    MTSCOS.System.Manager.init().catch(error => console.error(`[system_mechanisms.js] Manager.init failed:`, error));
+    MTSCOS.System.Manager.init();
 }
 
 // 导出到全局作用域

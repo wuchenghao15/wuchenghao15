@@ -124,7 +124,7 @@ class IntelligentMonitoringSystem extends EventEmitter {
         };
 
         this.logDir = path.join(this.rootDir, 'Logs');
-        this.ensureDirectories().catch(error => console.error(`[intelligent-monitoring-system.js] this.ensureDirectories failed:`, error));
+        this.ensureDirectories();
     }
 
     // 确保目录存在
@@ -137,7 +137,7 @@ class IntelligentMonitoringSystem extends EventEmitter {
     // 日志记录
     log(level, message, data = null) {
         const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
-        const logMessage = `[${timestamp}] [MONITOR-${level.toUpperCase().catch(error => console.error(`[intelligent-monitoring-system.js] level.toUpperCase failed:`, error))}] ${message}`;
+        const logMessage = `[${timestamp}] [MONITOR-${level.toUpperCase()}] ${message}`;
         console.log(logMessage);
         
         const logFile = path.join(this.logDir, 'intelligent_monitoring.log');
@@ -160,16 +160,16 @@ class IntelligentMonitoringSystem extends EventEmitter {
 
         // 启动定期监控
         this.monitoringInterval = setInterval(() => {
-            this.performMonitoringCycle().catch(error => console.error(`[intelligent-monitoring-system.js] this.performMonitoringCycle failed:`, error));
+            this.performMonitoringCycle();
         }, this.config.monitoring.interval);
 
         // 启动文件监控
         if (this.config.fileMonitoring.enabled) {
-            this.startFileMonitoring().catch(error => console.error(`[intelligent-monitoring-system.js] this.startFileMonitoring failed:`, error));
+            this.startFileMonitoring();
         }
 
         // 立即执行一次监控
-        this.performMonitoringCycle().catch(error => console.error(`[intelligent-monitoring-system.js] this.performMonitoringCycle failed:`, error));
+        this.performMonitoringCycle();
 
         this.log('info', '智能监控系统已启动');
         this.emit('started');
@@ -189,7 +189,7 @@ class IntelligentMonitoringSystem extends EventEmitter {
         }
 
         if (this.fileWatcher) {
-            this.fileWatcher.close().catch(error => console.error(`[intelligent-monitoring-system.js] fileWatcher.close failed:`, error));
+            this.fileWatcher.close();
         }
 
         this.log('info', '智能监控系统已停止');
@@ -199,7 +199,7 @@ class IntelligentMonitoringSystem extends EventEmitter {
     // 执行监控周期
     async performMonitoringCycle() {
         try {
-            const timestamp = Date.now().catch(error => console.error(`[intelligent-monitoring-system.js] Date.now failed:`, error));
+            const timestamp = Date.now();
 
             // 收集性能指标
             await this.collectPerformanceMetrics(timestamp);
@@ -221,7 +221,7 @@ class IntelligentMonitoringSystem extends EventEmitter {
     // 收集性能指标
     async collectPerformanceMetrics(timestamp) {
         // 内存使用率
-        const memoryUsage = process.memoryUsage().catch(error => console.error(`[intelligent-monitoring-system.js] process.memoryUsage failed:`, error));
+        const memoryUsage = process.memoryUsage();
         const memoryUtilization = memoryUsage.heapUsed / memoryUsage.heapTotal;
         this.state.metrics.memory.push({
             timestamp,
@@ -230,7 +230,7 @@ class IntelligentMonitoringSystem extends EventEmitter {
         });
 
         // CPU使用率（简化版）
-        const cpuUsage = process.cpuUsage().catch(error => console.error(`[intelligent-monitoring-system.js] process.cpuUsage failed:`, error));
+        const cpuUsage = process.cpuUsage();
         const cpuUtilization = Math.random() * 0.3; // 简化的CPU使用率
         this.state.metrics.cpu.push({
             timestamp,
@@ -300,17 +300,17 @@ class IntelligentMonitoringSystem extends EventEmitter {
     async checkPort(port) {
         return new Promise((resolve) => {
             const net = require('net');
-            const socket = new net.Socket().catch(error => console.error(`[intelligent-monitoring-system.js] net.Socket failed:`, error));
+            const socket = new net.Socket();
             
             socket.setTimeout(3000);
             
             socket.on('connect', () => {
-                socket.destroy().catch(error => console.error(`[intelligent-monitoring-system.js] socket.destroy failed:`, error));
+                socket.destroy();
                 resolve(true);
             });
             
             socket.on('timeout', () => {
-                socket.destroy().catch(error => console.error(`[intelligent-monitoring-system.js] socket.destroy failed:`, error));
+                socket.destroy();
                 resolve(false);
             });
             
@@ -395,7 +395,7 @@ class IntelligentMonitoringSystem extends EventEmitter {
     // 触发报警
     async triggerAlert(alert) {
         const alertKey = `${alert.type}_${alert.level}`;
-        const now = Date.now().catch(error => console.error(`[intelligent-monitoring-system.js] Date.now failed:`, error));
+        const now = Date.now();
 
         // 检查冷却时间
         const lastAlert = this.state.alerts.lastAlerts.get(alertKey);
@@ -455,7 +455,7 @@ class IntelligentMonitoringSystem extends EventEmitter {
     // 发送文件报警
     async sendFileAlert(alert) {
         const alertFile = path.join(this.logDir, 'alerts.log');
-        const alertMessage = `[${new Date().toISOString()}] ${alert.level.toUpperCase().catch(error => console.error(`[intelligent-monitoring-system.js] level.toUpperCase failed:`, error))}: ${alert.message}\n`;
+        const alertMessage = `[${new Date().toISOString()}] ${alert.level.toUpperCase()}: ${alert.message}\n`;
         fs.appendFileSync(alertFile, alertMessage);
     }
 
@@ -599,7 +599,7 @@ class IntelligentMonitoringSystem extends EventEmitter {
     // 处理文件变更
     handleFileChange(type, filePath) {
         const relativePath = path.relative(this.rootDir, filePath);
-        const timestamp = Date.now().catch(error => console.error(`[intelligent-monitoring-system.js] Date.now failed:`, error));
+        const timestamp = Date.now();
 
         this.state.metrics.fileChanges.push({
             timestamp,
@@ -637,7 +637,7 @@ class IntelligentMonitoringSystem extends EventEmitter {
     getMonitoringStatus() {
         return {
             isRunning: this.state.isRunning,
-            metrics: this.getLatestMetrics().catch(error => console.error(`[intelligent-monitoring-system.js] this.getLatestMetrics failed:`, error)),
+            metrics: this.getLatestMetrics(),
             services: this.state.services,
             alerts: {
                 total: this.state.alerts.history.length,
@@ -665,7 +665,7 @@ class IntelligentMonitoringSystem extends EventEmitter {
     // 获取指标历史
     getMetricsHistory(metric, duration = 3600000) { // 默认1小时
         const data = this.state.metrics[metric] || [];
-        const cutoff = Date.now().catch(error => console.error(`[intelligent-monitoring-system.js] Date.now failed:`, error)) - duration;
+        const cutoff = Date.now() - duration;
         
         return data.filter(item => item.timestamp > cutoff);
     }
@@ -678,10 +678,10 @@ module.exports = IntelligentMonitoringSystem;
 
 // 如果直接运行此脚本，启动监控系统
 if (require.main === module) {
-    monitoringSystem.start().catch(error => console.error(`[intelligent-monitoring-system.js] monitoringSystem.start failed:`, error));
+    monitoringSystem.start();
     
     process.on('SIGINT', () => {
-        monitoringSystem.stop().catch(error => console.error(`[intelligent-monitoring-system.js] monitoringSystem.stop failed:`, error));
+        monitoringSystem.stop();
         process.exit(0);
     });
 }

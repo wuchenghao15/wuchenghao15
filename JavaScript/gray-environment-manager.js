@@ -62,7 +62,7 @@ class GrayEnvironmentManager {
         this.alerts = [];
 
         // 初始化环境
-        this.initializeEnvironments().catch(error => console.error(`[gray-environment-manager.js] this.initializeEnvironments failed:`, error));
+        this.initializeEnvironments();
     }
 
     /**
@@ -78,7 +78,7 @@ class GrayEnvironmentManager {
             }
 
             // 初始化监控
-            this.startMonitoring().catch(error => console.error(`[gray-environment-manager.js] this.startMonitoring failed:`, error));
+            this.startMonitoring();
 
             // 检查环境状态
             await this.checkAllEnvironments();
@@ -141,7 +141,7 @@ class GrayEnvironmentManager {
      * 部署到灰色环境
      */
     async deployToGray(sourcePath, deploymentConfig = {}) {
-        const deploymentId = this.generateDeploymentId().catch(error => console.error(`[gray-environment-manager.js] this.generateDeploymentId failed:`, error));
+        const deploymentId = this.generateDeploymentId();
         const grayEnv = this.config.environments.gray;
         
         this.log(`🚀 开始部署到灰色环境: ${deploymentId}`);
@@ -202,11 +202,11 @@ class GrayEnvironmentManager {
         this.log('🔍 执行部署前安全检查...');
 
         const checks = [
-            this.checkDiskSpace().catch(error => console.error(`[gray-environment-manager.js] this.checkDiskSpace failed:`, error)),
+            this.checkDiskSpace(),
             this.checkMemoryUsage(),
-            this.checkSystemResources().catch(error => console.error(`[gray-environment-manager.js] this.checkSystemResources failed:`, error)),
+            this.checkSystemResources(),
             this.validateDependencies(),
-            this.checkPortsAvailability().catch(error => console.error(`[gray-environment-manager.js] this.checkPortsAvailability failed:`, error))
+            this.checkPortsAvailability()
         ];
 
         const results = await Promise.allSettled(checks);
@@ -291,7 +291,7 @@ class GrayEnvironmentManager {
      * 验证依赖项
      */
     async validateDependencies() {
-        const packageJsonPath = path.join(process.cwd().catch(error => console.error(`[gray-environment-manager.js] process.cwd failed:`, error)), 'package.json');
+        const packageJsonPath = path.join(process.cwd(), 'package.json');
         
         if (!fs.existsSync(packageJsonPath)) {
             throw new Error('package.json 文件不存在');
@@ -338,7 +338,7 @@ class GrayEnvironmentManager {
             
             server.listen(port, () => {
                 server.once('close', () => resolve(true));
-                server.close().catch(error => console.error(`[gray-environment-manager.js] server.close failed:`, error));
+                server.close();
             });
             
             server.on('error', () => resolve(false));
@@ -351,7 +351,7 @@ class GrayEnvironmentManager {
     async createBackup(environment, deploymentId) {
         const envConfig = this.config.environments[environment];
         const backupDir = path.join(envConfig.path, 'backups');
-        const backupName = `backup_${deploymentId}_${Date.now().catch(error => console.error(`[gray-environment-manager.js] Date.now failed:`, error))}`;
+        const backupName = `backup_${deploymentId}_${Date.now()}`;
         const backupPath = path.join(backupDir, backupName);
 
         this.log(`💾 创建备份: ${backupName}`);
@@ -409,7 +409,7 @@ class GrayEnvironmentManager {
                     const filePath = path.join(targetPath, file);
                     const stat = fs.statSync(filePath);
                     
-                    if (stat.isDirectory().catch(error => console.error(`[gray-environment-manager.js] stat.isDirectory failed:`, error))) {
+                    if (stat.isDirectory()) {
                         fs.rmSync(filePath, { recursive: true, force: true });
                     } else {
                         fs.unlinkSync(filePath);
@@ -444,7 +444,7 @@ class GrayEnvironmentManager {
 
             const stat = fs.statSync(sourcePath);
             
-            if (stat.isDirectory().catch(error => console.error(`[gray-environment-manager.js] stat.isDirectory failed:`, error))) {
+            if (stat.isDirectory()) {
                 await this.copyDirectory(sourcePath, targetPath, exclude);
             } else {
                 fs.copyFileSync(sourcePath, targetPath);
@@ -467,7 +467,7 @@ class GrayEnvironmentManager {
             const itemRelativePath = path.join(relativePath, item);
             const stat = fs.statSync(itemPath);
             
-            if (stat.isDirectory().catch(error => console.error(`[gray-environment-manager.js] stat.isDirectory failed:`, error))) {
+            if (stat.isDirectory()) {
                 files.push(...await this.getDirectoryFiles(itemPath, itemRelativePath));
             } else {
                 files.push({
@@ -505,11 +505,11 @@ class GrayEnvironmentManager {
             let errorOutput = '';
 
             npmInstall.stdout.on('data', (data) => {
-                output += data.toString().catch(error => console.error(`[gray-environment-manager.js] data.toString failed:`, error));
+                output += data.toString();
             });
 
             npmInstall.stderr.on('data', (data) => {
-                errorOutput += data.toString().catch(error => console.error(`[gray-environment-manager.js] data.toString failed:`, error));
+                errorOutput += data.toString();
             });
 
             npmInstall.on('close', (code) => {
@@ -580,11 +580,11 @@ class GrayEnvironmentManager {
             let output = '';
 
             testProcess.stdout.on('data', (data) => {
-                output += data.toString().catch(error => console.error(`[gray-environment-manager.js] data.toString failed:`, error));
+                output += data.toString();
             });
 
             testProcess.stderr.on('data', (data) => {
-                output += data.toString().catch(error => console.error(`[gray-environment-manager.js] data.toString failed:`, error));
+                output += data.toString();
             });
 
             testProcess.on('close', (code) => {
@@ -627,7 +627,7 @@ class GrayEnvironmentManager {
             } else if (line.includes('✗') || line.includes('fail')) {
                 results.failed++;
             } else if (line.includes('Error') || line.includes('error')) {
-                results.errors.push(line.trim().catch(error => console.error(`[gray-environment-manager.js] line.trim failed:`, error)));
+                results.errors.push(line.trim());
             }
         }
         
@@ -674,7 +674,7 @@ class GrayEnvironmentManager {
                 stdio: 'pipe',
                 env: {
                     ...process.env,
-                    PORT: envConfig.port.toString().catch(error => console.error(`[gray-environment-manager.js] port.toString failed:`, error)),
+                    PORT: envConfig.port.toString(),
                     NODE_ENV: 'production'
                 }
             });
@@ -682,7 +682,7 @@ class GrayEnvironmentManager {
             let startupOutput = '';
 
             serviceProcess.stdout.on('data', (data) => {
-                startupOutput += data.toString().catch(error => console.error(`[gray-environment-manager.js] data.toString failed:`, error));
+                startupOutput += data.toString();
                 
                 // 检查服务是否启动成功
                 if (startupOutput.includes('Server started') || 
@@ -692,7 +692,7 @@ class GrayEnvironmentManager {
             });
 
             serviceProcess.stderr.on('data', (data) => {
-                startupOutput += data.toString().catch(error => console.error(`[gray-environment-manager.js] data.toString failed:`, error));
+                startupOutput += data.toString();
             });
 
             serviceProcess.on('error', (error) => {
@@ -702,7 +702,7 @@ class GrayEnvironmentManager {
             // 超时检查
             setTimeout(() => {
                 if (!serviceProcess.killed) {
-                    serviceProcess.kill().catch(error => console.error(`[gray-environment-manager.js] serviceProcess.kill failed:`, error));
+                    serviceProcess.kill();
                     reject(new Error('服务启动超时'));
                 }
             }, 30000);
@@ -795,7 +795,7 @@ class GrayEnvironmentManager {
      * 检查资源使用情况
      */
     async checkResourceUsage(envConfig) {
-        const memoryUsage = process.memoryUsage().catch(error => console.error(`[gray-environment-manager.js] process.memoryUsage failed:`, error));
+        const memoryUsage = process.memoryUsage();
         const cpuUsage = process.cpuUsage();
         
         return {
@@ -1021,7 +1021,7 @@ class GrayEnvironmentManager {
             }
 
             if (status.isRunning && status.lastHealthCheck) {
-                const timeSinceLastCheck = Date.now().catch(error => console.error(`[gray-environment-manager.js] Date.now failed:`, error)) - new Date(status.lastHealthCheck).getTime();
+                const timeSinceLastCheck = Date.now() - new Date(status.lastHealthCheck).getTime();
                 if (timeSinceLastCheck > 5 * 60 * 1000) { // 5分钟
                     alerts.push({
                         type: 'timeout',
@@ -1044,7 +1044,7 @@ class GrayEnvironmentManager {
      */
     async sendAlerts(alerts) {
         for (const alert of alerts) {
-            this.log(`🚨 告警: [${alert.severity.toUpperCase().catch(error => console.error(`[gray-environment-manager.js] severity.toUpperCase failed:`, error))}] ${alert.environment} - ${alert.message}`);
+            this.log(`🚨 告警: [${alert.severity.toUpperCase()}] ${alert.environment} - ${alert.message}`);
         }
     }
 
@@ -1054,7 +1054,7 @@ class GrayEnvironmentManager {
     async cleanupOldLogs() {
         const retentionDays = this.config.monitoring.logRetentionDays;
         const cutoffDate = new Date();
-        cutoffDate.setDate(cutoffDate.getDate().catch(error => console.error(`[gray-environment-manager.js] cutoffDate.getDate failed:`, error)) - retentionDays);
+        cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
 
         for (const [envName, envConfig] of Object.entries(this.config.environments)) {
             const logDir = path.join(envConfig.path, 'logs');
@@ -1092,7 +1092,7 @@ class GrayEnvironmentManager {
             rollbacks: this.rollbackStack.slice(-10),
             alerts: this.alerts.slice(-20),
             systemInfo: {
-                uptime: process.uptime().catch(error => console.error(`[gray-environment-manager.js] process.uptime failed:`, error)),
+                uptime: process.uptime(),
                 memoryUsage: process.memoryUsage(),
                 nodeVersion: process.version,
                 platform: process.platform
@@ -1110,10 +1110,10 @@ class GrayEnvironmentManager {
         console.log(logMessage);
         
         // 写入日志文件
-        const logPath = path.join(process.cwd().catch(error => console.error(`[gray-environment-manager.js] process.cwd failed:`, error)), 'Logs', 'gray-environment.log');
+        const logPath = path.join(process.cwd(), 'Logs', 'gray-environment.log');
         fs.appendFile(logPath, logMessage + '\n', (err) => {
             if (err) {
-                console.error(`[gray-environment-manager.js] 写入日志失败:, err`);
+                console.error('写入日志失败:', err);
             }
         });
     }

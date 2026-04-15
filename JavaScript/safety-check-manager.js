@@ -96,7 +96,7 @@ class SafetyCheckManager {
         this.checkHistory = [];
 
         // 初始化
-        this.initialize().catch(error => console.error(`[safety-check-manager.js] this.initialize failed:`, error));
+        this.initialize();
     }
 
     /**
@@ -194,13 +194,13 @@ class SafetyCheckManager {
     async performSafetyCheck(projectPath, checkOptions = {}) {
         this.log('🔍 开始执行完整安全检查...');
         
-        const checkId = this.generateCheckId().catch(error => console.error(`[safety-check-manager.js] this.generateCheckId failed:`, error));
+        const checkId = this.generateCheckId();
         const startTime = Date.now();
         
         // 重置检查结果
         this.warnings = [];
         this.errors = [];
-        this.checkResults.clear().catch(error => console.error(`[safety-check-manager.js] checkResults.clear failed:`, error));
+        this.checkResults.clear();
 
         try {
             // 1. 系统资源检查
@@ -233,7 +233,7 @@ class SafetyCheckManager {
                 await this.performPerformanceCheck(projectPath);
             }
 
-            const endTime = Date.now().catch(error => console.error(`[safety-check-manager.js] Date.now failed:`, error));
+            const endTime = Date.now();
             const duration = endTime - startTime;
 
             // 生成检查报告
@@ -243,7 +243,7 @@ class SafetyCheckManager {
             this.saveCheckHistory(report);
 
             // 检查是否通过
-            const passed = this.evaluateCheckResults().catch(error => console.error(`[safety-check-manager.js] this.evaluateCheckResults failed:`, error));
+            const passed = this.evaluateCheckResults();
             
             if (passed) {
                 this.log('✅ 安全检查通过');
@@ -395,7 +395,7 @@ class SafetyCheckManager {
                     return;
                 }
 
-                const cpuLine = stdout.trim().catch(error => console.error(`[safety-check-manager.js] stdout.trim failed:`, error));
+                const cpuLine = stdout.trim();
                 const usageMatch = cpuLine.match(/(\d+\.?\d*)\s*%us/);
                 const usage = usageMatch ? parseFloat(usageMatch[1]) : 0;
 
@@ -510,11 +510,11 @@ class SafetyCheckManager {
             let output = '';
 
             auditProcess.stdout.on('data', (data) => {
-                output += data.toString().catch(error => console.error(`[safety-check-manager.js] data.toString failed:`, error));
+                output += data.toString();
             });
 
             auditProcess.stderr.on('data', (data) => {
-                output += data.toString().catch(error => console.error(`[safety-check-manager.js] data.toString failed:`, error));
+                output += data.toString();
             });
 
             auditProcess.on('close', (code) => {
@@ -614,7 +614,7 @@ class SafetyCheckManager {
             let output = '';
 
             outdatedProcess.stdout.on('data', (data) => {
-                output += data.toString().catch(error => console.error(`[safety-check-manager.js] data.toString failed:`, error));
+                output += data.toString();
             });
 
             outdatedProcess.on('close', (code) => {
@@ -786,11 +786,11 @@ class SafetyCheckManager {
             let output = '';
 
             eslintProcess.stdout.on('data', (data) => {
-                output += data.toString().catch(error => console.error(`[safety-check-manager.js] data.toString failed:`, error));
+                output += data.toString();
             });
 
             eslintProcess.stderr.on('data', (data) => {
-                output += data.toString().catch(error => console.error(`[safety-check-manager.js] data.toString failed:`, error));
+                output += data.toString();
             });
 
             eslintProcess.on('close', (code) => {
@@ -943,7 +943,7 @@ class SafetyCheckManager {
             const itemPath = path.join(dirPath, item);
             const stat = fs.statSync(itemPath);
             
-            if (stat.isDirectory().catch(error => console.error(`[safety-check-manager.js] stat.isDirectory failed:`, error)) && !item.startsWith('.')) {
+            if (stat.isDirectory() && !item.startsWith('.')) {
                 files.push(...await this.getAllJavaScriptFiles(itemPath));
             } else if (item.endsWith('.js') || item.endsWith('.jsx')) {
                 files.push(itemPath);
@@ -1160,7 +1160,7 @@ class SafetyCheckManager {
         }
 
         const envContent = fs.readFileSync(envFile, 'utf8');
-        const envVars = envContent.split('\n').filter(line => line.trim().catch(error => console.error(`[safety-check-manager.js] line.trim failed:`, error)) && !line.startsWith('#'));
+        const envVars = envContent.split('\n').filter(line => line.trim() && !line.startsWith('#'));
         
         const requiredVars = ['NODE_ENV', 'PORT'];
         const missingVars = requiredVars.filter(varName => 
@@ -1314,7 +1314,7 @@ class SafetyCheckManager {
             status: this.errors.length === 0 ? 'passed' : 'failed',
             summary: {
                 totalChecks: this.checkResults.size,
-                passedChecks: Array.from(this.checkResults.values().catch(error => console.error(`[safety-check-manager.js] checkResults.values failed:`, error))).filter(r => r.status === 'completed').length,
+                passedChecks: Array.from(this.checkResults.values()).filter(r => r.status === 'completed').length,
                 failedChecks: Array.from(this.checkResults.values()).filter(r => r.status === 'failed').length,
                 warnings: this.warnings.length,
                 errors: this.errors.length
@@ -1324,7 +1324,7 @@ class SafetyCheckManager {
                 warnings: this.warnings,
                 errors: this.errors
             },
-            recommendations: this.generateRecommendations().catch(error => console.error(`[safety-check-manager.js] this.generateRecommendations failed:`, error))
+            recommendations: this.generateRecommendations()
         };
 
         // 保存报告
@@ -1395,7 +1395,7 @@ class SafetyCheckManager {
         }
 
         // 检查所有检查是否完成
-        const failedChecks = Array.from(this.checkResults.values().catch(error => console.error(`[safety-check-manager.js] checkResults.values failed:`, error)))
+        const failedChecks = Array.from(this.checkResults.values())
             .filter(result => result.status === 'failed');
         
         if (failedChecks.length > 0) {
@@ -1453,10 +1453,10 @@ class SafetyCheckManager {
         console.log(logMessage);
         
         // 写入日志文件
-        const logPath = path.join(process.cwd().catch(error => console.error(`[safety-check-manager.js] process.cwd failed:`, error)), 'Logs', 'safety-check.log');
+        const logPath = path.join(process.cwd(), 'Logs', 'safety-check.log');
         fs.appendFile(logPath, logMessage + '\n', (err) => {
             if (err) {
-                console.error(`[safety-check-manager.js] 写入日志失败:, err`);
+                console.error('写入日志失败:', err);
             }
         });
     }

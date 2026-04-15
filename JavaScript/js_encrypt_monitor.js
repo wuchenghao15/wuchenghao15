@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-// VERSION: 20251106.7da669c8aa73665c820c07
 // -*- coding: utf-8 -*-
 /**
  * JavaScript自动加密监控器
@@ -33,8 +32,7 @@ class JSEncryptMonitor {
         this.ensureDirExists(this.logDir);
         this.ensureDirExists(this.encryptedDir);
         this.ensureDirExists(this.backupDir);
-    };
-
+    }
     
     /**
      * 确保目录存在
@@ -43,10 +41,8 @@ class JSEncryptMonitor {
         if (!fs.existsSync(dirPath)) {
             fs.mkdirSync(dirPath, { recursive: true });
             this.log(`目录创建: ${dirPath}`);
-        };
-
-    };
-
+        }
+    }
     
     /**
      * 日志函数
@@ -60,11 +56,9 @@ class JSEncryptMonitor {
         try {
             fs.appendFileSync(this.logFile, logMessage + '\n');
         } catch (error) {
-            console.error(`[js_encrypt_monitor.js] `写入日志失败: ${error.message}``);
-        };
-
-    };
-
+            console.error(`写入日志失败: ${error.message}`);
+        }
+    }
     
     /**
      * 错误日志函数
@@ -73,25 +67,22 @@ class JSEncryptMonitor {
         const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
         const logMessage = `[${timestamp}] ERROR: ${message}`;
         
-        console.error(`[js_encrypt_monitor.js] logMessage`);
+        console.error(logMessage);
         
         try {
             fs.appendFileSync(this.errorLogFile, logMessage + '\n');
             fs.appendFileSync(this.logFile, logMessage + '\n');
         } catch (error) {
-            console.error(`[js_encrypt_monitor.js] `写入错误日志失败: ${error.message}``);
-        };
-
-    };
-
+            console.error(`写入错误日志失败: ${error.message}`);
+        }
+    }
     
     /**
      * 获取相对路径
      */
     getRelativePath(target, base) {
         return path.relative(base, target);
-    };
-
+    }
     
     /**
      * 加密单个JS文件
@@ -108,10 +99,8 @@ class JSEncryptMonitor {
             
             // 创建自解码的加密JS文件
             const encryptedContent = `// 加密的JavaScript文件
-// 原始文件: ${path.basename(jsFilePath)};
-
-// 加密时间: ${new Date().toISOString().replace('T', ' ').substring(0, 19)};
-
+// 原始文件: ${path.basename(jsFilePath)}
+// 加密时间: ${new Date().toISOString().replace('T', ' ').substring(0, 19)}
 
 (function() {
     var encoded = '${encodedContent}';
@@ -129,10 +118,8 @@ class JSEncryptMonitor {
         } catch (error) {
             this.errorLog(`加密文件失败 ${jsFilePath}: ${error.message}`);
             return null;
-        };
-
-    };
-
+        }
+    }
     
     /**
      * 更新HTML文件中的JS引用
@@ -157,8 +144,7 @@ class JSEncryptMonitor {
                     const backupPath = htmlFile + '.backup';
                     if (!fs.existsSync(backupPath)) {
                         fs.copyFileSync(htmlFile, backupPath);
-                    };
-
+                    }
                     
                     // 替换JS引用
                     const regex = new RegExp(`src=["'][^"']*${jsFileName}[^"']*["']`, 'g');
@@ -167,18 +153,13 @@ class JSEncryptMonitor {
                     if (updatedContent !== content) {
                         fs.writeFileSync(htmlFile, updatedContent);
                         this.log(`已更新HTML引用: ${htmlFile} 中的 ${relativeJSPath} -> ${relativeEncryptedPath}`);
-                    };
-
-                };
-
-            };
-
+                    }
+                }
+            }
         } catch (error) {
             this.errorLog(`更新HTML引用失败: ${error.message}`);
-        };
-
-    };
-
+        }
+    }
     
     /**
      * 查找指定扩展名的文件
@@ -193,21 +174,17 @@ class JSEncryptMonitor {
                 const filePath = path.join(dir, file);
                 const stat = fs.statSync(filePath);
                 
-                if (stat.isDirectory().catch(error => console.error(`[js_encrypt_monitor.js] stat.isDirectory failed:`, error))) {
+                if (stat.isDirectory()) {
                     traverse(filePath);
                 } else if (file.endsWith(extension)) {
                     results.push(filePath);
-                };
-
-            };
-
-        };
-
+                }
+            }
+        }
         
         traverse(dir);
         return results;
-    };
-
+    }
     
     /**
      * 初始化已加密文件列表
@@ -219,12 +196,10 @@ class JSEncryptMonitor {
             const originalFileName = path.basename(file).replace('encrypted_', '').replace(/_/g, '/');
             const originalFilePath = path.join(this.jsDir, originalFileName);
             this.encryptedFiles.add(originalFilePath);
-        };
-
+        }
         
         this.log(`已初始化 ${this.encryptedFiles.size} 个已加密文件`);
-    };
-
+    }
     
     /**
      * 检查并加密新的JS文件
@@ -244,18 +219,13 @@ class JSEncryptMonitor {
                     if (encryptedFilePath) {
                         this.updateHTMLReferences(jsFile, encryptedFilePath);
                         this.encryptedFiles.add(jsFile);
-                    };
-
-                };
-
-            };
-
+                    }
+                }
+            }
         } catch (error) {
             this.errorLog(`检查新文件失败: ${error.message}`);
-        };
-
-    };
-
+        }
+    }
     
     /**
      * 启动监控
@@ -266,15 +236,15 @@ class JSEncryptMonitor {
         this.log("=====================================");
         
         // 初始化已加密文件列表
-        this.initializeEncryptedFiles().catch(error => console.error(`[js_encrypt_monitor.js] this.initializeEncryptedFiles failed:`, error));
+        this.initializeEncryptedFiles();
         
         // 立即检查一次
-        this.checkAndEncryptNewFiles().catch(error => console.error(`[js_encrypt_monitor.js] this.checkAndEncryptNewFiles failed:`, error));
+        this.checkAndEncryptNewFiles();
         
         // 设置定时检查
         this.log("开始定时监控JavaScript文件变化...");
         setInterval(() => {
-            this.checkAndEncryptNewFiles().catch(error => console.error(`[js_encrypt_monitor.js] this.checkAndEncryptNewFiles failed:`, error));
+            this.checkAndEncryptNewFiles();
         }, 60000); // 每分钟检查一次
         
         // 处理退出信号
@@ -282,22 +252,18 @@ class JSEncryptMonitor {
             this.log("收到终止信号，正在停止监控...");
             process.exit(0);
         });
-    };
-
-};
-
+    }
+}
 
 // 主函数
 function main() {
     const monitor = new JSEncryptMonitor();
-    monitor.startMonitoring().catch(error => console.error(`[js_encrypt_monitor.js] monitor.startMonitoring failed:`, error));
-};
-
+    monitor.startMonitoring();
+}
 
 // 执行主函数
 if (require.main === module) {
     main();
-};
-
+}
 
 module.exports = JSEncryptMonitor;

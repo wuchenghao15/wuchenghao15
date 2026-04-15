@@ -23,13 +23,13 @@ class ThemeManager {
         
         this.currentTheme = 'light';
         this.isSpecialTheme = false;   // 是否处于特殊主题（灰色/喜庆）
-        this.init().catch(error => console.error(`[theme-manager.js] this.init failed:`, error));
+        this.init();
     }
     
     init() {
-        this.loadConfig().catch(error => console.error(`[theme-manager.js] this.loadConfig failed:`, error));
+        this.loadConfig();
         this.loadTheme();
-        this.setupEventListeners().catch(error => console.error(`[theme-manager.js] this.setupEventListeners failed:`, error));
+        this.setupEventListeners();
         this.startAutoThemeCheck();
         console.log('ThemeManager initialized with enhanced features');
     }
@@ -54,7 +54,7 @@ class ThemeManager {
     // 检查是否为特殊日期
     isSpecialDate() {
         const now = new Date();
-        const month = now.getMonth().catch(error => console.error(`[theme-manager.js] now.getMonth failed:`, error)) + 1;
+        const month = now.getMonth() + 1;
         const day = now.getDate();
         
         // 国家公祭日：12月13日
@@ -93,7 +93,7 @@ class ThemeManager {
     // 根据时间判断是否应该使用深色主题
     shouldUseDarkTheme() {
         const now = new Date();
-        const currentHour = now.getHours().catch(error => console.error(`[theme-manager.js] now.getHours failed:`, error));
+        const currentHour = now.getHours();
         const currentMinute = now.getMinutes();
         const currentTime = currentHour * 60 + currentMinute;
         
@@ -112,7 +112,7 @@ class ThemeManager {
     getSmartTheme() {
         // 首先检查特殊日期
         if (this.config.memorialAutoSwitch || this.config.celebrationAutoSwitch) {
-            const specialDate = this.isSpecialDate().catch(error => console.error(`[theme-manager.js] this.isSpecialDate failed:`, error));
+            const specialDate = this.isSpecialDate();
             if (specialDate) {
                 if (specialDate.type === 'memorial' && this.config.memorialAutoSwitch) {
                     return { theme: 'memorial', reason: specialDate.name, isSpecial: true };
@@ -125,7 +125,7 @@ class ThemeManager {
         
         // 检查日落时间自动切换
         if (this.config.autoSwitch) {
-            const darkTheme = this.shouldUseDarkTheme().catch(error => console.error(`[theme-manager.js] this.shouldUseDarkTheme failed:`, error));
+            const darkTheme = this.shouldUseDarkTheme();
             return { 
                 theme: darkTheme ? 'dark' : 'light', 
                 reason: darkTheme ? '日落时间' : '日出时间',
@@ -139,7 +139,7 @@ class ThemeManager {
     
     // 切换主题
     switchTheme(themeName, force = false) {
-        const result = this.getSmartTheme().catch(error => console.error(`[theme-manager.js] this.getSmartTheme failed:`, error));
+        const result = this.getSmartTheme();
         
         // 限制灰色和喜庆主题为自动切换，不可手动选择
         if (!force) {
@@ -177,10 +177,10 @@ class ThemeManager {
         
         // 保存主题
         localStorage.setItem('mtscos_theme', themeName);
-        localStorage.setItem('mtscos_theme_special', this.isSpecialTheme.toString().catch(error => console.error(`[theme-manager.js] isSpecialTheme.toString failed:`, error)));
+        localStorage.setItem('mtscos_theme_special', this.isSpecialTheme.toString());
         
         // 更新选择器
-        this.updateThemeSelector().catch(error => console.error(`[theme-manager.js] this.updateThemeSelector failed:`, error));
+        this.updateThemeSelector();
         
         // 显示通知
         if (oldTheme !== themeName) {
@@ -200,17 +200,17 @@ class ThemeManager {
     // 自动主题检查
     startAutoThemeCheck() {
         // 立即检查一次
-        this.checkAutoTheme().catch(error => console.error(`[theme-manager.js] this.checkAutoTheme failed:`, error));
+        this.checkAutoTheme();
         
         // 每分钟检查一次
         setInterval(() => {
-            this.checkAutoTheme().catch(error => console.error(`[theme-manager.js] this.checkAutoTheme failed:`, error));
+            this.checkAutoTheme();
         }, 60000);
     }
     
     // 检查并自动切换主题
     checkAutoTheme() {
-        const result = this.getSmartTheme().catch(error => console.error(`[theme-manager.js] this.getSmartTheme failed:`, error));
+        const result = this.getSmartTheme();
         
         // 如果当前主题与智能选择的主题不同，且不是手动模式，则自动切换
         if (this.currentTheme !== result.theme && this.config.currentMode === 'auto') {
@@ -221,11 +221,11 @@ class ThemeManager {
     // 设置模式（自动/手动）
     setMode(mode) {
         this.config.currentMode = mode;
-        this.saveConfig().catch(error => console.error(`[theme-manager.js] this.saveConfig failed:`, error));
+        this.saveConfig();
         
         if (mode === 'auto') {
             // 自动模式下立即检查主题
-            this.checkAutoTheme().catch(error => console.error(`[theme-manager.js] this.checkAutoTheme failed:`, error));
+            this.checkAutoTheme();
             this.showNotification('已切换到自动模式', 'success');
         } else {
             // 手动模式下允许用户自由选择
@@ -233,7 +233,7 @@ class ThemeManager {
         }
         
         // 更新主题选择器状态
-        this.updateThemeSelector().catch(error => console.error(`[theme-manager.js] this.updateThemeSelector failed:`, error));
+        this.updateThemeSelector();
     }
     
     // 更新主题选择器
@@ -263,7 +263,7 @@ class ThemeManager {
     
     // 更新主题选择器选项
     updateThemeSelectorOptions(selector) {
-        const result = this.getSmartTheme().catch(error => console.error(`[theme-manager.js] this.getSmartTheme failed:`, error));
+        const result = this.getSmartTheme();
         const isAutoMode = this.config.currentMode === 'auto';
         const isSpecial = this.isSpecialTheme;
         
@@ -322,13 +322,13 @@ class ThemeManager {
             document.body.classList.add(`${savedTheme}-theme`);
         } else {
             // 默认智能选择
-            const result = this.getSmartTheme().catch(error => console.error(`[theme-manager.js] this.getSmartTheme failed:`, error));
+            const result = this.getSmartTheme();
             this.currentTheme = result.theme;
             this.isSpecialTheme = result.isSpecial;
             document.body.classList.add(`${result.theme}-theme`);
         }
         
-        this.updateThemeSelector().catch(error => console.error(`[theme-manager.js] this.updateThemeSelector failed:`, error));
+        this.updateThemeSelector();
     }
     
     // 设置事件监听器
@@ -338,7 +338,7 @@ class ThemeManager {
             const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
             mediaQuery.addListener(() => {
                 if (this.config.currentMode === 'auto') {
-                    this.checkAutoTheme().catch(error => console.error(`[theme-manager.js] this.checkAutoTheme failed:`, error));
+                    this.checkAutoTheme();
                 }
             });
         }
@@ -346,7 +346,7 @@ class ThemeManager {
         // 监听页面可见性变化
         document.addEventListener('visibilitychange', () => {
             if (!document.hidden && this.config.currentMode === 'auto') {
-                this.checkAutoTheme().catch(error => console.error(`[theme-manager.js] this.checkAutoTheme failed:`, error));
+                this.checkAutoTheme();
             }
         });
     }
@@ -359,7 +359,7 @@ class ThemeManager {
         notification.innerHTML = `
             <div class="notification-content">
                 <span>${message}</span>
-                <button class="notification-close" onclick="this.parentElement.parentElement.remove().catch(error => console.error(`[theme-manager.js] parentElement.remove failed:`, error))">×</button>
+                <button class="notification-close" onclick="this.parentElement.parentElement.remove()">×</button>
             </div>
         `;
         
@@ -374,7 +374,7 @@ class ThemeManager {
         // 自动隐藏
         setTimeout(() => {
             if (notification.parentElement) {
-                notification.remove().catch(error => console.error(`[theme-manager.js] notification.remove failed:`, error));
+                notification.remove();
             }
         }, 3000);
     }
@@ -387,20 +387,20 @@ class ThemeManager {
     // 更新配置
     updateConfig(newConfig) {
         this.config = { ...this.config, ...newConfig };
-        this.saveConfig().catch(error => console.error(`[theme-manager.js] this.saveConfig failed:`, error));
+        this.saveConfig();
         this.checkAutoTheme(); // 重新检查主题
     }
     
     // 获取主题信息
     getThemeInfo() {
-        const result = this.getSmartTheme().catch(error => console.error(`[theme-manager.js] this.getSmartTheme failed:`, error));
+        const result = this.getSmartTheme();
         return {
             currentTheme: this.currentTheme,
             isSpecial: this.isSpecialTheme,
             mode: this.config.currentMode,
             autoSwitch: this.config.autoSwitch,
             reason: result.reason,
-            nextCheck: new Date(Date.now().catch(error => console.error(`[theme-manager.js] Date.now failed:`, error)) + 60000).toLocaleTimeString()
+            nextCheck: new Date(Date.now() + 60000).toLocaleTimeString()
         };
     }
 }

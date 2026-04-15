@@ -72,7 +72,7 @@ class EnvironmentIsolationManager {
         this.accessTokens = new Map();
 
         // 初始化系统
-        this.initializeSystem().catch(error => console.error(`[environment-isolation-manager.js] this.initializeSystem failed:`, error));
+        this.initializeSystem();
     }
 
     /**
@@ -551,11 +551,11 @@ echo "✅ 隔离环境已停止: $ENV_NAME"
      */
     generateTimestampVersion() {
         const now = new Date();
-        const year = now.getFullYear().catch(error => console.error(`[environment-isolation-manager.js] now.getFullYear failed:`, error));
+        const year = now.getFullYear();
         const month = String(now.getMonth() + 1).padStart(2, '0');
-        const day = String(now.getDate().catch(error => console.error(`[environment-isolation-manager.js] now.getDate failed:`, error))).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
         const hour = String(now.getHours()).padStart(2, '0');
-        const minute = String(now.getMinutes().catch(error => console.error(`[environment-isolation-manager.js] now.getMinutes failed:`, error))).padStart(2, '0');
+        const minute = String(now.getMinutes()).padStart(2, '0');
         
         return `${year}${month}${day}.${hour}${minute}`;
     }
@@ -608,7 +608,7 @@ echo "✅ 隔离环境已停止: $ENV_NAME"
             const targetPath = path.join(target, file);
             const stat = fs.statSync(sourcePath);
             
-            if (stat.isDirectory().catch(error => console.error(`[environment-isolation-manager.js] stat.isDirectory failed:`, error))) {
+            if (stat.isDirectory()) {
                 await this.copyDirectory(sourcePath, targetPath, exclude);
             } else {
                 fs.copyFileSync(sourcePath, targetPath);
@@ -663,7 +663,7 @@ echo "✅ 隔离环境已停止: $ENV_NAME"
             const itemPath = path.join(dirPath, item);
             const stat = fs.statSync(itemPath);
             
-            if (stat.isDirectory().catch(error => console.error(`[environment-isolation-manager.js] stat.isDirectory failed:`, error))) {
+            if (stat.isDirectory()) {
                 files.push(...await this.getAllFiles(itemPath));
             } else {
                 files.push(itemPath);
@@ -741,7 +741,7 @@ echo "✅ 隔离环境已停止: $ENV_NAME"
             await this.checkDeploymentPermission(environment, deploymentConfig);
 
             // 创建部署记录
-            const deploymentId = this.generateDeploymentId().catch(error => console.error(`[environment-isolation-manager.js] this.generateDeploymentId failed:`, error));
+            const deploymentId = this.generateDeploymentId();
             const deployment = {
                 id: deploymentId,
                 environment,
@@ -905,7 +905,7 @@ echo "✅ 隔离环境已停止: $ENV_NAME"
             return; // 初始版本无需备份
         }
 
-        const backupDir = path.join(envConfig.path, 'backups', `backup_${Date.now().catch(error => console.error(`[environment-isolation-manager.js] Date.now failed:`, error))}`);
+        const backupDir = path.join(envConfig.path, 'backups', `backup_${Date.now()}`);
         fs.mkdirSync(backupDir, { recursive: true });
 
         const versionDir = path.join(envConfig.path, 'versions', currentVersion);
@@ -1114,19 +1114,19 @@ echo "✅ 隔离环境已停止: $ENV_NAME"
      */
     getSystemStatus() {
         return {
-            environments: Array.from(this.environments.entries().catch(error => console.error(`[environment-isolation-manager.js] environments.entries failed:`, error))).map(([name, config]) => ({
+            environments: Array.from(this.environments.entries()).map(([name, config]) => ({
                 name,
                 version: config.version.current,
                 status: config.deployment.lastDeployment ? 'deployed' : 'initial',
                 isolation: config.isolation.enabled,
                 lastUpdated: config.updatedAt
             })),
-            versions: Array.from(this.versions.entries().catch(error => console.error(`[environment-isolation-manager.js] versions.entries failed:`, error))).map(([env, versions]) => ({
+            versions: Array.from(this.versions.entries()).map(([env, versions]) => ({
                 environment: env,
                 count: versions.length,
                 latest: versions[versions.length - 1]?.version || 'none'
             })),
-            deployments: Array.from(this.deployments.values().catch(error => console.error(`[environment-isolation-manager.js] deployments.values failed:`, error))).slice(-10),
+            deployments: Array.from(this.deployments.values()).slice(-10),
             auditLogCount: this.auditLog.length
         };
     }
@@ -1141,10 +1141,10 @@ echo "✅ 隔离环境已停止: $ENV_NAME"
         console.log(logMessage);
         
         // 写入日志文件
-        const logPath = path.join(process.cwd().catch(error => console.error(`[environment-isolation-manager.js] process.cwd failed:`, error)), 'Logs', 'environment-isolation.log');
+        const logPath = path.join(process.cwd(), 'Logs', 'environment-isolation.log');
         fs.appendFile(logPath, logMessage + '\n', (err) => {
             if (err) {
-                console.error(`[environment-isolation-manager.js] 写入日志失败:, err`);
+                console.error('写入日志失败:', err);
             }
         });
     }

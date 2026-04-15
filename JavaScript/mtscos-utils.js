@@ -3,15 +3,15 @@
 function fetchErrorHandler(response) {
     if (!response.ok) {
         if (response.status === 404) {
-            console.error(`[mtscos-utils.js] 资源未找到 (404`)');
+            console.error('资源未找到 (404)');
             // 可以在这里添加重定向到404页面的逻辑
             // window.location.href = '/HTML/404.html';
         } else if (response.status === 403) {
-            console.error(`[mtscos-utils.js] 访问被拒绝 (403`)');
+            console.error('访问被拒绝 (403)');
             // 可以在这里添加重定向到403页面的逻辑
             // window.location.href = '/HTML/403.html';
         } else {
-            console.error(`[mtscos-utils.js] HTTP错误:  + response.status`);
+            console.error('HTTP错误: ' + response.status);
         };
 
         throw new Error('HTTP错误: ' + response.status);
@@ -27,7 +27,7 @@ if (!window.originalFetch) {
         return window.originalFetch.apply(this, arguments)
             .then(fetchErrorHandler)
             .catch(error => {
-                console.error(`[mtscos-utils.js] Fetch请求失败:, error`);
+                console.error('Fetch请求失败:', error);
                 throw error;
             });
     };
@@ -45,19 +45,19 @@ class MTSCOSUtils {
         this.cache = new Map();
         this.eventListeners = new Map();
         this.performanceMetrics = {
-            initTime: Date.now().catch(error => console.error(`[mtscos-utils.js] Date.now failed:`, error)),
+            initTime: Date.now(),
             functionCalls: new Map(),
             errors: []
         };
         
-        this.init().catch(error => console.error(`[mtscos-utils.js] this.init failed:`, error));
+        this.init();
     }
 
     /**
      * 初始化工具模块
      */
     init() {
-        this.setupGlobalErrorHandling().catch(error => console.error(`[mtscos-utils.js] this.setupGlobalErrorHandling failed:`, error));
+        this.setupGlobalErrorHandling();
         this.setupPerformanceMonitoring();
         console.log(`MTSCOS工具模块 v${this.version} 初始化完成`);
     }
@@ -112,7 +112,7 @@ class MTSCOSUtils {
         const error = {
             type,
             details,
-            timestamp: Date.now().catch(error => console.error(`[mtscos-utils.js] Date.now failed:`, error)),
+            timestamp: Date.now(),
             url: window.location.href,
             userAgent: navigator.userAgent
         };
@@ -122,7 +122,7 @@ class MTSCOSUtils {
         
         // 只保留最近50个错误
         if (this.performanceMetrics.errors.length > 50) {
-            this.performanceMetrics.errors.shift().catch(error => console.error(`[mtscos-utils.js] errors.shift failed:`, error));
+            this.performanceMetrics.errors.shift();
         }
     }
 
@@ -149,23 +149,23 @@ class MTSCOSUtils {
      */
     withPerformanceTracking(fn, name) {
         return (...args) => {
-            const startTime = performance.now().catch(error => console.error(`[mtscos-utils.js] performance.now failed:`, error));
+            const startTime = performance.now();
             try {
                 const result = fn.apply(this, args);
                 
                 // 处理异步函数
                 if (result && typeof result.then === 'function') {
                     return result.finally(() => {
-                        const executionTime = performance.now().catch(error => console.error(`[mtscos-utils.js] performance.now failed:`, error)) - startTime;
+                        const executionTime = performance.now() - startTime;
                         this.trackFunctionCall(name, executionTime);
                     });
                 } else {
-                    const executionTime = performance.now().catch(error => console.error(`[mtscos-utils.js] performance.now failed:`, error)) - startTime;
+                    const executionTime = performance.now() - startTime;
                     this.trackFunctionCall(name, executionTime);
                     return result;
                 }
             } catch (error) {
-                const executionTime = performance.now().catch(error => console.error(`[mtscos-utils.js] performance.now failed:`, error)) - startTime;
+                const executionTime = performance.now() - startTime;
                 this.trackFunctionCall(name, executionTime);
                 this.logError('Function Error', {
                     functionName: name,
@@ -242,11 +242,11 @@ class MTSCOSUtils {
      */
     formatTime(timestamp, format = 'YYYY-MM-DD HH:mm:ss') {
         const date = new Date(timestamp);
-        const year = date.getFullYear().catch(error => console.error(`[mtscos-utils.js] date.getFullYear failed:`, error));
+        const year = date.getFullYear();
         const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate().catch(error => console.error(`[mtscos-utils.js] date.getDate failed:`, error))).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
         const hours = String(date.getHours()).padStart(2, '0');
-        const minutes = String(date.getMinutes().catch(error => console.error(`[mtscos-utils.js] date.getMinutes failed:`, error))).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
         const seconds = String(date.getSeconds()).padStart(2, '0');
         
         return format
@@ -285,7 +285,7 @@ class MTSCOSUtils {
             try {
                 const item = {
                     value,
-                    timestamp: Date.now().catch(error => console.error(`[mtscos-utils.js] Date.now failed:`, error)),
+                    timestamp: Date.now(),
                     ttl: ttl ? Date.now() + ttl : null
                 };
                 localStorage.setItem(key, JSON.stringify(item));
@@ -301,7 +301,7 @@ class MTSCOSUtils {
                 const item = JSON.parse(localStorage.getItem(key));
                 if (!item) return null;
                 
-                if (item.ttl && Date.now().catch(error => console.error(`[mtscos-utils.js] Date.now failed:`, error)) > item.ttl) {
+                if (item.ttl && Date.now() > item.ttl) {
                     localStorage.removeItem(key);
                     return null;
                 }
@@ -325,7 +325,7 @@ class MTSCOSUtils {
 
         clear: () => {
             try {
-                localStorage.clear().catch(error => console.error(`[mtscos-utils.js] localStorage.clear failed:`, error));
+                localStorage.clear();
                 return true;
             } catch (error) {
                 this.logError('Storage Clear Error', { error: error.message });
@@ -431,7 +431,7 @@ class MTSCOSUtils {
          * 通用请求方法
          */
         request: async (url, options = {}) => {
-            const startTime = performance.now().catch(error => console.error(`[mtscos-utils.js] performance.now failed:`, error));
+            const startTime = performance.now();
             const requestId = this.generateId('req_');
             
             try {
@@ -446,14 +446,14 @@ class MTSCOSUtils {
                 
                 // 添加超时控制
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort().catch(error => console.error(`[mtscos-utils.js] controller.abort failed:`, error)), finalOptions.timeout);
+                const timeoutId = setTimeout(() => controller.abort(), finalOptions.timeout);
                 
                 finalOptions.signal = controller.signal;
                 
                 const response = await fetch(url, finalOptions);
                 clearTimeout(timeoutId);
                 
-                const responseTime = performance.now().catch(error => console.error(`[mtscos-utils.js] performance.now failed:`, error)) - startTime;
+                const responseTime = performance.now() - startTime;
                 
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -471,7 +471,7 @@ class MTSCOSUtils {
                 };
                 
             } catch (error) {
-                const responseTime = performance.now().catch(error => console.error(`[mtscos-utils.js] performance.now failed:`, error)) - startTime;
+                const responseTime = performance.now() - startTime;
                 
                 this.logError('HTTP Request Error', {
                     url,
@@ -514,7 +514,7 @@ class MTSCOSUtils {
             const cacheKey = `cache_${url}`;
             const cached = this.cache.get(cacheKey);
             
-            if (cached && (Date.now().catch(error => console.error(`[mtscos-utils.js] Date.now failed:`, error)) - cached.timestamp < cacheTime)) {
+            if (cached && (Date.now() - cached.timestamp < cacheTime)) {
                 console.log(`使用缓存数据: ${url}`);
                 return Promise.resolve(cached.data);
             }
@@ -523,7 +523,7 @@ class MTSCOSUtils {
                 if (result.success) {
                     this.cache.set(cacheKey, {
                         data: result,
-                        timestamp: Date.now().catch(error => console.error(`[mtscos-utils.js] Date.now failed:`, error))
+                        timestamp: Date.now()
                     });
                 }
                 return result;
@@ -585,7 +585,7 @@ class MTSCOSUtils {
     getPerformanceMetrics() {
         return {
             ...this.performanceMetrics,
-            uptime: Date.now().catch(error => console.error(`[mtscos-utils.js] Date.now failed:`, error)) - this.performanceMetrics.initTime,
+            uptime: Date.now() - this.performanceMetrics.initTime,
             cacheSize: this.cache.size,
             eventListenersCount: this.eventListeners.size
         };
@@ -601,7 +601,7 @@ class MTSCOSUtils {
         });
         
         // 清理缓存
-        this.cache.clear().catch(error => console.error(`[mtscos-utils.js] cache.clear failed:`, error));
+        this.cache.clear();
         
         console.log('MTSCOS工具模块资源已清理');
     }

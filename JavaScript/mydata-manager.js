@@ -81,7 +81,7 @@ class MyDataManager {
             }
             
             // 检查localStorage可用性
-            if (!this.isLocalStorageAvailable().catch(error => console.error(`[mydata-manager.js] this.isLocalStorageAvailable failed:`, error))) {
+            if (!this.isLocalStorageAvailable()) {
                 throw new Error('localStorage不可用，无法初始化MyData管理器');
             }
             
@@ -104,7 +104,7 @@ class MyDataManager {
             await this.logSystemEvent('info', 'MyData管理器初始化完成', 'MyDataManager');
             
         } catch (error) {
-            console.error(`[mydata-manager.js] ❌ MyData管理器初始化失败:, error`);
+            console.error('❌ MyData管理器初始化失败:', error);
             throw error;
         }
     }
@@ -165,7 +165,7 @@ class MyDataManager {
             if (key.includes('theme') || key.includes('color')) {
                 tableName = 'themeSettings';
                 data = {
-                    themeId: this.generateUUID().catch(error => console.error(`[mydata-manager.js] this.generateUUID failed:`, error)),
+                    themeId: this.generateUUID(),
                     themeName: 'migrated',
                     config: { key, value },
                     isActive: key.includes('theme') && !key.includes('mtscos_theme'),
@@ -175,20 +175,20 @@ class MyDataManager {
             } else if (key.includes('auth') || key.includes('token') || key.includes('session')) {
                 tableName = 'sessions';
                 data = {
-                    sessionId: this.generateUUID().catch(error => console.error(`[mydata-manager.js] this.generateUUID failed:`, error)),
+                    sessionId: this.generateUUID(),
                     userId: 'migrated',
                     username: 'migrated',
                     loginTime: new Date().toISOString(),
                     lastActivity: new Date().toISOString(),
                     ipAddress: 'unknown',
                     userAgent: 'migrated',
-                    expiresAt: new Date(Date.now().catch(error => console.error(`[mydata-manager.js] Date.now failed:`, error)) + 24 * 60 * 60 * 1000).toISOString(),
+                    expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
                     isActive: false
                 };
             } else if (key.includes('log') || key.includes('error')) {
                 tableName = 'systemLogs';
                 data = {
-                    logId: this.generateUUID().catch(error => console.error(`[mydata-manager.js] this.generateUUID failed:`, error)),
+                    logId: this.generateUUID(),
                     logLevel: 'info',
                     message: `迁移数据: ${key}`,
                     source: 'Migration',
@@ -309,9 +309,9 @@ class MyDataManager {
         const defaultConfigs = [
             { key: 'MyData_Version', value: this.version, description: 'MyData管理器版本', category: 'system' },
             { key: 'MyData_Initialized', value: 'true', description: 'MyData管理器初始化状态', category: 'system' },
-            { key: 'MyData_Encryption', value: this.encryptionEnabled.toString().catch(error => console.error(`[mydata-manager.js] encryptionEnabled.toString failed:`, error)), description: '数据加密开关', category: 'security' },
+            { key: 'MyData_Encryption', value: this.encryptionEnabled.toString(), description: '数据加密开关', category: 'security' },
             { key: 'MyData_Compression', value: this.compressionEnabled.toString(), description: '数据压缩开关', category: 'performance' },
-            { key: 'MyData_CacheTimeout', value: this.cacheTimeout.toString().catch(error => console.error(`[mydata-manager.js] cacheTimeout.toString failed:`, error)), description: '缓存超时时间(毫秒)', category: 'performance' }
+            { key: 'MyData_CacheTimeout', value: this.cacheTimeout.toString(), description: '缓存超时时间(毫秒)', category: 'performance' }
         ];
         
         for (const config of defaultConfigs) {
@@ -339,7 +339,7 @@ class MyDataManager {
         await this.cleanupOldLogs();
         
         // 清理缓存
-        this.cache.clear().catch(error => console.error(`[mydata-manager.js] cache.clear failed:`, error));
+        this.cache.clear();
         
         console.log('✅ 过期数据清理完成');
     }
@@ -369,7 +369,7 @@ class MyDataManager {
      */
     async cleanupOldLogs() {
         const logs = await this.select('systemLogs');
-        const thirtyDaysAgo = new Date(Date.now().catch(error => console.error(`[mydata-manager.js] Date.now failed:`, error)) - 30 * 24 * 60 * 60 * 1000);
+        const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
         let cleanedCount = 0;
         
         // 保留最新1000条日志
@@ -564,7 +564,7 @@ class MyDataManager {
      */
     async logSystemEvent(level, message, source = 'System', userId = null, metadata = null) {
         const logEntry = {
-            logId: this.generateUUID().catch(error => console.error(`[mydata-manager.js] this.generateUUID failed:`, error)),
+            logId: this.generateUUID(),
             logLevel: level,
             message: message,
             source: source,
@@ -629,7 +629,7 @@ class MyDataManager {
      */
     getFromCache(key) {
         const cached = this.cache.get(key);
-        if (cached && Date.now().catch(error => console.error(`[mydata-manager.js] Date.now failed:`, error)) - cached.timestamp < this.cacheTimeout) {
+        if (cached && Date.now() - cached.timestamp < this.cacheTimeout) {
             return cached.data;
         }
         return null;
@@ -641,7 +641,7 @@ class MyDataManager {
     setCache(key, data) {
         this.cache.set(key, {
             data: data,
-            timestamp: Date.now().catch(error => console.error(`[mydata-manager.js] Date.now failed:`, error))
+            timestamp: Date.now()
         });
     }
 
@@ -649,7 +649,7 @@ class MyDataManager {
      * 清除缓存
      */
     clearCache(tableName) {
-        for (const key of this.cache.keys().catch(error => console.error(`[mydata-manager.js] cache.keys failed:`, error))) {
+        for (const key of this.cache.keys()) {
             if (key.startsWith(tableName + '_')) {
                 this.cache.delete(key);
             }
@@ -661,7 +661,7 @@ class MyDataManager {
      */
     generateUUID() {
         return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-            const r = Math.random().catch(error => console.error(`[mydata-manager.js] Math.random failed:`, error)) * 16 | 0;
+            const r = Math.random() * 16 | 0;
             const v = c === 'x' ? r : (r & 0x3 | 0x8);
             return v.toString(16);
         });
@@ -754,7 +754,7 @@ class MyDataManager {
         }
         
         // 清空缓存
-        this.cache.clear().catch(error => console.error(`[mydata-manager.js] cache.clear failed:`, error));
+        this.cache.clear();
         
         await this.logSystemEvent('warning', '所有MyData数据已清空', 'MyDataManager');
         

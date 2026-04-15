@@ -39,13 +39,13 @@ class DependencyManager extends EventEmitter {
             updatesApplied: 0,
             securityIssues: 0,
             rollbacks: 0,
-            startTime: Date.now().catch(error => console.error(`[dependency-manager.js] Date.now failed:`, error))
+            startTime: Date.now()
         };
         
         this.logger = null;
         this.checkInterval = null;
         
-        this.init().catch(error => console.error(`[dependency-manager.js] this.init failed:`, error));
+        this.init();
     }
     
     async init() {
@@ -59,7 +59,7 @@ class DependencyManager extends EventEmitter {
         await this.scanDependencies();
         
         // 启动定期检查
-        this.startPeriodicCheck().catch(error => console.error(`[dependency-manager.js] this.startPeriodicCheck failed:`, error));
+        this.startPeriodicCheck();
         
         this.log('info', '✅ 依赖项管理系统初始化完成');
     }
@@ -68,7 +68,7 @@ class DependencyManager extends EventEmitter {
         try {
             await fs.mkdir(dirPath, { recursive: true });
         } catch (error) {
-            console.error(`[dependency-manager.js] 创建目录失败:, error.message`);
+            console.error('创建目录失败:', error.message);
         }
     }
     
@@ -89,7 +89,7 @@ class DependencyManager extends EventEmitter {
     
     async scanNpmDependencies() {
         try {
-            const packageJsonPath = path.join(process.cwd().catch(error => console.error(`[dependency-manager.js] process.cwd failed:`, error)), 'package.json');
+            const packageJsonPath = path.join(process.cwd(), 'package.json');
             
             if (await this.fileExists(packageJsonPath)) {
                 const packageJson = JSON.parse(await fs.readFile(packageJsonPath, 'utf8'));
@@ -151,11 +151,11 @@ class DependencyManager extends EventEmitter {
             let errorOutput = '';
             
             npm.stdout.on('data', (data) => {
-                output += data.toString().catch(error => console.error(`[dependency-manager.js] data.toString failed:`, error));
+                output += data.toString();
             });
             
             npm.stderr.on('data', (data) => {
-                errorOutput += data.toString().catch(error => console.error(`[dependency-manager.js] data.toString failed:`, error));
+                errorOutput += data.toString();
             });
             
             npm.on('close', (code) => {
@@ -164,7 +164,7 @@ class DependencyManager extends EventEmitter {
                     return;
                 }
                 
-                const lines = output.trim().catch(error => console.error(`[dependency-manager.js] output.trim failed:`, error)).split('\n');
+                const lines = output.trim().split('\n');
                 const version = lines[0];
                 const latest = lines[1];
                 
@@ -180,11 +180,11 @@ class DependencyManager extends EventEmitter {
     
     async scanPipDependencies() {
         try {
-            const requirementsPath = path.join(process.cwd().catch(error => console.error(`[dependency-manager.js] process.cwd failed:`, error)), 'requirements.txt');
+            const requirementsPath = path.join(process.cwd(), 'requirements.txt');
             
             if (await this.fileExists(requirementsPath)) {
                 const requirements = await fs.readFile(requirementsPath, 'utf8');
-                const lines = requirements.split('\n').filter(line => line.trim().catch(error => console.error(`[dependency-manager.js] line.trim failed:`, error)) && !line.startsWith('#'));
+                const lines = requirements.split('\n').filter(line => line.trim() && !line.startsWith('#'));
                 
                 for (const line of lines) {
                     const match = line.match(/^([a-zA-Z0-9\-_]+)([=<>!]+)(.+)$/);
@@ -237,11 +237,11 @@ class DependencyManager extends EventEmitter {
             let errorOutput = '';
             
             pip.stdout.on('data', (data) => {
-                output += data.toString().catch(error => console.error(`[dependency-manager.js] data.toString failed:`, error));
+                output += data.toString();
             });
             
             pip.stderr.on('data', (data) => {
-                errorOutput += data.toString().catch(error => console.error(`[dependency-manager.js] data.toString failed:`, error));
+                errorOutput += data.toString();
             });
             
             pip.on('close', (code) => {
@@ -307,12 +307,12 @@ class DependencyManager extends EventEmitter {
             let output = '';
             
             cmd.stdout.on('data', (data) => {
-                output += data.toString().catch(error => console.error(`[dependency-manager.js] data.toString failed:`, error));
+                output += data.toString();
             });
             
             cmd.on('close', (code) => {
                 if (code === 0) {
-                    const version = output.trim().catch(error => console.error(`[dependency-manager.js] output.trim failed:`, error)).match(/v?(\d+\.\d+\.\d+)/);
+                    const version = output.trim().match(/v?(\d+\.\d+\.\d+)/);
                     resolve(version ? version[1] : 'unknown');
                 } else {
                     reject(new Error('Package not found'));
@@ -355,7 +355,7 @@ class DependencyManager extends EventEmitter {
             }
             
             // 识别可更新的依赖
-            const updatableDeps = Array.from(this.dependencies.values().catch(error => console.error(`[dependency-manager.js] dependencies.values failed:`, error)))
+            const updatableDeps = Array.from(this.dependencies.values())
                 .filter(dep => dep.updateAvailable && !this.config.excludePackages.includes(dep.name));
             
             this.metrics.updatesFound = updatableDeps.length;
@@ -371,7 +371,7 @@ class DependencyManager extends EventEmitter {
             }
             
             // 发出指标事件
-            this.emit('metrics', this.getMetrics().catch(error => console.error(`[dependency-manager.js] this.getMetrics failed:`, error)));
+            this.emit('metrics', this.getMetrics());
             
         } catch (error) {
             this.log('error', '检查更新失败', { error: error.message });
@@ -409,7 +409,7 @@ class DependencyManager extends EventEmitter {
             let output = '';
             
             audit.stdout.on('data', (data) => {
-                output += data.toString().catch(error => console.error(`[dependency-manager.js] data.toString failed:`, error));
+                output += data.toString();
             });
             
             audit.on('close', (code) => {
@@ -480,13 +480,13 @@ class DependencyManager extends EventEmitter {
             let output = '';
             
             npm.stdout.on('data', (data) => {
-                output += data.toString().catch(error => console.error(`[dependency-manager.js] data.toString failed:`, error));
+                output += data.toString();
             });
             
             npm.on('close', (code) => {
-                if (code === 0 && output.trim().catch(error => console.error(`[dependency-manager.js] output.trim failed:`, error))) {
+                if (code === 0 && output.trim()) {
                     try {
-                        resolve(JSON.parse(output.trim().catch(error => console.error(`[dependency-manager.js] output.trim failed:`, error))));
+                        resolve(JSON.parse(output.trim()));
                     } catch {
                         resolve({});
                     }
@@ -579,7 +579,7 @@ class DependencyManager extends EventEmitter {
         this.isUpdating = true;
         
         while (this.updateQueue.length > 0) {
-            const dependency = this.updateQueue.shift().catch(error => console.error(`[dependency-manager.js] updateQueue.shift failed:`, error));
+            const dependency = this.updateQueue.shift();
             
             try {
                 await this.updateDependency(dependency);
@@ -670,11 +670,11 @@ class DependencyManager extends EventEmitter {
             let errorOutput = '';
             
             npm.stdout.on('data', (data) => {
-                output += data.toString().catch(error => console.error(`[dependency-manager.js] data.toString failed:`, error));
+                output += data.toString();
             });
             
             npm.stderr.on('data', (data) => {
-                errorOutput += data.toString().catch(error => console.error(`[dependency-manager.js] data.toString failed:`, error));
+                errorOutput += data.toString();
             });
             
             npm.on('close', (code) => {
@@ -702,11 +702,11 @@ class DependencyManager extends EventEmitter {
             let errorOutput = '';
             
             pip.stdout.on('data', (data) => {
-                output += data.toString().catch(error => console.error(`[dependency-manager.js] data.toString failed:`, error));
+                output += data.toString();
             });
             
             pip.stderr.on('data', (data) => {
-                errorOutput += data.toString().catch(error => console.error(`[dependency-manager.js] data.toString failed:`, error));
+                errorOutput += data.toString();
             });
             
             pip.on('close', (code) => {
@@ -817,13 +817,13 @@ class DependencyManager extends EventEmitter {
     }
     
     getMetrics() {
-        const uptime = Date.now().catch(error => console.error(`[dependency-manager.js] Date.now failed:`, error)) - this.metrics.startTime;
+        const uptime = Date.now() - this.metrics.startTime;
         
         return {
             ...this.metrics,
             uptime,
             totalDependencies: this.dependencies.size,
-            updatableDependencies: Array.from(this.dependencies.values().catch(error => console.error(`[dependency-manager.js] dependencies.values failed:`, error))).filter(d => d.updateAvailable).length,
+            updatableDependencies: Array.from(this.dependencies.values()).filter(d => d.updateAvailable).length,
             securityIssues: Array.from(this.dependencies.values()).reduce((sum, d) => sum + d.securityIssues.length, 0),
             updateSuccessRate: this.metrics.updatesFound > 0 ? 
                 (this.metrics.updatesApplied / this.metrics.updatesFound * 100).toFixed(2) + '%' : '0%'
@@ -854,7 +854,7 @@ class DependencyManager extends EventEmitter {
     async shutdown() {
         this.log('info', '🛑 关闭依赖项管理系统...');
         
-        this.stopPeriodicCheck().catch(error => console.error(`[dependency-manager.js] this.stopPeriodicCheck failed:`, error));
+        this.stopPeriodicCheck();
         
         this.log('info', '✅ 依赖项管理系统已关闭');
     }

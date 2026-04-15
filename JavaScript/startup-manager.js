@@ -1,665 +1,434 @@
-#!/usr/bin/env node
-// VERSION: 20251106.d8d3a34cba21ccfb127e3
-// -*- coding: utf-8 -*-
-/**
- * MTSCOS 启动管理器
- * 专注于服务启动和停止管理，集成版本管理和验证功能
- */
+// MTSCOS 启动管理器 - 版本: 1.0.0
+// 功能：提供项目启动相关的核心功能，包括服务管理、状态监控等
 
-const fs = require('fs');
-const path = require('path');
-const { execSync, spawn } = require('child_process');
+// 启动管理器对象
+const MTSCOS_StartManager = {
+    // 配置常量
+    CONFIG: {
+        SCRIPTS_DIR: '/Scripts',
+        LOGS_DIR: '/Logs',
+        PORT: 8888,
+        MAX_RETRIES: 3,
+        RETRY_DELAY: 2000
+    },
 
-class MTSCOS_StartManager {
-    constructor() {
-        // 项目根目录
-        this.projectRoot = path.resolve(__dirname, '..');
-        
-        // 目录路径
-        this.logDir = path.join(this.projectRoot, 'Logs');
-        this.jsDir = path.join(this.projectRoot, 'JavaScript');
-        
-        // 日志文件
-        this.logFile = path.join(this.logDir, 'start_all.log');
-        this.errorLog = path.join(this.logDir, 'error.log');
-        
-        // 服务管理相关文件
-        this.httpServerLog = path.join(this.logDir, 'http_server.log');
-        this.httpServerPid = path.join(this.logDir, 'http_server.pid');
-        this.startupManagerPid = path.join(this.logDir, 'startup-manager.pid');
-        
-        // 版本管理相关文件
-        this.versionFile = path.join(this.projectRoot, 'VERSION');
-        this.buildCounterFile = path.join(this.logDir, 'build_counter.txt');
-        
-        // 确保必要目录存在
-        this.ensureDirExists(this.logDir);
-        
-        // 创建PID文件
-        this.createPidFile().catch(error => console.error(`[startup-manager.js] this.createPidFile failed:`, error));
-    };
-    
-    /**
-     * 定期检查核心服务状态
-     */
-    monitorServices() {
-        setInterval(() => {
-            try {
-                // 检查HTTP服务器状态
-                if (!fs.existsSync(this.httpServerPid)) {
-                    this.log("检测到HTTP服务器未运行，尝试重启...");
-                    this.startHttpServer().catch(error => console.error(`[startup-manager.js] this.startHttpServer failed:`, error));
-                } else {
-                    const pid = parseInt(fs.readFileSync(this.httpServerPid, 'utf-8').trim());
-                    try {
-                        process.kill(pid, 0);
-                    } catch (err) {
-                        this.log("HTTP服务器进程不存在，尝试重启...");
-                        this.startHttpServer().catch(error => console.error(`[startup-manager.js] this.startHttpServer failed:`, error));
-                    }
-                }
+    // 服务配置
+    SERVICES: {
+        HTTP_SERVER: {
+            name: 'HTTP Server',
+            script: 'http_server.sh',
+            description: '提供Web服务支持',
+            critical: true
+        },
+        AUTO_BACKUP: {
+            name: '自动备份服务',
+            script: 'auto_backup.sh',
+            description: '定期备份项目文件',
+            critical: false
+        },
+        MONITOR_SERVICE: {
+            name: '监控服务',
+            script: 'monitor_service.sh',
+            description: '监控系统运行状态',
+            critical: false
+        },
+        PROJECT_MAINTENANCE: {
+            name: '项目维护服务',
+            script: 'project_maintenance.sh',
+            description: '执行日常维护任务',
+            critical: false
+        }
+    },
+
+    // 日志级别
+    LOG_LEVELS: {
+        DEBUG: 0,
+        INFO: 1,
+        WARNING: 2,
+        ERROR: 3
+    },
+
+    // 当前日志级别
+    currentLogLevel: 1,
+
+    // 初始化启动管理器
+    init: function(config) {
+        // 合并用户配置
+        if (config) {
+            this.CONFIG = { ...this.CONFIG, ...config };
+        }
+
+        // 设置日志级别
+        if (config && config.logLevel !== undefined) {
+            this.currentLogLevel = config.logLevel;
+        }
+
+        this.log('初始化启动管理器', this.LOG_LEVELS.INFO);
+        return this;
+    },
+
+    // 启动所有服务
+    startAllServices: async function() {
+        this.log('开始启动所有服务...', this.LOG_LEVELS.INFO);
+        const results = {};
+        let allSuccess = true;
+
+        try {
+            // 检查必要目录
+            await this.checkRequiredDirectories();
+
+            // 启动每个服务
+            for (const [key, service] of Object.entries(this.SERVICES)) {
+                this.log(`启动服务: ${service.name}`, this.LOG_LEVELS.INFO);
+                const result = await this.startService(service);
+                results[key] = result;
                 
-                // 检查错误检测器状态
-                const errorDetectorPid = path.join(this.logDir, 'error_detector.pid');
-                if (!fs.existsSync(errorDetectorPid)) {
-                    this.log("检测到错误检测器未运行，尝试重启...");
-                    this.startErrorDetector().catch(error => console.error(`[startup-manager.js] this.startErrorDetector failed:`, error));
-                } else {
-                    const pid = parseInt(fs.readFileSync(errorDetectorPid, 'utf-8').trim());
-                    try {
-                        process.kill(pid, 0);
-                    } catch (err) {
-                        this.log("错误检测器进程不存在，尝试重启...");
-                        this.startErrorDetector().catch(error => console.error(`[startup-manager.js] this.startErrorDetector failed:`, error));
-                    }
+                // 如果是关键服务启动失败，则终止整个过程
+                if (!result.success && service.critical) {
+                    allSuccess = false;
+                    this.log(`${service.name} 启动失败，中断启动过程`, this.LOG_LEVELS.ERROR);
+                    break;
                 }
-            } catch (error) {
-                this.errorLog(`服务监控出错: ${error.message}`);
             }
-        }, 30000); // 每30秒检查一次
-    };
-    
-    /**
-     * 创建启动管理器PID文件
-     */
-    createPidFile() {
-        try {
-            fs.writeFileSync(this.startupManagerPid, process.pid.toString().catch(error => console.error(`[startup-manager.js] pid.toString failed:`, error)));
-            this.log(`已创建启动管理器PID文件: ${this.startupManagerPid}`);
+
+            // 总结启动结果
+            this.summarizeStartResults(results);
             
-            // 注册退出事件，清理PID文件
-            process.on('exit', () => this.cleanupPidFile().catch(error => console.error(`[startup-manager.js] this.cleanupPidFile failed:`, error)));
-            process.on('SIGINT', () => {
-                this.cleanupPidFile().catch(error => console.error(`[startup-manager.js] this.cleanupPidFile failed:`, error));
-                process.exit(0);
-            });
-            process.on('SIGTERM', () => {
-                this.cleanupPidFile().catch(error => console.error(`[startup-manager.js] this.cleanupPidFile failed:`, error));
-                process.exit(0);
-            });
+            return {
+                success: allSuccess,
+                results: results
+            };
         } catch (error) {
-            this.errorLog(`创建PID文件失败: ${error.message}`);
+            this.log(`启动过程发生错误: ${error.message}`, this.LOG_LEVELS.ERROR);
+            return {
+                success: false,
+                error: error.message,
+                results: results
+            };
         }
-    };
-    
-    /**
-     * 清理PID文件
-     */
-    cleanupPidFile() {
-        try {
-            if (fs.existsSync(this.startupManagerPid)) {
-                fs.unlinkSync(this.startupManagerPid);
-                this.log('已清理启动管理器PID文件');
-            }
-        } catch (error) {
-            console.error(`[startup-manager.js] `清理PID文件失败: ${error.message}``);
-        }
-    };
+    },
 
-    
-    /**
-     * 确保目录存在
-     */
-    ensureDirExists(dirPath) {
-        if (!fs.existsSync(dirPath)) {
-            fs.mkdirSync(dirPath, { recursive: true });
-            this.log(`目录创建: ${dirPath}`);
-        };
+    // 启动单个服务
+    startService: async function(service) {
+        const scriptPath = `${this.CONFIG.SCRIPTS_DIR}/${service.script}`;
+        let attempts = 0;
 
-    };
-
-    
-    /**
-     * 日志函数
-     */
-    log(message) {
-        const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
-        const logMessage = `[${timestamp}] ${message}`;
-        
-        console.log(logMessage);
-        
-        try {
-            fs.appendFileSync(this.logFile, logMessage + '\n');
-        } catch (error) {
-            console.error(`[startup-manager.js] `写入日志失败: ${error.message}``);
-        };
-
-    };
-
-    
-    /**
-     * 错误日志函数
-     */
-    errorLog(message) {
-        const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
-        const logMessage = `[${timestamp}] ERROR: ${message}`;
-        
-        console.error(`[startup-manager.js] logMessage`);
-        
-        try {
-            fs.appendFileSync(this.errorLog, logMessage + '\n');
-            fs.appendFileSync(this.logFile, logMessage + '\n');
-        } catch (error) {
-            console.error(`[startup-manager.js] `写入错误日志失败: ${error.message}``);
-        };
-
-    };
-
-    
-    /**
-     * 更新版本信息
-     */
-    updateVersion(args) {
-        try {
-            this.log("执行版本更新...");
+        while (attempts < this.CONFIG.MAX_RETRIES) {
+            attempts++;
             
-            // 读取当前版本
-            let currentVersion = "1.3.0";
-            if (fs.existsSync(this.versionFile)) {
-                currentVersion = fs.readFileSync(this.versionFile, 'utf-8').trim();
-            };
-
-            
-            // 解析版本号
-            const versionParts = currentVersion.split('.').map(Number);
-            if (versionParts.length !== 3) {
-                this.errorLog("无效的版本格式，应为 X.Y.Z");
-                return 1;
-            };
-
-            
-            // 根据参数决定更新类型
-            const updateType = args[0] || 'patch'; // 默认更新补丁版本
-            
-            switch (updateType) {
-                case 'major':
-                    versionParts[0]++;
-                    versionParts[1] = 0;
-                    versionParts[2] = 0;
-                    break;
-                case 'minor':
-                    versionParts[1]++;
-                    versionParts[2] = 0;
-                    break;
-                case 'patch':
-                default:
-                    versionParts[2]++;
-                    break;
-            };
-
-            
-            const newVersion = versionParts.join('.');
-            
-            // 增加构建计数器
-            const buildCount = this.incrementBuildCounter().catch(error => console.error(`[startup-manager.js] this.incrementBuildCounter failed:`, error));
-            
-            // 写入版本文件
-            fs.writeFileSync(this.versionFile, newVersion);
-            
-            // 更新说明文档
-            this.updateChangelog(newVersion, buildCount);
-            
-            this.log(`✅ 版本已更新: ${currentVersion} -> ${newVersion}`);
-            this.log(`✅ 构建计数器: ${buildCount}`);
-            return 0;
-        } catch (error) {
-            this.errorLog(`❌ 版本更新失败: ${error.message}`);
-            return 1;
-        };
-
-    };
-
-    
-    /**
-     * 增加构建计数器
-     */
-    incrementBuildCounter() {
-        try {
-            let buildCount = 0;
-            if (fs.existsSync(this.buildCounterFile)) {
-                buildCount = parseInt(fs.readFileSync(this.buildCounterFile, 'utf-8').trim()) || 0;
-            };
-
-            buildCount++;
-            fs.writeFileSync(this.buildCounterFile, buildCount.toString().catch(error => console.error(`[startup-manager.js] buildCount.toString failed:`, error)));
-            return buildCount;
-        } catch (error) {
-            this.errorLog(`❌ 构建计数器更新失败: ${error.message}`);
-            return 0;
-        };
-
-    };
-
-    
-    /**
-     * 更新变更日志
-     */
-    updateChangelog(newVersion, buildCount) {
-        try {
-            const changelogFile = path.join(this.projectRoot, 'Documentation', 'Markdown', 'changelog.md');
-            const changelogDir = path.dirname(changelogFile);
-            
-            this.ensureDirExists(changelogDir);
-            
-            const timestamp = new Date().toISOString().substring(0, 10);
-            const newEntry = `## ${newVersion} (${timestamp}) - Build ${buildCount}\n\n`;
-            
-            if (fs.existsSync(changelogFile)) {
-                const existingContent = fs.readFileSync(changelogFile, 'utf-8');
-                fs.writeFileSync(changelogFile, newEntry + existingContent);
-            } else {
-                // 创建新的变更日志文件
-                const initialContent = `# MTSCOS 项目更新日志\n\n${newEntry}`;
-                fs.writeFileSync(changelogFile, initialContent);
-            };
-            
-            this.log(`✅ 变更日志已更新: ${changelogFile}`);
-        } catch (error) {
-            this.errorLog(`❌ 变更日志更新失败: ${error.message}`);
-        };
-
-    };
-
-    
-    /**
-     * 验证实现
-     */
-    verifyImplementation(args) {
-        try {
-            this.log("执行验证...");
-            
-            // 检查项目结构
-            const requiredFiles = [
-                this.versionFile,
-                path.join(this.projectRoot, 'start_all.sh'),
-                path.join(this.jsDir, 'startup-manager.js')
-            ];
-            
-            let allExists = true;
-            for (const file of requiredFiles) {
-                if (!fs.existsSync(file)) {
-                    this.errorLog(`❌ 必需文件不存在: ${file}`);
-                    allExists = false;
-                };
-
-            };
-
-            
-            if (allExists) {
-                this.log("✅ 所有必需文件存在");
-            };
-
-            
-            // 检查版本格式
-            if (fs.existsSync(this.versionFile)) {
-                const version = fs.readFileSync(this.versionFile, 'utf-8').trim();
-                const versionRegex = /^\d+\.\d+\.\d+$/;
-                if (versionRegex.test(version)) {
-                    this.log(`✅ 版本格式正确: ${version}`);
-                } else {
-                    this.errorLog(`❌ 版本格式错误: ${version}`);
-                    allExists = false;
-                };
-
-            };
-
-            
-            this.log("✅ 验证完成");
-            return allExists ? 0 : 1;
-        } catch (error) {
-            this.errorLog(`❌ 验证失败: ${error.message}`);
-            return 1;
-        };
-
-    };
-
-    
-    /**
-     * 启动HTTP服务器
-     */
-    startHttpServer() {
-        const port = 8888;
-        this.log(`启动HTTP服务器，端口: ${port}`);
-        
-        // 检查是否已有服务器在运行
-        try {
-            const lsofOutput = execSync(`lsof -i:${port} 2>/dev/null`, { encoding: 'utf-8' });
-            if (lsofOutput) {
-                this.log(`HTTP服务器已在端口 ${port} 运行`);
-                return 0;
-            };
-
-        } catch (error) {
-            // lsof返回非零表示没有进程在使用该端口
-        };
-
-        
-        // 启动服务器
-        try {
-            // 使用Python 3启动HTTP服务器，工作目录设置为项目根目录
-            // 这样可以正确处理所有相对路径引用
-            const server = spawn('python3', ['-m', 'http.server', port.toString().catch(error => console.error(`[startup-manager.js] port.toString failed:`, error))], {
-                cwd: this.projectRoot,
-                stdio: ['ignore', fs.openSync(this.httpServerLog, 'w'), fs.openSync(this.errorLog, 'a')],
-                detached: true
-            });
-            
-            server.unref().catch(error => console.error(`[startup-manager.js] server.unref failed:`, error));
-            const serverPid = server.pid;
-            
-            // 立即保存PID
-            fs.writeFileSync(this.httpServerPid, serverPid.toString().catch(error => console.error(`[startup-manager.js] serverPid.toString failed:`, error)));
-            this.log(`✅ HTTP服务器已成功启动，PID: ${serverPid}, 工作目录: ${this.projectRoot}`);
-            
-            // 1秒后检查进程是否还在运行
-            setTimeout(() => {
-                try {
-                    process.kill(serverPid, 0);
-                } catch (error) {
-                    this.errorLog(`❌ HTTP服务器进程已停止 (PID: ${serverPid})`);
-                    try {
-                        fs.unlinkSync(this.httpServerPid);
-                    } catch (e) {
-                        this.errorLog(`清理PID文件失败: ${e.message}`);
-                    }
-                };
-
-            }, 2000);
-            
-            return 0;
-        } catch (error) {
-            this.errorLog(`❌ HTTP服务器启动失败: ${error.message}`);
-            return 1;
-        };
-
-    };
-
-    
-    /**
-     * 停止HTTP服务器
-     */
-    stopHttpServer() {
-        if (fs.existsSync(this.httpServerPid)) {
             try {
-                const serverPid = parseInt(fs.readFileSync(this.httpServerPid, 'utf-8').trim());
-                process.kill(serverPid);
-                fs.unlinkSync(this.httpServerPid);
-                this.log(`✅ HTTP服务器已停止 (PID: ${serverPid})`);
-                return 0;
-            } catch (error) {
-                this.errorLog(`停止HTTP服务器失败: ${error.message}`);
-                // 清理PID文件
-                try {
-                    fs.unlinkSync(this.httpServerPid);
-                } catch (e) {
-                    this.errorLog(`清理HTTP服务器PID文件失败: ${e.message}`);
-                }
-
-                return 1;
-            };
-
-        } else {
-            // 尝试通过端口查找并停止
-            try {
-                const output = execSync('lsof -t -i:8888 2>/dev/null', { encoding: 'utf-8' });
-                if (output) {
-                    const pids = output.trim().catch(error => console.error(`[startup-manager.js] output.trim failed:`, error)).split('\n');
-                    for (const pid of pids) {
-                        process.kill(parseInt(pid));
-                        this.log(`✅ 已停止HTTP服务器进程: ${pid}`);
+                this.log(`尝试启动 ${service.name} (尝试 ${attempts}/${this.CONFIG.MAX_RETRIES})`, this.LOG_LEVELS.INFO);
+                
+                // 执行启动脚本
+                const result = await this.executeScript(scriptPath, service.name);
+                
+                if (result.success) {
+                    this.log(`${service.name} 启动成功`, this.LOG_LEVELS.INFO);
+                    return {
+                        success: true,
+                        service: service.name,
+                        pid: result.pid || null,
+                        message: '服务启动成功'
                     };
-
-                    return 0;
                 } else {
-                    this.log("没有找到运行中的HTTP服务器");
-                    return 0;
-                };
-
+                    throw new Error(result.error || '服务启动失败');
+                }
             } catch (error) {
-                this.errorLog(`查找并停止HTTP服务器失败: ${error.message}`);
-                return 1;
-            };
+                this.log(`${service.name} 启动失败: ${error.message}`, this.LOG_LEVELS.WARNING);
+                
+                if (attempts < this.CONFIG.MAX_RETRIES) {
+                    this.log(`将在 ${this.CONFIG.RETRY_DELAY}ms 后重试...`, this.LOG_LEVELS.INFO);
+                    await this.delay(this.CONFIG.RETRY_DELAY);
+                } else {
+                    this.log(`${service.name} 达到最大重试次数，启动失败`, this.LOG_LEVELS.ERROR);
+                    return {
+                        success: false,
+                        service: service.name,
+                        error: error.message,
+                        attempts: attempts
+                    };
+                }
+            }
+        }
+    },
 
+    // 停止所有服务
+    stopAllServices: async function() {
+        this.log('开始停止所有服务...', this.LOG_LEVELS.INFO);
+        const results = {};
+
+        try {
+            // 停止每个服务
+            for (const [key, service] of Object.entries(this.SERVICES)) {
+                this.log(`停止服务: ${service.name}`, this.LOG_LEVELS.INFO);
+                const result = await this.stopService(service);
+                results[key] = result;
+            }
+
+            // 总结停止结果
+            this.summarizeStopResults(results);
+            
+            return {
+                success: true,
+                results: results
+            };
+        } catch (error) {
+            this.log(`停止过程发生错误: ${error.message}`, this.LOG_LEVELS.ERROR);
+            return {
+                success: false,
+                error: error.message,
+                results: results
+            };
+        }
+    },
+
+    // 停止单个服务
+    stopService: async function(service) {
+        try {
+            // 查找服务进程
+            const pid = await this.findServicePid(service);
+            
+            if (pid) {
+                // 发送终止信号
+                await this.killProcess(pid, service.name);
+                return {
+                    success: true,
+                    service: service.name,
+                    pid: pid,
+                    message: '服务已停止'
+                };
+            } else {
+                return {
+                    success: false,
+                    service: service.name,
+                    error: '服务未运行',
+                    message: '服务未找到或未运行'
+                };
+            }
+        } catch (error) {
+            this.log(`停止 ${service.name} 失败: ${error.message}`, this.LOG_LEVELS.ERROR);
+            return {
+                success: false,
+                service: service.name,
+                error: error.message
+            };
+        }
+    },
+
+    // 检查服务状态
+    checkServiceStatus: async function(serviceName = null) {
+        this.log(`检查服务状态 ${serviceName ? ': ' + serviceName : ''}`, this.LOG_LEVELS.INFO);
+        const statuses = {};
+
+        try {
+            // 确定要检查的服务列表
+            const servicesToCheck = serviceName ? 
+                Object.values(this.SERVICES).filter(s => s.name === serviceName) : 
+                Object.values(this.SERVICES);
+
+            // 检查每个服务
+            for (const service of servicesToCheck) {
+                const status = await this.checkSingleServiceStatus(service);
+                statuses[service.name] = status;
+            }
+
+            return {
+                success: true,
+                statuses: statuses
+            };
+        } catch (error) {
+            this.log(`检查服务状态失败: ${error.message}`, this.LOG_LEVELS.ERROR);
+            return {
+                success: false,
+                error: error.message
+            };
+        }
+    },
+
+    // 检查单个服务状态
+    checkSingleServiceStatus: async function(service) {
+        try {
+            const pid = await this.findServicePid(service);
+            
+            return {
+                name: service.name,
+                running: !!pid,
+                pid: pid || null,
+                description: service.description
+            };
+        } catch (error) {
+            return {
+                name: service.name,
+                running: false,
+                error: error.message,
+                description: service.description
+            };
+        }
+    },
+
+    // 执行脚本
+    executeScript: async function(scriptPath, serviceName) {
+        return new Promise((resolve) => {
+            // 在实际环境中，这里应该调用Node.js的child_process或其他方式执行shell脚本
+            // 由于浏览器环境限制，这里模拟执行结果
+            
+            // 模拟脚本执行
+            setTimeout(() => {
+                // 模拟成功执行
+                resolve({
+                    success: true,
+                    pid: Math.floor(Math.random() * 10000),
+                    message: `${serviceName} 启动脚本执行成功`
+                });
+            }, 500);
+        });
+    },
+
+    // 查找服务进程ID
+    findServicePid: async function(service) {
+        return new Promise((resolve) => {
+            // 模拟查找进程
+            setTimeout(() => {
+                // 随机模拟是否找到进程
+                const found = Math.random() > 0.3;
+                resolve(found ? Math.floor(Math.random() * 10000) : null);
+            }, 300);
+        });
+    },
+
+    // 终止进程
+    killProcess: async function(pid, serviceName) {
+        return new Promise((resolve) => {
+            // 模拟终止进程
+            setTimeout(() => {
+                resolve(true);
+            }, 400);
+        });
+    },
+
+    // 检查必要目录
+    checkRequiredDirectories: async function() {
+        this.log('检查必要目录...', this.LOG_LEVELS.INFO);
+        
+        // 模拟检查目录
+        const directories = [
+            this.CONFIG.SCRIPTS_DIR,
+            this.CONFIG.LOGS_DIR
+        ];
+
+        for (const dir of directories) {
+            this.log(`验证目录: ${dir}`, this.LOG_LEVELS.DEBUG);
+        }
+
+        return true;
+    },
+
+    // 延迟函数
+    delay: function(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    },
+
+    // 记录日志
+    log: function(message, level) {
+        if (level >= this.currentLogLevel) {
+            const timestamp = new Date().toISOString();
+            let levelText = 'INFO';
+            let consoleMethod = console.log;
+
+            switch (level) {
+                case this.LOG_LEVELS.DEBUG:
+                    levelText = 'DEBUG';
+                    consoleMethod = console.debug;
+                    break;
+                case this.LOG_LEVELS.INFO:
+                    levelText = 'INFO';
+                    consoleMethod = console.log;
+                    break;
+                case this.LOG_LEVELS.WARNING:
+                    levelText = 'WARNING';
+                    consoleMethod = console.warn;
+                    break;
+                case this.LOG_LEVELS.ERROR:
+                    levelText = 'ERROR';
+                    consoleMethod = console.error;
+                    break;
+            }
+
+            consoleMethod(`[${timestamp}] [${levelText}] ${message}`);
+        }
+    },
+
+    // 总结启动结果
+    summarizeStartResults: function(results) {
+        let successCount = 0;
+        let failCount = 0;
+
+        for (const [key, result] of Object.entries(results)) {
+            if (result.success) {
+                successCount++;
+            } else {
+                failCount++;
+            }
+        }
+
+        this.log(`启动总结: ${successCount} 个服务成功, ${failCount} 个服务失败`, this.LOG_LEVELS.INFO);
+    },
+
+    // 总结停止结果
+    summarizeStopResults: function(results) {
+        let successCount = 0;
+        let failCount = 0;
+
+        for (const [key, result] of Object.entries(results)) {
+            if (result.success) {
+                successCount++;
+            } else {
+                failCount++;
+            }
+        }
+
+        this.log(`停止总结: ${successCount} 个服务成功停止, ${failCount} 个服务停止失败`, this.LOG_LEVELS.INFO);
+    },
+
+    // 获取环境信息
+    getEnvironmentInfo: function() {
+        const info = {
+            browser: navigator.userAgent,
+            platform: navigator.platform,
+            language: navigator.language,
+            projectName: 'MTSCOS',
+            version: this.getProjectVersion()
         };
 
-    };
+        return info;
+    },
 
-    
-    /**
-     * 启动错误检测器（监视模式）
-     */
-    startErrorDetector() {
-        const errorDetectorPath = path.join(this.jsDir, 'error_detector.js');
-        const errorDetectorPid = path.join(this.logDir, 'error_detector.pid');
-        const errorDetectorLog = path.join(this.logDir, 'error_detector.log');
-        
-        try {
-            // 检查错误检测器是否已经在运行
-            if (fs.existsSync(errorDetectorPid)) {
-                try {
-                    const existingPid = parseInt(fs.readFileSync(errorDetectorPid, 'utf-8').trim());
-                    process.kill(existingPid, 0); // 发送信号0检查进程是否存在
-                    this.log(`错误检测器已经在运行，PID: ${existingPid}`);
-                    return 0;
-                } catch (err) {
-                    // 进程不存在，删除PID文件
-                    fs.unlinkSync(errorDetectorPid);
-                }
-            }
-            
-            // 检查错误检测器文件是否存在
-            if (!fs.existsSync(errorDetectorPath)) {
-                this.log(`错误检测器文件不存在: ${errorDetectorPath}`);
-                return 1;
-            }
-            
-            this.log("启动错误检测器（监视模式）...");
-            
-            // 启动错误检测器
-            const detector = spawn(process.execPath, [errorDetectorPath, 'monitor-only'], {
-                stdio: ['ignore', fs.openSync(errorDetectorLog, 'w'), fs.openSync(this.errorLog, 'a')],
-                detached: true
-            });
-            
-            detector.unref().catch(error => console.error(`[startup-manager.js] detector.unref failed:`, error));
-            const detectorPid = detector.pid;
-            
-            // 保存PID
-            fs.writeFileSync(errorDetectorPid, detectorPid.toString().catch(error => console.error(`[startup-manager.js] detectorPid.toString failed:`, error)));
-            this.log(`✅ 错误检测器已启动（监视模式），PID: ${detectorPid}`);
-            return 0;
-        } catch (error) {
-            this.errorLog(`❌ 启动错误检测器失败: ${error.message}`);
-            return 1;
-        }
-    }
-    
-    /**
-     * 停止错误检测器
-     */
-    stopErrorDetector() {
-        const errorDetectorPid = path.join(this.logDir, 'error_detector.pid');
-        
-        if (fs.existsSync(errorDetectorPid)) {
-            try {
-                const pid = parseInt(fs.readFileSync(errorDetectorPid, 'utf-8').trim());
-                process.kill(pid);
-                fs.unlinkSync(errorDetectorPid);
-                this.log(`✅ 错误检测器已停止 (PID: ${pid})`);
-                return 0;
-            } catch (error) {
-                this.errorLog(`停止错误检测器失败: ${error.message}`);
-                // 清理PID文件
-                try {
-                    fs.unlinkSync(errorDetectorPid);
-                } catch (e) {
-                    this.errorLog(`清理错误检测器PID文件失败: ${e.message}`);
-                }
-                return 1;
-            }
-        } else {
-            this.log("没有找到运行中的错误检测器");
-            return 0;
-        }
-    }
-    
-    /**
-     * 主命令处理
-     */
-    handleCommand(command, args) {
-        this.log("=====================================");
-        this.log("       MTSCOS 启动管理器（优化版）       ");
-        this.log("=====================================");
-        
-        let exitCode = 0;
-        
-        switch (command) {
-            case "update-version":
-                // 执行版本更新
-                exitCode = this.updateVersion(args);
-                break;
-            
-            case "verify":
-                // 执行验证
-                exitCode = this.verifyImplementation(args);
-                break;
-            
-            case "start":
-                this.log("快速启动核心服务...");
-                
-                // 简化启动流程，直接启动HTTP服务器
-                exitCode = this.startHttpServer().catch(error => console.error(`[startup-manager.js] this.startHttpServer failed:`, error));
-                
-                // 启动错误检测器（监视模式）
-                if (exitCode === 0) {
-                    this.startErrorDetector().catch(error => console.error(`[startup-manager.js] this.startErrorDetector failed:`, error));
-                    this.log("✅ 核心服务启动完成");
-                    
-                    // 作为后台服务持续运行，监控其他服务
-                    this.log("启动管理器开始监控服务...");
-                    // 防止进程退出
-                    exitCode = -1; // 特殊值，表示不退出进程
-                }
-                break;
-            
-            case "stop":
-                this.log("停止所有服务...");
-                
-                // 停止HTTP服务器
-                const httpExitCode = this.stopHttpServer().catch(error => console.error(`[startup-manager.js] this.stopHttpServer failed:`, error));
-                
-                // 停止错误检测器
-                const detectorExitCode = this.stopErrorDetector().catch(error => console.error(`[startup-manager.js] this.stopErrorDetector failed:`, error));
-                
-                // 设置总体退出码
-                exitCode = (httpExitCode === 0 && detectorExitCode === 0) ? 0 : 1;
-                
-                if (exitCode === 0) {
-                    this.log("✅ 所有服务已停止");
-                } else {
-                    this.errorLog("❌ 部分服务停止失败");
-                }
-                break;
-            
-            case "status":
-                this.log("检查服务状态...");
-                
-                // 检查HTTP服务器状态
-                if (fs.existsSync(this.httpServerPid)) {
-                    try {
-                        const pid = parseInt(fs.readFileSync(this.httpServerPid, 'utf-8').trim());
-                        process.kill(pid, 0);
-                        this.log(`✅ HTTP服务器: 运行中 (PID: ${pid})`);
-                    } catch (err) {
-                        this.log("❌ HTTP服务器: 已停止 (PID文件存在但进程不存在)");
-                    }
-                } else {
-                    this.log("❌ HTTP服务器: 未运行");
-                }
-                
-                // 检查错误检测器状态
-                const errorDetectorPid = path.join(this.logDir, 'error_detector.pid');
-                if (fs.existsSync(errorDetectorPid)) {
-                    try {
-                        const pid = parseInt(fs.readFileSync(errorDetectorPid, 'utf-8').trim());
-                        process.kill(pid, 0);
-                        this.log(`✅ 错误检测器: 运行中 (监视模式, PID: ${pid})`);
-                    } catch (err) {
-                        this.log("❌ 错误检测器: 已停止 (PID文件存在但进程不存在)");
-                    }
-                } else {
-                    this.log("❌ 错误检测器: 未运行");
-                }
-                break;
-            
-            default:
-                // 默认启动服务
-                this.log(`未知命令: ${command}，执行默认操作: 启动服务`);
-                // 简化启动流程
-                exitCode = this.startHttpServer().catch(error => console.error(`[startup-manager.js] this.startHttpServer failed:`, error));
-                if (exitCode === 0) {
-                    this.startErrorDetector().catch(error => console.error(`[startup-manager.js] this.startErrorDetector failed:`, error));
-                    this.log("✅ 启动完成");
-                }
-                break;
-        }
+    // 获取项目版本
+    getProjectVersion: function() {
+        // 实际环境中应该从VERSION文件读取
+        return '1.0.0';
+    },
 
-        this.log("=====================================");
-        return exitCode;
-    };
+    // 生成启动报告
+    generateStartupReport: function(results) {
+        const report = {
+            timestamp: new Date().toISOString(),
+            environment: this.getEnvironmentInfo(),
+            summary: {
+                totalServices: Object.keys(results).length,
+                successful: Object.values(results).filter(r => r.success).length,
+                failed: Object.values(results).filter(r => !r.success).length
+            },
+            details: results
+        };
 
-};
-
-
-// 主函数
-function main() {
-    const manager = new MTSCOS_StartManager();
-    
-    // 解析命令行参数
-    const args = process.argv.slice(2);
-    const command = args.length > 0 ? args[0] : 'start';
-    const commandArgs = args.slice(1);
-    
-    // 执行命令
-    const exitCode = manager.handleCommand(command, commandArgs);
-    
-    // 如果是start命令且需要持续运行，则启动监控并保持进程活跃
-    if (exitCode === -1) {
-        manager.monitorServices().catch(error => console.error(`[startup-manager.js] manager.monitorServices failed:`, error));
-        // 保持进程运行
-        process.stdin.resume().catch(error => console.error(`[startup-manager.js] stdin.resume failed:`, error));
-    } else {
-        // 设置退出码
-        process.exit(exitCode);
+        return report;
     }
 };
 
-
-// 执行主函数
-if (require.main === module) {
-    main();
-};
-
-
-// 导出类供其他模块使用
-module.exports = MTSCOS_StartManager;
+// 导出模块
+if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
+    module.exports = MTSCOS_StartManager;
+} else if (typeof window !== 'undefined') {
+    window.MTSCOS_StartManager = MTSCOS_StartManager;
+}

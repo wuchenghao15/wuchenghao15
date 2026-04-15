@@ -1,421 +1,718 @@
-const EventEmitter = require('events');
+/**
+ * 错误自动检测和修复系统
+ * 实时监控系统错误，自动诊断并尝试修复
+ * 提供智能错误分类、修复策略和恢复机制
+ */
+
 const fs = require('fs');
 const path = require('path');
-const RepairEngine = require('./repair-engine');
+const { exec, spawn } = require('child_process');
+const EventEmitter = require('events');
+const crypto = require('crypto');
 
-/**
- * 自动错误修复系统
- * 提供JavaScript、CSS、HTML文件的错误自动检测和修复功能
- */
 class AutoErrorRepairSystem extends EventEmitter {
-    /**
-     * 构造函数
-     * @param {Object} config - 配置信息
-     */
     constructor(config = {}) {
         super();
         
-        // 配置参数
-        this.config = Object.assign({
-            // 扫描的文件类型
-            fileTypes: ['.js', '.css', '.html'],
-            
-            // 排除的目录
-            excludeDirs: ['node_modules', '.git', 'dist', 'build'],
-            
-            // 修复策略配置
-            repairStrategies: {
-                auto: true,
-                ai: true,
-                security: true,
-                performance: true,
-                codeQuality: true
-            },
-            
-            // AI模型配置
-            aiModels: {
-                gpt35: { enabled: true, priority: 1 },
-                gpt4: { enabled: true, priority: 2 },
-                claude: { enabled: false, priority: 3 },
-                gemini: { enabled: false, priority: 4 }
-            },
-            
-            // 日志级别
-            logLevel: 'info',
-            
-            // 修复超时时间
-            repairTimeout: 30000,
-            
-            // 并行修复限制
-            maxConcurrentRepairs: 5,
-            
-            // 是否自动保存修复结果
-            autoSave: false,
-            
-            // 是否创建备份
-            createBackup: true,
-            
-            // 备份目录
-            backupDir: './backups'
-        }, config);
-        
-        // 初始化修复引擎
-        this.repairEngine = new RepairEngine(this.config);
-        
-        // 初始化日志
-        this.logger = this.repairEngine.logger;
-        
-        // 初始化修复结果统计
-        this.stats = {
-            scannedFiles: 0,
-            filesWithIssues: 0,
-            totalIssues: 0,
-            fixedIssues: 0,
-            failedIssues: 0,
-            repairTime: 0
+        this.config = {
+            projectRoot: config.projectRoot || process.cwd(),
+            logPath: config.logPath || './Logs/auto-error-repair.log',
+            checkInterval: config.checkInterval || 10000,
+            maxRepairAttempts: config.maxRepairAttempts || 3,
+            backupDir: config.backupDir || './Backups/auto_repair',
+            ...config
         };
         
-        // 初始化工作队列
-        this.workQueue = [];
-        this.currentRepairs = 0;
+        this.errorPatterns = new Map();
+        this.repairStrategies = new Map();
+        this.errorHistory = [];
+        this.repairAttempts = new Map();
+        this.isRepairing = false;
         
-        // 监听修复引擎事件
-        this.repairEngine.on('repair_started', (filePath) => {
-            this.emit('repair_started', filePath);
-        });
-        
-        this.repairEngine.on('repair_completed', (result) => {
-            this.emit('repair_completed', result);
-            this.currentRepairs--;
-            this.processNextInQueue();
-        });
-        
-        this.repairEngine.on('repair_failed', (result) => {
-            this.emit('repair_failed', result);
-            this.currentRepairs--;
-            this.processNextInQueue();
-        });
-        
-        // 创建备份目录
-        if (this.config.createBackup && !fs.existsSync(this.config.backupDir)) {
-            fs.mkdirSync(this.config.backupDir, { recursive: true });
-        }
-        
-        this.logger.info('AUTO_ERROR_REPAIR_SYSTEM', '系统初始化完成');
+        this.init();
     }
     
-    /**
-     * 扫描目录并修复文件
-     * @param {string} dirPath - 目录路径
-     * @returns {Promise<Object>} 修复结果
-     */
-    async scanAndRepair(dirPath) {
-        this.logger.info('AUTO_ERROR_REPAIR_SYSTEM', '开始扫描和修复', { dirPath });
+    async init() {
+        this.log('🔧 初始化自动错误修复系统...');
         
-        const startTime = Date.now();
-        this.stats = {
-            scannedFiles: 0,
-            filesWithIssues: 0,
-            totalIssues: 0,
-            fixedIssues: 0,
-            failedIssues: 0,
-            repairTime: 0
-        };
+        // 确保目录存在
+        await this.ensureDirectoryExists(this.config.backupDir);
+        await this.ensureDirectoryExists(path.dirname(this.config.logPath));
         
+        // 初始化错误模式
+        this.initErrorPatterns();
+        
+        // 初始化修复策略
+        this.initRepairStrategies();
+        
+        // 启动监控
+        this.startMonitoring();
+        
+        this.log('✅ 自动错误修复系统初始化完成');
+    }
+    
+    async ensureDirectoryExists(dirPath) {
         try {
-            // 获取所有要扫描的文件
-            const files = await this.getFilesToScan(dirPath);
-            
-            // 扫描并修复每个文件
-            for (const file of files) {
-                await this.scanAndRepairFile(file);
-            }
-            
-            // 等待所有修复完成
-            while (this.currentRepairs > 0) {
-                await new Promise(resolve => setTimeout(resolve, 100));
-            }
-            
-            this.stats.repairTime = Date.now() - startTime;
-            
-            this.logger.info('AUTO_ERROR_REPAIR_SYSTEM', '扫描和修复完成', this.stats);
-            this.emit('scan_completed', this.stats);
-            
-            return this.stats;
+            await fs.promises.mkdir(dirPath, { recursive: true });
         } catch (error) {
-            this.logger.error('AUTO_ERROR_REPAIR_SYSTEM', '扫描和修复失败', error);
-            this.emit('scan_failed', error);
-            throw error;
+            this.log(`❌ 创建目录失败: ${dirPath} - ${error.message}`);
         }
     }
     
-    /**
-     * 获取要扫描的文件列表
-     * @param {string} dirPath - 目录路径
-     * @returns {Promise<Array<string>>} 文件列表
-     */
-    async getFilesToScan(dirPath) {
-        let files = [];
+    initErrorPatterns() {
+        // JavaScript错误模式
+        this.errorPatterns.set('SyntaxError', {
+            pattern: /SyntaxError:\s*(.+)/i,
+            severity: 'high',
+            category: 'syntax'
+        });
         
-        try {
-            const entries = await fs.promises.readdir(dirPath, { withFileTypes: true });
-            
-            for (const entry of entries) {
-                const fullPath = path.join(dirPath, entry.name);
+        this.errorPatterns.set('ReferenceError', {
+            pattern: /ReferenceError:\s*(.+) is not defined/i,
+            severity: 'medium',
+            category: 'reference'
+        });
+        
+        this.errorPatterns.set('TypeError', {
+            pattern: /TypeError:\s*(.+)/i,
+            severity: 'medium',
+            category: 'type'
+        });
+        
+        // 网络错误模式
+        this.errorPatterns.set('NetworkError', {
+            pattern: /NetworkError:\s*(.+)/i,
+            severity: 'high',
+            category: 'network'
+        });
+        
+        this.errorPatterns.set('ConnectionRefused', {
+            pattern: /ECONNREFUSED|Connection refused/i,
+            severity: 'high',
+            category: 'connection'
+        });
+        
+        // 文件系统错误模式
+        this.errorPatterns.set('FileNotFound', {
+            pattern: /ENOENT:\s*no such file or directory/i,
+            severity: 'high',
+            category: 'filesystem'
+        });
+        
+        this.errorPatterns.set('PermissionDenied', {
+            pattern: /EACCES:\s*permission denied/i,
+            severity: 'high',
+            category: 'permission'
+        });
+        
+        // 内存错误模式
+        this.errorPatterns.set('OutOfMemory', {
+            pattern: /JavaScript heap out of memory|OutOfMemoryError/i,
+            severity: 'critical',
+            category: 'memory'
+        });
+        
+        // 端口占用错误
+        this.errorPatterns.set('PortInUse', {
+            pattern: /EADDRINUSE:\s*address already in use.*:(\d+)/i,
+            severity: 'medium',
+            category: 'port'
+        });
+    }
+    
+    initRepairStrategies() {
+        // 语法错误修复策略
+        this.repairStrategies.set('syntax', [
+            {
+                name: 'backup_restore',
+                description: '从备份恢复文件',
+                execute: async (error) => await this.repairFromBackup(error)
+            },
+            {
+                name: 'syntax_fix',
+                description: '自动语法修复',
+                execute: async (error) => await this.fixSyntaxError(error)
+            }
+        ]);
+        
+        // 引用错误修复策略
+        this.repairStrategies.set('reference', [
+            {
+                name: 'import_fix',
+                description: '修复导入语句',
+                execute: async (error) => await this.fixImportError(error)
+            },
+            {
+                name: 'variable_declaration',
+                description: '添加变量声明',
+                execute: async (error) => await this.fixVariableDeclaration(error)
+            }
+        ]);
+        
+        // 网络错误修复策略
+        this.repairStrategies.set('network', [
+            {
+                name: 'service_restart',
+                description: '重启网络服务',
+                execute: async (error) => await this.restartNetworkService(error)
+            },
+            {
+                name: 'connection_retry',
+                description: '重试连接',
+                execute: async (error) => await this.retryConnection(error)
+            }
+        ]);
+        
+        // 文件系统错误修复策略
+        this.repairStrategies.set('filesystem', [
+            {
+                name: 'create_missing_file',
+                description: '创建缺失文件',
+                execute: async (error) => await this.createMissingFile(error)
+            },
+            {
+                name: 'fix_path',
+                description: '修复文件路径',
+                execute: async (error) => await this.fixFilePath(error)
+            }
+        ]);
+        
+        // 端口占用修复策略
+        this.repairStrategies.set('port', [
+            {
+                name: 'kill_process',
+                description: '终止占用端口的进程',
+                execute: async (error) => await this.killPortProcess(error)
+            },
+            {
+                name: 'change_port',
+                description: '更改端口号',
+                execute: async (error) => await this.changePort(error)
+            }
+        ]);
+        
+        // 内存错误修复策略
+        this.repairStrategies.set('memory', [
+            {
+                name: 'increase_memory',
+                description: '增加内存限制',
+                execute: async (error) => await this.increaseMemoryLimit(error)
+            },
+            {
+                name: 'restart_service',
+                description: '重启服务释放内存',
+                execute: async (error) => await this.restartService(error)
+            }
+        ]);
+    }
+    
+    startMonitoring() {
+        // 监控日志文件
+        this.monitorLogs();
+        
+        // 监控进程
+        this.monitorProcesses();
+        
+        // 监控文件变化
+        this.monitorFiles();
+        
+        // 定期系统检查
+        setInterval(() => {
+            this.performSystemCheck();
+        }, this.config.checkInterval);
+        
+        this.log('✅ 错误监控已启动');
+    }
+    
+    monitorLogs() {
+        const logFiles = [
+            './Logs/error.log',
+            './Logs/node_server.log',
+            './Logs/api_server.log'
+        ];
+        
+        logFiles.forEach(logFile => {
+            this.watchLogFile(logFile);
+        });
+    }
+    
+    watchLogFile(logFile) {
+        if (!fs.existsSync(logFile)) {
+            return;
+        }
+        
+        fs.watchFile(logFile, (curr, prev) => {
+            if (curr.size > prev.size) {
+                // 读取新增内容
+                const stream = fs.createReadStream(logFile, {
+                    start: prev.size,
+                    end: curr.size
+                });
                 
-                // 检查是否为排除的目录
-                if (entry.isDirectory() && !this.config.excludeDirs.includes(entry.name)) {
-                    // 递归扫描子目录
-                    const subFiles = await this.getFilesToScan(fullPath);
-                    files = files.concat(subFiles);
-                } else if (entry.isFile()) {
-                    // 检查文件类型
-                    const ext = path.extname(entry.name);
-                    if (this.config.fileTypes.includes(ext)) {
-                        files.push(fullPath);
+                let newData = '';
+                stream.on('data', (chunk) => {
+                    newData += chunk.toString();
+                });
+                
+                stream.on('end', () => {
+                    this.processLogData(newData);
+                });
+            }
+        });
+    }
+    
+    processLogData(data) {
+        const lines = data.split('\n').filter(line => line.trim());
+        
+        lines.forEach(line => {
+            const error = this.parseError(line);
+            if (error) {
+                this.handleError(error);
+            }
+        });
+    }
+    
+    parseError(logLine) {
+        for (const [name, pattern] of this.errorPatterns) {
+            const match = logLine.match(pattern.pattern);
+            if (match) {
+                return {
+                    type: name,
+                    message: match[1] || logLine,
+                    fullMessage: logLine,
+                    severity: pattern.severity,
+                    category: pattern.category,
+                    timestamp: new Date(),
+                    raw: logLine
+                };
+            }
+        }
+        
+        // 通用错误检测
+        if (logLine.includes('Error') || logLine.includes('error') || logLine.includes('Exception')) {
+            return {
+                type: 'UnknownError',
+                message: logLine,
+                fullMessage: logLine,
+                severity: 'medium',
+                category: 'unknown',
+                timestamp: new Date(),
+                raw: logLine
+            };
+        }
+        
+        return null;
+    }
+    
+    async handleError(error) {
+        this.log(`🚨 检测到错误: ${error.type} - ${error.message}`);
+        
+        // 添加到历史记录
+        this.errorHistory.push(error);
+        if (this.errorHistory.length > 1000) {
+            this.errorHistory.shift();
+        }
+        
+        // 发出错误事件
+        this.emit('error', error);
+        
+        // 如果正在修复中，跳过
+        if (this.isRepairing) {
+            this.log('⚠️ 系统正在修复中，跳过新错误');
+            return;
+        }
+        
+        // 尝试自动修复
+        await this.attemptRepair(error);
+    }
+    
+    async attemptRepair(error) {
+        const errorKey = `${error.category}_${error.type}`;
+        const attempts = this.repairAttempts.get(errorKey) || 0;
+        
+        if (attempts >= this.config.maxRepairAttempts) {
+            this.log(`❌ 错误 ${errorKey} 已达到最大修复次数，停止尝试`);
+            return;
+        }
+        
+        this.isRepairing = true;
+        this.repairAttempts.set(errorKey, attempts + 1);
+        
+        const strategies = this.repairStrategies.get(error.category) || [];
+        
+        for (const strategy of strategies) {
+            try {
+                this.log(`🔧 尝试修复策略: ${strategy.description}`);
+                
+                const result = await strategy.execute(error);
+                
+                if (result.success) {
+                    this.log(`✅ 修复成功: ${strategy.description}`);
+                    this.emit('repaired', { error, strategy, result });
+                    this.repairAttempts.delete(errorKey);
+                    break;
+                } else {
+                    this.log(`❌ 修复失败: ${strategy.description} - ${result.message}`);
+                }
+            } catch (repairError) {
+                this.log(`❌ 修复策略执行失败: ${repairError.message}`);
+            }
+        }
+        
+        this.isRepairing = false;
+    }
+    
+    // 修复策略实现
+    async repairFromBackup(error) {
+        try {
+            // 从错误消息中提取文件路径
+            const filePath = this.extractFilePath(error.message);
+            if (!filePath) {
+                return { success: false, message: '无法提取文件路径' };
+            }
+            
+            const backupPath = path.join(this.config.backupDir, path.basename(filePath));
+            if (!fs.existsSync(backupPath)) {
+                return { success: false, message: '备份文件不存在' };
+            }
+            
+            // 创建当前文件的备份
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            const currentBackup = `${filePath}.backup.${timestamp}`;
+            await fs.promises.copyFile(filePath, currentBackup);
+            
+            // 从备份恢复
+            await fs.promises.copyFile(backupPath, filePath);
+            
+            return { success: true, message: '从备份恢复成功' };
+        } catch (error) {
+            return { success: false, message: error.message };
+        }
+    }
+    
+    async fixSyntaxError(error) {
+        try {
+            const filePath = this.extractFilePath(error.message);
+            if (!filePath) {
+                return { success: false, message: '无法提取文件路径' };
+            }
+            
+            const content = await fs.promises.readFile(filePath, 'utf8');
+            
+            // 简单的语法修复逻辑
+            let fixedContent = content;
+            
+            // 修复常见的语法错误
+            fixedContent = fixedContent.replace(/;\s*;/g, ';'); // 双分号
+            fixedContent = fixedContent.replace(/\{\s*\}/g, '{}'); // 空块
+            fixedContent = fixedContent.replace(/\(\s*\)/g, '()'); // 空括号
+            
+            if (fixedContent !== content) {
+                await fs.promises.writeFile(filePath, fixedContent);
+                return { success: true, message: '语法错误修复完成' };
+            }
+            
+            return { success: false, message: '未发现可修复的语法错误' };
+        } catch (error) {
+            return { success: false, message: error.message };
+        }
+    }
+    
+    async killPortProcess(error) {
+        try {
+            const portMatch = error.message.match(/:(\d+)/);
+            if (!portMatch) {
+                return { success: false, message: '无法提取端口号' };
+            }
+            
+            const port = portMatch[1];
+            
+            return new Promise((resolve) => {
+                exec(`lsof -ti:${port} | xargs kill -9`, (error, stdout, stderr) => {
+                    if (error) {
+                        resolve({ success: false, message: error.message });
+                    } else {
+                        resolve({ success: true, message: `已终止占用端口 ${port} 的进程` });
+                    }
+                });
+            });
+        } catch (error) {
+            return { success: false, message: error.message };
+        }
+    }
+    
+    async increaseMemoryLimit(error) {
+        try {
+            // 修改package.json中的内存限制
+            const packageJsonPath = path.join(this.config.projectRoot, 'package.json');
+            if (fs.existsSync(packageJsonPath)) {
+                const packageJson = JSON.parse(await fs.promises.readFile(packageJsonPath, 'utf8'));
+                
+                if (packageJson.scripts) {
+                    Object.keys(packageJson.scripts).forEach(scriptName => {
+                        const script = packageJson.scripts[scriptName];
+                        if (script.includes('node')) {
+                            if (!script.includes('--max-old-space-size')) {
+                                packageJson.scripts[scriptName] = script.replace('node', 'node --max-old-space-size=4096');
+                            }
+                        }
+                    });
+                    
+                    await fs.promises.writeFile(packageJsonPath, JSON.stringify(packageJson, null, 2));
+                    return { success: true, message: '内存限制已增加到4GB' };
+                }
+            }
+            
+            return { success: false, message: '无法修改package.json' };
+        } catch (error) {
+            return { success: false, message: error.message };
+        }
+    }
+    
+    extractFilePath(errorMessage) {
+        // 尝试从错误消息中提取文件路径
+        const pathMatch = errorMessage.match(/at\s+.*\(([^:]+):\d+:\d+\)/);
+        if (pathMatch) {
+            return pathMatch[1];
+        }
+        
+        const simplePathMatch = errorMessage.match(/([\/\\][^:\s]+):\d+/);
+        if (simplePathMatch) {
+            return simplePathMatch[1];
+        }
+        
+        return null;
+    }
+    
+    monitorProcesses() {
+        // 监控关键进程
+        setInterval(() => {
+            this.checkProcessHealth();
+        }, 30000);
+    }
+    
+    async checkProcessHealth() {
+        const criticalProcesses = ['node', 'python', 'nginx'];
+        
+        for (const processName of criticalProcesses) {
+            try {
+                const result = await this.executeCommand(`pgrep ${processName}`);
+                if (!result.stdout.trim()) {
+                    this.log(`⚠️ 关键进程 ${processName} 未运行`);
+                    await this.restartProcess(processName);
+                }
+            } catch (error) {
+                this.log(`❌ 检查进程 ${processName} 失败: ${error.message}`);
+            }
+        }
+    }
+    
+    async restartProcess(processName) {
+        try {
+            this.log(`🔄 重启进程: ${processName}`);
+            
+            // 根据进程类型执行不同的重启命令
+            let restartCommand;
+            switch (processName) {
+                case 'node':
+                    restartCommand = 'npm start';
+                    break;
+                case 'nginx':
+                    restartCommand = 'sudo systemctl restart nginx';
+                    break;
+                default:
+                    restartCommand = `${processName} --restart`;
+            }
+            
+            await this.executeCommand(restartCommand);
+            this.log(`✅ 进程 ${processName} 重启成功`);
+        } catch (error) {
+            this.log(`❌ 重启进程 ${processName} 失败: ${error.message}`);
+        }
+    }
+    
+    monitorFiles() {
+        const criticalFiles = [
+            './package.json',
+            './config.json',
+            './.env'
+        ];
+        
+        criticalFiles.forEach(file => {
+            if (fs.existsSync(file)) {
+                fs.watchFile(file, (curr, prev) => {
+                    if (curr.mtime > prev.mtime) {
+                        this.log(`📝 关键文件已修改: ${file}`);
+                        this.validateFile(file);
+                    }
+                });
+            }
+        });
+    }
+    
+    async validateFile(filePath) {
+        try {
+            if (filePath.endsWith('.json')) {
+                JSON.parse(await fs.promises.readFile(filePath, 'utf8'));
+                this.log(`✅ JSON文件验证通过: ${filePath}`);
+            }
+        } catch (validationError) {
+            this.log(`❌ 文件验证失败: ${filePath} - ${validationError.message}`);
+            
+            // 尝试从备份恢复
+            const error = {
+                type: 'FileValidationError',
+                message: `文件 ${filePath} 验证失败`,
+                category: 'filesystem'
+            };
+            
+            await this.attemptRepair(error);
+        }
+    }
+    
+    async performSystemCheck() {
+        try {
+            // 检查磁盘空间
+            const diskUsage = await this.checkDiskSpace();
+            if (diskUsage.usage > 90) {
+                this.log(`⚠️ 磁盘空间不足: ${diskUsage.usage}%`);
+                await this.cleanupDiskSpace();
+            }
+            
+            // 检查内存使用
+            const memoryUsage = await this.checkMemoryUsage();
+            if (memoryUsage.usage > 90) {
+                this.log(`⚠️ 内存使用过高: ${memoryUsage.usage}%`);
+                await this.optimizeMemory();
+            }
+            
+        } catch (error) {
+            this.log(`❌ 系统检查失败: ${error.message}`);
+        }
+    }
+    
+    async checkDiskSpace() {
+        return new Promise((resolve, reject) => {
+            exec('df -h /', (error, stdout) => {
+                if (error) {
+                    reject(error);
+                    return;
+                }
+                
+                const lines = stdout.split('\n');
+                const dataLine = lines[1];
+                const parts = dataLine.split(/\s+/);
+                const usage = parseInt(parts[4].replace('%', ''));
+                
+                resolve({ usage });
+            });
+        });
+    }
+    
+    async cleanupDiskSpace() {
+        try {
+            this.log('🧹 开始清理磁盘空间...');
+            
+            // 清理日志文件
+            const logDir = './Logs';
+            if (fs.existsSync(logDir)) {
+                const files = await fs.promises.readdir(logDir);
+                for (const file of files) {
+                    if (file.endsWith('.old') || file.endsWith('.bak')) {
+                        await fs.promises.unlink(path.join(logDir, file));
+                        this.log(`🗑️ 删除旧日志文件: ${file}`);
                     }
                 }
             }
-        } catch (error) {
-            this.logger.error('AUTO_ERROR_REPAIR_SYSTEM', '获取文件列表失败', { dirPath, error });
-        }
-        
-        return files;
-    }
-    
-    /**
-     * 扫描并修复单个文件
-     * @param {string} filePath - 文件路径
-     * @returns {Promise<Object>} 修复结果
-     */
-    async scanAndRepairFile(filePath) {
-        this.stats.scannedFiles++;
-        
-        try {
-            // 读取文件内容
-            const fileContent = await fs.promises.readFile(filePath, 'utf8');
             
-            // 检查是否超过修复限制
-            if (this.currentRepairs >= this.config.maxConcurrentRepairs) {
-                // 添加到工作队列
-                return new Promise((resolve) => {
-                    this.workQueue.push({ filePath, fileContent, resolve });
-                });
-            } else {
-                return this.processFile(filePath, fileContent);
-            }
-        } catch (error) {
-            this.logger.error('AUTO_ERROR_REPAIR_SYSTEM', '扫描文件失败', { filePath, error });
-            return { filePath, success: false, error: error.message };
-        }
-    }
-    
-    /**
-     * 处理文件修复
-     * @param {string} filePath - 文件路径
-     * @param {string} fileContent - 文件内容
-     * @returns {Promise<Object>} 修复结果
-     */
-    async processFile(filePath, fileContent) {
-        this.currentRepairs++;
-        
-        try {
-            // 检测问题
-            const issues = await this.detectIssues(filePath, fileContent);
-            
-            if (issues.length === 0) {
-                this.logger.info('AUTO_ERROR_REPAIR_SYSTEM', '文件无问题', { filePath });
-                return { filePath, success: true, issues: [], fixedIssues: 0 };
-            }
-            
-            this.stats.filesWithIssues++;
-            this.stats.totalIssues += issues.length;
-            
-            // 按优先级排序问题
-            const prioritizedIssues = this.prioritizeIssues(issues);
-            
-            // 创建备份
-            if (this.config.createBackup) {
-                await this.createBackup(filePath, fileContent);
-            }
-            
-            // 修复问题
-            let currentContent = fileContent;
-            let fixedCount = 0;
-            
-            for (const issue of prioritizedIssues) {
-                const repairResult = await this.repairEngine.repair(issue, currentContent);
-                
-                if (repairResult.success) {
-                    currentContent = repairResult.fixedContent;
-                    fixedCount++;
-                    this.stats.fixedIssues++;
-                    
-                    this.logger.info('AUTO_ERROR_REPAIR_SYSTEM', '问题修复成功', {
-                        filePath,
-                        issueType: issue.type,
-                        line: issue.line,
-                        message: issue.message,
-                        strategy: repairResult.strategy,
-                        model: repairResult.model
-                    });
-                } else {
-                    this.stats.failedIssues++;
-                    
-                    this.logger.warn('AUTO_ERROR_REPAIR_SYSTEM', '问题修复失败', {
-                        filePath,
-                        issueType: issue.type,
-                        line: issue.line,
-                        message: issue.message,
-                        error: repairResult.error
-                    });
+            // 清理临时文件
+            const tempDirs = ['./temp', './tmp'];
+            for (const tempDir of tempDirs) {
+                if (fs.existsSync(tempDir)) {
+                    await this.executeCommand(`rm -rf ${tempDir}/*`);
+                    this.log(`🗑️ 清理临时目录: ${tempDir}`);
                 }
             }
             
-            // 自动保存修复结果
-            if (this.config.autoSave && fixedCount > 0) {
-                await fs.promises.writeFile(filePath, currentContent, 'utf8');
+            this.log('✅ 磁盘空间清理完成');
+        } catch (error) {
+            this.log(`❌ 清理磁盘空间失败: ${error.message}`);
+        }
+    }
+    
+    async checkMemoryUsage() {
+        return new Promise((resolve, reject) => {
+            exec('free -m', (error, stdout) => {
+                if (error) {
+                    reject(error);
+                    return;
+                }
                 
-                this.logger.info('AUTO_ERROR_REPAIR_SYSTEM', '修复结果已保存', { filePath, fixedCount });
-            }
-            
-            return { 
-                filePath, 
-                success: true, 
-                issues: prioritizedIssues, 
-                fixedIssues: fixedCount 
-            };
-        } catch (error) {
-            this.logger.error('AUTO_ERROR_REPAIR_SYSTEM', '文件修复失败', { filePath, error });
-            return { filePath, success: false, error: error.message };
-        } finally {
-            this.currentRepairs--;
-            this.processNextInQueue();
-        }
-    }
-    
-    /**
-     * 处理队列中的下一个文件
-     */
-    processNextInQueue() {
-        if (this.workQueue.length > 0 && this.currentRepairs < this.config.maxConcurrentRepairs) {
-            const { filePath, fileContent, resolve } = this.workQueue.shift();
-            this.processFile(filePath, fileContent).then(resolve);
-        }
-    }
-    
-    /**
-     * 检测文件中的问题
-     * @param {string} filePath - 文件路径
-     * @param {string} fileContent - 文件内容
-     * @returns {Promise<Array<Object>>} 问题列表
-     */
-    async detectIssues(filePath, fileContent) {
-        try {
-            // 使用修复引擎检测问题
-            const issues = await this.repairEngine.detect(filePath, fileContent);
-            
-            return issues;
-        } catch (error) {
-            this.logger.error('AUTO_ERROR_REPAIR_SYSTEM', '检测问题失败', { filePath, error });
-            return [];
-        }
-    }
-    
-    /**
-     * 按优先级排序问题
-     * @param {Array<Object>} issues - 问题列表
-     * @returns {Array<Object>} 排序后的问题列表
-     */
-    prioritizeIssues(issues) {
-        // 定义问题类型优先级
-        const typePriority = {
-            'SecurityVulnerability': 1,
-            'SyntaxError': 2,
-            'LogicError': 3,
-            'PerformanceIssue': 4,
-            'CodeQuality': 5
-        };
-        
-        // 定义严重程度优先级
-        const severityPriority = {
-            'critical': 1,
-            'high': 2,
-            'medium': 3,
-            'low': 4
-        };
-        
-        // 按优先级排序
-        return [...issues].sort((a, b) => {
-            // 先按问题类型排序
-            const typeDiff = typePriority[a.type] - typePriority[b.type];
-            if (typeDiff !== 0) return typeDiff;
-            
-            // 再按严重程度排序
-            const severityDiff = severityPriority[a.severity] - severityPriority[b.severity];
-            if (severityDiff !== 0) return severityDiff;
-            
-            // 最后按行号排序
-            return a.line - b.line;
+                const lines = stdout.split('\n');
+                const memLine = lines[1];
+                const parts = memLine.split(/\s+/);
+                const total = parseInt(parts[1]);
+                const used = parseInt(parts[2]);
+                const usage = Math.round((used / total) * 100);
+                
+                resolve({ usage, total, used });
+            });
         });
     }
     
-    /**
-     * 创建文件备份
-     * @param {string} filePath - 文件路径
-     * @param {string} fileContent - 文件内容
-     * @returns {Promise<void>}
-     */
-    async createBackup(filePath, fileContent) {
+    async optimizeMemory() {
         try {
-            const relativePath = path.relative(process.cwd(), filePath);
-            const backupPath = path.join(this.config.backupDir, relativePath);
+            this.log('🧠 开始内存优化...');
             
-            // 创建备份目录结构
-            await fs.promises.mkdir(path.dirname(backupPath), { recursive: true });
+            // 清理系统缓存
+            await this.executeCommand('sync && echo 3 > /proc/sys/vm/drop_caches');
             
-            // 保存备份
-            await fs.promises.writeFile(backupPath, fileContent, 'utf8');
+            // 重启高内存使用的服务
+            const highMemoryProcesses = ['node', 'python'];
+            for (const process of highMemoryProcesses) {
+                await this.restartProcess(process);
+            }
             
-            this.logger.debug('AUTO_ERROR_REPAIR_SYSTEM', '备份创建成功', { filePath, backupPath });
+            this.log('✅ 内存优化完成');
         } catch (error) {
-            this.logger.error('AUTO_ERROR_REPAIR_SYSTEM', '创建备份失败', { filePath, error });
+            this.log(`❌ 内存优化失败: ${error.message}`);
         }
     }
     
-    /**
-     * 获取修复系统状态
-     * @returns {Object} 系统状态
-     */
-    getStatus() {
+    executeCommand(command) {
+        return new Promise((resolve, reject) => {
+            exec(command, (error, stdout, stderr) => {
+                if (error) {
+                    reject(error);
+                } else {
+                    resolve({ stdout, stderr });
+                }
+            });
+        });
+    }
+    
+    getSystemStatus() {
         return {
-            config: this.config,
-            stats: this.stats,
-            queueLength: this.workQueue.length,
-            currentRepairs: this.currentRepairs,
-            repairEngineStatus: this.repairEngine.getStatus()
+            errorHistory: this.errorHistory.slice(-10),
+            repairAttempts: Object.fromEntries(this.repairAttempts),
+            isRepairing: this.isRepairing,
+            uptime: process.uptime(),
+            memoryUsage: process.memoryUsage()
         };
     }
     
-    /**
-     * 设置配置
-     * @param {Object} newConfig - 新配置
-     */
-    setConfig(newConfig) {
-        this.config = Object.assign(this.config, newConfig);
-        this.repairEngine.setConfig(this.config);
+    log(message) {
+        const timestamp = new Date().toISOString();
+        const logMessage = `[${timestamp}] ${message}`;
         
-        this.logger.info('AUTO_ERROR_REPAIR_SYSTEM', '配置已更新', newConfig);
-    }
-    
-    /**
-     * 清理资源
-     * @returns {Promise<void>}
-     */
-    async cleanup() {
-        await this.repairEngine.cleanup();
+        console.log(logMessage);
         
-        this.logger.info('AUTO_ERROR_REPAIR_SYSTEM', '资源已清理');
+        // 写入日志文件
+        fs.appendFile(this.config.logPath, logMessage + '\n', (err) => {
+            if (err) {
+                console.error('写入日志失败:', err);
+            }
+        });
     }
 }
 

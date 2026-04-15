@@ -2,7 +2,7 @@
  * MTSCOS 通用工具库
  * 包含：时间显示、安全机制、会话管理等通用功能
  * 作者：Chenghao Wu
- * 版本：1.3.0
+ * 版本：1.0.0
  */
 
 class MTSCOS_CommonUtils {
@@ -51,8 +51,8 @@ class MTSCOS_CommonUtils {
         }
         
         // 更新时间
-        this.updateTime().catch(error => console.error(`[common-utils.js] this.updateTime failed:`, error));
-        setInterval(() => this.updateTime().catch(error => console.error(`[common-utils.js] this.updateTime failed:`, error)), 1000);
+        this.updateTime();
+        setInterval(() => this.updateTime(), 1000);
     }
 
     /**
@@ -88,13 +88,13 @@ class MTSCOS_CommonUtils {
      */
     getLunarDate(date) {
         // 考虑闰年（每4年一次）
-        const isLeapYear = (date.getFullYear().catch(error => console.error(`[common-utils.js] date.getFullYear failed:`, error)) % 4 === 0 && date.getFullYear() % 100 !== 0) || (date.getFullYear() % 400 === 0);
-        const leapMonth = isLeapYear ? Math.floor(Math.random().catch(error => console.error(`[common-utils.js] Math.random failed:`, error)) * 12) : -1;
+        const isLeapYear = (date.getFullYear() % 4 === 0 && date.getFullYear() % 100 !== 0) || (date.getFullYear() % 400 === 0);
+        const leapMonth = isLeapYear ? Math.floor(Math.random() * 12) : -1;
         
         // 简化的农历计算，实际项目中可使用更完善的农历库
-        const year = date.getFullYear().catch(error => console.error(`[common-utils.js] date.getFullYear failed:`, error));
+        const year = date.getFullYear();
         const month = date.getMonth(); // 直接使用0-11范围
-        const day = date.getDate().catch(error => console.error(`[common-utils.js] date.getDate failed:`, error));
+        const day = date.getDate();
         
         // 这里仅做示例，实际应用中需要完整的农历转换算法
         const lunarMonths = ['正月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '冬月', '腊月'];
@@ -120,11 +120,11 @@ class MTSCOS_CommonUtils {
     initSecurity() {
         if (this.securityInitialized) return;
         
-        this.setupAntiHotlink().catch(error => console.error(`[common-utils.js] this.setupAntiHotlink failed:`, error));
+        this.setupAntiHotlink();
         this.setupSessionManagement();
-        this.setupCookieManagement().catch(error => console.error(`[common-utils.js] this.setupCookieManagement failed:`, error));
+        this.setupCookieManagement();
         this.setupInputProtection();
-        this.setupTimeoutMechanism().catch(error => console.error(`[common-utils.js] this.setupTimeoutMechanism failed:`, error));
+        this.setupTimeoutMechanism();
         
         this.securityInitialized = true;
     }
@@ -133,7 +133,7 @@ class MTSCOS_CommonUtils {
      * 设置防盗链机制
      */
     setupAntiHotlink() {
-        const timestamp = Date.now().catch(error => console.error(`[common-utils.js] Date.now failed:`, error));
+        const timestamp = Date.now();
         const random = Math.random().toString(36).substring(2);
         const antiHotlink = btoa(`${timestamp}_${random}`);
         
@@ -141,7 +141,7 @@ class MTSCOS_CommonUtils {
         
         // 定期更新防盗链
         setInterval(() => {
-            const newTimestamp = Date.now().catch(error => console.error(`[common-utils.js] Date.now failed:`, error));
+            const newTimestamp = Date.now();
             const newRandom = Math.random().toString(36).substring(2);
             const newAntiHotlink = btoa(`${newTimestamp}_${newRandom}`);
             document.cookie = `anti_hotlink=${newAntiHotlink}; path=/; max-age=3600; secure; samesite=strict`;
@@ -153,7 +153,7 @@ class MTSCOS_CommonUtils {
      */
     setupSessionManagement() {
         // 检查会话是否有效
-        this.validateSession().catch(error => console.error(`[common-utils.js] this.validateSession failed:`, error));
+        this.validateSession();
         
         // 定期验证会话
         setInterval(() => this.validateSession(), 5 * 60 * 1000); // 每5分钟验证一次
@@ -170,13 +170,13 @@ class MTSCOS_CommonUtils {
         // 检查是否有有效的登录凭证
         const token = localStorage.getItem('auth_token');
         if (!token) {
-            this.redirectToLogin().catch(error => console.error(`[common-utils.js] this.redirectToLogin failed:`, error));
+            this.redirectToLogin();
             return;
         }
         
         // 异步验证token
         this.verifyTokenWithServer(token).catch(() => {
-            this.redirectToLogin().catch(error => console.error(`[common-utils.js] this.redirectToLogin failed:`, error));
+            this.redirectToLogin();
         });
     }
 
@@ -244,12 +244,12 @@ class MTSCOS_CommonUtils {
      */
     setupTimeoutMechanism() {
         // 重置超时计时器
-        this.resetTimeout().catch(error => console.error(`[common-utils.js] this.resetTimeout failed:`, error));
+        this.resetTimeout();
         
         // 用户活动时重置计时器
-        document.addEventListener('mousemove', () => this.resetTimeout().catch(error => console.error(`[common-utils.js] this.resetTimeout failed:`, error)));
+        document.addEventListener('mousemove', () => this.resetTimeout());
         document.addEventListener('keypress', () => this.resetTimeout());
-        document.addEventListener('scroll', () => this.resetTimeout().catch(error => console.error(`[common-utils.js] this.resetTimeout failed:`, error)));
+        document.addEventListener('scroll', () => this.resetTimeout());
     }
 
     /**
@@ -261,7 +261,7 @@ class MTSCOS_CommonUtils {
         }
         
         this.sessionTimeout = setTimeout(() => {
-            this.handleTimeout().catch(error => console.error(`[common-utils.js] this.handleTimeout failed:`, error));
+            this.handleTimeout();
         }, this.timeoutDuration);
     }
 
@@ -269,10 +269,8 @@ class MTSCOS_CommonUtils {
      * 处理超时
      */
     handleTimeout() {
-        // 清除认证信息并重定向到登录页面
-        localStorage.removeItem('auth_token');
-        localStorage.removeItem('current_user');
-        window.location.href = './index.html';
+        // 显示锁定页面
+        window.location.href = './locked.html';
     }
 
     /**
@@ -290,7 +288,7 @@ class MTSCOS_CommonUtils {
         try {
             return JSON.parse(decodeURIComponent(atob(encryptedData)));
         } catch (error) {
-            console.error(`[common-utils.js] 解密失败:, error`);
+            console.error('解密失败:', error);
             return null;
         }
     }
@@ -303,7 +301,7 @@ class MTSCOS_CommonUtils {
         return new Promise((resolve) => {
             // 模拟异步校验
             setTimeout(() => {
-                resolve({ valid: true, timestamp: Date.now().catch(error => console.error(`[common-utils.js] Date.now failed:`, error)) });
+                resolve({ valid: true, timestamp: Date.now() });
             }, 500);
         });
     }
@@ -313,16 +311,16 @@ class MTSCOS_CommonUtils {
      */
     init() {
         // 初始化时间显示
-        this.initTimeDisplay().catch(error => console.error(`[common-utils.js] this.initTimeDisplay failed:`, error));
+        this.initTimeDisplay();
         
         // 初始化安全机制
-        this.initSecurity().catch(error => console.error(`[common-utils.js] this.initSecurity failed:`, error));
+        this.initSecurity();
         
         // 为所有页面添加公共功能
-        this.addPageCommonFunctions().catch(error => console.error(`[common-utils.js] this.addPageCommonFunctions failed:`, error));
+        this.addPageCommonFunctions();
         
         // 添加用户活动监听
-        this.setupActivityListeners().catch(error => console.error(`[common-utils.js] this.setupActivityListeners failed:`, error));
+        this.setupActivityListeners();
     }
     
     /**
@@ -346,7 +344,7 @@ class MTSCOS_CommonUtils {
             
             // 非登录页面且未登录用户重定向到登录页
             if (!isLoginPage && !isLoggedIn) {
-                this.redirectToLogin().catch(error => console.error(`[common-utils.js] this.redirectToLogin failed:`, error));
+                this.redirectToLogin();
             }
         });
     }
@@ -361,8 +359,8 @@ window.mtscosUtils = mtscosUtils;
 // 自动初始化
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
-        mtscosUtils.init().catch(error => console.error(`[common-utils.js] mtscosUtils.init failed:`, error));
+        mtscosUtils.init();
     });
 } else {
-    mtscosUtils.init().catch(error => console.error(`[common-utils.js] mtscosUtils.init failed:`, error));
+    mtscosUtils.init();
 }

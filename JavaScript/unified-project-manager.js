@@ -106,7 +106,7 @@ class UnifiedProjectManager extends EventEmitter {
         };
 
         this.logDir = path.join(this.rootDir, 'Logs');
-        this.ensureDirectories().catch(error => console.error(`[unified-project-manager.js] this.ensureDirectories failed:`, error));
+        this.ensureDirectories();
     }
 
     // 确保目录存在
@@ -119,7 +119,7 @@ class UnifiedProjectManager extends EventEmitter {
     // 日志记录
     log(level, message, data = null) {
         const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
-        const logMessage = `[${timestamp}] [UNIFIED-${level.toUpperCase().catch(error => console.error(`[unified-project-manager.js] level.toUpperCase failed:`, error))}] ${message}`;
+        const logMessage = `[${timestamp}] [UNIFIED-${level.toUpperCase()}] ${message}`;
         console.log(logMessage);
         
         const logFile = path.join(this.logDir, 'unified_manager.log');
@@ -326,24 +326,24 @@ class UnifiedProjectManager extends EventEmitter {
             switch (action) {
                 case 'performIntegrityCheck':
                     if (manager.checkFileIntegrity) {
-                        manager.checkFileIntegrity().catch(error => console.error(`[unified-project-manager.js] manager.checkFileIntegrity failed:`, error));
+                        manager.checkFileIntegrity();
                     }
                     break;
                 case 'performSecurityScan':
                     if (manager.performSecurityScan) {
-                        manager.performSecurityScan().catch(error => console.error(`[unified-project-manager.js] manager.performSecurityScan failed:`, error));
+                        manager.performSecurityScan();
                     }
                     break;
                 case 'performBackup':
                     if (manager.performBackup) {
-                        manager.performBackup().catch(error => console.error(`[unified-project-manager.js] manager.performBackup failed:`, error));
+                        manager.performBackup();
                     } else if (manager.performIncrementalBackup) {
-                        manager.performIncrementalBackup().catch(error => console.error(`[unified-project-manager.js] manager.performIncrementalBackup failed:`, error));
+                        manager.performIncrementalBackup();
                     }
                     break;
                 case 'cleanupOldBackups':
                     if (manager.cleanupOldBackups) {
-                        manager.cleanupOldBackups().catch(error => console.error(`[unified-project-manager.js] manager.cleanupOldBackups failed:`, error));
+                        manager.cleanupOldBackups();
                     }
                     break;
                 case 'adjustMonitoringFrequency':
@@ -371,14 +371,14 @@ class UnifiedProjectManager extends EventEmitter {
             if (manager) {
                 // 停止并重新启动管理器
                 if (manager.stop) {
-                    manager.stop().catch(error => console.error(`[unified-project-manager.js] manager.stop failed:`, error));
+                    manager.stop();
                 }
                 
                 // 等待一段时间
                 await new Promise(resolve => setTimeout(resolve, 2000));
                 
                 if (manager.start) {
-                    manager.start().catch(error => console.error(`[unified-project-manager.js] manager.start failed:`, error));
+                    manager.start();
                 }
                 
                 this.log('info', `${managerName}管理器恢复成功`);
@@ -406,18 +406,18 @@ class UnifiedProjectManager extends EventEmitter {
             // 启动各个管理器
             for (const [managerName, manager] of Object.entries(this.state.managers)) {
                 if (this.config.managers[managerName].autoStart && manager.start) {
-                    manager.start().catch(error => console.error(`[unified-project-manager.js] manager.start failed:`, error));
+                    manager.start();
                 }
             }
 
             // 启动健康检查
             if (this.config.healthCheck.enabled) {
-                this.startHealthCheck().catch(error => console.error(`[unified-project-manager.js] this.startHealthCheck failed:`, error));
+                this.startHealthCheck();
             }
 
             // 启动报告生成
             if (this.config.reporting.enabled) {
-                this.startReporting().catch(error => console.error(`[unified-project-manager.js] this.startReporting failed:`, error));
+                this.startReporting();
             }
 
             this.log('info', 'MTSCOS统一项目管理器启动完成');
@@ -443,7 +443,7 @@ class UnifiedProjectManager extends EventEmitter {
             // 停止各个管理器
             for (const [managerName, manager] of Object.entries(this.state.managers)) {
                 if (manager.stop) {
-                    manager.stop().catch(error => console.error(`[unified-project-manager.js] manager.stop failed:`, error));
+                    manager.stop();
                 }
             }
 
@@ -468,11 +468,11 @@ class UnifiedProjectManager extends EventEmitter {
     // 启动健康检查
     startHealthCheck() {
         this.healthCheckInterval = setInterval(() => {
-            this.performHealthCheck().catch(error => console.error(`[unified-project-manager.js] this.performHealthCheck failed:`, error));
+            this.performHealthCheck();
         }, this.config.healthCheck.interval);
 
         // 立即执行一次健康检查
-        this.performHealthCheck().catch(error => console.error(`[unified-project-manager.js] this.performHealthCheck failed:`, error));
+        this.performHealthCheck();
     }
 
     // 执行健康检查
@@ -487,7 +487,7 @@ class UnifiedProjectManager extends EventEmitter {
                 let details = {};
 
                 if (manager.getStatus) {
-                    const status = manager.getStatus().catch(error => console.error(`[unified-project-manager.js] manager.getStatus failed:`, error));
+                    const status = manager.getStatus();
                     isHealthy = status.uptime > 0;
                     details = status;
                 } else if (manager.state && manager.state.isRunning !== undefined) {
@@ -545,13 +545,13 @@ class UnifiedProjectManager extends EventEmitter {
         for (const [managerName, manager] of Object.entries(this.state.managers)) {
             try {
                 if (manager.stop) {
-                    manager.stop().catch(error => console.error(`[unified-project-manager.js] manager.stop failed:`, error));
+                    manager.stop();
                 }
                 
                 await new Promise(resolve => setTimeout(resolve, 1000));
                 
                 if (manager.start) {
-                    manager.start().catch(error => console.error(`[unified-project-manager.js] manager.start failed:`, error));
+                    manager.start();
                 }
                 
                 this.log('info', `${managerName}管理器恢复成功`);
@@ -567,11 +567,11 @@ class UnifiedProjectManager extends EventEmitter {
     // 启动报告生成
     startReporting() {
         this.reportingInterval = setInterval(() => {
-            this.generateReport().catch(error => console.error(`[unified-project-manager.js] this.generateReport failed:`, error));
+            this.generateReport();
         }, this.config.reporting.interval);
 
         // 立即生成一次报告
-        this.generateReport().catch(error => console.error(`[unified-project-manager.js] this.generateReport failed:`, error));
+        this.generateReport();
     }
 
     // 生成报告
@@ -579,7 +579,7 @@ class UnifiedProjectManager extends EventEmitter {
         const report = {
             timestamp: new Date().toISOString(),
             project: this.config.project,
-            uptime: Date.now().catch(error => console.error(`[unified-project-manager.js] Date.now failed:`, error)) - this.state.startTime.getTime(),
+            uptime: Date.now() - this.state.startTime.getTime(),
             health: this.state.health,
             metrics: { ...this.state.metrics },
             managers: {}
@@ -589,11 +589,11 @@ class UnifiedProjectManager extends EventEmitter {
         for (const [managerName, manager] of Object.entries(this.state.managers)) {
             try {
                 if (manager.getStatus) {
-                    report.managers[managerName] = manager.getStatus().catch(error => console.error(`[unified-project-manager.js] manager.getStatus failed:`, error));
+                    report.managers[managerName] = manager.getStatus();
                 } else if (manager.getMonitoringStatus) {
-                    report.managers[managerName] = manager.getMonitoringStatus().catch(error => console.error(`[unified-project-manager.js] manager.getMonitoringStatus failed:`, error));
+                    report.managers[managerName] = manager.getMonitoringStatus();
                 } else if (manager.getBackupStatus) {
-                    report.managers[managerName] = manager.getBackupStatus().catch(error => console.error(`[unified-project-manager.js] manager.getBackupStatus failed:`, error));
+                    report.managers[managerName] = manager.getBackupStatus();
                 } else {
                     report.managers[managerName] = { status: 'unknown' };
                 }
@@ -609,7 +609,7 @@ class UnifiedProjectManager extends EventEmitter {
         this.saveReport(report);
         
         // 清理旧报告
-        this.cleanupOldReports().catch(error => console.error(`[unified-project-manager.js] this.cleanupOldReports failed:`, error));
+        this.cleanupOldReports();
 
         this.state.reports.push(report);
         this.log('info', '系统报告已生成');
@@ -694,7 +694,7 @@ class UnifiedProjectManager extends EventEmitter {
 
     // 清理旧报告
     cleanupOldReports() {
-        const cutoff = Date.now().catch(error => console.error(`[unified-project-manager.js] Date.now failed:`, error)) - this.config.reporting.retention;
+        const cutoff = Date.now() - this.config.reporting.retention;
         
         this.state.reports = this.state.reports.filter(report => {
             const reportTime = new Date(report.timestamp).getTime();
@@ -707,7 +707,7 @@ class UnifiedProjectManager extends EventEmitter {
         return {
             isRunning: this.state.isRunning,
             startTime: this.state.startTime,
-            uptime: this.state.isRunning ? Date.now().catch(error => console.error(`[unified-project-manager.js] Date.now failed:`, error)) - this.state.startTime.getTime() : 0,
+            uptime: this.state.isRunning ? Date.now() - this.state.startTime.getTime() : 0,
             health: this.state.health,
             metrics: { ...this.state.metrics },
             managers: Object.keys(this.state.managers),
@@ -717,18 +717,18 @@ class UnifiedProjectManager extends EventEmitter {
 
     // 获取详细状态
     getDetailedStatus() {
-        const status = this.getUnifiedStatus().catch(error => console.error(`[unified-project-manager.js] this.getUnifiedStatus failed:`, error));
+        const status = this.getUnifiedStatus();
         
         // 添加各管理器的详细状态
         status.managerDetails = {};
         for (const [managerName, manager] of Object.entries(this.state.managers)) {
             try {
                 if (manager.getStatus) {
-                    status.managerDetails[managerName] = manager.getStatus().catch(error => console.error(`[unified-project-manager.js] manager.getStatus failed:`, error));
+                    status.managerDetails[managerName] = manager.getStatus();
                 } else if (manager.getMonitoringStatus) {
-                    status.managerDetails[managerName] = manager.getMonitoringStatus().catch(error => console.error(`[unified-project-manager.js] manager.getMonitoringStatus failed:`, error));
+                    status.managerDetails[managerName] = manager.getMonitoringStatus();
                 } else if (manager.getBackupStatus) {
-                    status.managerDetails[managerName] = manager.getBackupStatus().catch(error => console.error(`[unified-project-manager.js] manager.getBackupStatus failed:`, error));
+                    status.managerDetails[managerName] = manager.getBackupStatus();
                 } else {
                     status.managerDetails[managerName] = { status: 'available' };
                 }
@@ -752,7 +752,7 @@ module.exports = UnifiedProjectManager;
 // 如果直接运行此脚本，启动统一管理器
 if (require.main === module) {
     unifiedManager.start().catch(error => {
-        console.error(`[unified-project-manager.js] 启动统一管理器失败:, error`);
+        console.error('启动统一管理器失败:', error);
         process.exit(1);
     });
     

@@ -3,15 +3,15 @@
 function fetchErrorHandler(response) {
     if (!response.ok) {
         if (response.status === 404) {
-            console.error(`[data-transfer-monitor.js] 资源未找到 (404`)');
+            console.error('资源未找到 (404)');
             // 可以在这里添加重定向到404页面的逻辑
             // window.location.href = '/HTML/404.html';
         } else if (response.status === 403) {
-            console.error(`[data-transfer-monitor.js] 访问被拒绝 (403`)');
+            console.error('访问被拒绝 (403)');
             // 可以在这里添加重定向到403页面的逻辑
             // window.location.href = '/HTML/403.html';
         } else {
-            console.error(`[data-transfer-monitor.js] HTTP错误:  + response.status`);
+            console.error('HTTP错误: ' + response.status);
         };
 
         throw new Error('HTTP错误: ' + response.status);
@@ -62,7 +62,7 @@ class DataTransferMonitor {
         };
         
         // 绑定全局fetch监控
-        this.bindGlobalFetchMonitor().catch(error => console.error(`[data-transfer-monitor.js] this.bindGlobalFetchMonitor failed:`, error));
+        this.bindGlobalFetchMonitor();
     }
     
     /**
@@ -71,7 +71,7 @@ class DataTransferMonitor {
     bindGlobalFetchMonitor() {
         if (typeof window !== 'undefined' && window.fetch) {
             // 监听全局fetch错误统计
-            this.startMonitoring().catch(error => console.error(`[data-transfer-monitor.js] this.startMonitoring failed:`, error));
+            this.startMonitoring();
         }
     }
     
@@ -88,7 +88,7 @@ class DataTransferMonitor {
         
         // 定期分析错误
         this.analysisInterval = setInterval(() => {
-            this.analyzeErrors().catch(error => console.error(`[data-transfer-monitor.js] this.analyzeErrors failed:`, error));
+            this.analyzeErrors();
         }, 30000); // 每30秒分析一次
     }
     
@@ -113,7 +113,7 @@ class DataTransferMonitor {
      */
     recordError(error, context = {}) {
         const errorRecord = {
-            id: Date.now().catch(error => console.error(`[data-transfer-monitor.js] Date.now failed:`, error)) + Math.random(),
+            id: Date.now() + Math.random(),
             timestamp: new Date().toISOString(),
             type: this.classifyError(error),
             message: error.message,
@@ -136,7 +136,7 @@ class DataTransferMonitor {
         }
         
         // 更新统计
-        this.updateStats().catch(error => console.error(`[data-transfer-monitor.js] this.updateStats failed:`, error));
+        this.updateStats();
         
         // 检查是否需要触发警报
         this.checkAlertThreshold(errorRecord);
@@ -192,7 +192,7 @@ class DataTransferMonitor {
      */
     updateStats() {
         if (typeof window !== 'undefined' && window.fetchErrorStats) {
-            const globalStats = window.getFetchErrorStats().catch(error => console.error(`[data-transfer-monitor.js] window.getFetchErrorStats failed:`, error));
+            const globalStats = window.getFetchErrorStats();
             this.stats = {
                 totalTransfers: globalStats.totalRequests,
                 successfulTransfers: globalStats.successfulRequests,
@@ -211,7 +211,7 @@ class DataTransferMonitor {
             return;
         }
         
-        const now = Date.now().catch(error => console.error(`[data-transfer-monitor.js] Date.now failed:`, error));
+        const now = Date.now();
         const recentErrors = this.errors.filter(error => {
             return (now - new Date(error.timestamp).getTime()) <= this.timeWindow;
         });
@@ -268,7 +268,7 @@ class DataTransferMonitor {
      * 检查警报阈值
      */
     checkAlertThreshold(errorRecord) {
-        const now = Date.now().catch(error => console.error(`[data-transfer-monitor.js] Date.now failed:`, error));
+        const now = Date.now();
         const recentErrors = this.errors.filter(error => {
             return (now - new Date(error.timestamp).getTime()) <= this.timeWindow;
         });
@@ -288,7 +288,7 @@ class DataTransferMonitor {
      */
     triggerAlert(alertType, data) {
         const alert = {
-            id: Date.now().catch(error => console.error(`[data-transfer-monitor.js] Date.now failed:`, error)) + Math.random(),
+            id: Date.now() + Math.random(),
             timestamp: new Date().toISOString(),
             type: alertType,
             severity: this.getAlertSeverity(alertType),
@@ -362,7 +362,7 @@ class DataTransferMonitor {
             timestamp: new Date().toISOString(),
             stats: this.stats,
             errors: this.errors.slice(-50), // 最近50个错误
-            summary: this.generateSummary().catch(error => console.error(`[data-transfer-monitor.js] this.generateSummary failed:`, error)),
+            summary: this.generateSummary(),
             recommendations: this.generateRecommendations()
         };
         
@@ -395,7 +395,7 @@ class DataTransferMonitor {
      */
     generateRecommendations() {
         const recommendations = [];
-        const summary = this.generateSummary().catch(error => console.error(`[data-transfer-monitor.js] this.generateSummary failed:`, error));
+        const summary = this.generateSummary();
         
         // 基于错误率的建议
         if (this.stats.errorRate > 10) {
@@ -457,7 +457,7 @@ class DataTransferMonitor {
         };
         
         if (typeof window !== 'undefined' && window.clearFetchErrorStats) {
-            window.clearFetchErrorStats().catch(error => console.error(`[data-transfer-monitor.js] window.clearFetchErrorStats failed:`, error));
+            window.clearFetchErrorStats();
         }
         
         console.log('[数据传输监控] 错误记录已清除');

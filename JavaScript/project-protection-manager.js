@@ -64,7 +64,7 @@ class ProjectProtectionManager {
 
         this.logDir = path.join(this.rootDir, 'Logs');
         this.backupDir = path.join(this.rootDir, 'Backups');
-        this.ensureDirectories().catch(error => console.error(`[project-protection-manager.js] this.ensureDirectories failed:`, error));
+        this.ensureDirectories();
         this.initializeFileHashes();
     }
 
@@ -80,7 +80,7 @@ class ProjectProtectionManager {
     // 日志记录
     log(level, message, data = null) {
         const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
-        const logMessage = `[${timestamp}] [${level.toUpperCase().catch(error => console.error(`[project-protection-manager.js] level.toUpperCase failed:`, error))}] ${message}`;
+        const logMessage = `[${timestamp}] [${level.toUpperCase()}] ${message}`;
         console.log(logMessage);
         
         const logFile = path.join(this.logDir, 'project_protection.log');
@@ -94,7 +94,7 @@ class ProjectProtectionManager {
     // 初始化文件哈希
     initializeFileHashes() {
         this.log('info', '初始化文件完整性检查...');
-        this.scanProjectFiles().catch(error => console.error(`[project-protection-manager.js] this.scanProjectFiles failed:`, error));
+        this.scanProjectFiles();
     }
 
     // 扫描项目文件
@@ -114,9 +114,9 @@ class ProjectProtectionManager {
                 
                 const stat = fs.statSync(fullPath);
                 
-                if (stat.isDirectory().catch(error => console.error(`[project-protection-manager.js] stat.isDirectory failed:`, error))) {
+                if (stat.isDirectory()) {
                     scanDir(fullPath, itemRelativePath);
-                } else if (stat.isFile().catch(error => console.error(`[project-protection-manager.js] stat.isFile failed:`, error))) {
+                } else if (stat.isFile()) {
                     // 计算文件哈希
                     try {
                         const hash = this.calculateFileHash(fullPath);
@@ -190,7 +190,7 @@ class ProjectProtectionManager {
             
             if (criticalChanges.length > 0) {
                 this.log('warning', `检测到关键文件变更，触发自动备份`);
-                this.performBackup().catch(error => console.error(`[project-protection-manager.js] this.performBackup failed:`, error));
+                this.performBackup();
             }
         }
         
@@ -206,7 +206,7 @@ class ProjectProtectionManager {
         this.log('info', '开始执行自动备份...');
         
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-').substring(0, 19);
-        const version = this.getProjectVersion().catch(error => console.error(`[project-protection-manager.js] this.getProjectVersion failed:`, error));
+        const version = this.getProjectVersion();
         const backupName = `backup_${timestamp}_v${version}`;
         const backupPath = path.join(this.backupDir, backupName);
         
@@ -234,7 +234,7 @@ class ProjectProtectionManager {
             this.log('info', `备份完成: ${backupName}`);
             
             // 清理旧备份
-            this.cleanupOldBackups().catch(error => console.error(`[project-protection-manager.js] this.cleanupOldBackups failed:`, error));
+            this.cleanupOldBackups();
             
         } catch (error) {
             this.state.metrics.errors++;
@@ -265,7 +265,7 @@ class ProjectProtectionManager {
                 
                 const stat = fs.statSync(srcPath);
                 
-                if (stat.isDirectory().catch(error => console.error(`[project-protection-manager.js] stat.isDirectory failed:`, error))) {
+                if (stat.isDirectory()) {
                     copyDir(srcPath, destPath);
                 } else {
                     fs.copyFileSync(srcPath, destPath);
@@ -372,9 +372,9 @@ class ProjectProtectionManager {
         }
         
         const metrics = {
-            memory: process.memoryUsage().catch(error => console.error(`[project-protection-manager.js] process.memoryUsage failed:`, error)),
+            memory: process.memoryUsage(),
             cpu: process.cpuUsage(),
-            disk: this.getDiskUsage().catch(error => console.error(`[project-protection-manager.js] this.getDiskUsage failed:`, error))
+            disk: this.getDiskUsage()
         };
         
         // 检查内存使用
@@ -419,7 +419,7 @@ class ProjectProtectionManager {
     // 获取系统状态
     getStatus() {
         return {
-            uptime: process.uptime().catch(error => console.error(`[project-protection-manager.js] process.uptime failed:`, error)),
+            uptime: process.uptime(),
             lastBackup: this.state.lastBackup,
             metrics: { ...this.state.metrics },
             fileCount: this.state.fileHashes.size,
@@ -436,35 +436,35 @@ class ProjectProtectionManager {
         // 文件完整性检查
         if (this.config.fileMonitor.enabled) {
             setInterval(() => {
-                this.checkFileIntegrity().catch(error => console.error(`[project-protection-manager.js] this.checkFileIntegrity failed:`, error));
+                this.checkFileIntegrity();
             }, this.config.fileMonitor.interval);
         }
         
         // 自动备份
         if (this.config.backup.enabled) {
             setInterval(() => {
-                this.performBackup().catch(error => console.error(`[project-protection-manager.js] this.performBackup failed:`, error));
+                this.performBackup();
             }, this.config.backup.interval);
         }
         
         // 安全扫描
         if (this.config.security.enabled) {
             setInterval(() => {
-                this.performSecurityScan().catch(error => console.error(`[project-protection-manager.js] this.performSecurityScan failed:`, error));
+                this.performSecurityScan();
             }, this.config.security.scanInterval);
         }
         
         // 性能监控
         if (this.config.performance.enabled) {
             setInterval(() => {
-                this.checkPerformance().catch(error => console.error(`[project-protection-manager.js] this.checkPerformance failed:`, error));
+                this.checkPerformance();
             }, 60000); // 每分钟检查一次
         }
         
         // 立即执行一次完整检查
-        this.checkFileIntegrity().catch(error => console.error(`[project-protection-manager.js] this.checkFileIntegrity failed:`, error));
+        this.checkFileIntegrity();
         this.performSecurityScan();
-        this.checkPerformance().catch(error => console.error(`[project-protection-manager.js] this.checkPerformance failed:`, error));
+        this.checkPerformance();
         
         this.log('info', 'MTSCOS项目保护系统已启动');
     }
@@ -484,16 +484,16 @@ module.exports = ProjectProtectionManager;
 
 // 如果直接运行此脚本，启动保护系统
 if (require.main === module) {
-    protectionManager.start().catch(error => console.error(`[project-protection-manager.js] protectionManager.start failed:`, error));
+    protectionManager.start();
     
     // 优雅关闭
     process.on('SIGINT', () => {
-        protectionManager.stop().catch(error => console.error(`[project-protection-manager.js] protectionManager.stop failed:`, error));
+        protectionManager.stop();
         process.exit(0);
     });
     
     process.on('SIGTERM', () => {
-        protectionManager.stop().catch(error => console.error(`[project-protection-manager.js] protectionManager.stop failed:`, error));
+        protectionManager.stop();
         process.exit(0);
     });
 }

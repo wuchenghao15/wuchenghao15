@@ -85,7 +85,7 @@ class EnhancedBackupManager {
             }
         };
 
-        this.ensureDirectories().catch(error => console.error(`[enhanced-backup-manager.js] this.ensureDirectories failed:`, error));
+        this.ensureDirectories();
         this.loadBackupChain();
     }
 
@@ -109,7 +109,7 @@ class EnhancedBackupManager {
     // 日志记录
     log(level, message, data = null) {
         const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
-        const logMessage = `[${timestamp}] [BACKUP-${level.toUpperCase().catch(error => console.error(`[enhanced-backup-manager.js] level.toUpperCase failed:`, error))}] ${message}`;
+        const logMessage = `[${timestamp}] [BACKUP-${level.toUpperCase()}] ${message}`;
         console.log(logMessage);
         
         const logFile = path.join(this.rootDir, 'Logs', 'backup_manager.log');
@@ -131,7 +131,7 @@ class EnhancedBackupManager {
             try {
                 const chainData = fs.readFileSync(chainFile, 'utf8');
                 this.state.backupChain = JSON.parse(chainData);
-                this.updateCurrentBase().catch(error => console.error(`[enhanced-backup-manager.js] this.updateCurrentBase failed:`, error));
+                this.updateCurrentBase();
                 this.log('info', `已加载备份链，包含 ${this.state.backupChain.length} 个备份`);
             } catch (error) {
                 this.log('error', '加载备份链失败', error.message);
@@ -193,9 +193,9 @@ class EnhancedBackupManager {
                     
                     const stat = fs.statSync(fullPath);
                     
-                    if (stat.isDirectory().catch(error => console.error(`[enhanced-backup-manager.js] stat.isDirectory failed:`, error))) {
+                    if (stat.isDirectory()) {
                         scanDir(fullPath, itemRelativePath);
-                    } else if (stat.isFile().catch(error => console.error(`[enhanced-backup-manager.js] stat.isFile failed:`, error))) {
+                    } else if (stat.isFile()) {
                         fileMap.set(itemRelativePath, {
                             path: fullPath,
                             size: stat.size,
@@ -352,7 +352,7 @@ class EnhancedBackupManager {
             this.state.metrics.totalSize += totalSize;
             this.state.metrics.compressedSize += compressedSize;
             
-            this.saveBackupChain().catch(error => console.error(`[enhanced-backup-manager.js] this.saveBackupChain failed:`, error));
+            this.saveBackupChain();
             this.cleanupOldBackups();
             
             this.log('info', `完整备份完成: ${backupId}`, {
@@ -504,7 +504,7 @@ class EnhancedBackupManager {
             this.state.metrics.totalSize += totalSize;
             this.state.metrics.compressedSize += compressedSize;
             
-            this.saveBackupChain().catch(error => console.error(`[enhanced-backup-manager.js] this.saveBackupChain failed:`, error));
+            this.saveBackupChain();
             this.cleanupOldBackups();
             
             this.log('info', `增量备份完成: ${backupId}`, {
@@ -556,7 +556,7 @@ class EnhancedBackupManager {
             }
         });
         
-        this.saveBackupChain().catch(error => console.error(`[enhanced-backup-manager.js] this.saveBackupChain failed:`, error));
+        this.saveBackupChain();
     }
 
     // 递归删除目录
@@ -622,9 +622,9 @@ class EnhancedBackupManager {
         
         // 立即执行一次备份
         if (!this.state.currentBase) {
-            this.performFullBackup().catch(error => console.error(`[enhanced-backup-manager.js] this.performFullBackup failed:`, error));
+            this.performFullBackup();
         } else {
-            this.performIncrementalBackup().catch(error => console.error(`[enhanced-backup-manager.js] this.performIncrementalBackup failed:`, error));
+            this.performIncrementalBackup();
         }
         
         this.log('info', '增强版备份管理器已启动');
@@ -643,10 +643,10 @@ module.exports = EnhancedBackupManager;
 
 // 如果直接运行此脚本，启动备份管理器
 if (require.main === module) {
-    backupManager.start().catch(error => console.error(`[enhanced-backup-manager.js] backupManager.start failed:`, error));
+    backupManager.start();
     
     process.on('SIGINT', () => {
-        backupManager.stop().catch(error => console.error(`[enhanced-backup-manager.js] backupManager.stop failed:`, error));
+        backupManager.stop();
         process.exit(0);
     });
 }

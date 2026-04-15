@@ -51,12 +51,12 @@ class DatabaseManager {
             await this.initializeSystemFactors();
             
             // 启动连接健康检查
-            this.startHealthCheck().catch(error => console.error(`[database-manager.js] this.startHealthCheck failed:`, error));
+            this.startHealthCheck();
             
             console.log('✅ 数据库管理器初始化完成');
             
         } catch (error) {
-            console.error(`[database-manager.js] ❌ 数据库管理器初始化失败:`, error);
+            console.error('❌ 数据库管理器初始化失败:', error);
             throw error;
         }
     }
@@ -377,7 +377,7 @@ class DatabaseManager {
                     await this.logSystemEvent('warning', '数据库连接健康检查失败', 'HealthCheck');
                 }
             } catch (error) {
-                console.error(`[database-manager.js] ❌ 健康检查异常:`, error);
+                console.error('❌ 健康检查异常:', error);
                 await this.logSystemEvent('error', '数据库健康检查异常', 'HealthCheck', null, { error: error.message });
             }
         }, 60000); // 每分钟检查一次

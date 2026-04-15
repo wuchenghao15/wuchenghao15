@@ -24,20 +24,20 @@ function fetchErrorHandler(response) {
                 message: `HTTP ${response.status}: ${response.statusText}`,
                 status: response.status,
                 url: response.url,
-                timestamp: Date.now().catch(error => console.error(`[unified-error-handler-v3.js] Date.now failed:`, error))
+                timestamp: Date.now()
             });
         }
 
         if (response.status === 404) {
-            console.error(`[unified-error-handler-v3.js] 资源未找到 (404`):', response.url);
+            console.error('资源未找到 (404):', response.url);
         } else if (response.status === 403) {
-            console.error(`[unified-error-handler-v3.js] 访问被拒绝 (403`):', response.url);
+            console.error('访问被拒绝 (403):', response.url);
         } else if (response.status === 401) {
-            console.error(`[unified-error-handler-v3.js] 未授权访问 (401`):', response.url);
+            console.error('未授权访问 (401):', response.url);
         } else if (response.status >= 500) {
-            console.error(`[unified-error-handler-v3.js] 服务器错误:, response.status, response.statusText`);
+            console.error('服务器错误:', response.status, response.statusText);
         } else {
-            console.error(`[unified-error-handler-v3.js] HTTP错误:, response.status, response.statusText`);
+            console.error('HTTP错误:', response.status, response.statusText);
         }
 
         throw new Error(`HTTP错误: ${response.status} - ${response.statusText}`);
@@ -88,7 +88,7 @@ class MTSCOSUnifiedErrorHandler {
         };
         
         this.isInitialized = false;
-        this.init().catch(error => console.error(`[unified-error-handler-v3.js] this.init failed:`, error));
+        this.init();
     }
 
     /**
@@ -97,13 +97,13 @@ class MTSCOSUnifiedErrorHandler {
     init() {
         if (this.isInitialized) return;
         
-        this.setupGlobalErrorHandlers().catch(error => console.error(`[unified-error-handler-v3.js] this.setupGlobalErrorHandlers failed:`, error));
+        this.setupGlobalErrorHandlers();
         this.setupUnhandledRejectionHandler();
         
         if (this.config.enablePerformanceMonitoring) {
-            this.setupPerformanceObservers().catch(error => console.error(`[unified-error-handler-v3.js] this.setupPerformanceObservers failed:`, error));
+            this.setupPerformanceObservers();
             this.setupMemoryMonitoring();
-            this.setupNetworkMonitoring().catch(error => console.error(`[unified-error-handler-v3.js] this.setupNetworkMonitoring failed:`, error));
+            this.setupNetworkMonitoring();
         }
         
         this.isInitialized = true;
@@ -124,7 +124,7 @@ class MTSCOSUnifiedErrorHandler {
                     lineno: event.lineno,
                     colno: event.colno,
                     stack: event.error?.stack,
-                    timestamp: Date.now().catch(error => console.error(`[unified-error-handler-v3.js] Date.now failed:`, error))
+                    timestamp: Date.now()
                 });
             } else {
                 // 资源加载错误
@@ -133,7 +133,7 @@ class MTSCOSUnifiedErrorHandler {
                     message: `Failed to load ${event.target.tagName}`,
                     source: event.target.src || event.target.href,
                     element: event.target.tagName,
-                    timestamp: Date.now().catch(error => console.error(`[unified-error-handler-v3.js] Date.now failed:`, error))
+                    timestamp: Date.now()
                 });
             }
         }, true);
@@ -149,11 +149,11 @@ class MTSCOSUnifiedErrorHandler {
                 message: event.reason?.message || String(event.reason),
                 reason: event.reason,
                 promise: event.promise,
-                timestamp: Date.now().catch(error => console.error(`[unified-error-handler-v3.js] Date.now failed:`, error))
+                timestamp: Date.now()
             });
             
             // 防止错误在控制台显示
-            event.preventDefault().catch(error => console.error(`[unified-error-handler-v3.js] event.preventDefault failed:`, error));
+            event.preventDefault();
         });
     }
 
@@ -165,7 +165,7 @@ class MTSCOSUnifiedErrorHandler {
         if ('performance' in window) {
             window.addEventListener('load', () => {
                 setTimeout(() => {
-                    this.recordPageLoadPerformance().catch(error => console.error(`[unified-error-handler-v3.js] this.recordPageLoadPerformance failed:`, error));
+                    this.recordPageLoadPerformance();
                 }, 0);
             });
         }
@@ -174,7 +174,7 @@ class MTSCOSUnifiedErrorHandler {
         if ('PerformanceObserver' in window) {
             try {
                 const longTaskObserver = new PerformanceObserver((list) => {
-                    for (const entry of list.getEntries().catch(error => console.error(`[unified-error-handler-v3.js] list.getEntries failed:`, error))) {
+                    for (const entry of list.getEntries()) {
                         this.recordLongTask(entry);
                     }
                 });
@@ -191,7 +191,7 @@ class MTSCOSUnifiedErrorHandler {
     setupMemoryMonitoring() {
         if ('memory' in performance) {
             setInterval(() => {
-                this.recordMemoryUsage().catch(error => console.error(`[unified-error-handler-v3.js] this.recordMemoryUsage failed:`, error));
+                this.recordMemoryUsage();
             }, 30000); // 每30秒记录一次
         }
     }
@@ -203,18 +203,18 @@ class MTSCOSUnifiedErrorHandler {
         // 监控fetch请求
         const originalFetch = window.fetch;
         window.fetch = async (...args) => {
-            const startTime = performance.now().catch(error => console.error(`[unified-error-handler-v3.js] performance.now failed:`, error));
+            const startTime = performance.now();
             const url = args[0];
             
             try {
                 const response = await originalFetch(...args);
-                const endTime = performance.now().catch(error => console.error(`[unified-error-handler-v3.js] performance.now failed:`, error));
+                const endTime = performance.now();
                 const duration = endTime - startTime;
                 
                 this.recordApiCall(url, 'success', duration, response.status);
                 return response;
             } catch (error) {
-                const endTime = performance.now().catch(error => console.error(`[unified-error-handler-v3.js] performance.now failed:`, error));
+                const endTime = performance.now();
                 const duration = endTime - startTime;
                 
                 this.recordApiCall(url, 'error', duration, null, error);
@@ -229,7 +229,7 @@ class MTSCOSUnifiedErrorHandler {
     handleError(errorInfo) {
         try {
             // 生成错误ID
-            const errorId = this.generateErrorId().catch(error => console.error(`[unified-error-handler-v3.js] this.generateErrorId failed:`, error));
+            const errorId = this.generateErrorId();
             const timestamp = new Date().toISOString();
             
             const error = {
@@ -301,7 +301,7 @@ class MTSCOSUnifiedErrorHandler {
             switch(error.status) {
                 case 401:
                     this.showUserMessage('登录已过期，请重新登录', 'warning');
-                    this.redirectToLogin().catch(error => console.error(`[unified-error-handler-v3.js] this.redirectToLogin failed:`, error));
+                    this.redirectToLogin();
                     break;
                 case 403:
                     this.showUserMessage('访问被拒绝，权限不足', 'error');
@@ -394,7 +394,7 @@ class MTSCOSUnifiedErrorHandler {
         
         // 限制日志大小
         if (this.errorLog.length > this.maxLogSize) {
-            this.errorLog.shift().catch(error => console.error(`[unified-error-handler-v3.js] errorLog.shift failed:`, error));
+            this.errorLog.shift();
         }
         
         // 输出到控制台
@@ -403,7 +403,7 @@ class MTSCOSUnifiedErrorHandler {
         }
         
         // 保存到本地存储
-        this.saveErrorLog().catch(error => console.error(`[unified-error-handler-v3.js] this.saveErrorLog failed:`, error));
+        this.saveErrorLog();
         
         // 远程日志记录
         if (this.config.enableRemoteLogging) {
@@ -501,7 +501,7 @@ class MTSCOSUnifiedErrorHandler {
         // 自动移除
         setTimeout(() => {
             if (notification.parentElement) {
-                notification.remove().catch(error => console.error(`[unified-error-handler-v3.js] notification.remove failed:`, error));
+                notification.remove();
             }
         }, 5000);
     }
@@ -581,7 +581,7 @@ class MTSCOSUnifiedErrorHandler {
                 dnsLookup: navigation.domainLookupEnd - navigation.domainLookupStart,
                 tcpConnection: navigation.connectEnd - navigation.connectStart,
                 requestTime: navigation.responseEnd - navigation.requestStart,
-                timestamp: Date.now().catch(error => console.error(`[unified-error-handler-v3.js] Date.now failed:`, error))
+                timestamp: Date.now()
             };
 
             console.log('页面加载性能指标:', this.performanceMetrics.pageLoad);
@@ -592,7 +592,7 @@ class MTSCOSUnifiedErrorHandler {
         this.logWarning('Long Task Detected', {
             duration: entry.duration,
             startTime: entry.startTime,
-            timestamp: Date.now().catch(error => console.error(`[unified-error-handler-v3.js] Date.now failed:`, error))
+            timestamp: Date.now()
         });
     }
 
@@ -602,14 +602,14 @@ class MTSCOSUnifiedErrorHandler {
                 used: performance.memory.usedJSHeapSize,
                 total: performance.memory.totalJSHeapSize,
                 limit: performance.memory.jsHeapSizeLimit,
-                timestamp: Date.now().catch(error => console.error(`[unified-error-handler-v3.js] Date.now failed:`, error))
+                timestamp: Date.now()
             };
             
             this.performanceMetrics.memoryUsage.push(memory);
             
             // 限制记录数量
             if (this.performanceMetrics.memoryUsage.length > 50) {
-                this.performanceMetrics.memoryUsage.shift().catch(error => console.error(`[unified-error-handler-v3.js] memoryUsage.shift failed:`, error));
+                this.performanceMetrics.memoryUsage.shift();
             }
         }
     }
@@ -683,7 +683,7 @@ class MTSCOSUnifiedErrorHandler {
             userInteractions: Object.fromEntries(this.performanceMetrics.userInteractions),
             memoryUsage: this.performanceMetrics.memoryUsage.slice(-10),
             errors: this.errorLog.slice(-10),
-            summary: this.generatePerformanceSummary().catch(error => console.error(`[unified-error-handler-v3.js] this.generatePerformanceSummary failed:`, error))
+            summary: this.generatePerformanceSummary()
         };
     }
 
@@ -693,18 +693,18 @@ class MTSCOSUnifiedErrorHandler {
     generatePerformanceSummary() {
         const summary = {
             totalErrors: this.errorLog.length,
-            totalApiCalls: Array.from(this.performanceMetrics.apiCalls.values().catch(error => console.error(`[unified-error-handler-v3.js] apiCalls.values failed:`, error)))
+            totalApiCalls: Array.from(this.performanceMetrics.apiCalls.values())
                 .reduce((sum, metrics) => sum + metrics.count, 0),
-            averageResponseTime: this.calculateAverageResponseTime().catch(error => console.error(`[unified-error-handler-v3.js] this.calculateAverageResponseTime failed:`, error)),
+            averageResponseTime: this.calculateAverageResponseTime(),
             memoryTrend: this.calculateMemoryTrend(),
-            performanceScore: this.calculatePerformanceScore().catch(error => console.error(`[unified-error-handler-v3.js] this.calculatePerformanceScore failed:`, error))
+            performanceScore: this.calculatePerformanceScore()
         };
 
         return summary;
     }
 
     calculateAverageResponseTime() {
-        const allApiCalls = Array.from(this.performanceMetrics.apiCalls.values().catch(error => console.error(`[unified-error-handler-v3.js] apiCalls.values failed:`, error)));
+        const allApiCalls = Array.from(this.performanceMetrics.apiCalls.values());
         if (allApiCalls.length === 0) return 0;
         
         const totalDuration = allApiCalls.reduce((sum, metrics) => sum + metrics.totalDuration, 0);
@@ -733,7 +733,7 @@ class MTSCOSUnifiedErrorHandler {
         
         score -= Math.min(30, this.errorLog.length * 2);
         
-        const slowRequests = Array.from(this.performanceMetrics.apiCalls.values().catch(error => console.error(`[unified-error-handler-v3.js] apiCalls.values failed:`, error)))
+        const slowRequests = Array.from(this.performanceMetrics.apiCalls.values())
             .filter(metrics => metrics.averageDuration > 3000).length;
         score -= Math.min(20, slowRequests * 5);
         
@@ -771,7 +771,7 @@ class MTSCOSUnifiedErrorHandler {
             errors: this.errorLog,
             errorCounts: this.errorCounts,
             performanceMetrics: this.performanceMetrics,
-            exportTime: Date.now().catch(error => console.error(`[unified-error-handler-v3.js] Date.now failed:`, error)),
+            exportTime: Date.now(),
             version: this.version
         };
         
@@ -780,7 +780,7 @@ class MTSCOSUnifiedErrorHandler {
         const a = document.createElement('a');
         a.href = url;
         a.download = `mtscos-unified-logs-${new Date().toISOString().slice(0, 10)}.json`;
-        a.click().catch(error => console.error(`[unified-error-handler-v3.js] a.click failed:`, error));
+        a.click();
         URL.revokeObjectURL(url);
     }
 
@@ -792,7 +792,7 @@ class MTSCOSUnifiedErrorHandler {
             totalErrors: this.errorLog.length,
             errorCounts: { ...this.errorCounts },
             recentErrors: this.errorLog.slice(-5),
-            mostCommonError: this.getMostCommonErrorType().catch(error => console.error(`[unified-error-handler-v3.js] this.getMostCommonErrorType failed:`, error))
+            mostCommonError: this.getMostCommonErrorType()
         };
     }
 

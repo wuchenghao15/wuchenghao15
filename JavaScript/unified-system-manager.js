@@ -23,7 +23,7 @@ class UnifiedSystemManager {
             return;
         }
 
-        this.startTime = Date.now().catch(error => console.error(`[unified-system-manager.js] Date.now failed:`, error));
+        this.startTime = Date.now();
         console.log('🚀 开始初始化统一系统管理器...');
 
         try {
@@ -43,11 +43,11 @@ class UnifiedSystemManager {
             await this.startAutomatedTasks();
             
             // 5. 注册系统事件监听
-            this.registerSystemEventListeners().catch(error => console.error(`[unified-system-manager.js] this.registerSystemEventListeners failed:`, error));
+            this.registerSystemEventListeners();
             
             this.isInitialized = true;
             
-            const initTime = Date.now().catch(error => console.error(`[unified-system-manager.js] Date.now failed:`, error)) - this.startTime;
+            const initTime = Date.now() - this.startTime;
             console.log(`✅ 统一系统管理器初始化完成，耗时: ${initTime}ms`);
             
             // 记录初始化日志
@@ -59,7 +59,7 @@ class UnifiedSystemManager {
             });
 
         } catch (error) {
-            console.error(`[unified-system-manager.js] ❌ 系统管理器初始化失败:, error`);
+            console.error('❌ 系统管理器初始化失败:', error);
             this.handleInitializationError(error);
             throw error;
         }
@@ -80,7 +80,7 @@ class UnifiedSystemManager {
                 console.warn('⚠️ DatabaseManager未找到，跳过数据库初始化');
             }
         } catch (error) {
-            console.error(`[unified-system-manager.js] ❌ 数据库管理器初始化失败:, error`);
+            console.error('❌ 数据库管理器初始化失败:', error);
             throw error;
         }
     }
@@ -205,11 +205,11 @@ class UnifiedSystemManager {
         console.log('🔍 执行系统启动检查...');
 
         const checks = [
-            this.checkSystemResources().catch(error => console.error(`[unified-system-manager.js] this.checkSystemResources failed:`, error)),
+            this.checkSystemResources(),
             this.checkDatabaseConnection(),
-            this.checkFileSystem().catch(error => console.error(`[unified-system-manager.js] this.checkFileSystem failed:`, error)),
+            this.checkFileSystem(),
             this.checkNetworkConnectivity(),
-            this.checkSecurityConfiguration().catch(error => console.error(`[unified-system-manager.js] this.checkSecurityConfiguration failed:`, error)),
+            this.checkSecurityConfiguration(),
             this.checkDependencies()
         ];
 
@@ -219,7 +219,7 @@ class UnifiedSystemManager {
         if (failedChecks.length > 0) {
             console.warn(`⚠️ ${failedChecks.length} 项启动检查失败`);
             failedChecks.forEach((result, index) => {
-                console.error(`[unified-system-manager.js] `检查 ${index + 1} 失败:`, result.reason`);
+                console.error(`检查 ${index + 1} 失败:`, result.reason);
             });
         } else {
             console.log('✅ 所有启动检查通过');
@@ -230,7 +230,7 @@ class UnifiedSystemManager {
      * 检查系统资源
      */
     async checkSystemResources() {
-        const memoryUsage = process.memoryUsage().catch(error => console.error(`[unified-system-manager.js] process.memoryUsage failed:`, error));
+        const memoryUsage = process.memoryUsage();
         const cpuUsage = process.cpuUsage();
         
         console.log('📊 系统资源状态:');
@@ -317,7 +317,7 @@ class UnifiedSystemManager {
                 });
                 req.on('error', reject);
                 req.setTimeout(5000, () => reject(new Error('网络超时')));
-                req.end().catch(error => console.error(`[unified-system-manager.js] req.end failed:`, error));
+                req.end();
             });
             console.log('✅ 网络连接正常');
             return true;
@@ -386,16 +386,16 @@ class UnifiedSystemManager {
         console.log('🤖 启动自动化任务...');
 
         // 启动健康检查任务
-        this.startHealthCheckTask().catch(error => console.error(`[unified-system-manager.js] this.startHealthCheckTask failed:`, error));
+        this.startHealthCheckTask();
         
         // 启动清理任务
-        this.startCleanupTask().catch(error => console.error(`[unified-system-manager.js] this.startCleanupTask failed:`, error));
+        this.startCleanupTask();
         
         // 启动备份任务
-        this.startBackupTask().catch(error => console.error(`[unified-system-manager.js] this.startBackupTask failed:`, error));
+        this.startBackupTask();
         
         // 启动监控任务
-        this.startMonitoringTask().catch(error => console.error(`[unified-system-manager.js] this.startMonitoringTask failed:`, error));
+        this.startMonitoringTask();
 
         console.log('✅ 自动化任务启动完成');
     }
@@ -411,7 +411,7 @@ class UnifiedSystemManager {
             try {
                 await this.performHealthCheck();
             } catch (error) {
-                console.error(`[unified-system-manager.js] 健康检查失败:, error`);
+                console.error('健康检查失败:', error);
             }
         }, interval);
 
@@ -429,7 +429,7 @@ class UnifiedSystemManager {
         };
 
         // 检查内存使用
-        const memoryUsage = process.memoryUsage().catch(error => console.error(`[unified-system-manager.js] process.memoryUsage failed:`, error));
+        const memoryUsage = process.memoryUsage();
         const memoryPercent = (memoryUsage.heapUsed / memoryUsage.heapTotal) * 100;
         health.checks.memory = {
             usage: `${(memoryUsage.heapUsed / 1024 / 1024).toFixed(2)}MB`,
@@ -438,9 +438,9 @@ class UnifiedSystemManager {
         };
 
         // 检查响应时间
-        const startTime = Date.now().catch(error => console.error(`[unified-system-manager.js] Date.now failed:`, error));
+        const startTime = Date.now();
         await new Promise(resolve => setTimeout(resolve, 1));
-        const responseTime = Date.now().catch(error => console.error(`[unified-system-manager.js] Date.now failed:`, error)) - startTime;
+        const responseTime = Date.now() - startTime;
         health.checks.responseTime = {
             time: `${responseTime}ms`,
             status: responseTime < 100 ? 'healthy' : 'warning'
@@ -463,7 +463,7 @@ class UnifiedSystemManager {
             try {
                 await this.performCleanup();
             } catch (error) {
-                console.error(`[unified-system-manager.js] 清理任务失败:, error`);
+                console.error('清理任务失败:', error);
             }
         }, 60 * 60 * 1000);
 
@@ -505,7 +505,7 @@ class UnifiedSystemManager {
                         const stats = await fs.stat(filePath);
                         
                         // 删除超过24小时的临时文件
-                        if (Date.now().catch(error => console.error(`[unified-system-manager.js] Date.now failed:`, error)) - stats.mtime.getTime() > 24 * 60 * 60 * 1000) {
+                        if (Date.now() - stats.mtime.getTime() > 24 * 60 * 60 * 1000) {
                             await fs.unlink(filePath);
                             console.log(`  删除临时文件: ${filePath}`);
                         }
@@ -515,7 +515,7 @@ class UnifiedSystemManager {
                 }
             }
         } catch (error) {
-            console.error(`[unified-system-manager.js] 清理临时文件失败:, error`);
+            console.error('清理临时文件失败:', error);
         }
     }
 
@@ -536,14 +536,14 @@ class UnifiedSystemManager {
                     const stats = await fs.stat(filePath);
                     
                     // 删除超过7天的日志文件
-                    if (Date.now().catch(error => console.error(`[unified-system-manager.js] Date.now failed:`, error)) - stats.mtime.getTime() > 7 * 24 * 60 * 60 * 1000) {
+                    if (Date.now() - stats.mtime.getTime() > 7 * 24 * 60 * 60 * 1000) {
                         await fs.unlink(filePath);
                         console.log(`  删除日志文件: ${filePath}`);
                     }
                 }
             }
         } catch (error) {
-            console.error(`[unified-system-manager.js] 清理日志文件失败:, error`);
+            console.error('清理日志文件失败:', error);
         }
     }
 
@@ -553,7 +553,7 @@ class UnifiedSystemManager {
     async cleanupCache() {
         // 清理内存缓存
         if (this.cache && this.cache.clear) {
-            this.cache.clear().catch(error => console.error(`[unified-system-manager.js] cache.clear failed:`, error));
+            this.cache.clear();
             console.log('  内存缓存已清理');
         }
     }
@@ -569,7 +569,7 @@ class UnifiedSystemManager {
             try {
                 await this.performBackup();
             } catch (error) {
-                console.error(`[unified-system-manager.js] 备份任务失败:, error`);
+                console.error('备份任务失败:', error);
             }
         }, interval);
 
@@ -603,7 +603,7 @@ class UnifiedSystemManager {
             });
             
         } catch (error) {
-            console.error(`[unified-system-manager.js] 备份失败:, error`);
+            console.error('备份失败:', error);
         }
     }
 
@@ -623,7 +623,7 @@ class UnifiedSystemManager {
         for (const file of configFiles) {
             try {
                 const stats = await fs.stat(file);
-                if (stats.isDirectory().catch(error => console.error(`[unified-system-manager.js] stats.isDirectory failed:`, error))) {
+                if (stats.isDirectory()) {
                     await this.copyDirectory(file, path.join(backupDir, path.basename(file)));
                 } else {
                     await fs.copyFile(file, path.join(backupDir, path.basename(file)));
@@ -656,7 +656,7 @@ class UnifiedSystemManager {
             const srcPath = path.join(src, entry.name);
             const destPath = path.join(dest, entry.name);
             
-            if (entry.isDirectory().catch(error => console.error(`[unified-system-manager.js] entry.isDirectory failed:`, error))) {
+            if (entry.isDirectory()) {
                 await this.copyDirectory(srcPath, destPath);
             } else {
                 await fs.copyFile(srcPath, destPath);
@@ -674,7 +674,7 @@ class UnifiedSystemManager {
             try {
                 await this.collectMetrics();
             } catch (error) {
-                console.error(`[unified-system-manager.js] 监控任务失败:, error`);
+                console.error('监控任务失败:', error);
             }
         }, 60 * 1000); // 每分钟收集一次指标
 
@@ -687,9 +687,9 @@ class UnifiedSystemManager {
     async collectMetrics() {
         const metrics = {
             timestamp: new Date().toISOString(),
-            memory: process.memoryUsage().catch(error => console.error(`[unified-system-manager.js] process.memoryUsage failed:`, error)),
+            memory: process.memoryUsage(),
             cpu: process.cpuUsage(),
-            uptime: process.uptime().catch(error => console.error(`[unified-system-manager.js] process.uptime failed:`, error)),
+            uptime: process.uptime(),
             version: this.version
         };
 
@@ -703,22 +703,22 @@ class UnifiedSystemManager {
         // 进程退出事件
         process.on('SIGINT', () => {
             console.log('🛑 接收到SIGINT信号，正在优雅关闭...');
-            this.gracefulShutdown().catch(error => console.error(`[unified-system-manager.js] this.gracefulShutdown failed:`, error));
+            this.gracefulShutdown();
         });
 
         process.on('SIGTERM', () => {
             console.log('🛑 接收到SIGTERM信号，正在优雅关闭...');
-            this.gracefulShutdown().catch(error => console.error(`[unified-system-manager.js] this.gracefulShutdown failed:`, error));
+            this.gracefulShutdown();
         });
 
         // 未捕获异常
         process.on('uncaughtException', (error) => {
-            console.error(`[unified-system-manager.js] ❌ 未捕获异常:, error`);
+            console.error('❌ 未捕获异常:', error);
             this.handleCriticalError(error);
         });
 
         process.on('unhandledRejection', (reason, promise) => {
-            console.error(`[unified-system-manager.js] ❌ 未处理的Promise拒绝:, reason`);
+            console.error('❌ 未处理的Promise拒绝:', reason);
             this.handleCriticalError(reason);
         });
 
@@ -746,7 +746,7 @@ class UnifiedSystemManager {
             console.log('✅ 优雅关闭完成');
             process.exit(0);
         } catch (error) {
-            console.error(`[unified-system-manager.js] ❌ 优雅关闭失败:, error`);
+            console.error('❌ 优雅关闭失败:', error);
             process.exit(1);
         }
     }
@@ -766,7 +766,7 @@ class UnifiedSystemManager {
         if (errorHandler.automaticRecovery) {
             console.log('🔄 尝试自动恢复...');
             setTimeout(() => {
-                this.initialize().catch(error => console.error(`[unified-system-manager.js] this.initialize failed:`, error));
+                this.initialize();
             }, errorHandler.retryDelay);
         }
     }
@@ -814,7 +814,7 @@ class UnifiedSystemManager {
         try {
             fs.appendFileSync(logPath, JSON.stringify(logEntry) + '\n');
         } catch (error) {
-            console.error(`[unified-system-manager.js] 写入系统事件日志失败:, error`);
+            console.error('写入系统事件日志失败:', error);
         }
     }
 
@@ -826,7 +826,7 @@ class UnifiedSystemManager {
             initialized: this.isInitialized,
             version: this.version,
             internalVersion: this.internalVersion,
-            uptime: process.uptime().catch(error => console.error(`[unified-system-manager.js] process.uptime failed:`, error)),
+            uptime: process.uptime(),
             memory: process.memoryUsage(),
             rules: Object.fromEntries(this.systemRules),
             mechanisms: Object.fromEntries(this.systemMechanisms),

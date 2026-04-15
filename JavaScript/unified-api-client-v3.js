@@ -24,20 +24,20 @@ function fetchErrorHandler(response) {
                 message: `HTTP ${response.status}: ${response.statusText}`,
                 status: response.status,
                 url: response.url,
-                timestamp: Date.now().catch(error => console.error(`[unified-api-client-v3.js] Date.now failed:`, error))
+                timestamp: Date.now()
             });
         }
 
         if (response.status === 404) {
-            console.error(`[unified-api-client-v3.js] 资源未找到 (404`):', response.url);
+            console.error('资源未找到 (404):', response.url);
         } else if (response.status === 403) {
-            console.error(`[unified-api-client-v3.js] 访问被拒绝 (403`):', response.url);
+            console.error('访问被拒绝 (403):', response.url);
         } else if (response.status === 401) {
-            console.error(`[unified-api-client-v3.js] 未授权访问 (401`):', response.url);
+            console.error('未授权访问 (401):', response.url);
         } else if (response.status >= 500) {
-            console.error(`[unified-api-client-v3.js] 服务器错误:, response.status, response.statusText`);
+            console.error('服务器错误:', response.status, response.statusText);
         } else {
-            console.error(`[unified-api-client-v3.js] HTTP错误:, response.status, response.statusText`);
+            console.error('HTTP错误:', response.status, response.statusText);
         }
 
         throw new Error(`HTTP错误: ${response.status} - ${response.statusText}`);
@@ -100,7 +100,7 @@ class MTSCOSUnifiedApiClient {
         };
         
         this.isInitialized = false;
-        this.init().catch(error => console.error(`[unified-api-client-v3.js] this.init failed:`, error));
+        this.init();
     }
 
     /**
@@ -111,11 +111,11 @@ class MTSCOSUnifiedApiClient {
         
         // 启动心跳
         if (this.heartbeatConfig.enabled) {
-            this.startHeartbeat().catch(error => console.error(`[unified-api-client-v3.js] this.startHeartbeat failed:`, error));
+            this.startHeartbeat();
         }
         
         // 设置请求拦截器
-        this.setupRequestInterceptors().catch(error => console.error(`[unified-api-client-v3.js] this.setupRequestInterceptors failed:`, error));
+        this.setupRequestInterceptors();
         
         this.isInitialized = true;
         console.log(`[MTSCOS统一API客户端] v${this.version} 初始化完成`);
@@ -233,7 +233,7 @@ class MTSCOSUnifiedApiClient {
         
         // 添加超时
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort().catch(error => console.error(`[unified-api-client-v3.js] controller.abort failed:`, error)), this.timeout);
+        const timeoutId = setTimeout(() => controller.abort(), this.timeout);
         requestConfig.signal = controller.signal;
         
         try {
@@ -310,7 +310,7 @@ class MTSCOSUnifiedApiClient {
      */
     getFromCache(key) {
         const cached = this.cache.get(key);
-        if (cached && Date.now().catch(error => console.error(`[unified-api-client-v3.js] Date.now failed:`, error)) - cached.timestamp < cached.ttl) {
+        if (cached && Date.now() - cached.timestamp < cached.ttl) {
             return cached.data;
         }
         
@@ -325,19 +325,19 @@ class MTSCOSUnifiedApiClient {
         // 检查缓存大小
         if (this.cache.size >= this.cacheConfig.maxSize) {
             // 删除最旧的缓存项
-            const firstKey = this.cache.keys().catch(error => console.error(`[unified-api-client-v3.js] cache.keys failed:`, error)).next().value;
+            const firstKey = this.cache.keys().next().value;
             this.cache.delete(firstKey);
         }
         
         this.cache.set(key, {
             data,
-            timestamp: Date.now().catch(error => console.error(`[unified-api-client-v3.js] Date.now failed:`, error)),
+            timestamp: Date.now(),
             ttl
         });
     }
 
     clearCache() {
-        this.cache.clear().catch(error => console.error(`[unified-api-client-v3.js] cache.clear failed:`, error));
+        this.cache.clear();
         console.log('[API缓存] 缓存已清理');
     }
 
@@ -408,7 +408,7 @@ class MTSCOSUnifiedApiClient {
                         type: 'NETWORK_ERROR',
                         message: '服务器心跳检测失败',
                         error: error.message,
-                        timestamp: Date.now().catch(error => console.error(`[unified-api-client-v3.js] Date.now failed:`, error))
+                        timestamp: Date.now()
                     });
                 }
             }
@@ -459,13 +459,13 @@ class MTSCOSUnifiedApiClient {
             method,
             status,
             responseTime,
-            timestamp: Date.now().catch(error => console.error(`[unified-api-client-v3.js] Date.now failed:`, error)),
+            timestamp: Date.now(),
             error: error?.message
         });
         
         // 限制记录数量
         if (this.performanceMetrics.requests.length > 100) {
-            this.performanceMetrics.requests.shift().catch(error => console.error(`[unified-api-client-v3.js] requests.shift failed:`, error));
+            this.performanceMetrics.requests.shift();
         }
         
         // 记录到性能监控器
@@ -483,7 +483,7 @@ class MTSCOSUnifiedApiClient {
             successRate: this.performanceMetrics.requestCount > 0 
                 ? (this.performanceMetrics.successCount / this.performanceMetrics.requestCount * 100).toFixed(2) + '%'
                 : '0%',
-            cacheHitRate: this.getCacheHitRate().catch(error => console.error(`[unified-api-client-v3.js] this.getCacheHitRate failed:`, error))
+            cacheHitRate: this.getCacheHitRate()
         };
     }
 
@@ -496,7 +496,7 @@ class MTSCOSUnifiedApiClient {
      * 健康检查
      */
     async healthCheck() {
-        const startTime = performance.now().catch(error => console.error(`[unified-api-client-v3.js] performance.now failed:`, error));
+        const startTime = performance.now();
         
         try {
             await this.get('/api/health', { 
@@ -505,19 +505,19 @@ class MTSCOSUnifiedApiClient {
                 timeout: 5000 
             });
             
-            const responseTime = performance.now().catch(error => console.error(`[unified-api-client-v3.js] performance.now failed:`, error)) - startTime;
+            const responseTime = performance.now() - startTime;
             
             return {
                 status: 'healthy',
                 responseTime,
-                timestamp: Date.now().catch(error => console.error(`[unified-api-client-v3.js] Date.now failed:`, error))
+                timestamp: Date.now()
             };
             
         } catch (error) {
             return {
                 status: 'unhealthy',
                 error: error.message,
-                timestamp: Date.now().catch(error => console.error(`[unified-api-client-v3.js] Date.now failed:`, error))
+                timestamp: Date.now()
             };
         }
     }
@@ -560,7 +560,7 @@ class MTSCOSUnifiedApiClient {
         
         // 重启心跳
         if (newConfig.heartbeat && this.heartbeatConfig.enabled) {
-            this.startHeartbeat().catch(error => console.error(`[unified-api-client-v3.js] this.startHeartbeat failed:`, error));
+            this.startHeartbeat();
         }
     }
 
@@ -568,9 +568,9 @@ class MTSCOSUnifiedApiClient {
      * 清理资源
      */
     destroy() {
-        this.stopHeartbeat().catch(error => console.error(`[unified-api-client-v3.js] this.stopHeartbeat failed:`, error));
+        this.stopHeartbeat();
         this.clearCache();
-        this.cancelAllRequests().catch(error => console.error(`[unified-api-client-v3.js] this.cancelAllRequests failed:`, error));
+        this.cancelAllRequests();
         
         // 恢复原始fetch
         if (typeof window !== 'undefined' && window.originalFetch) {

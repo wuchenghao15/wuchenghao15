@@ -5,7 +5,7 @@
 
 const express = require('express');
 const cors = require('cors');
-const bcryptjs = require('bcryptjs');
+const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const mysql = require('mysql2/promise');
 const redis = require('redis');
@@ -172,7 +172,7 @@ async function initializeDatabase() {
                 username VARCHAR(50),
                 ip_address VARCHAR(45),
                 user_agent TEXT,
-                login_type ENUM('password', 'oauth') DEFAULT 'password',
+                login_type ENUM('password', 'oauth', 'vikey') DEFAULT 'password',
                 status ENUM('success', 'failed', 'blocked') NOT NULL,
                 failure_reason VARCHAR(255),
                 session_id VARCHAR(255),
@@ -203,10 +203,10 @@ async function initializeDatabase() {
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         `);
         
-        connection.release().catch(error => console.error(`[login-api-server.js] connection.release failed:`, error));
+        connection.release();
         console.log('数据库表初始化完成');
     } catch (error) {
-        console.error(`[login-api-server.js] 数据库初始化失败:, error`);
+        console.error('数据库初始化失败:', error);
         throw error;
     }
 }
@@ -257,7 +257,7 @@ class AuthUtils {
             fontSize: 36
         });
         return {
-            text: captcha.text.toLowerCase().catch(error => console.error(`[login-api-server.js] text.toLowerCase failed:`, error)),
+            text: captcha.text.toLowerCase(),
             data: captcha.data
         };
     }
@@ -269,7 +269,7 @@ class AuthUtils {
         for (const [field, rule] of Object.entries(rules)) {
             const value = data[field];
             
-            if (rule.required && (!value || value.trim().catch(error => console.error(`[login-api-server.js] value.trim failed:`, error)) === '')) {
+            if (rule.required && (!value || value.trim() === '')) {
                 errors.push(`${rule.label || field}不能为空`);
                 continue;
             }
@@ -302,9 +302,9 @@ class AuthUtils {
                 INSERT INTO login_logs (user_id, username, ip_address, user_agent, login_type, status, failure_reason, session_id)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             `, [userId, username, ipAddress, userAgent, loginType, status, failureReason, sessionId]);
-            connection.release().catch(error => console.error(`[login-api-server.js] connection.release failed:`, error));
+            connection.release();
         } catch (error) {
-            console.error(`[login-api-server.js] 记录登录日志失败:, error`);
+            console.error('记录登录日志失败:', error);
         }
     }
 }
@@ -332,7 +332,7 @@ function authenticateToken(req, res, next) {
 // 生成验证码
 app.get('/api/captcha', captchaLimiter, async (req, res) => {
     try {
-        const captcha = AuthUtils.generateCaptcha().catch(error => console.error(`[login-api-server.js] AuthUtils.generateCaptcha failed:`, error));
+        const captcha = AuthUtils.generateCaptcha();
         const captchaId = crypto.randomBytes(16).toString('hex');
         
         // 将验证码存储到Redis，5分钟过期
@@ -346,7 +346,7 @@ app.get('/api/captcha', captchaLimiter, async (req, res) => {
             }
         });
     } catch (error) {
-        console.error(`[login-api-server.js] 生成验证码失败:, error`);
+        console.error('生成验证码失败:', error);
         res.status(500).json({ success: false, message: '验证码生成失败' });
     }
 });
@@ -373,7 +373,7 @@ app.post('/api/login', loginLimiter, async (req, res) => {
         
         // 验证验证码
         const storedCaptcha = await redisClient.get(`captcha:${captchaId}`);
-        if (!storedCaptcha || storedCaptcha !== captchaText.toLowerCase().catch(error => console.error(`[login-api-server.js] captchaText.toLowerCase failed:`, error))) {
+        if (!storedCaptcha || storedCaptcha !== captchaText.toLowerCase()) {
             await AuthUtils.logLogin(null, username, req.ip, req.get('User-Agent'), 'password', 'failed', '验证码错误');
             return res.status(400).json({ success: false, message: '验证码错误' });
         }
@@ -390,7 +390,7 @@ app.post('/api/login', loginLimiter, async (req, res) => {
         
         if (users.length === 0) {
             await AuthUtils.logLogin(null, username, req.ip, req.get('User-Agent'), 'password', 'failed', '用户不存在或已被禁用');
-            connection.release().catch(error => console.error(`[login-api-server.js] connection.release failed:`, error));
+            connection.release();
             return res.status(401).json({ success: false, message: '用户名或密码错误' });
         }
         
@@ -400,7 +400,7 @@ app.post('/api/login', loginLimiter, async (req, res) => {
         if (user.locked_until && new Date(user.locked_until) > new Date()) {
             const remainingTime = Math.ceil((new Date(user.locked_until) - new Date()) / 60000);
             await AuthUtils.logLogin(user.id, username, req.ip, req.get('User-Agent'), 'password', 'failed', `账户被锁定，剩余${remainingTime}分钟`);
-            connection.release().catch(error => console.error(`[login-api-server.js] connection.release failed:`, error));
+            connection.release();
             return res.status(423).json({ 
                 success: false, 
                 message: `账户已被锁定，请${remainingTime}分钟后再试` 
@@ -426,7 +426,7 @@ app.post('/api/login', loginLimiter, async (req, res) => {
             const failureReason = newAttempts >= 5 ? '密码错误次数过多，账户已锁定' : '密码错误';
             await AuthUtils.logLogin(user.id, username, req.ip, req.get('User-Agent'), 'password', 'failed', failureReason);
             
-            connection.release().catch(error => console.error(`[login-api-server.js] connection.release failed:`, error));
+            connection.release();
             return res.status(401).json({ 
                 success: false, 
                 message: failureReason,
@@ -453,7 +453,7 @@ app.post('/api/login', loginLimiter, async (req, res) => {
         const sessionId = crypto.randomBytes(16).toString('hex');
         
         // 存储会话信息
-        const expiresAt = new Date(Date.now().catch(error => console.error(`[login-api-server.js] Date.now failed:`, error)) + (rememberMe ? 7 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000));
+        const expiresAt = new Date(Date.now() + (rememberMe ? 7 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000));
         await connection.execute(
             'INSERT INTO user_sessions (user_id, session_token, refresh_token, ip_address, user_agent, expires_at) VALUES (?, ?, ?, ?, ?, ?)',
             [user.id, accessToken, refreshToken, req.ip, req.get('User-Agent'), expiresAt]
@@ -462,7 +462,7 @@ app.post('/api/login', loginLimiter, async (req, res) => {
         // 记录成功登录日志
         await AuthUtils.logLogin(user.id, username, req.ip, req.get('User-Agent'), 'password', 'success', null, sessionId);
         
-        connection.release().catch(error => console.error(`[login-api-server.js] connection.release failed:`, error));
+        connection.release();
         
         res.json({
             success: true,
@@ -486,7 +486,7 @@ app.post('/api/login', loginLimiter, async (req, res) => {
         });
         
     } catch (error) {
-        console.error(`[login-api-server.js] 登录失败:, error`);
+        console.error('登录失败:', error);
         res.status(500).json({ success: false, message: '服务器内部错误' });
     }
 });
@@ -530,7 +530,7 @@ app.get('/api/oauth/:provider', async (req, res) => {
         });
         
     } catch (error) {
-        console.error(`[login-api-server.js] 获取第三方登录URL失败:, error`);
+        console.error('获取第三方登录URL失败:', error);
         res.status(500).json({ success: false, message: '服务器内部错误' });
     }
 });
@@ -637,7 +637,7 @@ app.post('/api/oauth/:provider/callback', async (req, res) => {
         const sessionId = crypto.randomBytes(16).toString('hex');
         
         // 存储会话信息
-        const expiresAt = new Date(Date.now().catch(error => console.error(`[login-api-server.js] Date.now failed:`, error)) + 24 * 60 * 60 * 1000);
+        const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
         await connection.execute(
             'INSERT INTO user_sessions (user_id, session_token, refresh_token, ip_address, user_agent, expires_at) VALUES (?, ?, ?, ?, ?, ?)',
             [user.id, accessToken, refreshToken, req.ip, req.get('User-Agent'), expiresAt]
@@ -646,7 +646,7 @@ app.post('/api/oauth/:provider/callback', async (req, res) => {
         // 记录登录日志
         await AuthUtils.logLogin(user.id, user.username, req.ip, req.get('User-Agent'), 'oauth', 'success', null, sessionId);
         
-        connection.release().catch(error => console.error(`[login-api-server.js] connection.release failed:`, error));
+        connection.release();
         
         res.json({
             success: true,
@@ -670,7 +670,7 @@ app.post('/api/oauth/:provider/callback', async (req, res) => {
         });
         
     } catch (error) {
-        console.error(`[login-api-server.js] 第三方登录回调失败:, error`);
+        console.error('第三方登录回调失败:', error);
         res.status(500).json({ success: false, message: '服务器内部错误' });
     }
 });
@@ -709,7 +709,7 @@ async function handleWechatCallback(code, config) {
             refresh_token: refresh_token
         };
     } catch (error) {
-        console.error(`[login-api-server.js] 微信登录失败:, error`);
+        console.error('微信登录失败:', error);
         return null;
     }
 }
@@ -761,7 +761,7 @@ async function handleQQCallback(code, config) {
             refresh_token: null
         };
     } catch (error) {
-        console.error(`[login-api-server.js] QQ登录失败:, error`);
+        console.error('QQ登录失败:', error);
         return null;
     }
 }
@@ -798,7 +798,7 @@ async function handleGoogleCallback(code, config) {
             refresh_token: refresh_token
         };
     } catch (error) {
-        console.error(`[login-api-server.js] Google登录失败:, error`);
+        console.error('Google登录失败:', error);
         return null;
     }
 }
@@ -811,11 +811,11 @@ app.post('/api/logout', authenticateToken, async (req, res) => {
             'DELETE FROM user_sessions WHERE session_token = ?',
             [req.headers.authorization.split(' ')[1]]
         );
-        connection.release().catch(error => console.error(`[login-api-server.js] connection.release failed:`, error));
+        connection.release();
         
         res.json({ success: true, message: '登出成功' });
     } catch (error) {
-        console.error(`[login-api-server.js] 登出失败:, error`);
+        console.error('登出失败:', error);
         res.status(500).json({ success: false, message: '服务器内部错误' });
     }
 });
@@ -836,7 +836,7 @@ app.post('/api/refresh', async (req, res) => {
         );
         
         if (sessions.length === 0) {
-            connection.release().catch(error => console.error(`[login-api-server.js] connection.release failed:`, error));
+            connection.release();
             return res.status(401).json({ success: false, message: '刷新令牌无效或已过期' });
         }
         
@@ -858,7 +858,7 @@ app.post('/api/refresh', async (req, res) => {
             [newAccessToken, session.id]
         );
         
-        connection.release().catch(error => console.error(`[login-api-server.js] connection.release failed:`, error));
+        connection.release();
         
         res.json({
             success: true,
@@ -869,7 +869,7 @@ app.post('/api/refresh', async (req, res) => {
         });
         
     } catch (error) {
-        console.error(`[login-api-server.js] 刷新令牌失败:, error`);
+        console.error('刷新令牌失败:', error);
         res.status(500).json({ success: false, message: '服务器内部错误' });
     }
 });
@@ -884,11 +884,11 @@ app.get('/api/user', authenticateToken, async (req, res) => {
         );
         
         if (users.length === 0) {
-            connection.release().catch(error => console.error(`[login-api-server.js] connection.release failed:`, error));
+            connection.release();
             return res.status(404).json({ success: false, message: '用户不存在' });
         }
         
-        connection.release().catch(error => console.error(`[login-api-server.js] connection.release failed:`, error));
+        connection.release();
         
         res.json({
             success: true,
@@ -896,14 +896,14 @@ app.get('/api/user', authenticateToken, async (req, res) => {
         });
         
     } catch (error) {
-        console.error(`[login-api-server.js] 获取用户信息失败:, error`);
+        console.error('获取用户信息失败:', error);
         res.status(500).json({ success: false, message: '服务器内部错误' });
     }
 });
 
 // 错误处理中间件
 app.use((error, req, res, next) => {
-    console.error(`[login-api-server.js] 服务器错误:, error`);
+    console.error('服务器错误:', error);
     res.status(500).json({ 
         success: false, 
         message: process.env.NODE_ENV === 'production' ? '服务器内部错误' : error.message 
@@ -931,7 +931,7 @@ async function startServer() {
             console.log(`API文档: http://localhost:${PORT}/api`);
         });
     } catch (error) {
-        console.error(`[login-api-server.js] 服务器启动失败:, error`);
+        console.error('服务器启动失败:', error);
         process.exit(1);
     }
 }

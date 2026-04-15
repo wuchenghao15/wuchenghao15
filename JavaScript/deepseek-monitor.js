@@ -3,15 +3,15 @@
 function fetchErrorHandler(response) {
     if (!response.ok) {
         if (response.status === 404) {
-            console.error(`[deepseek-monitor.js] 资源未找到 (404`)');
+            console.error('资源未找到 (404)');
             // 可以在这里添加重定向到404页面的逻辑
             // window.location.href = '/HTML/404.html';
         } else if (response.status === 403) {
-            console.error(`[deepseek-monitor.js] 访问被拒绝 (403`)');
+            console.error('访问被拒绝 (403)');
             // 可以在这里添加重定向到403页面的逻辑
             // window.location.href = '/HTML/403.html';
         } else {
-            console.error(`[deepseek-monitor.js] HTTP错误:  + response.status`);
+            console.error('HTTP错误: ' + response.status);
         };
 
         throw new Error('HTTP错误: ' + response.status);
@@ -41,16 +41,16 @@ class DeepSeekMonitor {
         this.isMonitoring = false;
         this.isVisible = !document.hidden;
         
-        this.init().catch(error => console.error(`[deepseek-monitor.js] this.init failed:`, error));
+        this.init();
     }
 
     /**
      * 初始化监控模块
      */
     init() {
-        this.setupEventListeners().catch(error => console.error(`[deepseek-monitor.js] this.setupEventListeners failed:`, error));
+        this.setupEventListeners();
         this.setupVisibilityHandlers();
-        this.setupKeyboardShortcuts().catch(error => console.error(`[deepseek-monitor.js] this.setupKeyboardShortcuts failed:`, error));
+        this.setupKeyboardShortcuts();
         this.setupTextareaAutoResize();
         
         console.log('DeepSeek监控模块初始化完成');
@@ -62,13 +62,13 @@ class DeepSeekMonitor {
     setupEventListeners() {
         // 页面加载完成后启动监控
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => this.start().catch(error => console.error(`[deepseek-monitor.js] this.start failed:`, error)));
+            document.addEventListener('DOMContentLoaded', () => this.start());
         } else {
-            this.start().catch(error => console.error(`[deepseek-monitor.js] this.start failed:`, error));
+            this.start();
         }
 
         // 页面卸载时清理资源
-        window.addEventListener('beforeunload', () => this.cleanup().catch(error => console.error(`[deepseek-monitor.js] this.cleanup failed:`, error)));
+        window.addEventListener('beforeunload', () => this.cleanup());
     }
 
     /**
@@ -78,10 +78,10 @@ class DeepSeekMonitor {
         document.addEventListener('visibilitychange', () => {
             this.isVisible = !document.hidden;
             if (this.isVisible) {
-                this.startMonitoring().catch(error => console.error(`[deepseek-monitor.js] this.startMonitoring failed:`, error));
+                this.startMonitoring();
                 this.addLog('info', '监控', '页面重新可见，恢复监控');
             } else {
-                this.stopMonitoring().catch(error => console.error(`[deepseek-monitor.js] this.stopMonitoring failed:`, error));
+                this.stopMonitoring();
                 this.addLog('info', '监控', '页面隐藏，暂停监控');
             }
         });
@@ -108,12 +108,12 @@ class DeepSeekMonitor {
             '3': () => this.switchTab('analyze'),
             '4': () => this.switchTab('translate'),
             '5': () => this.switchTab('summarize'),
-            'Enter': () => this.executeActiveTabFunction().catch(error => console.error(`[deepseek-monitor.js] this.executeActiveTabFunction failed:`, error))
+            'Enter': () => this.executeActiveTabFunction()
         };
 
         const handler = keyHandlers[e.key];
         if (handler) {
-            e.preventDefault().catch(error => console.error(`[deepseek-monitor.js] e.preventDefault failed:`, error));
+            e.preventDefault();
             handler();
         }
     }
@@ -151,9 +151,9 @@ class DeepSeekMonitor {
      * 启动监控
      */
     start() {
-        this.initEventListeners().catch(error => console.error(`[deepseek-monitor.js] this.initEventListeners failed:`, error));
+        this.initEventListeners();
         this.startAutoStatusCheck();
-        this.startMonitoring().catch(error => console.error(`[deepseek-monitor.js] this.startMonitoring failed:`, error));
+        this.startMonitoring();
         this.checkServiceStatus();
         this.addLog('info', '系统', '页面初始化完成');
     }
@@ -166,7 +166,7 @@ class DeepSeekMonitor {
         
         this.isMonitoring = true;
         this.monitoringInterval = setInterval(() => {
-            this.updateMonitoring().catch(error => console.error(`[deepseek-monitor.js] this.updateMonitoring failed:`, error));
+            this.updateMonitoring();
         }, 2000);
         
         this.addLog('info', '监控', '实时监控已启动');
@@ -193,11 +193,11 @@ class DeepSeekMonitor {
     async updateMonitoring() {
         try {
             await Promise.all([
-                this.updateSystemInfo().catch(error => console.error(`[deepseek-monitor.js] this.updateSystemInfo failed:`, error)),
+                this.updateSystemInfo(),
                 this.updateMetrics()
             ]);
         } catch (error) {
-            console.error(`[deepseek-monitor.js] 监控更新失败:, error`);
+            console.error('监控更新失败:', error);
             this.performanceMetrics.errorCount++;
         }
     }
@@ -207,9 +207,9 @@ class DeepSeekMonitor {
      */
     async updateSystemInfo() {
         try {
-            const startTime = performance.now().catch(error => console.error(`[deepseek-monitor.js] performance.now failed:`, error));
+            const startTime = performance.now();
             const response = await this.fetchWithCache(`${this.apiBase}/system-info`, 5000);
-            const responseTime = performance.now().catch(error => console.error(`[deepseek-monitor.js] performance.now failed:`, error)) - startTime;
+            const responseTime = performance.now() - startTime;
             
             this.updatePerformanceMetrics(responseTime);
             
@@ -217,8 +217,8 @@ class DeepSeekMonitor {
                 this.updateSystemDisplay(response.data);
             }
         } catch (error) {
-            console.error(`[deepseek-monitor.js] 获取系统信息失败:, error`);
-            this.updateFallbackSystemInfo().catch(error => console.error(`[deepseek-monitor.js] this.updateFallbackSystemInfo failed:`, error));
+            console.error('获取系统信息失败:', error);
+            this.updateFallbackSystemInfo();
         }
     }
 
@@ -229,7 +229,7 @@ class DeepSeekMonitor {
         const cacheKey = url;
         const cached = this.cache.get(cacheKey);
         
-        if (cached && (Date.now().catch(error => console.error(`[deepseek-monitor.js] Date.now failed:`, error)) - cached.timestamp < cacheTime)) {
+        if (cached && (Date.now() - cached.timestamp < cacheTime)) {
             return cached.data;
         }
 
@@ -238,7 +238,7 @@ class DeepSeekMonitor {
         
         this.cache.set(cacheKey, {
             data: data,
-            timestamp: Date.now().catch(error => console.error(`[deepseek-monitor.js] Date.now failed:`, error))
+            timestamp: Date.now()
         });
 
         return data;
@@ -253,7 +253,7 @@ class DeepSeekMonitor {
         
         // 只保留最近50次的响应时间
         if (this.performanceMetrics.responseTimes.length > 50) {
-            this.performanceMetrics.responseTimes.shift().catch(error => console.error(`[deepseek-monitor.js] responseTimes.shift failed:`, error));
+            this.performanceMetrics.responseTimes.shift();
         }
         
         // 计算平均响应时间
@@ -280,7 +280,7 @@ class DeepSeekMonitor {
         }
 
         // 更新CPU使用（模拟值）
-        const cpuUsage = Math.round(Math.random().catch(error => console.error(`[deepseek-monitor.js] Math.random failed:`, error)) * 20 + 5);
+        const cpuUsage = Math.round(Math.random() * 20 + 5);
         this.updateElementWithAnimation('cpuUsage', cpuUsage);
         this.updateTrend('cpuUsage', cpuUsage, 'cpu');
     }
@@ -372,7 +372,7 @@ class DeepSeekMonitor {
                 console.log('性能指标:', response.metrics);
             }
         } catch (error) {
-            console.error(`[deepseek-monitor.js] 获取性能指标失败:, error`);
+            console.error('获取性能指标失败:', error);
             this.performanceMetrics.errorCount++;
         }
     }
@@ -382,7 +382,7 @@ class DeepSeekMonitor {
      */
     updateFallbackSystemInfo() {
         // 使用模拟数据
-        const memoryUsage = Math.round(Math.random().catch(error => console.error(`[deepseek-monitor.js] Math.random failed:`, error)) * 30 + 40);
+        const memoryUsage = Math.round(Math.random() * 30 + 40);
         const cpuUsage = Math.round(Math.random() * 20 + 5);
         
         this.updateElementWithAnimation('memoryUsage', `${memoryUsage}%`);
@@ -432,7 +432,7 @@ class DeepSeekMonitor {
         const logEntries = logsContainer.querySelectorAll('.log-entry');
         if (logEntries.length > maxEntries) {
             const excessEntries = Array.from(logEntries).slice(maxEntries);
-            excessEntries.forEach(entry => entry.remove().catch(error => console.error(`[deepseek-monitor.js] entry.remove failed:`, error)));
+            excessEntries.forEach(entry => entry.remove());
         }
     }
 
@@ -447,7 +447,7 @@ class DeepSeekMonitor {
                 this.displayLogs(response.logs);
             }
         } catch (error) {
-            console.error(`[deepseek-monitor.js] 获取日志失败:, error`);
+            console.error('获取日志失败:', error);
             this.performanceMetrics.errorCount++;
         }
     }
@@ -473,7 +473,7 @@ class DeepSeekMonitor {
     startAutoStatusCheck() {
         setInterval(() => {
             if (this.isVisible) {
-                this.checkServiceStatus().catch(error => console.error(`[deepseek-monitor.js] this.checkServiceStatus failed:`, error));
+                this.checkServiceStatus();
             }
         }, 30000);
     }
@@ -488,7 +488,7 @@ class DeepSeekMonitor {
                 console.log('服务状态正常');
             }
         } catch (error) {
-            console.error(`[deepseek-monitor.js] 检查服务状态失败:, error`);
+            console.error('检查服务状态失败:', error);
         }
     }
 
@@ -545,7 +545,7 @@ class DeepSeekMonitor {
      * 清理资源
      */
     cleanup() {
-        this.stopMonitoring().catch(error => console.error(`[deepseek-monitor.js] this.stopMonitoring failed:`, error));
+        this.stopMonitoring();
         this.cache.clear();
         console.log('DeepSeek监控模块资源已清理');
     }

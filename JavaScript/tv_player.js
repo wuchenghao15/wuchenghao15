@@ -1,4 +1,3 @@
-// VERSION: 20251106.9eb83df6e95ba35e50
 // 电视直播页面的 JavaScript 控制代码
 
 // DOM 元素缓存
@@ -314,13 +313,13 @@ function loadVideoSource(channel) {
     if (loadingContainer) {
         loadingContainer.style.display = 'flex';
         loadingContainer.innerHTML = `
-            <div class="spinner"div>
+            <div class="spinner"></div>
             <div class="loader-text">正在准备视频源...</div>
         `;
     }
     
     // 记录开始加载时间
-    sourceLoadStartTime = Date.now().catch(error => console.error(`[tv_player.js] Date.now failed:`, error));
+    sourceLoadStartTime = Date.now();
     
     // 尝试加载当前索引的源
     attemptLoadSource(channel, channel.urls[currentAttemptIndex], currentAttemptIndex);
@@ -332,7 +331,7 @@ let hlsInstance = null;
 function cleanupHLSSources() {
     // 如果存在HLS实例，销毁它
     if (hlsInstance) {
-        hlsInstance.destroy().catch(error => console.error(`[tv_player.js] hlsInstance.destroy failed:`, error));
+        hlsInstance.destroy();
         hlsInstance = null;
     }
     
@@ -352,9 +351,9 @@ function attemptLoadSource(channel, sourceUrl, attempt) {
     cleanupHLSSources();
     
     // 根据视频格式设置合适的加载方式
-    if (sourceUrl.toLowerCase().catch(error => console.error(`[tv_player.js] sourceUrl.toLowerCase failed:`, error)).endsWith('.m3u8')) {
+    if (sourceUrl.toLowerCase().endsWith('.m3u8')) {
         // 对于HLS格式(m3u8)，使用HLS.js库处理
-        if (window.Hls && Hls.isSupported().catch(error => console.error(`[tv_player.js] Hls.isSupported failed:`, error))) {
+        if (window.Hls && Hls.isSupported()) {
             console.log('HLS.js支持可用，使用HLS.js播放m3u8流媒体');
             
             // 创建HLS实例配置
@@ -377,7 +376,7 @@ function attemptLoadSource(channel, sourceUrl, attempt) {
             hlsInstance.on(Hls.Events.MANIFEST_LOADING, function() {
                 console.log('正在加载HLS清单...');
                 loadingContainer.innerHTML = `
-                    <div class="spinner"div>
+                    <div class="spinner"></div>
                     <div class="loader-text">正在加载流媒体清单...</div>
                 `;
             });
@@ -385,7 +384,7 @@ function attemptLoadSource(channel, sourceUrl, attempt) {
             hlsInstance.on(Hls.Events.MANIFEST_LOADED, function(event, data) {
                 console.log('HLS清单已加载，找到', data.levels.length, '个质量级别');
                 loadingContainer.innerHTML = `
-                    <div class="spinner"div>
+                    <div class="spinner"></div>
                     <div class="loader-text">正在准备${data.levels.length}个质量级别的流媒体...</div>
                 `;
             });
@@ -393,7 +392,7 @@ function attemptLoadSource(channel, sourceUrl, attempt) {
             hlsInstance.on(Hls.Events.MANIFEST_PARSED, function(event, data) {
                 console.log('HLS清单解析成功，准备播放');
                 loadingContainer.innerHTML = `
-                    <div class="spinner"div>
+                    <div class="spinner"></div>
                     <div class="loader-text">正在缓冲视频数据...</div>
                 `;
             });
@@ -401,14 +400,14 @@ function attemptLoadSource(channel, sourceUrl, attempt) {
             hlsInstance.on(Hls.Events.FRAG_BUFFERED, function() {
                 if (loadingContainer.style.display === 'flex') {
                     loadingContainer.innerHTML = `
-                        <div class="spinner"div>
+                        <div class="spinner"></div>
                         <div class="loader-text">视频加载中，即将开始播放...</div>
                     `;
                 }
             });
             
             hlsInstance.on(Hls.Events.ERROR, function(event, data) {
-                console.error(`[tv_player.js] HLS错误:, data`);
+                console.error('HLS错误:', data);
                 
                 // 非致命错误处理
                 if (!data.fatal) {
@@ -418,7 +417,7 @@ function attemptLoadSource(channel, sourceUrl, attempt) {
                             // 确保容器存在并更新加载状态（带安全检查）
                             if (loadingContainer) {
                                 loadingContainer.innerHTML = `
-                                    <div class="spinner"div>
+                                    <div class="spinner"></div>
                                     <div class="loader-text">网络不稳定，正在重试...</div>
                                 `;
                             }
@@ -434,7 +433,7 @@ function attemptLoadSource(channel, sourceUrl, attempt) {
                 }
                 
                 // 致命错误处理
-                console.error(`[tv_player.js] 致命HLS错误类型:, data.type, 详情:, data.details`);
+                console.error('致命HLS错误类型:', data.type, '详情:', data.details);
                 
                 // 尝试回退到备用源
                 console.log('尝试回退到备用视频源');
@@ -446,7 +445,7 @@ function attemptLoadSource(channel, sourceUrl, attempt) {
                 hlsInstance.loadSource(sourceUrl);
                 hlsInstance.attachMedia(videoPlayer);
             } catch (err) {
-                console.error(`[tv_player.js] HLS实例初始化错误:, err`);
+                console.error('HLS实例初始化错误:', err);
                 fallbackToNextSource(channel, attempt);
             }
         } else if (videoPlayer.canPlayType('application/vnd.apple.mpegurl')) {
@@ -456,7 +455,7 @@ function attemptLoadSource(channel, sourceUrl, attempt) {
             source.src = sourceUrl;
             source.type = 'application/x-mpegURL';
             videoPlayer.appendChild(source);
-            videoPlayer.load().catch(error => console.error(`[tv_player.js] videoPlayer.load failed:`, error));
+            videoPlayer.load();
         } else {
             // 既不支持HLS.js也不支持原生HLS，尝试回退
             console.warn('不支持HLS格式，尝试回退到备用源');
@@ -466,12 +465,12 @@ function attemptLoadSource(channel, sourceUrl, attempt) {
         // 对于普通视频格式，直接设置src
         console.log('使用直接方式播放视频');
         videoPlayer.src = sourceUrl;
-        videoPlayer.load().catch(error => console.error(`[tv_player.js] videoPlayer.load failed:`, error));
+        videoPlayer.load();
         
         // 更新加载状态文本（带安全检查）
         if (loadingContainer) {
             loadingContainer.innerHTML = `
-                <div class="spinner"div>
+                <div class="spinner"></div>
                 <div class="loader-text">正在加载视频数据...</div>
             `;
         }
@@ -521,7 +520,7 @@ function handleVideoLoaded() {
 
 // 处理视频加载错误尝试
 function handleVideoErrorAttempt() {
-    console.error(`[tv_player.js] 视频加载失败，尝试回退到备用源`);
+    console.error('视频加载失败，尝试回退到备用源');
     
     // 清除超时定时器
     if (loadTimeout) {
@@ -549,7 +548,7 @@ function fallbackToNextSource(channel, currentAttempt) {
         // 更新加载状态（带安全检查）
         if (loadingContainer) {
             loadingContainer.innerHTML = `
-                <div class="spinner"div>
+                <div class="spinner"></div>
                 <div class="loader-text">当前源不可用，正在尝试备用源 (${currentAttemptIndex + 1}/${channel.urls.length})...</div>
             `;
         }
@@ -578,7 +577,7 @@ function useGlobalFallbackSources() {
     // 尝试第一个全局备用源
     console.log(`尝试使用全局备用源: ${globalFallbacks[0]}`);
     loadingContainer.innerHTML = `
-        <div class="spinner"div>
+        <div class="spinner"></div>
         <div class="loader-text">频道源暂时不可用，正在切换到备用视频...</div>
     `;
     
@@ -612,7 +611,7 @@ function setupVideoEventListeners() {
         console.log('视频正在缓冲');
         loadingContainer.style.display = 'flex';
         loadingContainer.innerHTML = `
-            <div class="spinner"div>
+            <div class="spinner"></div>
             <div class="loader-text">视频正在缓冲中...</div>
         `;
     });
@@ -627,7 +626,7 @@ function setupVideoEventListeners() {
         console.warn('网络连接不稳定');
         loadingContainer.style.display = 'flex';
         loadingContainer.innerHTML = `
-            <div class="spinner"div>
+            <div class="spinner"></div>
             <div class="loader-text">网络连接不稳定，正在恢复...</div>
         `;
     });
@@ -655,11 +654,11 @@ function setupVideoEventListeners() {
 function togglePlay() {
     if (videoPlayer.paused) {
         videoPlayer.play().catch(error => {
-            console.error(`[tv_player.js] 播放失败:, error`);
+            console.error('播放失败:', error);
             showError('播放失败，请检查网络连接或尝试其他频道');
         });
     } else {
-        videoPlayer.pause().catch(error => console.error(`[tv_player.js] videoPlayer.pause failed:`, error));
+        videoPlayer.pause();
     }
 }
 
@@ -684,28 +683,28 @@ function toggleFullscreen() {
         // 进入全屏
         if (videoPlayer.requestFullscreen) {
             videoPlayer.requestFullscreen().catch(error => {
-                console.error(`[tv_player.js] 进入全屏失败:, error`);
+                console.error('进入全屏失败:', error);
             });
         } else if (videoPlayer.webkitRequestFullscreen) { // Safari
-            videoPlayer.webkitRequestFullscreen().catch(error => console.error(`[tv_player.js] videoPlayer.webkitRequestFullscreen failed:`, error));
+            videoPlayer.webkitRequestFullscreen();
         } else if (videoPlayer.msRequestFullscreen) { // IE11
-            videoPlayer.msRequestFullscreen().catch(error => console.error(`[tv_player.js] videoPlayer.msRequestFullscreen failed:`, error));
+            videoPlayer.msRequestFullscreen();
         }
     } else {
         // 退出全屏
         if (document.exitFullscreen) {
-            document.exitFullscreen().catch(error => console.error(`[tv_player.js] document.exitFullscreen failed:`, error));
+            document.exitFullscreen();
         } else if (document.webkitExitFullscreen) { // Safari
-            document.webkitExitFullscreen().catch(error => console.error(`[tv_player.js] document.webkitExitFullscreen failed:`, error));
+            document.webkitExitFullscreen();
         } else if (document.msExitFullscreen) { // IE11
-            document.msExitFullscreen().catch(error => console.error(`[tv_player.js] document.msExitFullscreen failed:`, error));
+            document.msExitFullscreen();
         }
     }
 }
 
 // 显示错误消息
 function showError(message) {
-    console.error(`[tv_player.js] 显示错误:, message`);
+    console.error('显示错误:', message);
     errorContainer.textContent = message;
     errorContainer.style.display = 'block';
     loadingContainer.style.display = 'none';

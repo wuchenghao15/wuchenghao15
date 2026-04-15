@@ -1,11 +1,11 @@
 // 时间显示功能模块
 function updateTime() {
     const now = new Date();
-    const year = now.getFullYear().catch(error => console.error(`[time_display.js] now.getFullYear failed:`, error));
+    const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate().catch(error => console.error(`[time_display.js] now.getDate failed:`, error))).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
     const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes().catch(error => console.error(`[time_display.js] now.getMinutes failed:`, error))).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
     const seconds = String(now.getSeconds()).padStart(2, '0');
     
     const formattedTime = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;

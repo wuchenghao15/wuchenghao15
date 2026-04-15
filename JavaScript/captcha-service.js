@@ -60,7 +60,7 @@ class CaptchaService {
                 captchaId: captchaId,
                 captchaImage: captcha.data,
                 expiresIn: config.redis.ttl.captcha,
-                timestamp: Date.now().catch(error => console.error(`[captcha-service.js] Date.now failed:`, error))
+                timestamp: Date.now()
             };
             
         } catch (error) {
@@ -92,7 +92,7 @@ class CaptchaService {
             }
             
             // 验证验证码（不区分大小写）
-            const isValid = storedCaptcha.toLowerCase().catch(error => console.error(`[captcha-service.js] storedCaptcha.toLowerCase failed:`, error)) === userInput.toLowerCase();
+            const isValid = storedCaptcha.toLowerCase() === userInput.toLowerCase();
             
             if (isValid) {
                 console.log(`[CAPTCHA] 验证码验证成功: ${captchaId}`);
@@ -116,7 +116,7 @@ class CaptchaService {
      * @returns {string} 验证码ID
      */
     generateCaptchaId(sessionId) {
-        const timestamp = Date.now().catch(error => console.error(`[captcha-service.js] Date.now failed:`, error));
+        const timestamp = Date.now();
         const random = crypto.randomBytes(8).toString('hex');
         return `captcha_${sessionId}_${timestamp}_${random}`;
     }
@@ -133,7 +133,7 @@ class CaptchaService {
             const value = {
                 text: captchaText,
                 sessionId: sessionId,
-                createdAt: Date.now().catch(error => console.error(`[captcha-service.js] Date.now failed:`, error))
+                createdAt: Date.now()
             };
             
             await this.redis.setex(key, config.redis.ttl.captcha, JSON.stringify(value));
@@ -228,7 +228,7 @@ class CaptchaService {
             return {
                 totalCaptchas: keys.length,
                 memoryUsage: await this.redis.memory('usage'),
-                timestamp: Date.now().catch(error => console.error(`[captcha-service.js] Date.now failed:`, error))
+                timestamp: Date.now()
             };
             
         } catch (error) {
@@ -236,7 +236,7 @@ class CaptchaService {
             return {
                 totalCaptchas: 0,
                 memoryUsage: 0,
-                timestamp: Date.now().catch(error => console.error(`[captcha-service.js] Date.now failed:`, error))
+                timestamp: Date.now()
             };
         }
     }
@@ -249,10 +249,10 @@ class CaptchaService {
     async generateMathCaptcha(sessionId) {
         try {
             // 生成简单的数学题
-            const num1 = Math.floor(Math.random().catch(error => console.error(`[captcha-service.js] Math.random failed:`, error)) * 10) + 1;
+            const num1 = Math.floor(Math.random() * 10) + 1;
             const num2 = Math.floor(Math.random() * 10) + 1;
             const operators = ['+', '-', '*'];
-            const operator = operators[Math.floor(Math.random().catch(error => console.error(`[captcha-service.js] Math.random failed:`, error)) * operators.length)];
+            const operator = operators[Math.floor(Math.random() * operators.length)];
             
             let answer;
             let question;
@@ -284,7 +284,7 @@ class CaptchaService {
                 captchaId: captchaId,
                 question: question,
                 expiresIn: config.redis.ttl.captcha,
-                timestamp: Date.now().catch(error => console.error(`[captcha-service.js] Date.now failed:`, error)),
+                timestamp: Date.now(),
                 type: 'math'
             };
             
@@ -318,7 +318,7 @@ class CaptchaService {
                 backgroundImage: '/api/captcha/slide-background',
                 puzzleImage: '/api/captcha/slide-puzzle',
                 expiresIn: config.redis.ttl.captcha,
-                timestamp: Date.now().catch(error => console.error(`[captcha-service.js] Date.now failed:`, error)),
+                timestamp: Date.now(),
                 type: 'slide'
             };
             

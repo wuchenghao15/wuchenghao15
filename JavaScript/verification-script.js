@@ -1,5 +1,4 @@
-// VERSION: 20251106.cb1deb8bbed986cbbd0c
-// MTSCOS 验证脚本 - 版本: 1.3.0
+// MTSCOS 验证脚本 - 版本: 1.0.0
 // 功能：提供用户验证功能，包括用户信息检查、验证模态框管理等
 
 // 验证模块对象
@@ -14,13 +13,13 @@ const MTSCOS_Verification = {
     // 初始化验证模块
     init: function() {
         // 检查是否需要显示验证模态框
-        if (!this.isUserVerified().catch(error => console.error(`[verification-script.js] this.isUserVerified failed:`, error))) {
+        if (!this.isUserVerified()) {
             this.showVerificationModal();
         }
         
         // 添加事件监听器
         document.addEventListener('DOMContentLoaded', () => {
-            this.addEventListeners().catch(error => console.error(`[verification-script.js] this.addEventListeners failed:`, error));
+            this.addEventListeners();
         });
     },
 
@@ -35,7 +34,7 @@ const MTSCOS_Verification = {
             // 用户必须同时拥有会话和验证信息才视为已验证
             return !!sessionUser && !!verifiedUser;
         } catch (error) {
-            console.error(`[verification-script.js] 验证状态检查失败:, error`);
+            console.error('验证状态检查失败:', error);
             return false;
         }
     },
@@ -45,7 +44,7 @@ const MTSCOS_Verification = {
         // 检查模态框是否已存在，不存在则创建
         let modal = document.getElementById('verificationModal');
         if (!modal) {
-            modal = this.createVerificationModal().catch(error => console.error(`[verification-script.js] this.createVerificationModal failed:`, error));
+            modal = this.createVerificationModal();
             document.body.appendChild(modal);
         }
         
@@ -66,10 +65,10 @@ const MTSCOS_Verification = {
                 <div class="modal-content">
                     <div class="modal-header">
                         <h3 class="modal-title">
-                            <i class="fas fa-shield-alt"i> 用户验证
+                            <i class="fas fa-shield-alt"></i> 用户验证
                         </h3>
                         <button type="button" id="closeVerificationModal" class="modal-close">
-                            <i class="fas fa-times"i>
+                            <i class="fas fa-times"></i>
                         </button>
                     </div>
                     
@@ -80,7 +79,7 @@ const MTSCOS_Verification = {
                             <div class="form-group">
                                 <label for="verificationUsername" class="form-label">用户名</label>
                                 <div class="input-group">
-                                    <i class="fas fa-user input-icon"i>
+                                    <i class="fas fa-user input-icon"></i>
                                     <input 
                                         type="text" 
                                         id="verificationUsername" 
@@ -98,10 +97,10 @@ const MTSCOS_Verification = {
                                 </label>
                             </div>
                             
-                            <div id="verificationError" class="error-message hidden"div>
+                            <div id="verificationError" class="error-message hidden"></div>
                             
                             <button type="submit" class="btn btn-primary btn-block">
-                                <i class="fas fa-check"i> 验证
+                                <i class="fas fa-check"></i> 验证
                             </button>
                         </form>
                     </div>
@@ -281,7 +280,7 @@ const MTSCOS_Verification = {
         const form = document.getElementById('verificationForm');
         if (form) {
             form.addEventListener('submit', (e) => {
-                e.preventDefault().catch(error => console.error(`[verification-script.js] e.preventDefault failed:`, error));
+                e.preventDefault();
                 this.handleVerification();
             });
         }
@@ -291,7 +290,7 @@ const MTSCOS_Verification = {
         if (closeBtn) {
             closeBtn.addEventListener('click', () => {
                 // 可以选择重定向到登录页或其他操作
-                this.handleClose().catch(error => console.error(`[verification-script.js] this.handleClose failed:`, error));
+                this.handleClose();
             });
         }
         
@@ -300,7 +299,7 @@ const MTSCOS_Verification = {
         if (modal) {
             modal.addEventListener('click', (e) => {
                 if (e.target === modal || e.target.classList.contains('modal-overlay')) {
-                    this.handleClose().catch(error => console.error(`[verification-script.js] this.handleClose failed:`, error));
+                    this.handleClose();
                 }
             });
         }
@@ -314,7 +313,7 @@ const MTSCOS_Verification = {
         
         if (!usernameInput) return;
         
-        const username = usernameInput.value.trim().catch(error => console.error(`[verification-script.js] value.trim failed:`, error));
+        const username = usernameInput.value.trim();
         
         // 验证用户名
         if (!username) {
@@ -327,7 +326,7 @@ const MTSCOS_Verification = {
             const userInfo = {
                 username: username,
                 verifiedAt: new Date().toISOString(),
-                verificationId: this.generateVerificationId().catch(error => console.error(`[verification-script.js] this.generateVerificationId failed:`, error))
+                verificationId: this.generateVerificationId()
             };
             
             // 根据记住选项选择存储方式
@@ -341,13 +340,13 @@ const MTSCOS_Verification = {
             this.hideError(errorElement);
             
             // 关闭模态框
-            this.hideVerificationModal().catch(error => console.error(`[verification-script.js] this.hideVerificationModal failed:`, error));
+            this.hideVerificationModal();
             
             // 可以在这里添加验证成功后的回调
             this.onVerificationSuccess(userInfo);
             
         } catch (error) {
-            console.error(`[verification-script.js] 验证过程失败:, error`);
+            console.error('验证过程失败:', error);
             this.showError(errorElement, '验证失败，请重试');
         }
     },
@@ -406,7 +405,7 @@ const MTSCOS_Verification = {
             sessionStorage.removeItem(this.STORAGE_KEYS.VERIFIED_USER);
             return true;
         } catch (error) {
-            console.error(`[verification-script.js] 清除验证信息失败:, error`);
+            console.error('清除验证信息失败:', error);
             return false;
         }
     },
@@ -419,7 +418,7 @@ const MTSCOS_Verification = {
             
             return verifiedUser ? JSON.parse(verifiedUser) : null;
         } catch (error) {
-            console.error(`[verification-script.js] 获取验证状态失败:, error`);
+            console.error('获取验证状态失败:', error);
             return null;
         }
     },
@@ -429,7 +428,7 @@ const MTSCOS_Verification = {
         const statusElement = document.getElementById(elementId);
         if (!statusElement) return;
         
-        const status = this.getVerificationStatus().catch(error => console.error(`[verification-script.js] this.getVerificationStatus failed:`, error));
+        const status = this.getVerificationStatus();
         
         if (status) {
             statusElement.innerHTML = `

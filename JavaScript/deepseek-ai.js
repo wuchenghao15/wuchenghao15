@@ -1,12 +1,12 @@
 const axios = require('axios');
+const fs = require('fs').promises;
 const path = require('path');
 const winston = require('winston');
 const LocalDeepSeekModel = require('./local-deepseek-model');
-const configManager = require('./config-manager');
 
 class DeepSeekAI {
-    constructor(configPathOrConfig = './Configs/deepseek_config.json') {
-        this.configPathOrConfig = configPathOrConfig;
+    constructor(configPath = './Configs/deepseek_config.json') {
+        this.configPath = configPath;
         this.config = null;
         this.cache = new Map();
         this.localModel = null;
@@ -21,35 +21,12 @@ class DeepSeekAI {
                 new winston.transports.Console()
             ]
         });
-        this.init().catch(error => console.error(`[deepseek-ai.js] this.init failed:`, error));
+        this.init();
     }
 
     async init() {
         try {
-            // 默认配置
-            const defaultConfig = {
-                deepseek: {
-                    apiKey: '',
-                    baseUrl: 'https://api.deepseek.com',
-                    model: 'deepseek-coder',
-                    maxTokens: 1024,
-                    temperature: 0.3,
-                    timeout: 30000
-                },
-                cache: {
-                    enabled: true,
-                    maxSize: 100,
-                    ttl: 3600
-                },
-                localModel: {
-                    enabled: false,
-                    modelPath: './Models/deepseek-local',
-                    maxTokens: 512
-                }
-            };
-
-            // 使用配置管理器加载配置
-            this.config = await configManager.loadConfig(this.configPathOrConfig, defaultConfig);
+            await this.loadConfig();
             
             // 初始化本地模型（如果启用）
             if (this.config.localModel?.enabled) {
@@ -60,6 +37,21 @@ class DeepSeekAI {
             this.logger.info('DeepSeek AI initialized successfully');
         } catch (error) {
             this.logger.error('Failed to initialize DeepSeek AI:', error);
+            throw error;
+        }
+    }
+
+    async loadConfig() {
+        try {
+            const configData = await fs.readFile(this.configPath, 'utf8');
+            this.config = JSON.parse(configData);
+            
+            // 替换环境变量
+            if (this.config.deepseek.apiKey.includes('${DEEPSEEK_API_KEY}')) {
+                this.config.deepseek.apiKey = process.env.DEEPSEEK_API_KEY || '';
+            }
+        } catch (error) {
+            this.logger.error('Failed to load config:', error);
             throw error;
         }
     }
@@ -232,7 +224,15 @@ console.log(calculator(10, 5, '/'));  // 2`;
 当前运行在演示模式下，所有功能都可以正常测试，但响应为模拟数据。`;
     }
 
+    async generateCode(description, language = 'javascript') {
+        const prompt = `Generate ${language} code for the following requirement:\n\n${description}\n\nPlease provide clean, well-commented code.`;
+        return this.callAPI(prompt, { temperature: 0.3 });
+    }
 
+    async analyzeText(text) {
+        const prompt = `Analyze the following text and provide insights:\n\n${text}\n\nInclude sentiment analysis, key themes, and recommendations.`;
+        return this.callAPI(prompt);
+    }
 
     async translateText(text, targetLanguage) {
         const prompt = `Translate the following text to ${targetLanguage}:\n\n${text}`;
@@ -288,9 +288,112 @@ console.log(calculator(10, 5, '/'));  // 2`;
         return { ...this.config };
     }
 
+    async updateConfig(newConfig) {
+        try {
+            await fs.writeFile(this.configPath, JSON.stringify(newConfig, null, 2));
+            await this.loadConfig();
+            this.logger.info('Configuration updated successfully');
+        } catch (error) {
+            this.logger.error('Failed to update config:', error);
+            throw error;
+        }
+    }
 
+    clearCache() {
+        this.cache.clear();
+        this.logger.info('Cache cleared');
+    }
 
+    getCacheStats() {
+        return {
+            size: this.cache.size,
+            maxSize: this.config.cache.maxSize,
+            enabled: this.config.cache.enabled
+        };
+    }
 
+    /**
+     * 智能文本补全
+     */
+    async completeText(text, context = '') {
+        const prompt = `Complete the following text intelligently. Context: ${context}\n\nText to complete: ${text}\n\nCompletion:`;
+        return this.callAPI(prompt, { temperature: 0.4, maxTokens: 150 });
+    }
+
+    /**
+     * 获取智能建议
+     */
+    async getSuggestions(userContext, currentTab) {
+        const prompt = `Based on the user context and current tab, provide intelligent suggestions:
+        
+User Context: ${userContext}
+Current Tab: ${currentTab}
+
+Provide a helpful suggestion and action in JSON format:
+{
+    "suggestion": "text suggestion",
+    "action": {
+        "type": "switch_tab|set_prompt|optimize_ui",
+        "tab": "target_tab",
+        "prompt": "suggested_prompt"
+    }
+}`;
+        
+        try {
+            const response = await this.callAPI(prompt, { temperature: 0.7 });
+            return JSON.parse(response);
+        } catch (error) {
+            // 如果解析失败，返回默认建议
+            return this.getDefaultSuggestion(currentTab);
+        }
+    }
+
+    /**
+     * 获取默认建议
+     */
+    getDefaultSuggestion(currentTab) {
+        const suggestions = {
+            chat: {
+                suggestion: "💡 尝试询问AI关于编程、学习或创意的问题",
+                action: {
+                    type: 'set_prompt',
+                    tab: 'chat',
+                    prompt: '请帮我解释一下JavaScript的异步编程概念'
+                }
+            },
+            code: {
+                suggestion: "🚀 试试让AI生成一个实用的代码片段",
+                action: {
+                    type: 'set_prompt',
+                    tab: 'code',
+                    prompt: '创建一个简单的待办事项管理器'
+                }
+            },
+            analyze: {
+                suggestion: "📊 粘贴一些文本让AI分析情感和关键信息",
+                action: {
+                    type: 'switch_tab',
+                    tab: 'analyze'
+                }
+            },
+            translate: {
+                suggestion: "🌍 尝试将文本翻译成不同的语言",
+                action: {
+                    type: 'switch_tab',
+                    tab: 'translate'
+                }
+            },
+            summarize: {
+                suggestion: "📝 让AI帮您快速总结长篇文章",
+                action: {
+                    type: 'switch_tab',
+                    tab: 'summarize'
+                }
+            }
+        };
+
+        return suggestions[currentTab] || suggestions.chat;
+    }
 
     /**
      * 批量处理任务
@@ -338,13 +441,26 @@ console.log(calculator(10, 5, '/'));  // 2`;
         return results;
     }
 
-
+    /**
+     * 流式聊天响应
+     */
+    async *chatStream(message, conversationHistory = []) {
+        const fullResponse = await this.chatWithAI(message, conversationHistory);
+        const words = fullResponse.split(' ');
+        
+        for (let i = 0; i < words.length; i += 3) {
+            const chunk = words.slice(i, i + 3).join(' ') + ' ';
+            yield { chunk, done: false };
+        }
+        
+        yield { done: true };
+    }
 
     /**
      * 增强的模拟响应
      */
     getSimulatedResponse(prompt, options = {}) {
-        const lowerPrompt = prompt.toLowerCase().catch(error => console.error(`[deepseek-ai.js] prompt.toLowerCase failed:`, error));
+        const lowerPrompt = prompt.toLowerCase();
         
         // 代码生成模拟
         if (lowerPrompt.includes('生成代码') || lowerPrompt.includes('generate code')) {
@@ -364,7 +480,7 @@ function generateSolution() {
 
 // 使用示例
 const solution = generateSolution();
-solution.init().catch(error => console.error('[deepseek-ai.js] solution.init failed:', error));
+solution.init();
 const results = solution.process([{ id: 1, name: '测试' }]);
 console.log(solution.export());`;
         }

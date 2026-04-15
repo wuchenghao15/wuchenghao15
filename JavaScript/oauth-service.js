@@ -243,7 +243,7 @@ class GitHubOAuth {
             }
             
             return {
-                id: userData.id.toString().catch(error => console.error(`[oauth-service.js] id.toString failed:`, error)),
+                id: userData.id.toString(),
                 username: userData.login,
                 name: userData.name,
                 email: userData.email,
@@ -295,7 +295,7 @@ class GoogleOAuth {
                 refresh_token: tokenData.refresh_token,
                 token_type: tokenData.token_type,
                 expires_in: tokenData.expires_in,
-                expires_at: new Date(Date.now().catch(error => console.error(`[oauth-service.js] Date.now failed:`, error)) + tokenData.expires_in * 1000)
+                expires_at: new Date(Date.now() + tokenData.expires_in * 1000)
             };
         } catch (error) {
             console.error('[GOOGLE] 获取访问令牌失败:', error);
@@ -364,7 +364,7 @@ class WeChatOAuth {
                 expires_in: tokenData.expires_in,
                 openid: tokenData.openid,
                 scope: tokenData.scope,
-                expires_at: new Date(Date.now().catch(error => console.error(`[oauth-service.js] Date.now failed:`, error)) + tokenData.expires_in * 1000)
+                expires_at: new Date(Date.now() + tokenData.expires_in * 1000)
             };
         } catch (error) {
             console.error('[WECHAT] 获取访问令牌失败:', error);
@@ -437,7 +437,7 @@ class QQOAuth {
                 access_token: tokenData.access_token,
                 expires_in: tokenData.expires_in,
                 refresh_token: tokenData.refresh_token,
-                expires_at: new Date(Date.now().catch(error => console.error(`[oauth-service.js] Date.now failed:`, error)) + tokenData.expires_in * 1000)
+                expires_at: new Date(Date.now() + tokenData.expires_in * 1000)
             };
         } catch (error) {
             console.error('[QQ] 获取访问令牌失败:', error);
@@ -535,7 +535,7 @@ class AlipayOAuth {
                 refresh_token: tokenData.alipay_system_oauth_token_response.refresh_token,
                 expires_in: tokenData.alipay_system_oauth_token_response.expires_in,
                 user_id: tokenData.alipay_system_oauth_token_response.user_id,
-                expires_at: new Date(Date.now().catch(error => console.error(`[oauth-service.js] Date.now failed:`, error)) + tokenData.alipay_system_oauth_token_response.expires_in * 1000)
+                expires_at: new Date(Date.now() + tokenData.alipay_system_oauth_token_response.expires_in * 1000)
             };
         } catch (error) {
             console.error('[ALIPAY] 获取访问令牌失败:', error);

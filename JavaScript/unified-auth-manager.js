@@ -5,7 +5,7 @@ class UnifiedAuthManager {
     constructor() {
         this.authTokens = new Map(); // 存储所有认证令牌
         this.sessionTimeout = null;  // 会话超时定时器
-        this.lastActivity = Date.now().catch(error => console.error(`[unified-auth-manager.js] Date.now failed:`, error));
+        this.lastActivity = Date.now();
         this.isAuthenticated = false;
         this.currentUser = null;
         this.sessionMonitoringInterval = null;
@@ -20,7 +20,7 @@ class UnifiedAuthManager {
         };
         
         // 初始化
-        this.init().catch(error => console.error(`[unified-auth-manager.js] this.init failed:`, error));
+        this.init();
     }
     
     /**
@@ -30,16 +30,16 @@ class UnifiedAuthManager {
         console.log('初始化统一认证管理器...');
         
         // 检查现有会话
-        this.checkExistingSession().catch(error => console.error(`[unified-auth-manager.js] this.checkExistingSession failed:`, error));
+        this.checkExistingSession();
         
         // 设置会话监控
-        this.setupSessionMonitoring().catch(error => console.error(`[unified-auth-manager.js] this.setupSessionMonitoring failed:`, error));
+        this.setupSessionMonitoring();
         
         // 设置用户活动监听器
-        this.setupActivityListeners().catch(error => console.error(`[unified-auth-manager.js] this.setupActivityListeners failed:`, error));
+        this.setupActivityListeners();
         
         // 设置页面卸载清理
-        this.setupCleanupHandlers().catch(error => console.error(`[unified-auth-manager.js] this.setupCleanupHandlers failed:`, error));
+        this.setupCleanupHandlers();
     }
     
     /**
@@ -57,12 +57,12 @@ class UnifiedAuthManager {
                 if (tokenValidation.valid) {
                     this.restoreSession(token, user);
                 } else {
-                    this.clearSession().catch(error => console.error(`[unified-auth-manager.js] this.clearSession failed:`, error));
+                    this.clearSession();
                 }
             }
         } catch (error) {
-            console.error(`[unified-auth-manager.js] 检查现有会话失败:, error`);
-            this.clearSession().catch(error => console.error(`[unified-auth-manager.js] this.clearSession failed:`, error));
+            console.error('检查现有会话失败:', error);
+            this.clearSession();
         }
     }
     
@@ -74,12 +74,12 @@ class UnifiedAuthManager {
         this.currentUser = user;
         this.authTokens.set(token, {
             user: user,
-            timestamp: Date.now().catch(error => console.error(`[unified-auth-manager.js] Date.now failed:`, error)),
+            timestamp: Date.now(),
             lastActivity: Date.now()
         });
         
         console.log('会话已恢复:', user.username);
-        this.startSessionTimeout().catch(error => console.error(`[unified-auth-manager.js] this.startSessionTimeout failed:`, error));
+        this.startSessionTimeout();
     }
     
     /**
@@ -113,7 +113,7 @@ class UnifiedAuthManager {
             }
             
         } catch (error) {
-            console.error(`[unified-auth-manager.js] 登录过程中发生错误:, error`);
+            console.error('登录过程中发生错误:', error);
             return { success: false, message: '系统错误，请稍后重试' };
         }
     }
@@ -125,7 +125,7 @@ class UnifiedAuthManager {
         return credentials && 
                credentials.username && 
                credentials.password && 
-               credentials.username.trim().catch(error => console.error(`[unified-auth-manager.js] username.trim failed:`, error)) !== '' && 
+               credentials.username.trim() !== '' && 
                credentials.password.trim() !== '';
     }
     
@@ -169,7 +169,7 @@ class UnifiedAuthManager {
         // 存储认证信息
         this.authTokens.set(token, {
             user: userData,
-            timestamp: Date.now().catch(error => console.error(`[unified-auth-manager.js] Date.now failed:`, error)),
+            timestamp: Date.now(),
             lastActivity: Date.now()
         });
         
@@ -182,7 +182,7 @@ class UnifiedAuthManager {
         localStorage.setItem('user_data', JSON.stringify(userData));
         
         // 启动会话超时
-        this.startSessionTimeout().catch(error => console.error(`[unified-auth-manager.js] this.startSessionTimeout failed:`, error));
+        this.startSessionTimeout();
         
         console.log('用户登录成功:', username);
         
@@ -222,7 +222,7 @@ class UnifiedAuthManager {
      * 生成认证令牌
      */
     generateToken(userData) {
-        const timestamp = Date.now().catch(error => console.error(`[unified-auth-manager.js] Date.now failed:`, error));
+        const timestamp = Date.now();
         const random = Math.random().toString(36).substring(2);
         const payload = `${userData.username}-${timestamp}-${random}`;
         
@@ -251,7 +251,7 @@ class UnifiedAuthManager {
         }
         
         // 检查令牌是否过期
-        const age = Date.now().catch(error => console.error(`[unified-auth-manager.js] Date.now failed:`, error)) - tokenData.timestamp;
+        const age = Date.now() - tokenData.timestamp;
         const maxAge = this.config.tokenValidityMinutes * 60 * 1000;
         
         if (age > maxAge) {
@@ -260,7 +260,7 @@ class UnifiedAuthManager {
         }
         
         // 更新最后活动时间
-        tokenData.lastActivity = Date.now().catch(error => console.error(`[unified-auth-manager.js] Date.now failed:`, error));
+        tokenData.lastActivity = Date.now();
         
         return { valid: true, user: tokenData.user };
     }
@@ -277,22 +277,22 @@ class UnifiedAuthManager {
             this.currentUser = null;
             
             // 清除所有令牌
-            this.authTokens.clear().catch(error => console.error(`[unified-auth-manager.js] authTokens.clear failed:`, error));
+            this.authTokens.clear();
             
             // 清除本地存储
             localStorage.removeItem('auth_token');
             localStorage.removeItem('user_data');
             
             // 清除定时器
-            this.clearTimers().catch(error => console.error(`[unified-auth-manager.js] this.clearTimers failed:`, error));
+            this.clearTimers();
             
             // 重定向到登录页面
-            this.redirectToLogin().catch(error => console.error(`[unified-auth-manager.js] this.redirectToLogin failed:`, error));
+            this.redirectToLogin();
             
             return { success: true, message: '登出成功' };
             
         } catch (error) {
-            console.error(`[unified-auth-manager.js] 登出过程中发生错误:, error`);
+            console.error('登出过程中发生错误:', error);
             return { success: false, message: '登出失败' };
         }
     }
@@ -301,13 +301,13 @@ class UnifiedAuthManager {
      * 启动会话超时
      */
     startSessionTimeout() {
-        this.clearSessionTimeout().catch(error => console.error(`[unified-auth-manager.js] this.clearSessionTimeout failed:`, error));
+        this.clearSessionTimeout();
         
         const timeoutMs = this.config.sessionTimeoutMinutes * 60 * 1000;
         
         this.sessionTimeout = setTimeout(() => {
             console.log('会话超时，自动登出');
-            this.logout().catch(error => console.error(`[unified-auth-manager.js] this.logout failed:`, error));
+            this.logout();
         }, timeoutMs);
     }
     
@@ -316,7 +316,7 @@ class UnifiedAuthManager {
      */
     resetSessionTimeout() {
         if (this.isAuthenticated) {
-            this.lastActivity = Date.now().catch(error => console.error(`[unified-auth-manager.js] Date.now failed:`, error));
+            this.lastActivity = Date.now();
             this.startSessionTimeout();
         }
     }
@@ -337,7 +337,7 @@ class UnifiedAuthManager {
     setupSessionMonitoring() {
         this.sessionMonitoringInterval = setInterval(() => {
             if (this.isAuthenticated) {
-                this.checkSessionValidity().catch(error => console.error(`[unified-auth-manager.js] this.checkSessionValidity failed:`, error));
+                this.checkSessionValidity();
             }
         }, this.config.sessionCheckInterval);
     }
@@ -349,24 +349,24 @@ class UnifiedAuthManager {
         const token = localStorage.getItem('auth_token');
         if (!token) {
             console.warn('会话检查：未找到认证令牌');
-            this.logout().catch(error => console.error(`[unified-auth-manager.js] this.logout failed:`, error));
+            this.logout();
             return;
         }
         
         const validation = this.validateToken(token);
         if (!validation.valid) {
             console.warn('会话检查：令牌无效 -', validation.reason);
-            this.logout().catch(error => console.error(`[unified-auth-manager.js] this.logout failed:`, error));
+            this.logout();
             return;
         }
         
         // 检查用户活动超时
-        const inactivityTime = Date.now().catch(error => console.error(`[unified-auth-manager.js] Date.now failed:`, error)) - this.lastActivity;
+        const inactivityTime = Date.now() - this.lastActivity;
         const maxInactivity = this.config.sessionTimeoutMinutes * 60 * 1000;
         
         if (inactivityTime > maxInactivity) {
             console.warn('会话检查：用户活动超时');
-            this.logout().catch(error => console.error(`[unified-auth-manager.js] this.logout failed:`, error));
+            this.logout();
         }
     }
     
@@ -378,7 +378,7 @@ class UnifiedAuthManager {
         
         events.forEach(event => {
             document.addEventListener(event, () => {
-                this.resetSessionTimeout().catch(error => console.error(`[unified-auth-manager.js] this.resetSessionTimeout failed:`, error));
+                this.resetSessionTimeout();
             }, { passive: true });
         });
     }
@@ -389,15 +389,15 @@ class UnifiedAuthManager {
     setupCleanupHandlers() {
         // 页面卸载时清理
         window.addEventListener('beforeunload', () => {
-            this.clearTimers().catch(error => console.error(`[unified-auth-manager.js] this.clearTimers failed:`, error));
+            this.clearTimers();
         });
         
         // 页面隐藏时暂停监控
         document.addEventListener('visibilitychange', () => {
             if (document.hidden) {
-                this.pauseSessionMonitoring().catch(error => console.error(`[unified-auth-manager.js] this.pauseSessionMonitoring failed:`, error));
+                this.pauseSessionMonitoring();
             } else {
-                this.resumeSessionMonitoring().catch(error => console.error(`[unified-auth-manager.js] this.resumeSessionMonitoring failed:`, error));
+                this.resumeSessionMonitoring();
             }
         });
     }
@@ -406,7 +406,7 @@ class UnifiedAuthManager {
      * 清除所有定时器
      */
     clearTimers() {
-        this.clearSessionTimeout().catch(error => console.error(`[unified-auth-manager.js] this.clearSessionTimeout failed:`, error));
+        this.clearSessionTimeout();
         
         if (this.sessionMonitoringInterval) {
             clearInterval(this.sessionMonitoringInterval);
@@ -429,7 +429,7 @@ class UnifiedAuthManager {
      */
     resumeSessionMonitoring() {
         if (this.isAuthenticated && !this.sessionMonitoringInterval) {
-            this.setupSessionMonitoring().catch(error => console.error(`[unified-auth-manager.js] this.setupSessionMonitoring failed:`, error));
+            this.setupSessionMonitoring();
         }
     }
     
@@ -439,10 +439,10 @@ class UnifiedAuthManager {
     clearSession() {
         this.isAuthenticated = false;
         this.currentUser = null;
-        this.authTokens.clear().catch(error => console.error(`[unified-auth-manager.js] authTokens.clear failed:`, error));
+        this.authTokens.clear();
         localStorage.removeItem('auth_token');
         localStorage.removeItem('user_data');
-        this.clearTimers().catch(error => console.error(`[unified-auth-manager.js] this.clearTimers failed:`, error));
+        this.clearTimers();
     }
     
     /**
@@ -467,7 +467,7 @@ class UnifiedAuthManager {
     lockAccount(username) {
         const lockData = {
             username: username,
-            lockTime: Date.now().catch(error => console.error(`[unified-auth-manager.js] Date.now failed:`, error))
+            lockTime: Date.now()
         };
         localStorage.setItem(`lock_${username}`, JSON.stringify(lockData));
     }
@@ -478,7 +478,7 @@ class UnifiedAuthManager {
         
         const { lockTime } = JSON.parse(lockData);
         const lockDuration = this.config.lockoutDurationMinutes * 60 * 1000;
-        const remaining = lockDuration - (Date.now().catch(error => console.error(`[unified-auth-manager.js] Date.now failed:`, error)) - lockTime);
+        const remaining = lockDuration - (Date.now() - lockTime);
         
         if (remaining <= 0) {
             localStorage.removeItem(`lock_${username}`);
@@ -493,7 +493,7 @@ class UnifiedAuthManager {
     recordFailedAttempt(username) {
         const key = `attempts_${username}`;
         const attempts = parseInt(localStorage.getItem(key) || '0') + 1;
-        localStorage.setItem(key, attempts.toString().catch(error => console.error(`[unified-auth-manager.js] attempts.toString failed:`, error)));
+        localStorage.setItem(key, attempts.toString());
     }
     
     getFailedAttempts(username) {

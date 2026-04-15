@@ -1,12 +1,13 @@
-// VERSION: 20251106.c6e61325d6cd9dc7b94c47
 // 统一页面功能脚本 - 版本: 1.231030.103001
 // 功能: 统一认证机制、会话管理、主题切换、防盗链、加密解密、系统锁定与解锁等
 
 // 全局版本信息
-const SCRIPT_VERSION = '1.3.0';
+const SCRIPT_VERSION = '2.251030.14251';
 
-// 认证相关常量
+// 锁定相关常量
+const LOCKED_PAGE = '../HTML/locked.html';
 const MAX_LOGIN_ATTEMPTS = 5;
+const MAX_DIRECT_ACCESS_ATTEMPTS = 3;
 
 // 检查是否是登录页面
 function isLoginPage() {
@@ -45,38 +46,14 @@ function initializeTheme() {
 function initializeThemeIcon() {
     const themeToggle = document.getElementById('themeToggle');
     if (themeToggle) {
-        // 检查是否有Font Awesome图标
-        const faIcon = themeToggle.querySelector('i.theme-icon, .theme-icon');
-        // 检查是否有img图标
-        const imgIcon = themeToggle.querySelector('img');
-        
-        if (document.body.classList.contains('dark-theme')) {
-            themeToggle.title = '切换到浅色主题';
-            
-            // 处理Font Awesome图标
-            if (faIcon) {
-                faIcon.classList.remove('fa-moon', 'fa-moon-o');
-                faIcon.classList.add('fa-sun', 'fa-sun-o');
-            }
-            
-            // 处理img图标
-            if (imgIcon) {
-                imgIcon.src = '../images/icons/light_mode.svg';
-                imgIcon.alt = '切换到浅色主题';
-            }
-        } else {
-            themeToggle.title = '切换到深色主题';
-            
-            // 处理Font Awesome图标
-            if (faIcon) {
-                faIcon.classList.remove('fa-sun', 'fa-sun-o');
-                faIcon.classList.add('fa-moon', 'fa-moon-o');
-            }
-            
-            // 处理img图标
-            if (imgIcon) {
-                imgIcon.src = '../images/icons/dark_mode.svg';
-                imgIcon.alt = '切换到深色主题';
+        const icon = themeToggle.querySelector('img');
+        if (icon) {
+            if (document.body.classList.contains('dark-theme')) {
+                icon.src = '../SourceCode/images/icons/light_mode.svg';
+                icon.alt = '切换到浅色主题';
+            } else {
+                icon.src = '../SourceCode/images/icons/dark_mode.svg';
+                icon.alt = '切换到深色主题';
             }
         }
     }
@@ -85,28 +62,13 @@ function initializeThemeIcon() {
 // 切换主题
 function toggleTheme() {
     const body = document.body;
-    const themeToggle = document.getElementById('themeToggle');
-    
-    // 添加切换动画效果
-    if (themeToggle) {
-        themeToggle.classList.add('theme-transition');
-        setTimeout(() => {
-            themeToggle.classList.remove('theme-transition');
-        }, 600); // 匹配动画持续时间
-    }
-    
-    // 平滑切换主题类
     if (body.classList.contains('dark-theme')) {
-        body.style.transition = 'background-color 0.3s ease, color 0.3s ease';
         body.classList.remove('dark-theme');
         localStorage.setItem('theme', '');
     } else {
-        body.style.transition = 'background-color 0.3s ease, color 0.3s ease';
         body.classList.add('dark-theme');
         localStorage.setItem('theme', 'dark-theme');
     }
-    
-    // 更新图标
     initializeThemeIcon();
 }
 
@@ -132,7 +94,7 @@ function updateVisitStats() {
     if (visitInfoElement) {
         // 获取访问次数
         let visitCount = parseInt(localStorage.getItem('visitCount') || '0') + 1;
-        localStorage.setItem('visitCount', visitCount.toString().catch(error => console.error(`[unified_page_functions.js] visitCount.toString failed:`, error)));
+        localStorage.setItem('visitCount', visitCount.toString());
         
         // 获取上次访问时间
         const lastVisit = localStorage.getItem('lastVisit');
@@ -140,7 +102,7 @@ function updateVisitStats() {
         if (lastVisit) {
             lastVisitText = '上次访问: ' + new Date(parseInt(lastVisit)).toLocaleString('zh-CN');
         }
-        localStorage.setItem('lastVisit', Date.now().catch(error => console.error(`[unified_page_functions.js] Date.now failed:`, error)).toString());
+        localStorage.setItem('lastVisit', Date.now().toString());
         
         visitInfoElement.innerHTML = `
             <div class="visit-count">访问次数: ${visitCount}</div>
@@ -161,7 +123,7 @@ function checkAuthentication() {
 }
 
 // 会话超时机制
-// sessionTimeout 变量已移至 window.sessionTimeout 避免全局冲突
+let sessionTimeout;
 function setupSessionTimeout() {
     if (!requiresAuthentication()) return;
     
@@ -180,13 +142,10 @@ function setupSessionTimeout() {
 
 // 重置会话超时
 function resetSessionTimeout() {
-    if (window.sessionTimeout) {
-        clearTimeout(window.sessionTimeout);
-    }
-    window.sessionTimeout = setTimeout(() => {
-        // 会话超时，清除认证信息并重定向到登录页面
-        clearAuthInfo();
-        window.location.href = '../HTML/index.html';
+    clearTimeout(sessionTimeout);
+    sessionTimeout = setTimeout(() => {
+        // 会话超时，锁定系统而不是仅仅重定向
+        lockSystem('会话超时异常');
     }, parseInt(localStorage.getItem('sessionTimeout') || '30') * 60 * 1000);
 }
 
@@ -244,7 +203,7 @@ function getUserInfo() {
         try {
             return JSON.parse(decryptData(encryptedUserInfo));
         } catch (e) {
-            console.error(`[unified_page_functions.js] 获取用户信息失败:, e`);
+            console.error('获取用户信息失败:', e);
             return null;
         }
     }
@@ -274,14 +233,38 @@ function setupLogout() {
 
 // 检查页面访问权限
 function checkPageAccessPermission() {
+    // 检查是否被锁定
+    if (getCookie('isLocked') === 'true' || localStorage.getItem('isLocked') === 'true') {
+        // 增加访问次数
+        let logCount = parseInt(localStorage.getItem('Log_Count') || '0');
+        logCount++;
+        localStorage.setItem('Log_Count', logCount.toString());
+        // 重定向到锁定页面
+        window.location.href = LOCKED_PAGE;
+        return false;
+    }
+    
     // 获取当前页面路径
     const currentPath = window.location.pathname;
+    
+    // 检查是否是锁定页面
+    if (currentPath.endsWith('/HTML/locked.html')) {
+        return true;
+    }
     
     // 检查是否是登录页面或其他公开页面，这些页面不需要认证
     const excludedPaths = ['/HTML/index.html', '/HTML/register.html', '/HTML/PasswordReset.html', '/HTML/404.html', '/HTML/403.html'];
     
     // 如果在排除列表中，允许访问
     if (excludedPaths.some(path => currentPath.endsWith(path))) {
+        // 但如果是公开页面且有锁定状态，仍然重定向到锁定页面
+        if (localStorage.getItem('sessionLocked') === 'true') {
+            let logCount = parseInt(localStorage.getItem('Log_Count') || '0');
+            logCount++;
+            localStorage.setItem('Log_Count', logCount.toString());
+            window.location.href = LOCKED_PAGE;
+            return false;
+        }
         return true;
     }
     
@@ -323,20 +306,39 @@ function checkPagePermission() {
     }
 }
 
-// 锁定系统函数已完全移除
-// function lockSystem(reason = '系统安全锁定') {
-//     // 清除认证信息
-//     clearAuthInfo();
-//     
-//     // 重定向到登录页面
-//     window.location.href = '../HTML/index.html?reason=' + encodeURIComponent(reason);
-// }
+// 锁定系统
+function lockSystem(reason = '系统安全锁定') {
+    // 设置锁定状态
+    setCookie('isLocked', 'true', 1); // 锁定1天
+    localStorage.setItem('isLocked', 'true');
+    sessionStorage.setItem('isLocked', 'true');
+    
+    // 清除认证信息
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('user_info');
+    sessionStorage.removeItem('auth_token');
+    sessionStorage.removeItem('user_info');
+    
+    // 跳转到锁定页面
+    window.location.href = LOCKED_PAGE + '?reason=' + encodeURIComponent(reason);
+}
 
-// 解锁系统函数已完全移除
-// function unlockSystem(adminCode) {
-//     // 锁定功能已移除，直接返回false
-//     return false;
-// }
+// 解锁系统
+function unlockSystem(adminCode) {
+    // 这里应该有实际的验证逻辑
+    // 模拟验证
+    if (adminCode === 'unlock123') { // 实际应该从服务器验证
+        // 清除锁定状态
+        setCookie('isLocked', 'false', -1); // 删除cookie
+        localStorage.removeItem('isLocked');
+        sessionStorage.removeItem('isLocked');
+        localStorage.removeItem('Log_Count');
+        localStorage.removeItem('lock_attempt_count');
+        
+        return true;
+    }
+    return false;
+}
 
 // 初始化页面监控
 function initPageMonitoring() {
@@ -355,56 +357,23 @@ function monitorDirectAccess() {
         directAccessCount++;
         localStorage.setItem('direct_access_count', directAccessCount.toString());
         
-        if (directAccessCount >= 3) { // 使用固定阈值3
-            // 记录异常访问
-            logUnauthorizedAccess('direct_access');
-            
-            // 清除认证信息
-            clearAuthInfo();
-            
-            // 重定向到登录页面
-            window.location.href = '../HTML/index.html?reason=' + encodeURIComponent('多次尝试直接访问');
+        if (directAccessCount >= MAX_DIRECT_ACCESS_ATTEMPTS) {
+            lockSystem('多次尝试直接访问');
         }
     }
 }
 
-// 全局变量用于存储定时器ID
-let urlMonitorInterval = null;
-// sessionTimeout已在第166行声明，这里不再重复声明
-
 // 监控URL篡改
 function monitorUrlTampering() {
-    // 清理已存在的监控定时器
-    if (urlMonitorInterval) {
-        clearInterval(urlMonitorInterval);
-        urlMonitorInterval = null;
-    }
-    
     // 定期检查URL是否被篡改
-    urlMonitorInterval = setInterval(() => {
+    setInterval(() => {
         const currentHash = generatePageHash();
         const expectedHash = sessionStorage.getItem('page_hash');
         
         if (expectedHash && currentHash !== expectedHash) {
-            // 记录异常访问
-            logUnauthorizedAccess('url_tampering');
-            
-            // 清除认证信息
-            clearAuthInfo();
-            
-            // 重定向到登录页面
-            window.location.href = '../HTML/index.html?reason=' + encodeURIComponent('检测到URL篡改');
+            lockSystem('检测到URL篡改');
         }
     }, 5000); // 每5秒检查一次
-}
-
-// 停止URL监控
-function stopUrlMonitoring() {
-    if (urlMonitorInterval) {
-        clearInterval(urlMonitorInterval);
-        urlMonitorInterval = null;
-        console.log('URL监控已停止');
-    }
 }
 
 // 生成页面哈希值
@@ -439,11 +408,33 @@ function logUnauthorizedAccess(page) {
     localStorage.setItem('unauthorized_access_logs', JSON.stringify(accessLogs.slice(-100))); // 只保留最近100条
 }
 
+// ViKey验证
+async function verifyViKey() {
+    try {
+        // 这里应该调用实际的ViKey API
+        // 模拟验证过程
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        // 模拟验证成功
+        const isVerified = Math.random() > 0.5; // 实际应该是API返回结果
+        
+        if (isVerified) {
+            // 验证成功，解锁系统
+            unlockSystem('vikey_verified');
+            return true;
+        }
+        return false;
+    } catch (error) {
+        console.error('ViKey验证失败:', error);
+        return false;
+    }
+}
+
 // Cookie操作函数
 function setCookie(name, value, days) {
     const expires = new Date();
-    expires.setTime(expires.getTime().catch(error => console.error(`[unified_page_functions.js] expires.getTime failed:`, error)) + days * 24 * 60 * 60 * 1000);
-    document.cookie = name + '=' + value + ';expires=' + expires.toUTCString().catch(error => console.error(`[unified_page_functions.js] expires.toUTCString failed:`, error)) + ';path=/';
+    expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
+    document.cookie = name + '=' + value + ';expires=' + expires.toUTCString() + ';path=/';
 }
 
 function getCookie(name) {
@@ -469,7 +460,7 @@ function getLoginAttempts() {
 
 function incrementLoginAttempts() {
     const attempts = getLoginAttempts() + 1;
-    localStorage.setItem('loginAttempts', attempts.toString().catch(error => console.error(`[unified_page_functions.js] attempts.toString failed:`, error)));
+    localStorage.setItem('loginAttempts', attempts.toString());
     
     // 更新登录页面的尝试次数显示
     updateLoginAttemptsDisplay(attempts);
@@ -501,7 +492,7 @@ function updateLoginAttemptsDisplay(attempts) {
 
 function lockAccount() {
     const lockUntil = Date.now() + 5 * 60 * 1000; // 锁定5分钟
-    localStorage.setItem('accountLockedUntil', lockUntil.toString().catch(error => console.error(`[unified_page_functions.js] lockUntil.toString failed:`, error)));
+    localStorage.setItem('accountLockedUntil', lockUntil.toString());
     
     // 显示账号锁定遮罩层
     const accountLockOverlay = document.getElementById('account-lock-overlay');
@@ -514,7 +505,7 @@ function lockAccount() {
 function isAccountLocked() {
     const lockUntil = localStorage.getItem('accountLockedUntil');
     if (lockUntil) {
-        const now = Date.now().catch(error => console.error(`[unified_page_functions.js] Date.now failed:`, error));
+        const now = Date.now();
         if (now < parseInt(lockUntil)) {
             return true;
         } else {
@@ -531,14 +522,8 @@ function startLockCountdown() {
     if (countdownElement) {
         const lockUntil = parseInt(localStorage.getItem('accountLockedUntil'));
         
-        // 清除已存在的倒计时定时器
-        if (countdownElement._countdownTimeout) {
-            clearTimeout(countdownElement._countdownTimeout);
-            countdownElement._countdownTimeout = null;
-        }
-        
         function updateCountdown() {
-            const now = Date.now().catch(error => console.error(`[unified_page_functions.js] Date.now failed:`, error));
+            const now = Date.now();
             const remaining = Math.max(0, Math.floor((lockUntil - now) / 1000));
             
             const minutes = Math.floor(remaining / 60);
@@ -547,7 +532,7 @@ function startLockCountdown() {
             countdownElement.textContent = `${minutes}分${seconds}秒`;
             
             if (remaining > 0) {
-                countdownElement._countdownTimeout = setTimeout(updateCountdown, 1000);
+                setTimeout(updateCountdown, 1000);
             } else {
                 // 锁定时间结束
                 const accountLockOverlay = document.getElementById('account-lock-overlay');
@@ -567,7 +552,7 @@ function generateVerificationCode() {
     const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
     let code = '';
     for (let i = 0; i < 6; i++) {
-        code += chars.charAt(Math.floor(Math.random().catch(error => console.error(`[unified_page_functions.js] Math.random failed:`, error)) * chars.length));
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     return code;
 }
@@ -760,7 +745,7 @@ function reportBrokenLinks(links) {
     };
     
     // 在控制台记录错误（实际应用中应该发送到服务器）
-    console.error(`[unified_page_functions.js] 发现损坏的链接:, errorData`);
+    console.error('发现损坏的链接:', errorData);
     
     // 尝试本地修复（仅前端可见）
     attemptLocalLinkFix(links);
@@ -798,7 +783,7 @@ function setup404Handling() {
     window.addEventListener('error', function(event) {
         // 检查是否是404错误
         if (event.target && (event.target.tagName === 'IMG' || event.target.tagName === 'SCRIPT' || event.target.tagName === 'LINK')) {
-            console.error(`[unified_page_functions.js] 资源加载失败: ${event.target.src || event.target.href}`);
+            console.error(`资源加载失败: ${event.target.src || event.target.href}`);
             
             // 尝试后台修复
             setTimeout(() => {
@@ -860,7 +845,7 @@ function initializePage() {
     
     // 防止右键菜单（防盗链补充措施）
     document.addEventListener('contextmenu', function(e) {
-        e.preventDefault().catch(error => console.error(`[unified_page_functions.js] e.preventDefault failed:`, error));
+        e.preventDefault();
     });
     
     // 初始化页面监控
@@ -876,23 +861,7 @@ function initializePage() {
 // 页面加载完成后执行初始化
 document.addEventListener('DOMContentLoaded', initializePage);
 
-// 页面卸载时清除所有定时器
+// 页面卸载时清除超时计时器
 window.addEventListener('unload', function() {
-    // 清除会话超时定时器
-    if (sessionTimeout) {
-        clearTimeout(sessionTimeout);
-        sessionTimeout = null;
-    }
-    
-    // 清除URL监控定时器
-    stopUrlMonitoring();
-    
-    // 清除其他可能的定时器
-    const countdownElement = document.getElementById('lock-countdown');
-    if (countdownElement && countdownElement._countdownTimeout) {
-        clearTimeout(countdownElement._countdownTimeout);
-        countdownElement._countdownTimeout = null;
-    }
-    
-    console.log('页面卸载，所有定时器已清理');
+    clearTimeout(sessionTimeout);
 });

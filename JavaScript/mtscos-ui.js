@@ -7,16 +7,16 @@ class MTSCOSUI {
         this.currentTab = 'chat';
         this.notificationQueue = [];
         this.maxNotifications = 5;
-        this.init().catch(error => console.error(`[mtscos-ui.js] this.init failed:`, error));
+        this.init();
     }
 
     /**
      * 初始化UI模块
      */
     init() {
-        this.setupEventListeners().catch(error => console.error(`[mtscos-ui.js] this.setupEventListeners failed:`, error));
+        this.setupEventListeners();
         this.setupKeyboardShortcuts();
-        this.setupTextareaAutoResize().catch(error => console.error(`[mtscos-ui.js] this.setupTextareaAutoResize failed:`, error));
+        this.setupTextareaAutoResize();
         this.addLog('info', 'UI模块', 'UI交互模块初始化完成');
     }
 
@@ -38,21 +38,21 @@ class MTSCOSUI {
         // AI建议按钮
         const suggestBtn = document.querySelector('.ai-suggest-btn');
         if (suggestBtn) {
-            suggestBtn.addEventListener('click', () => this.getAISuggestion().catch(error => console.error(`[mtscos-ui.js] this.getAISuggestion failed:`, error)));
+            suggestBtn.addEventListener('click', () => this.getAISuggestion());
         }
 
         // 页面可见性变化
         document.addEventListener('visibilitychange', () => {
             if (document.hidden) {
-                this.pauseMonitoring().catch(error => console.error(`[mtscos-ui.js] this.pauseMonitoring failed:`, error));
+                this.pauseMonitoring();
             } else {
-                this.resumeMonitoring().catch(error => console.error(`[mtscos-ui.js] this.resumeMonitoring failed:`, error));
+                this.resumeMonitoring();
             }
         });
 
         // 页面卸载前清理
         window.addEventListener('beforeunload', () => {
-            this.cleanup().catch(error => console.error(`[mtscos-ui.js] this.cleanup failed:`, error));
+            this.cleanup();
         });
     }
 
@@ -64,27 +64,27 @@ class MTSCOSUI {
             if (e.ctrlKey || e.metaKey) {
                 switch(e.key) {
                     case '1':
-                        e.preventDefault().catch(error => console.error(`[mtscos-ui.js] e.preventDefault failed:`, error));
+                        e.preventDefault();
                         this.switchTab('chat');
                         break;
                     case '2':
-                        e.preventDefault().catch(error => console.error(`[mtscos-ui.js] e.preventDefault failed:`, error));
+                        e.preventDefault();
                         this.switchTab('code');
                         break;
                     case '3':
-                        e.preventDefault().catch(error => console.error(`[mtscos-ui.js] e.preventDefault failed:`, error));
+                        e.preventDefault();
                         this.switchTab('analyze');
                         break;
                     case '4':
-                        e.preventDefault().catch(error => console.error(`[mtscos-ui.js] e.preventDefault failed:`, error));
+                        e.preventDefault();
                         this.switchTab('translate');
                         break;
                     case '5':
-                        e.preventDefault().catch(error => console.error(`[mtscos-ui.js] e.preventDefault failed:`, error));
+                        e.preventDefault();
                         this.switchTab('summarize');
                         break;
                     case 'Enter':
-                        e.preventDefault().catch(error => console.error(`[mtscos-ui.js] e.preventDefault failed:`, error));
+                        e.preventDefault();
                         this.executeCurrentTabAction();
                         break;
                 }
@@ -146,11 +146,11 @@ class MTSCOSUI {
      */
     executeCurrentTabAction() {
         const actions = {
-            'chat': () => this.sendChatMessage().catch(error => console.error(`[mtscos-ui.js] this.sendChatMessage failed:`, error)),
+            'chat': () => this.sendChatMessage(),
             'code': () => this.generateCode(),
-            'analyze': () => this.analyzeText().catch(error => console.error(`[mtscos-ui.js] this.analyzeText failed:`, error)),
+            'analyze': () => this.analyzeText(),
             'translate': () => this.translateText(),
-            'summarize': () => this.summarizeText().catch(error => console.error(`[mtscos-ui.js] this.summarizeText failed:`, error))
+            'summarize': () => this.summarizeText()
         };
 
         const action = actions[this.currentTab];
@@ -166,7 +166,7 @@ class MTSCOSUI {
         const chatMessage = document.getElementById('chatMessage');
         if (chatMessage) {
             chatMessage.value = prompt;
-            chatMessage.focus().catch(error => console.error(`[mtscos-ui.js] chatMessage.focus failed:`, error));
+            chatMessage.focus();
         }
     }
 
@@ -177,7 +177,7 @@ class MTSCOSUI {
         const codeDescription = document.getElementById('codeDescription');
         if (codeDescription) {
             codeDescription.value = prompt;
-            codeDescription.focus().catch(error => console.error(`[mtscos-ui.js] codeDescription.focus failed:`, error));
+            codeDescription.focus();
         }
     }
 
@@ -189,7 +189,7 @@ class MTSCOSUI {
         const textarea = activeTab?.querySelector('textarea');
         if (textarea) {
             textarea.value = '';
-            textarea.focus().catch(error => console.error(`[mtscos-ui.js] textarea.focus failed:`, error));
+            textarea.focus();
         }
     }
 
@@ -259,7 +259,7 @@ class MTSCOSUI {
     showNotification(message, type = 'info', duration = 3000) {
         // 检查通知队列
         if (this.notificationQueue.length >= this.maxNotifications) {
-            this.removeOldestNotification().catch(error => console.error(`[mtscos-ui.js] this.removeOldestNotification failed:`, error));
+            this.removeOldestNotification();
         }
 
         const notification = document.createElement('div');
@@ -381,7 +381,7 @@ class MTSCOSUI {
      */
     pauseMonitoring() {
         if (window.deepseekMonitor) {
-            window.deepseekMonitor.stop().catch(error => console.error(`[mtscos-ui.js] deepseekMonitor.stop failed:`, error));
+            window.deepseekMonitor.stop();
         }
     }
 
@@ -390,7 +390,7 @@ class MTSCOSUI {
      */
     resumeMonitoring() {
         if (window.deepseekMonitor) {
-            window.deepseekMonitor.start().catch(error => console.error(`[mtscos-ui.js] deepseekMonitor.start failed:`, error));
+            window.deepseekMonitor.start();
         }
     }
 
@@ -398,7 +398,7 @@ class MTSCOSUI {
      * 清理资源
      */
     cleanup() {
-        this.pauseMonitoring().catch(error => console.error(`[mtscos-ui.js] this.pauseMonitoring failed:`, error));
+        this.pauseMonitoring();
         this.notificationQueue.forEach(notification => {
             if (notification.parentNode) {
                 document.body.removeChild(notification);
@@ -409,7 +409,7 @@ class MTSCOSUI {
 
     // API调用方法（将在后续实现中连接到apiService）
     async sendChatMessage() {
-        const message = document.getElementById('chatMessage')?.value.trim().catch(error => console.error(`[mtscos-ui.js] value.trim failed:`, error));
+        const message = document.getElementById('chatMessage')?.value.trim();
         if (!message) {
             this.showNotification('请输入消息内容', 'warning');
             return;
@@ -432,7 +432,7 @@ class MTSCOSUI {
     }
 
     async generateCode() {
-        const description = document.getElementById('codeDescription')?.value.trim().catch(error => console.error(`[mtscos-ui.js] value.trim failed:`, error));
+        const description = document.getElementById('codeDescription')?.value.trim();
         const language = document.getElementById('codeLanguage')?.value || 'javascript';
         
         if (!description) {
@@ -457,7 +457,7 @@ class MTSCOSUI {
     }
 
     async analyzeText() {
-        const text = document.getElementById('analyzeText')?.value.trim().catch(error => console.error(`[mtscos-ui.js] value.trim failed:`, error));
+        const text = document.getElementById('analyzeText')?.value.trim();
         
         if (!text) {
             this.showNotification('请输入要分析的文本', 'warning');
@@ -481,8 +481,8 @@ class MTSCOSUI {
     }
 
     async translateText() {
-        const text = document.getElementById('translateText')?.value.trim().catch(error => console.error(`[mtscos-ui.js] value.trim failed:`, error));
-        const targetLanguage = document.getElementById('targetLanguage')?.value.trim().catch(error => console.error(`[mtscos-ui.js] value.trim failed:`, error));
+        const text = document.getElementById('translateText')?.value.trim();
+        const targetLanguage = document.getElementById('targetLanguage')?.value.trim();
         
         if (!text || !targetLanguage) {
             this.showNotification('请输入要翻译的文本和目标语言', 'warning');
@@ -507,7 +507,7 @@ class MTSCOSUI {
     }
 
     async summarizeText() {
-        const text = document.getElementById('summarizeText')?.value.trim().catch(error => console.error(`[mtscos-ui.js] value.trim failed:`, error));
+        const text = document.getElementById('summarizeText')?.value.trim();
         const maxLength = parseInt(document.getElementById('maxLength')?.value) || 200;
         
         if (!text) {

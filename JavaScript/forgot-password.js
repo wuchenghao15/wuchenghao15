@@ -1,4 +1,3 @@
-// VERSION: 20251106.aad2ec92b5a8553cf8c0aad
 // 忘记密码页面脚本
 
 // DOM 加载完成后执行
@@ -36,7 +35,7 @@ function initResetSteps() {
     
     // 表单提交
     document.getElementById('reset-form').addEventListener('submit', function(e) {
-        e.preventDefault().catch(error => console.error(`[forgot-password.js] e.preventDefault failed:`, error));
+        e.preventDefault();
         submitNewPassword();
     });
     
@@ -50,7 +49,7 @@ function initResetSteps() {
 
 // 验证用户名
 function validateUsername() {
-    const username = document.getElementById('username').value.trim().catch(error => console.error(`[forgot-password.js] value.trim failed:`, error));
+    const username = document.getElementById('username').value.trim();
     
     if (!username) {
         showResetError('请输入用户名');
@@ -74,13 +73,13 @@ function validateUsername() {
 
 // 验证身份
 function validateVerification() {
-    const verifyCode = document.getElementById('verify-code').value.trim().catch(error => console.error(`[forgot-password.js] value.trim failed:`, error));
+    const verifyCode = document.getElementById('verify-code').value.trim();
     const securityQuestion = document.getElementById('security-question').value;
-    const securityAnswer = document.getElementById('security-answer').value.trim().catch(error => console.error(`[forgot-password.js] value.trim failed:`, error));
+    const securityAnswer = document.getElementById('security-answer').value.trim();
     
     // 验证验证码
     const storedCode = sessionStorage.getItem('verify_code');
-    if (!verifyCode || verifyCode.toUpperCase().catch(error => console.error(`[forgot-password.js] verifyCode.toUpperCase failed:`, error)) !== storedCode.toUpperCase()) {
+    if (!verifyCode || verifyCode.toUpperCase() !== storedCode.toUpperCase()) {
         showResetError('验证码错误');
         generateVerifyCode();
         return;
@@ -102,7 +101,7 @@ function validateVerification() {
     setTimeout(() => {
         showLoading(false);
         // 在实际应用中，这里应该调用API验证安全问题答案
-        if (securityAnswer.toLowerCase().catch(error => console.error(`[forgot-password.js] securityAnswer.toLowerCase failed:`, error)) === 'demo') {
+        if (securityAnswer.toLowerCase() === 'demo') {
             goToStep(3);
             logAction('identity_verified', '用户身份验证通过');
         } else {
@@ -152,7 +151,7 @@ function generateVerifyCode() {
     const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     let code = '';
     for (let i = 0; i < 4; i++) {
-        code += chars.charAt(Math.floor(Math.random().catch(error => console.error(`[forgot-password.js] Math.random failed:`, error)) * chars.length));
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     
     sessionStorage.setItem('verify_code', code);
@@ -165,17 +164,17 @@ function generateVerifyCode() {
     
     // 设置背景
     const bgColors = ['#f0f0f0', '#e0e0e0', '#f5f5f5'];
-    ctx.fillStyle = bgColors[Math.floor(Math.random().catch(error => console.error(`[forgot-password.js] Math.random failed:`, error)) * bgColors.length)];
+    ctx.fillStyle = bgColors[Math.floor(Math.random() * bgColors.length)];
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
     // 添加干扰线
     ctx.strokeStyle = '#ccc';
     ctx.lineWidth = 1;
     for (let i = 0; i < 5; i++) {
-        ctx.beginPath().catch(error => console.error(`[forgot-password.js] ctx.beginPath failed:`, error));
-        ctx.moveTo(Math.random().catch(error => console.error(`[forgot-password.js] Math.random failed:`, error)) * canvas.width, Math.random() * canvas.height);
+        ctx.beginPath();
+        ctx.moveTo(Math.random() * canvas.width, Math.random() * canvas.height);
         ctx.lineTo(Math.random() * canvas.width, Math.random() * canvas.height);
-        ctx.stroke().catch(error => console.error(`[forgot-password.js] ctx.stroke failed:`, error));
+        ctx.stroke();
     }
     
     // 添加文字
@@ -186,21 +185,21 @@ function generateVerifyCode() {
     // 每个字符使用不同颜色
     const textColors = ['#333', '#666', '#999'];
     for (let i = 0; i < code.length; i++) {
-        ctx.fillStyle = textColors[Math.floor(Math.random().catch(error => console.error(`[forgot-password.js] Math.random failed:`, error)) * textColors.length)];
+        ctx.fillStyle = textColors[Math.floor(Math.random() * textColors.length)];
         const x = 25 + i * 20;
-        const y = 22 + (Math.random().catch(error => console.error(`[forgot-password.js] Math.random failed:`, error)) - 0.5) * 10;
+        const y = 22 + (Math.random() - 0.5) * 10;
         const rotation = (Math.random() - 0.5) * 0.3;
         
-        ctx.save().catch(error => console.error(`[forgot-password.js] ctx.save failed:`, error));
+        ctx.save();
         ctx.translate(x, y);
         ctx.rotate(rotation);
         ctx.fillText(code[i], 0, 0);
-        ctx.restore().catch(error => console.error(`[forgot-password.js] ctx.restore failed:`, error));
+        ctx.restore();
     }
     
     // 设置验证码图片
     const verifyImage = document.getElementById('verify-image');
-    verifyImage.src = canvas.toDataURL().catch(error => console.error(`[forgot-password.js] canvas.toDataURL failed:`, error));
+    verifyImage.src = canvas.toDataURL();
 }
 
 // 切换到指定步骤
@@ -250,7 +249,7 @@ function showLoading(isLoading) {
     buttons.forEach(btn => {
         btn.disabled = isLoading;
         if (isLoading && btn.id === 'reset-submit') {
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"i> 处理中...';
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 处理中...';
         } else if (btn.id === 'reset-submit') {
             btn.textContent = '重设密码';
         }
@@ -305,7 +304,7 @@ function toggleTheme() {
 // 检查是否是公祭日
 function isMourningDay() {
     const today = new Date();
-    const month = today.getMonth().catch(error => console.error(`[forgot-password.js] today.getMonth failed:`, error)) + 1;
+    const month = today.getMonth() + 1;
     const day = today.getDate();
     
     const mourningDays = [
@@ -331,7 +330,7 @@ function updateDateTime() {
     const dateTimeElement = document.getElementById('datetime-display');
     if (!dateTimeElement) return;
     
-    const userTimezone = Intl.DateTimeFormat().catch(error => console.error(`[forgot-password.js] Intl.DateTimeFormat failed:`, error)).resolvedOptions().timeZone;
+    const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     const now = new Date();
     
     const options = {

@@ -2,7 +2,6 @@
  * 自定义HTTP服务器
  * 支持404和403页面自动挂载
  * 集成DeepSeek AI API
- * 集成安全模块：电子签名、Token、证书
  */
 
 const http = require('http');
@@ -14,9 +13,6 @@ const url = require('url');
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
-
-// 导入安全模块
-const security = require('./security');
 
 // 导入DeepSeek路由
 const deepseekRoutes = require('./deepseek-routes');
@@ -240,135 +236,21 @@ async function handleStaticFile(requestPath, res) {
  */
 const app = express();
 
-// 初始化安全模块
-security.initialize();
-
 // 中间件配置
 app.use(cors());
 app.use(bodyParser.json({ limit: '10mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
 
-// 安全中间件 - Token认证（排除健康检查和登录接口）
-app.use('/api/', (req, res, next) => {
-    // 排除不需要认证的接口
-    if (req.path === '/health' || req.path === '/auth/login') {
-        return next();
-    }
-    security.tokenAuth.middleware(req, res, next);
-});
-
 // API路由
 app.use('/api/deepseek', deepseekRoutes);
 
-// 健康检查API - 不需要认证
+// 健康检查API
 app.get('/api/health', (req, res) => {
-    // 获取系统状态
-    const systemStatus = {
-        status: 'ok',
+    res.json({ 
+        status: 'ok', 
         timestamp: new Date().toISOString(),
-        version: '1.0.0',
-        securityStatus: {
-            jwtKeyExists: fs.existsSync(path.join(PROJECT_ROOT, 'Security', 'keys', 'jwt_secret.key')),
-            certExists: fs.existsSync(path.join(PROJECT_ROOT, 'Security', 'certs', 'mtscos-ai.local.pem')),
-            keysExists: fs.existsSync(path.join(PROJECT_ROOT, 'Security', 'keys', 'default_public.pem'))
-        }
-    };
-    
-    res.json(systemStatus);
-});
-
-// 安全API - 生成Token
-app.post('/api/auth/login', (req, res) => {
-    const { username, password } = req.body;
-    
-    // 这里应该有实际的用户认证逻辑
-    // 简化实现：使用硬编码的用户名密码
-    if (username === 'admin' && password === 'admin123') {
-        const token = security.tokenAuth.generateToken({
-            username: username,
-            role: 'admin',
-            userId: '1'
-        });
-        
-        res.json({
-            success: true,
-            token: token,
-            user: {
-                username: username,
-                role: 'admin'
-            }
-        });
-    } else {
-        res.status(401).json({
-            success: false,
-            message: 'Invalid credentials'
-        });
-    }
-});
-
-// 安全API - 电子签名
-app.post('/api/security/sign', security.tokenAuth.middleware, (req, res) => {
-    const { data } = req.body;
-    
-    if (!data) {
-        return res.status(400).json({ error: 'Data is required' });
-    }
-    
-    try {
-        const signature = security.digitalSignature.sign(data);
-        res.json({
-            success: true,
-            signature: signature,
-            data: data
-        });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to sign data' });
-    }
-});
-
-// 安全API - 验证电子签名
-app.post('/api/security/verify', security.tokenAuth.middleware, (req, res) => {
-    const { data, signature } = req.body;
-    
-    if (!data || !signature) {
-        return res.status(400).json({ error: 'Data and signature are required' });
-    }
-    
-    try {
-        const isValid = security.digitalSignature.verify(data, signature);
-        res.json({
-            success: true,
-            isValid: isValid
-        });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to verify signature' });
-    }
-});
-
-// 安全API - 获取证书信息
-app.get('/api/security/certificate', security.tokenAuth.middleware, (req, res) => {
-    try {
-        const certInfo = security.certificateManager.getCertificate();
-        res.json({
-            success: true,
-            certificate: certInfo.certificate
-        });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to get certificate' });
-    }
-});
-
-// 安全API - 自我修复
-app.post('/api/security/repair', security.tokenAuth.middleware, (req, res) => {
-    try {
-        const result = security.selfRepair.repair();
-        res.json({
-            success: true,
-            message: 'Security configuration repaired successfully'
-        });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to repair security configuration' });
-    }
+        version: '1.0.0'
+    });
 });
 
 /**
@@ -385,187 +267,6 @@ async function staticFileMiddleware(req, res, next) {
     // 处理根路径
     if (requestPath === '/') {
         requestPath = '/HTML/index.html';
-    } 
-    // 处理assets路径 - 将其映射到HTML/assets目录
-    else if (requestPath.startsWith('/assets/')) {
-        requestPath = `/HTML${requestPath}`;
-    }
-    // 处理JS路径 - 同时检查HTML/JS和根目录JS
-    else if (requestPath.startsWith('/JS/')) {
-        // 先尝试HTML/JS目录
-        let htmlJsPath = `/HTML${requestPath}`;
-        try {
-            const stats = await fs.promises.stat(path.join(PROJECT_ROOT, htmlJsPath));
-            if (stats.isFile()) {
-                requestPath = htmlJsPath;
-            }
-        } catch (error) {
-            // 如果HTML/JS目录不存在，使用根目录JS
-            requestPath = requestPath;
-        }
-    }
-    // 处理CSS路径 - 同时检查HTML/CSS和根目录CSS
-    else if (requestPath.startsWith('/CSS/')) {
-        // 先尝试HTML/CSS目录
-        let htmlCssPath = `/HTML${requestPath}`;
-        try {
-            const stats = await fs.promises.stat(path.join(PROJECT_ROOT, htmlCssPath));
-            if (stats.isFile()) {
-                requestPath = htmlCssPath;
-            }
-        } catch (error) {
-            // 如果HTML/CSS目录不存在，使用根目录CSS
-            requestPath = requestPath;
-        }
-    } 
-    else if (requestPath.startsWith('/Staging/')) {
-        // 对Staging路径进行特殊处理
-        // 如果是Staging下的HTML文件，映射到根目录的HTML
-        if (requestPath.startsWith('/Staging/HTML/') && requestPath.endsWith('.html')) {
-            // 例如: /Staging/HTML/index.html -> /HTML/index.html
-            requestPath = requestPath.replace('/Staging/HTML/', '/HTML/');
-        } 
-        // 如果是Staging下的assets路径，先尝试映射到HTML目录的assets
-        else if (requestPath.startsWith('/Staging/assets/')) {
-            // 例如: /Staging/assets/css/main.css -> /HTML/assets/css/main.css
-            // 先将/Staging/assets/替换为/HTML/assets/
-            let mappedPath = requestPath.replace('/Staging/assets/', '/HTML/assets/');
-            let fileFound = false;
-            
-            // 检查文件是否存在于HTML目录的assets路径
-            try {
-                const stats = await fs.promises.stat(path.join(PROJECT_ROOT, mappedPath));
-                if (stats.isFile()) {
-                    requestPath = mappedPath;
-                    fileFound = true;
-                } 
-            } catch (error) {
-                // 文件不存在于HTML/assets，尝试项目根目录的assets
-                mappedPath = requestPath.replace('/Staging/assets/', '/assets/');
-                try {
-                    const stats = await fs.promises.stat(path.join(PROJECT_ROOT, mappedPath));
-                    if (stats.isFile()) {
-                        requestPath = mappedPath;
-                        fileFound = true;
-                    }
-                } catch (error) {
-                    // 文件不存在于根目录assets，继续尝试其他路径
-                }
-            }
-            
-            // 如果文件不存在，尝试在common_styles目录下查找（仅当路径中不包含common_styles时）
-            if (!fileFound && mappedPath.startsWith('/HTML/assets/css/') && !mappedPath.includes('/common_styles/')) {
-                const commonStylesPath = mappedPath.replace('/HTML/assets/css/', '/HTML/assets/css/common_styles/');
-                try {
-                    const stats = await fs.promises.stat(path.join(PROJECT_ROOT, commonStylesPath));
-                    if (stats.isFile()) {
-                        requestPath = commonStylesPath;
-                        fileFound = true;
-                    }
-                } catch (error) {
-                    // 文件不存在于common_styles目录，继续尝试
-                }
-            } else if (!fileFound && mappedPath.startsWith('/assets/css/') && !mappedPath.includes('/common_styles/')) {
-                const commonStylesPath = mappedPath.replace('/assets/css/', '/assets/css/common_styles/');
-                try {
-                    const stats = await fs.promises.stat(path.join(PROJECT_ROOT, commonStylesPath));
-                    if (stats.isFile()) {
-                        requestPath = commonStylesPath;
-                        fileFound = true;
-                    }
-                } catch (error) {
-                    // 文件不存在于common_styles目录，继续尝试
-                }
-            }
-            
-            // 如果文件不存在，尝试在根目录的CSS目录下查找
-            if (!fileFound && mappedPath.startsWith('/HTML/assets/css/')) {
-                const rootCssPath = mappedPath.replace('/HTML/assets/css/', '/CSS/');
-                try {
-                    const stats = await fs.promises.stat(path.join(PROJECT_ROOT, rootCssPath));
-                    if (stats.isFile()) {
-                        requestPath = rootCssPath;
-                        fileFound = true;
-                    }
-                } catch (error) {
-                    // 文件不存在于根目录CSS，继续尝试
-                }
-            } else if (!fileFound && mappedPath.startsWith('/assets/css/')) {
-                const rootCssPath = mappedPath.replace('/assets/css/', '/CSS/');
-                try {
-                    const stats = await fs.promises.stat(path.join(PROJECT_ROOT, rootCssPath));
-                    if (stats.isFile()) {
-                        requestPath = rootCssPath;
-                        fileFound = true;
-                    }
-                } catch (error) {
-                    // 文件不存在于根目录CSS，继续尝试
-                }
-            }
-            
-            // 如果文件不存在，尝试在根目录的JS目录下查找
-            if (!fileFound && mappedPath.startsWith('/HTML/assets/js/')) {
-                const rootJsPath = mappedPath.replace('/HTML/assets/js/', '/JS/');
-                try {
-                    const stats = await fs.promises.stat(path.join(PROJECT_ROOT, rootJsPath));
-                    if (stats.isFile()) {
-                        requestPath = rootJsPath;
-                        fileFound = true;
-                    }
-                } catch (error) {
-                    // 文件不存在于根目录JS，继续尝试
-                }
-            } else if (!fileFound && mappedPath.startsWith('/assets/js/')) {
-                const rootJsPath = mappedPath.replace('/assets/js/', '/JS/');
-                try {
-                    const stats = await fs.promises.stat(path.join(PROJECT_ROOT, rootJsPath));
-                    if (stats.isFile()) {
-                        requestPath = rootJsPath;
-                        fileFound = true;
-                    }
-                } catch (error) {
-                    // 文件不存在于根目录JS，继续尝试
-                }
-            }
-            
-            // 如果文件不存在于所有上述路径，尝试直接使用Staging下的assets路径
-            if (!fileFound) {
-                try {
-                    // 直接使用原始的Staging路径
-                    const stats = await fs.promises.stat(path.join(PROJECT_ROOT, requestPath));
-                    if (stats.isFile()) {
-                        fileFound = true;
-                        // requestPath已经是正确的Staging路径，不需要修改
-                    }
-                } catch (error) {
-                    // 如果仍然不存在，尝试在Staging下的common_styles目录查找
-                    if (requestPath.startsWith('/Staging/assets/css/')) {
-                        const stagingCommonStylesPath = requestPath.replace('/Staging/assets/css/', '/Staging/assets/css/common_styles/');
-                        try {
-                            const stats = await fs.promises.stat(path.join(PROJECT_ROOT, stagingCommonStylesPath));
-                            if (stats.isFile()) {
-                                requestPath = stagingCommonStylesPath;
-                                fileFound = true;
-                            }
-                        } catch (e) {
-                            // 所有路径都尝试过了，使用原始映射路径
-                            requestPath = mappedPath;
-                        }
-                    } else {
-                        // 所有路径都尝试过了，使用原始映射路径
-                        requestPath = mappedPath;
-                    }
-                }
-            }
-        }
-        // 其他Staging路径保持不变
-    } else if (requestPath.startsWith('/HTML/') && requestPath.endsWith('.html')) {
-        // 如果已经是完整的HTML路径，直接使用
-        // 例如: /HTML/UpdateInfo.html 保持不变
-    } else if (requestPath.endsWith('.html')) {
-        // 对于其他HTML文件，添加HTML前缀
-        // 例如: /UpdateInfo.html -> /HTML/UpdateInfo.html
-        requestPath = `/HTML${requestPath}`;
     } else if (!requestPath.startsWith('/HTML/') && !requestPath.includes('.')) {
         // 如果不是HTML路径且没有文件扩展名，尝试在HTML目录中查找
         requestPath = `/HTML${requestPath}.html`;
@@ -653,17 +354,17 @@ async function staticFileMiddleware(req, res, next) {
 app.use(staticFileMiddleware);
 
 // 404处理
-app.use(async (req, res) => {
+app.use((req, res) => {
     if (req.path.startsWith('/api/')) {
         res.status(404).json({ error: 'API endpoint not found' });
     } else {
-        await send404Page(res, req.path);
+        send404Page(res, req.path);
     }
 });
 
 // 错误处理中间件
 app.use((err, req, res, next) => {
-    console.error(`[server.js] 服务器错误:`, err);
+    console.error('服务器错误:', err);
     res.status(500).json({ 
         error: 'Internal server error',
         message: process.env.NODE_ENV === 'development' ? err.message : '服务器内部错误'
@@ -689,16 +390,9 @@ server.listen(PORT, () => {
     console.log(`   • 安全路径检查`);
     console.log(`   • 静态文件服务`);
     console.log(`   • DeepSeek AI API集成`);
-    console.log(`   • 安全模块: 电子签名、Token、证书`);
     console.log(`\n📄 错误页面:`);
     console.log(`   • 404页面: /HTML/404.html`);
     console.log(`   • 403页面: /HTML/403.html`);
-    console.log(`\n🔒 安全API端点:`);
-    console.log(`   • 登录: http://localhost:${PORT}/api/auth/login`);
-    console.log(`   • 数据签名: http://localhost:${PORT}/api/security/sign`);
-    console.log(`   • 签名验证: http://localhost:${PORT}/api/security/verify`);
-    console.log(`   • 证书信息: http://localhost:${PORT}/api/security/certificate`);
-    console.log(`   • 自我修复: http://localhost:${PORT}/api/security/repair`);
     console.log(`\n🤖 AI API端点:`);
     console.log(`   • 健康检查: http://localhost:${PORT}/api/health`);
     console.log(`   • AI聊天: http://localhost:${PORT}/api/deepseek/chat`);
@@ -727,9 +421,9 @@ process.on('SIGINT', () => {
  */
 server.on('error', (error) => {
     if (error.code === 'EADDRINUSE') {
-        console.error(`[server.js] ❌ 端口 ${PORT} 已被占用，请检查是否有其他服务在运行`);
+        console.error(`❌ 端口 ${PORT} 已被占用，请检查是否有其他服务在运行`);
     } else {
-        console.error(`[server.js] ❌ 服务器错误: ${error.message}`);
+        console.error(`❌ 服务器错误: ${error.message}`);
     }
     process.exit(1);
 });

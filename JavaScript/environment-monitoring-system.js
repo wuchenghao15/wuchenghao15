@@ -123,7 +123,7 @@ class EnvironmentMonitoringSystem extends EventEmitter {
         this.activeAlerts = new Map();
 
         // 初始化
-        this.initialize().catch(error => console.error(`[environment-monitoring-system.js] this.initialize failed:`, error));
+        this.initialize();
     }
 
     /**
@@ -137,7 +137,7 @@ class EnvironmentMonitoringSystem extends EventEmitter {
             await this.createMonitoringDirectories();
             
             // 初始化环境状态
-            this.initializeEnvironmentStatus().catch(error => console.error(`[environment-monitoring-system.js] this.initializeEnvironmentStatus failed:`, error));
+            this.initializeEnvironmentStatus();
             
             // 加载历史数据
             await this.loadHistoricalData();
@@ -272,10 +272,10 @@ class EnvironmentMonitoringSystem extends EventEmitter {
         await Promise.allSettled(checkPromises);
         
         // 更新全局状态
-        this.updateGlobalStatus().catch(error => console.error(`[environment-monitoring-system.js] this.updateGlobalStatus failed:`, error));
+        this.updateGlobalStatus();
         
         // 触发状态更新事件
-        this.emit('statusUpdate', this.getEnvironmentStatus().catch(error => console.error(`[environment-monitoring-system.js] this.getEnvironmentStatus failed:`, error)));
+        this.emit('statusUpdate', this.getEnvironmentStatus());
     }
 
     /**
@@ -283,12 +283,12 @@ class EnvironmentMonitoringSystem extends EventEmitter {
      */
     async checkEnvironment(envKey, envConfig) {
         const status = this.environmentStatus.get(envKey);
-        const startTime = Date.now().catch(error => console.error(`[environment-monitoring-system.js] Date.now failed:`, error));
+        const startTime = Date.now();
 
         try {
             // 健康检查
             const healthResult = await this.performHealthCheck(envConfig);
-            const responseTime = Date.now().catch(error => console.error(`[environment-monitoring-system.js] Date.now failed:`, error)) - startTime;
+            const responseTime = Date.now() - startTime;
 
             // 更新状态
             status.status = 'healthy';
@@ -313,7 +313,7 @@ class EnvironmentMonitoringSystem extends EventEmitter {
             await this.checkAlertConditions(envKey, status, envConfig);
 
         } catch (error) {
-            const responseTime = Date.now().catch(error => console.error(`[environment-monitoring-system.js] Date.now failed:`, error)) - startTime;
+            const responseTime = Date.now() - startTime;
 
             // 更新错误状态
             status.status = 'unhealthy';
@@ -353,19 +353,19 @@ class EnvironmentMonitoringSystem extends EventEmitter {
                 reject(new Error('健康检查超时'));
             }, this.config.monitoring.timeout);
 
-            const startTime = Date.now().catch(error => console.error(`[environment-monitoring-system.js] Date.now failed:`, error));
+            const startTime = Date.now();
             
             // 使用curl进行健康检查
             exec(`curl -f -s -w "%{http_code}" "${healthUrl}"`, (error, stdout, stderr) => {
                 clearTimeout(timeout);
-                const responseTime = Date.now().catch(error => console.error(`[environment-monitoring-system.js] Date.now failed:`, error)) - startTime;
+                const responseTime = Date.now() - startTime;
 
                 if (error) {
                     reject(new Error(`健康检查失败: ${error.message}`));
                     return;
                 }
 
-                const httpCode = stdout.trim().catch(error => console.error(`[environment-monitoring-system.js] stdout.trim failed:`, error));
+                const httpCode = stdout.trim();
                 if (httpCode === '200') {
                     // 收集系统指标
                     this.collectSystemMetrics().then(metrics => {
@@ -396,15 +396,15 @@ class EnvironmentMonitoringSystem extends EventEmitter {
         try {
             // CPU使用率
             const cpuResult = await this.executeCommand('top -bn1 | grep "Cpu(s)" | awk \'{print $2}\' | cut -d\'%\' -f1');
-            metrics.cpu = parseFloat(cpuResult.stdout.trim().catch(error => console.error(`[environment-monitoring-system.js] stdout.trim failed:`, error))) || 0;
+            metrics.cpu = parseFloat(cpuResult.stdout.trim()) || 0;
 
             // 内存使用率
             const memResult = await this.executeCommand('free | grep Mem | awk \'{printf "%.1f", $3/$2 * 100.0}\'');
-            metrics.memory = parseFloat(memResult.stdout.trim().catch(error => console.error(`[environment-monitoring-system.js] stdout.trim failed:`, error))) || 0;
+            metrics.memory = parseFloat(memResult.stdout.trim()) || 0;
 
             // 磁盘使用率
             const diskResult = await this.executeCommand('df -h / | tail -1 | awk \'{print $5}\' | cut -d\'%\' -f1');
-            metrics.disk = parseFloat(diskResult.stdout.trim().catch(error => console.error(`[environment-monitoring-system.js] stdout.trim failed:`, error))) || 0;
+            metrics.disk = parseFloat(diskResult.stdout.trim()) || 0;
 
         } catch (error) {
             this.log(`收集系统指标失败: ${error.message}`);
@@ -418,7 +418,7 @@ class EnvironmentMonitoringSystem extends EventEmitter {
      */
     recordMetrics(envKey, metrics) {
         const envMetrics = this.environmentMetrics.get(envKey);
-        const timestamp = Date.now().catch(error => console.error(`[environment-monitoring-system.js] Date.now failed:`, error));
+        const timestamp = Date.now();
 
         // 记录响应时间
         if (metrics.responseTime) {
@@ -525,7 +525,7 @@ class EnvironmentMonitoringSystem extends EventEmitter {
      * 触发告警
      */
     async triggerAlert(envKey, alertType, data, isCritical = false) {
-        const alertId = this.generateAlertId().catch(error => console.error(`[environment-monitoring-system.js] this.generateAlertId failed:`, error));
+        const alertId = this.generateAlertId();
         const cooldownKey = `${envKey}_${alertType}`;
 
         // 检查冷却期
@@ -696,7 +696,7 @@ class EnvironmentMonitoringSystem extends EventEmitter {
      * 设置冷却期
      */
     setCooldown(cooldownKey) {
-        this.alertCooldowns.set(cooldownKey, Date.now().catch(error => console.error(`[environment-monitoring-system.js] Date.now failed:`, error)));
+        this.alertCooldowns.set(cooldownKey, Date.now());
     }
 
     /**
@@ -718,10 +718,10 @@ class EnvironmentMonitoringSystem extends EventEmitter {
      * 收集和聚合指标
      */
     async collectAndAggregateMetrics() {
-        const timestamp = Date.now().catch(error => console.error(`[environment-monitoring-system.js] Date.now failed:`, error));
+        const timestamp = Date.now();
         const aggregatedMetrics = {};
 
-        for (const [envKey, envMetrics] of this.environmentMetrics.entries().catch(error => console.error(`[environment-monitoring-system.js] environmentMetrics.entries failed:`, error))) {
+        for (const [envKey, envMetrics] of this.environmentMetrics.entries()) {
             aggregatedMetrics[envKey] = {
                 timestamp,
                 responseTime: this.calculateAverage(envMetrics.responseTime),
@@ -791,15 +791,15 @@ class EnvironmentMonitoringSystem extends EventEmitter {
         
         // API路由
         app.get('/api/status', (req, res) => {
-            res.json(this.getEnvironmentStatus().catch(error => console.error(`[environment-monitoring-system.js] this.getEnvironmentStatus failed:`, error)));
+            res.json(this.getEnvironmentStatus());
         });
 
         app.get('/api/metrics', (req, res) => {
-            res.json(this.getMetricsData().catch(error => console.error(`[environment-monitoring-system.js] this.getMetricsData failed:`, error)));
+            res.json(this.getMetricsData());
         });
 
         app.get('/api/alerts', (req, res) => {
-            res.json(this.getAlertHistory().catch(error => console.error(`[environment-monitoring-system.js] this.getAlertHistory failed:`, error)));
+            res.json(this.getAlertHistory());
         });
 
         // WebSocket连接
@@ -807,7 +807,7 @@ class EnvironmentMonitoringSystem extends EventEmitter {
             this.log('🔌 仪表板客户端已连接');
 
             // 发送实时数据
-            socket.emit('status', this.getEnvironmentStatus().catch(error => console.error(`[environment-monitoring-system.js] this.getEnvironmentStatus failed:`, error)));
+            socket.emit('status', this.getEnvironmentStatus());
             socket.emit('metrics', this.getMetricsData());
 
             // 监听状态更新
@@ -837,7 +837,7 @@ class EnvironmentMonitoringSystem extends EventEmitter {
         let allHealthy = true;
         let hasCriticalIssues = false;
 
-        for (const [envKey, status] of this.environmentStatus.entries().catch(error => console.error(`[environment-monitoring-system.js] environmentStatus.entries failed:`, error))) {
+        for (const [envKey, status] of this.environmentStatus.entries()) {
             const envConfig = this.config.environments[envKey];
             
             if (status.status !== 'healthy') {
@@ -854,7 +854,7 @@ class EnvironmentMonitoringSystem extends EventEmitter {
             overall: allHealthy ? 'healthy' : (hasCriticalIssues ? 'critical' : 'degraded'),
             timestamp: new Date().toISOString(),
             environmentCount: this.environmentStatus.size,
-            healthyCount: Array.from(this.environmentStatus.values().catch(error => console.error(`[environment-monitoring-system.js] environmentStatus.values failed:`, error))).filter(s => s.status === 'healthy').length,
+            healthyCount: Array.from(this.environmentStatus.values()).filter(s => s.status === 'healthy').length,
             activeAlerts: this.activeAlerts.size
         };
     }
@@ -865,7 +865,7 @@ class EnvironmentMonitoringSystem extends EventEmitter {
     getEnvironmentStatus() {
         const status = {};
         
-        for (const [envKey, envStatus] of this.environmentStatus.entries().catch(error => console.error(`[environment-monitoring-system.js] environmentStatus.entries failed:`, error))) {
+        for (const [envKey, envStatus] of this.environmentStatus.entries()) {
             status[envKey] = { ...envStatus };
         }
 
@@ -882,7 +882,7 @@ class EnvironmentMonitoringSystem extends EventEmitter {
     getMetricsData() {
         const metrics = {};
         
-        for (const [envKey, envMetrics] of this.environmentMetrics.entries().catch(error => console.error(`[environment-monitoring-system.js] environmentMetrics.entries failed:`, error))) {
+        for (const [envKey, envMetrics] of this.environmentMetrics.entries()) {
             metrics[envKey] = { ...envMetrics };
         }
 
@@ -898,7 +898,7 @@ class EnvironmentMonitoringSystem extends EventEmitter {
      */
     getAlertHistory() {
         return {
-            active: Array.from(this.activeAlerts.values().catch(error => console.error(`[environment-monitoring-system.js] activeAlerts.values failed:`, error))),
+            active: Array.from(this.activeAlerts.values()),
             history: this.alertHistory.slice(-100),
             timestamp: new Date().toISOString()
         };
@@ -955,7 +955,7 @@ class EnvironmentMonitoringSystem extends EventEmitter {
         const logPath = path.join('./monitoring/logs', 'monitoring.log');
         fs.appendFile(logPath, logMessage + '\n', (err) => {
             if (err) {
-                console.error(`[environment-monitoring-system.js] 写入日志失败:, err`);
+                console.error('写入日志失败:', err);
             }
         });
     }

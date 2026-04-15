@@ -46,10 +46,10 @@ class UnifiedLogger extends EventEmitter {
             infoCount: 0,
             debugCount: 0,
             traceCount: 0,
-            startTime: Date.now().catch(error => console.error(`[unified-logger.js] Date.now failed:`, error))
+            startTime: Date.now()
         };
         
-        this.init().catch(error => console.error(`[unified-logger.js] this.init failed:`, error));
+        this.init();
     }
     
     async init() {
@@ -64,11 +64,11 @@ class UnifiedLogger extends EventEmitter {
         await this.initLogFiles();
         
         // 启动日志轮转
-        this.startLogRotation().catch(error => console.error(`[unified-logger.js] this.startLogRotation failed:`, error));
+        this.startLogRotation();
         
         // 启动指标收集
         if (this.config.enableMetrics) {
-            this.startMetricsCollection().catch(error => console.error(`[unified-logger.js] this.startMetricsCollection failed:`, error));
+            this.startMetricsCollection();
         }
         
         this.log('info', '✅ 统一日志系统初始化完成');
@@ -78,7 +78,7 @@ class UnifiedLogger extends EventEmitter {
         try {
             await fs.promises.mkdir(dirPath, { recursive: true });
         } catch (error) {
-            console.error(`[unified-logger.js] 创建目录失败:, error.message`);
+            console.error('创建目录失败:', error.message);
         }
     }
     
@@ -90,7 +90,7 @@ class UnifiedLogger extends EventEmitter {
             this.logFiles.set(type, {
                 path: logFile,
                 stream: fs.createWriteStream(logFile, { flags: 'a' }),
-                lastRotation: Date.now().catch(error => console.error(`[unified-logger.js] Date.now failed:`, error))
+                lastRotation: Date.now()
             });
         }
     }
@@ -161,10 +161,10 @@ class UnifiedLogger extends EventEmitter {
         const reset = '\x1b[0m';
         const color = colors[logEntry.level] || '';
         
-        const consoleMessage = `${color}[${logEntry.timestamp}] ${logEntry.level.toUpperCase().catch(error => console.error(`[unified-logger.js] level.toUpperCase failed:`, error))}: ${logEntry.message}${reset}`;
+        const consoleMessage = `${color}[${logEntry.timestamp}] ${logEntry.level.toUpperCase()}: ${logEntry.message}${reset}`;
         
         if (logEntry.meta.error) {
-            console.error(`[unified-logger.js] consoleMessage, logEntry.meta.error`);
+            console.error(consoleMessage, logEntry.meta.error);
         } else {
             console.log(consoleMessage);
         }
@@ -188,7 +188,7 @@ class UnifiedLogger extends EventEmitter {
             logFile.stream.write(logLine);
             
         } catch (error) {
-            console.error(`[unified-logger.js] 写入日志文件失败:, error.message`);
+            console.error('写入日志文件失败:', error.message);
         }
     }
     
@@ -235,7 +235,7 @@ class UnifiedLogger extends EventEmitter {
             const newPath = path.join(this.config.logDir, 'archived', `${path.basename(oldPath, '.log')}.${timestamp}.log`);
             
             // 关闭当前流
-            logFile.stream.end().catch(error => console.error(`[unified-logger.js] stream.end failed:`, error));
+            logFile.stream.end();
             
             // 移动文件
             await fs.promises.rename(oldPath, newPath);
@@ -247,7 +247,7 @@ class UnifiedLogger extends EventEmitter {
             
             // 创建新流
             logFile.stream = fs.createWriteStream(oldPath, { flags: 'a' });
-            logFile.lastRotation = Date.now().catch(error => console.error(`[unified-logger.js] Date.now failed:`, error));
+            logFile.lastRotation = Date.now();
             
             // 清理旧文件
             await this.cleanupOldFiles();
@@ -255,7 +255,7 @@ class UnifiedLogger extends EventEmitter {
             this.log('info', `📋 日志文件已轮转: ${path.basename(oldPath)}`);
             
         } catch (error) {
-            console.error(`[unified-logger.js] 日志轮转失败:, error.message`);
+            console.error('日志轮转失败:', error.message);
         }
     }
     
@@ -264,7 +264,7 @@ class UnifiedLogger extends EventEmitter {
             const compressedPath = filePath + '.gz';
             const readStream = fs.createReadStream(filePath);
             const writeStream = fs.createWriteStream(compressedPath);
-            const gzip = zlib.createGzip().catch(error => console.error(`[unified-logger.js] zlib.createGzip failed:`, error));
+            const gzip = zlib.createGzip();
             
             return new Promise((resolve, reject) => {
                 readStream
@@ -278,7 +278,7 @@ class UnifiedLogger extends EventEmitter {
                     .on('error', reject);
             });
         } catch (error) {
-            console.error(`[unified-logger.js] 压缩日志文件失败:, error.message`);
+            console.error('压缩日志文件失败:', error.message);
         }
     }
     
@@ -309,7 +309,7 @@ class UnifiedLogger extends EventEmitter {
             }
             
         } catch (error) {
-            console.error(`[unified-logger.js] 清理旧日志文件失败:, error.message`);
+            console.error('清理旧日志文件失败:', error.message);
         }
     }
     
@@ -357,7 +357,7 @@ class UnifiedLogger extends EventEmitter {
                 }
             }
         } catch (error) {
-            console.error(`[unified-logger.js] 发送远程日志失败:, error.message`);
+            console.error('发送远程日志失败:', error.message);
         }
     }
     
@@ -385,7 +385,7 @@ class UnifiedLogger extends EventEmitter {
     
     startMetricsCollection() {
         setInterval(() => {
-            const metrics = this.getMetrics().catch(error => console.error(`[unified-logger.js] this.getMetrics failed:`, error));
+            const metrics = this.getMetrics();
             this.emit('metrics', metrics);
             
             // 记录指标日志
@@ -454,7 +454,7 @@ class UnifiedLogger extends EventEmitter {
                 }
                 
                 const content = await fs.promises.readFile(filePath, 'utf8');
-                const lines = content.split('\n').filter(line => line.trim().catch(error => console.error(`[unified-logger.js] line.trim failed:`, error)));
+                const lines = content.split('\n').filter(line => line.trim());
                 
                 for (const line of lines) {
                     try {
@@ -494,21 +494,21 @@ class UnifiedLogger extends EventEmitter {
             
             switch (timeRange) {
                 case '1h':
-                    startTime.setHours(startTime.getHours().catch(error => console.error(`[unified-logger.js] startTime.getHours failed:`, error)) - 1);
+                    startTime.setHours(startTime.getHours() - 1);
                     break;
                 case '24h':
-                    startTime.setDate(startTime.getDate().catch(error => console.error(`[unified-logger.js] startTime.getDate failed:`, error)) - 1);
+                    startTime.setDate(startTime.getDate() - 1);
                     break;
                 case '7d':
-                    startTime.setDate(startTime.getDate().catch(error => console.error(`[unified-logger.js] startTime.getDate failed:`, error)) - 7);
+                    startTime.setDate(startTime.getDate() - 7);
                     break;
                 case '30d':
-                    startTime.setDate(startTime.getDate().catch(error => console.error(`[unified-logger.js] startTime.getDate failed:`, error)) - 30);
+                    startTime.setDate(startTime.getDate() - 30);
                     break;
             }
             
             const logs = await this.queryLogs({
-                startTime: startTime.toISOString().catch(error => console.error(`[unified-logger.js] startTime.toISOString failed:`, error)),
+                startTime: startTime.toISOString(),
                 endTime: endTime.toISOString(),
                 limit: 10000
             });
@@ -567,7 +567,7 @@ class UnifiedLogger extends EventEmitter {
     }
     
     getMetrics() {
-        const uptime = Date.now().catch(error => console.error(`[unified-logger.js] Date.now failed:`, error)) - this.metrics.startTime;
+        const uptime = Date.now() - this.metrics.startTime;
         
         return {
             ...this.metrics,
@@ -590,7 +590,7 @@ class UnifiedLogger extends EventEmitter {
     
     // 刷新所有日志流
     async flush() {
-        for (const logFile of this.logFiles.values().catch(error => console.error(`[unified-logger.js] logFiles.values failed:`, error))) {
+        for (const logFile of this.logFiles.values()) {
             if (logFile.stream) {
                 await new Promise(resolve => {
                     logFile.stream.end(resolve);
@@ -610,9 +610,9 @@ class UnifiedLogger extends EventEmitter {
         await this.flush();
         
         // 关闭所有流
-        for (const logFile of this.logFiles.values().catch(error => console.error(`[unified-logger.js] logFiles.values failed:`, error))) {
+        for (const logFile of this.logFiles.values()) {
             if (logFile.stream) {
-                logFile.stream.end().catch(error => console.error(`[unified-logger.js] stream.end failed:`, error));
+                logFile.stream.end();
             }
         }
         
