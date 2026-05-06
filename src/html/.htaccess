@@ -1,0 +1,93 @@
+# MTSCOS 系统错误页面配置
+# 配置所有错误代码指向对应的本地错误页面
+
+# 4xx 客户端错误
+ErrorDocument 400 /400.html
+ErrorDocument 401 /401.html
+ErrorDocument 403 /403.html
+ErrorDocument 404 /404.html
+
+# 5xx 服务器错误
+ErrorDocument 500 /500.html
+ErrorDocument 501 /501.html
+ErrorDocument 502 /502.html
+ErrorDocument 503 /503.html
+ErrorDocument 504 /504.html
+
+# 启用重写引擎
+RewriteEngine On
+
+# 确保index.html作为默认文档
+DirectoryIndex index.html
+
+# 重写规则：如果请求的文件不存在，重定向到404页面
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ /404.html?path=$1 [L]
+
+# 配置MIME类型
+AddType text/html .html
+AddType text/css .css
+AddType application/javascript .js
+
+# 启用跨域资源共享（CORS）
+Header set Access-Control-Allow-Origin "*"
+Header set Access-Control-Allow-Methods "GET, POST, OPTIONS"
+Header set Access-Control-Allow-Headers "Content-Type, Authorization"
+
+# 启用压缩
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/plain
+    AddOutputFilterByType DEFLATE text/html
+    AddOutputFilterByType DEFLATE text/xml
+    AddOutputFilterByType DEFLATE text/css
+    AddOutputFilterByType DEFLATE application/xml
+    AddOutputFilterByType DEFLATE application/xhtml+xml
+    AddOutputFilterByType DEFLATE application/rss+xml
+    AddOutputFilterByType DEFLATE application/javascript
+    AddOutputFilterByType DEFLATE application/x-javascript
+</IfModule>
+
+# 启用缓存
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType text/html "access plus 1 hour"
+    ExpiresByType text/css "access plus 1 week"
+    ExpiresByType application/javascript "access plus 1 week"
+    ExpiresByType image/jpeg "access plus 1 month"
+    ExpiresByType image/png "access plus 1 month"
+    ExpiresByType image/gif "access plus 1 month"
+</IfModule>
+
+# 安全设置
+<IfModule mod_headers.c>
+    # 防止点击劫持
+    Header always append X-Frame-Options DENY
+    
+    # 防止MIME类型嗅探
+    Header always set X-Content-Type-Options nosniff
+    
+    # 启用XSS保护
+    Header always set X-XSS-Protection "1; mode=block"
+    
+    # 禁用严格传输安全（不强制HTTPS）
+    # Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+    
+    # 启用内容安全策略
+    Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'"
+</IfModule>
+
+# 禁止目录浏览
+Options -Indexes
+
+# 禁止访问敏感文件
+<FilesMatch "\.(htaccess|htpasswd|ini|log|sh|inc|bak|tmp)$">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>
+
+# 允许访问特定的配置文件
+<FilesMatch "^(robots\.txt|sitemap\.xml|favicon\.ico)$">
+    Order Allow,Deny
+    Allow from all
+</FilesMatch>

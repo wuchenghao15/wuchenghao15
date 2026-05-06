@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 """
 权限管理模块
-"""
 
 import logging
 from functools import wraps
@@ -25,4 +24,3 @@ def permission_required(required_roles):
 def check_permission(required_role):
     """检查权限"""
     role = session.get('user_level', 'user')
-    return role in required_role

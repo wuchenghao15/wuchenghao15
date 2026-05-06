@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 生成密码哈希的简单脚本
-"""
 
 import sys
 import os
@@ -18,3 +17,5 @@ hashed_password = security_utils.hash_password(password)
 
 print(f"密码: {password}")
 print(f"哈希值: {hashed_password}")
+
+"""

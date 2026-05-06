@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 """
 测试优化后的专家AI服务
-"""
 
 import sys
 import os
@@ -17,9 +16,8 @@ def main():
     print("=" * 60)
     print("测试优化后的专家AI服务")
     print("=" * 60)
-    
     service = EnhancedExpertAIService()
-    
+
     # 1. 测试题库健康分析
     print("\n[1] 测试题库健康分析...")
     health_report = service.analyze_question_bank_health('japanese')
@@ -31,7 +29,7 @@ def main():
             print("  发现的问题:")
             for issue in health_report['issues'][:3]:
                 print(f"    - {issue}")
-    
+
     # 2. 测试生成提升试卷
     print("\n[2] 测试生成提升试卷...")
     user_id = 1
@@ -41,7 +39,7 @@ def main():
         print(f"  题目{i}: 等级{q['level_id']}, 题型{q['question_type']}")
         if 'audio' in q:
             print(f"       - 音频: {q['audio'].get('accent', 'none')}")
-    
+
     # 3. 测试生成题库需求
     print("\n[3] 测试生成题库需求...")
     requirements = service.generate_question_bank_requirements('japanese')
@@ -53,11 +51,12 @@ def main():
             print("  高优先级任务示例:")
             for task in requirements['priority_tasks'][:2]:
                 print(f"    - {task}")
-    
+
     print("\n" + "=" * 60)
     print("优化后的专家AI服务测试完成！")
     print("=" * 60)
 
-
 if __name__ == "__main__":
     main()
+
+"""

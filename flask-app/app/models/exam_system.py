@@ -2,10 +2,9 @@
 """
 考试系统数据模型和管理器
 包括试卷生成、考试管理和成绩分析功能
-"""
 
 import sqlite3
-import json
+# JSON import removed - using database
 import logging
 import random
 from datetime import datetime, UTC
@@ -20,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 class Exam:
     """考试模型"""
-    
+
     def __init__(self, id: int = None, title: str = None, description: str = None,
                  language: str = None, level: str = None, duration: int = None,
                  question_count: int = None, created_at: str = None, updated_at: str = None):
@@ -33,7 +32,7 @@ class Exam:
         self.question_count = question_count
         self.created_at = created_at or datetime.now(UTC).isoformat()
         self.updated_at = updated_at or datetime.now(UTC).isoformat()
-    
+
     def to_dict(self) -> Dict:
         """转换为字典"""
         return {
@@ -51,13 +50,12 @@ class Exam:
 
 class ExamPaper:
     """试卷模型"""
-    
+
     def __init__(self, id: int = None, exam_id: int = None, user_id: int = None,
                  questions: list = None, scores: dict = None, total_score: float = None,
                  status: str = "pending", start_time: str = None, end_time: str = None,
                  created_at: str = None, updated_at: str = None):
         self.id = id
-        self.exam_id = exam_id
         self.user_id = user_id
         self.questions = questions or []  # 题目ID列表
         self.scores = scores or {}  # 题目得分映射
@@ -67,18 +65,12 @@ class ExamPaper:
         self.end_time = end_time
         self.created_at = created_at or datetime.now(UTC).isoformat()
         self.updated_at = updated_at or datetime.now(UTC).isoformat()
-    
     def to_dict(self) -> Dict:
-        """转换为字典"""
         return {
             'id': self.id,
-            'exam_id': self.exam_id,
             'user_id': self.user_id,
-            'questions': self.questions,
             'scores': self.scores,
-            'total_score': self.total_score,
             'status': self.status,
-            'start_time': self.start_time,
             'end_time': self.end_time,
             'created_at': self.created_at,
             'updated_at': self.updated_at
@@ -87,53 +79,39 @@ class ExamPaper:
 
 class ExamResult:
     """考试结果模型"""
-    
-    def __init__(self, id: int = None, exam_paper_id: int = None, user_id: int = None,
+
                  total_score: float = None, correct_count: int = None, wrong_count: int = None,
-                 accuracy: float = None, analysis: dict = None, created_at: str = None):
         self.id = id
-        self.exam_paper_id = exam_paper_id
-        self.user_id = user_id
         self.total_score = total_score
         self.correct_count = correct_count
         self.wrong_count = wrong_count
         self.accuracy = accuracy
         self.analysis = analysis or {}  # 详细分析数据
         self.created_at = created_at or datetime.now(UTC).isoformat()
-    
+
     def to_dict(self) -> Dict:
-        """转换为字典"""
         return {
             'id': self.id,
             'exam_paper_id': self.exam_paper_id,
-            'user_id': self.user_id,
-            'total_score': self.total_score,
             'correct_count': self.correct_count,
-            'wrong_count': self.wrong_count,
-            'accuracy': self.accuracy,
             'analysis': self.analysis,
             'created_at': self.created_at
-        }
 
 
-class ExamSystemManager:
     """考试系统管理器"""
-    
+
     def __init__(self):
         config = load_config()
         self.db_path = config.get('DB_PATH', 'dev.db')
         self.question_manager = QuestionManager()
         self._init_tables()
-    
-    def _get_connection(self):
+
         """获取数据库连接"""
-        return sqlite3.connect(self.db_path)
-    
-    def _init_tables(self):
+
         """初始化数据库表"""
         conn = self._get_connection()
         cursor = conn.cursor()
-        
+
         # 创建考试表
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS exams (
@@ -148,7 +126,7 @@ class ExamSystemManager:
                 updated_at TEXT NOT NULL
             )
         ''')
-        
+
         # 创建试卷表
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS exam_papers (
@@ -166,109 +144,85 @@ class ExamSystemManager:
                 FOREIGN KEY (exam_id) REFERENCES exams (id)
             )
         ''')
-        
+
         # 创建考试结果表
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS exam_results (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 exam_paper_id INTEGER NOT NULL,
-                user_id INTEGER NOT NULL,
                 total_score REAL NOT NULL,
                 correct_count INTEGER NOT NULL,
-                wrong_count INTEGER NOT NULL,
                 accuracy REAL NOT NULL,
                 analysis TEXT NOT NULL,
                 created_at TEXT NOT NULL,
                 FOREIGN KEY (exam_paper_id) REFERENCES exam_papers (id)
             )
         ''')
-        
+
         # 创建用户题目使用记录表
         cursor.execute('''
-            CREATE TABLE IF NOT EXISTS user_question_usage (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_id INTEGER NOT NULL,
                 question_id INTEGER NOT NULL,
-                usage_count INTEGER DEFAULT 1,
-                last_used_at TEXT NOT NULL,
                 created_at TEXT NOT NULL,
-                updated_at TEXT NOT NULL,
                 UNIQUE(user_id, question_id)
-            )
         ''')
-        
+
         conn.commit()
         conn.close()
-    
+
     def create_exam(self, title: str, description: str, language: str, level: str,
-                   duration: int, question_count: int) -> Exam:
         """创建考试"""
         conn = self._get_connection()
-        cursor = conn.cursor()
-        
-        now = datetime.now(UTC).isoformat()
-        
+
+
         cursor.execute(
-            'INSERT INTO exams (title, description, language, level, duration, question_count, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
             (title, description, language, level, duration, question_count, now, now)
-        )
-        
-        exam_id = cursor.lastrowid
+
         conn.commit()
         conn.close()
-        
-        return Exam(id=exam_id, title=title, description=description, language=language, 
+
+        return Exam(id=exam_id, title=title, description=description, language=language,
                    level=level, duration=duration, question_count=question_count,
-                   created_at=now, updated_at=now)
-    
+
     def generate_exam_paper(self, exam_id: int, user_id: int) -> ExamPaper:
-        """智能生成试卷，基于知识点覆盖、难度分布和用户历史"""
         # 获取考试信息
         conn = self._get_connection()
-        cursor = conn.cursor()
-        cursor.execute('SELECT * FROM exams WHERE id = ?', (exam_id,))
-        exam_row = cursor.fetchone()
         conn.close()
-        
+
         if not exam_row:
-            raise ValueError(f"考试ID {exam_id} 不存在")
-        
-        exam = Exam(*exam_row)
-        
+
+
         # 智能生成题目列表
         # 1. 获取考试基本信息
         language_id = 1 if exam.language == 'japanese' else 2
         level_map = {'beginner': 1, 'intermediate': 2, 'advanced': 3, 'expert': 4}
         level_id = level_map.get(exam.level, 2)
-        
+
         # 2. 获取用户最近使用的题目，避免重复出题
         used_question_ids = self.get_user_used_questions(user_id, limit=200)  # 获取最近使用的200道题
-        
-        # 3. 分析用户历史表现，调整题目难度分布
+
         user_performance = self._analyze_user_performance(user_id)
-        
         # 4. 获取所有可用题目，并排除已使用的题目
         all_questions = self.question_manager.get_questions(
-            language_id=language_id,
             level_id=level_id,
             limit=exam.question_count * 5  # 获取足够的题目进行筛选
         )
-        
+
         # 排除用户已使用的题目
         available_questions = [q for q in all_questions if q.id not in used_question_ids]
-        
+
         # 如果可用题目不足，放宽限制，允许少量重复
         if len(available_questions) < exam.question_count * 2:
-            available_questions = all_questions
-        
+
         questions = []
-        
+
         if available_questions:
             # 按难度分组
             easy_questions = []
             medium_questions = []
             hard_questions = []
-            
+
             for q in available_questions:
                 difficulty = q.difficulty_score or 5
                 if difficulty < 4:
@@ -277,17 +231,16 @@ class ExamSystemManager:
                     medium_questions.append(q)
                 else:
                     hard_questions.append(q)
-            
+
             # 根据用户表现调整难度分布
             total = exam.question_count
-            
+
             # 基础难度分布：简单题:中等题:难题 = 4:4:2
             easy_ratio = 0.4
             medium_ratio = 0.4
             hard_ratio = 0.2
-            
+
             # 根据用户表现调整难度比例
-            if user_performance['average_accuracy'] > 0.8:  # 用户表现优秀，增加难题比例
                 easy_ratio = 0.3
                 medium_ratio = 0.4
                 hard_ratio = 0.3
@@ -295,53 +248,51 @@ class ExamSystemManager:
                 easy_ratio = 0.5
                 medium_ratio = 0.4
                 hard_ratio = 0.1
-            
+
             # 计算各难度题目数量
             easy_count = max(1, int(total * easy_ratio))
             medium_count = max(1, int(total * medium_ratio))
             hard_count = max(1, total - easy_count - medium_count)
-            
+
             # 随机选择题目，确保知识点覆盖和题型多样化
             selected = []
             used_categories = set()
             used_types = set()
-            
+
             # 辅助函数：选择题目时优先考虑未使用的分类和题型
             def select_question(question_pool, count):
                 if not question_pool:
                     return []
-                
+
                 # 打乱题目顺序
                 random.shuffle(question_pool)
-                
+
                 selected_questions = []
                 for q in question_pool:
                     if len(selected_questions) >= count:
                         break
-                    
+
                     # 优先选择未使用的分类和题型
-                    if (q.category_id not in used_categories or 
-                        q.question_type not in used_types or 
-                        len(used_categories) >= 5 or 
+                    if (q.category_id not in used_categories or
+                        q.question_type not in used_types or
+                        len(used_categories) >= 5 or
                         len(used_types) >= 3):
-                        
+
                         selected_questions.append(q)
                         used_categories.add(q.category_id or 0)
                         used_types.add(q.question_type or 'single_choice')
-                
+
                 # 如果数量不足，从剩余题目中补充
                 if len(selected_questions) < count:
                     remaining = [q for q in question_pool if q not in selected_questions]
                     needed = count - len(selected_questions)
                     selected_questions.extend(random.sample(remaining, min(needed, len(remaining))))
-                
+
                 return selected_questions[:count]
-            
             # 选择各难度题目
             selected.extend(select_question(easy_questions, easy_count))
             selected.extend(select_question(medium_questions, medium_count))
-            selected.extend(select_question(hard_questions, hard_count))
-            
+
             # 确保题目数量正确
             if len(selected) > total:
                 selected = selected[:total]
@@ -351,14 +302,14 @@ class ExamSystemManager:
                 needed = total - len(selected)
                 if remaining:
                     selected.extend(random.sample(remaining, min(needed, len(remaining))))
-            
+
             questions = selected
-        
+
         # 记录题目使用情况
         question_ids = [q.id for q in questions]
         for q_id in question_ids:
             self.record_question_usage(user_id, q_id)
-        
+
         # 创建试卷
         exam_paper = ExamPaper(
             exam_id=exam_id,
@@ -366,34 +317,32 @@ class ExamSystemManager:
             questions=question_ids,
             status="pending"
         )
-        
+
         conn = self._get_connection()
         cursor = conn.cursor()
-        
-        questions_json = json.dumps(question_ids)
-        scores_json = json.dumps({})
-        
+
+        questions_json = str(question_ids)
+        scores_json = str({})
+
         cursor.execute(
             'INSERT INTO exam_papers (exam_id, user_id, questions, scores, total_score, status, start_time, end_time, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
             (exam_paper.exam_id, exam_paper.user_id, questions_json, scores_json, exam_paper.total_score,
              exam_paper.status, exam_paper.start_time, exam_paper.end_time,
              exam_paper.created_at, exam_paper.updated_at)
         )
-        
+
         exam_paper_id = cursor.lastrowid
         conn.commit()
         conn.close()
-        
+
         exam_paper.id = exam_paper_id
         return exam_paper
-    
+
     def _analyze_user_performance(self, user_id: int) -> dict:
         """分析用户历史表现，返回表现数据"""
-        # 获取用户最近的3次考试结果
         user_exams = self.get_user_exams(user_id)
         completed_exams = [exam for exam in user_exams if exam.status == 'completed'][:3]
-        
-        if not completed_exams:
+
             # 默认表现数据
             return {
                 'average_accuracy': 0.7,
@@ -401,66 +350,54 @@ class ExamSystemManager:
                 'strong_points': [],
                 'weak_points': []
             }
-        
-        # 计算平均正确率
+
         total_accuracy = 0
         exam_count = 0
-        
         for exam_paper in completed_exams:
             conn = self._get_connection()
             cursor = conn.cursor()
             cursor.execute('SELECT accuracy FROM exam_results WHERE exam_paper_id = ?', (exam_paper.id,))
             result_row = cursor.fetchone()
             conn.close()
-            
+
             if result_row:
                 total_accuracy += result_row[0]
                 exam_count += 1
-        
-        average_accuracy = total_accuracy / exam_count if exam_count > 0 else 0.7
-        
+
         return {
             'average_accuracy': average_accuracy,
             'total_exams': exam_count,
             'strong_points': [],  # 可扩展：分析用户强项
             'weak_points': []     # 可扩展：分析用户弱项
         }
-    
-    def start_exam(self, exam_paper_id: int) -> ExamPaper:
+
         """开始考试"""
         conn = self._get_connection()
-        cursor = conn.cursor()
-        
+
         now = datetime.now(UTC).isoformat()
-        
         cursor.execute(
             'UPDATE exam_papers SET status = ?, start_time = ?, updated_at = ? WHERE id = ?',
-            ("in_progress", now, now, exam_paper_id)
         )
-        
         conn.commit()
         conn.close()
-        
+
         # 获取更新后的试卷
-        return self.get_exam_paper(exam_paper_id)
-    
+
     def submit_exam(self, exam_paper_id: int, answers: dict) -> ExamResult:
         """提交考试并生成结果"""
         # 获取试卷
         exam_paper = self.get_exam_paper(exam_paper_id)
         if not exam_paper:
             raise ValueError(f"试卷ID {exam_paper_id} 不存在")
-        
+
         # 计算成绩和分析
         scores = {}
         correct_count = 0
-        wrong_count = 0
         partial_count = 0
-        
+
         # 题型权重配置
         question_type_weights = {
             'multiple_choice': 1.0,
-            'fill_in_blank': 1.2,
             'true_false': 0.8,
             'short_answer': 1.5,
             'essay': 3.0,
@@ -473,32 +410,27 @@ class ExamSystemManager:
             'speaking': 2.0,
             'intensive_reading': 2.0
         }
-        
+
         for question_id, user_answer in answers.items():
             question = self.question_manager.get_question(int(question_id))
             if not question:
                 continue
-            
+
             # 智能评分逻辑
             question_id_str = str(question_id)
-            question_type = question.question_type or 'multiple_choice'
             weight = question_type_weights.get(question_type, 1.0)
             difficulty = question.difficulty_score or 5
-            
+
             # 基础分数
             base_score = weight * (difficulty / 10) * 2  # 基础分数根据难度和题型调整
-            
+
             # 精确匹配答案
             correct_answer = str(question.answer).strip().lower()
-            user_answer_str = str(user_answer).strip().lower()
-            
+
             is_correct = False
-            score = 0.0
-            
+
             # 根据题型调整评分逻辑
-            if question_type in ['multiple_choice', 'true_false', 'matching', 'ordering']:
                 # 客观题，精确匹配
-                is_correct = user_answer_str == correct_answer
                 if is_correct:
                     score = base_score
                     correct_count += 1
@@ -509,10 +441,10 @@ class ExamSystemManager:
                 # 简单实现：检查关键词匹配
                 correct_words = correct_answer.split()
                 user_words = user_answer_str.split()
-                
+
                 matched_words = set(correct_words) & set(user_words)
                 match_ratio = len(matched_words) / len(correct_words) if correct_words else 0
-                
+
                 if match_ratio == 1.0:
                     score = base_score
                     correct_count += 1
@@ -540,193 +472,150 @@ class ExamSystemManager:
                     correct_count += 1
                 else:
                     wrong_count += 1
-            
+
             scores[question_id_str] = round(score, 2)
-        
+
         total_score = round(sum(scores.values()), 2)
         total_attempted = len(answers)
         accuracy = correct_count / total_attempted if total_attempted > 0 else 0
-        
+
         # 更新试卷状态
         conn = self._get_connection()
         cursor = conn.cursor()
-        
+
         now = datetime.now(UTC).isoformat()
-        scores_json = json.dumps(scores)
-        
+        scores_json = str(scores)
+
         cursor.execute(
             'UPDATE exam_papers SET scores = ?, total_score = ?, status = ?, end_time = ?, updated_at = ? WHERE id = ?',
             (scores_json, total_score, "completed", now, now, exam_paper_id)
         )
-        
+
         conn.commit()
         conn.close()
-        
+
         # 生成详细分析
         analysis = self.analyze_exam_result(exam_paper, answers, scores, question_type_weights)
-        
+
         # 创建考试结果
         exam_result = ExamResult(
             exam_paper_id=exam_paper_id,
-            user_id=exam_paper.user_id,
             total_score=total_score,
             correct_count=correct_count,
             wrong_count=wrong_count,
             accuracy=accuracy,
             analysis=analysis
         )
-        
         conn = self._get_connection()
         cursor = conn.cursor()
-        
-        analysis_json = json.dumps(analysis)
-        
+
+        analysis_json = str(analysis)
+
         cursor.execute(
-            'INSERT INTO exam_results (exam_paper_id, user_id, total_score, correct_count, wrong_count, accuracy, analysis, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
             (exam_result.exam_paper_id, exam_result.user_id, exam_result.total_score,
              exam_result.correct_count, exam_result.wrong_count, exam_result.accuracy,
-             analysis_json, exam_result.created_at)
         )
-        
-        exam_result_id = cursor.lastrowid
         conn.commit()
         conn.close()
-        
+
         exam_result.id = exam_result_id
         return exam_result
-    
     def analyze_exam_result(self, exam_paper: ExamPaper, answers: dict, scores: dict, question_type_weights: dict = None) -> dict:
         """分析考试结果"""
-        # 获取所有题目
-        questions = [self.question_manager.get_question(qid) for qid in exam_paper.questions]
         questions = [q for q in questions if q is not None]
-        
         # 初始化题型权重
-        if question_type_weights is None:
-            question_type_weights = {
                 'multiple_choice': 1.0,
                 'fill_in_blank': 1.2,
-                'true_false': 0.8,
                 'short_answer': 1.5,
-                'essay': 3.0,
                 'intensive_reading': 2.0
             }
-        
-        # 按题型分析
-        question_type_stats = {}
-        for question in questions:
-            qid = str(question.id)
-            question_type = question.question_type or 'multiple_choice'
-            
+
             if question_type not in question_type_stats:
-                question_type_stats[question_type] = {
                     'count': 0,
-                    'correct': 0,
                     'partial': 0,
                     'wrong': 0,
-                    'total_score': 0.0,
-                    'average_score': 0.0,
-                    'accuracy': 0.0
                 }
-            
             question_type_stats[question_type]['count'] += 1
-            score = scores.get(qid, 0.0)
             question_type_stats[question_type]['total_score'] += score
-            
+
             # 计算正确率（考虑部分得分）
             if score > 0:
                 if score == max(scores.values()):
                     question_type_stats[question_type]['correct'] += 1
-                else:
                     question_type_stats[question_type]['partial'] += 1
             else:
                 question_type_stats[question_type]['wrong'] += 1
-        
+
         # 计算各题型的平均分数和正确率
         for qtype, stats in question_type_stats.items():
             if stats['count'] > 0:
-                stats['average_score'] = round(stats['total_score'] / stats['count'], 2)
                 total_correct = stats['correct'] + stats['partial'] * 0.5
                 stats['accuracy'] = round(total_correct / stats['count'], 4)
-        
+
         # 按难度分析
         difficulty_stats = {
             'easy': {'count': 0, 'correct': 0, 'partial': 0, 'wrong': 0, 'accuracy': 0.0, 'total_score': 0.0},
             'medium': {'count': 0, 'correct': 0, 'partial': 0, 'wrong': 0, 'accuracy': 0.0, 'total_score': 0.0},
             'hard': {'count': 0, 'correct': 0, 'partial': 0, 'wrong': 0, 'accuracy': 0.0, 'total_score': 0.0}
         }
-        
-        for question in questions:
+
             qid = str(question.id)
-            difficulty = 'medium'  # 默认为中等难度
             if question.difficulty_score:
                 if question.difficulty_score < 4:
                     difficulty = 'easy'
                 elif question.difficulty_score > 7:
                     difficulty = 'hard'
-            
+
             score = scores.get(qid, 0.0)
             difficulty_stats[difficulty]['count'] += 1
             difficulty_stats[difficulty]['total_score'] += score
-            
+
             if score > 0:
                 if score == max(scores.values()):
                     difficulty_stats[difficulty]['correct'] += 1
-                else:
                     difficulty_stats[difficulty]['partial'] += 1
             else:
                 difficulty_stats[difficulty]['wrong'] += 1
-        
+
         # 计算各难度的正确率
         for difficulty, stats in difficulty_stats.items():
             if stats['count'] > 0:
                 total_correct = stats['correct'] + stats['partial'] * 0.5
                 stats['accuracy'] = round(total_correct / stats['count'], 4)
-        
+
         # 知识点分析
         topic_stats = {}
         for question in questions:
             qid = str(question.id)
             topic = question.topic or "未分类"
             score = scores.get(qid, 0.0)
-            
+
             if topic not in topic_stats:
-                topic_stats[topic] = {
                     'count': 0,
-                    'correct': 0,
                     'wrong': 0,
-                    'accuracy': 0.0,
                     'total_score': 0.0
-                }
-            
-            topic_stats[topic]['count'] += 1
+
             topic_stats[topic]['total_score'] += score
-            
             if score > 0:
-                topic_stats[topic]['correct'] += 1
             else:
                 topic_stats[topic]['wrong'] += 1
-        
+
         # 计算各知识点的正确率
         for topic, stats in topic_stats.items():
             if stats['count'] > 0:
                 stats['accuracy'] = round(stats['correct'] / stats['count'], 4)
-        
         # 计算总分和平均分
         total_score = sum(scores.values())
         average_score = round(total_score / len(scores), 2) if scores else 0.0
-        
         # 时间分析（如果有开始和结束时间）
         time_stats = {}
         if exam_paper.start_time and exam_paper.end_time:
-            start = datetime.fromisoformat(exam_paper.start_time.replace('Z', '+00:00'))
             end = datetime.fromisoformat(exam_paper.end_time.replace('Z', '+00:00'))
-            duration = (end - start).total_seconds() / 60  # 转换为分钟
             time_stats = {
                 'total_minutes': round(duration, 2),
                 'minutes_per_question': round(duration / len(questions), 2) if questions else 0.0
             }
-        
+
         return {
             'question_type_stats': question_type_stats,
             'difficulty_stats': difficulty_stats,
@@ -737,277 +626,218 @@ class ExamSystemManager:
             'partial_count': sum(stats['partial'] for stats in question_type_stats.values()),
             'wrong_count': sum(stats['wrong'] for stats in question_type_stats.values()),
             'total_score': total_score,
-            'average_score': average_score,
             'accuracy': round(sum(stats['correct'] for stats in question_type_stats.values()) / len(questions), 4) if questions else 0.0,
             'weighted_accuracy': round(total_score / (len(questions) * max(question_type_weights.values())), 4) if questions else 0.0
         }
-    
+
     def get_exam(self, exam_id: int) -> Optional[Exam]:
         """获取考试"""
-        conn = self._get_connection()
         cursor = conn.cursor()
         cursor.execute('SELECT * FROM exams WHERE id = ?', (exam_id,))
         exam_row = cursor.fetchone()
         conn.close()
-        
+
         if exam_row:
             return Exam(*exam_row)
         return None
-    
+
     def get_exam_paper(self, exam_paper_id: int) -> Optional[ExamPaper]:
         """获取试卷"""
-        conn = self._get_connection()
         cursor = conn.cursor()
-        cursor.execute('SELECT * FROM exam_papers WHERE id = ?', (exam_paper_id,))
-        paper_row = cursor.fetchone()
         conn.close()
-        
+
         if paper_row:
-            import json
-            return ExamPaper(
+            # JSON import removed - using database
                 id=paper_row[0],
                 exam_id=paper_row[1],
                 user_id=paper_row[2],
-                questions=json.loads(paper_row[3]),
-                scores=json.loads(paper_row[4]),
+                questions=eval(paper_row[3]),
+                scores=eval(paper_row[4]),
                 total_score=paper_row[5],
                 status=paper_row[6],
                 start_time=paper_row[7],
-                end_time=paper_row[8],
                 created_at=paper_row[9],
-                updated_at=paper_row[10]
             )
         return None
-    
-    def get_exam_result(self, exam_result_id: int) -> Optional[ExamResult]:
+
         """获取考试结果"""
         conn = self._get_connection()
         cursor = conn.cursor()
         cursor.execute('SELECT * FROM exam_results WHERE id = ?', (exam_result_id,))
         result_row = cursor.fetchone()
-        conn.close()
-        
+
         if result_row:
-            import json
-            return ExamResult(
                 id=result_row[0],
                 exam_paper_id=result_row[1],
-                user_id=result_row[2],
-                total_score=result_row[3],
-                correct_count=result_row[4],
                 wrong_count=result_row[5],
-                accuracy=result_row[6],
-                analysis=json.loads(result_row[7]),
+                analysis=eval(result_row[7]),
                 created_at=result_row[8]
             )
         return None
-    
-    def get_user_exams(self, user_id: int) -> List[ExamPaper]:
+
         """获取用户的所有试卷"""
         conn = self._get_connection()
         cursor = conn.cursor()
         cursor.execute('SELECT * FROM exam_papers WHERE user_id = ? ORDER BY created_at DESC', (user_id,))
-        paper_rows = cursor.fetchall()
-        conn.close()
-        
-        import json
-        exam_papers = []
-        for row in paper_rows:
+
             exam_papers.append(ExamPaper(
-                id=row[0],
                 exam_id=row[1],
-                user_id=row[2],
-                questions=json.loads(row[3]),
-                scores=json.loads(row[4]),
+                questions=eval(row[3]),
                 total_score=row[5],
                 status=row[6],
-                start_time=row[7],
                 end_time=row[8],
-                created_at=row[9],
                 updated_at=row[10]
-            ))
-        
+
         return exam_papers
-    
-    def record_question_usage(self, user_id: int, question_id: int):
+
         """记录题目使用情况"""
         conn = self._get_connection()
         cursor = conn.cursor()
-        
+
         now = datetime.now(UTC).isoformat()
-        
+
         # 尝试更新现有记录
-        cursor.execute(
             '''
-            UPDATE user_question_usage 
-            SET usage_count = usage_count + 1, last_used_at = ?, updated_at = ? 
-            WHERE user_id = ? AND question_id = ?
+            UPDATE user_question_usage
+            SET usage_count = usage_count + 1, last_used_at = ?, updated_at = ?
             ''',
-            (now, now, user_id, question_id)
         )
-        
+
         # 如果没有更新到记录，插入新记录
         if cursor.rowcount == 0:
             cursor.execute(
-                '''
-                INSERT INTO user_question_usage (user_id, question_id, usage_count, last_used_at, created_at, updated_at) 
+                INSERT INTO user_question_usage (user_id, question_id, usage_count, last_used_at, created_at, updated_at)
                 VALUES (?, ?, 1, ?, ?, ?)
                 ''',
-                (user_id, question_id, now, now, now)
             )
-        
+
         conn.commit()
         conn.close()
-    
+
     def get_user_used_questions(self, user_id: int, limit: int = 100):
         """获取用户已使用的题目"""
         conn = self._get_connection()
         cursor = conn.cursor()
-        
+
         cursor.execute(
             '''
-            SELECT question_id FROM user_question_usage 
-            WHERE user_id = ? 
-            ORDER BY last_used_at DESC 
+            SELECT question_id FROM user_question_usage
             LIMIT ?
             ''',
             (user_id, limit)
         )
-        
+
         rows = cursor.fetchall()
         conn.close()
-        
+
         return [row[0] for row in rows]
-    
+
     def get_user_question_usage_count(self, user_id: int, question_id: int):
         """获取用户使用某题目的次数"""
-        conn = self._get_connection()
         cursor = conn.cursor()
-        
+
         cursor.execute(
             '''
-            SELECT usage_count FROM user_question_usage 
+            SELECT usage_count FROM user_question_usage
             WHERE user_id = ? AND question_id = ?
             ''',
             (user_id, question_id)
         )
-        
+
         row = cursor.fetchone()
         conn.close()
-        
+
         return row[0] if row else 0
-    
-    def generate_personalized_exam(self, user_id: int, language: str, level: str, 
-                                 question_count: int, topics: list = None) -> ExamPaper:
+
+    def generate_personalized_exam(self, user_id: int, language: str, level: str,
         """生成个性化考试"""
         # 1. 分析用户历史表现
         user_exams = self.get_user_exams(user_id)
-        
+
         # 2. 识别用户薄弱环节
         weak_areas = {
             'question_types': [],
             'difficulties': [],
             'topics': []
         }
-        
+
         # 分析历史考试结果
         if user_exams:
-            recent_exams = sorted(user_exams, key=lambda x: x.updated_at, reverse=True)[:3]  # 只看最近3次考试
-            
+
             for exam_paper in recent_exams:
                 if exam_paper.status == 'completed':
-                    # 获取考试结果
                     conn = self._get_connection()
-                    cursor = conn.cursor()
                     cursor.execute('SELECT * FROM exam_results WHERE exam_paper_id = ?', (exam_paper.id,))
                     result_row = cursor.fetchone()
                     conn.close()
-                    
+
                     if result_row:
-                        import json
-                        analysis = json.loads(result_row[7])
-                        
+                        # JSON import removed - using database
+
                         # 分析薄弱题型
-                        for qtype, stats in analysis.get('question_type_stats', {}).items():
                             if stats.get('accuracy', 1.0) < 0.6:
                                 weak_areas['question_types'].append(qtype)
-                        
-                        # 分析薄弱难度
                         for difficulty, stats in analysis.get('difficulty_stats', {}).items():
                             if stats.get('accuracy', 1.0) < 0.6:
-                                weak_areas['difficulties'].append(difficulty)
-                        
                         # 分析薄弱知识点
                         for topic, stats in analysis.get('topic_stats', {}).items():
                             if stats.get('accuracy', 1.0) < 0.6:
                                 weak_areas['topics'].append(topic)
-        
-        # 3. 创建个性化考试
+
         temp_exam = self.create_exam(
             title=f"个性化{language}测试",
             description=f"根据用户学习情况生成的个性化{language}测试",
             language=language,
             level=level,
-            duration=60,  # 默认60分钟
             question_count=question_count
         )
-        
+
         # 4. 生成个性化试卷
         # 这里可以进一步优化，根据weak_areas调整题目选择逻辑
-        # 例如：增加薄弱题型和知识点的题目比例
-        exam_paper = self.generate_exam_paper(temp_exam.id, user_id)
-        
         return exam_paper
-        
+
     def get_exam_statistics(self, exam_id: int) -> dict:
         """获取考试统计信息"""
         conn = self._get_connection()
-        cursor = conn.cursor()
-        
+
         # 获取考试基本信息
         cursor.execute('SELECT * FROM exams WHERE id = ?', (exam_id,))
         exam_row = cursor.fetchone()
-        
         if not exam_row:
             conn.close()
             return {}
-        
-        # 获取考试结果统计
+
         cursor.execute('SELECT COUNT(*) FROM exam_papers WHERE exam_id = ? AND status = ?', (exam_id, 'completed'))
-        completed_count = cursor.fetchone()[0]
-        
+
         cursor.execute('SELECT AVG(total_score) FROM exam_papers WHERE exam_id = ? AND status = ?', (exam_id, 'completed'))
         avg_score = cursor.fetchone()[0] or 0
-        
+
         cursor.execute('SELECT MIN(total_score), MAX(total_score) FROM exam_papers WHERE exam_id = ? AND status = ?', (exam_id, 'completed'))
         min_max = cursor.fetchone()
         min_score = min_max[0] or 0
         max_score = min_max[1] or 0
-        
+
         conn.close()
-        
+
         exam = Exam(*exam_row)
-        
+
         return {
             'exam_info': exam.to_dict(),
             'completed_count': completed_count,
             'average_score': round(avg_score, 2),
             'min_score': min_score,
             'max_score': max_score,
-            'score_range': f"{min_score} - {max_score}"
         }
-    
+
     def generate_learning_recommendations(self, user_id: int, exam_result_id: int) -> list:
         """根据考试结果生成学习建议"""
         # 获取考试结果
-        exam_result = self.get_exam_result(exam_result_id)
         if not exam_result:
-            return []
-        
+
         # 分析考试结果，生成学习建议
         analysis = exam_result.analysis
         recommendations = []
-        
+
         # 按题型分析
         for qtype, stats in analysis['question_type_stats'].items():
             if stats['accuracy'] < 0.6:
@@ -1017,9 +847,7 @@ class ExamSystemManager:
                     'recommendation': f"您在{qtype}题型上的表现较弱（正确率{stats['accuracy']:.2%}），建议加强该题型的练习。",
                     'priority': 'high' if stats['accuracy'] < 0.4 else 'medium'
                 })
-        
-        # 按难度分析
-        for difficulty, stats in analysis['difficulty_stats'].items():
+
             if stats['accuracy'] < 0.6 and stats['count'] > 0:
                 recommendations.append({
                     'type': 'difficulty',
@@ -1027,21 +855,19 @@ class ExamSystemManager:
                     'recommendation': f"您在{difficulty}难度题目上的表现较弱（正确率{stats['accuracy']:.2%}），建议针对性练习。",
                     'priority': 'high' if stats['accuracy'] < 0.4 else 'medium'
                 })
-        
+
         # 总体建议
         if analysis['accuracy'] < 0.6:
             recommendations.append({
                 'type': 'overall',
-                'target': 'all',
                 'recommendation': f"您的总体正确率为{analysis['accuracy']:.2%}，建议系统复习相关知识点。",
                 'priority': 'high' if analysis['accuracy'] < 0.4 else 'medium'
             })
-        elif analysis['accuracy'] > 0.8:
             recommendations.append({
                 'type': 'overall',
                 'target': 'all',
                 'recommendation': f"您的总体正确率为{analysis['accuracy']:.2%}，表现优秀！建议挑战更高难度的题目。",
                 'priority': 'low'
             })
-        
+
         return recommendations

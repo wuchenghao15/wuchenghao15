@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 最小化Flask应用启动脚本，用于测试基本功能
-"""
 from flask import Flask, jsonify
 
 # 创建一个简单的Flask应用
@@ -23,3 +22,5 @@ if __name__ == "__main__":
     port = 8888
     print(f"Starting minimal Flask app on {host}:{port}...")
     app.run(host=host, port=port, debug=False)
+
+"""

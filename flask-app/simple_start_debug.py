@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 简化的调试启动脚本，用于诊断服务器启动问题
-"""
 
 import sys
 import os
@@ -22,19 +21,21 @@ try:
     logger.info("正在导入Flask应用...")
     from app import app
     logger.info("成功导入Flask应用")
-    
+
     # 打印应用的URL规则
     logger.info("应用URL规则:")
     for rule in app.url_map.iter_rules():
         logger.info(f"  {rule}")
-    
+
     # 启动应用
     logger.info("正在启动Flask应用...")
     logger.info("访问地址: http://localhost:8888")
     app.run(host='0.0.0.0', port=8888, debug=True)
-    
+
 except Exception as e:
     logger.error(f"应用启动失败: {e}")
     import traceback
     traceback.print_exc()
     sys.exit(1)
+
+"""

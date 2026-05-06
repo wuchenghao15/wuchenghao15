@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 检查登录表单URL是否正确
-"""
 
 import sys
 import os
@@ -26,7 +25,7 @@ try:
     login_url = url_for('auth.login')
     index_url = url_for('main.index')
     test_system_url = url_for('language_tests.test_system')
-    
+
     print(f"auth.login URL: {login_url}")
     print(f"main.index URL: {index_url}")
     print(f"language_tests.test_system URL: {test_system_url}")
@@ -47,3 +46,5 @@ print("\n=== 所有注册路由 ===")
 for rule in app.url_map.iter_rules():
     if 'static' not in str(rule):
         print(f"{rule} -> {rule.endpoint}")
+
+"""

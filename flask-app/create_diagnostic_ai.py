@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 创建诊断AI员工，用于处理服务器启动和访问问题
-"""
 
 import sys
 import os
@@ -15,11 +14,11 @@ print("创建诊断AI员工...")
 try:
     from app.ai.instances import ai_instance_manager
     print("✓ 成功导入AI实例管理器")
-    
+
     # 检查是否已存在诊断AI实例
     diagnostic_ai_id = "diagnostic-ai-001"
     existing_instance = ai_instance_manager.get_ai_instance(diagnostic_ai_id)
-    
+
     if existing_instance:
         print(f"✓ 诊断AI员工 {diagnostic_ai_id} 已存在")
         ai_instance = existing_instance
@@ -45,19 +44,17 @@ try:
                 },
                 "brain_database": {
                     "enabled": True,
-                    "upload_interval": 60,
                     "retention_days": 30
                 }
             }
         )
-        print(f"✓ 成功创建诊断AI员工: {diagnostic_ai_id}")
-    
+
     # 记录当前服务器启动问题
     print("\n记录当前服务器启动问题...")
-    
+
     # 问题描述
     problem_description = "服务器无法在端口8888或8080上启动，curl请求返回连接失败"
-    
+
     # 问题特征
     problem_features = [
         "服务器启动日志显示正常，但无法建立连接",
@@ -66,7 +63,7 @@ try:
         "服务器启动脚本没有报错",
         "视图函数测试正常"
     ]
-    
+
     # 解决思路
     solution_ideas = [
         "检查服务器绑定的IP地址，确保绑定到127.0.0.1或0.0.0.0",
@@ -76,16 +73,15 @@ try:
         "尝试使用不同的端口启动服务器",
         "检查Werkzeug版本，确保与Flask版本兼容"
     ]
-    
+
     # 记录问题到日志
-    from app.utils.logging import logger
     logger.info(f"诊断AI员工记录问题: {problem_description}")
     logger.info(f"问题特征: {', '.join(problem_features)}")
     logger.info(f"解决思路: {', '.join(solution_ideas)}")
-    
+
     print("\n✓ 成功记录服务器启动问题到日志")
     print("\n诊断AI员工已创建并配置完成，将继续监控和解决服务器启动问题")
-    
+
     # 显示AI实例信息
     print(f"\n诊断AI员工信息:")
     print(f"  ID: {ai_instance['instance_id']}")
@@ -93,8 +89,10 @@ try:
     print(f"  类型: {ai_instance['ai_type']}")
     print(f"  状态: {ai_instance['status']}")
     print(f"  功能: {', '.join(ai_instance['functions'])}")
-    
+
 except Exception as e:
     print(f"✗ 创建诊断AI员工失败: {str(e)}")
     import traceback
     traceback.print_exc()
+
+"""

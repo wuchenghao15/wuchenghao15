@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # 检查VERSION文件
 with open('VERSION', 'r') as f:
     version = f.read().strip()
@@ -26,14 +27,11 @@ with open('CHANGELOG.md', 'r') as f:
         next_version_start = content.find('## Version', latest_version_start + 1)
         if next_version_start != -1:
             latest_entry = content[latest_version_start:next_version_start]
-        else:
             latest_entry = content[latest_version_start:]
         print(latest_entry.strip())
-    else:
         print('未找到版本 1.0.1 的更新日志')
 
 print('\n=== 验证完成 ===')
 if version == '1.0.1' and result and result[0] == '1.0.1':
     print('✓ 版本升级成功！')
-else:
     print('✗ 版本升级失败！')

@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 应用路由诊断脚本，用于分析登录跳转问题
-"""
 
 import sys
 import os
@@ -36,7 +35,7 @@ for rule in app.url_map.iter_rules():
 print("=== 关键端点检查 ===")
 endpoints_to_check = [
     'auth.login',
-    'auth.logout', 
+    'auth.logout',
     'main.index',
     'language_tests.test_system'
 ]
@@ -51,17 +50,17 @@ for endpoint in endpoints_to_check:
 # 测试URL生成
 print("\n=== URL生成测试 ===")
 try:
-    from flask import url_for
     login_url = url_for('auth.login')
     index_url = url_for('main.index')
     test_system_url = url_for('language_tests.test_system')
-    
+
     print(f"auth.login URL: {login_url}")
     print(f"main.index URL: {index_url}")
     print(f"language_tests.test_system URL: {test_system_url}")
 except Exception as e:
     print(f"URL生成失败: {e}")
-    import traceback
     traceback.print_exc()
 
 print("\n=== 诊断完成 ===")
+
+"""

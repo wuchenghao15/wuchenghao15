@@ -214,7 +214,28 @@
     }
 </style>
 
-<div class="test-container">
+<!-- 预加载动画 -->
+<div id="preloader" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; display: flex; justify-content: center; align-items: center; z-index: 9999;">
+    <div style="text-align: center;">
+        <div class="spinner" style="border: 4px solid rgba(0, 0, 0, 0.1); border-left: 4px solid #667eea; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 20px;"></div>
+        <p>正在生成测试题目，请稍候...</p>
+    </div>
+    <style>
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</div>
+
+<!-- 错误容器 -->
+<div id="error-container" style="display: none; max-width: 800px; margin: 0 auto; padding: 30px; background: white; border-radius: 20px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); text-align: center;">
+    <h2 style="color: #ff4757; margin-bottom: 20px;">错误</h2>
+    <p id="error-message" style="margin-bottom: 30px;"></p>
+    <button onclick="window.location.reload()" style="padding: 12px 24px; border: none; border-radius: 50px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; font-size: 1rem; font-weight: 600; cursor: pointer;">重试</button>
+</div>
+
+<div id="test-container" class="test-container" style="display: none;">
     <!-- 测试头部 -->
     <div class="test-header">
         <h1 class="test-title">
@@ -228,7 +249,7 @@
     <div class="test-info">
         <div class="info-item">
             <span class="info-label">总题目数</span>
-            <span class="info-value">20题</span>
+            <span class="info-value" id="total-questions">20题</span>
         </div>
         <div class="info-item">
             <span class="info-label">当前题目</span>
@@ -251,10 +272,10 @@
             <span class="question-number">问题 1</span>
             <span class="question-score">10分</span>
         </div>
-        <div class="question-content">
+        <div class="question-content" id="question-content">
             以下哪个是日语中"你好"的正确说法？
         </div>
-        <div class="options">
+        <div class="options" id="options">
             <div class="option">
                 <input type="radio" name="q1" value="a" id="q1-a">
                 <label for="q1-a" class="option-label">A. こんにちは (Konnichiwa)</label>
@@ -287,109 +308,141 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const options = document.querySelectorAll('.option');
+        // 元素
+        const preloader = document.getElementById('preloader');
+        const testContainer = document.getElementById('test-container');
+        const errorContainer = document.getElementById('error-container');
+        const optionsContainer = document.getElementById('options');
+        const questionContent = document.getElementById('question-content');
+        const questionNumber = document.querySelector('.question-number');
+        const currentQuestionEl = document.getElementById('current-question');
+        const totalQuestionsEl = document.getElementById('total-questions');
+        const timeRemainingEl = document.getElementById('time-remaining');
+        const progressFill = document.querySelector('.progress-fill');
         const prevBtn = document.querySelector('.prev-btn');
         const nextBtn = document.querySelector('.next-btn');
-        const currentQuestionEl = document.getElementById('current-question');
-        const progressFill = document.querySelector('.progress-fill');
         
-        let currentQuestion = 1;
-        const totalQuestions = 20;
+        // 变量
+        let questions = [];
+        let currentQuestion = 0;
+        let userAnswers = {};
+        let timeRemaining = 15 * 60; // 15分钟
         
-        // 选项点击事件
-        options.forEach(option => {
-            option.addEventListener('click', function() {
-                // 移除所有选项的选中状态
-                options.forEach(opt => opt.classList.remove('selected'));
-                // 添加当前选项的选中状态
-                this.classList.add('selected');
-                // 选中对应的单选按钮
-                const radio = this.querySelector('input[type="radio"]');
-                radio.checked = true;
+        // 从API获取题目
+        function fetchQuestions() {
+            fetch('/api/japanese-test/generate')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        questions = data.data.questions;
+                        totalQuestionsEl.textContent = `${questions.length}题`;
+                        
+                        // 隐藏预加载动画，显示测试容器
+                        preloader.style.display = 'none';
+                        testContainer.style.display = 'block';
+                        
+                        // 显示第一题
+                        showQuestion();
+                    } else {
+                        // 显示错误信息
+                        preloader.style.display = 'none';
+                        errorContainer.style.display = 'block';
+                        document.getElementById('error-message').textContent = data.message;
+                    }
+                })
+                .catch(error => {
+                    // 显示错误信息
+                    preloader.style.display = 'none';
+                    errorContainer.style.display = 'block';
+                    document.getElementById('error-message').textContent = '获取题目失败，请刷新页面重试。';
+                    console.error('获取题目失败:', error);
+                });
+        }
+        
+        // 显示当前题目
+        function showQuestion() {
+            if (questions.length === 0) return;
+            
+            const q = questions[currentQuestion];
+            questionContent.textContent = q.content;
+            questionNumber.textContent = `问题 ${currentQuestion + 1}`;
+            currentQuestionEl.textContent = `${currentQuestion + 1}/${questions.length}`;
+            
+            // 更新进度条
+            const progress = (currentQuestion + 1) / questions.length * 100;
+            progressFill.style.width = `${progress}%`;
+            
+            // 更新按钮状态
+            prevBtn.disabled = currentQuestion === 0;
+            nextBtn.innerHTML = currentQuestion === questions.length - 1 ? '<i class="fas fa-check"></i> 提交测试' : '下一题 <i class="fas fa-arrow-right"></i>';
+            nextBtn.className = currentQuestion === questions.length - 1 ? 'nav-btn submit-btn' : 'nav-btn next-btn';
+            
+            // 清空选项
+            optionsContainer.innerHTML = '';
+            
+            // 创建选项
+            q.options.forEach((option, index) => {
+                const optionLetter = String.fromCharCode(65 + index); // A, B, C, D...
+                const optionElement = document.createElement('div');
+                optionElement.className = 'option';
+                optionElement.innerHTML = `
+                    <input type="radio" name="question" value="${optionLetter}" id="option-${optionLetter}">
+                    <label for="option-${optionLetter}" class="option-label">${optionLetter}. ${option}</label>
+                `;
+                optionsContainer.appendChild(optionElement);
+                
+                // 检查是否已选择
+                if (userAnswers[currentQuestion] === optionLetter) {
+                    optionElement.querySelector('input').checked = true;
+                    optionElement.classList.add('selected');
+                }
+                
+                // 添加点击事件
+                optionElement.addEventListener('click', function() {
+                    // 移除所有选项的选中状态
+                    document.querySelectorAll('.option').forEach(opt => opt.classList.remove('selected'));
+                    // 添加当前选项的选中状态
+                    this.classList.add('selected');
+                    // 选中对应的单选按钮
+                    const radio = this.querySelector('input[type="radio"]');
+                    radio.checked = true;
+                });
             });
-        });
+        }
         
         // 下一题按钮点击事件
         nextBtn.addEventListener('click', function() {
-            if (currentQuestion < totalQuestions) {
+            // 保存答案
+            const selectedOption = document.querySelector('input[name="question"]:checked');
+            if (selectedOption) {
+                userAnswers[currentQuestion] = selectedOption.value;
+            }
+            
+            if (currentQuestion < questions.length - 1) {
                 currentQuestion++;
-                updateQuestion();
+                showQuestion();
             } else {
-                // 最后一题，切换为提交按钮
-                nextBtn.textContent = '提交测试';
-                nextBtn.className = 'nav-btn submit-btn';
-                nextBtn.innerHTML = '<i class="fas fa-check"></i> 提交测试';
-                nextBtn.addEventListener('click', function() {
-                    alert('测试提交成功！');
-                    window.location.href = '/test-system';
-                });
+                // 提交测试
+                alert('测试提交成功！');
+                window.location.href = '/test-system';
             }
         });
         
         // 上一题按钮点击事件
         prevBtn.addEventListener('click', function() {
-            if (currentQuestion > 1) {
+            // 保存答案
+            const selectedOption = document.querySelector('input[name="question"]:checked');
+            if (selectedOption) {
+                userAnswers[currentQuestion] = selectedOption.value;
+            }
+            
+            if (currentQuestion > 0) {
                 currentQuestion--;
-                updateQuestion();
+                showQuestion();
             }
         });
         
-        // 更新题目
-        function updateQuestion() {
-            // 更新当前题目显示
-            currentQuestionEl.textContent = `${currentQuestion}/${totalQuestions}`;
-            
-            // 更新进度条
-            const progress = (currentQuestion / totalQuestions) * 100;
-            progressFill.style.width = `${progress}%`;
-            
-            // 更新上一题按钮状态
-            prevBtn.disabled = currentQuestion === 1;
-            
-            // 模拟更新题目内容
-            const questionContent = document.querySelector('.question-content');
-            const questionNumber = document.querySelector('.question-number');
-            
-            questionNumber.textContent = `问题 ${currentQuestion}`;
-            
-            // 简单的题目内容模拟
-            const questions = [
-                '以下哪个是日语中"你好"的正确说法？',
-                '以下哪个是日语中"谢谢"的正确说法？',
-                '以下哪个是日语中"再见"的正确说法？',
-                '以下哪个是日语中"是的"的正确说法？',
-                '以下哪个是日语中"不是"的正确说法？',
-                '以下哪个是日语中"对不起"的正确说法？',
-                '以下哪个是日语中"请"的正确说法？',
-                '以下哪个是日语中"我"的正确说法？',
-                '以下哪个是日语中"你"的正确说法？',
-                '以下哪个是日语中"他"的正确说法？',
-                '以下哪个是日语中"她"的正确说法？',
-                '以下哪个是日语中"朋友"的正确说法？',
-                '以下哪个是日语中"家人"的正确说法？',
-                '以下哪个是日语中"学校"的正确说法？',
-                '以下哪个是日语中"工作"的正确说法？',
-                '以下哪个是日语中"食物"的正确说法？',
-                '以下哪个是日语中"水"的正确说法？',
-                '以下哪个是日语中"时间"的正确说法？',
-                '以下哪个是日语中"地方"的正确说法？',
-                '以下哪个是日语中"爱"的正确说法？'
-            ];
-            
-            questionContent.textContent = questions[currentQuestion - 1];
-            
-            // 重置选项状态
-            options.forEach(option => {
-                option.classList.remove('selected');
-                const radio = option.querySelector('input[type="radio"]');
-                radio.checked = false;
-            });
-        }
-        
         // 倒计时功能
-        let timeRemaining = 15 * 60; // 15分钟
-        const timeRemainingEl = document.getElementById('time-remaining');
-        
         const timer = setInterval(function() {
             timeRemaining--;
             const minutes = Math.floor(timeRemaining / 60);
@@ -402,6 +455,9 @@
                 window.location.href = '/test-system';
             }
         }, 1000);
+        
+        // 开始获取题目
+        fetchQuestions();
     });
 </script>
 {% endblock %}

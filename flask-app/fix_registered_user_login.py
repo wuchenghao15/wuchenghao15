@@ -21,12 +21,12 @@ password_map = {
 for user in users:
     print(f"\n2. 处理用户: {user.username} ({user.role})")
     print(f"   激活状态: {user.is_active}")
-    
+
     # 检查密码是否正确
     default_password = password_map.get(user.username, "LoginMe.1988")
     is_valid = security_utils.verify_password(user.password, default_password)
     print(f"   当前密码 '{default_password}' 验证: {'✅' if is_valid else '❌'}")
-    
+
     if not is_valid:
         # 修复密码
         print(f"   修复密码为: {default_password}")
@@ -34,12 +34,12 @@ for user in users:
         user.password = hashed_password
         user.save()
         print(f"   ✅ 密码已修复")
-        
+
         # 验证修复后的密码
         updated_user = User.get_by_username(user.username)
         is_valid = security_utils.verify_password(updated_user.password, default_password)
         print(f"   修复后密码验证: {'✅' if is_valid else '❌'}")
-    
+
     # 测试登录
     print(f"   测试登录...")
     login_result = user_ai_manager.process_login_request(user.username, default_password)

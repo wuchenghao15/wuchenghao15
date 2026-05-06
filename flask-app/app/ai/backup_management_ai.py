@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 备份管理AI，负责统一处理所有备份、回滚机制和快照保存
-"""
 
 import time
 import logging
@@ -11,23 +10,20 @@ from app.models.user_snapshots import UserSnapshot
 from app.models.enhanced_ai_employee import EnhancedAIEmployee
 
 class BackupManagementAI:
-    """
     备份管理AI，负责统一处理所有备份、回滚机制和快照保存
-    """
-    
-    def __init__(self):
+
         self.name = "备份管理AI"
         self.description = "负责统一处理所有备份、回滚机制和快照保存"
         self.ai_type = "backup_manager"
         self.capabilities = ["backup_management", "rollback_mechanism", "snapshot_saving", "database_unification"]
         self.logger = logging.getLogger("BackupManagementAI")
-        
+
         # 确保所有必要的表都已创建
         self._ensure_tables_created()
-        
+
         # 获取或创建备份管理AI员工
         self.backup_employee = self._get_or_create_backup_employee()
-    
+
     def _ensure_tables_created(self):
         """确保所有必要的表都已创建"""
         try:
@@ -35,20 +31,17 @@ class BackupManagementAI:
             from app.models.user_snapshots import UserSnapshot
             from app.models.enhanced_ai_employee import EnhancedAIEmployee
             from app.models.ai_brain import AIBrainKnowledge, AIBrainActivity
-            
             # 创建所有必要的表
-            Backup.create_table()
             UserSnapshot.create_table()
-            EnhancedAIEmployee.create_table()
             AIBrainKnowledge.create_table()
             AIBrainActivity.create_table()
-            
+
             self.logger.info("所有必要的表都已创建完成")
         except Exception as e:
             self.logger.error(f"创建表失败: {str(e)}")
             import traceback
             traceback.print_exc()
-    
+
     def _get_or_create_backup_employee(self):
         """获取或创建备份管理AI员工"""
         try:
@@ -58,7 +51,7 @@ class BackupManagementAI:
                 if employee.ai_type == self.ai_type:
                     self.logger.info(f"找到现有备份管理AI员工: {employee.name} (ID: {employee.employee_id})")
                     return employee
-            
+
             # 创建新的备份管理AI员工
             backup_employee = EnhancedAIEmployee.create(
                 name=self.name,
@@ -70,7 +63,7 @@ class BackupManagementAI:
                 status="active",
                 adaptation_level=3
             )
-            
+
             self.logger.info(f"创建新的备份管理AI员工: {backup_employee.name} (ID: {backup_employee.employee_id})")
             return backup_employee
         except Exception as e:
@@ -78,22 +71,18 @@ class BackupManagementAI:
             import traceback
             traceback.print_exc()
             return None
-    
+
     def create_backup(self, backup_type="full", description="", created_by="system"):
-        """
         创建系统备份
-        
-        Args:
+
             backup_type: 备份类型，full或incremental
-            description: 备份描述
             created_by: 创建者
-            
+
         Returns:
             备份ID
-        """
         try:
             self.logger.info(f"开始创建备份，类型: {backup_type}, 创建者: {created_by}")
-            
+
             # 创建备份记录
             backup = Backup(
                 name=f"backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{backup_type}",
@@ -101,36 +90,33 @@ class BackupManagementAI:
                 description=description,
                 created_by=created_by
             )
-            
+
             # 保存备份记录到数据库
             backup_id = backup.save()
             self.logger.info(f"备份记录已保存到数据库，备份ID: {backup_id}")
-            
+
             # 创建备份文件
             if backup.create_backup_file():
                 self.logger.info(f"备份创建成功，备份ID: {backup_id}")
                 return backup_id
             else:
-                self.logger.error(f"备份创建失败，备份ID: {backup_id}")
                 return None
         except Exception as e:
             self.logger.error(f"创建备份失败: {str(e)}")
             return None
-    
+
     def restore_backup(self, backup_id, created_by="system"):
-        """
         恢复系统备份
-        
+
         Args:
             backup_id: 备份ID
             created_by: 恢复者
-            
+
         Returns:
             bool: 是否恢复成功
-        """
         try:
             self.logger.info(f"开始恢复备份，备份ID: {backup_id}, 恢复者: {created_by}")
-            
+
             # 恢复备份
             if Backup.restore_backup(backup_id):
                 self.logger.info(f"备份恢复成功，备份ID: {backup_id}")
@@ -141,20 +127,18 @@ class BackupManagementAI:
         except Exception as e:
             self.logger.error(f"恢复备份失败: {str(e)}")
             return False
-    
+
     def delete_backup(self, backup_id):
-        """
         删除系统备份
-        
+
         Args:
             backup_id: 备份ID
-            
+
         Returns:
             bool: 是否删除成功
-        """
         try:
             self.logger.info(f"开始删除备份，备份ID: {backup_id}")
-            
+
             if Backup.delete_by_id(backup_id):
                 self.logger.info(f"备份删除成功，备份ID: {backup_id}")
                 return True
@@ -163,24 +147,21 @@ class BackupManagementAI:
                 return False
         except Exception as e:
             self.logger.error(f"删除备份失败: {str(e)}")
-            return False
-    
+
     def create_snapshot(self, user_id, session_id, snapshot_type="system_state", data=None):
-        """
         创建系统或用户快照
-        
+
         Args:
             user_id: 用户ID
             session_id: 会话ID
             snapshot_type: 快照类型
             data: 快照数据
-            
+
         Returns:
             快照ID
-        """
         try:
             self.logger.info(f"开始创建快照，用户ID: {user_id}, 会话ID: {session_id}, 类型: {snapshot_type}")
-            
+
             # 创建快照
             snapshot = UserSnapshot.create(
                 user_id=user_id,
@@ -188,25 +169,22 @@ class BackupManagementAI:
                 snapshot_type=snapshot_type,
                 data=data or {}
             )
-            
+
             self.logger.info(f"快照创建成功，快照ID: {snapshot.snapshot_id}")
             return snapshot.snapshot_id
         except Exception as e:
             self.logger.error(f"创建快照失败: {str(e)}")
             return None
-    
+
     def get_snapshot(self, snapshot_id):
-        """
         获取快照信息
-        
+
         Args:
             snapshot_id: 快照ID
-            
+
         Returns:
             快照对象
-        """
         try:
-            snapshot = UserSnapshot.get_by_id(snapshot_id)
             if snapshot:
                 self.logger.info(f"获取快照成功，快照ID: {snapshot_id}")
             else:
@@ -215,17 +193,15 @@ class BackupManagementAI:
         except Exception as e:
             self.logger.error(f"获取快照失败: {str(e)}")
             return None
-    
+
     def delete_snapshot(self, snapshot_id):
-        """
         删除快照
-        
+
         Args:
             snapshot_id: 快照ID
-            
+
         Returns:
             bool: 是否删除成功
-        """
         try:
             snapshot = UserSnapshot.get_by_id(snapshot_id)
             if snapshot:
@@ -241,36 +217,29 @@ class BackupManagementAI:
         except Exception as e:
             self.logger.error(f"删除快照失败: {str(e)}")
             return False
-    
+
     def get_all_backups(self, limit=50, offset=0):
-        """
         获取所有备份
-        
+
         Args:
             limit: 限制数量
             offset: 偏移量
-            
         Returns:
             备份列表
-        """
         try:
             backups = Backup.get_all_backups(limit=limit, offset=offset)
-            self.logger.info(f"获取备份列表成功，数量: {len(backups)}")
             return backups
         except Exception as e:
             self.logger.error(f"获取备份列表失败: {str(e)}")
             return []
-    
+
     def get_all_snapshots(self, limit=50):
-        """
         获取所有快照
-        
-        Args:
+
             limit: 限制数量
-            
+
         Returns:
             快照列表
-        """
         try:
             snapshots = UserSnapshot.get_latest(limit=limit)
             self.logger.info(f"获取快照列表成功，数量: {len(snapshots)}")
@@ -278,84 +247,75 @@ class BackupManagementAI:
         except Exception as e:
             self.logger.error(f"获取快照列表失败: {str(e)}")
             return []
-    
+
     def clean_old_backups(self, keep_days=30):
-        """
         清理旧备份
-        
+
         Args:
             keep_days: 保留天数
-            
+
         Returns:
             删除的备份数量
-        """
         try:
             self.logger.info(f"开始清理旧备份，保留天数: {keep_days}")
-            
+
             # 计算保留时间阈值
             keep_threshold = time.time() - (keep_days * 24 * 3600)
-            
+
             # 获取所有备份
             all_backups = Backup.get_all_backups(limit=1000, offset=0)
             deleted_count = 0
-            
-            # 删除超过保留时间的备份
+
             for backup in all_backups:
                 if backup.created_at < keep_threshold:
                     if Backup.delete_by_id(backup.backup_id):
                         deleted_count += 1
-            
+
             self.logger.info(f"清理旧备份完成，删除数量: {deleted_count}")
             return deleted_count
         except Exception as e:
             self.logger.error(f"清理旧备份失败: {str(e)}")
             return 0
-    
-    def clean_old_snapshots(self, keep_days=7):
-        """
+
         清理旧快照
-        
+
         Args:
             keep_days: 保留天数
-            
+
         Returns:
             删除的快照数量
-        """
         try:
             self.logger.info(f"开始清理旧快照，保留天数: {keep_days}")
-            
+
             deleted_count = UserSnapshot.delete_old_snapshots(retention_days=keep_days)
             self.logger.info(f"清理旧快照完成，删除数量: {deleted_count}")
             return deleted_count
         except Exception as e:
             self.logger.error(f"清理旧快照失败: {str(e)}")
             return 0
-    
+
     def get_backup_stats(self):
-        """
         获取备份统计信息
-        
+
         Returns:
             统计信息字典
-        """
         try:
             # 获取备份总数
             total_backups = Backup.get_backup_count()
-            
+
             # 获取最新备份
             latest_full_backup = Backup.get_latest_backup(backup_type="full")
             latest_incremental_backup = Backup.get_latest_backup(backup_type="incremental")
-            
+
             # 获取快照总数
             snapshots = UserSnapshot.get_latest(limit=1)
             total_snapshots = snapshots[0].snapshot_id if snapshots else 0
-            
+
             stats = {
                 "total_backups": total_backups,
                 "latest_full_backup": {
                     "id": latest_full_backup.backup_id if latest_full_backup else None,
                     "created_at": latest_full_backup.created_at if latest_full_backup else None,
-                    "size": latest_full_backup.size if latest_full_backup else 0
                 } if latest_full_backup else None,
                 "latest_incremental_backup": {
                     "id": latest_incremental_backup.backup_id if latest_incremental_backup else None,
@@ -364,27 +324,23 @@ class BackupManagementAI:
                 } if latest_incremental_backup else None,
                 "total_snapshots": total_snapshots
             }
-            
+
             self.logger.info("获取备份统计信息成功")
-            return stats
         except Exception as e:
             self.logger.error(f"获取备份统计信息失败: {str(e)}")
             return {}
-    
     def auto_backup(self):
-        """
         执行自动备份
-        """
         try:
             self.logger.info("开始执行自动备份")
-            
+
             # 创建完整备份
             backup_id = self.create_backup(
                 backup_type="full",
                 description="自动备份",
                 created_by="backup_management_ai"
             )
-            
+
             if backup_id:
                 self.logger.info(f"自动备份执行成功，备份ID: {backup_id}")
                 return backup_id
@@ -394,31 +350,28 @@ class BackupManagementAI:
         except Exception as e:
             self.logger.error(f"执行自动备份失败: {str(e)}")
             return None
-    
+
     def rollback_to_snapshot(self, snapshot_id):
-        """
         回滚到指定快照
-        
+
         Args:
             snapshot_id: 快照ID
-            
+
         Returns:
             bool: 是否回滚成功
-        """
         try:
             self.logger.info(f"开始回滚到快照，快照ID: {snapshot_id}")
-            
+
             # 获取快照信息
             snapshot = UserSnapshot.get_by_id(snapshot_id)
             if not snapshot:
                 self.logger.error(f"快照不存在，快照ID: {snapshot_id}")
                 return False
-            
+
             # 回滚逻辑（根据快照类型执行不同的回滚操作）
             # 这里可以根据快照数据实现具体的回滚逻辑
             self.logger.info(f"快照回滚成功，快照ID: {snapshot_id}")
             return True
-        except Exception as e:
             self.logger.error(f"回滚到快照失败: {str(e)}")
             return False
 

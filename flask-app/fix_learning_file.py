@@ -35,23 +35,18 @@ else:
         print(f"第15行: {lines[14] if 14 < len(lines) else '无'}")
         print(f"第16行: {lines[15] if 15 < len(lines) else '无'}")
         print(f"第17行: {lines[16] if 16 < len(lines) else '无'}")
-        
+
         # 直接修改第16行，添加安全访问
         # 假设第16行是类似 self.model_path = config['MODEL_PATH'] 的代码
         lines[15] = lines[15].replace("config['MODEL_PATH']", "config.get('MODEL_PATH', 'models/')")
         modified_content = '\n'.join(lines)
         print("已修改第16行，添加了get()方法")
-    else:
         print("文件行数不足16行，无法确定修改位置")
-        exit(1)
 
 # 写入修改后的内容
-try:
     with open(file_path, 'w', encoding='utf-8') as f:
         f.write(modified_content)
     print("文件修改成功")
 except Exception as e:
-    print(f"文件修改失败: {e}")
     exit(1)
 
-print("修复完成！")

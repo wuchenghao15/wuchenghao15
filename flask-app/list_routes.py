@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 列出应用中所有注册的路由
-"""
 
 import os
 import sys
@@ -23,7 +22,7 @@ with test_app.app_context():
     try:
         # 导入主应用
         from app import app
-        
+
         # 打印所有路由
         print("应用中注册的路由:")
         for rule in app.url_map.iter_rules():
@@ -32,3 +31,5 @@ with test_app.app_context():
         print(f"导入应用时出错: {str(e)}")
         import traceback
         traceback.print_exc()
+
+"""

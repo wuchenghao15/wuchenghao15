@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 简单扩充题库到10万题
-"""
 
 import sys
 import os
@@ -19,36 +18,33 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(level
 logger = logging.getLogger(__name__)
 
 def expand_to_100k_simple():
-    """
     简单扩充题库到10万题
-    """
     print("================================================================================")
-    print("简单扩充题库到10万题")
     print("================================================================================")
-    
+
     try:
         # 初始化题库扩充系统
         expander = QuestionBankExpander()
         logger.info("题库扩充系统初始化成功")
-        
+
         # 初始化题目管理器
         question_manager = QuestionManager()
         logger.info("题目管理器初始化成功")
-        
+
         # 目标题目数量
         target_count = 100000
-        
+
         # 记录开始时间
         start_time = time.time()
-        
+
         # 生成题目
         generated_count = 0
         batch_size = 1000  # 每批生成1000道题目
-        
+
         while generated_count < target_count:
             batch_start = time.time()
             batch_generated = 0
-            
+
             for _ in range(batch_size):
                 # 生成随机题目参数
                 language_id = 1 + (generated_count % 3)  # 1: 日语, 2: 英语, 3: 中文
@@ -56,7 +52,7 @@ def expand_to_100k_simple():
                 category_id = 1 + (generated_count % 5)  # 1-5
                 question_type = "single_choice"  # 只生成单选题，确保成功
                 difficulty = ["easy", "medium", "hard"][generated_count % 3]
-                
+
                 # 生成题目，跳过重复检测
                 question = expander._generate_question(
                     language_id=language_id,
@@ -66,14 +62,13 @@ def expand_to_100k_simple():
                     difficulty=difficulty,
                     check_duplicate=False
                 )
-                
+
                 # 保存题目
                 if question:
                     try:
                         # 使用 QuestionManager 创建题目
                         question_manager.create_question(
                             content=question.content,
-                            answer=question.answer,
                             explanation=question.explanation,
                             category_id=question.category_id,
                             language_id=question.language_id,
@@ -89,37 +84,37 @@ def expand_to_100k_simple():
                         )
                         batch_generated += 1
                         generated_count += 1
-                        
+
                         # 每生成1000道题目，打印一次进度
-                        if generated_count % 1000 == 0:
                             logger.info(f"已生成 {generated_count}/{target_count} 道题目")
                     except Exception as e:
                         logger.error(f"保存题目失败: {str(e)}")
-            
+
             batch_end = time.time()
             batch_time = batch_end - batch_start
             logger.info(f"第 {generated_count // batch_size} 批生成完成，耗时 {batch_time:.2f} 秒，生成 {batch_generated} 道题目")
-            
+
             # 短暂休息，避免系统过载
             time.sleep(0.1)
-        
+
         # 记录结束时间
         end_time = time.time()
         elapsed_time = end_time - start_time
-        
+
         logger.info("\n扩充完成！")
         logger.info(f"成功生成 {generated_count} 道题目")
         logger.info(f"耗时: {elapsed_time:.2f} 秒")
         logger.info(f"平均生成速度: {generated_count / elapsed_time:.2f} 题/秒")
-        
+
     except Exception as e:
         logger.error(f"扩充失败: {str(e)}")
         import traceback
         traceback.print_exc()
     finally:
         print("\n================================================================================")
-        print("扩充完成！")
         print("================================================================================")
 
 if __name__ == "__main__":
     expand_to_100k_simple()
+
+"""

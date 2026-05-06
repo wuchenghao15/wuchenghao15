@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 AI中间件优化器中间件
-"""
 
 from flask import Flask
 
@@ -9,10 +8,9 @@ from flask import Flask
 ai_middleware_optimizer_middleware_priority = 5
 
 def ai_middleware_optimizer_middleware(app: Flask):
-    """
     AI中间件优化器中间件
-    """
     @app.before_request
-    def optimize_middleware():
         # 这里可以添加中间件优化逻辑
         pass
+
+"""

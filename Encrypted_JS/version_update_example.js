@@ -1,0 +1,34 @@
+
+// 加密JS包装器
+(function() {
+    const encryptedData = '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';
+    const iv = 'dBYEc2ZuoXPtUV4L3NCuvQ==';
+    
+    // 解密函数
+    function decrypt(data, iv) {
+        try {
+            // 实际应用中，解密函数应该更安全，这里仅作为演示
+            const key = CryptoJS.SHA256('MTSCOS_SECRET_KEY_2025').toString().substring(0, 32);
+            const decrypted = CryptoJS.AES.decrypt(
+                { ciphertext: CryptoJS.enc.Base64.parse(data) },
+                CryptoJS.enc.Utf8.parse(key),
+                { iv: CryptoJS.enc.Base64.parse(iv) }
+            );
+            return decrypted.toString(CryptoJS.enc.Utf8);
+        } catch (e) {
+            console.error('解密失败:', e);
+            return '';
+        }
+    }
+    
+    // 解密并执行代码
+    try {
+        const decryptedCode = decrypt(encryptedData, iv);
+        if (decryptedCode) {
+            // 使用Function构造器执行代码，避免直接eval
+            (new Function(decryptedCode))();
+        }
+    } catch (e) {
+        console.error('执行解密代码失败:', e);
+    }
+})();

@@ -1,42 +1,75 @@
-# 简化的加密工具类
-import secrets
-import hashlib
-from cryptography.fernet import Fernet
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+数据加密工具，用于加密和解密敏感数据
+"""
 
-class EncryptionUtils:
-    """简化的加密工具类"""
-    
-    def __init__(self):
-        """初始化加密工具"""
-        # 使用内存中的密钥，不再依赖文件系统
-        self.key = self._generate_key()
-        self.cipher_suite = Fernet(self.key)
-    
-    def _generate_key(self):
-        """生成加密密钥"""
-        return Fernet.generate_key()
-    
+import base64
+import hashlib
+import json
+from cryptography.fernet import Fernet
+import os
+from datetime import datetime
+
+class EncryptionManager:
+    """数据加密管理器 - 单例模式"""
+
+    _instance = None
+
+    def __new__(cls):
+        """单例模式"""
+        if not cls._instance:
+            cls._instance = super().__new__(cls)
+            cls._instance._initialize()
+        return cls._instance
+
+    def _initialize(self):
+        """初始化加密管理器"""
+        encryption_key = os.environ.get('DATABASE_ENCRYPTION_KEY', None)
+        if not encryption_key:
+            encryption_key = 'MTSCOS_AI_Project_Database_Encryption_Key_2026'
+            
+        key_hash = hashlib.sha256(encryption_key.encode()).digest()
+        self.fernet_key = base64.urlsafe_b64encode(key_hash)
+        self.cipher = Fernet(self.fernet_key)
+
     def encrypt(self, data):
         """加密数据"""
-        if not isinstance(data, bytes):
-            data = str(data).encode()
-        return self.cipher_suite.encrypt(data).decode()
-    
+        try:
+            if data is None:
+                return None
+            
+            if isinstance(data, (dict, list)):
+                data_str = json.dumps(data)
+            else:
+                data_str = str(data)
+
+            encrypted_data = self.cipher.encrypt(data_str.encode())
+            return base64.b64encode(encrypted_data).decode()
+        except Exception as e:
+            print(f"加密数据失败: {str(e)}")
+            return data
+
     def decrypt(self, encrypted_data):
         """解密数据"""
-        if not isinstance(encrypted_data, bytes):
-            encrypted_data = encrypted_data.encode()
-        return self.cipher_suite.decrypt(encrypted_data).decode()
-    
-    def hash_data(self, data):
-        """哈希数据"""
-        if not isinstance(data, bytes):
-            data = str(data).encode()
-        return hashlib.sha256(data).hexdigest()
-    
-    def generate_secure_token(self, length=32):
-        """生成安全令牌"""
-        return secrets.token_urlsafe(length)
+        try:
+            if encrypted_data is None:
+                return None
+            
+            encrypted_bytes = base64.b64decode(encrypted_data.encode())
+            decrypted_bytes = self.cipher.decrypt(encrypted_bytes)
+            decrypted_str = decrypted_bytes.decode()
 
-# 创建单例实例
-encryption_utils = EncryptionUtils()
+            try:
+                return json.loads(decrypted_str)
+            except json.JSONDecodeError:
+                return decrypted_str
+        except Exception as e:
+            print(f"解密数据失败: {str(e)}")
+            return encrypted_data
+
+    def generate_key(self):
+        """生成新的加密密钥"""
+        return Fernet.generate_key().decode()
+
+encryption_manager = EncryptionManager()

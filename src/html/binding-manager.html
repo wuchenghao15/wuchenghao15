@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>绑定管理器 - 统一配置管理系统</title>
+    <link rel="stylesheet" href="/assets/css/binding-manager.css">
+    <link rel="stylesheet" href="assets/css/theme.css"></head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <h1>统一绑定管理器</h1>
+                <button class="btn" onclick="refreshAll()">刷新所有配置</button>
+            </div>
+        </header>
+
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('config-management')">配置管理</div>
+            <div class="tab" onclick="switchTab('page-binding')">页面绑定</div>
+            <div class="tab" onclick="switchTab('usage-monitoring')">使用监控</div>
+            <div class="tab" onclick="switchTab('auto-binding')">自动绑定</div>
+        </div>
+
+        <!-- 配置管理 -->
+        <div class="tab-content active" id="config-management">
+            <div class="section">
+                <h2>配置文件管理</h2>
+                <div id="config-list"></div>
+            </div>
+
+            <div class="section">
+                <h2>配置详情</h2>
+                <div id="config-detail"></div>
+            </div>
+        </div>
+
+        <!-- 页面绑定 -->
+        <div class="tab-content" id="page-binding">
+            <div class="section">
+                <h2>页面列表</h2>
+                <div id="page-list"></div>
+            </div>
+
+            <div class="section">
+                <h2>绑定配置</h2>
+                <div class="card">
+                    <h3>绑定配置到页面</h3>
+                    <div class="form-group">
+                        <label for="page-url">页面URL</label>
+                        <input type="text" id="page-url" placeholder="/src/html/example.html">
+                    </div>
+                    <div class="form-group">
+                        <label for="config-names">配置名称（逗号分隔）</label>
+                        <input type="text" id="config-names" placeholder="project-rules.json,design-guidelines.json">
+                    </div>
+                    <button class="btn" onclick="bindConfigToPage()">绑定配置</button>
+                    <button class="btn btn-secondary" onclick="bindAllConfigsToPage()">绑定所有配置</button>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>页面配置详情</h2>
+                <div id="page-config-detail"></div>
+            </div>
+        </div>
+
+        <!-- 使用监控 -->
+        <div class="tab-content" id="usage-monitoring">
+            <div class="section">
+                <h2>配置使用统计</h2>
+                <div id="usage-stats"></div>
+            </div>
+
+            <div class="section">
+                <h2>记录配置使用</h2>
+                <div class="card">
+                    <h3>记录配置使用</h3>
+                    <div class="form-group">
+                        <label for="usage-config-name">配置名称</label>
+                        <input type="text" id="usage-config-name" placeholder="project-rules.json">
+                    </div>
+                    <div class="form-group">
+                        <label for="usage-data">使用数据</label>
+                        <textarea id="usage-data" placeholder='{"action": "read", "page": "/src/html/example.html"}'></textarea>
+                    </div>
+                    <button class="btn" onclick="recordConfigUsage()">记录使用</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 自动绑定 -->
+        <div class="tab-content" id="auto-binding">
+            <div class="section">
+                <h2>自动绑定系统</h2>
+                <div class="card">
+                    <h3>自动绑定操作</h3>
+                    <button class="btn" onclick="scanPages()">扫描页面</button>
+                    <button class="btn btn-success" onclick="autoBindConfigs()">自动绑定配置</button>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>扫描结果</h2>
+                <div id="scan-result"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/assets/js/binding-manager.js" async></script>
+
+<!-- 安全锁定系统 -->
+<script src="/JavaScript/security-lock.js" async></script>
+<script>
+    // 初始化安全锁定系统
+    if (typeof SecurityLock !== 'undefined') {
+        window.securityLock = new SecurityLock();
+        console.log('安全锁定系统已初始化');
+    }
+</script>
+</body>
+</html>

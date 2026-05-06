@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">; /* 脚本修复：添加缺失的分号 */
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>安全机制配置管理 - MTSCOS系统</title>
+    <link rel="stylesheet" href="assets/css/main.css">
+    <link rel="stylesheet" href="assets/css/settings.css">
+    <link rel="stylesheet" href="assets/css/loading.css">
+    <link rel="stylesheet" href="/assets/css/security-mechanism-config.css">
+<script defer src="assets/js/unified-error-handler-v3.js"></script>; /* 脚本修复：添加缺失的分号 */
+</head>
+<body>
+    <div class="security-config-container">
+        <!-- 页面头部 -->
+        <div class="config-header">
+            <h1>安全机制配置管理</h1>
+            <div class="security-status">
+                <span class="status-indicator" id="security-status-indicator"></span>
+                <span id="security-status-text">加载中...</span>
+                <span id="security-level-badge" class="security-badge"></span>
+            </div>
+        </div>
+        
+        <!-- 配置内容 -->
+        <div class="config-content">
+            <!-- 标签页 -->
+            <div class="config-tabs">
+                <button class="config-tab active" data-tab="general">基本设置</button>
+                <button class="config-tab" data-tab="rolling-code">滚码锁设置</button>
+                <button class="config-tab" data-tab="security-channels">安全通道</button>
+                <button class="config-tab" data-tab="security-events">安全事件</button>
+                <button class="config-tab" data-tab="security-report">安全报告</button>
+                <button class="config-tab" data-tab="advanced">高级配置</button>
+            </div>
+            
+            <!-- 基本设置标签页 -->
+            <div class="tab-content active" id="tab-general">
+                <div class="config-section">
+                    <div class="section-header">
+                        <h2>全局安全设置</h2>
+                        <button class="btn btn-secondary small-btn" id="reset-general-settings">重置默认</button>
+                    </div>
+                    <div class="section-description">
+                        配置系统的基本安全设置，包括安全机制开关、安全级别和自动响应等核心功能。
+                    </div>
+                    
+                    <div class="form-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="security-enabled" class="form-checkbox">
+                            <label for="security-enabled" class="form-label">启用安全机制</label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">安全级别</label>
+                        <div class="radio-group">
+                            <div class="radio-item">
+                                <input type="radio" name="security-level" id="level-low" value="low" class="form-radio">
+                                <label for="level-low">低</label>
+                            </div>
+                            <div class="radio-item">
+                                <input type="radio" name="security-level" id="level-medium" value="medium" class="form-radio">
+                                <label for="level-medium">中</label>
+                            </div>
+                            <div class="radio-item">
+                                <input type="radio" name="security-level" id="level-high" value="high" class="form-radio">
+                                <label for="level-high">高</label>
+                            </div>
+                        </div>
+                        <div class="security-level-badges">
+                            <span class="security-badge badge-low">低：适用于开发环境</span>
+                            <span class="security-badge badge-medium">中：适用于一般生产环境</span>
+                            <span class="security-badge badge-high">高：适用于处理敏感数据的环境</span>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="audit-logging" class="form-checkbox">
+                            <label for="audit-logging" class="form-label">启用审计日志</label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="automatic-response" class="form-checkbox">
+                            <label for="automatic-response" class="form-label">启用自动安全响应</label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="alert-threshold" class="form-label">安全警报阈值</label>
+                        <div class="range-control">
+                            <input type="range" id="alert-threshold" min="1" max="20" step="1" class="slider">
+                            <span class="range-value" id="alert-threshold-value"></span>
+                        </div>
+                        <small class="form-text text-muted">连续检测到可疑活动的次数达到此阈值将触发警报</small>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 滚码锁设置标签页 -->
+            <div class="tab-content" id="tab-rolling-code">
+                <div class="config-section">
+                    <div class="section-header">
+                        <h2>滚码锁配置</h2>
+                        <button class="btn btn-secondary small-btn" id="reset-rolling-code-settings">重置默认</button>
+                    </div>
+                    <div class="section-description">
+                        配置滚码锁机制的参数，包括滚码长度、更新间隔和有效期等，这些设置直接影响数据传输的安全性。
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="code-length" class="form-label">滚码长度（字节）</label>
+                        <div class="range-control">
+                            <input type="range" id="code-length" min="8" max="64" step="8" class="slider">
+                            <span class="range-value" id="code-length-value"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="rotation-interval" class="form-label">滚码更新间隔（秒）</label>
+                        <div class="range-control">
+                            <input type="range" id="rotation-interval" min="10" max="300" step="10" class="slider">
+                            <span class="range-value" id="rotation-interval-value"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="max-code-age" class="form-label">滚码最大有效期（秒）</label>
+                        <div class="range-control">
+                            <input type="range" id="max-code-age" min="20" max="600" step="20" class="slider">
+                            <span class="range-value" id="max-code-age-value"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">加密算法</label>
+                        <select id="encryption-algorithm" class="form-control">
+                            <option value="AES-256-GCM">AES-256-GCM</option>
+                            <option value="AES-128-GCM">AES-128-GCM</option>
+                            <option value="ChaCha20-Poly1305">ChaCha20-Poly1305</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">签名算法</label>
+                        <select id="signature-algorithm" class="form-control">
+                            <option value="HMAC-SHA256">HMAC-SHA256</option>
+                            <option value="HMAC-SHA512">HMAC-SHA512</option>
+                            <option value="ECDSA-P256">ECDSA-P256</option>
+                        </select>
+                    </div>
+                    
+                    <div class="btn-group">
+                        <button class="btn btn-primary" id="generate-new-code">立即生成新滚码</button>
+                        <button class="btn btn-warning" id="reset-rolling-code-state">重置滚码状态</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 安全通道标签页 -->
+            <div class="tab-content" id="tab-security-channels">
+                <div class="config-section">
+                    <div class="section-header">
+                        <h2>安全通道管理</h2>
+                        <button class="btn btn-primary small-btn" id="create-new-channel">创建新通道</button>
+                    </div>
+                    <div class="section-description">
+                        管理用于敏感数据传输的安全通道，每个通道都有独立的加密和安全级别设置。
+                    </div>
+                    
+                    <div id="channels-list">
+                        <!-- 通道列表将通过JavaScript动态生成 -->
+                        <div class="status-card">
+                            <div class="status-row">
+                                <span class="status-label">正在加载安全通道...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 安全事件标签页 -->
+            <div class="tab-content" id="tab-security-events">
+                <div class="config-section">
+                    <div class="section-header">
+                        <h2>安全事件监控</h2>
+                        <div class="btn-group">
+                            <button class="btn btn-secondary small-btn" id="clear-events">清空事件</button>
+                            <button class="btn btn-primary small-btn" id="refresh-events">刷新</button>
+                        </div>
+                    </div>
+                    <div class="section-description">
+                        查看最近的安全事件日志，包括数据拦截尝试、篡改尝试和未授权访问等安全告警。
+                    </div>
+                    
+                    <div class="security-events" id="events-list">
+                        <!-- 事件列表将通过JavaScript动态生成 -->
+                        <div class="event-item">
+                            <div class="event-header">
+                                <span class="event-type">系统启动</span>
+                                <span class="event-time">加载中...</span>
+                            </div>
+                            <div class="event-details">正在加载安全事件...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 安全报告标签页 -->
+            <div class="tab-content" id="tab-security-report">
+                <div class="config-section">
+                    <div class="section-header">
+                        <h2>当前安全状态</h2>
+                        <button class="btn btn-primary small-btn" id="generate-security-report">生成详细报告</button>
+                    </div>
+                    
+                    <div class="status-card">
+                        <div class="status-row">
+                            <span class="status-label">安全机制状态</span>
+                            <span class="status-value" id="status-enabled"></span>
+                        </div>
+                        <div class="status-row">
+                            <span class="status-label">当前安全级别</span>
+                            <span class="status-value" id="status-level"></span>
+                        </div>
+                        <div class="status-row">
+                            <span class="status-label">滚码锁状态</span>
+                            <span class="status-value" id="status-rolling-code"></span>
+                        </div>
+                        <div class="status-row">
+                            <span class="status-label">活跃安全通道</span>
+                            <span class="status-value" id="status-active-channels"></span>
+                        </div>
+                        <div class="status-row">
+                            <span class="status-label">未处理安全事件</span>
+                            <span class="status-value" id="status-pending-events"></span>
+                        </div>
+                        <div class="status-row">
+                            <span class="status-label">最近安全检查</span>
+                            <span class="status-value" id="status-last-check"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 高级配置标签页 -->
+            <div class="tab-content" id="tab-advanced">
+                <div class="config-section">
+                    <div class="section-header">
+                        <h2>高级安全设置</h2>
+                        <button class="btn btn-secondary small-btn" id="reset-advanced-settings">重置默认</button>
+                    </div>
+                    <div class="section-description">
+                        高级安全配置选项，仅对专业用户开放，修改这些设置可能会影响系统的安全性和性能。
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">密钥交换方法</label>
+                        <select id="key-exchange-method" class="form-control">
+                            <option value="ECDHE">ECDHE</option>
+                            <option value="RSA-OAEP">RSA-OAEP</option>
+                            <option value="X25519">X25519</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="rekey-threshold" class="form-label">重密钥交换阈值</label>
+                        <div class="range-control">
+                            <input type="range" id="rekey-threshold" min="100" max="5000" step="100" class="slider">
+                            <span class="range-value" id="rekey-threshold-value"></span>
+                        </div>
+                        <small class="form-text text-muted">每个安全通道发送消息数量达到此阈值时将自动执行重密钥交换</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="fallback-mechanism" class="form-checkbox">
+                            <label for="fallback-mechanism" class="form-label">启用安全回退机制</label>
+                        </div>
+                        <small class="form-text text-muted">当主要安全机制失败时，启用备用安全措施</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="lockout-duration" class="form-label">账户锁定时长（秒）</label>
+                        <div class="range-control">
+                            <input type="range" id="lockout-duration" min="60" max="3600" step="60" class="slider">
+                            <span class="range-value" id="lockout-duration-value"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="btn-group">
+                        <button class="btn btn-danger" id="reset-all-security">重置所有安全状态</button>
+                        <button class="btn btn-warning" id="test-security-measures">测试安全措施</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 操作按钮 -->
+            <div class="action-buttons">
+                <button class="btn btn-secondary" id="cancel-changes">取消</button>
+                <button class="btn btn-primary" id="save-settings">保存设置</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 加载覆盖层 -->
+    <div class="loading-overlay" id="loading-overlay" style="display: none;">
+        <div class="loading-spinner"></div>
+    </div>
+    
+    <!-- 通知提示 -->
+    <div class="toast-notification" id="toast-notification"></div>
+    
+    <!-- 创建通道对话框 -->
+    <div class="modal" id="create-channel-modal" style="display: none;">
+        <div class="modal-content">; /* 脚本修复：添加缺失的分号 */
+            <div class="modal-header">; /* 脚本修复：添加缺失的分号 */
+                <h3>创建新安全通道</h3>
+                <button class="close-modal">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="channel-id-input" class="form-label">通道ID</label>
+                    <input type="text" id="channel-id-input" class="form-control" placeholder="输入通道唯一标识符">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">安全级别</label>
+                    <select id="channel-security-level" class="form-control">
+                        <option value="low">低</option>
+                        <option value="medium">中</option>
+                        <option value="high">高</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary close-modal">取消</button>
+                <button class="btn btn-primary" id="confirm-create-channel">创建</button>
+            </div>
+        </div>
+    </div>
+    
+    <script defer src="assets/js/core/security-events.js"></script>
+    <script defer src="assets/js/core/encryption.js"></script>
+    <script defer src="assets/js/core/session-manager.js"></script>
+    <script defer src="assets/js/core/data-security.js"></script>
+    <script defer src="assets/js/core/token-verification.js"></script>
+    <script defer src="assets/js/unified-auth-manager.js"></script>
+    <script defer src="assets/js/security-module.js"></script>
+<script defer src="/assets/js/core/user-status-manager.js"></script>
+	    <script src="assets/js/ai-hosting.js"></script>
+
+<!-- 安全锁定系统 -->
+<script src="/JavaScript/security-lock.js"></script>
+<script src="/assets/js/security-mechanism-config.js"></script>
+</body>
+</html>

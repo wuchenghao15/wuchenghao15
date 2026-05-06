@@ -1,65 +1,58 @@
+# -*- coding: utf-8 -*-
 # MTSCOS AI Project 数据库规则源
 """
 数据库规则源，用于从数据库加载和保存规则。
-"""
 
 from typing import List, Dict, Any
 from app.utils.logging import logger
 
 
 class DatabaseRuleSource:
-    """
     数据库规则源，从数据库加载规则并保存规则到数据库
-    """
-    
+
     def __init__(self):
         self._table_name = "rules"
-    
+
     def load_rules(self) -> List[Dict[str, Any]]:
-        """
         从数据库加载所有规则
-        
+
         Returns:
             List[Dict[str, Any]]: 规则列表
-        """
         rules = []
-        
+
         try:
             # 延迟导入，避免循环依赖
             from app.utils.db import db_manager
-            
+
             # 查询所有规则
             query = f"SELECT * FROM {self._table_name}"
             rows = db_manager.fetch_all(query)
-            
+
             for row in rows:
                 # 转换为规则定义格式
                 rule = self._row_to_rule(row)
                 rules.append(rule)
-            
+
             logger.info(f"从数据库加载了 {len(rules)} 个规则")
         except Exception as e:
             logger.error(f"从数据库加载规则失败: {str(e)}")
-        
+
         return rules
-    
+
     def save_rule(self, rule: Dict[str, Any]) -> bool:
-        """
         保存规则到数据库
-        
+
         Args:
             rule: 规则定义
-        
+
         Returns:
             bool: 是否保存成功
-        """
         try:
             # 延迟导入，避免循环依赖
             from app.utils.db import db_manager
-            
-            # 检查规则是否已存在
+
             existing_rule = self._get_rule_by_id(rule.get("id"))
-            
+
             if existing_rule:
                 # 更新现有规则
                 update_data = {
@@ -71,7 +64,7 @@ class DatabaseRuleSource:
                     "enabled": 1 if rule.get("status") == "active" else 0,
                     "version": existing_rule.get("version", 1) + 1
                 }
-                
+
                 success = db_manager.update(
                     table=self._table_name,
                     data=update_data,
@@ -90,80 +83,58 @@ class DatabaseRuleSource:
                     "enabled": 1 if rule.get("status") == "active" else 0,
                     "version": 1
                 }
-                
-                success = db_manager.insert(
                     table=self._table_name,
                     data=insert_data
-                ) is not None
-            
             if success:
                 logger.info(f"规则 {rule.get('name')} 已保存到数据库")
-            else:
                 logger.error(f"保存规则 {rule.get('name')} 到数据库失败")
-            
             return success
         except Exception as e:
             logger.error(f"保存规则到数据库失败: {str(e)}")
             return False
-    
-    def delete_rule(self, rule_id: str) -> bool:
-        """
+
         从数据库删除规则
-        
+
         Args:
             rule_id: 规则ID
-        
+
         Returns:
-            bool: 是否删除成功
-        """
         try:
             # 延迟导入，避免循环依赖
             from app.utils.db import db_manager
-            
+
             success = db_manager.delete(
                 table=self._table_name,
-                where_clause="id = ?",
                 where_params=(rule_id,)
             )
-            
+
             if success:
                 logger.info(f"规则 {rule_id} 已从数据库删除")
             else:
                 logger.error(f"从数据库删除规则 {rule_id} 失败")
-            
+
             return success
         except Exception as e:
             logger.error(f"从数据库删除规则失败: {str(e)}")
             return False
-    
+
     def _row_to_rule(self, row) -> Dict[str, Any]:
-        """
         将数据库行转换为规则定义
-        
         Args:
             row: 数据库行
-        
         Returns:
             Dict[str, Any]: 规则定义
-        """
-        import json
-        
-        rule_content = row.get("rule_content", "{}")
-        
+rule_content = row.get("rule_content", "{}")
+
         try:
-            # 解析规则内容
-            content_dict = json.loads(rule_content)
         except json.JSONDecodeError:
             # 如果解析失败，使用默认值
-            content_dict = {
                 "conditions": [],
                 "actions": []
             }
-        
         return {
             "id": row.get("id"),
             "name": row.get("rule_name"),
-            "type": row.get("rule_type"),
             "description": row.get("description"),
             "conditions": content_dict.get("conditions", []),
             "actions": content_dict.get("actions", []),
@@ -173,47 +144,41 @@ class DatabaseRuleSource:
             "created_at": row.get("created_at"),
             "updated_at": row.get("updated_at")
         }
-    
+
     def _rule_to_content(self, rule: Dict[str, Any]) -> str:
-        """
         将规则定义转换为数据库存储的内容
-        
+
         Args:
             rule: 规则定义
-        
+
         Returns:
             str: 数据库存储的规则内容
-        """
-        import json
-        
-        # 提取条件和动作
+        # JSON import removed - using database
+# 提取条件和动作
         content = {
             "conditions": rule.get("conditions", []),
             "actions": rule.get("actions", [])
         }
-        
-        return json.dumps(content, ensure_ascii=False)
-    
+
+        return str(content)
+
     def _get_rule_by_id(self, rule_id: str) -> Dict[str, Any]:
-        """
-        根据ID从数据库获取规则
-        
-        Args:
+
             rule_id: 规则ID
-        
+
         Returns:
             Dict[str, Any]: 规则定义
-        """
         try:
             # 延迟导入，避免循环依赖
             from app.utils.db import db_manager
-            
+
             query = f"SELECT * FROM {self._table_name} WHERE id = ?"
             row = db_manager.fetch_one(query, (rule_id,))
-            
+
             if row:
                 return self._row_to_rule(row)
             return None
         except Exception as e:
             logger.error(f"根据ID获取规则失败: {str(e)}")
-            return None
+
+"""

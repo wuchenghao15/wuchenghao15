@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 Basic Flask Test Script
-"""
 
 from flask import Flask
 
@@ -20,3 +19,5 @@ def health():
 if __name__ == '__main__':
     print("Starting basic Flask server on port 8888...")
     app.run(host='0.0.0.0', port=8888, debug=True)
+
+"""

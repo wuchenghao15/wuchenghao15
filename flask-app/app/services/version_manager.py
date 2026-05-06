@@ -1,436 +1,324 @@
 #!/usr/bin/env python3
 """
-版本管理服务
+版本号管理服务 - 确保数据库记录系统最高版本号，防止版本号错乱
 """
 
-import time
-import json
-import logging
-import os
-from typing import Dict, List, Any, Optional
-
-from app.utils.db import db_manager
+import sqlite3
+import re
+from datetime import datetime
 from app.utils.logging import logger
 
 class VersionManager:
-    """版本管理器"""
+    """版本号管理服务"""
     
-    def __init__(self):
+    _instance = None
+    _lock = __import__('threading').RLock()
+    
+    def __new__(cls):
+        if not cls._instance:
+            with cls._lock:
+                if not cls._instance:
+                    cls._instance = super(VersionManager, cls).__new__(cls)
+                    cls._instance._initialize()
+        return cls._instance
+    
+    def _initialize(self):
         """初始化版本管理器"""
-        self.current_version = "1.0.0"
-        self.version_history = []
-        self.version_file = "version.json"
+        self.db_path = 'flask-app/app.db'
         self._create_version_table()
-        self._load_version()
-        logger.info(f"版本管理器初始化完成，当前版本: {self.current_version}")
+        self._current_version = self._get_highest_version()
+        logger.info(f"版本管理器初始化完成，当前版本: {self._current_version}")
     
     def _create_version_table(self):
-        """创建版本历史表"""
-        try:
-            db_manager.execute('''
-                CREATE TABLE IF NOT EXISTS version_history (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    version TEXT NOT NULL,
-                    description TEXT,
-                    upgrade_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    status TEXT DEFAULT 'completed'  -- pending, in_progress, completed, failed
-                )
-            ''')
-            logger.info("版本历史表创建完成")
-        except Exception as e:
-            logger.error(f"创建版本历史表失败: {str(e)}")
-    
-    def _load_version(self):
-        """加载当前版本"""
-        # 从版本文件加载
-        if os.path.exists(self.version_file):
-            try:
-                with open(self.version_file, 'r', encoding='utf-8') as f:
-                    version_data = json.load(f)
-                    self.current_version = version_data.get('version', '1.0.0')
-                    self.version_history = version_data.get('history', [])
-            except Exception as e:
-                logger.error(f"加载版本文件失败: {str(e)}")
+        """创建版本管理表"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
         
-        # 从数据库加载
-        try:
-            history = db_manager.fetch_all(
-                'SELECT version, description, upgrade_time, status FROM version_history ORDER BY upgrade_time DESC'
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS version_control (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                version TEXT NOT NULL UNIQUE,
+                major INTEGER NOT NULL,
+                minor INTEGER NOT NULL,
+                patch INTEGER NOT NULL,
+                build INTEGER DEFAULT 0,
+                release_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                description TEXT,
+                is_active INTEGER DEFAULT 1,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
-            for record in history:
-                version_info = {
-                    'version': record['version'] if isinstance(record, dict) else record[0],
-                    'description': record['description'] if isinstance(record, dict) else record[1],
-                    'upgrade_time': record['upgrade_time'] if isinstance(record, dict) else record[2],
-                    'status': record['status'] if isinstance(record, dict) else record[3]
-                }
-                if version_info not in self.version_history:
-                    self.version_history.append(version_info)
-        except Exception as e:
-            logger.error(f"从数据库加载版本历史失败: {str(e)}")
+        ''')
+        
+        # 创建索引
+        cursor.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_version_control_version ON version_control(version)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_version_control_active ON version_control(is_active)')
+        
+        conn.commit()
+        conn.close()
     
-    def _save_version(self):
-        """保存版本信息"""
-        try:
-            version_data = {
-                'version': self.current_version,
-                'history': self.version_history,
-                'last_updated': time.time()
+    def _get_highest_version(self):
+        """获取数据库中最高版本号"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            SELECT version FROM version_control 
+            ORDER BY major DESC, minor DESC, patch DESC, build DESC 
+            LIMIT 1
+        ''')
+        result = cursor.fetchone()
+        
+        conn.close()
+        
+        if result:
+            return result[0]
+        return "1.0.0"
+    
+    def parse_version(self, version_str):
+        """解析版本号字符串"""
+        pattern = r'^(\d+)\.(\d+)\.(\d+)(?:\.(\d+))?$'
+        match = re.match(pattern, version_str)
+        
+        if match:
+            return {
+                'major': int(match.group(1)),
+                'minor': int(match.group(2)),
+                'patch': int(match.group(3)),
+                'build': int(match.group(4)) if match.group(4) else 0
             }
-            with open(self.version_file, 'w', encoding='utf-8') as f:
-                json.dump(version_data, f, ensure_ascii=False, indent=2)
-            logger.info(f"版本信息保存成功: {self.current_version}")
-        except Exception as e:
-            logger.error(f"保存版本信息失败: {str(e)}")
+        return None
     
-    def get_current_version(self) -> str:
-        """
-        获取当前版本
+    def compare_versions(self, v1, v2):
+        """比较两个版本号，返回 -1, 0, 1"""
+        v1_parts = self.parse_version(v1)
+        v2_parts = self.parse_version(v2)
         
-        Returns:
-            当前版本号
-        """
-        return self.current_version
-    
-    def get_version_history(self) -> List[Dict[str, Any]]:
-        """
-        获取版本历史
+        if not v1_parts or not v2_parts:
+            raise ValueError("无效的版本号格式")
         
-        Returns:
-            版本历史列表
-        """
-        return self.version_history
-    
-    def compare_versions(self, version1: str, version2: str) -> int:
-        """
-        比较版本号
-        
-        Args:
-            version1: 版本号1
-            version2: 版本号2
-        
-        Returns:
-            1: version1 > version2
-            0: version1 == version2
-            -1: version1 < version2
-        """
-        v1_parts = [int(part) for part in version1.split('.')]
-        v2_parts = [int(part) for part in version2.split('.')]
-        
-        for i in range(max(len(v1_parts), len(v2_parts))):
-            v1 = v1_parts[i] if i < len(v1_parts) else 0
-            v2 = v2_parts[i] if i < len(v2_parts) else 0
-            
-            if v1 > v2:
-                return 1
-            elif v1 < v2:
+        for key in ['major', 'minor', 'patch', 'build']:
+            if v1_parts[key] < v2_parts[key]:
                 return -1
+            elif v1_parts[key] > v2_parts[key]:
+                return 1
         
         return 0
     
-    def upgrade_version(self, new_version: str, description: str) -> Dict[str, Any]:
-        """
-        升级版本
-        
-        Args:
-            new_version: 新版本号
-            description: 版本描述
-        
-        Returns:
-            升级结果
-        """
-        # 验证版本号格式
-        if not self._validate_version(new_version):
-            return {
-                'status': 'error',
-                'message': '无效的版本号格式'
-            }
-        
-        # 检查版本号是否高于当前版本
-        if self.compare_versions(new_version, self.current_version) <= 0:
-            return {
-                'status': 'error',
-                'message': '新版本号必须高于当前版本号'
-            }
-        
-        try:
-            # 开始升级
-            logger.info(f"开始升级版本: {self.current_version} -> {new_version}")
-            
-            # 记录升级开始
-            db_manager.execute(
-                '''
-                INSERT INTO version_history (version, description, status)
-                VALUES (?, ?, ?)
-                ''',
-                (new_version, description, 'in_progress')
-            )
-            
-            # 执行升级操作
-            upgrade_result = self._perform_upgrade(new_version)
-            
-            if upgrade_result['status'] == 'success':
-                # 更新版本信息
-                self.current_version = new_version
-                
-                # 记录版本历史
-                version_info = {
-                    'version': new_version,
-                    'description': description,
-                    'upgrade_time': time.time(),
-                    'status': 'completed'
-                }
-                self.version_history.insert(0, version_info)
-                
-                # 更新数据库记录
-                db_manager.execute(
-                    'UPDATE version_history SET status = ? WHERE version = ? AND status = ?',
-                    ('completed', new_version, 'in_progress')
-                )
-                
-                # 保存版本信息
-                self._save_version()
-                
-                logger.info(f"版本升级成功: {new_version}")
-                return {
-                    'status': 'success',
-                    'message': f'版本升级成功: {new_version}',
-                    'version': new_version,
-                    'description': description
-                }
-            else:
-                # 更新数据库记录为失败
-                db_manager.execute(
-                    'UPDATE version_history SET status = ? WHERE version = ? AND status = ?',
-                    ('failed', new_version, 'in_progress')
-                )
-                
-                logger.error(f"版本升级失败: {upgrade_result['message']}")
-                return {
-                    'status': 'error',
-                    'message': f'版本升级失败: {upgrade_result['message']}'
-                }
-                
-        except Exception as e:
-            # 更新数据库记录为失败
-            try:
-                db_manager.execute(
-                    'UPDATE version_history SET status = ? WHERE version = ? AND status = ?',
-                    ('failed', new_version, 'in_progress')
-                )
-            except:
-                pass
-            
-            logger.error(f"版本升级异常: {str(e)}")
-            return {
-                'status': 'error',
-                'message': f'版本升级异常: {str(e)}'
-            }
-    
-    def _validate_version(self, version: str) -> bool:
-        """
-        验证版本号格式
-        
-        Args:
-            version: 版本号
-        
-        Returns:
-            是否有效
-        """
-        parts = version.split('.')
-        if len(parts) != 3:
-            return False
-        
-        for part in parts:
-            if not part.isdigit():
-                return False
-        
+    def validate_version(self, version_str):
+        """验证版本号格式是否正确"""
+        pattern = r'^(\d+)\.(\d+)\.(\d+)(?:\.(\d+))?$'
+        if not re.match(pattern, version_str):
+            raise ValueError(f"无效的版本号格式: {version_str}")
         return True
     
-    def _perform_upgrade(self, new_version: str) -> Dict[str, Any]:
-        """
-        执行升级操作
+    def get_current_version(self):
+        """获取当前版本号"""
+        return self._current_version
+    
+    def upgrade_version(self, level='patch', description=None):
+        """升级版本号
         
         Args:
-            new_version: 新版本号
+            level: 'major', 'minor', 'patch', 'build'
+            description: 版本更新描述
         
         Returns:
-            升级结果
+            str: 新版本号
         """
-        try:
-            # 执行数据库迁移
-            self._migrate_database(new_version)
+        with self._lock:
+            current = self._current_version
+            parts = self.parse_version(current)
             
-            # 执行配置更新
-            self._update_config(new_version)
+            if level == 'major':
+                parts['major'] += 1
+                parts['minor'] = 0
+                parts['patch'] = 0
+                parts['build'] = 0
+            elif level == 'minor':
+                parts['minor'] += 1
+                parts['patch'] = 0
+                parts['build'] = 0
+            elif level == 'patch':
+                parts['patch'] += 1
+                parts['build'] = 0
+            elif level == 'build':
+                parts['build'] += 1
+            else:
+                raise ValueError("无效的升级级别: major, minor, patch, build")
             
-            # 执行其他升级操作
-            self._perform_other_upgrades(new_version)
+            new_version = f"{parts['major']}.{parts['minor']}.{parts['patch']}"
+            if parts['build'] > 0:
+                new_version += f".{parts['build']}"
             
-            return {
-                'status': 'success',
-                'message': '升级操作执行成功'
-            }
-        except Exception as e:
-            return {
-                'status': 'error',
-                'message': str(e)
-            }
+            # 检查新版本是否已存在
+            if self._version_exists(new_version):
+                # 如果存在，自动增加build号
+                parts['build'] += 1
+                new_version = f"{parts['major']}.{parts['minor']}.{parts['patch']}.{parts['build']}"
+            
+            # 记录新版本到数据库
+            self._record_version(new_version, description)
+            
+            # 更新当前版本
+            self._current_version = new_version
+            
+            logger.info(f"版本升级完成: {current} -> {new_version}")
+            return new_version
     
-    def _migrate_database(self, new_version: str) -> None:
-        """
-        执行数据库迁移
+    def _version_exists(self, version):
+        """检查版本号是否已存在"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        cursor.execute('SELECT COUNT(*) FROM version_control WHERE version = ?', (version,))
+        exists = cursor.fetchone()[0] > 0
+        conn.close()
+        return exists
+    
+    def _record_version(self, version, description=None):
+        """记录新版本到数据库"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
         
-        Args:
-            new_version: 新版本号
-        """
-        logger.info("执行数据库迁移")
+        parts = self.parse_version(version)
         
-        # 这里可以添加数据库迁移代码
-        # 例如：创建新表、修改表结构、添加索引等
+        cursor.execute('''
+            INSERT INTO version_control 
+            (version, major, minor, patch, build, description, release_date)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', (version, parts['major'], parts['minor'], parts['patch'], parts['build'], description, datetime.now().isoformat()))
         
-        # 示例：添加新字段或表
-        try:
-            # 检查是否需要添加新表或字段
-            # 这里可以根据版本号执行不同的迁移操作
+        conn.commit()
+        conn.close()
+    
+    def set_version(self, version, description=None):
+        """手动设置版本号（谨慎使用）"""
+        with self._lock:
+            self.validate_version(version)
             
-            logger.info("数据库迁移完成")
-        except Exception as e:
-            logger.error(f"数据库迁移失败: {str(e)}")
-            raise
+            # 检查是否比当前版本高
+            if self.compare_versions(version, self._current_version) <= 0:
+                raise ValueError(f"新版本必须高于当前版本 {self._current_version}")
+            
+            # 检查是否已存在
+            if self._version_exists(version):
+                raise ValueError(f"版本 {version} 已存在")
+            
+            # 记录新版本
+            self._record_version(version, description)
+            self._current_version = version
+            
+            logger.info(f"版本手动设置完成: {version}")
+            return version
     
-    def _update_config(self, new_version: str) -> None:
-        """
-        更新配置
+    def get_version_history(self, limit=10):
+        """获取版本历史记录"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
         
-        Args:
-            new_version: 新版本号
-        """
-        logger.info("更新配置")
+        cursor.execute('''
+            SELECT version, release_date, description, is_active 
+            FROM version_control 
+            ORDER BY id DESC 
+            LIMIT ?
+        ''', (limit,))
         
-        # 这里可以添加配置更新代码
-        # 例如：更新配置文件、环境变量等
+        history = []
+        for row in cursor.fetchall():
+            history.append({
+                'version': row[0],
+                'release_date': row[1],
+                'description': row[2],
+                'is_active': bool(row[3])
+            })
         
-        logger.info("配置更新完成")
+        conn.close()
+        return history
     
-    def _perform_other_upgrades(self, new_version: str) -> None:
-        """
-        执行其他升级操作
+    def validate_version_order(self):
+        """验证版本号顺序是否正确，防止错乱"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
         
-        Args:
-            new_version: 新版本号
-        """
-        logger.info("执行其他升级操作")
+        cursor.execute('''
+            SELECT version, major, minor, patch, build 
+            FROM version_control 
+            ORDER BY id ASC
+        ''')
         
-        # 这里可以添加其他升级操作
-        # 例如：更新依赖、清理缓存、重建索引等
+        versions = cursor.fetchall()
+        conn.close()
         
-        logger.info("其他升级操作完成")
+        if len(versions) < 2:
+            return True, "版本数量不足，无需验证"
+        
+        for i in range(1, len(versions)):
+            prev = versions[i-1]
+            curr = versions[i]
+            
+            # 验证数值顺序
+            prev_num = (prev[1], prev[2], prev[3], prev[4])
+            curr_num = (curr[1], curr[2], curr[3], curr[4])
+            
+            if curr_num <= prev_num:
+                return False, f"版本顺序错乱: {prev[0]} -> {curr[0]}"
+        
+        return True, "版本顺序验证通过"
     
-    def check_for_updates(self) -> Dict[str, Any]:
-        """
-        检查更新
+    def get_next_version(self, level='patch'):
+        """获取下一个版本号（不实际升级）"""
+        current = self._current_version
+        parts = self.parse_version(current)
         
-        Returns:
-            更新检查结果
-        """
-        # 这里可以添加检查更新的逻辑
-        # 例如：从服务器获取最新版本信息
-        
-        # 模拟检查更新
-        latest_version = "1.1.0"
-        update_available = self.compare_versions(latest_version, self.current_version) > 0
-        
-        return {
-            'status': 'success',
-            'current_version': self.current_version,
-            'latest_version': latest_version,
-            'update_available': update_available,
-            'message': f'当前版本: {self.current_version}, 最新版本: {latest_version}'
-        }
+        if level == 'major':
+            return f"{parts['major'] + 1}.0.0"
+        elif level == 'minor':
+            return f"{parts['major']}.{parts['minor'] + 1}.0"
+        elif level == 'patch':
+            return f"{parts['major']}.{parts['minor']}.{parts['patch'] + 1}"
+        elif level == 'build':
+            return f"{parts['major']}.{parts['minor']}.{parts['patch']}.{parts['build'] + 1}"
+        else:
+            raise ValueError("无效的升级级别")
     
-    def rollback_version(self, target_version: str) -> Dict[str, Any]:
-        """
-        回滚版本
+    def lock_version(self, version):
+        """锁定版本号，防止被覆盖"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
         
-        Args:
-            target_version: 目标版本号
+        cursor.execute('UPDATE version_control SET is_active = 0 WHERE version = ?', (version,))
+        conn.commit()
+        conn.close()
         
-        Returns:
-            回滚结果
-        """
-        # 检查目标版本是否存在
-        target_version_info = None
-        for info in self.version_history:
-            if info['version'] == target_version:
-                target_version_info = info
-                break
+        logger.info(f"版本已锁定: {version}")
+    
+    def get_version_info(self, version):
+        """获取版本详细信息"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
         
-        if not target_version_info:
+        cursor.execute('''
+            SELECT version, major, minor, patch, build, release_date, description, is_active, created_at 
+            FROM version_control 
+            WHERE version = ?
+        ''', (version,))
+        
+        row = cursor.fetchone()
+        conn.close()
+        
+        if row:
             return {
-                'status': 'error',
-                'message': '目标版本不存在'
+                'version': row[0],
+                'major': row[1],
+                'minor': row[2],
+                'patch': row[3],
+                'build': row[4],
+                'release_date': row[5],
+                'description': row[6],
+                'is_active': bool(row[7]),
+                'created_at': row[8]
             }
-        
-        # 检查目标版本是否低于当前版本
-        if self.compare_versions(target_version, self.current_version) >= 0:
-            return {
-                'status': 'error',
-                'message': '目标版本必须低于当前版本'
-            }
-        
-        try:
-            logger.info(f"开始回滚版本: {self.current_version} -> {target_version}")
-            
-            # 执行回滚操作
-            # 这里可以添加回滚逻辑
-            
-            # 更新版本信息
-            self.current_version = target_version
-            
-            # 记录回滚历史
-            rollback_info = {
-                'version': target_version,
-                'description': f'回滚到版本 {target_version}',
-                'upgrade_time': time.time(),
-                'status': 'completed'
-            }
-            self.version_history.insert(0, rollback_info)
-            
-            # 保存版本信息
-            self._save_version()
-            
-            logger.info(f"版本回滚成功: {target_version}")
-            return {
-                'status': 'success',
-                'message': f'版本回滚成功: {target_version}',
-                'version': target_version
-            }
-            
-        except Exception as e:
-            logger.error(f"版本回滚失败: {str(e)}")
-            return {
-                'status': 'error',
-                'message': f'版本回滚失败: {str(e)}'
-            }
-    
-    def get_version_info(self) -> Dict[str, Any]:
-        """
-        获取版本信息
-        
-        Returns:
-            版本信息
-        """
-        return {
-            'current_version': self.current_version,
-            'version_history': self.version_history,
-            'last_updated': time.time(),
-            'system_info': {
-                'python_version': '3.8+',
-                'flask_version': '2.0+',
-                'database': 'SQLite/MySQL'
-            }
-        }
+        return None
 
-# 创建全局版本管理器实例
+# 创建单例实例
 version_manager = VersionManager()

@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试用户验证</title>
+    <link rel="stylesheet" href="../MyStyle/footer.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            color: #1f2937;
+        }
+        button {
+            padding: 10px 15px;
+            margin: 5px;
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #1d4ed8;
+        }
+        .container {
+            background-color: #f9fafb;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+        .success {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        .error {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+    </style>
+<script src="../MyScript/anti_hotlink.js"></script>
+
+<body>
+    <h1>用户验证功能测试</h1>
+    
+    <div class="container">
+        <h2>当前用户信息状态</h2>
+        <div id="userStatus" class="status">加载中...</div>
+        
+        <h3>操作选项</h3>
+        <button id="clearUserInfo">清除用户信息</button>
+        <button id="testServerPage">访问服务器设置页面</button>
+        <button id="viewServerCode">查看服务器设置代码</button>
+    </div>
+    
+    <div class="container">
+        <h2>功能说明</h2>
+        <p>1. 点击"清除用户信息"按钮会移除localStorage和sessionStorage中的用户信息</p>
+        <p>2. 然后点击"访问服务器设置页面"将测试用户名验证模态框功能</p>
+        <p>3. 如果用户信息不完整，服务器设置页面会自动弹出验证模态框</p>
+    </div>
+    
+    <script>
+        // 更新用户状态显示
+        function updateUserStatus() {
+            const statusElement = document.getElementById('userStatus');
+            
+            // 检查sessionStorage
+            const sessionUser = sessionStorage.getItem('mtscos_user_session');
+            // 检查localStorage
+            const localUser = localStorage.getItem('mtscos_current_user');
+            const verifiedUser = localStorage.getItem('mtscos_verified_user');
+            
+            let statusHTML = '';
+            let isEmpty = true;
+            
+            if (sessionUser) {
+                statusHTML += '<p><strong>Session Storage:</strong> 存在用户信息</p>';
+                isEmpty = false;
+            } else {
+                statusHTML += '<p><strong>Session Storage:</strong> 无用户信息</p>';
+            }
+            
+            if (localUser) {
+                statusHTML += '<p><strong>Local Storage (current_user):</strong> 存在用户信息</p>';
+                isEmpty = false;
+            } else {
+                statusHTML += '<p><strong>Local Storage (current_user):</strong> 无用户信息</p>';
+            }
+            
+            if (verifiedUser) {
+                statusHTML += '<p><strong>Local Storage (verified_user):</strong> 存在验证信息</p>';
+                isEmpty = false;
+            } else {
+                statusHTML += '<p><strong>Local Storage (verified_user):</strong> 无验证信息</p>';
+            }
+            
+            // 设置状态颜色
+            statusElement.className = 'status ' + (isEmpty ? 'success' : 'error');
+            statusElement.innerHTML = statusHTML;
+        }
+        
+        // 清除用户信息
+        document.getElementById('clearUserInfo').addEventListener('click', function() {
+            // 清除sessionStorage
+            sessionStorage.removeItem('mtscos_user_session');
+            
+            // 清除localStorage
+            localStorage.removeItem('mtscos_current_user');
+            localStorage.removeItem('mtscos_verified_user');
+            
+            // 更新状态显示
+            updateUserStatus();
+            
+            // 显示成功消息
+            alert('用户信息已清除，现在访问服务器设置页面将触发验证模态框');
+        });
+        
+        // 访问服务器设置页面
+        document.getElementById('testServerPage').addEventListener('click', function() {
+            window.location.href = 'server.html';
+        });
+        
+        // 查看服务器设置代码
+        document.getElementById('viewServerCode').addEventListener('click', function() {
+            alert('已为server.html添加用户名验证功能：\n\n1. 当用户信息不完整时会自动弹出验证模态框\n2. 用户需要输入用户名进行验证\n3. 验证成功后才能访问完整功能');
+        });
+        
+        // 页面加载时更新状态
+        window.addEventListener('DOMContentLoaded', updateUserStatus);
+    </script>
+    
+    <!-- 页脚 -->
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>关于我们</h3>
+                    <ul class="footer-links">
+                        <li><a href="#"><i class="fas fa-info-circle"></i> 公司简介</a></li>
+                        <li><a href="#"><i class="fas fa-history"></i> 发展历程</a></li>
+                        <li><a href="#"><i class="fas fa-users"></i> 团队介绍</a></li>
+                        <li><a href="#"><i class="fas fa-newspaper"></i> 新闻动态</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>产品服务</h3>
+                    <ul class="footer-links">
+                        <li><a href="#"><i class="fas fa-cogs"></i> 系统功能</a></li>
+                        <li><a href="#"><i class="fas fa-rocket"></i> 解决方案</a></li>
+                        <li><a href="#"><i class="fas fa-chart-line"></i> 数据分析</a></li>
+                        <li><a href="#"><i class="fas fa-shield-alt"></i> 安全服务</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>帮助中心</h3>
+                    <ul class="footer-links">
+                        <li><a href="#"><i class="fas fa-book"></i> 使用文档</a></li>
+                        <li><a href="#"><i class="fas fa-question-circle"></i> 常见问题</a></li>
+                        <li><a href="#"><i class="fas fa-headset"></i> 技术支持</a></li>
+                        <li><a href="#"><i class="fas fa-life-ring"></i> 联系我们</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>联系我们</h3>
+                    <ul class="footer-links">
+                        <li><a href="#"><i class="fas fa-map-marker-alt"></i> 北京市海淀区科技园区</a></li>
+                        <li><a href="#"><i class="fas fa-phone"></i> 400-888-8888</a></li>
+                        <li><a href="#"><i class="fas fa-envelope"></i> contact@mtscos.com</a></li>
+                        <li><a href="#"><i class="fas fa-clock"></i> 周一至周五 9:00-18:00</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <div class="footer-social">
+                    <a href="#"><i class="fab fa-weixin"></i></a>
+                    <a href="#"><i class="fab fa-weibo"></i></a>
+                    <a href="#"><i class="fab fa-github"></i></a>
+                    <a href="#"><i class="fab fa-linkedin"></i></a>
+                </div>
+                <p class="footer-copyright">© 2025 MTSCOS 智能管理系统 版权所有 | 作者: Chenghao Wu | 京ICP备12345678号</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

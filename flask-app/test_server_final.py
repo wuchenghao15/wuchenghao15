@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 测试服务器状态并查看server.log文件
-"""
 import requests
 import time
 import os
@@ -9,7 +8,7 @@ import os
 def main():
     print("正在测试服务器状态...")
     time.sleep(3)  # 等待服务器启动
-    
+
     try:
         response = requests.get('http://localhost:8888')
         print('✅ 服务器已成功启动！')
@@ -22,3 +21,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+"""

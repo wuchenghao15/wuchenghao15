@@ -2,24 +2,22 @@
 """
 创建考试系统AI
 负责考试系统的管理和优化，集成本地AI自动填充功能
-"""
 
 import os
 import sys
 import sqlite3
-import json
-
+# JSON import removed - using database
 # 添加项目根目录到Python路径
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 def create_exam_ai():
     """创建考试系统AI"""
     db_path = "app.db"
-    
+
     try:
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
-        
+
         # 创建考试系统AI
         exam_ai = {
             "ai_name": "exam_ai",
@@ -28,7 +26,7 @@ def create_exam_ai():
             "ai_type": "exam",
             "name": "考试系统AI",
             "description": "负责考试系统的管理和优化，集成本地AI自动填充功能，提供智能考试服务",
-            "functions": json.dumps([
+            "functions": str([
                 "exam_management",
                 "auto_fill",
                 "question_generation",
@@ -38,7 +36,7 @@ def create_exam_ai():
                 "adaptive_testing",
                 "cheat_detection"
             ]),
-            "responsibilities": json.dumps([
+            "responsibilities": str([
                 "考试系统管理",
                 "智能自动填充",
                 "题目生成",
@@ -48,8 +46,7 @@ def create_exam_ai():
                 "自适应测试",
                 "作弊检测"
             ]),
-            "status": "active",
-            "config": json.dumps({
+            "config": str({
                 "auto_fill": {
                     "enabled": True,
                     "fields": ["answer", "essay", "short_answer"],
@@ -59,25 +56,20 @@ def create_exam_ai():
                 "adaptive_testing": {
                     "enabled": True,
                     "difficulty_adjustment": True,
-                    "question_selection": "adaptive"
                 },
                 "cheat_detection": {
                     "enabled": True,
-                    "suspicious_behavior_detection": True,
-                    "time_analysis": True
                 }
             }),
             "bound_user": "admin"
         }
-        
+
         # 插入考试系统AI
         sql = """
-        INSERT OR REPLACE INTO ai_instances 
-        (ai_name, instance_id, collection_id, ai_type, name, description, 
+        INSERT OR REPLACE INTO ai_instances
          functions, responsibilities, status, config, bound_user, created_at, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-        """
-        
+
         params = (
             exam_ai["ai_name"],
             exam_ai["instance_id"],
@@ -91,21 +83,21 @@ def create_exam_ai():
             exam_ai["config"],
             exam_ai["bound_user"]
         )
-        
+
         cursor.execute(sql, params)
         conn.commit()
-        
+
         print("考试系统AI创建成功！")
         print(f"AI名称: {exam_ai['name']}")
         print(f"类型: {exam_ai['ai_type']}")
         print(f"状态: {exam_ai['status']}")
-        
+
         # 创建考试相关的表
         create_exam_tables(cursor)
-        
+
         conn.close()
         return True
-        
+
     except Exception as e:
         print(f"创建考试系统AI失败: {str(e)}")
         import traceback
@@ -130,7 +122,7 @@ def create_exam_tables(cursor):
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
     ''')
-    
+
     # 考试性能数据表
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS exam_performance (
@@ -139,15 +131,12 @@ def create_exam_tables(cursor):
         exam_id INTEGER NOT NULL,
         score REAL NOT NULL,
         time_spent INTEGER, -- 秒
-        correct_answers INTEGER,
         total_questions INTEGER,
         difficulty_level REAL,
-        strengths TEXT, -- JSON格式
         weaknesses TEXT, -- JSON格式
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
     ''')
-    
+
     # 考试设置表
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS exam_settings (
@@ -156,27 +145,20 @@ def create_exam_tables(cursor):
         setting_key TEXT NOT NULL,
         setting_value TEXT NOT NULL,
         category TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         UNIQUE(user_id, setting_key)
     )
-    ''')
-    
+
     # 考试行为数据表
-    cursor.execute('''
     CREATE TABLE IF NOT EXISTS exam_behavior (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
         exam_id INTEGER NOT NULL,
         question_id INTEGER NOT NULL,
-        action_type TEXT NOT NULL,
-        action_data TEXT,
         timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
         time_spent INTEGER -- 秒
     )
     ''')
-    
     print("考试相关表创建成功！")
 
 if __name__ == "__main__":
-    create_exam_ai()

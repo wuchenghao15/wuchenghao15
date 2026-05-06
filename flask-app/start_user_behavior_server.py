@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 启动用户行为子服务器和相关AI模块
-"""
 
 import time
 from app.utils.logging import logger
@@ -12,13 +11,13 @@ from app.ai.user_behavior_ai import get_user_behavior_ai
 def main():
     """主函数"""
     logger.info("启动用户行为子服务器和相关AI模块...")
-    
+
     try:
         # 启动分布式服务器管理器
         logger.info("启动分布式服务器管理器...")
         distributed_server_manager.start()
         time.sleep(2)
-        
+
         # 初始化用户行为AI
         logger.info("初始化用户行为AI...")
         user_behavior_ai = get_user_behavior_ai()
@@ -26,30 +25,29 @@ def main():
             logger.info("用户行为AI初始化成功")
         else:
             logger.error("用户行为AI初始化失败")
-        
+
         # 启动用户行为子服务器
         logger.info("启动用户行为子服务器...")
         success = start_user_behavior_server()
         if success:
             logger.info("用户行为子服务器启动成功")
         else:
-            logger.error("用户行为子服务器启动失败")
-        
+
         # 等待一段时间，让服务器完全启动
         time.sleep(3)
-        
+
         # 检查服务器状态
         server = get_user_behavior_server()
         if server:
             status = server.get_status()
             logger.info(f"用户行为子服务器状态: {status}")
-        
+
         # 检查分布式服务器管理器状态
         stats = distributed_server_manager.get_distributed_stats()
         logger.info(f"分布式服务器管理器状态: {stats}")
-        
+
         logger.info("用户行为子服务器和相关AI模块启动完成")
-        
+
         # 保持脚本运行，以便观察服务器状态
         logger.info("按 Ctrl+C 停止服务器...")
         while True:
@@ -57,12 +55,9 @@ def main():
             # 定期检查服务器状态
             if server:
                 status = server.get_status()
-                logger.debug(f"用户行为子服务器状态: {status}")
             stats = distributed_server_manager.get_distributed_stats()
-            logger.debug(f"分布式服务器管理器状态: {stats}")
-            
+
     except KeyboardInterrupt:
-        logger.info("正在停止服务器...")
     except Exception as e:
         logger.error(f"启动过程中发生错误: {str(e)}")
 

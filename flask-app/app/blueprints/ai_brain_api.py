@@ -1,5 +1,6 @@
+# -*- coding: utf-8 -*-
 from flask import Blueprint, request, jsonify
-from app.models.questions import Question
+from app.models.question import Question
 from app.models.system_config import SystemConfig
 from app.ai.brain_updater import AIBrainUpdater
 from app.ai.exam_generator import ExamGenerator
@@ -34,11 +35,10 @@ def get_questions():
     difficulty = request.args.get('difficulty', 'all')
     question_type = request.args.get('type', 'all')
     limit = request.args.get('limit', 10, type=int)
-    
+
     # 查询题库
     questions = Question.get_questions(subject, difficulty, question_type, limit)
-    
-    return jsonify({
+
         'count': len(questions),
         'subject': subject,
         'difficulty': difficulty,
@@ -54,12 +54,11 @@ def generate_questions():
     difficulty = data.get('difficulty', 'medium')
     question_type = data.get('type', 'multiple_choice')
     count = data.get('count', 5)
-    
+
     # 生成新问题
     updater = AIBrainUpdater()
     new_questions = updater.generate_questions(subject, difficulty, question_type, count)
-    
-    return jsonify({
+
         'message': 'Questions generated successfully',
         'count': len(new_questions),
         'questions': new_questions
@@ -69,11 +68,11 @@ def generate_questions():
 def generate_exam():
     """生成个性化考试"""
     user_preferences = request.get_json() or {}
-    
+
     # 生成考试
     generator = ExamGenerator()
     exam = generator.generate_personalized_exam(user_preferences)
-    
+
     return jsonify(exam)
 
 @ai_brain_api.route('/status')
@@ -81,13 +80,12 @@ def get_ai_brain_status():
     """获取AI脑库状态"""
     # 获取系统配置
     config = SystemConfig.get_all_configs()
-    
+
     # 统计题库数量
     total_questions = Question.get_question_count()
     japanese_questions = Question.get_question_count('japanese')
     english_questions = Question.get_question_count('english')
-    
-    return jsonify({
+
         'status': 'active',
         'total_questions': total_questions,
         'japanese_questions': japanese_questions,
@@ -99,14 +97,12 @@ def get_ai_brain_status():
 def validate_knowledge(knowledge_id):
     """验证单个知识条目"""
     result = ai_brain_service.validate_knowledge(knowledge_id)
-    
+
     if result:
-        return jsonify({
             'success': True,
             'data': result
         })
     else:
-        return jsonify({
             'success': False,
             'message': '知识验证失败'
         }), 404
@@ -116,11 +112,9 @@ def batch_validate_knowledge():
     """批量验证知识"""
     data = request.get_json() or {}
     limit = data.get('limit')
-    
+
     results = ai_brain_service.batch_validate_knowledge(limit=limit)
-    
-    return jsonify({
-        'success': True,
+
         'data': {
             'total_validated': len(results),
             'results': results
@@ -131,14 +125,12 @@ def batch_validate_knowledge():
 def get_validation_report():
     """获取知识验证报告"""
     report = ai_brain_service.get_validation_report()
-    
+
     if report:
-        return jsonify({
             'success': True,
             'data': report
         })
     else:
-        return jsonify({
             'success': False,
             'message': '获取验证报告失败'
         }), 500
@@ -146,10 +138,8 @@ def get_validation_report():
 @ai_brain_api.route('/knowledge-by-status/<status>')
 def get_knowledge_by_status(status):
     """根据验证状态获取知识"""
-    knowledge_list = ai_brain_service.get_knowledge_by_review_status(status)
-    
+
     # 转换为字典格式返回
-    knowledge_dict = []
     for knowledge in knowledge_list:
         knowledge_dict.append({
             'knowledge_id': knowledge.knowledge_id,
@@ -167,8 +157,7 @@ def get_knowledge_by_status(status):
             'reviewed_at': knowledge.reviewed_at,
             'reviewed_by': knowledge.reviewed_by
         })
-    
-    return jsonify({
+
         'success': True,
         'data': {
             'status': status,

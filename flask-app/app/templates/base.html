@@ -4,8 +4,59 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}语言学习系统{% endblock %}</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
+        /* 预载入动画 */
+        .preloader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+        
+        .preloader.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+        
+        .preloader-content {
+            text-align: center;
+            color: white;
+        }
+        
+        .preloader-spinner {
+            width: 80px;
+            height: 80px;
+            border: 8px solid rgba(255, 255, 255, 0.3);
+            border-top: 8px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        .preloader-text {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        
+        .preloader-subtext {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
         /* 全局样式 */
         * {
             margin: 0;
@@ -126,6 +177,15 @@
     </style>
 </head>
 <body>
+    <!-- 预载入动画 -->
+    <div class="preloader" id="preloader">
+        <div class="preloader-content">
+            <div class="preloader-spinner"></div>
+            <div class="preloader-text">系统加载中</div>
+            <div class="preloader-subtext">正在准备测试系统，请稍候...</div>
+        </div>
+    </div>
+    
     <!-- 导航栏 -->
     <nav class="navbar">
         <div class="container">
@@ -228,5 +288,69 @@
     {% if request.path != '/' %}
         {% include 'includes/timeout_lock.html' %}
     {% endif %}
+    
+    <!-- 预载入动画脚本 -->
+    <script>
+        // 检查是否已经显示过预载入动画
+        function checkPreloaderShown() {
+            return sessionStorage.getItem('preloaderShown') === 'true';
+        }
+        
+        // 标记预载入动画已显示
+        function markPreloaderShown() {
+            sessionStorage.setItem('preloaderShown', 'true');
+        }
+        
+        // 显示预载入动画
+        function showPreloader() {
+            const preloader = document.getElementById('preloader');
+            if (preloader) {
+                preloader.classList.remove('hidden');
+            }
+        }
+        
+        // 隐藏预载入动画
+        function hidePreloader() {
+            const preloader = document.getElementById('preloader');
+            if (preloader) {
+                preloader.classList.add('hidden');
+                // 动画结束后完全移除元素
+                setTimeout(() => {
+                    if (preloader.parentNode) {
+                        preloader.parentNode.removeChild(preloader);
+                    }
+                }, 500);
+            }
+        }
+        
+        // 页面加载完成后处理
+        window.addEventListener('load', function() {
+            // 检查是否已经显示过预载入动画
+            if (!checkPreloaderShown()) {
+                // 标记动画已显示
+                markPreloaderShown();
+                
+                // 显示动画一段时间后隐藏
+                setTimeout(hidePreloader, 2000); // 2秒后隐藏
+            } else {
+                // 如果已经显示过，直接隐藏
+                hidePreloader();
+            }
+        });
+        
+        // 页面切换时重新显示预载入动画（如果是第一次访问测试系统）
+        document.addEventListener('click', function(e) {
+            const target = e.target.closest('a');
+            if (target && target.href) {
+                // 检查是否是测试系统相关链接
+                if (target.href.includes('/test-system') || target.href.includes('/japanese-test') || target.href.includes('/english-test')) {
+                    // 检查是否已经显示过预载入动画
+                    if (!checkPreloaderShown()) {
+                        showPreloader();
+                    }
+                }
+            }
+        });
+    </script>
 </body>
 </html>

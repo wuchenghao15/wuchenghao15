@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 """
 简单启动脚本，使用固定端口8888
-"""
 
 import os
 import sys
@@ -26,3 +25,5 @@ if __name__ == '__main__':
         print(f"Error starting Flask app: {str(e)}")
         import traceback
         traceback.print_exc()
+
+"""

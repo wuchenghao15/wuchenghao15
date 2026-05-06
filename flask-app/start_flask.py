@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 """
 显式启动Flask应用，显示详细日志
-"""
 
 import os
 import sys
@@ -40,12 +39,11 @@ if __name__ == '__main__':
     try:
         if HTTPS_ENABLED and os.path.exists(SSL_CERT_PATH) and os.path.exists(SSL_KEY_PATH):
             app.run(
-                host='0.0.0.0', 
-                port=PORT, 
+                host='0.0.0.0',
+                port=PORT,
                 debug=True,
                 ssl_context=(SSL_CERT_PATH, SSL_KEY_PATH)
             )
-        else:
             app.run(host='0.0.0.0', port=PORT, debug=True)
         print(f"app.run() completed successfully")
     except KeyboardInterrupt:
@@ -57,3 +55,5 @@ if __name__ == '__main__':
     print("Start script completed.")
 
 
+
+"""

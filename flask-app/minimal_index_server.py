@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 极简的索引服务器，只提供index.html的访问
-"""
 
 from flask import Flask, render_template
 import os
@@ -30,3 +29,5 @@ if __name__ == '__main__':
     print("按 Ctrl+C 停止服务器")
     print("==========================")
     app.run(host='0.0.0.0', port=8888, debug=True)
+
+"""

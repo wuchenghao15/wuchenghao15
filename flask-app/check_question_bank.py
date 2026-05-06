@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from app.models.question import Question
 
 # 初始化题目模型

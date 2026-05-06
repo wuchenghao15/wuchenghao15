@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MTSCOS - 用户登录</title>
+    <link rel="stylesheet" href="CSS/page_styles/index.css">
+    <link rel="stylesheet" href="CSS/common_styles/main.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="JavaScript/anti_hotlink.js"></script>
+<script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+<body>
+    <!-- 粒子效果容器 -->
+    <div id="particles-js"></div>
+    <div class="login-container">
+        <!-- 右上角实时时间显示 -->
+        <div id="liveTime" class="live-time"></div>
+        
+        <div class="login-wrapper">
+            <!-- 左侧品牌区域 -->
+            <div class="brand-side">
+                <div class="brand-content">
+                    <div class="logo-animation">
+                        <div class="logo-circle">
+                            <h1>MTSCOS</h1>
+                        </div>
+                    </div>
+                    <p class="brand-description">智能管理系统</p>
+                    <div class="brand-features">
+                        <div class="feature-item">
+                            <i class="fas fa-shield-alt"></i>
+                            <span>安全可靠</span>
+                        </div>
+                        <div class="feature-item">
+                            <i class="fas fa-bolt"></i>
+                            <span>高效便捷</span>
+                        </div>
+                        <div class="feature-item">
+                            <i class="fas fa-users"></i>
+                            <span>协同工作</span>
+                        </div>
+                        <div class="feature-item">
+                            <i class="fas fa-magic"></i>
+                            <span>AI 驱动</span>
+                        </div>
+                    </div>
+                    <div class="brand-links">
+                        <a href="designer_ai.html" class="brand-link">
+                            <i class="fas fa-paint-brush"></i>
+                            <span>前端设计师AI</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧登录表单 -->
+            <div class="form-side">
+                <div class="form-content">
+                    <h2 class="login-title">欢迎登录</h2>
+                    <p class="login-subtitle">请输入您的账号信息</p>
+                    
+                    <form id="loginForm" class="login-form animated-form">
+                        <div class="form-group">
+                            <label for="username" class="form-label">用户名</label>
+                            <div class="input-wrapper">
+                                <div class="input-icon-container">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                                <input type="text" id="username" name="username" class="form-input" placeholder="请输入用户名" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="password" class="form-label">密码</label>
+                            <div class="password-container">
+                                <div class="input-icon-container">
+                                    <i class="fas fa-lock"></i>
+                                </div>
+                                <input type="password" id="password" name="password" class="form-input" placeholder="请输入密码" required>
+                                <button type="button" class="password-toggle" aria-label="切换密码可见性">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- 验证码输入区域 -->
+                        <div class="form-group">
+                            <label for="captcha" class="form-label">验证码</label>
+                            <div class="verify-container">
+                                <input type="text" id="captcha" name="captcha" class="form-input captcha-input" placeholder="请输入验证码" maxlength="4" required autocomplete="off">
+                                <canvas id="captchaCanvas" class="captcha-canvas" width="120" height="40"></canvas>
+                                <button type="button" id="refreshCaptcha" class="password-toggle captcha-refresh" aria-label="刷新验证码">
+                                    <i class="fas fa-sync-alt"></i>
+                                </button>
+                            </div>
+                            <div class="captcha-timer" id="captchaTimer">
+                                <span class="timer-text">验证码将在 <span id="countdown">60</span> 秒后过期</span>
+                            </div>
+                            <div class="form-options">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="remember" class="form-checkbox">
+                                    <span>记住我</span>
+                                </label>
+                                <a href="PasswordReset.html" class="forgot-password">忘记密码?</a>
+                            </div>
+                        </div>
+                        
+                        <input type="hidden" id="captchaId" name="captchaId" value="">
+                        <button type="submit" class="btn btn-gradient btn-block login-btn">
+                            <i class="fas fa-sign-in-alt"></i>
+                            <span>登录</span>
+                        </button>
+                    </form>
+                    
+                    <div class="login-footer">
+                        <p>还没有账号? <a href="register.html" class="register-link">立即注册</a></p>
+                        <p id="debugErrorLinks" class="error-pages-links" style="display: none;">
+                            <a href="404.html" class="error-page-link">测试404错误页面</a> | 
+                            <a href="403.html" class="error-page-link">测试403错误页面</a>
+                        </p>
+                    </div>
+                    
+                    <!-- 数据库设置入口 -->
+                    <div class="db-settings">
+                        <a href="server.html" class="db-settings-link">
+                            <i class="fas fa-database"></i>
+                            <span>设置数据库</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 成功登录后显示的模态框 -->
+    <div id="successModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-icon success">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <h3 class="modal-title">登录成功!</h3>
+            <p class="modal-message">欢迎回来，正在为您跳转...</p>
+        </div>
+    </div>
+
+    <script src="JavaScript/index-script.js"></script>
+    <script src="JavaScript/login-script.js"></script>
+    
+    <!-- 粒子效果配置 -->
+    <script>
+        particlesJS('particles-js', {
+            particles: {
+                number: {
+                    value: 80,
+                    density: {
+                        enable: true,
+                        value_area: 800
+                    }
+                },
+                color: {
+                    value: ['#165DFF', '#4080FF', '#73B4FF', '#A6D1FF']
+                },
+                shape: {
+                    type: 'circle',
+                    stroke: {
+                        width: 0,
+                        color: '#000000'
+                    }
+                },
+                opacity: {
+                    value: 0.5,
+                    random: true,
+                    anim: {
+                        enable: true,
+                        speed: 1,
+                        opacity_min: 0.1,
+                        sync: false
+                    }
+                },
+                size: {
+                    value: 3,
+                    random: true,
+                    anim: {
+                        enable: true,
+                        speed: 2,
+                        size_min: 0.1,
+                        sync: false
+                    }
+                },
+                line_linked: {
+                    enable: true,
+                    distance: 150,
+                    color: '#165DFF',
+                    opacity: 0.4,
+                    width: 1
+                },
+                move: {
+                    enable: true,
+                    speed: 1,
+                    direction: 'none',
+                    random: false,
+                    straight: false,
+                    out_mode: 'out',
+                    bounce: false
+                }
+            },
+            interactivity: {
+                detect_on: 'canvas',
+                events: {
+                    onhover: {
+                        enable: true,
+                        mode: 'grab'
+                    },
+                    onclick: {
+                        enable: true,
+                        mode: 'push'
+                    },
+                    resize: true
+                },
+                modes: {
+                    grab: {
+                        distance: 140,
+                        line_linked: {
+                            opacity: 1
+                        }
+                    },
+                    push: {
+                        particles_nb: 4
+                    }
+                }
+            },
+            retina_detect: true
+        });
+        
+        // 服务器绑定功能
+        const servers = {
+            router: {
+                name: '路由服务器',
+                status: '运行中',
+                ip: '192.168.1.1',
+                port: 8080
+            },
+            rule: {
+                name: '规则服务器',
+                status: '运行中',
+                ip: '192.168.1.2',
+                port: 8081
+            },
+            county: {
+                name: '全县服务器',
+                status: '运行中',
+                ip: '192.168.1.3',
+                port: 8082
+            },
+            script: {
+                name: '脚本服务器',
+                status: '运行中',
+                ip: '192.168.1.4',
+                port: 8083
+            },
+            user: {
+                name: '用户服务器',
+                status: '运行中',
+                ip: '192.168.1.5',
+                port: 8084
+            },
+            firewall: {
+                name: '防火墙',
+                status: '运行中',
+                ip: '192.168.1.6',
+                port: 8085
+            },
+            redis: {
+                name: 'Redis',
+                status: '运行中',
+                ip: '192.168.1.7',
+                port: 6379
+            }
+        };
+        
+        // 安全模型
+        const securityModels = {
+            cheese: {
+                name: '奶酪模型',
+                description: '多层次安全防护模型，通过多个安全层来减少攻击面'
+            },
+           佰穿: {
+                name: '佰穿模型',
+                description: '全面的安全渗透测试模型，评估系统的安全性'
+            }
+        };
+        
+        // 服务器状态监控
+        function monitorServers() {
+            console.log('=== 服务器状态监控 ===');
+            for (const [key, server] of Object.entries(servers)) {
+                console.log(`${server.name}: ${server.status} (${server.ip}:${server.port})`);
+            }
+            console.log('=== 安全模型 ===');
+            for (const [key, model] of Object.entries(securityModels)) {
+                console.log(`${model.name}: ${model.description}`);
+            }
+        }
+        
+        // 页面加载时监控服务器状态
+        window.onload = function() {
+            monitorServers();
+            // 每30秒刷新一次服务器状态
+            setInterval(monitorServers, 30000);
+        };
+    </script>
+    
+    <!-- 页脚 -->
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>关于我们</h3>
+                    <ul class="footer-links">
+                        <li><a href="#"><i class="fas fa-info-circle"></i> 公司简介</a></li>
+                        <li><a href="#"><i class="fas fa-history"></i> 发展历程</a></li>
+                        <li><a href="#"><i class="fas fa-users"></i> 团队介绍</a></li>
+                        <li><a href="#"><i class="fas fa-newspaper"></i> 新闻动态</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>产品服务</h3>
+                    <ul class="footer-links">
+                        <li><a href="#"><i class="fas fa-cogs"></i> 系统功能</a></li>
+                        <li><a href="#"><i class="fas fa-rocket"></i> 解决方案</a></li>
+                        <li><a href="#"><i class="fas fa-chart-line"></i> 数据分析</a></li>
+                        <li><a href="#"><i class="fas fa-shield-alt"></i> 安全服务</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>帮助中心</h3>
+                    <ul class="footer-links">
+                        <li><a href="#"><i class="fas fa-book"></i> 使用文档</a></li>
+                        <li><a href="#"><i class="fas fa-question-circle"></i> 常见问题</a></li>
+                        <li><a href="#"><i class="fas fa-headset"></i> 技术支持</a></li>
+                        <li><a href="#"><i class="fas fa-life-ring"></i> 联系我们</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>联系我们</h3>
+                    <ul class="footer-links">
+                        <li><a href="#"><i class="fas fa-map-marker-alt"></i> 北京市海淀区科技园区</a></li>
+                        <li><a href="#"><i class="fas fa-phone"></i> 400-888-8888</a></li>
+                        <li><a href="#"><i class="fas fa-envelope"></i> contact@mtscos.com</a></li>
+                        <li><a href="#"><i class="fas fa-clock"></i> 周一至周五 9:00-18:00</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <div class="footer-social">
+                    <a href="#"><i class="fab fa-weixin"></i></a>
+                    <a href="#"><i class="fab fa-weibo"></i></a>
+                    <a href="#"><i class="fab fa-github"></i></a>
+                    <a href="#"><i class="fab fa-linkedin"></i></a>
+                </div>
+                <p class="footer-copyright">© 2025 MTSCOS 智能管理系统 版权所有 | 作者: Chenghao Wu | 京ICP备12345678号</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

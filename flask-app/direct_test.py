@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 Direct test of the verify_password function with debug logging
-"""
 
 import logging
 import sys
@@ -30,3 +29,5 @@ print("=" * 60)
 # Test the verify_password function directly
 result = security_utils.verify_password(stored_password, provided_password)
 print(f"\nFinal result: {result}")
+
+"""

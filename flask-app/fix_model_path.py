@@ -2,7 +2,6 @@
 """
 修复MODEL_PATH环境变量的脚本
 在导入AI模块之前设置MODEL_PATH环境变量，避免KeyError
-"""
 
 import os
 import sys
@@ -23,7 +22,7 @@ try:
     # 先导入config模块，确保配置正确
     from app.config import Config
     print("Config模块导入成功")
-    
+
     # 检查Config类是否有MODEL_PATH属性
     if hasattr(Config, 'MODEL_PATH'):
         print(f"Config.MODEL_PATH: {Config.MODEL_PATH}")
@@ -31,12 +30,13 @@ try:
         print("Config类没有MODEL_PATH属性，添加它...")
         Config.MODEL_PATH = './models'
         print(f"Config.MODEL_PATH已添加: {Config.MODEL_PATH}")
-    
+
     # 现在尝试导入app模块
-    print("app模块导入成功！")
     print("修复完成，可以正常启动服务器了。")
 except Exception as e:
     print(f"导入app模块时出错: {e}")
     import traceback
     traceback.print_exc()
     sys.exit(1)
+
+"""

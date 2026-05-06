@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 """
 检查wuchenghao15用户的信息，确认其角色
-"""
 
 import sys
 import os
@@ -29,3 +28,5 @@ else:
     print("未找到用户 wuchenghao15")
 
 print("\n=== 检查完成 ===")
+
+"""

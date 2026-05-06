@@ -2,7 +2,6 @@
 """
 自动爬取日语和英语习题，并添加到题库中
 支持日语N1-N5，英语社会英语、英语8级、九年制义务教育
-"""
 
 import time
 import random
@@ -16,93 +15,75 @@ logger = logging.getLogger(__name__)
 
 class QuestionCrawler:
     """题目爬取器"""
-    
+
     def __init__(self):
         self.headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         }
         self.question_manager = question_manager
-    
+
     def crawl_japanese_questions(self, levels: List[str] = ['N1', 'N2', 'N3', 'N4', 'N5'], count_per_level: int = 20) -> int:
-        """
         爬取日语习题
         :param levels: 要爬取的日语等级列表，默认包括N1-N5
         :param count_per_level: 每个等级要爬取的题目数量
         :return: 爬取成功的题目数量
-        """
         total_crawled = 0
-        
+
         for level in levels:
             logger.info(f"开始爬取日语{level}习题...")
-            
+
             # 这里使用模拟数据，实际项目中可以替换为真实的爬虫逻辑
             # 由于是示例，我们使用模拟数据来演示功能
             for i in range(count_per_level):
                 try:
                     # 模拟爬取到的题目数据
                     question = self._generate_mock_japanese_question(level)
-                    
+
                     # 添加到数据库
                     self._add_question_to_db(question)
                     total_crawled += 1
                     logger.info(f"✓ 成功爬取日语{level}题目: {question['content'][:30]}...")
-                    
+
                     # 随机休眠，避免被封IP
                     time.sleep(random.uniform(0.5, 2.0))
                 except Exception as e:
                     logger.error(f"✗ 爬取日语{level}题目失败: {str(e)}")
                     time.sleep(3)
-        
+
         return total_crawled
-    
+
     def crawl_english_questions(self, types: List[str] = ['social', 'cet8', 'compulsory'], count_per_type: int = 20) -> int:
-        """
         爬取英语习题
         :param types: 要爬取的英语类型列表，默认包括社会英语、英语8级、九年制义务教育
         :param count_per_type: 每种类型要爬取的题目数量
         :return: 爬取成功的题目数量
-        """
         total_crawled = 0
-        
+
         for question_type in types:
-            logger.info(f"开始爬取英语{question_type}习题...")
-            
+
             # 这里使用模拟数据，实际项目中可以替换为真实的爬虫逻辑
-            for i in range(count_per_type):
                 try:
                     # 模拟爬取到的题目数据
                     question = self._generate_mock_english_question(question_type)
-                    
+
                     # 添加到数据库
-                    self._add_question_to_db(question)
                     total_crawled += 1
                     logger.info(f"✓ 成功爬取英语{question_type}题目: {question['content'][:30]}...")
-                    
                     # 随机休眠，避免被封IP
-                    time.sleep(random.uniform(0.5, 2.0))
                 except Exception as e:
                     logger.error(f"✗ 爬取英语{question_type}题目失败: {str(e)}")
                     time.sleep(3)
-        
         return total_crawled
-    
     def _generate_mock_japanese_question(self, level: str) -> Dict[str, Any]:
-        """生成模拟日语题目"""
         level_map = {
             'N1': {'level_name': 'N1', 'difficulty': 5, 'content': '高級日语语法题'},
             'N2': {'level_name': 'N2', 'difficulty': 4, 'content': '中高级日语语法题'},
-            'N3': {'level_name': 'N3', 'difficulty': 3, 'content': '中级日语语法题'},
             'N4': {'level_name': 'N4', 'difficulty': 2, 'content': '初级日语语法题'},
-            'N5': {'level_name': 'N5', 'difficulty': 1, 'content': '入门级日语语法题'}
         }
-        
         level_info = level_map[level]
-        
-        # 模拟日语题目内容
-        question_types = ['single_choice', 'multiple_choice', 'fill_blank', 'reading']
+
         question_type = random.choice(question_types)
-        
-        # 生成题目内容
+
         if question_type == 'single_choice':
             contents = [
                 f"この問題は{level_info['content']}です。正しい答えを選んでください。",
@@ -120,45 +101,38 @@ class QuestionCrawler:
                 f"次の文の{level}文法を正しく埋めてください。",
                 f"この{level}読解文の内容に合っているものはどれですか？"
             ]
-        
+
         content = random.choice(contents)
-        
+
         # 生成选项
         options = [
             f"選択肢A: {level}レベルの選択肢",
             f"選択肢B: {level}レベルの選択肢",
             f"選択肢C: {level}レベルの選択肢",
             f"選択肢D: {level}レベルの選択肢"
-        ]
-        
+
         # 随机打乱选项
         random.shuffle(options)
-        
-        return {
-            'content': content,
+
             'answer': random.choice(['A', 'B', 'C', 'D']),
             'explanation': f"これは{level}レベルの問題です。正解は{random.choice(['A', 'B', 'C', 'D'])}です。",
             'options': options,
             'question_type': question_type,
-            'language': 'japanese',
             'level': level_info['difficulty'],
             'category': '日语'
         }
-    
+
     def _generate_mock_english_question(self, question_type: str) -> Dict[str, Any]:
         """生成模拟英语题目"""
         type_map = {
-            'social': {'type_name': '社会英语', 'difficulty': 3, 'content': '日常英语会话题'},
             'cet8': {'type_name': '英语8级', 'difficulty': 5, 'content': '高级英语综合题'},
             'compulsory': {'type_name': '九年制义务教育', 'difficulty': 2, 'content': '基础英语语法题'}
-        }
-        
+
         type_info = type_map[question_type]
-        
+
         # 模拟英语题目内容
-        question_types = ['single_choice', 'multiple_choice', 'true_false', 'fill_blank']
         question_type = random.choice(question_types)
-        
+
         # 生成题目内容
         if question_type == 'single_choice':
             contents = [
@@ -178,46 +152,32 @@ class QuestionCrawler:
                 f"In {type_info['type_name']}, the present perfect tense is used to describe past actions with present relevance.",
                 f"The word 'however' can always be used to contrast ideas in {type_info['type_name']}."
             ]
-        else:
             contents = [
                 f"Complete the sentence with the correct {type_info['type_name']} word: The weather today is ____.",
-                f"Fill in the blank with the appropriate {type_info['type_name']} verb form: She ____ (go) to school every day.",
                 f"Use the correct {type_info['type_name']} preposition: He is interested ____ music."
-            ]
-        
-        content = random.choice(contents)
-        
+
+
         # 生成选项
         if question_type != 'fill_blank':
             options = [
                 f"Option A: {type_info['type_name']} option",
-                f"Option B: {type_info['type_name']} option",
                 f"Option C: {type_info['type_name']} option",
-                f"Option D: {type_info['type_name']} option"
             ]
             random.shuffle(options)
         else:
-            options = []
-        
-        return {
-            'content': content,
+
             'answer': random.choice(['A', 'B', 'C', 'D', 'True', 'False', 'correct answer']) if question_type != 'fill_blank' else 'correct answer',
             'explanation': f"This is a {type_info['type_name']} question. The correct answer is {random.choice(['A', 'B', 'C', 'D', 'True', 'False', 'correct answer'])}.",
-            'options': options,
             'question_type': question_type,
             'language': 'english',
             'level': type_info['difficulty'],
-            'category': '英语'
         }
-    
+
     def _add_question_to_db(self, question: Dict[str, Any]) -> None:
         """将题目添加到数据库"""
         # 获取分类、语种和等级ID
-        category_id = self._get_or_create_category(question['category'])
-        language_id = self._get_or_create_language(question['language'])
         level_id = self._get_or_create_level(question['level'])
-        
-        # 创建题目
+
         self.question_manager.create_question(
             content=question['content'],
             answer=question['answer'],
@@ -225,50 +185,40 @@ class QuestionCrawler:
             category_id=category_id,
             language_id=language_id,
             level_id=level_id,
-            question_type=question['question_type'],
-            options=question['options']
         )
-    
-    def _get_or_create_category(self, category_name: str) -> int:
+
         """获取或创建分类"""
         categories = self.question_manager.get_all_categories()
-        for category in categories:
             if category.name == category_name:
                 return category.id
-        
-        # 创建新分类
+
         category = self.question_manager.create_category(category_name, f"{category_name}分类")
         return category.id
-    
-    def _get_or_create_language(self, language_name: str) -> int:
+
         """获取或创建语种"""
         language_map = {
             'japanese': {'name': '日语', 'code': 'ja'},
             'english': {'name': '英语', 'code': 'en'},
             'chinese': {'name': '中文', 'code': 'zh'}
-        }
-        
+
         if language_name not in language_map:
             language_info = {'name': language_name, 'code': language_name[:2]}
-        else:
-            language_info = language_map[language_name]
-        
-        languages = self.question_manager.get_all_languages()
+
         for language in languages:
             if language.name == language_info['name']:
                 return language.id
-        
+
         # 创建新语种
         language = self.question_manager.create_language(language_info['name'], language_info['code'])
         return language.id
-    
+
     def _get_or_create_level(self, level: int) -> int:
         """获取或创建等级"""
         levels = self.question_manager.get_all_levels()
         for level_obj in levels:
             if level_obj.level == level:
                 return level_obj.id
-        
+
         # 创建新等级
         level_names = {
             1: '入门级',
@@ -277,23 +227,20 @@ class QuestionCrawler:
             4: '高级',
             5: '专家级'
         }
-        
+
         level_name = level_names.get(level, f"等级{level}")
         level_obj = self.question_manager.create_level(level_name, level, f"{level_name}难度")
         return level_obj.id
-    
     def crawl_all_questions(self) -> Dict[str, int]:
         """爬取所有类型的题目"""
         logger.info("开始爬取所有类型的题目...")
-        
+
         # 爬取日语题目
         japanese_count = self.crawl_japanese_questions()
-        
-        # 爬取英语题目
+
         english_count = self.crawl_english_questions()
-        
-        logger.info(f"爬取完成！共爬取日语题目{japanese_count}道，英语题目{english_count}道，总计{japanese_count + english_count}道题目。")
-        
+
+
         return {
             'japanese': japanese_count,
             'english': english_count,
@@ -303,5 +250,4 @@ class QuestionCrawler:
 # 测试代码
 if __name__ == '__main__':
     crawler = QuestionCrawler()
-    result = crawler.crawl_all_questions()
     print(f"爬取结果：{result}")

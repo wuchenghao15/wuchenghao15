@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="日语历年练习题系统 - 智能日语学习平台">
+    <meta name="keywords" content="日语, 练习题, 历年真题, AI解题, 智能学习">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="theme-color" content="#007bff">
+    <title>日语历年练习题系统</title>
+    <link rel="stylesheet" href="/assets/css/japanese-exam.css">
+    
+    <!-- 预加载关键资源 -->
+    <link rel="preload" href="assets/css/common_styles/theme-system.css" as="style">
+    <link rel="preload" href="assets/css/page_styles/main.css" as="style">
+    
+    <!-- 引入现代化CSS文件 -->
+    <link rel="stylesheet" href="assets/css/common_styles/new-layout.css">
+    <link rel="stylesheet" href="assets/css/common_styles/modern-forms.css">
+    <link rel="stylesheet" href="assets/css/common_styles/modern-components.css">
+    <link rel="stylesheet" href="assets/css/common_styles/modern-color-scheme.css">
+    <link rel="stylesheet" href="assets/css/common_styles/modern-animations.css">
+    <link rel="stylesheet" href="assets/css/common_styles/modern-icons.css">
+    <link rel="stylesheet" href="assets/css/common_styles/modern-theme.css">
+    <!-- 主题系统样式文件 -->
+    <link rel="stylesheet" href="assets/css/common_styles/theme-system.css">
+    <link rel="stylesheet" href="assets/css/common_styles/system-log.css">
+    <link rel="stylesheet" href="assets/css/common_styles/security.css">
+    <link rel="stylesheet" href="assets/css/common_styles/compatibility.css">
+    <link rel="stylesheet" href="assets/css/common_styles/variables-fallback.css">
+    <link rel="stylesheet" href="assets/css/common_styles/fonts.css">
+    <link rel="stylesheet" href="assets/css/common_styles/responsive.css">
+    <link rel="stylesheet" href="assets/css/page_styles/main.css">
+    <link rel="stylesheet" href="assets/css/page_styles/index.css">
+    <!-- 自定义页面样式 -->
+    <link rel="stylesheet" href="assets/css/page_styles/index-custom.css">
+    <!-- 修正路径：footer.css 位于 component_styles 目录 -->
+    <link rel="stylesheet" href="assets/css/component_styles/footer.css">
+    <!-- 浏览器兼容性样式 -->
+    <link rel="stylesheet" href="assets/css/common_styles/browser-compatibility.css">
+    <!-- 优化的UI样式 -->
+    <link rel="stylesheet" href="assets/css/optimized-ui.css">
+    <!-- Font Awesome 图标库 -->
+    <link rel="stylesheet" href="assets/css/third_party/font-awesome.min.css">
+    
+    <!-- 日语练习题专用样式 -->
+    <link rel="stylesheet" href="assets/css/page_styles/japanese-exam.css">
+</head>
+<body class="page-loading">
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="navbar-brand">日语学习平台</div>
+        <div class="navbar-right">
+            <div id="user-info" class="user-info" style="display: none;">
+                <div class="user-avatar" id="user-avatar">U</div>
+                <span id="user-name">用户名</span>
+                <span class="status-indicator"></span>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- 渐变背景 -->
+    <div id="gradient-background" class="gradient-background"></div>
+    <!-- 页面加载动画 -->
+    <div class="page-loader" id="page-loader" role="status" aria-label="系统加载中...">
+        <div class="loader-content">
+            <div class="loader-text">MTSCOS AI</div>
+            <div class="loader-subtitle">智能项目管理系统正在启动...</div>
+            <div class="loader-progress">
+                <div class="loader-progress-bar"></div>
+            </div>
+            <div class="loader-dots">
+                <div class="loader-dot"></div>
+                <div class="loader-dot"></div>
+                <div class="loader-dot"></div>
+            </div>
+        </div>
+    </div>
+    <!-- 主内容容器 -->
+    <div class="page-content-container">
+
+    <!-- 系统日志容器 -->
+    <div id="system-log-container" style="display: none;">
+        <div id="system-log" class="system-log"></div>
+        <button id="toggle-log" class="toggle-log-btn">显示/隐藏日志</button>
+    </div>
+
+    <header class="header transition-all duration-300 page-content" role="banner">
+        <div class="container">
+            <div class="logo">
+                <!-- 使用内联SVG替代图片，确保加载更快且无闪烁 -->
+                <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="https://www.w3.org/2000/svg">
+                    <rect x="5" y="5" width="30" height="30" rx="8" fill="var(--primary-color)"/>
+                    <path d="M12 18L18 26L28 16" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span aria-label="日语历年练习题系统">日语历年练习题系统</span>
+            </div>
+            <div id="system-status" role="status">
+                <div class="status-indicator online">
+                    <span class="status-dot"></span>
+                    <div class="time-display">
+                        <span id="current-time">加载中...</span>
+                        <span id="lunar-time" class="lunar-time"></span>
+                    </div>
+                </div>
+                <div class="status-indicator" id="theme-status">
+                    <div class="theme-selector">
+                        <button class="theme-btn" id="theme-toggle" aria-label="切换主题">
+                            🌙
+                        </button>
+                        <div class="theme-selector-menu" id="theme-menu">
+                            <button class="theme-option active" data-theme="auto">
+                                🔄
+                                <span>自动主题</span>
+                            </button>
+                            <button class="theme-option" data-theme="light">
+                                ☀️
+                                <span>浅色主题</span>
+                            </button>
+                            <button class="theme-option" data-theme="dark">
+                                🌙
+                                <span>深色主题</span>
+                            </button>
+                            <button class="theme-option" data-theme="sunset">
+                                🌅
+                                <span>日落深色主题</span>
+                            </button>
+                            <button class="theme-option" data-theme="teal">
+                                💧
+                                <span>深青色主题</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content page-content" id="main-content" tabindex="-1">
+        <div class="container max-w-6xl mx-auto">
+            <div class="japanese-exam-container">
+            <!-- 考试头部信息 -->
+            <div class="exam-header">
+                <div class="exam-title">日语能力考试 历年真题练习</div>
+                <div class="exam-info">
+                    <div>📅 <span id="exam-date">2023年12月</span></div>
+                    <div>📁 <span id="exam-section">词汇语法部分</span></div>
+                    <div>🕒 建议时长: 30分钟</div>
+                </div>
+                
+                <!-- 练习模式选择 -->
+                <div class="practice-mode-selector">
+                    <div class="mode-option active" data-mode="random">随机练习</div>
+                    <div class="mode-option" data-mode="adaptive">智能适配难度</div>
+                    <div class="mode-option" data-mode="targeted">针对性练习</div>
+                    <div class="mode-option" data-mode="recommended">AI智能推荐</div>
+                </div>
+                
+                <!-- 级别选择 -->
+                <div class="level-selector">
+                    <div class="level-option active" data-level="N1">N1</div>
+                    <div class="level-option" data-level="N2">N2</div>
+                    <div class="level-option" data-level="N3">N3</div>
+                    <div class="level-option" data-level="N4">N4</div>
+                    <div class="level-option" data-level="N5">N5</div>
+                    <div class="level-option" data-level="all">全部级别</div>
+                </div>
+                
+                <!-- 题型选择 -->
+                <div class="question-type-selector">
+                    <div class="type-option active" data-type="词汇">词汇</div>
+                    <div class="type-option" data-type="语法">语法</div>
+                    <div class="type-option" data-type="阅读">阅读</div>
+                    <div class="type-option" data-type="听力">听力</div>
+                    <div class="type-option" data-type="all">全部题型</div>
+                </div>
+                
+                <div class="exam-stats">
+                    <div class="stat-item">
+                        <div class="stat-value" id="total-questions">0</div>
+                        <div class="stat-label">总题数</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="current-question">0</div>
+                        <div class="stat-label">当前题</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="correct-answers">0</div>
+                        <div class="stat-label">答对题数</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="accuracy">0%</div>
+                        <div class="stat-label">正确率</div>
+                    </div>
+                </div>
+                
+                <!-- 进度条 -->
+                <div class="progress-container">
+                    <div class="progress-label">
+                        <span>答题进度</span>
+                        <span id="progress-text">0%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+                
+                <!-- 练习题卡片 -->
+                <div class="question-card">
+                    <div class="question-header">
+                        <div>
+                            <div class="question-number" id="question-number">问题 1</div>
+                            <div class="question-difficulty" id="question-difficulty">
+                                ⭐
+                                ⭐
+                                ⭐
+                                ⭐
+                                ⭐
+                            </div>
+                        </div>
+                        <div class="question-type" id="question-type">词汇</div>
+                    </div>
+                    
+                    <!-- 问题内容 -->
+                    <div class="question-content" id="question-content">
+                        この計画は、実現するためには多くの資金と時間が__。
+                    </div>
+                    
+                    <!-- 知识点标签 -->
+                    <div class="knowledge-tags" id="knowledge-tags">
+                        <span class="knowledge-tag">N1词汇</span>
+                        <span class="knowledge-tag">动词用法</span>
+                        <span class="knowledge-tag">惯用表达</span>
+                    </div>
+                    
+                    <!-- 选项 -->
+                    <div class="question-options" id="question-options">
+                        <div class="option-item" data-option="A">
+                            <div class="option-letter">A</div>
+                            <div class="option-content">必要とされる</div>
+                        </div>
+                        <div class="option-item" data-option="B">
+                            <div class="option-letter">B</div>
+                            <div class="option-content">必要である</div>
+                        </div>
+                        <div class="option-item" data-option="C">
+                            <div class="option-letter">C</div>
+                            <div class="option-content">必要となる</div>
+                        </div>
+                        <div class="option-item" data-option="D">
+                            <div class="option-letter">D</div>
+                            <div class="option-content">必要であった</div>
+                        </div>
+                    </div>
+                    
+                    <!-- 结果反馈 -->
+                    <div id="result-feedback"></div>
+                    
+                    <!-- 正确答案和解析 -->
+                    <div id="answer-explanation" style="display: none;">
+                        <div class="answer-explanation">
+                            <div class="explanation-title">正确答案：<span id="correct-answer"></span></div>
+                            <div class="explanation-content" id="explanation-content">
+                                本题考察动词的被动用法。「必要とされる」是「必要とする」的被动形式，表示“被需要”。句意为“这个计划要实现需要很多资金和时间”。
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- AI解题按钮 -->
+                    <button class="ai-solution-btn" id="ai-solution-btn">
+                        🤖
+                        <span>AI 帮我解题</span>
+                    </button>
+                    
+                    <!-- AI解题结果 -->
+                    <div id="ai-solution" style="display: none;">
+                        <div class="ai-solution">
+                            <div class="solution-header">
+                                🤖
+                                <div class="solution-title">AI 解题分析</div>
+                            </div>
+                            <div class="solution-content" id="solution-content">
+                                <!-- AI解题内容将在这里显示 -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 操作按钮 -->
+                    <div class="question-actions">
+                        <button class="btn btn-primary" id="submit-answer">提交答案</button>
+                        <button class="btn btn-secondary" id="next-question">下一题</button>
+                        <button class="btn btn-danger" id="reset-question">重置</button>
+                    </div>
+                </div>
+                
+                <!-- 底部导航 -->
+                <div class="exam-nav">
+                    <button class="nav-button" id="prev-question" disabled>
+                        ←
+                        <span>上一题</span>
+                    </button>
+                    <div class="nav-info">
+                        <span id="nav-info">第 1 题 / 共 0 题</span>
+                    </div>
+                    <button class="nav-button" id="next-question-btn">
+                        <span>下一题</span>
+                        →
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer py-8 transition-all duration-300 page-content animate-fade-in-delay-4">
+        <div class="container">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-6">
+                <p class="text-text-secondary text-sm mb-0">&copy; 2023 MTSCOS AI Project. All rights reserved.</p>
+                <div class="flex flex-col sm:flex-row gap-4 sm:gap-8 items-center">; /* 脚本修复：添加缺失的分号 */
+                    <div class="footer-info text-sm text-text-secondary">; /* 脚本修复：添加缺失的分号 */
+                        <span>版本: v1.3.0</span>
+                    </div>
+                    <div class="footer-contact text-sm text-text-secondary">
+                        <a href="mailto:admin@mtscos.com" class="hover:text-primary transition-colors duration-300">技术支持: admin@mtscos.com</a>
+                    </div>
+                    <div class="config-link">
+                        <a href="server.html" target="_blank" class="text-sm text-primary hover:underline transition-colors duration-300">数据库配置管理</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- 错误捕获脚本 - 必须在所有其他脚本之前加载 -->
+    <script src="capture-errors.js"></script>
+    
+    <!-- 引入JavaScript文件 - 使用defer提高加载性能 -->
+    <!-- 移除可能导致问题的外部依赖库 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    
+    <!-- 主题管理器 -->
+    <script defer src="assets/js/theme-manager.js"></script>
+    
+    <!-- 核心功能脚本 -->
+    <script defer src="assets/js/core/session-manager.js"></script>
+    <script defer src="assets/js/core/encryption.js"></script>
+    <script defer src="assets/js/core/security-events.js"></script>
+    <script defer src="assets/js/core/data-security.js"></script>
+    <script defer src="assets/js/core/token-verification.js"></script>
+    <script defer src="assets/js/core/token-validator.js"></script>
+    <script defer src="assets/js/core/security-core.js"></script>
+    <script defer src="assets/js/core/security-protection.js"></script>
+    <script defer src="assets/js/core/anti-debug.js"></script>
+    <script defer src="assets/js/core/system-lock.js"></script>
+    <script defer src="assets/js/core/system-logger.js"></script>
+    
+    <!-- 安全机制模块 -->
+    <script defer src="assets/js/security-module.js"></script>
+    <script defer src="assets/js/anti_hotlink.js"></script>
+    
+    <!-- 系统管理脚本 -->
+    <script defer src="assets/js/core/system-settings.js"></script>
+    <script defer src="assets/js/startup-manager.js"></script>
+    <script defer src="assets/js/core/startup-manager.js"></script>
+    <script defer src="assets/js/cleanup_manager.js"></script>
+    <script defer src="assets/js/project-protection-manager.js"></script>
+    <script defer src="assets/js/log-management.js"></script>
+    <script defer src="assets/js/core/audit-system.js"></script>
+    
+    <!-- 错误检测和监控脚本 -->
+    <script defer src="assets/js/error-monitor.js"></script>
+    <script defer src="assets/js/error_detector.js"></script>
+    <script defer src="assets/js/error_handler.js"></script>
+    
+    <!-- AI模型编排系统 -->
+    <script defer src="assets/js/core/ai-model-orchestrator.js"></script>
+    
+    <!-- 日语练习题数据库 -->
+    <script defer src="assets/js/core/japanese-exam-database.js"></script>
+    
+    <!-- 日语练习题脚本 -->
+    <script defer src="assets/js/page_scripts/japanese-exam.js"></script>
+    
+    <!-- 管理员权限检查 -->
+    <script defer src="assets/js/japanese-exam-admin-check.js"></script>
+    
+    <!-- 模块管理系统 -->
+    <script src="../core/module-manager.js"></script>
+    
+    <!-- AI试题生成器 -->
+    <script src="../core/ai-question-generator.js"></script>
+    
+    <!-- 错题本管理器 -->
+    <script src="../core/error-book-manager.js"></script>
+    
+    <!-- 功能初始化脚本 -->
+    <script defer src="assets/js/init-captcha.js"></script>
+    <script defer src="assets/js/init-lunar-time.js"></script>
+    <script defer src="assets/js/init-feature-icons.js"></script>
+    <script defer src="assets/js/text-to-icon.js"></script>
+    <script defer src="assets/js/add-missing-icons.js"></script>
+    
+    <!-- 浏览器最大化 -->
+    <script defer src="assets/js/browser-maximizer.js"></script>
+    
+    <!-- 页面预载过渡动画 -->
+    <script src="JavaScript/page-loader.js"></script>
+    
+    <!-- 时间显示 -->
+    <script defer src="JavaScript/time_display.js"></script>
+    
+    <!-- 用户状态管理 -->
+    <script defer src="/assets/js/core/user-status-manager.js"></script>
+    
+    <!-- 系统机制核心模块 - 包含自动缩放布局功能 -->
+    <script defer src="../JS/system_mechanisms.js"></script>
+    
+    <!-- 本地AI模型管理 -->
+<script defer src="JavaScript/local-deepseek-model.js"></script>
+</div>
+    <script src="assets/js/ai-hosting.js"></script>
+
+<!-- 安全锁定系统 -->
+<script src="/JavaScript/security-lock.js"></script>
+<script defer src="assets/js/security-lock-init.js"></script>
+
+<script src="/assets/js/japanese-exam.js"></script>
+</body>
+</html>

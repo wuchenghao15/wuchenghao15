@@ -1,214 +1,2093 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta name="theme-color" content="#3b82f6">
+    <meta name="theme-color" content="#1e40af">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>硬件管理员 - MTSCOS AI 系统</title>
     
-    <!-- 现代CSS框架 -->
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <!-- 图标库 -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-</head>
-<body class="bg-gray-50 text-gray-900 min-h-screen">
-    <!-- 顶部导航栏 -->
-    <header class="bg-white shadow-md fixed w-full top-0 z-50">
-    <meta name="theme-color" content="#3b82f6">
-        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
-            <!-- Logo -->
-            <div class="flex items-center space-x-2">
-                <div class="w-10 h-10 bg-gradient-primary-to-r from-green-500 to-teal-600 rounded-lg flex items-center justify-center">
-                    <i class="fas fa-microchip text-white text-xl"></i>
-                </div>
-                <h1 class="text-2xl font-bold text-gray-800">MTSCOS AI</h1>
-            </div>
-            
-            <!-- 用户信息 -->
-            <div class="flex items-center space-x-4">
-                <span class="text-gray-700 font-medium">欢迎，硬件管理员 {{ username }}</span>
-                <div class="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                    <i class="fas fa-user-cog text-gray-600"></i>
-                </div>
-                <a href="/auth/logout" class="text-gray-600 hover:text-indigo-600 transition-colors">
-                    <i class="fas fa-sign-out-alt"></i>
-                </a>
-            </div>
-        </div>
-    </header>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
-    <!-- 主内容区域 -->
-    <main class="pt-20 pb-10">
-        <div class="container mx-auto px-4">
-            <!-- 页面标题 -->
-            <div class="mb-8">
-                <h2 class="text-3xl font-bold text-gray-800">硬件管理员仪表板</h2>
-                <p class="text-gray-600 mt-2">管理系统硬件设备和资源</p>
+    <style>
+        /* 主题变量 */
+        :root {
+            --primary-color: #3b82f6;
+            --primary-dark: #1e40af;
+            --primary-light: #60a5fa;
+            --secondary-color: #10b981;
+            --accent-color: #8b5cf6;
+            --danger-color: #ef4444;
+            --warning-color: #f59e0b;
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --bg-card-hover: #334155;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --border-color: #334155;
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
+            --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.5);
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, var(--bg-dark) 0%, #1a1a2e 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+        
+        /* 侧边栏 */
+        .sidebar {
+            width: 260px;
+            background: linear-gradient(180deg, var(--bg-card) 0%, rgba(30, 41, 59, 0.95) 100%);
+            backdrop-filter: blur(10px);
+            position: fixed;
+            left: 0;
+            top: 0;
+            height: 100vh;
+            z-index: 100;
+            border-right: 1px solid var(--border-color);
+            transition: transform 0.3s ease;
+        }
+        
+        .sidebar-header {
+            padding: 24px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .logo-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+        }
+        
+        .logo-icon i {
+            font-size: 22px;
+            color: white;
+        }
+        
+        .logo-text h1 {
+            font-size: 18px;
+            font-weight: 700;
+            background: linear-gradient(90deg, var(--primary-light), white);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .logo-text p {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+        
+        /* 导航菜单 */
+        .nav-menu {
+            padding: 16px;
+            margin-top: 20px;
+        }
+        
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-radius: 10px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.25s ease;
+            text-decoration: none;
+            margin-bottom: 4px;
+        }
+        
+        .nav-item:hover {
+            background: rgba(59, 130, 246, 0.15);
+            color: var(--primary-light);
+            transform: translateX(4px);
+        }
+        
+        .nav-item.active {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.25), rgba(139, 92, 246, 0.1));
+            color: var(--primary-light);
+            border-left: 3px solid var(--primary-color);
+        }
+        
+        .nav-item i {
+            width: 20px;
+            font-size: 18px;
+        }
+        
+        .nav-item span {
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .nav-item.logout {
+            position: absolute;
+            bottom: 20px;
+            left: 16px;
+            right: 16px;
+            color: var(--danger-color);
+        }
+        
+        .nav-item.logout:hover {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--danger-color);
+        }
+        
+        /* 主内容区 */
+        .main-content {
+            margin-left: 260px;
+            min-height: 100vh;
+            padding: 24px;
+        }
+        
+        /* 顶部栏 */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+        
+        .page-title h2 {
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(90deg, white, var(--text-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .page-title p {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+        
+        .top-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .search-box {
+            position: relative;
+        }
+        
+        .search-box input {
+            width: 280px;
+            padding: 10px 16px 10px 40px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 14px;
+            transition: all 0.25s ease;
+        }
+        
+        .search-box input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+        
+        .search-box i {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+        }
+        
+        .notification-btn {
+            position: relative;
+            width: 44px;
+            height: 44px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+        
+        .notification-btn:hover {
+            border-color: var(--primary-color);
+            background: rgba(59, 130, 246, 0.1);
+        }
+        
+        .notification-btn i {
+            font-size: 18px;
+            color: var(--text-secondary);
+        }
+        
+        .notification-badge {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            width: 18px;
+            height: 18px;
+            background: var(--danger-color);
+            border-radius: 50%;
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 12px 8px 8px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+        }
+        
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            border-radius: 9px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .user-avatar i {
+            font-size: 16px;
+            color: white;
+        }
+        
+        .user-details {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .user-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .user-role {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+        
+        /* 统计卡片 */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(1, 1fr);
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+        
+        @media (min-width: 768px) {
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        
+        @media (min-width: 1024px) {
+            .stats-grid { grid-template-columns: repeat(4, 1fr); }
+        }
+        
+        .stat-card {
+            background: linear-gradient(145deg, var(--bg-card), rgba(30, 41, 59, 0.8));
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 24px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--primary-color);
+            box-shadow: var(--shadow-lg), 0 0 30px rgba(59, 130, 246, 0.15);
+        }
+        
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+        
+        .stat-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+        
+        .stat-icon.blue { background: rgba(59, 130, 246, 0.2); color: var(--primary-light); }
+        .stat-icon.green { background: rgba(16, 185, 129, 0.2); color: var(--secondary-color); }
+        .stat-icon.purple { background: rgba(139, 92, 246, 0.2); color: var(--accent-color); }
+        .stat-icon.orange { background: rgba(245, 158, 11, 0.2); color: var(--warning-color); }
+        
+        .stat-title {
+            font-size: 13px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+        
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+        
+        .stat-footer {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .stat-status {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 12px;
+            color: var(--secondary-color);
+        }
+        
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--secondary-color);
+            animation: pulse-green 2s infinite;
+        }
+        
+        @keyframes pulse-green {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+        
+        .stat-trend {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        
+        /* 主内容网格 */
+        .content-grid {
+            display: grid;
+            grid-template-columns: repeat(1, 1fr);
+            gap: 20px;
+        }
+        
+        @media (min-width: 1024px) {
+            .content-grid { grid-template-columns: 2fr 1fr; }
+        }
+        
+        /* 卡片 */
+        .card {
+            background: linear-gradient(145deg, var(--bg-card), rgba(30, 41, 59, 0.8));
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .card:hover {
+            border-color: rgba(59, 130, 246, 0.5);
+        }
+        
+        .card-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .card-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .card-title i {
+            color: var(--primary-color);
+            font-size: 18px;
+        }
+        
+        .card-title h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .card-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            border: none;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+        
+        .btn-secondary {
+            background: var(--bg-card-hover);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+        
+        .btn-secondary:hover {
+            border-color: var(--primary-color);
+        }
+        
+        /* 表格 */
+        .table-container {
+            overflow-x: auto;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .data-table thead {
+            background: rgba(0, 0, 0, 0.2);
+        }
+        
+        .data-table th {
+            padding: 14px 24px;
+            text-align: left;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .data-table tbody tr {
+            border-bottom: 1px solid var(--border-color);
+            transition: background 0.2s ease;
+        }
+        
+        .data-table tbody tr:hover {
+            background: rgba(59, 130, 246, 0.08);
+        }
+        
+        .data-table td {
+            padding: 16px 24px;
+        }
+        
+        .device-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .device-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+        
+        .device-icon.online { background: rgba(16, 185, 129, 0.2); color: var(--secondary-color); }
+        .device-icon.offline { background: rgba(148, 163, 184, 0.2); color: var(--text-secondary); }
+        
+        .device-details p {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+        
+        .device-details span {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .status-badge.online {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--secondary-color);
+        }
+        
+        .status-badge.offline {
+            background: rgba(148, 163, 184, 0.15);
+            color: var(--text-secondary);
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .action-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: transparent;
+            border: none;
+        }
+        
+        .action-btn:hover {
+            background: var(--bg-card-hover);
+        }
+        
+        .action-btn i {
+            font-size: 15px;
+            color: var(--text-secondary);
+        }
+        
+        .action-btn:hover i {
+            color: var(--primary-color);
+        }
+        
+        .action-btn.delete:hover i {
+            color: var(--danger-color);
+        }
+        
+        /* 设置面板 */
+        .settings-panel {
+            padding: 24px;
+        }
+        
+        .settings-section {
+            margin-bottom: 24px;
+        }
+        
+        .settings-section:last-child {
+            margin-bottom: 0;
+        }
+        
+        .settings-section h4 {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 12px 14px;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 14px;
+            transition: all 0.25s ease;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+        
+        .form-control::placeholder {
+            color: var(--text-secondary);
+        }
+        
+        textarea.form-control {
+            resize: vertical;
+            min-height: 80px;
+        }
+        
+        select.form-control {
+            cursor: pointer;
+        }
+        
+        /* 开关 */
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 28px;
+            cursor: pointer;
+        }
+        
+        .toggle-switch input {
+            display: none;
+        }
+        
+        .toggle-track {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--bg-card-hover);
+            border-radius: 14px;
+            transition: background 0.25s ease;
+        }
+        
+        .toggle-switch input:checked + .toggle-track {
+            background: var(--primary-color);
+        }
+        
+        .toggle-thumb {
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 22px;
+            height: 22px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.25s ease;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .toggle-switch input:checked + .toggle-track .toggle-thumb {
+            transform: translateX(22px);
+        }
+        
+        .setting-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 14px 16px;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        margin-bottom: 10px;
+        gap: 12px;
+    }
+    
+    .setting-row .setting-info {
+        flex: 1;
+        min-width: 0;
+    }
+        
+        .setting-row:last-child {
+            margin-bottom: 0;
+        }
+        
+        .setting-info p {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+        
+        .setting-info span {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        
+        .danger-bg {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+        
+        .danger-text {
+            color: var(--danger-color) !important;
+        }
+        
+        .danger-text span {
+            color: rgba(239, 68, 68, 0.7) !important;
+        }
+        
+        /* 自定义模态框 */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-overlay.show {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            width: 90%;
+            max-width: 480px;
+            box-shadow: var(--shadow-lg);
+            animation: modalFadeIn 0.2s ease;
+        }
+        
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .modal-header h3 {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+        
+        .modal-close:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .modal-body {
+            padding: 24px;
+        }
+        
+        .modal-body p {
+            color: var(--text-primary);
+            font-size: 15px;
+            margin-bottom: 16px;
+        }
+        
+        .modal-body input {
+            width: 100%;
+            padding: 12px 14px;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+        
+        .modal-body input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+        
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            padding: 16px 24px;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        /* 设置状态指示器 */
+        .status-indicator {
+            opacity: 0;
+            transform: translateX(10px);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .status-indicator.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        
+        .status-indicator.success {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--secondary-color);
+        }
+        
+        .status-indicator.pending {
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--warning-color);
+        }
+        
+        /* 性能监控 */
+        .monitoring-section {
+            padding: 24px;
+        }
+        
+        .monitoring-grid {
+            display: grid;
+            grid-template-columns: repeat(1, 1fr);
+            gap: 20px;
+        }
+        
+        @media (min-width: 768px) {
+            .monitoring-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+        
+        .metric-card {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            padding: 16px;
+        }
+        
+        .metric-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        
+        .metric-label {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        
+        .metric-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .metric-chart {
+            height: 80px;
+            display: flex;
+            align-items: flex-end;
+            gap: 4px;
+        }
+        
+        .chart-bar {
+            flex: 1;
+            border-radius: 4px 4px 0 0;
+            transition: height 0.5s ease-out;
+            min-height: 4px;
+        }
+        
+        .chart-bar.cpu { background: linear-gradient(180deg, var(--secondary-color), rgba(16, 185, 129, 0.4)); }
+        .chart-bar.memory { background: linear-gradient(180deg, var(--accent-color), rgba(139, 92, 246, 0.4)); }
+        .chart-bar.network { background: linear-gradient(180deg, var(--primary-color), rgba(59, 130, 246, 0.4)); }
+        
+        /* 徽章样式 */
+        .badge {
+            background: var(--warning-color);
+            color: #fff;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        /* 审批列表 */
+        .approval-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            margin-bottom: 12px;
+            border-left: 4px solid var(--warning-color);
+            transition: all 0.3s ease;
+        }
+        
+        .approval-item.warning {
+            border-left-color: #f59e0b;
+            background: rgba(245, 158, 11, 0.1);
+            animation: pulse-warning 2s infinite;
+        }
+        
+        .approval-item.attention {
+            border-left-color: #f97316;
+        }
+        
+        .approval-item.expired {
+            border-left-color: #6b7280;
+            opacity: 0.6;
+            filter: grayscale(0.5);
+        }
+        
+        @keyframes pulse-warning {
+            0%, 100% { box-shadow: none; }
+            50% { box-shadow: 0 0 15px rgba(245, 158, 11, 0.3); }
+        }
+        
+        .approval-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            gap: 12px;
+        }
+        
+        .approval-status-tag {
+            font-size: 12px;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-weight: 500;
+        }
+        
+        .approval-status-tag.normal {
+            background: rgba(59, 130, 246, 0.2);
+            color: var(--primary-color);
+        }
+        
+        .approval-status-tag.attention {
+            background: rgba(249, 115, 22, 0.2);
+            color: #f97316;
+        }
+        
+        .approval-status-tag.warning {
+            background: rgba(245, 158, 11, 0.2);
+            color: #f59e0b;
+            animation: blink 1s infinite;
+        }
+        
+        .approval-status-tag.expired {
+            background: rgba(107, 114, 128, 0.2);
+            color: #9ca3af;
+        }
+        
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .approval-values {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            margin-bottom: 8px;
+        }
+        
+        .approval-values .old-value {
+            color: var(--text-secondary);
+        }
+        
+        .approval-values .new-value {
+            color: var(--secondary-color);
+            font-weight: 500;
+        }
+        
+        .approval-values .arrow {
+            color: var(--primary-color);
+            font-weight: bold;
+        }
+        
+        .approval-meta {
+            display: flex;
+            gap: 16px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        
+        .approval-time {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 8px;
+        }
+        
+        .approval-info p {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+        
+        .approval-info p strong {
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+        
+        .approval-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #10b981, #059669);
+            border: none;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: linear-gradient(135deg, #059669, #047857);
+        }
+        
+        .btn-warning {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            border: none;
+            color: white;
+        }
+        
+        .btn-warning:hover {
+            background: linear-gradient(135deg, #d97706, #b45309);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            border: none;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
+        }
+        
+        /* 消息提示 */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 16px 24px;
+            border-radius: 12px;
+            color: white;
+            font-weight: 500;
+            z-index: 1000;
+            animation: slideInRight 0.3s ease;
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .toast.success { background: linear-gradient(135deg, var(--secondary-color), #059669); }
+        .toast.error { background: linear-gradient(135deg, var(--danger-color), #dc2626); }
+        .toast.info { background: linear-gradient(135deg, var(--primary-color), var(--primary-dark)); }
+        
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(100px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        
+        /* 响应式 */
+        @media (max-width: 1024px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .sidebar.open {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 侧边栏 -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <div class="logo-icon">
+                    <i class="fas fa-microchip"></i>
+                </div>
+                <div class="logo-text">
+                    <h1>MTSCOS AI</h1>
+                    <p>硬件管理系统</p>
+                </div>
             </div>
-            
-            <!-- 消息提示区域 -->
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    <div class="mb-6">
-                        {% for category, message in messages %}
-                            <div class="bg-{{ 'green' if category == 'success' else 'red' }}-100 border-l-4 border-{{ 'green' if category == 'success' else 'red' }}-500 text-{{ 'green' if category == 'success' else 'red' }}-700 p-4 rounded" role="alert">
-                                <p class="font-bold">
-                                    {% if category == 'success' %}成功{% else %}错误{% endif %}
-                                </p>
-                                <p>{{ message }}</p>
-                            </div>
-                        {% endfor %}
-                    </div>
-                {% endif %}
-            {% endwith %}
-            
-            <!-- 统计卡片 -->
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                <!-- 设备总数 -->
-                <div class="bg-white rounded-xl shadow-md p-6">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <h3 class="text-sm font-medium text-gray-600 mb-1">设备总数</h3>
-                            <p class="text-3xl font-bold text-gray-800">0</p>
-                        </div>
-                        <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                            <i class="fas fa-server text-blue-600 text-xl"></i>
-                        </div>
-                    </div>
-                    <div class="mt-4 text-sm text-gray-600">
-                        暂无设备数据
-                    </div>
-                </div>
-                
-                <!-- 角色信息 -->
-                <div class="bg-white rounded-xl shadow-md p-6">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <h3 class="text-sm font-medium text-gray-600 mb-1">当前角色</h3>
-                            <p class="text-3xl font-bold text-gray-800">硬件管理员</p>
-                        </div>
-                        <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                            <i class="fas fa-user-cog text-purple-600 text-xl"></i>
-                        </div>
-                    </div>
-                    <div class="mt-4 text-sm text-gray-600">
-                        管理系统硬件设备
-                    </div>
-                </div>
-                
-                <!-- 系统状态 -->
-                <div class="bg-white rounded-xl shadow-md p-6">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <h3 class="text-sm font-medium text-gray-600 mb-1">系统状态</h3>
-                            <p class="text-3xl font-bold text-green-600">正常</p>
-                        </div>
-                        <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                            <i class="fas fa-check-circle text-green-600 text-xl"></i>
-                        </div>
-                    </div>
-                    <div class="mt-4 text-sm text-gray-600">
-                        所有服务运行正常
-                    </div>
-                </div>
-                
-                <!-- AI服务状态 -->
-                <div class="bg-white rounded-xl shadow-md p-6">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <h3 class="text-sm font-medium text-gray-600 mb-1">AI服务</h3>
-                            <p class="text-3xl font-bold text-indigo-600">运行中</p>
-                        </div>
-                        <div class="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center">
-                            <i class="fas fa-brain text-indigo-600 text-xl"></i>
-                        </div>
-                    </div>
-                    <div class="mt-4 text-sm text-gray-600">
-                        AI服务正常运行
-                    </div>
-                </div>
+        </div>
+        
+        <nav class="nav-menu">
+            <a href="#dashboard" class="nav-item active">
+                <i class="fas fa-home"></i>
+                <span>仪表盘</span>
+            </a>
+            <a href="#devices" class="nav-item">
+                <i class="fas fa-server"></i>
+                <span>设备管理</span>
+            </a>
+            <a href="#settings" class="nav-item">
+                <i class="fas fa-cog"></i>
+                <span>系统设置</span>
+            </a>
+            <a href="#monitoring" class="nav-item">
+                <i class="fas fa-chart-line"></i>
+                <span>性能监控</span>
+            </a>
+            <a href="#logs" class="nav-item">
+                <i class="fas fa-file-text"></i>
+                <span>系统日志</span>
+            </a>
+            <a href="#keys" class="nav-item">
+                <i class="fas fa-key"></i>
+                <span>硬件密钥</span>
+            </a>
+            <a href="/auth/logout" class="nav-item logout">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>退出登录</span>
+            </a>
+        </nav>
+    </aside>
+    
+    <!-- 主内容区 -->
+    <main class="main-content">
+        <!-- 顶部栏 -->
+        <div class="top-bar">
+            <div class="page-title">
+                <h2>硬件管理员仪表板</h2>
+                <p>管理系统硬件设备和资源配置</p>
             </div>
-            
-            <!-- 功能区域 -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <!-- 左侧：硬件管理 -->
-                <div class="bg-white rounded-xl shadow-md p-6">
-                    <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
-                        <i class="fas fa-microchip text-indigo-600 mr-2"></i>
-                        硬件管理
-                    </h3>
-                    
-                    <div class="space-y-4">
-                        <a href="#" class="block bg-gray-50 hover:bg-gray-100 p-4 rounded-lg transition-colors">
-                            <h4 class="font-medium text-gray-800 flex items-center">
-                                <i class="fas fa-server text-blue-600 mr-2"></i>
-                                设备管理
-                            </h4>
-                            <p class="text-sm text-gray-600 mt-1">管理系统硬件设备</p>
-                        </a>
-                        
-                        <a href="#" class="block bg-gray-50 hover:bg-gray-100 p-4 rounded-lg transition-colors">
-                            <h4 class="font-medium text-gray-800 flex items-center">
-                                <i class="fas fa-chart-line text-green-600 mr-2"></i>
-                                性能监控
-                            </h4>
-                            <p class="text-sm text-gray-600 mt-1">监控硬件性能指标</p>
-                        </a>
-                        
-                        <a href="#" class="block bg-gray-50 hover:bg-gray-100 p-4 rounded-lg transition-colors">
-                            <h4 class="font-medium text-gray-800 flex items-center">
-                                <i class="fas fa-cogs text-orange-600 mr-2"></i>
-                                硬件配置
-                            </h4>
-                            <p class="text-sm text-gray-600 mt-1">配置硬件参数</p>
-                        </a>
-                    </div>
+            <div class="top-right">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" placeholder="搜索设备...">
                 </div>
-                
-                <!-- 右侧：资源管理 -->
-                <div class="bg-white rounded-xl shadow-md p-6">
-                    <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
-                        <i class="fas fa-database text-indigo-600 mr-2"></i>
-                        资源管理
-                    </h3>
-                    
-                    <div class="space-y-4">
-                        <a href="#" class="block bg-gray-50 hover:bg-gray-100 p-4 rounded-lg transition-colors">
-                            <h4 class="font-medium text-gray-800 flex items-center">
-                                <i class="fas fa-memory text-blue-600 mr-2"></i>
-                                内存管理
-                            </h4>
-                            <p class="text-sm text-gray-600 mt-1">监控和管理系统内存</p>
-                        </a>
-                        
-                        <a href="#" class="block bg-gray-50 hover:bg-gray-100 p-4 rounded-lg transition-colors">
-                            <h4 class="font-medium text-gray-800 flex items-center">
-                                <i class="fas fa-hdd text-green-600 mr-2"></i>
-                                存储管理
-                            </h4>
-                            <p class="text-sm text-gray-600 mt-1">管理系统存储资源</p>
-                        </a>
-                        
-                        <a href="#" class="block bg-gray-50 hover:bg-gray-100 p-4 rounded-lg transition-colors">
-                            <h4 class="font-medium text-gray-800 flex items-center">
-                                <i class="fas fa-network-wired text-red-600 mr-2"></i>
-                                网络配置
-                            </h4>
-                            <p class="text-sm text-gray-600 mt-1">配置系统网络参数</p>
-                        </a>
+                <button class="notification-btn">
+                    <i class="fas fa-bell"></i>
+                    <span class="notification-badge">3</span>
+                </button>
+                <div class="user-info">
+                    <div class="user-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="user-details">
+                        <span class="user-name">硬件管理员</span>
+                        <span class="user-role">hardware_vikey_admin</span>
                     </div>
                 </div>
             </div>
         </div>
+        
+        <!-- 统计卡片 -->
+        <section id="dashboard" class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-header">
+                    <span class="stat-title">设备总数</span>
+                    <div class="stat-icon blue">
+                        <i class="fas fa-server"></i>
+                    </div>
+                </div>
+                <div class="stat-value" id="total-devices">7</div>
+                <div class="stat-footer">
+                    <span class="stat-status">
+                        <span class="status-dot"></span>
+                        <span id="online-devices">4 台在线</span>
+                    </span>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-header">
+                    <span class="stat-title">CPU 使用率</span>
+                    <div class="stat-icon green">
+                        <i class="fas fa-microchip"></i>
+                    </div>
+                </div>
+                <div class="stat-value">45%</div>
+                <div class="stat-footer">
+                    <div style="width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
+                        <div style="width: 45%; height: 100%; background: linear-gradient(90deg, var(--secondary-color), #059669); border-radius: 3px;"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-header">
+                    <span class="stat-title">内存使用</span>
+                    <div class="stat-icon purple">
+                        <i class="fas fa-memory"></i>
+                    </div>
+                </div>
+                <div class="stat-value">8.2 GB</div>
+                <div class="stat-footer">
+                    <div style="width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
+                        <div style="width: 68%; height: 100%; background: linear-gradient(90deg, var(--accent-color), #7c3aed); border-radius: 3px;"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-header">
+                    <span class="stat-title">存储容量</span>
+                    <div class="stat-icon orange">
+                        <i class="fas fa-hdd"></i>
+                    </div>
+                </div>
+                <div class="stat-value">245 GB</div>
+                <div class="stat-footer">
+                    <div style="width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
+                        <div style="width: 72%; height: 100%; background: linear-gradient(90deg, var(--warning-color), #d97706); border-radius: 3px;"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- 内容网格 -->
+        <div class="content-grid">
+            <!-- 设备列表 -->
+            <section id="devices" class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <i class="fas fa-server"></i>
+                        <h3>设备列表</h3>
+                    </div>
+                    <button class="btn btn-primary add-device-btn">
+                        <i class="fas fa-plus"></i>
+                        添加设备
+                    </button>
+                </div>
+                <div class="table-container">
+                    <table id="devices-table" class="data-table">
+                        <thead>
+                            <tr>
+                                <th>设备名称</th>
+                                <th>类型</th>
+                                <th>状态</th>
+                                <th>CPU</th>
+                                <th>内存</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <div class="device-info">
+                                        <div class="device-icon online">
+                                            <i class="fas fa-server"></i>
+                                        </div>
+                                        <div class="device-details">
+                                            <p>AI服务器-01</p>
+                                            <span>192.168.1.101</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span style="color: var(--text-secondary);">AI计算节点</span></td>
+                                <td><span class="status-badge online"><span class="status-dot"></span>在线</span></td>
+                                <td><span style="color: var(--text-secondary);">32%</span></td>
+                                <td><span style="color: var(--text-secondary);">4.5 GB</span></td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="action-btn" onclick="viewDevice(1)"><i class="fas fa-eye"></i></button>
+                                        <button class="action-btn" onclick="editDevice(1)"><i class="fas fa-edit"></i></button>
+                                        <button class="action-btn delete" onclick="deleteDevice(1, 'AI服务器-01')"><i class="fas fa-trash"></i></button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="device-info">
+                                        <div class="device-icon online">
+                                            <i class="fas fa-database"></i>
+                                        </div>
+                                        <div class="device-details">
+                                            <p>数据库服务器</p>
+                                            <span>192.168.1.102</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span style="color: var(--text-secondary);">数据库节点</span></td>
+                                <td><span class="status-badge online"><span class="status-dot"></span>在线</span></td>
+                                <td><span style="color: var(--text-secondary);">58%</span></td>
+                                <td><span style="color: var(--text-secondary);">6.2 GB</span></td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="action-btn" onclick="viewDevice(2)"><i class="fas fa-eye"></i></button>
+                                        <button class="action-btn" onclick="editDevice(2)"><i class="fas fa-edit"></i></button>
+                                        <button class="action-btn delete" onclick="deleteDevice(2, '数据库服务器')"><i class="fas fa-trash"></i></button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="device-info">
+                                        <div class="device-icon offline">
+                                            <i class="fas fa-server"></i>
+                                        </div>
+                                        <div class="device-details">
+                                            <p>测试服务器</p>
+                                            <span>192.168.1.103</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span style="color: var(--text-secondary);">测试节点</span></td>
+                                <td><span class="status-badge offline"><span class="status-dot" style="background: var(--text-secondary); animation: none;"></span>离线</span></td>
+                                <td><span style="color: var(--text-secondary);">-</span></td>
+                                <td><span style="color: var(--text-secondary);">-</span></td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="action-btn" onclick="viewDevice(3)"><i class="fas fa-eye"></i></button>
+                                        <button class="action-btn" onclick="editDevice(3)"><i class="fas fa-edit"></i></button>
+                                        <button class="action-btn delete" onclick="deleteDevice(3, '测试服务器')"><i class="fas fa-trash"></i></button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+            
+            <!-- 设置面板 -->
+            <div>
+                <section id="settings" class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <i class="fas fa-cog"></i>
+                            <h3>系统设置</h3>
+                        </div>
+                    </div>
+                    <div class="settings-panel">
+                        <div class="settings-section">
+                            <input id="system-name-input" type="text" value="MTSCOS AI 硬件管理系统" class="form-control" placeholder="系统名称">
+                        </div>
+                        <div class="settings-section">
+                            <textarea id="system-desc-input" class="form-control" placeholder="系统描述">基于人工智能的智能硬件管理系统，提供设备监控、资源管理和自动化运维功能。</textarea>
+                        </div>
+                        <div class="settings-section">
+                            <label>时区设置</label>
+                            <select id="timezone-select" class="form-control">
+                                <option>Asia/Shanghai (UTC+8)</option>
+                                <option>Asia/Tokyo (UTC+9)</option>
+                                <option>UTC (UTC+0)</option>
+                                <option>America/New_York (UTC-5)</option>
+                            </select>
+                        </div>
+                        <div class="settings-section">
+                            <div class="setting-row">
+                                <div class="setting-info">
+                                    <p>自动保存</p>
+                                    <span>设置更改将自动保存到数据库</span>
+                                </div>
+                                <label id="auto-save-switch" class="toggle-switch">
+                                    <input type="checkbox" checked>
+                                    <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="card-actions" style="justify-content: flex-end; margin-top: 20px;">
+                            <button class="btn btn-secondary">重置</button>
+                            <button class="btn btn-primary save-settings-btn">
+                                <i class="fas fa-save"></i>
+                                保存设置
+                            </button>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- 安全设置 -->
+                <section class="card" style="margin-top: 20px;">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <i class="fas fa-shield-alt"></i>
+                            <h3>安全设置</h3>
+                        </div>
+                    </div>
+                    <div class="settings-panel">
+                        <div class="setting-row danger-bg">
+                            <div class="setting-info danger-text">
+                                <p>设备认证</p>
+                                <span>启用设备身份验证</span>
+                            </div>
+                            <label id="device-auth-switch" class="toggle-switch">
+                                <input type="checkbox" checked>
+                                <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                            </label>
+                            <span class="status-indicator" id="status-device-auth"></span>
+                        </div>
+                        <div class="setting-row">
+                            <div class="setting-info">
+                                <p>SSL加密</p>
+                                <span>启用HTTPS连接</span>
+                            </div>
+                            <label id="ssl-switch" class="toggle-switch">
+                                <input type="checkbox">
+                                <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                            </label>
+                            <span class="status-indicator" id="status-ssl"></span>
+                        </div>
+                        <div class="setting-row">
+                            <div class="setting-info">
+                                <p>访问日志</p>
+                                <span>记录所有访问操作</span>
+                            </div>
+                            <label id="access-log-switch" class="toggle-switch">
+                                <input type="checkbox" checked>
+                                <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                            </label>
+                            <span class="status-indicator" id="status-access-log"></span>
+                        </div>
+                        <div class="setting-row">
+                            <div class="setting-info">
+                                <p>自动锁定</p>
+                                <span>超时自动锁定账户</span>
+                            </div>
+                            <label id="auto-lock-switch" class="toggle-switch">
+                                <input type="checkbox" checked>
+                                <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                            </label>
+                            <span class="status-indicator" id="status-auto-lock"></span>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- 设置审批 -->
+                <section class="card" style="margin-top: 20px;">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <i class="fas fa-file-check"></i>
+                            <h3>设置审批</h3>
+                            <span id="approval-badge" style="display: none; margin-left: 8px;" class="badge"></span>
+                        </div>
+                        <button class="btn btn-secondary" onclick="loadApprovals()">
+                            <i class="fas fa-refresh"></i>
+                            刷新
+                        </button>
+                    </div>
+                    <div class="settings-panel">
+                        <div id="approval-list">
+                            <p style="color: var(--text-secondary); text-align: center; padding: 20px;">暂无待审批的设置变更</p>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+        
+        <!-- 自定义对话框 -->
+        <div id="custom-modal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="modal-title">提示</h3>
+                    <button class="modal-close" onclick="closeModal()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p id="modal-message"></p>
+                    <input id="modal-input" type="text" style="display: none;" placeholder="请输入内容">
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closeModal()">取消</button>
+                    <button id="modal-confirm" class="btn btn-primary" onclick="confirmModal()">确认</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 性能监控 -->
+        <section id="monitoring" class="card" style="margin-top: 20px;">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fas fa-chart-line"></i>
+                    <h3>性能监控</h3>
+                </div>
+            </div>
+            <div class="monitoring-section">
+                <div class="monitoring-grid">
+                    <div class="metric-card">
+                        <div class="metric-header">
+                            <span class="metric-label">CPU 使用率</span>
+                            <span class="metric-value" style="color: var(--secondary-color);">45%</span>
+                        </div>
+                        <div class="metric-chart">
+                            <div class="chart-bar cpu" style="height: 35%"></div>
+                            <div class="chart-bar cpu" style="height: 45%"></div>
+                            <div class="chart-bar cpu" style="height: 38%"></div>
+                            <div class="chart-bar cpu" style="height: 52%"></div>
+                            <div class="chart-bar cpu" style="height: 48%"></div>
+                            <div class="chart-bar cpu" style="height: 45%"></div>
+                            <div class="chart-bar cpu" style="height: 42%"></div>
+                            <div class="chart-bar cpu" style="height: 45%"></div>
+                        </div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-header">
+                            <span class="metric-label">内存使用</span>
+                            <span class="metric-value" style="color: var(--accent-color);">68%</span>
+                        </div>
+                        <div class="metric-chart">
+                            <div class="chart-bar memory" style="height: 62%"></div>
+                            <div class="chart-bar memory" style="height: 68%"></div>
+                            <div class="chart-bar memory" style="height: 65%"></div>
+                            <div class="chart-bar memory" style="height: 72%"></div>
+                            <div class="chart-bar memory" style="height: 70%"></div>
+                            <div class="chart-bar memory" style="height: 68%"></div>
+                            <div class="chart-bar memory" style="height: 66%"></div>
+                            <div class="chart-bar memory" style="height: 68%"></div>
+                        </div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-header">
+                            <span class="metric-label">网络流量</span>
+                            <span class="metric-value" style="color: var(--primary-color);">2.4 MB/s</span>
+                        </div>
+                        <div class="metric-chart">
+                            <div class="chart-bar network" style="height: 55%"></div>
+                            <div class="chart-bar network" style="height: 62%"></div>
+                            <div class="chart-bar network" style="height: 48%"></div>
+                            <div class="chart-bar network" style="height: 70%"></div>
+                            <div class="chart-bar network" style="height: 58%"></div>
+                            <div class="chart-bar network" style="height: 65%"></div>
+                            <div class="chart-bar network" style="height: 52%"></div>
+                            <div class="chart-bar network" style="height: 60%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
     </main>
     
-    <!-- 页脚 -->
-    <footer class="bg-white border-t border-gray-200 py-6">
-        <div class="container mx-auto px-4 text-center text-gray-600 text-sm">
-            <p>&copy; 2026 MTSCOS AI Project. All rights reserved.</p>
-        </div>
-    </footer>
-
-    {% block footer %}{% endblock %}
-
+    <script>
+        // 侧边栏导航
+        document.querySelectorAll('.nav-item').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                document.querySelectorAll('.nav-item').forEach(l => l.classList.remove('active'));
+                this.classList.add('active');
+                
+                const targetId = this.getAttribute('href');
+                const targetSection = document.querySelector(targetId);
+                if (targetSection) {
+                    targetSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+        
+        // 当前用户信息（从页面获取）
+        const currentUserRole = 'hardware_vikey_admin';
+        const currentUserId = '13';
+        
+        // API工具 - 添加用户角色头
+        const api = {
+            get: async (url) => { 
+                const r = await fetch(url, { 
+                    headers: { 
+                        'X-User-Role': currentUserRole,
+                        'X-User-Id': currentUserId
+                    }
+                }); 
+                return await r.json(); 
+            },
+            post: async (url, data) => { 
+                const r = await fetch(url, { 
+                    method: 'POST', 
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'X-User-Role': currentUserRole,
+                        'X-User-Id': currentUserId
+                    }, 
+                    body: JSON.stringify(data) 
+                }); 
+                return await r.json(); 
+            },
+            put: async (url, data) => { 
+                const r = await fetch(url, { 
+                    method: 'PUT', 
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'X-User-Role': currentUserRole,
+                        'X-User-Id': currentUserId
+                    }, 
+                    body: JSON.stringify(data) 
+                }); 
+                return await r.json(); 
+            },
+            delete: async (url) => { 
+                const r = await fetch(url, { 
+                    method: 'DELETE',
+                    headers: { 
+                        'X-User-Role': currentUserRole,
+                        'X-User-Id': currentUserId
+                    }
+                }); 
+                return await r.json(); 
+            }
+        };
+        
+        // 显示消息
+        function showMessage(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => { toast.remove(); }, 3000);
+        }
+        
+        // 自定义对话框变量
+        let modalCallback = null;
+        let modalType = 'confirm'; // 'confirm' or 'prompt'
+        
+        // 显示确认对话框
+        function showConfirm(message, callback) {
+            modalCallback = callback;
+            modalType = 'confirm';
+            document.getElementById('modal-title').textContent = '确认';
+            document.getElementById('modal-message').textContent = message;
+            document.getElementById('modal-input').style.display = 'none';
+            document.getElementById('custom-modal').classList.add('show');
+        }
+        
+        // 显示输入对话框
+        function showPrompt(message, defaultValue = '', callback) {
+            modalCallback = callback;
+            modalType = 'prompt';
+            document.getElementById('modal-title').textContent = '输入';
+            document.getElementById('modal-message').textContent = message;
+            const input = document.getElementById('modal-input');
+            input.style.display = 'block';
+            input.value = defaultValue;
+            input.focus();
+            document.getElementById('custom-modal').classList.add('show');
+        }
+        
+        // 关闭对话框
+        function closeModal() {
+            document.getElementById('custom-modal').classList.remove('show');
+            modalCallback = null;
+        }
+        
+        // 确认对话框
+        function confirmModal() {
+            if (modalType === 'prompt') {
+                const value = document.getElementById('modal-input').value;
+                if (modalCallback) {
+                    modalCallback(value);
+                }
+            } else {
+                if (modalCallback) {
+                    modalCallback(true);
+                }
+            }
+            closeModal();
+        }
+        
+        // 加载设备
+        async function loadDevices() {
+            const result = await api.get('/api/hardware/devices');
+            if (result.success) {
+                const tbody = document.querySelector('#devices-table tbody');
+                if (tbody) {
+                    tbody.innerHTML = result.data.map(d => `
+                        <tr>
+                            <td>
+                                <div class="device-info">
+                                    <div class="device-icon ${d.status === 'online' ? 'online' : 'offline'}">
+                                        <i class="fas fa-server"></i>
+                                    </div>
+                                    <div class="device-details">
+                                        <p>${d.device_name}</p>
+                                        <span>${d.ip_address}</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td><span style="color: var(--text-secondary);">${d.device_type}</span></td>
+                            <td><span class="status-badge ${d.status === 'online' ? 'online' : 'offline'}"><span class="status-dot" ${d.status !== 'online' ? 'style="background: var(--text-secondary); animation: none;"' : ''}></span>${d.status === 'online' ? '在线' : '离线'}</span></td>
+                            <td><span style="color: var(--text-secondary);">${d.cpu_usage}%</span></td>
+                            <td><span style="color: var(--text-secondary);">${d.memory_usage} GB</span></td>
+                            <td>
+                                <div class="action-buttons">
+                                    <button class="action-btn" onclick="viewDevice(${d.id})"><i class="fas fa-eye"></i></button>
+                                    <button class="action-btn" onclick="editDevice(${d.id})"><i class="fas fa-edit"></i></button>
+                                    <button class="action-btn delete" onclick="deleteDevice(${d.id}, '${d.device_name}')"><i class="fas fa-trash"></i></button>
+                                </div>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+                const online = result.data.filter(d => d.status === 'online').length;
+                document.querySelector('#total-devices').textContent = result.data.length;
+                document.querySelector('#online-devices').textContent = `${online} 台在线`;
+            }
+        }
+        
+        function viewDevice(id) { 
+            api.get(`/api/hardware/devices/${id}`).then(r => {
+                if (r.success) {
+                    showMessage(JSON.stringify(r.data, null, 2), 'info');
+                }
+            }); 
+        }
+        
+        function editDevice(id) { 
+            api.get(`/api/hardware/devices/${id}`).then(r => { 
+                if (r.success) {
+                    showPrompt('输入新设备名称:', r.data.device_name, (name) => {
+                        if (name) {
+                            api.put(`/api/hardware/devices/${id}`, { device_name: name }).then(r2 => { 
+                                if (r2.success) {
+                                    showMessage('更新成功', 'success');
+                                    loadDevices();
+                                }
+                            }); 
+                        }
+                    });
+                }
+            }); 
+        }
+        
+        function deleteDevice(id, name) { 
+            showConfirm(`确定要删除设备 "${name}" 吗？`, (confirmed) => {
+                if (confirmed) {
+                    api.delete(`/api/hardware/devices/${id}`).then(r => { 
+                        if (r.success) {
+                            showMessage('删除成功', 'success');
+                            loadDevices();
+                        }
+                    }); 
+                }
+            });
+        }
+        
+        document.querySelector('.add-device-btn')?.addEventListener('click', () => {
+            showPrompt('输入设备名称:', '', (deviceName) => {
+                if (deviceName) {
+                    showPrompt('输入设备类型:', '', (deviceType) => {
+                        showPrompt('输入IP地址:', '', (ipAddress) => {
+                            api.post('/api/hardware/devices', { 
+                                device_name: deviceName,
+                                device_type: deviceType || 'unknown',
+                                ip_address: ipAddress || ''
+                            }).then(r => { 
+                                if (r.success) {
+                                    showMessage('添加成功', 'success');
+                                    loadDevices();
+                                }
+                            });
+                        });
+                    });
+                }
+            });
+        });
+        
+        // 性能监控图表数据
+        let cpuData = [35, 45, 38, 52, 48, 45, 42, 45];
+        let memoryData = [62, 68, 65, 72, 70, 68, 66, 68];
+        let networkData = [55, 62, 48, 70, 58, 65, 52, 60];
+        
+        // 更新图表
+        function updateCharts() {
+            // 生成随机波动
+            cpuData.shift();
+            cpuData.push(Math.min(100, Math.max(20, cpuData[cpuData.length-1] + (Math.random() - 0.5) * 10)));
+            
+            memoryData.shift();
+            memoryData.push(Math.min(100, Math.max(40, memoryData[memoryData.length-1] + (Math.random() - 0.5) * 5)));
+            
+            networkData.shift();
+            networkData.push(Math.min(100, Math.max(30, networkData[networkData.length-1] + (Math.random() - 0.5) * 15)));
+            
+            // 更新CPU图表
+            const cpuBars = document.querySelectorAll('.chart-bar.cpu');
+            cpuBars.forEach((bar, index) => {
+                bar.style.height = `${cpuData[index]}%`;
+            });
+            document.querySelector('.metric-value[style*="secondary-color"]').textContent = `${Math.round(cpuData[7])}%`;
+            
+            // 更新内存图表
+            const memoryBars = document.querySelectorAll('.chart-bar.memory');
+            memoryBars.forEach((bar, index) => {
+                bar.style.height = `${memoryData[index]}%`;
+            });
+            document.querySelector('.metric-value[style*="accent-color"]').textContent = `${Math.round(memoryData[7])}%`;
+            
+            // 更新网络图表
+            const networkBars = document.querySelectorAll('.chart-bar.network');
+            networkBars.forEach((bar, index) => {
+                bar.style.height = `${networkData[index]}%`;
+            });
+            document.querySelector('.metric-value[style*="primary-color"]').textContent = `${(networkData[7] / 40).toFixed(1)} MB/s`;
+        }
+        
+        // 每秒刷新图表
+        setInterval(updateCharts, 1000);
+        
+        // 显示状态提示
+        function showStatusIndicator(settingKey, type) {
+            const indicatorId = `status-${settingKey.replace(/_/g, '-')}`;
+            const indicator = document.getElementById(indicatorId);
+            if (!indicator) return;
+            
+            indicator.textContent = type === 'success' ? '设置已生效' : '参数配置待生效';
+            indicator.className = `status-indicator ${type} show`;
+            
+            setTimeout(() => {
+                indicator.classList.remove('show');
+            }, 2000);
+        }
+        
+        document.querySelector('.save-settings-btn')?.addEventListener('click', () => {
+            const settingsData = {
+                system_name: document.querySelector('#system-name-input')?.value,
+                system_description: document.querySelector('#system-desc-input')?.value,
+                timezone: document.querySelector('#timezone-select')?.value,
+                auto_save: document.querySelector('#auto-save-switch input')?.checked ? 'true' : 'false',
+                device_auth: document.querySelector('#device-auth-switch input')?.checked ? 'true' : 'false',
+                ssl_enabled: document.querySelector('#ssl-switch input')?.checked ? 'true' : 'false',
+                access_log: document.querySelector('#access-log-switch input')?.checked ? 'true' : 'false',
+                auto_lock: document.querySelector('#auto-lock-switch input')?.checked ? 'true' : 'false'
+            };
+            
+            api.put('/api/hardware/settings', settingsData).then(r => {
+                if (r.success) {
+                    if (r.message.includes('立即生效')) {
+                        showStatusIndicator('device_auth', 'success');
+                        showStatusIndicator('ssl', 'success');
+                        showStatusIndicator('access_log', 'success');
+                        showStatusIndicator('auto_lock', 'success');
+                    } else if (r.pending_approvals && r.pending_approvals.length > 0) {
+                        r.pending_approvals.forEach(approval => {
+                            showStatusIndicator(approval.setting_key, 'pending');
+                        });
+                    }
+                    showMessage(r.message, 'success');
+                } else {
+                    showMessage(r.message, 'error');
+                }
+            });
+        });
+        
+        // 加载审批列表
+        async function loadApprovals() {
+            const result = await api.get('/api/hardware/approvals/all');
+            if (result.success) {
+                const approvalList = document.querySelector('#approval-list');
+                const badge = document.getElementById('approval-badge');
+                
+                if (approvalList) {
+                    if (result.data.length > 0) {
+                        approvalList.innerHTML = result.data.map(a => {
+                            const statusClass = getStatusClass(a.status_color);
+                            const isApproved = ['approved', 'scheduled', 'executed'].includes(a.status);
+                            const isExpired = a.status_color === 'expired';
+                            
+                            return `
+                                <div class="approval-item ${statusClass}">
+                                    <div class="approval-info">
+                                        <div class="approval-header">
+                                            <strong>${a.setting_key}</strong>
+                                            <span class="approval-status-tag ${a.status_color}">${getStatusText(a.status, a.status_text)}</span>
+                                        </div>
+                                        <div class="approval-values">
+                                            <span class="old-value">原值: ${a.old_value || '-'}</span>
+                                            <span class="arrow">→</span>
+                                            <span class="new-value">新值: ${a.new_value}</span>
+                                        </div>
+                                        <div class="approval-meta">
+                                            <span>申请人: ${a.requester_role} (ID: ${a.requester_id})</span>
+                                            <span>等待天数: ${a.days_pending}天</span>
+                                        </div>
+                                        ${a.approved_at ? `<p class="approval-time">批准时间: ${formatTime(a.approved_at)}</p>` : ''}
+                                        ${a.executed_at && a.status === 'scheduled' ? `<p class="approval-time">计划生效: ${formatTime(a.executed_at)}</p>` : ''}
+                                    </div>
+                                    <div class="approval-actions">
+                                        ${!isExpired && !isApproved ? `
+                                            <button onclick="approveApproval(${a.id})" class="btn btn-primary">同意</button>
+                                            <button onclick="rejectApproval(${a.id})" class="btn btn-danger">驳回</button>
+                                        ` : ''}
+                                        ${isApproved && !isExpired ? `
+                                            <button onclick="executeNow(${a.id})" class="btn btn-success">立即生效</button>
+                                            <button onclick="executeMidnight(${a.id})" class="btn btn-warning">零点生效</button>
+                                            <button onclick="revokeApproval(${a.id})" class="btn btn-secondary">撤回</button>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            `;
+                        }).join('');
+                        
+                        // 更新徽章
+                        const pendingCount = result.data.filter(a => a.status === 'pending').length;
+                        if (pendingCount > 0) {
+                            badge.textContent = `${pendingCount} 待处理`;
+                            badge.style.display = 'inline-block';
+                        } else {
+                            badge.style.display = 'none';
+                        }
+                    } else {
+                        approvalList.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 20px;">暂无审批记录</p>';
+                        badge.style.display = 'none';
+                    }
+                }
+            }
+        }
+        
+        function getStatusClass(color) {
+            switch(color) {
+                case 'expired': return 'expired';
+                case 'warning': return 'warning';
+                case 'attention': return 'attention';
+                default: return '';
+            }
+        }
+        
+        function getStatusText(status, text) {
+            const statusMap = {
+                'pending': '待审批',
+                'approved': '已批准',
+                'rejected': '已驳回',
+                'scheduled': '已计划',
+                'executed': '已生效'
+            };
+            return statusMap[status] || text || status;
+        }
+        
+        function formatTime(time) {
+            if (!time) return '';
+            try {
+                return new Date(time).toLocaleString('zh-CN');
+            } catch {
+                return time;
+            }
+        }
+        
+        function approveApproval(id) {
+            api.post(`/api/hardware/approvals/${id}/approve`, {}).then(r => {
+                if (r.success) {
+                    showMessage(r.message, 'success');
+                    loadApprovals();
+                } else {
+                    showMessage(r.message, 'error');
+                }
+            });
+        }
+        
+        function rejectApproval(id) {
+            api.post(`/api/hardware/approvals/${id}/reject`, {}).then(r => {
+                if (r.success) {
+                    showMessage(r.message, 'success');
+                    loadApprovals();
+                } else {
+                    showMessage(r.message, 'error');
+                }
+            });
+        }
+        
+        function executeNow(id) {
+            showConfirm('确定要立即生效此设置吗？', (confirmed) => {
+                if (confirmed) {
+                    api.post(`/api/hardware/approvals/${id}/execute_now`, {}).then(r => {
+                        if (r.success) {
+                            showMessage(r.message, 'success');
+                            loadApprovals();
+                        } else {
+                            showMessage(r.message, 'error');
+                        }
+                    });
+                }
+            });
+        }
+        
+        function executeMidnight(id) {
+            api.post(`/api/hardware/approvals/${id}/execute_midnight`, {}).then(r => {
+                if (r.success) {
+                    showMessage(r.message, 'success');
+                    loadApprovals();
+                } else {
+                    showMessage(r.message, 'error');
+                }
+            });
+        }
+        
+        function revokeApproval(id) {
+            showConfirm('确定要撤回此审批吗？撤回后将恢复到待审批状态。', (confirmed) => {
+                if (confirmed) {
+                    api.post(`/api/hardware/approvals/${id}/revoke`, {}).then(r => {
+                        if (r.success) {
+                            showMessage(r.message, 'success');
+                            loadApprovals();
+                        } else {
+                            showMessage(r.message, 'error');
+                        }
+                    });
+                }
+            });
+        }
+        
+        // 检查超时审批
+        async function checkTimeout() {
+            const result = await api.get('/api/hardware/approvals/check_timeout');
+            if (result.success) {
+                if (result.data.has_critical) {
+                    showMessage(`发现 ${result.data.critical_approvals.length} 个审批已严重超时（超过3天），请尽快处理！`, 'error');
+                } else if (result.data.has_warning) {
+                    showMessage(`有 ${result.data.warning_approvals.length} 个审批即将超时（超过1天）`, 'warning');
+                }
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            loadDevices();
+            loadApprovals();
+            checkTimeout();
+            // 每5分钟检查一次超时
+            setInterval(checkTimeout, 5 * 60 * 1000);
+            // 每30秒刷新审批列表
+            setInterval(loadApprovals, 30 * 1000);
+        });
+    </script>
+</body>
 </html>

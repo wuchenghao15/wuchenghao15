@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 最简单的HTTP服务器，用于测试服务器启动
-"""
 
 import socketserver
 import logging
@@ -27,3 +26,5 @@ if __name__ == "__main__":
         logger.error(f"Error starting server: {e}")
         import traceback
         traceback.print_exc()
+
+"""

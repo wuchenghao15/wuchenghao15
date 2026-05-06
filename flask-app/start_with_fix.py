@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # 修改版启动脚本，用于修复learning.py中的MODEL_PATH KeyError问题
 import sys
 import os
@@ -44,7 +45,6 @@ fake_config.Config = type('Config', (), {
         'RETRY_COUNT': 3,
         'CACHE_SIZE': 1000,
         'CACHE_TTL': 3600
-    },
     # 信道配置
     'CHANNEL_CONFIG': {
         'MAX_CHANNELS': 50,
@@ -53,27 +53,16 @@ fake_config.Config = type('Config', (), {
     }
 })
 fake_config.DEFAULT_CONFIG = {
-    'MODEL_PATH': 'models/',
     'AI_CONFIG': {
-        'MONITORING_ENABLED': True,
         'LEARNING_ENABLED': True,
-        'AUTO_ADAPT': True,
         'AI_ENHANCEMENT': True,
-        'AUTO_OPTIMIZATION': True,
         'AUTO_CLOSURE': True,
-        'SELF_OPTIMIZATION': True
     }
-}
 
-# 替换实际的app.config模块
 sys.modules['app.config'] = fake_config
-
 # 2. 现在尝试导入app.ai.learning模块，验证修复是否有效
-print("[启动修复] 验证learning模块修复...")
 try:
     print("[启动修复] learning模块修复成功!")
-except Exception as e:
-    print(f"[启动修复] learning模块修复失败: {e}")
     import traceback
     traceback.print_exc()
     sys.exit(1)

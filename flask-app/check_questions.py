@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 检查生成的题目内容
-"""
 
 from app.models.question import QuestionManager
 
@@ -15,3 +14,5 @@ questions = question_manager.get_questions(limit=10)
 print("前10道题目内容:")
 for i, question in enumerate(questions, 1):
     print(f"题目 {i}: {question.content}")
+
+"""

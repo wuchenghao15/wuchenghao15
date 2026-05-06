@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 """
 纯净的启动脚本，直接创建Flask应用并注册必要的蓝图，跳过所有复杂的初始化
-"""
+
+import sys
+import os
+from flask import Flask, request, render_template
 
 # 添加当前目录到Python路径
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))

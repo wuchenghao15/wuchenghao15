@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 """
 创建前端布局优化专用AI员工
-"""
 
 import os
 import sys
@@ -16,17 +15,14 @@ from app.ai.user_ai_manager import get_user_ai_manager
 
 
 def create_frontend_layout_ai_employee():
-    """
     创建前端布局优化专用AI员工
-    """
     print("🎯 开始创建前端布局优化专用AI员工...")
-    
     # 创建AI实例管理器
     instance_manager = ai_instance_manager
-    
+
     # 1. 创建前端布局优化AI实例
     frontend_ai_id = f"frontend-optimizer-ai-{uuid.uuid4().hex[:8]}"
-    
+
     # 2. 定义AI员工的能力和责任
     frontend_ai = instance_manager.create_ai_instance(
         instance_id=frontend_ai_id,
@@ -53,25 +49,24 @@ def create_frontend_layout_ai_employee():
         config={
             "optimization_level": "aggressive",
             "modern_css": True,
-            "accessibility": True,
             "performance": True,
             "responsive": True,
             "supported_frameworks": ["html", "css", "tailwindcss"]
         },
         user_role="admin"
     )
-    
+
     if frontend_ai:
         print(f"✅ 成功创建前端布局优化AI员工: {frontend_ai['name']} (ID: {frontend_ai['instance_id']})")
         print(f"📋 能力: {', '.join(frontend_ai['functions'])}")
         print(f"📋 责任: {', '.join(frontend_ai['responsibilities'])}")
         print(f"⚙️  配置: {frontend_ai['config']}")
-        
+
         # 3. 创建用户AI团队，包含前端优化AI
         user_ai_manager = get_user_ai_manager()
         team_result = user_ai_manager.create_user_ai_team("system")
         print(f"👥 已将前端布局优化AI添加到系统AI团队")
-        
+
         return frontend_ai
     else:
         print("❌ 创建前端布局优化AI员工失败")
@@ -81,16 +76,17 @@ def create_frontend_layout_ai_employee():
 if __name__ == "__main__":
     print("🚀 启动前端布局优化AI员工创建流程...")
     frontend_ai = create_frontend_layout_ai_employee()
-    
+
     if frontend_ai:
         print("\n🎉 前端布局优化AI员工创建成功！")
         print(f"📌 AI ID: {frontend_ai['instance_id']}")
         print(f"📌 AI 名称: {frontend_ai['name']}")
         print(f"📌 AI 类型: {frontend_ai['ai_type']}")
-        print("\n🔧 AI员工已准备好为您优化前端布局！")
         print("\n使用示例:")
         print("1. 分析布局文件: frontend_ai.analyze_layout('layout.html')")
         print("2. 优化布局文件: frontend_ai.optimize_layout('layout.html')")
         print("3. 批量优化: frontend_ai.analyze_and_optimize(['layout1.html', 'layout2.html'])")
     else:
         print("\n❌ 前端布局优化AI员工创建失败，请检查日志获取详细信息")
+
+"""

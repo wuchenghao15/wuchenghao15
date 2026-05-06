@@ -19,7 +19,6 @@ except Exception as e:
 
 # 2. 创建项目历史表
 print("\n创建项目历史表...")
-try:
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS project_history (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -33,13 +32,10 @@ try:
     )
     ''')
     conn.commit()
-    print("项目历史表创建成功")
 except Exception as e:
     print(f"创建项目历史表时出错: {e}")
-
 # 3. 检查修改后的用户表结构
 print("\n修改后的用户表结构:")
-try:
     cursor.execute('PRAGMA table_info(users)')
     columns = cursor.fetchall()
     for column in columns:
@@ -47,9 +43,7 @@ try:
 except Exception as e:
     print(f"错误: {e}")
 
-# 4. 检查项目历史表结构
 print("\n项目历史表结构:")
-try:
     cursor.execute('PRAGMA table_info(project_history)')
     columns = cursor.fetchall()
     for column in columns:
@@ -57,5 +51,3 @@ try:
 except Exception as e:
     print(f"错误: {e}")
 
-# 关闭连接
-conn.close()

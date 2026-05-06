@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 带详细日志的启动脚本
-"""
 
 import os
 import sys
@@ -32,17 +31,19 @@ try:
     # 导入应用
     logger.info("正在导入Flask应用...")
     from app import app
-    
+
     # 获取应用配置
     logger.info(f"应用配置: DEBUG={app.config.get('DEBUG')}")
-    
+
     # 启动服务器
     logger.info("正在启动Flask服务器...")
     app.run(host='0.0.0.0', port=8888, debug=True, load_dotenv=False)
-    
+
 except Exception as e:
     logger.error(f"启动失败: {str(e)}")
     logger.error("完整堆栈跟踪:")
     traceback.print_exc()
     logger.error("应用启动失败，详细日志已写入startup.log")
     sys.exit(1)
+
+"""

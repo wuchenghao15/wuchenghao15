@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="zh-CN">; /* 脚本修复：添加缺失的分号 */
+<head>
+    <meta charset="UTF-8">; /* 脚本修复：添加缺失的分号 */
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>日志管理 - MTSCOS 管理平台</title>
+    <!-- 外部样式表 -->
+    <link rel="stylesheet" href="assets/css/main.css">
+    <link rel="stylesheet" href="assets/css/logs-viewer.css">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../assets/css/theme.css"></head>
+<body>
+    <!-- 页面加载遮罩 -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="loading-container">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">加载中...</div>
+        </div>
+    </div>
+
+    <!-- 顶部导航栏 -->
+    <header class="main-header">
+        <div class="header-left">
+            <div class="logo">
+                <i class="fas fa-shield-alt"></i>
+                <span>MTSCOS 管理平台</span>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="user-info">
+                <span id="current-user">未知用户</span>
+                <span id="user-role">未知权限</span>
+            </div>
+            <button id="logout-btn" class="btn btn-secondary">
+                <i class="fas fa-sign-out-alt"></i>
+                登出
+            </button>
+        </div>
+    </header>
+
+    <!-- 侧边导航 -->
+    <nav class="sidebar">
+        <ul class="nav-menu">
+            <li class="nav-item">
+                <a href="index.html" class="nav-link">
+                    <i class="fas fa-home"></i>
+                    <span>首页</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="user-management.html" class="nav-link">
+                    <i class="fas fa-users"></i>
+                    <span>用户管理</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="vikey-monitor.html" class="nav-link">
+                    <i class="fas fa-chart-line"></i>
+                    <span>规则监测</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="logs-viewer.html" class="nav-link active">
+                    <i class="fas fa-file-alt"></i>
+                    <span>日志管理</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="backup-restore.html" class="nav-link">
+                    <i class="fas fa-database"></i>
+                    <span>备份与恢复</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="gray-test.html" class="nav-link">
+                    <i class="fas fa-experiment"></i>
+                    <span>灰度测试</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="deepseek-integration.html" class="nav-link">
+                    <i class="fas fa-brain"></i>
+                    <span>DeepSeek 集成</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+
+    <!-- 主要内容区 -->
+    <main class="main-content">
+        <!-- 权限警告 -->
+        <div id="permission-warning" class="warning-alert hidden">
+            <i class="fas fa-exclamation-triangle"></i>
+            <span>您没有足够的权限执行此操作。只有管理员才能查看和管理日志。</span>
+        </div>
+
+        <!-- 页面标题 -->
+        <div class="page-header">
+            <h1>日志管理系统</h1>
+            <p>全面的操作日志记录、查询和分析功能</p>
+        </div>
+
+        <!-- 日志统计卡片 -->
+        <div class="stats-cards">
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-file-alt"></i>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-number" id="total-logs">--</div>
+                    <div class="stat-label">总日志数</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-number" id="error-logs">--</div>
+                    <div class="stat-label">错误日志</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon info">
+                    <i class="fas fa-info-circle"></i>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-number" id="today-logs">--</div>
+                    <div class="stat-label">今日日志</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon success">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-number" id="active-users">--</div>
+                    <div class="stat-label">活跃用户数</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 搜索和筛选区域 -->
+        <div class="filter-section">
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label for="log-search">搜索关键词</label>
+                    <div class="search-input-wrapper">
+                        <input type="text" id="log-search" placeholder="输入关键词搜索...">
+                        <button class="btn btn-primary btn-search">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="filter-group">
+                    <label for="log-level">日志级别</label>
+                    <select id="log-level">
+                        <option value="">全部级别</option>
+                        <option value="debug">调试</option>
+                        <option value="info">信息</option>
+                        <option value="warning">警告</option>
+                        <option value="error">错误</option>
+                        <option value="critical">严重</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="log-type">日志类型</label>
+                    <select id="log-type">
+                        <option value="">全部类型</option>
+                        <option value="user_action">用户操作</option>
+                        <option value="system_event">系统事件</option>
+                        <option value="rule_action">规则操作</option>
+                        <option value="admin_action">管理员操作</option>
+                        <option value="data_change">数据变更</option>
+                        <option value="authentication">认证操作</option>
+                    </select>
+                </div>
+            </div>
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label for="start-date">开始日期</label>
+                    <input type="date" id="start-date">
+                </div>
+                <div class="filter-group">
+                    <label for="end-date">结束日期</label>
+                    <input type="date" id="end-date">
+                </div>
+                <div class="filter-group">
+                    <label for="log-user">操作用户</label>
+                    <input type="text" id="log-user" placeholder="输入用户名...">
+                </div>
+                <div class="filter-actions">
+                    <button id="apply-filters" class="btn btn-primary">
+                        <i class="fas fa-filter"></i>
+                        应用筛选
+                    </button>
+                    <button id="reset-filters" class="btn btn-secondary">
+                        <i class="fas fa-redo"></i>
+                        重置筛选
+                    </button>
+                </div>
+            </div>
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label for="sort-by">排序方式</label>
+                    <select id="sort-by">
+                        <option value="timestamp">时间戳</option>
+                        <option value="level">日志级别</option>
+                        <option value="user">用户</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="sort-order">排序顺序</label>
+                    <select id="sort-order">
+                        <option value="desc">降序</option>
+                        <option value="asc">升序</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="page-size">每页显示</label>
+                    <select id="page-size">
+                        <option value="20">20</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- 日志列表表格 -->
+        <div class="logs-table-container">
+            <div class="table-header">
+                <h2>日志列表</h2>
+                <div class="table-actions">
+                    <button id="refresh-logs" class="btn btn-secondary">
+                        <i class="fas fa-sync-alt"></i>
+                        刷新日志
+                    </button>
+                    <div class="dropdown">
+                        <button id="export-logs" class="btn btn-primary dropdown-toggle">
+                            <i class="fas fa-download"></i>
+                            导出日志
+                        </button>
+                        <div class="dropdown-menu">
+                            <a href="#" data-format="json">JSON格式</a>
+                            <a href="#" data-format="csv">CSV格式</a>
+                            <a href="#" data-format="txt">文本格式</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="table-wrapper">
+                <table class="logs-table"> <!-- 建议：使用div布局替代table布局 -->
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>时间</th>
+                            <th>级别</th>
+                            <th>类型</th>
+                            <th>消息</th>
+                            <th>操作人</th>
+                            <th>URL</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logs-table-body">
+                        <!-- 日志数据将通过JavaScript动态加载 -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- 分页控件 -->
+            <div class="pagination">
+                <div class="pagination-info">
+                    显示 <span id="showing-range">0-0</span> 条，共 <span id="total-items">0</span> 条
+                </div>
+                <div class="pagination-controls">
+                    <button id="prev-page" class="btn btn-secondary" disabled>
+                        <i class="fas fa-chevron-left"></i>
+                        上一页
+                    </button>
+                    <span id="page-info">第 <span id="current-page">1</span> 页，共 <span id="total-pages">1</span> 页</span>
+                    <button id="next-page" class="btn btn-secondary" disabled>
+                        下一页
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 日志详情模态框 -->
+        <div id="log-details-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>日志详情</h3>
+                    <button id="close-log-details" class="close-modal">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="detail-row">
+                        <div class="detail-label">日志ID:</div>
+                        <div class="detail-value" id="detail-log-id"></div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">时间戳:</div>
+                        <div class="detail-value" id="detail-log-timestamp"></div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">日志级别:</div>
+                        <div class="detail-value" id="detail-log-level"></div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">日志类型:</div>
+                        <div class="detail-value" id="detail-log-type"></div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">消息:</div>
+                        <div class="detail-value" id="detail-log-message"></div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">操作人:</div>
+                        <div class="detail-value" id="detail-log-user"></div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">URL:</div>
+                        <div class="detail-value" id="detail-log-url"></div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">用户代理:</div>
+                        <div class="detail-value" id="detail-log-user-agent"></div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">同步状态:</div>
+                        <div class="detail-value" id="detail-log-synced"></div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">详细信息:</div>
+                        <div class="detail-value code-block">
+                            <pre id="detail-log-details"></pre>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="close-details-modal" class="btn btn-secondary">关闭</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 清除日志确认模态框 -->
+        <div id="clear-logs-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>确认清除日志</h3>
+                    <button id="close-clear-modal" class="close-modal">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="warning-message">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <p>您确定要清除日志吗？此操作无法撤销！</p>
+                    </div>
+                    <div class="clear-options">
+                        <div class="option-group">
+                            <label>
+                                <input type="radio" name="clear-option" value="all" checked>
+                                清除所有日志
+                            </label>
+                        </div>
+                        <div class="option-group">
+                            <label>
+                                <input type="radio" name="clear-option" value="before">
+                                清除指定日期之前的日志
+                            </label>
+                            <input type="date" id="clear-before-date" disabled>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="cancel-clear" class="btn btn-secondary">取消</button>
+                    <button id="confirm-clear" class="btn btn-danger">确认清除</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="main-footer">
+        <div class="footer-content">
+            <p>© 2024 MTSCOS 管理平台 - 安全、高效、可靠</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript 文件 -->
+    <script src="assets/js/config.js"></script>
+    <script src="assets/js/auth.js"></script>
+    <script src="assets/js/notification.js"></script>
+    <script src="assets/js/modules/logging.js"></script>
+    <script src="assets/js/modules/logs-viewer.js"></script>
+
+<!-- 安全锁定系统 -->
+<script src="/JavaScript/security-lock.js"></script>
+<script defer src="../assets/js/security-lock-init.js"></script>
+</body>
+</html>

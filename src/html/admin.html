@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <meta name="description" content="MTSCOS 超级管理后台">
+    <title>MTSCOS 超级管理后台</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="assets/css/common_styles/variables-fallback.css">
+    <link rel="stylesheet" href="assets/css/common_styles/fonts.css">
+    <link rel="stylesheet" href="assets/css/common_styles/main.css">
+    <link rel="stylesheet" href="assets/css/common_styles/responsive.css">
+    <link rel="stylesheet" href="assets/css/common_styles/theme-system.css">
+    <link rel="stylesheet" href="assets/css/page_styles/admin.css">
+    
+    <!-- 安全机制相关 -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta name="referrer" content="no-referrer">
+
+<!-- CryptoJS库，用于JS解密 -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
+<script defer src="assets/js/system-core.js"></script>
+<script defer src="assets/js/ui-manager.js"></script>
+</head>
+<body>
+    <!-- 侧边栏 -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <h1><a href="admin.html" style="color: #fff;"><i class="fas fa-shield-alt"></i> MTSCOS 超级管理</a></h1>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="nav-item">
+                <a href="admin.html" class="nav-link active">
+                    <span class="nav-icon"><i class="fas fa-tachometer-alt"></i></span>
+                    <span>控制台</span>
+                </a>
+            </div>
+            
+            <div class="nav-item">
+                <a href="#" class="nav-link">
+                    <span class="nav-icon"><i class="fas fa-cogs"></i></span>
+                    <span>系统管理</span>
+                </a>
+                <div class="nav-submenu">
+                    <a href="#" class="nav-subitem">服务管理</a>
+                    <a href="#" class="nav-subitem">备份管理</a>
+                    <a href="#" class="nav-subitem">日志管理</a>
+                    <a href="#" class="nav-subitem">系统设置</a>
+                </div>
+            </div>
+            
+            <div class="nav-item">
+                <a href="#" class="nav-link">
+                    <span class="nav-icon"><i class="fas fa-users"></i></span>
+                    <span>用户管理</span>
+                </a>
+                <div class="nav-submenu">
+                    <a href="#" class="nav-subitem">用户列表</a>
+                    <a href="#" class="nav-subitem">权限管理</a>
+                </div>
+            </div>
+            
+            <div class="nav-item">
+                <a href="#" class="nav-link">
+                    <span class="nav-icon"><i class="fas fa-database"></i></span>
+                    <span>数据库管理</span>
+                </a>
+                <div class="nav-submenu">
+                    <a href="#" class="nav-subitem">表管理</a>
+                    <a href="#" class="nav-subitem">数据备份</a>
+                    <a href="#" class="nav-subitem">数据同步</a>
+                </div>
+            </div>
+            
+            <div class="nav-item">
+                <a href="#" class="nav-link">
+                    <span class="nav-icon"><i class="fas fa-code"></i></span>
+                    <span>脚本管理</span>
+                </a>
+                <div class="nav-submenu">
+                    <a href="#" class="nav-subitem">JavaScript</a>
+                    <a href="#" class="nav-subitem">样式管理</a>
+                </div>
+            </div>
+            
+            <div class="nav-item">
+                <a href="#" class="nav-link">
+                    <span class="nav-icon"><i class="fas fa-palette"></i></span>
+                    <span>主题管理</span>
+                </a>
+            </div>
+            
+            <div class="nav-item">
+                <a href="#" class="nav-link">
+                    <span class="nav-icon"><i class="fas fa-terminal"></i></span>
+                    <span>终端</span>
+                </a>
+            </div>
+        </nav>
+    </aside>
+
+    <!-- 主内容区域 -->
+    <main class="main-content">
+        <!-- 顶部导航 -->
+        <div class="top-nav">
+            <h2 id="page-title">系统控制台</h2>
+            <div class="top-nav-actions">
+                <div class="user-info" id="user-info">
+                    <div class="user-name">管理员</div>
+                    <div class="user-role">超级管理员</div>
+                </div>
+                <div class="theme-toggle" id="theme-toggle">
+                    <span>主题: 自动</span>
+                </div>
+                <button class="btn" id="refresh-btn">
+                    <i class="fas fa-sync-alt"></i> 刷新
+                </button>
+                <button class="btn" id="restart-btn">
+                    <i class="fas fa-redo"></i> 重启服务
+                </button>
+                <button class="btn" id="logout-btn">
+                    <i class="fas fa-sign-out-alt"></i> 退出
+                </button>
+            </div>
+        </div>
+
+        <!-- 仪表盘面板 -->
+        <div class="dashboard-cards" id="dashboard-cards">
+            <div class="card">
+                <div class="card-icon"><i class="fas fa-server"></i></div>
+                <div class="card-title">服务状态</div>
+                <div class="card-value">
+                    <span class="status-badge status-running"></span> 运行中
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-icon"><i class="fas fa-users"></i></div>
+                <div class="card-title">在线用户</div>
+                <div class="card-value">12</div>
+            </div>
+            <div class="card">
+                <div class="card-icon"><i class="fas fa-database"></i></div>
+                <div class="card-title">数据库大小</div>
+                <div class="card-value">2.5 GB</div>
+            </div>
+            <div class="card">
+                <div class="card-icon"><i class="fas fa-clock"></i></div>
+                <div class="card-title">运行时间</div>
+                <div class="card-value">32 天</div>
+            </div>
+        </div>
+
+        <!-- 系统服务管理 -->
+        <div class="panel" id="services-panel" style="margin-top: 20px;">
+            <div class="panel-header">
+                <h3 class="panel-title">服务管理</h3>
+                <button class="btn">
+                    <i class="fas fa-plus"></i> 添加服务
+                </button>
+            </div>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>服务名称</th>
+                        <th>状态</th>
+                        <th>CPU 使用率</th>
+                        <th>内存占用</th>
+                        <th>运行时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>HTTP Server</td>
+                        <td><span class="status-badge status-running"></span> 运行中</td>
+                        <td>2.5%</td>
+                        <td>128 MB</td>
+                        <td>32 天</td>
+                        <td>
+                            <button class="btn btn-sm">重启</button>
+                            <button class="btn btn-sm btn-danger">停止</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>数据库服务</td>
+                        <td><span class="status-badge status-running"></span> 运行中</td>
+                        <td>5.8%</td>
+                        <td>256 MB</td>
+                        <td>32 天</td>
+                        <td>
+                            <button class="btn btn-sm">重启</button>
+                            <button class="btn btn-sm btn-danger">停止</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>监控服务</td>
+                        <td><span class="status-badge status-running"></span> 运行中</td>
+                        <td>1.2%</td>
+                        <td>64 MB</td>
+                        <td>32 天</td>
+                        <td>
+                            <button class="btn btn-sm">重启</button>
+                            <button class="btn btn-sm btn-danger">停止</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 备份管理 -->
+        <div class="panel" id="backup-panel" style="margin-top: 20px;">
+            <div class="panel-header">
+                <h3 class="panel-title">备份管理</h3>
+                <button class="btn">
+                    <i class="fas fa-backup"></i> 创建备份
+                </button>
+            </div>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>备份名称</th>
+                        <th>备份时间</th>
+                        <th>大小</th>
+                        <th>类型</th>
+                        <th>状态</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>daily_backup_20251106</td>
+                        <td>2025-11-06 00:00:00</td>
+                        <td>156 MB</td>
+                        <td>自动备份</td>
+                        <td>完成</td>
+                        <td>
+                            <button class="btn btn-sm">恢复</button>
+                            <button class="btn btn-sm">下载</button>
+                            <button class="btn btn-sm btn-danger">删除</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>manual_backup_20251105</td>
+                        <td>2025-11-05 14:30:00</td>
+                        <td>155 MB</td>
+                        <td>手动备份</td>
+                        <td>完成</td>
+                        <td>
+                            <button class="btn btn-sm">恢复</button>
+                            <button class="btn btn-sm">下载</button>
+                            <button class="btn btn-sm btn-danger">删除</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 日志管理 -->
+        <div class="panel" id="logs-panel" style="margin-top: 20px;">
+            <div class="panel-header">
+                <h3 class="panel-title">日志管理</h3>
+                <div>
+                    <select id="log-type" class="form-select" style="margin-right: 10px;">
+                        <option value="error">错误日志</option>
+                        <option value="access">访问日志</option>
+                        <option value="system">系统日志</option>
+                        <option value="database">数据库日志</option>
+                    </select>
+                    <button class="btn">刷新日志</button>
+                </div>
+            </div>
+            <div class="logs-container" id="logs-container">
+                <!-- 日志内容将动态加载 -->
+                [2025-11-06 10:15:32] <span class="log-level info">INFO</span> - 系统启动成功
+                [2025-11-06 10:16:45] <span class="log-level info">INFO</span> - 用户 admin 登录成功
+                [2025-11-06 10:18:22] <span class="log-level warning">WARNING</span> - 数据库连接超时，尝试重连
+                [2025-11-06 10:18:23] <span class="log-level info">INFO</span> - 数据库重连成功
+                [2025-11-06 10:20:15] <span class="log-level error">ERROR</span> - 文件上传失败: 权限不足
+            </div>
+        </div>
+
+        <!-- 系统设置 -->
+        <div class="panel" id="settings-panel" style="margin-top: 20px;">
+            <div class="panel-header">
+                <h3 class="panel-title">系统设置</h3>
+                <button class="btn">保存设置</button>
+            </div>
+            <form>
+                <div class="form-group">
+                    <label class="form-label">会话超时时间（分钟）</label>
+                    <input type="number" class="form-input" value="30" min="5" max="120">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">自动备份频率</label>
+                    <select class="form-select">
+                        <option value="daily">每天</option>
+                        <option value="weekly">每周</option>
+                        <option value="monthly">每月</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">最大上传文件大小（MB）</label>
+                    <input type="number" class="form-input" value="50" min="1" max="1024">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">默认主题</label>
+                    <select class="form-select">
+                        <option value="light">浅色主题</option>
+                        <option value="dark">深色主题</option>
+                        <option value="auto">自动（跟随系统）</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">安全设置</label>
+                    <div>
+                        <label><input type="checkbox" checked> 启用防盗链</label><br>
+                        <label><input type="checkbox" checked> 启用会话验证</label><br>
+                        <label><input type="checkbox" checked> 启用XSS防护</label>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- 用户管理 -->
+        <div class="panel" id="users-panel" style="margin-top: 20px;">
+            <div class="panel-header">
+                <h3 class="panel-title">用户管理</h3>
+                <button class="btn">
+                    <i class="fas fa-user-plus"></i> 添加用户
+                </button>
+            </div>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>用户名</th>
+                        <th>角色</th>
+                        <th>创建时间</th>
+                        <th>最后登录</th>
+                        <th>状态</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1</td>
+                        <td>admin</td>
+                        <td>超级管理员</td>
+                        <td>2025-10-01</td>
+                        <td>2025-11-06 10:16:45</td>
+                        <td>活跃</td>
+                        <td>
+                            <button class="btn btn-sm">编辑</button>
+                            <button class="btn btn-sm btn-danger">删除</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>2</td>
+                        <td>test_user</td>
+                        <td>测试用户</td>
+                        <td>2025-10-15</td>
+                        <td>2025-11-05 16:30:22</td>
+                        <td>活跃</td>
+                        <td>
+                            <button class="btn btn-sm">编辑</button>
+                            <button class="btn btn-sm btn-danger">删除</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-links">
+                <div class="footer-column">
+                    <h3>关于我们</h3>
+                    <ul class="footer-list">
+                        <li><a href="#"><i class="fas fa-info-circle"></i> 系统介绍</a></li>
+                        <li><a href="#"><i class="fas fa-users"></i> 开发团队</a></li>
+                        <li><a href="#"><i class="fas fa-envelope"></i> 联系我们</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h3>产品服务</h3>
+                    <ul class="footer-list">
+                        <li><a href="#"><i class="fas fa-cogs"></i> 系统管理</a></li>
+                        <li><a href="#"><i class="fas fa-database"></i> 数据服务</a></li>
+                        <li><a href="#"><i class="fas fa-shield-alt"></i> 安全保障</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h3>帮助中心</h3>
+                    <ul class="footer-list">
+                        <li><a href="#"><i class="fas fa-book"></i> 使用文档</a></li>
+                        <li><a href="#"><i class="fas fa-question-circle"></i> 常见问题</a></li>
+                        <li><a href="#"><i class="fas fa-headset"></i> 技术支持</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h3>快速链接</h3>
+                    <ul class="footer-list">
+                        <li><a href="index.html"><i class="fas fa-home"></i> 返回首页</a></li>
+                        <li><a href="admin.html"><i class="fas fa-tachometer-alt"></i> 仪表盘</a></li>
+                        <li><a href="#"><i class="fas fa-cog"></i> 系统设置</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <div class="social-links">
+                    <a href="#" title="GitHub"><i class="fab fa-github"></i></a>
+                    <a href="#" title="Twitter"><i class="fab fa-twitter"></i></a>
+                    <a href="#" title="LinkedIn"><i class="fab fa-linkedin"></i></a>
+                </div>
+                <p class="copyright">
+                    © 2025 MTSCOS AI 项目管理系统. 保留所有权利.
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- 模态框 -->
+    <div class="modal" id="confirm-modal">
+        <div class="modal-content">
+            <h3 id="modal-title">确认操作</h3>
+            <p id="modal-message">您确定要执行此操作吗？</p>
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button class="btn btn-secondary" id="modal-cancel">取消</button>
+                <button class="btn btn-primary" id="modal-confirm">确认</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 引入脚本 -->
+    <script defer src="assets/js/auth-scripts.js"></script>
+    <script defer src="assets/js/vikey-detection.js"></script>
+    
+    <!-- 安全机制模块 -->
+    <script defer src="assets/js/security-lock.js"></script>
+    <script defer src="assets/js/auth-state-manager.js"></script>
+    <script defer src="assets/js/core/ai-integration.js"></script>
+    <script defer src="assets/js/core/user-status-manager.js"></script>
+    
+    <!-- 安全管理器 -->
+    <script defer src="assets/js/security-manager.js"></script>
+    
+    <!-- 自动主题和增强时间显示 -->
+    <script defer src="assets/js/theme-manager.js"></script>
+    <script defer src="assets/js/time-utils.js"></script>
+    
+    <!-- 系统锁定管理脚本 -->
+    <script defer src="assets/js/admin-scripts.js"></script>
+
+<!-- 安全锁定系统 -->
+<script>
+    // 初始化安全锁定系统
+    if (typeof SecurityLock !== 'undefined') {
+        window.securityLock = new SecurityLock();
+        console.log('安全锁定系统已初始化');
+    }
+</script>
+</body>
+</html>

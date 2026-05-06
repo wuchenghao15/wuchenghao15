@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 使用sys.meta_path拦截模块导入的启动脚本，用于修复MODEL_PATH KeyError问题
-"""
 import sys
 import os
 import types
@@ -18,28 +17,28 @@ class LearningModuleInterceptor:
             print(f"[拦截启动] 拦截到模块导入: {fullname}")
             return self
         return None
-    
+
     def create_module(self, spec):
         # 创建一个假的learning模块
         fake_learning = types.ModuleType('app.ai.learning')
-        
+
         # 添加必要的类和方法，避免ImportError
         class FakeLearningAI:
             def __init__(self, config=None):
                 # 忽略config参数，避免KeyError
                 print("[拦截启动] 创建了FakeLearningAI实例")
                 self.model_path = 'models/'
-            
+
             def learn(self, data):
                 print(f"[拦截启动] FakeLearningAI.learn() 被调用，数据: {data}")
                 return {}
-        
+
         # 将FakeLearningAI添加到模块中
         fake_learning.LearningAI = FakeLearningAI
-        
+
         print("[拦截启动] 已创建假的app.ai.learning模块")
         return fake_learning
-    
+
     def exec_module(self, module):
         # 不需要执行任何代码
         pass
@@ -58,3 +57,5 @@ except Exception as e:
     print(f"[拦截启动] 服务器启动失败: {e}")
     import traceback
     traceback.print_exc()
+
+"""

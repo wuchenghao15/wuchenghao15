@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 检查应用的路由映射
-"""
 
 import os
 import sys
@@ -19,3 +18,5 @@ from app import app
 print("应用路由映射:")
 for rule in app.url_map.iter_rules():
     print(f"  {rule}")
+
+"""

@@ -8,11 +8,10 @@
 4. 自动升级必要组件依赖项
 5. 升级AI知识和AI性能
 6. 升级脑库知识量和题库
-"""
 
 import os
 import sys
-import json
+# JSON import removed - using database
 import sqlite3
 import subprocess
 import shutil
@@ -25,7 +24,7 @@ from update_knowledge_base import update_knowledge_base
 
 class AutoSystemUpgrader:
     """自动系统升级类"""
-    
+
     def __init__(self):
         """初始化"""
         self.db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "app.db")
@@ -33,11 +32,11 @@ class AutoSystemUpgrader:
         self.repair_system = AIRepairSystemExpander(self.db_path)
         self.ai_route_system = get_ai_route_system()
         self.upgrade_logs = []
-    
+
     def connect_db(self):
         """连接数据库"""
         return sqlite3.connect(self.db_path)
-    
+
     def log(self, message, level="INFO"):
         """记录日志"""
         log_entry = {
@@ -47,38 +46,37 @@ class AutoSystemUpgrader:
         }
         self.upgrade_logs.append(log_entry)
         print(f"[{level}] {message}")
-    
+
     def detect_and_fix_issues(self):
         """检测和修复系统问题"""
         self.log("=== 开始检测和修复系统问题 ===")
-        
+
         # 1. 检测系统问题
         self.log("1. 检测系统问题")
         detect_result = self.repair_ai.detect_issues({})
-        
+
         fixed_issues = []
-        
+
         # 2. 修复每个问题
         self.log(f"2. 发现 {len(detect_result['issues'])} 个问题，开始修复")
         for issue in detect_result['issues']:
             self.log(f"   修复问题: {issue['title']} ({issue['severity']})")
-            
+
             # 分析问题
             analyze_result = self.repair_ai.analyze_issue({
                 "issue_type": issue["issue_type"],
                 "issue_description": issue["description"]
             })
-            
+
             if "recommended_solution" in analyze_result:
                 solution = analyze_result["recommended_solution"]
                 self.log(f"   推荐解决方案: {solution['title']}")
-                
+
                 # 执行修复
                 fix_result = self.repair_ai.execute_repair({
                     "issue": issue,
                     "solution": solution
                 })
-                
                 if fix_result["success"]:
                     self.log(f"   修复成功: {fix_result['message']}")
                     issue["fixed"] = True
@@ -90,29 +88,27 @@ class AutoSystemUpgrader:
                     issue["fix_error"] = fix_result["message"]
             else:
                 self.log("   未找到推荐解决方案", "WARNING")
-                issue["fixed"] = False
                 issue["fix_error"] = "未找到推荐解决方案"
-            
-            fixed_issues.append(issue)
-            
+
+
             # 上报修复过程到数据库
             self.report_repair_process(issue)
-        
+
         self.log(f"3. 修复完成，共修复 {sum(1 for i in fixed_issues if i['fixed'])} 个问题")
         return fixed_issues
-    
+
     def report_repair_process(self, issue):
         """上报修复过程到数据库"""
         try:
             conn = self.connect_db()
             cursor = conn.cursor()
-            
+
             # 生成修复记录ID
             repair_log_id = f"repair_{uuid.uuid4().hex[:8]}"
-            
+
             # 插入修复记录
             cursor.execute("""
-                INSERT INTO ai_repair_logs 
+                INSERT INTO ai_repair_logs
                 (log_id, issue_id, solution_id, action, action_type, result, details, executed_by)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """, (
@@ -122,160 +118,142 @@ class AutoSystemUpgrader:
                 f"修复问题: {issue['title']}",
                 "auto_repair",
                 "success" if issue.get("fixed") else "failure",
-                json.dumps(issue),
+                str(issue),
                 "auto_repair_system"
             ))
-            
+
             conn.commit()
             conn.close()
-            
+
             self.log(f"   修复过程已上报到数据库: {repair_log_id}")
         except Exception as e:
             self.log(f"   上报修复过程失败: {e}", "ERROR")
-    
+
     def upload_json_files_to_db(self):
         """上报所有JSON文件数据到数据库"""
         self.log("=== 开始上报JSON文件数据到数据库 ===")
-        
+
         # 查找所有JSON文件
         json_files = []
         for root, dirs, files in os.walk(os.path.dirname(os.path.abspath(__file__))):
             for file in files:
                 if file.endswith(".json"):
                     json_files.append(os.path.join(root, file))
-        
+
         self.log(f"找到 {len(json_files)} 个JSON文件")
-        
+
         conn = self.connect_db()
         cursor = conn.cursor()
-        
+
         # 创建JSON文件数据表（如果不存在）
-        cursor.execute("""
             CREATE TABLE IF NOT EXISTS json_files (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
                 file_path TEXT UNIQUE NOT NULL,
                 file_name TEXT NOT NULL,
                 content TEXT NOT NULL,
-                uploaded_at TEXT DEFAULT CURRENT_TIMESTAMP,
                 file_size INTEGER,
                 file_hash TEXT
             )
         """)
-        
+
         uploaded_count = 0
         for json_file in json_files:
             try:
                 # 读取JSON文件
                 with open(json_file, 'r', encoding='utf-8') as f:
                     content = f.read()
-                    json.loads(content)  # 验证JSON格式
-                
+
                 file_name = os.path.basename(json_file)
                 file_size = os.path.getsize(json_file)
-                
+
                 # 计算文件哈希
                 import hashlib
                 with open(json_file, 'rb') as f:
                     file_hash = hashlib.sha256(f.read()).hexdigest()
-                
+
                 # 插入或更新JSON文件数据
                 cursor.execute("""
-                    INSERT OR REPLACE INTO json_files 
+                    INSERT OR REPLACE INTO json_files
                     (file_path, file_name, content, file_size, file_hash)
                     VALUES (?, ?, ?, ?, ?)
                 """, (
                     json_file,
                     file_name,
-                    content,
                     file_size,
                     file_hash
                 ))
-                
+
                 uploaded_count += 1
-                self.log(f"   已上传: {json_file}")
             except json.JSONDecodeError:
                 self.log(f"   跳过无效JSON文件: {json_file}", "WARNING")
             except Exception as e:
                 self.log(f"   上传失败: {json_file}, 错误: {e}", "ERROR")
-        
+
         conn.commit()
-        conn.close()
-        
+
         self.log(f"JSON文件上传完成，共上传 {uploaded_count} 个文件")
         return uploaded_count
-    
+
     def upgrade_dependencies(self):
         """升级必要组件依赖项"""
         self.log("=== 开始升级必要组件依赖项 ===")
-        
+
         # 检查requirements.txt文件
-        requirements_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "requirements.txt")
         if not os.path.exists(requirements_file):
-            self.log("未找到requirements.txt文件", "WARNING")
             return False
-        
+
         try:
             # 升级pip
             self.log("1. 升级pip")
-            result = subprocess.run([sys.executable, "-m", "pip", "install", "--upgrade", "pip"], 
-                                  capture_output=True, text=True)
+            result = subprocess.run([sys.executable, "-m", "pip", "install", "--upgrade", "pip"],
             if result.returncode == 0:
                 self.log("   pip升级成功")
             else:
                 self.log(f"   pip升级失败: {result.stderr}", "ERROR")
-            
             # 升级所有依赖项
             self.log("2. 升级所有依赖项")
-            result = subprocess.run([sys.executable, "-m", "pip", "install", "--upgrade", "-r", requirements_file], 
+            result = subprocess.run([sys.executable, "-m", "pip", "install", "--upgrade", "-r", requirements_file],
                                   capture_output=True, text=True)
             if result.returncode == 0:
                 self.log("   依赖项升级成功")
                 return True
             else:
                 self.log(f"   依赖项升级失败: {result.stderr}", "ERROR")
-                return False
         except Exception as e:
             self.log(f"升级依赖项时发生错误: {e}", "ERROR")
             return False
-    
+
     def upgrade_ai_knowledge(self):
         """升级AI知识和AI性能"""
         self.log("=== 开始升级AI知识和AI性能 ===")
-        
+
         try:
-            # 调用AI知识更新模块
             self.log("1. 更新AI知识库")
-            update_result = update_knowledge_base()
             if update_result:
                 self.log("   AI知识库更新成功")
-            else:
                 self.log("   AI知识库更新失败", "ERROR")
-            
-            # 优化AI性能
             self.log("2. 优化AI性能")
             # 这里可以添加AI性能优化的代码
-            # 例如：清理缓存、优化模型、调整参数等
-            
+
             # 重启AI路由系统
             self.log("3. 重启AI路由系统")
             global _ai_route_system_instance
             if _ai_route_system_instance:
                 _ai_route_system_instance.stop()
                 _ai_route_system_instance = None
-            
+
             # 重新获取实例，触发重启
             get_ai_route_system()
             self.log("   AI路由系统已重启")
-            
+
             return True
         except Exception as e:
             self.log(f"升级AI知识和性能时发生错误: {e}", "ERROR")
             return False
-    
+
     def upgrade_knowledge_base_and_question_bank(self):
         """升级脑库知识量和题库"""
         self.log("=== 开始升级脑库知识量和题库 ===")
-        
+
         try:
             # 升级脑库知识量
             self.log("1. 升级脑库知识量")
@@ -283,53 +261,41 @@ class AutoSystemUpgrader:
             self.log("   开始更新AI知识库...")
             update_result = update_knowledge_base()
             if update_result:
-                self.log("   AI知识库更新成功")
             else:
                 self.log("   AI知识库更新失败", "ERROR")
-            
             # 升级题库
             self.log("2. 升级题库")
             # 创建题目生成器实例并扩充题库
-            self.log("   开始扩充题库...")
             generator = QuestionGenerator()
-            expand_result = generator.expand_question_bank(target_count=150)  # 扩充到150道题目
             if expand_result > 0:
                 self.log(f"   成功扩充到 {expand_result} 道题目")
             else:
                 self.log("   题库扩充失败", "ERROR")
-            
             return True
         except Exception as e:
             self.log(f"升级脑库知识量和题库时发生错误: {e}", "ERROR")
             return False
-    
+
     def backup_system(self):
         """备份系统"""
         self.log("=== 开始备份系统 ===")
-        
+
         try:
-            # 创建备份目录
             backup_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "backups")
-            os.makedirs(backup_dir, exist_ok=True)
-            
-            # 生成备份文件名
+
             backup_name = f"system_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
             backup_path = os.path.join(backup_dir, backup_name)
-            
-            # 备份数据库
             db_backup_path = f"{backup_path}_app.db"
             shutil.copy2(self.db_path, db_backup_path)
             self.log(f"   数据库备份成功: {db_backup_path}")
-            
+
             # 备份关键目录
             key_dirs = ["templates", "static", "utils"]
-            for dir_name in key_dirs:
                 dir_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), dir_name)
                 if os.path.exists(dir_path):
-                    backup_dir_path = f"{backup_path}_{dir_name}"
                     shutil.copytree(dir_path, backup_dir_path)
                     self.log(f"   目录备份成功: {dir_path} -> {backup_dir_path}")
-            
+
             # 备份关键文件
             key_files = ["app.py", "ai_employee_system.py", "requirements.txt"]
             for file_name in key_files:
@@ -338,17 +304,17 @@ class AutoSystemUpgrader:
                     backup_file_path = f"{backup_path}_{file_name}"
                     shutil.copy2(file_path, backup_file_path)
                     self.log(f"   文件备份成功: {file_path} -> {backup_file_path}")
-            
+
             self.log("系统备份完成")
             return True
         except Exception as e:
             self.log(f"系统备份失败: {e}", "ERROR")
             return False
-    
+
     def generate_upgrade_report(self):
         """生成升级报告"""
         self.log("=== 生成升级报告 ===")
-        
+
         report = {
             "report_id": f"upgrade_{uuid.uuid4().hex[:8]}",
             "generated_at": datetime.now().isoformat(),
@@ -359,21 +325,17 @@ class AutoSystemUpgrader:
                 "warning_logs": sum(1 for log in self.upgrade_logs if log["level"] == "WARNING"),
                 "error_logs": sum(1 for log in self.upgrade_logs if log["level"] == "ERROR")
             }
-        }
-        
         # 保存报告到文件
         report_file = f"upgrade_report_{datetime.now().strftime('%Y%m%d%H%M%S')}.json"
         report_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), report_file)
         with open(report_path, "w", encoding="utf-8") as f:
             json.dump(report, f, ensure_ascii=False, indent=2)
-        
-        self.log(f"升级报告已保存到: {report_path}")
-        
+
+
         # 保存报告到数据库
         try:
-            conn = self.connect_db()
             cursor = conn.cursor()
-            
+
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS system_upgrade_reports (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -381,52 +343,40 @@ class AutoSystemUpgrader:
                     generated_at TEXT NOT NULL,
                     report_content TEXT NOT NULL,
                     created_at TEXT DEFAULT CURRENT_TIMESTAMP
-                )
             """)
-            
+
             cursor.execute("""
-                INSERT INTO system_upgrade_reports 
+                INSERT INTO system_upgrade_reports
                 (report_id, generated_at, report_content)
                 VALUES (?, ?, ?)
-            """, (
                 report["report_id"],
                 report["generated_at"],
-                json.dumps(report)
             ))
-            
+
             conn.commit()
-            conn.close()
             self.log("升级报告已保存到数据库")
         except Exception as e:
             self.log(f"保存升级报告到数据库失败: {e}", "ERROR")
-        
+
         return report
-    
+
     def run_full_upgrade(self):
         """运行完整的系统升级"""
-        self.log("=== 开始完整系统升级 ===")
-        
         # 1. 备份系统
         self.backup_system()
-        
+
         # 2. 检测和修复系统问题
         fixed_issues = self.detect_and_fix_issues()
-        
         # 3. 上报JSON文件数据到数据库
-        uploaded_json_files = self.upload_json_files_to_db()
-        
         # 4. 升级必要组件依赖项
         self.upgrade_dependencies()
-        
+
         # 5. 升级AI知识和AI性能
-        self.upgrade_ai_knowledge()
-        
+
         # 6. 升级脑库知识量和题库
         self.upgrade_knowledge_base_and_question_bank()
-        
         # 7. 生成升级报告
         report = self.generate_upgrade_report()
-        
         self.log("=== 系统升级完成 ===")
         return {
             "success": True,
@@ -434,11 +384,10 @@ class AutoSystemUpgrader:
             "fixed_issues": fixed_issues,
             "uploaded_json_files": uploaded_json_files
         }
-
 # 主函数
 if __name__ == "__main__":
     upgrader = AutoSystemUpgrader()
-    
+
     try:
         result = upgrader.run_full_upgrade()
         print("\n=== 系统升级结果 ===")
@@ -451,7 +400,6 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         print("\n升级过程被用户中断")
         sys.exit(1)
-    except Exception as e:
         print(f"\n升级过程中发生错误: {e}")
         import traceback
         traceback.print_exc()

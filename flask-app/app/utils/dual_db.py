@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 双数据库管理模块，支持主数据库和备份数据库的同步和备份
-"""
 
 import threading
 import time
@@ -11,7 +10,7 @@ from app.utils.logging import logger
 
 class DatabaseManagerWithConfig:
     """带配置的数据库管理器，支持自定义配置"""
-    
+
     def __init__(self, db_type, db_path=None, db_host=None, db_port=None, db_user=None, db_password=None, db_name=None):
         """初始化数据库管理器"""
         # 初始化配置
@@ -22,7 +21,7 @@ class DatabaseManagerWithConfig:
         self.db_user = db_user
         self.db_password = db_password
         self.db_name = db_name
-        
+
         # 尝试导入数据库驱动
         try:
             import mysql.connector
@@ -30,14 +29,12 @@ class DatabaseManagerWithConfig:
             self.MYSQL_AVAILABLE = True
         except ImportError:
             self.MYSQL_AVAILABLE = False
-        
+
         try:
-            import psycopg2
             from psycopg2 import pool
             self.POSTGRESQL_AVAILABLE = True
         except ImportError:
             self.POSTGRESQL_AVAILABLE = False
-        
         if self.db_type == 'sqlite':
             # 对于SQLite，使用线程本地存储管理连接
             self._thread_local = threading.local()
@@ -47,9 +44,9 @@ class DatabaseManagerWithConfig:
             self._max_connections = 10
             self._connection_lock = threading.Lock()
             self._init_connection_pool()
-        
+
         logger.info(f"数据库管理器初始化完成，类型: {self.db_type}")
-    
+
     def _init_connection_pool(self):
         """初始化连接池"""
         with self._connection_lock:
@@ -58,20 +55,17 @@ class DatabaseManagerWithConfig:
                 if conn:
                     self._connection_pool.append(conn)
             logger.info(f"数据库连接池初始化完成，创建了 {len(self._connection_pool)} 个连接")
-    
+
     def _create_connection(self):
         """创建数据库连接"""
         try:
-            if self.db_type == 'sqlite':
                 import sqlite3
                 conn = sqlite3.connect(self.db_path, timeout=5.0)
                 conn.row_factory = sqlite3.Row  # 返回字典形式的结果
-                return conn
             elif self.db_type == 'mysql' and self.MYSQL_AVAILABLE:
                 import mysql.connector
                 conn = mysql.connector.connect(
                     host=self.db_host,
-                    port=self.db_port,
                     user=self.db_user,
                     password=self.db_password,
                     database=self.db_name,
@@ -83,47 +77,31 @@ class DatabaseManagerWithConfig:
                 conn = psycopg2.connect(
                     host=self.db_host,
                     port=self.db_port,
-                    user=self.db_user,
-                    password=self.db_password,
                     dbname=self.db_name
                 )
                 # 设置自动提交
                 conn.autocommit = True
-                return conn
             else:
-                logger.error(f"不支持的数据库类型: {self.db_type} 或驱动不可用")
                 return None
-        except Exception as e:
             logger.error(f"创建数据库连接失败: {str(e)}")
-            return None
-    
-    def get_connection(self):
         """获取数据库连接"""
         if self.db_type == 'sqlite':
-            # 对于SQLite，每个线程使用自己的连接
             if not hasattr(self._thread_local, 'connection') or self._thread_local.connection is None:
                 # 创建新连接
                 conn = self._create_connection()
                 self._thread_local.connection = conn
-            return self._thread_local.connection
         else:
             # 对于其他数据库，从连接池获取连接
             with self._connection_lock:
                 if self._connection_pool:
                     return self._connection_pool.pop()
-                # 如果连接池为空，创建新连接
-                return self._create_connection()
-    
-    def return_connection(self, conn):
+
         """将连接返回连接池或处理SQLite连接"""
         if self.db_type == 'sqlite':
             # 对于SQLite，每个线程使用自己的连接，不返回连接池
-            # 只需确保连接有效
             try:
-                if conn:
                     # 重置连接状态
                     conn.rollback()
-                return True
             except Exception as e:
                 logger.error(f"重置SQLite连接失败: {str(e)}")
                 if conn:
@@ -134,56 +112,39 @@ class DatabaseManagerWithConfig:
         else:
             # 对于其他数据库，将连接返回连接池
             with self._connection_lock:
-                if conn and len(self._connection_pool) < self._max_connections:
                     try:
-                        # 重置连接状态
                         conn.rollback()
                         self._connection_pool.append(conn)
                         return True
                     except Exception as e:
-                        logger.error(f"重置数据库连接失败: {str(e)}")
-                        conn.close()
                         return False
                 elif conn:
                     conn.close()
                 return False
-    
     def execute(self, query, params=None):
         """执行SQL查询，自动管理连接"""
         conn = self.get_connection()
-        if not conn:
             return None, False
-        
+
         try:
-            cursor = conn.cursor()
             if params:
                 cursor.execute(query, params)
-            else:
                 cursor.execute(query)
-            
+
             # 所有数据库都需要手动提交
             if self.db_type != 'postgresql':  # PostgreSQL已经设置了autocommit=True
                 conn.commit()
-            
+
             return cursor, True
-        except Exception as e:
             logger.error(f"执行SQL查询失败: {query} | 错误: {str(e)}")
-            # 回滚事务
-            if self.db_type != 'sqlite':
-                conn.rollback()
             return None, False
         finally:
-            self.return_connection(conn)
-    
+
     def fetch_one(self, query, params=None):
         """执行查询，返回单行结果"""
-        cursor, success = self.execute(query, params)
         if success and cursor:
-            if self.db_type == 'mysql':
-                result = cursor.fetchone()
                 if result:
                     # 将MySQL结果转换为字典
-                    columns = [desc[0] for desc in cursor.description]
                     return dict(zip(columns, result))
                 return None
             elif self.db_type == 'postgresql':
@@ -195,8 +156,7 @@ class DatabaseManagerWithConfig:
                 return None
             return cursor.fetchone()
         return None
-    
-    def fetch_all(self, query, params=None):
+
         """执行查询，返回所有结果"""
         cursor, success = self.execute(query, params)
         if success and cursor:
@@ -204,7 +164,6 @@ class DatabaseManagerWithConfig:
                 results = cursor.fetchall()
                 columns = [desc[0] for desc in cursor.description]
                 return [dict(zip(columns, row)) for row in results]
-            elif self.db_type == 'postgresql':
                 results = cursor.fetchall()
                 columns = [desc[0] for desc in cursor.description]
                 return [dict(zip(columns, row)) for row in results]
@@ -212,65 +171,47 @@ class DatabaseManagerWithConfig:
         return []
 
 class DualDatabaseManager:
-    """双数据库管理器，支持主数据库和备份数据库的同步和备份"""
-    
-    _instance = None
+
     _lock = threading.Lock()
-    
+
     def __new__(cls):
         """单例模式"""
         if not cls._instance:
             with cls._lock:
-                if not cls._instance:
                     cls._instance = super().__new__(cls)
-                    cls._instance._initialize()
         return cls._instance
-    
+
     def _initialize(self):
         """初始化双数据库连接"""
         # 初始化主数据库管理器（使用默认配置）
         self.primary_db = DatabaseManager()
         logger.info("主数据库初始化完成")
-        
-        # 初始化备份数据库管理器（使用不同的SQLite文件）
+
         self.backup_db = DatabaseManagerWithConfig(
-            db_type='sqlite',
             db_path='instance/mtscos_backup.db'
         )
-        logger.info("备份数据库初始化完成")
-        
-        # 启动自动同步线程
+
         self.sync_interval = 3600  # 默认1小时
         self.sync_thread = threading.Thread(target=self._auto_sync, daemon=True)
         self.sync_thread.start()
-        logger.info(f"自动同步线程启动，同步间隔: {self.sync_interval}秒")
-        
-        # 初始化表结构
+
         self._init_tables()
-    
     def _init_tables(self):
         """初始化表结构，确保主数据库和备份数据库的表结构一致"""
         # 获取所有表名
         tables = self._get_all_tables()
-        
         for table in tables:
             try:
-                logger.info(f"初始化表结构: {table}")
                 self._copy_table_structure(table)
-            except Exception as e:
                 logger.error(f"初始化表 {table} 结构失败: {str(e)}")
-    
     def _copy_table_structure(self, table):
-        """复制表结构从主数据库到备份数据库"""
         if self.primary_db.db_type == 'sqlite':
             # 获取表结构
-            query = f"PRAGMA table_info({table})"
-            columns = self.primary_db.fetch_all(query)
-            
+
             if not columns:
                 logger.warning(f"无法获取表 {table} 的结构")
                 return
-            
+
             # 构建创建表语句
             columns_sql = []
             for col in columns:
@@ -279,20 +220,18 @@ class DualDatabaseManager:
                 not_null = 'NOT NULL' if col['notnull'] else ''
                 default = f"DEFAULT {col['dflt_value']}" if col['dflt_value'] else ''
                 primary_key = 'PRIMARY KEY' if col['pk'] else ''
-                
-                col_def = f"{col_name} {col_type} {not_null} {default} {primary_key}"
+
                 columns_sql.append(col_def)
-            
+
             columns_sql = ', '.join(columns_sql)
             create_query = f"CREATE TABLE IF NOT EXISTS {table} ({columns_sql})"
-            
+
             # 在备份数据库中创建表
             self.backup_db.execute(create_query)
             logger.info(f"表 {table} 结构创建成功")
         elif self.primary_db.db_type == 'mysql':
             # MySQL的表结构复制
             query = f"SHOW CREATE TABLE {table}"
-            result = self.primary_db.fetch_one(query)
             if result:
                 create_query = result['Create Table']
                 # 移除AUTO_INCREMENT部分，让数据库自动处理
@@ -305,11 +244,11 @@ class DualDatabaseManager:
             # PostgreSQL的表结构复制
             query = f"SELECT column_name, data_type, is_nullable, column_default FROM information_schema.columns WHERE table_name='{table}'"
             columns = self.primary_db.fetch_all(query)
-            
+
             if not columns:
                 logger.warning(f"无法获取表 {table} 的结构")
                 return
-            
+
             # 构建创建表语句
             columns_sql = []
             for col in columns:
@@ -317,42 +256,39 @@ class DualDatabaseManager:
                 col_type = col['data_type']
                 not_null = 'NOT NULL' if col['is_nullable'] == 'NO' else ''
                 default = f"DEFAULT {col['column_default']}" if col['column_default'] else ''
-                
+
                 col_def = f"{col_name} {col_type} {not_null} {default}"
                 columns_sql.append(col_def)
-            
+
             columns_sql = ', '.join(columns_sql)
             create_query = f"CREATE TABLE IF NOT EXISTS {table} ({columns_sql})"
-            
+
             # 在备份数据库中创建表
             self.backup_db.execute(create_query)
             logger.info(f"表 {table} 结构创建成功")
-    
+
     def _auto_sync(self):
         """自动同步主数据库到备份数据库"""
         while True:
             try:
-                logger.info("开始自动同步主数据库到备份数据库")
                 self.sync_from_primary()
                 logger.info("自动同步完成")
             except Exception as e:
                 logger.error(f"自动同步失败: {str(e)}")
-            
+
             # 等待下一次同步
             time.sleep(self.sync_interval)
-    
+
     def sync_from_primary(self):
         """从主数据库同步到备份数据库"""
         # 获取所有表名
         tables = self._get_all_tables()
-        
-        for table in tables:
+
             try:
-                logger.info(f"同步表: {table}")
                 self._sync_table(table)
             except Exception as e:
                 logger.error(f"同步表 {table} 失败: {str(e)}")
-    
+
     def _get_all_tables(self):
         """获取所有表名"""
         if self.primary_db.db_type == 'sqlite':
@@ -363,48 +299,33 @@ class DualDatabaseManager:
             query = "SELECT table_name FROM information_schema.tables WHERE table_schema='public'"
         else:
             return []
-        
         tables = self.primary_db.fetch_all(query)
-        
         # 处理不同数据库的结果格式
         if self.primary_db.db_type == 'sqlite':
             return [table['name'] for table in tables]
         elif self.primary_db.db_type == 'mysql':
             return [list(table.values())[0] for table in tables]
         elif self.primary_db.db_type == 'postgresql':
-            return [table['table_name'] for table in tables]
         else:
             return []
-    
-    def _sync_table(self, table):
         """同步单个表"""
-        # 获取表结构
         columns = self._get_table_columns(table)
-        if not columns:
             logger.warning(f"无法获取表 {table} 的结构")
             return
-        
+
         # 构建插入语句
         column_names = ', '.join(columns)
         placeholders = ', '.join(['?'] * len(columns))
         insert_query = f"INSERT OR REPLACE INTO {table} ({column_names}) VALUES ({placeholders})"
-        
-        # 获取主数据库中的所有数据
-        select_query = f"SELECT {column_names} FROM {table}"
         data = self.primary_db.fetch_all(select_query)
-        
-        # 同步到备份数据库
+
         for row in data:
-            # 处理不同数据库的结果格式
             if isinstance(row, dict):
                 values = tuple(row[col] for col in columns)
-            else:
                 values = row
-            
             self.backup_db.execute(insert_query, values)
-        
-        logger.info(f"表 {table} 同步完成，同步了 {len(data)} 条记录")
-    
+
+
     def _get_table_columns(self, table):
         """获取表的列名"""
         if self.primary_db.db_type == 'sqlite':
@@ -413,7 +334,6 @@ class DualDatabaseManager:
             return [col['name'] for col in columns]
         elif self.primary_db.db_type == 'mysql':
             query = f"DESCRIBE {table}"
-            columns = self.primary_db.fetch_all(query)
             return [col['Field'] for col in columns]
         elif self.primary_db.db_type == 'postgresql':
             query = f"SELECT column_name FROM information_schema.columns WHERE table_name='{table}'"
@@ -421,36 +341,30 @@ class DualDatabaseManager:
             return [col['column_name'] for col in columns]
         else:
             return []
-    
+
     def sync_to_primary(self):
         """从备份数据库同步到主数据库（用于恢复）"""
-        # 获取所有表名
         tables = self._get_all_tables()
-        
+
         for table in tables:
             try:
-                logger.info(f"从备份恢复表: {table}")
                 self._sync_table_from_backup(table)
-            except Exception as e:
                 logger.error(f"从备份恢复表 {table} 失败: {str(e)}")
-    
+
     def _sync_table_from_backup(self, table):
-        """从备份数据库同步单个表到主数据库"""
         # 获取表结构
         columns = self._get_table_columns(table)
         if not columns:
-            logger.warning(f"无法获取表 {table} 的结构")
             return
-        
+
         # 构建插入语句
         column_names = ', '.join(columns)
-        placeholders = ', '.join(['?'] * len(columns))
         insert_query = f"INSERT OR REPLACE INTO {table} ({column_names}) VALUES ({placeholders})"
-        
+
         # 获取备份数据库中的所有数据
         select_query = f"SELECT {column_names} FROM {table}"
         data = self.backup_db.fetch_all(select_query)
-        
+
         # 同步到主数据库
         for row in data:
             # 处理不同数据库的结果格式
@@ -458,39 +372,34 @@ class DualDatabaseManager:
                 values = tuple(row[col] for col in columns)
             else:
                 values = row
-            
+
             self.primary_db.execute(insert_query, values)
-        
+
         logger.info(f"表 {table} 从备份恢复完成，恢复了 {len(data)} 条记录")
-    
+
     def backup_now(self):
         """立即执行备份"""
         logger.info("开始手动执行备份")
         self.sync_from_primary()
         logger.info("手动备份完成")
-    
+
     def restore_from_backup(self):
         """从备份恢复数据"""
         logger.info("开始从备份恢复数据")
-        self.sync_to_primary()
         logger.info("从备份恢复完成")
-    
     def get_primary_db(self):
         """获取主数据库管理器"""
         return self.primary_db
-    
+
     def get_backup_db(self):
         """获取备份数据库管理器"""
         return self.backup_db
-    
     def get_sync_status(self):
         """获取同步状态"""
         return {
-            'last_sync_time': datetime.now().isoformat(),
             'sync_interval': self.sync_interval,
             'primary_db_type': self.primary_db.db_type,
             'backup_db_type': self.backup_db.db_type
         }
 
-# 创建双数据库管理器实例
 dual_db_manager = DualDatabaseManager()

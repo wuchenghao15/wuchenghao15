@@ -33,13 +33,8 @@ except Exception as e:
 
 # 检查原始表的结构
 print("\n检查原始表 questions 的结构:")
-try:
     cursor.execute('PRAGMA table_info(questions)')
     columns = cursor.fetchall()
-    for column in columns:
         print(f"- {column[1]}: {column[2]}")
-except Exception as e:
     print(f"错误: {e}")
-
 # 关闭连接
-conn.close()

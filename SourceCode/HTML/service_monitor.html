@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MTSCOS - 服务监控中心</title>
+    <!-- 引用外部资源 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- 项目内部资源 -->
+    <link rel="stylesheet" href="/SourceCode/CSS/service_monitor.css">
+    
+    <!-- 集成模块 - 按正确顺序加载 -->
+    <script src="/SourceCode/JavaScript/MyScript/timeout_monitor.js"></script>
+    <script src="/SourceCode/JavaScript/MyScript/log_handler.js"></script>
+    <script src="/SourceCode/JavaScript/MyScript/service_monitor.js"></script>
+</head>
+<body>
+    <div class="service-monitor-container">
+        <div class="dashboard-header">
+            <div class="dashboard-title">
+                <i class="fas fa-server"></i>
+                <span>MTSCOS 服务监控</span>
+            </div>
+            <div class="user-info">
+                <!-- 用户登录状态和头像菜单将由user_profile.js动态生成 -->
+                <span class="session-time">会话剩余: <span id="remaining-time">30:00</span></span>
+            </div>
+        </div>
+        
+        <div class="dashboard-content">
+            <!-- 系统状态概览 -->
+            <div class="monitor-overview">
+                <div class="status-summary">
+                    <div class="summary-card success">
+                        <div class="summary-icon">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="summary-content">
+                            <h3 id="running-services">0</h3>
+                            <p>运行中服务</p>
+                        </div>
+                    </div>
+                    <div class="summary-card warning">
+                        <div class="summary-icon">
+                            <i class="fas fa-exclamation-circle"></i>
+                        </div>
+                        <div class="summary-content">
+                            <h3 id="warning-services">0</h3>
+                            <p>警告服务</p>
+                        </div>
+                    </div>
+                    <div class="summary-card danger">
+                        <div class="summary-icon">
+                            <i class="fas fa-times-circle"></i>
+                        </div>
+                        <div class="summary-content">
+                            <h3 id="stopped-services">0</h3>
+                            <p>停止服务</p>
+                        </div>
+                    </div>
+                    <div class="summary-card info">
+                        <div class="summary-icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="summary-content">
+                            <h3 id="last-check"></h3>
+                            <p>最后检查时间</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 服务列表 -->
+            <div class="services-section">
+                <div class="section-header">
+                    <h2>服务状态列表</h2>
+                    <div class="header-actions">
+                        <button id="refresh-services" class="action-btn primary">
+                            <i class="fas fa-sync-alt"></i>
+                            刷新状态
+                        </button>
+                        <button id="generate-report" class="action-btn secondary">
+                            <i class="fas fa-file-alt"></i>
+                            生成报告
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="services-table-container">
+                    <table class="services-table">
+                        <thead>
+                            <tr>
+                                <th>服务名称</th>
+                                <th>服务ID</th>
+                                <th>状态</th>
+                                <th>PID</th>
+                                <th>启动时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="services-list">
+                            <!-- 服务列表将通过JavaScript动态生成 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 监控日志 -->
+            <div class="logs-section">
+                <div class="section-header">
+                    <h2>监控日志</h2>
+                    <div class="header-actions">
+                        <div class="log-filter">
+                            <select id="log-level-filter">
+                                <option value="all">全部日志</option>
+                                <option value="error">错误</option>
+                                <option value="warning">警告</option>
+                                <option value="info">信息</option>
+                            </select>
+                        </div>
+                        <button id="clear-logs" class="action-btn secondary">
+                            <i class="fas fa-trash-alt"></i>
+                            清空日志
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="logs-container">
+                    <div id="monitor-logs" class="logs-content">
+                        <!-- 日志内容将通过JavaScript动态生成 -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- 系统资源监控 -->
+            <div class="resources-section">
+                <div class="section-header">
+                    <h2>系统资源监控</h2>
+                </div>
+                
+                <div class="charts-grid">
+                    <div class="chart-container">
+                        <canvas id="cpu-chart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="memory-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 服务操作模态框 -->
+    <div id="service-action-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">服务操作</h3>
+                <button id="close-modal" class="close-btn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="modal-message">正在执行操作，请稍候...</div>
+            </div>
+            <div class="modal-footer">
+                <button id="modal-confirm" class="btn-primary">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 超时提示模态框 -->
+    <div id="timeout-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-icon warning">
+                <i class="fas fa-clock"></i>
+            </div>
+            <h3>登录超时</h3>
+            <p>您的登录已超时，请重新登录系统。</p>
+            <button id="login-again" class="btn-primary">重新登录</button>
+        </div>
+    </div>
+
+    <!-- 会话即将超时警告模态框 (隐藏状态) -->
+    <div id="timeout-warning-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-icon warning">
+                <i class="fas fa-clock"></i>
+            </div>
+            <h3>会话即将超时</h3>
+            <p>您的会话将在 <span id="timeout-countdown">5:00</span> 分钟后超时，请点击继续使用以保持登录状态。</p>
+            <div class="modal-actions">
+                <button id="continue-session" class="btn-primary">继续使用</button>
+                <button id="end-session" class="btn-secondary">结束会话</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 日志详情模态框 (隐藏状态) -->
+    <div id="log-detail-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>日志详情</h3>
+                <button class="modal-close"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="detail-grid">
+                    <!-- 日志详情内容将由JavaScript动态填充 -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary modal-close">关闭</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="/Web/Pages/MyScript/service_monitor.js"></script>
+</body>
+</html>

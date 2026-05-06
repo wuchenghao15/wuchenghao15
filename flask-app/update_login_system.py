@@ -19,7 +19,6 @@ except Exception as e:
 
 # 2. 创建操作记录表
 print("\n创建操作记录表...")
-try:
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS user_operations (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -34,13 +33,10 @@ try:
     )
     ''')
     conn.commit()
-    print("操作记录表创建成功")
 except Exception as e:
     print(f"创建操作记录表时出错: {e}")
-
 # 3. 检查修改后的用户表结构
 print("\n修改后的用户表结构:")
-try:
     cursor.execute('PRAGMA table_info(users)')
     columns = cursor.fetchall()
     for column in columns:
@@ -48,9 +44,7 @@ try:
 except Exception as e:
     print(f"错误: {e}")
 
-# 4. 检查操作记录表结构
 print("\n操作记录表结构:")
-try:
     cursor.execute('PRAGMA table_info(user_operations)')
     columns = cursor.fetchall()
     for column in columns:
@@ -58,5 +52,3 @@ try:
 except Exception as e:
     print(f"错误: {e}")
 
-# 关闭连接
-conn.close()

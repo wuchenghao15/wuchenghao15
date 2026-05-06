@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 简单启动服务器，只运行基本的Flask应用，不依赖AI组件
-"""
 
 import sys
 import os
@@ -34,21 +33,18 @@ def health():
 @app.route('/')
 def root():
     return jsonify({
-        'status': 'ok',
         'message': 'Welcome to MTSCOS AI Server',
-        'version': '1.0.0',
         'features': ['auto-login', 'ai-route-optimization', 'fragmented-cache']
     }), 200
 
 # 启动服务器
-if __name__ == '__main__':
     host = '0.0.0.0'
     port = 8888
     debug = False
-    
+
     logger.info(f"Starting simple Flask server on http://{host}:{port}")
     logger.info(f"Debug mode: {debug}")
-    
+
     try:
         app.run(host=host, port=port, debug=debug, use_reloader=False)
         logger.info("Server started successfully!")
@@ -57,3 +53,5 @@ if __name__ == '__main__':
         import traceback
         traceback.print_exc()
         sys.exit(1)
+
+"""

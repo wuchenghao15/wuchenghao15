@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from datetime import datetime
 
 # 读取当前版本号
@@ -28,14 +29,13 @@ existing = cursor.fetchone()
 if existing:
     # 更新现有配置
     cursor.execute('''
-        UPDATE system_config 
+        UPDATE system_config
         SET config_value = ?, updated_at = ?
         WHERE config_key = "system_version"
     ''', (next_version, current_time))
 else:
     # 创建新配置
-    cursor.execute('''
-        INSERT INTO system_config 
+        INSERT INTO system_config
         (config_key, config_value, config_type, description, is_active, created_at, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?)
     ''', ("system_version", next_version, "string", "系统当前版本号", 1, current_time, current_time))

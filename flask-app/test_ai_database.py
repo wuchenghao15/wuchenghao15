@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 测试 AI 功能是否能够正确使用数据库存储
-"""
 
 import sys
 import os
@@ -16,15 +15,15 @@ from app.utils.logging import logger
 def test_teacher_ai_database():
     """测试老师 AI 是否能够正确使用数据库存储"""
     print("\n=== 测试老师 AI 功能 ===")
-    
+
     # 获取数学老师 AI
     math_teacher = teacher_ai_map.get('math')
     if not math_teacher:
         print("   无法获取数学老师 AI")
         return False
-    
+
     print(f"1. 初始化老师 AI: {math_teacher.name}")
-    
+
     # 先添加一个错题用于测试
     print("2. 添加测试错题...")
     error_question_id = error_question_manager.add_error_question(
@@ -39,13 +38,12 @@ def test_teacher_ai_database():
         knowledge_point="加法",
         difficulty_level=1
     )
-    
+
     if error_question_id > 0:
         print(f"   添加成功，错题ID: {error_question_id}")
     else:
         print("   添加错题失败")
         return False
-    
     # 测试分析错题
     print("3. 分析错题...")
     analysis_result = math_teacher.analyze_error_question(error_question_id, user_id=1)
@@ -59,7 +57,6 @@ def test_teacher_ai_database():
     else:
         print("   分析失败")
         return False
-    
     # 测试提供反馈
     print("4. 提供反馈...")
     feedback = math_teacher.provide_feedback(1, error_question_id, analysis_result)
@@ -70,7 +67,6 @@ def test_teacher_ai_database():
     else:
         print("   提供反馈失败")
         return False
-    
     # 测试生成练习题目
     print("5. 生成练习题目...")
     practice_questions = math_teacher.generate_practice_questions(
@@ -78,15 +74,12 @@ def test_teacher_ai_database():
         knowledge_points=["加法", "数学"],
         difficulty="medium",
         count=3
-    )
     if practice_questions:
         print(f"   生成成功，共 {len(practice_questions)} 道题目")
         for i, q in enumerate(practice_questions, 1):
             print(f"   题目 {i}: {q.get('content')}")
-    else:
         print("   生成练习题目失败")
         return False
-    
     # 测试跟踪学生进度
     print("6. 跟踪学生进度...")
     progress_report = math_teacher.track_student_progress(user_id=1)
@@ -98,16 +91,15 @@ def test_teacher_ai_database():
     else:
         print("   跟踪学生进度失败")
         return False
-    
     return True
 
 def main():
     """主测试函数"""
     print("开始测试 AI 功能是否能够正确使用数据库存储...")
-    
+
     # 测试老师 AI
     teacher_ai_test = test_teacher_ai_database()
-    
+
     if teacher_ai_test:
         print("\n✅ 所有 AI 功能测试通过！AI 能够正确使用数据库存储。")
     else:

@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 修复AI模块启动错误，确保应用能正常运行
-"""
 
 import sqlite3
 
@@ -29,18 +28,13 @@ CREATE TABLE IF NOT EXISTS ai_instances (
 # 创建ai_collections表
 print("创建ai_collections表...")
 cursor.execute('''
-CREATE TABLE IF NOT EXISTS ai_collections (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     collection_name TEXT UNIQUE NOT NULL,
-    description TEXT DEFAULT '',
     status TEXT DEFAULT 'active',
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
 )
-''')
 
-# 提交事务并关闭连接
 conn.commit()
-conn.close()
 
-print("修复完成！")
+
+"""

@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 Simple run script for MTSCOS AI Project
-"""
 
 import sys
 import os
@@ -24,7 +23,7 @@ if __name__ == '__main__':
     print("Starting MTSCOS AI Project server...")
     print(f"Environment: {os.environ.get('FLASK_ENV')}")
     print(f"App: {os.environ.get('FLASK_APP')}")
-    
+
     try:
         # Try running on port 8888 first
         app.run(host='127.0.0.1', port=8888, debug=True, use_reloader=False)
@@ -33,3 +32,5 @@ if __name__ == '__main__':
         print("Trying port 8080...")
         # Fallback to port 8080 if 8888 is in use
         app.run(host='127.0.0.1', port=8080, debug=True, use_reloader=False)
+
+"""

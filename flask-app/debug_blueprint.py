@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 调试蓝图注册问题
-"""
 
 import sys
 import os
@@ -17,13 +16,13 @@ print("Python路径:", sys.path)
 print("\n尝试导入集成设计蓝图模块...")
 try:
     print("✓ 成功导入app.views.integrated_design模块")
-    
+
     # 检查模块中的属性
     print("\n模块属性:")
     for attr in dir(app.views.integrated_design):
         if not attr.startswith('_'):
             print(f"  {attr}")
-    
+
     # 检查蓝图对象
     print("\n检查蓝图对象...")
     if hasattr(app.views.integrated_design, 'integrated_design_bp'):
@@ -34,8 +33,10 @@ try:
         print(f"  蓝图规则数量: {len(blueprint.deferred_functions)}")
     else:
         print("✗ 没有找到integrated_design_bp对象")
-        
+
 except Exception as e:
     print(f"✗ 导入模块失败: {str(e)}")
     import traceback
     traceback.print_exc()
+
+"""

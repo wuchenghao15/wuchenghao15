@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MTSCOS - 错误处理测试</title>
+    <link rel="stylesheet" href="../CSS/main.css">
+    <link rel="stylesheet" href="CSS/font-awesome.min.css">
+    <style>
+        .test-container {
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 30px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #4361ee;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .test-section {
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .test-section:last-child {
+            border-bottom: none;
+        }
+        h2 {
+            color: #2b2d42;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+        .test-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .test-btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .test-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        .btn-404 {
+            background-color: #6c757d;
+            color: white;
+        }
+        .btn-403 {
+            background-color: #dc3545;
+            color: white;
+        }
+        .btn-network {
+            background-color: #ffc107;
+            color: #212529;
+        }
+        .btn-resource {
+            background-color: #17a2b8;
+            color: white;
+        }
+        .btn-clear-logs {
+            background-color: #28a745;
+            color: white;
+        }
+        .btn-get-logs {
+            background-color: #17a2b8;
+            color: white;
+        }
+        .logs-container {
+            margin-top: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            max-height: 300px;
+            overflow-y: auto;
+            padding: 15px;
+        }
+        .logs-header {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #495057;
+        }
+        .log-item {
+            padding: 10px;
+            margin-bottom: 8px;
+            background: white;
+            border-radius: 6px;
+            border-left: 4px solid #4361ee;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        .log-type-404 {
+            border-left-color: #6c757d;
+        }
+        .log-type-403 {
+            border-left-color: #dc3545;
+        }
+        .log-type-network {
+            border-left-color: #ffc107;
+        }
+        .log-type-resource_error {
+            border-left-color: #17a2b8;
+        }
+        .log-time {
+            color: #6c757d;
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+        .log-message {
+            color: #212529;
+            margin-bottom: 5px;
+        }
+        .log-details {
+            color: #495057;
+            font-size: 12px;
+        }
+    </style>
+    <script src="../JavaScript/error_handler.js"></script>
+</head>
+<body>
+    <div class="test-container">
+        <h1><i class="fas fa-bug"></i> 错误处理测试工具</h1>
+        
+        <div class="test-section">
+            <h2><i class="fas fa-exclamation-triangle"></i> 错误页面测试</h2>
+            <p>点击以下按钮测试不同类型的错误页面和错误处理功能：</p>
+            <div class="test-buttons">
+                <button class="test-btn btn-404" onclick="test404()">
+                    <i class="fas fa-search"></i> 测试404错误
+                </button>
+                <button class="test-btn btn-403" onclick="test403()">
+                    <i class="fas fa-shield-alt"></i> 测试403错误
+                </button>
+                <button class="test-btn btn-network" onclick="testNetworkError()">
+                    <i class="fas fa-wifi-slash"></i> 测试网络错误
+                </button>
+                <button class="test-btn btn-resource" onclick="testResourceError()">
+                    <i class="fas fa-file-alt"></i> 测试资源加载错误
+                </button>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2><i class="fas fa-history"></i> 错误日志管理</h2>
+            <p>查看和管理本地存储的错误日志：</p>
+            <div class="test-buttons">
+                <button class="test-btn btn-get-logs" onclick="showLogs()">
+                    <i class="fas fa-list"></i> 查看错误日志
+                </button>
+                <button class="test-btn btn-clear-logs" onclick="clearLogs()">
+                    <i class="fas fa-trash-alt"></i> 清除错误日志
+                </button>
+            </div>
+            
+            <div class="logs-container" id="logsContainer">
+                <div class="logs-header">错误日志将显示在这里...</div>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2><i class="fas fa-info-circle"></i> 关于错误处理系统</h2>
+            <p>本系统实现了以下功能：</p>
+            <ul>
+                <li>自动捕获和记录404、403等HTTP错误</li>
+                <li>记录网络请求失败和资源加载错误</li>
+                <li>本地存储错误日志，便于调试和分析</li>
+                <li>为用户提供友好的错误页面和操作指引</li>
+                <li>支持全局错误监控和资源完整性检查</li>
+            </ul>
+        </div>
+    </div>
+    
+    <script>
+        // 初始化错误处理
+        document.addEventListener('DOMContentLoaded', function() {
+            if (window.errorHandler) {
+                errorHandler.initGlobalErrorHandlers();
+                console.log('错误测试页面初始化完成');
+            }
+        });
+        
+        // 测试404错误
+        function test404() {
+            window.location.href = '404.html';
+        }
+        
+        // 测试403错误
+        function test403() {
+            window.location.href = '403.html';
+        }
+        
+        // 测试网络错误
+        function testNetworkError() {
+            if (window.errorHandler) {
+                const networkError = new Error('模拟网络连接失败');
+                errorHandler.captureNetworkError(networkError);
+                alert('已记录模拟网络错误，请查看控制台和日志');
+            }
+        }
+        
+        // 测试资源加载错误
+        function testResourceError() {
+            // 创建一个指向不存在资源的图片
+            const img = new Image();
+            img.src = 'https://example.com/non_existent_image_12345.jpg';
+            img.onerror = function() {
+                if (window.errorHandler) {
+                    errorHandler.logError('resource_error', '测试资源加载失败', { 
+                        resourceType: 'img', 
+                        src: img.src 
+                    });
+                    alert('已记录资源加载错误，请查看控制台和日志');
+                }
+            };
+        }
+        
+        // 显示错误日志
+        function showLogs() {
+            const logsContainer = document.getElementById('logsContainer');
+            
+            if (window.errorHandler) {
+                const logs = errorHandler.getStoredLogs();
+                
+                if (logs.length === 0) {
+                    logsContainer.innerHTML = '<div class="logs-header">暂无错误日志</div>';
+                    return;
+                }
+                
+                logsContainer.innerHTML = `<div class="logs-header">共 ${logs.length} 条错误日志</div>`;
+                
+                // 按时间倒序显示
+                logs.reverse().forEach(log => {
+                    const logItem = document.createElement('div');
+                    logItem.className = `log-item log-type-${log.errorType}`;
+                    
+                    logItem.innerHTML = `
+                        <div class="log-time">${new Date(log.timestamp).toLocaleString('zh-CN')}</div>
+                        <div class="log-message">[${log.errorType}] ${log.errorMessage}</div>
+                        <div class="log-details">URL: ${log.url || 'N/A'}</div>
+                    `;
+                    
+                    logsContainer.appendChild(logItem);
+                });
+            } else {
+                logsContainer.innerHTML = '<div class="logs-header">错误处理模块未加载</div>';
+            }
+        }
+        
+        // 清除错误日志
+        function clearLogs() {
+            if (confirm('确定要清除所有错误日志吗？')) {
+                if (window.errorHandler) {
+                    errorHandler.clearStoredLogs();
+                    document.getElementById('logsContainer').innerHTML = '<div class="logs-header">错误日志已清除</div>';
+                }
+            }
+        }
+    </script>
+</body>
+</html>

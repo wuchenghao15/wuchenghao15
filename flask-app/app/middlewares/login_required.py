@@ -1,20 +1,17 @@
 #!/usr/bin/env python3
 """
 登录检查中间件，确保用户必须登录才能访问系统
-"""
 
 from flask import session, redirect, url_for, request
 from app.utils.logging import logger
 
 
 def login_required_middleware(app):
-    """
     登录检查中间件，确保用户（包括游客）必须登录才能使用系统
-    
+
     Args:
         app: Flask应用实例
-    """
-    
+
     # 不需要登录的路由列表
     EXCLUDED_ROUTES = [
         'auth.auto_guest_login',  # 游客登录路由
@@ -28,42 +25,39 @@ def login_required_middleware(app):
         'monitoring.health',  # 健康检查路由
         'static',  # 静态文件路由
     ]
-    
+
     @app.before_request
     def check_login():
-        """
         检查用户是否已登录
-        """
         # 获取当前请求的端点
         endpoint = request.endpoint
-        
+
         # 获取当前请求的URL路径
         path = request.path
-        
+
         # 检查是否为静态文件请求
         if endpoint == 'static':
             return None
-        
+
         # 检查是否为API请求
         if path.startswith('/api/'):
             # API请求不需要登录检查
             return None
-        
+
         # 检查是否在排除列表中
         if endpoint in EXCLUDED_ROUTES:
             return None
-        
         # 检查会话中是否有登录状态
         if not session.get('logged_in'):
             # 未登录，重定向到首页
-            logger.info(f"未登录用户尝试访问受保护路由: {endpoint}")
             return redirect(url_for('main.index'))
-        
+
         # 已登录，继续处理请求
         return None
-    
+
     return app
 
 
-# 中间件优先级，数字越小优先级越高
 login_required_priority = 5
+
+"""

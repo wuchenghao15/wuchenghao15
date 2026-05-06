@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 """
 修复 threading 导入问题
-"""
 
 import os
 import re
@@ -47,7 +46,6 @@ def fix_threading_in_file(file_path):
     except Exception as e:
         logger.error(f"❌ 修复失败: {file_path} - {str(e)}")
         return False
-
 def main():
     """主函数"""
     logger.info("=== 开始修复 threading 导入 ===")
@@ -63,7 +61,6 @@ def main():
             logger.info(f"检查文件: {file_path}")
             fix_threading_in_file(file_path)
         else:
-            logger.warning(f"文件不存在: {file_path}")
 
     logger.info("=== threading 导入修复完成 ===")
 

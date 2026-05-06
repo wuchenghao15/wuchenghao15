@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 防火墙系统API接口，提供RESTful API服务
-"""
 
 from flask import Blueprint, request, jsonify
 from app.services.firewall_system import firewall_system
@@ -12,9 +11,7 @@ firewall_api_bp = Blueprint('firewall_api', __name__, url_prefix='/api/firewall'
 
 @firewall_api_bp.route('/status', methods=['GET'])
 def get_firewall_status():
-    """
     获取防火墙系统状态
-    """
     try:
         status = firewall_system.get_status()
         return jsonify({
@@ -30,9 +27,7 @@ def get_firewall_status():
 
 @firewall_api_bp.route('/initialize', methods=['POST'])
 def initialize_firewall():
-    """
     初始化防火墙系统
-    """
     try:
         config = request.json or {}
         success = firewall_system.initialize(config)
@@ -49,9 +44,7 @@ def initialize_firewall():
 
 @firewall_api_bp.route('/shutdown', methods=['POST'])
 def shutdown_firewall():
-    """
     关闭防火墙系统
-    """
     try:
         success = firewall_system.shutdown()
         return jsonify({
@@ -62,23 +55,19 @@ def shutdown_firewall():
         logger.error(f"关闭防火墙系统失败: {str(e)}")
         return jsonify({
             "success": False,
-            "error": str(e)
         }), 500
 
-# 规则管理API
 
 @firewall_api_bp.route('/rules', methods=['GET'])
 def list_rules():
-    """
     列出防火墙规则
-    """
     try:
         filters = {}
         if 'enabled' in request.args:
             filters['enabled'] = request.args['enabled'].lower() == 'true'
         if 'action' in request.args:
             filters['action'] = request.args['action']
-        
+
         rules = firewall_system.list_rules(filters)
         return jsonify({
             "success": True,
@@ -94,9 +83,7 @@ def list_rules():
 
 @firewall_api_bp.route('/rules', methods=['POST'])
 def add_rule():
-    """
     添加防火墙规则
-    """
     try:
         rule = request.json
         if not rule:
@@ -104,7 +91,7 @@ def add_rule():
                 "success": False,
                 "error": "规则信息不能为空"
             }), 400
-        
+
         rule_id = firewall_system.add_rule(rule)
         return jsonify({
             "success": True,
@@ -120,9 +107,7 @@ def add_rule():
 
 @firewall_api_bp.route('/rules/<string:rule_id>', methods=['GET'])
 def get_rule(rule_id):
-    """
     获取防火墙规则
-    """
     try:
         rule = firewall_system.get_rule(rule_id)
         if rule:
@@ -144,9 +129,7 @@ def get_rule(rule_id):
 
 @firewall_api_bp.route('/rules/<string:rule_id>', methods=['PUT'])
 def update_rule(rule_id):
-    """
     更新防火墙规则
-    """
     try:
         updates = request.json
         if not updates:
@@ -154,7 +137,7 @@ def update_rule(rule_id):
                 "success": False,
                 "error": "更新内容不能为空"
             }), 400
-        
+
         success = firewall_system.update_rule(rule_id, updates)
         return jsonify({
             "success": success,
@@ -169,12 +152,9 @@ def update_rule(rule_id):
 
 @firewall_api_bp.route('/rules/<string:rule_id>', methods=['DELETE'])
 def delete_rule(rule_id):
-    """
     删除防火墙规则
-    """
     try:
         success = firewall_system.delete_rule(rule_id)
-        return jsonify({
             "success": success,
             "message": "防火墙规则删除成功" if success else "防火墙规则删除失败"
         }), 200 if success else 404
@@ -189,18 +169,14 @@ def delete_rule(rule_id):
 
 @firewall_api_bp.route('/whitelist', methods=['POST'])
 def add_to_whitelist():
-    """
     添加IP到白名单
-    """
     try:
         data = request.json
-        if not data or 'ip' not in data:
             return jsonify({
                 "success": False,
                 "error": "IP地址不能为空"
             }), 400
-        
-        ip = data['ip']
+
         success = firewall_system.add_to_whitelist(ip)
         return jsonify({
             "success": success,
@@ -215,16 +191,13 @@ def add_to_whitelist():
 
 @firewall_api_bp.route('/whitelist/<string:ip>', methods=['DELETE'])
 def remove_from_whitelist(ip):
-    """
     从白名单移除IP
-    """
     try:
         success = firewall_system.remove_from_whitelist(ip)
         return jsonify({
             "success": success,
             "message": "IP从白名单移除成功" if success else "IP不在白名单中"
         }), 200
-    except Exception as e:
         logger.error(f"从白名单移除IP失败: {str(e)}")
         return jsonify({
             "success": False,
@@ -235,17 +208,14 @@ def remove_from_whitelist(ip):
 
 @firewall_api_bp.route('/blacklist', methods=['POST'])
 def add_to_blacklist():
-    """
     添加IP到黑名单
-    """
     try:
         data = request.json
         if not data or 'ip' not in data:
             return jsonify({
                 "success": False,
                 "error": "IP地址不能为空"
-            }), 400
-        
+
         ip = data['ip']
         success = firewall_system.add_to_blacklist(ip)
         return jsonify({
@@ -261,9 +231,7 @@ def add_to_blacklist():
 
 @firewall_api_bp.route('/blacklist/<string:ip>', methods=['DELETE'])
 def remove_from_blacklist(ip):
-    """
     从黑名单移除IP
-    """
     try:
         success = firewall_system.remove_from_blacklist(ip)
         return jsonify({
@@ -271,31 +239,23 @@ def remove_from_blacklist(ip):
             "message": "IP从黑名单移除成功" if success else "IP不在黑名单中"
         }), 200
     except Exception as e:
-        logger.error(f"从黑名单移除IP失败: {str(e)}")
         return jsonify({
-            "success": False,
-            "error": str(e)
         }), 500
 
 # 速率限制管理API
-
 @firewall_api_bp.route('/rate-limit', methods=['POST'])
 def set_rate_limit():
-    """
     设置速率限制
-    """
-    try:
         data = request.json
         if not data or 'key' not in data or 'limit' not in data:
             return jsonify({
                 "success": False,
                 "error": "缺少必要参数: key和limit"
             }), 400
-        
+
         key = data['key']
         limit = data['limit']
-        window = data.get('window', 60)
-        
+
         success = firewall_system.set_rate_limit(key, limit, window)
         return jsonify({
             "success": success,
@@ -310,9 +270,7 @@ def set_rate_limit():
 
 @firewall_api_bp.route('/check-request', methods=['POST'])
 def check_firewall_request():
-    """
     检查请求是否允许通过
-    """
     try:
         request_data = request.json
         if not request_data:
@@ -320,17 +278,17 @@ def check_firewall_request():
                 "success": False,
                 "error": "请求数据不能为空"
             }), 400
-        
+
         allowed = firewall_system.check_request(request_data)
         return jsonify({
-            "success": True,
             "data": {
                 "allowed": allowed
             }
-        }), 200
     except Exception as e:
         logger.error(f"检查请求失败: {str(e)}")
         return jsonify({
             "success": False,
             "error": str(e)
         }), 500
+
+"""

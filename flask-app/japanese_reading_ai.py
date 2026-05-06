@@ -3,10 +3,9 @@
 """
 日语精读练习AI
 为日语题库增加日语精读类型练习
-"""
 
 import os
-import json
+# JSON import removed - using database
 import logging
 import sqlite3
 from datetime import datetime, UTC
@@ -30,11 +29,11 @@ except ImportError:
         def __init__(self):
             self.db_path = 'data/mtscos_ai_project.db'
             self._ensure_tables()
-        
+
         def _ensure_tables(self):
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
-            
+
             # 创建题目表
             cursor.execute('''
             CREATE TABLE IF NOT EXISTS questions (
@@ -61,254 +60,168 @@ except ImportError:
                 updated_at TEXT
             )
             ''')
-            
+
             # 创建题目选项表
             cursor.execute('''
-            CREATE TABLE IF NOT EXISTS question_options (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 question_id INTEGER,
-                option_text TEXT,
                 option_index INTEGER,
                 FOREIGN KEY (question_id) REFERENCES questions (id)
             )
             ''')
-            
-            # 创建标签表
+
             cursor.execute('''
-            CREATE TABLE IF NOT EXISTS question_tags (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
                 tag_name TEXT
             )
-            ''')
-            
+
             # 创建标签关联表
             cursor.execute('''
-            CREATE TABLE IF NOT EXISTS question_tag_relations (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
                 question_id INTEGER,
                 tag_id INTEGER,
-                FOREIGN KEY (question_id) REFERENCES questions (id),
-                FOREIGN KEY (tag_id) REFERENCES question_tags (id)
             )
             ''')
-            
+
             # 创建题目分类表
             cursor.execute('''
-            CREATE TABLE IF NOT EXISTS question_categories (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
-                description TEXT,
-                created_at TEXT,
                 updated_at TEXT
-            )
             ''')
-            
             # 创建题目语种表
             cursor.execute('''
-            CREATE TABLE IF NOT EXISTS question_languages (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
-                code TEXT NOT NULL,
                 created_at TEXT,
-                updated_at TEXT
             )
-            ''')
-            
             # 创建题目等级表
             cursor.execute('''
-            CREATE TABLE IF NOT EXISTS question_levels (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
-                level INTEGER NOT NULL,
                 description TEXT,
-                created_at TEXT,
                 updated_at TEXT
             )
-            ''')
-            
             # 插入默认数据
             cursor.execute('SELECT COUNT(*) FROM question_languages')
-            if cursor.fetchone()[0] == 0:
                 cursor.execute('INSERT INTO question_languages (name, code, created_at, updated_at) VALUES (?, ?, ?, ?)',
                              ('日语', 'ja', datetime.now(UTC).isoformat(), datetime.now(UTC).isoformat()))
                 cursor.execute('INSERT INTO question_languages (name, code, created_at, updated_at) VALUES (?, ?, ?, ?)',
                              ('英语', 'en', datetime.now(UTC).isoformat(), datetime.now(UTC).isoformat()))
-            
-            cursor.execute('SELECT COUNT(*) FROM question_levels')
-            if cursor.fetchone()[0] == 0:
-                cursor.execute('INSERT INTO question_levels (name, level, description, created_at, updated_at) VALUES (?, ?, ?, ?, ?)',
+
                              ('初级', 1, '初级难度', datetime.now(UTC).isoformat(), datetime.now(UTC).isoformat()))
-                cursor.execute('INSERT INTO question_levels (name, level, description, created_at, updated_at) VALUES (?, ?, ?, ?, ?)',
                              ('中级', 2, '中级难度', datetime.now(UTC).isoformat(), datetime.now(UTC).isoformat()))
                 cursor.execute('INSERT INTO question_levels (name, level, description, created_at, updated_at) VALUES (?, ?, ?, ?, ?)',
                              ('高级', 3, '高级难度', datetime.now(UTC).isoformat(), datetime.now(UTC).isoformat()))
-                cursor.execute('INSERT INTO question_levels (name, level, description, created_at, updated_at) VALUES (?, ?, ?, ?, ?)',
                              ('专家', 4, '专家难度', datetime.now(UTC).isoformat(), datetime.now(UTC).isoformat()))
-            
+
             conn.commit()
             conn.close()
-        
+
         def execute(self, query, params=()):
-            conn = sqlite3.connect(self.db_path)
-            cursor = conn.cursor()
-            try:
-                cursor.execute(query, params)
-                conn.commit()
                 return cursor, True
             except Exception as e:
                 logger.error(f"执行SQL失败: {query}, 参数: {params}, 错误: {e}")
-                conn.rollback()
                 return None, False
             finally:
                 conn.close()
-        
+
         def fetch_all(self, query, params=()):
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
-            try:
-                cursor.execute(query, params)
                 return cursor.fetchall()
             except Exception as e:
-                logger.error(f"查询SQL失败: {query}, 参数: {params}, 错误: {e}")
                 return []
             finally:
-                conn.close()
-        
+
         def fetch_one(self, query, params=()):
             conn = sqlite3.connect(self.db_path)
-            cursor = conn.cursor()
             try:
-                cursor.execute(query, params)
-                return cursor.fetchone()
             except Exception as e:
                 logger.error(f"查询SQL失败: {query}, 参数: {params}, 错误: {e}")
                 return None
-            finally:
-                conn.close()
-        
-        def fetch_scalar(self, query, params=()):
+
             conn = sqlite3.connect(self.db_path)
-            cursor = conn.cursor()
             try:
-                cursor.execute(query, params)
                 result = cursor.fetchone()
-                return result[0] if result else None
             except Exception as e:
                 logger.error(f"查询SQL失败: {query}, 参数: {params}, 错误: {e}")
                 return None
             finally:
-                conn.close()
-        
+
         def insert(self, table, data):
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
             try:
-                columns = ', '.join(data.keys())
                 placeholders = ', '.join(['?'] * len(data))
                 query = f'INSERT INTO {table} ({columns}) VALUES ({placeholders})'
-                cursor.execute(query, list(data.values()))
-                conn.commit()
                 return cursor.lastrowid
             except Exception as e:
                 logger.error(f"插入数据失败: {table}, 数据: {data}, 错误: {e}")
                 conn.rollback()
-                return None
             finally:
                 conn.close()
-        
-        def update(self, table, data, where_clause, where_params):
+
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
             try:
-                set_clause = ', '.join([f'{col} = ?' for col in data.keys()])
                 query = f'UPDATE {table} SET {set_clause} WHERE {where_clause}'
                 params = list(data.values()) + list(where_params)
                 cursor.execute(query, params)
-                conn.commit()
-                return cursor.rowcount > 0
             except Exception as e:
                 logger.error(f"更新数据失败: {table}, 数据: {data}, 条件: {where_clause}, 错误: {e}")
                 conn.rollback()
                 return False
-            finally:
-                conn.close()
-        
-        def delete(self, table, where_clause, where_params):
+
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
             try:
-                query = f'DELETE FROM {table} WHERE {where_clause}'
                 cursor.execute(query, where_params)
                 conn.commit()
-                return cursor.rowcount > 0
             except Exception as e:
-                logger.error(f"删除数据失败: {table}, 条件: {where_clause}, 错误: {e}")
                 conn.rollback()
                 return False
-    
     db_manager = DBManager()
 
-class JapaneseReadingAI:
-    """日语精读练习AI"""
-    
     def __init__(self):
         """初始化AI"""
         logger.info("日语精读练习AI初始化...")
         self.japanese_language_id = 1  # 日语的ID
-        self.reading_passages = self._load_reading_passages()
         self._ensure_directories()
-    
+
     def _ensure_directories(self):
-        """确保必要的目录存在"""
-        directories = ['logs', 'data', 'reports']
         for directory in directories:
             if not os.path.exists(directory):
                 os.makedirs(directory)
                 logger.info(f"创建目录: {directory}")
-    
-    def _load_reading_passages(self) -> List[Dict]:
-        """加载日语阅读材料"""
+
         return [
-            {
                 "title": "東京の朝",
-                "content": "東京の朝はとてもにぎやかです。電車には通勤客でいっぱいで、道路には車がたくさん走っています。駅の周りには、コンビニエンスストアやカフェがたくさんあります。人々は朝ごはんを買ったり、新聞を読んだりしながら歩いています。",
                 "level": 1,  # 初级
                 "questions": [
                     {
                         "question": "東京の朝はどのような様子ですか？",
                         "options": ["静かです", "にぎやかです", "寒いです", "暑いです"],
                         "answer": "にぎやかです",
-                        "explanation": "文章の最初に「東京の朝はとてもにぎやかです」と書かれています。"
                     },
                     {
                         "question": "電車には何でいっぱいですか？",
                         "options": ["学生", "観光客", "通勤客", "子供"],
-                        "answer": "通勤客",
                         "explanation": "文章に「電車には通勤客でいっぱいで」と書かれています。"
                     }
-                ]
-            },
             {
                 "title": "日本の四季",
                 "content": "日本には四季があります。春は桜が咲いて美しいです。夏は暑くて、海に行く人がたくさんいます。秋は紅葉がきれいで、山登りに行く人が多いです。冬は寒くて、雪が降る地域もあります。日本人は四季の変化を楽しんでいます。",
                 "level": 2,  # 中级
-                "questions": [
-                    {
                         "question": "日本にはどのような季節がありますか？",
                         "options": ["春と夏", "夏と秋", "秋と冬", "四季"],
-                        "answer": "四季",
                         "explanation": "文章の最初に「日本には四季があります」と書かれています。"
                     },
                     {
                         "question": "夏にはどこに行く人がたくさんいますか？",
-                        "options": ["山", "海", "公園", "神社"],
                         "answer": "海",
                         "explanation": "文章に「夏は暑くて、海に行く人がたくさんいます」と書かれています。"
-                    },
                     {
                         "question": "秋には何がきれいですか？",
                         "options": ["桜", "向日葵", "紅葉", "菊"],
-                        "answer": "紅葉",
                         "explanation": "文章に「秋は紅葉がきれいで」と書かれています。"
                     }
                 ]
@@ -319,7 +232,6 @@ class JapaneseReadingAI:
                 "level": 3,  # 高级
                 "questions": [
                     {
-                        "question": "茶道とは何ですか？",
                         "options": ["花を飾る芸術", "お茶を点てて飲む伝統的な儀式", "伝統的な演劇", "木版画"],
                         "answer": "お茶を点てて飲む伝統的な儀式",
                         "explanation": "文章に「茶道はお茶を点てて飲む伝統的な儀式です」と書かれています。"
@@ -328,12 +240,10 @@ class JapaneseReadingAI:
                         "question": "歌舞伎の特徴は何ですか？",
                         "options": ["簡素な衣装", "豪華な衣装と化粧", "静かな演出", "現代的な音楽"],
                         "answer": "豪華な衣装と化粧",
-                        "explanation": "文章に「歌舞伎は伝統的な演劇で、豪華な衣装と化粧が特徴です」と書かれています。"
                     },
                     {
                         "question": "浮世絵はいつ流行しましたか？",
                         "options": ["明治時代", "大正時代", "昭和時代", "江戸時代"],
-                        "answer": "江戸時代",
                         "explanation": "文章に「浮世絵は江戸時代に流行した木版画です」と書かれています。"
                     }
                 ]
@@ -382,41 +292,37 @@ class JapaneseReadingAI:
                     },
                     {
                         "question": "放課後、学生たちは何をしますか？",
-                        "options": ["家に帰る", "塾に通う", "体育館で練習したり、部室で活動したりする", "映画を見る"],
                         "answer": "体育館で練習したり、部室で活動したりする",
                         "explanation": "文章に「放課後は体育館で練習したり、部室で活動したりします」と書かれています。"
                     }
                 ]
             }
         ]
-    
+
     def add_reading_questions(self) -> Dict[str, any]:
         """添加日语精读题目"""
         logger.info("开始添加日语精读题目...")
-        
+
         added_count = 0
         failed_count = 0
         errors = []
-        
+
         try:
-            for passage in self.reading_passages:
                 logger.info(f"处理阅读材料: {passage['title']} (等级: {passage['level']})")
-                
+
                 for idx, q_data in enumerate(passage['questions']):
                     try:
-                        # 构建题目内容
                         question_content = f"文章: {passage['title']}\n\n{passage['content']}\n\n質問: {q_data['question']}"
-                        
+
                         # 检查题目是否已存在
                         existing = db_manager.fetch_one(
-                            'SELECT id FROM questions WHERE content LIKE ? AND language_id = ?',
                             (f'%{passage["title"]}%', self.japanese_language_id)
                         )
-                        
+
                         if existing:
                             logger.warning(f"题目已存在: {passage['title']} - 问题 {idx+1}")
                             continue
-                        
+
                         # 创建题目
                         now = datetime.now(UTC).isoformat()
                         question_data = {
@@ -432,16 +338,14 @@ class JapaneseReadingAI:
                             'created_at': now,
                             'updated_at': now
                         }
-                        
+
                         question_id = db_manager.insert('questions', question_data)
-                        if question_id:
                             # 添加选项
-                            for opt_idx, option in enumerate(q_data['options']):
                                 db_manager.execute(
                                     'INSERT INTO question_options (question_id, option_text, option_index) VALUES (?, ?, ?)',
                                     (question_id, option, opt_idx)
                                 )
-                            
+
                             # 添加标签
                             tags = ['日语', '精读', passage['title']]
                             for tag_name in tags:
@@ -453,26 +357,23 @@ class JapaneseReadingAI:
                                     tag_id = tag[0]
                                 else:
                                     tag_id = tag[0]
-                                
-                                # 关联标签
+
                                 db_manager.execute(
                                     'INSERT OR IGNORE INTO question_tag_relations (question_id, tag_id) VALUES (?, ?)',
                                     (question_id, tag_id)
                                 )
-                            
-                            added_count += 1
+
                             logger.info(f"成功添加题目: {passage['title']} - 问题 {idx+1}")
                         else:
-                            failed_count += 1
                             errors.append(f"添加题目失败: {passage['title']} - 问题 {idx+1}")
                             logger.error(f"添加题目失败: {passage['title']} - 问题 {idx+1}")
-                            
+
                     except Exception as e:
                         failed_count += 1
                         errors.append(f"处理题目时出错: {passage['title']} - 问题 {idx+1}, 错误: {str(e)}")
                         logger.error(f"处理题目时出错: {passage['title']} - 问题 {idx+1}, 错误: {str(e)}")
                         continue
-            
+
             # 生成报告
             report = {
                 'total_passages': len(self.reading_passages),
@@ -482,36 +383,33 @@ class JapaneseReadingAI:
                 'errors': errors,
                 'timestamp': datetime.now(UTC).isoformat()
             }
-            
-            # 保存报告
+
             report_path = f"reports/japanese_reading_ai_report_{datetime.now(UTC).strftime('%Y%m%d_%H%M%S')}.json"
             with open(report_path, 'w', encoding='utf-8') as f:
                 json.dump(report, f, ensure_ascii=False, indent=2)
-            
+
             logger.info(f"日语精读题目添加完成，报告保存到: {report_path}")
             return report
-            
+
         except Exception as e:
             logger.error(f"添加日语精读题目时出错: {str(e)}")
             return {
                 'error': str(e),
                 'timestamp': datetime.now(UTC).isoformat()
             }
-    
+
     def get_reading_questions_count(self) -> int:
         """获取日语精读题目数量"""
         count = db_manager.fetch_scalar(
-            'SELECT COUNT(*) FROM questions WHERE language_id = ? AND question_type = ?',
             (self.japanese_language_id, 'reading')
         )
         return count or 0
-    
+
     def share_error_cases(self) -> Dict[str, any]:
         """共享错误修复案例到脑库"""
         logger.info("共享错误修复案例到脑库...")
-        
+
         try:
-            # 生成错误修复案例
             error_cases = [
                 {
                     "title": "日语精读题目添加成功",
@@ -547,7 +445,6 @@ class JapaneseReadingAI:
                     "category": "标签管理",
                     "severity": "info",
                     "status": "resolved",
-                    "timestamp": datetime.now(UTC).isoformat()
                 },
                 {
                     "title": "日语精读题目报告生成",
@@ -555,11 +452,9 @@ class JapaneseReadingAI:
                     "solution": "创建详细的报告文件，记录添加的题目数量和状态",
                     "category": "报告管理",
                     "severity": "info",
-                    "status": "resolved",
                     "timestamp": datetime.now(UTC).isoformat()
                 }
-            ]
-            
+
             # 保存错误修复案例到脑库
             knowledge_base_path = 'data/knowledge_base.json'
             if os.path.exists(knowledge_base_path):
@@ -567,46 +462,43 @@ class JapaneseReadingAI:
                     knowledge_base = json.load(f)
             else:
                 knowledge_base = {"cases": []}
-            
+
             # 添加新案例
             knowledge_base["cases"].extend(error_cases)
-            
+
             # 保存到文件
             with open(knowledge_base_path, 'w', encoding='utf-8') as f:
-                json.dump(knowledge_base, f, ensure_ascii=False, indent=2)
-            
             logger.info(f"成功共享了 {len(error_cases)} 个错误修复案例到脑库")
             return {
                 "shared_count": len(error_cases),
                 "total_cases": len(knowledge_base["cases"]),
                 "timestamp": datetime.now(UTC).isoformat()
             }
-            
+
         except Exception as e:
             logger.error(f"共享错误修复案例时出错: {str(e)}")
             return {
                 "error": str(e),
                 "timestamp": datetime.now(UTC).isoformat()
             }
-    
+
     def run(self):
         """运行AI"""
         logger.info("日语精读练习AI开始运行...")
-        
+
         # 添加日语精读题目
         add_result = self.add_reading_questions()
         logger.info(f"添加结果: {add_result}")
-        
+
         # 获取当前精读题目数量
         current_count = self.get_reading_questions_count()
         logger.info(f"当前日语精读题目数量: {current_count}")
-        
+
         # 共享错误修复案例
-        share_result = self.share_error_cases()
         logger.info(f"共享结果: {share_result}")
-        
+
         logger.info("日语精读练习AI运行完成")
-        
+
         return {
             "add_result": add_result,
             "current_count": current_count,
@@ -617,7 +509,7 @@ def main():
     """主函数"""
     ai = JapaneseReadingAI()
     result = ai.run()
-    
+
     # 打印结果
     print("\n日语精读练习AI运行结果:")
     print(f"添加结果: {result['add_result']}")

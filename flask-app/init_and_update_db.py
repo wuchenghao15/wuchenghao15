@@ -5,7 +5,6 @@
 初始化并更新数据库脚本
 1. 创建必要的表
 2. 运行数据库更新脚本
-"""
 
 import sys
 import os
@@ -42,3 +41,5 @@ print("\n3. 运行数据库更新脚本...")
 os.system("python3 update_database.py")
 
 print("\n✅ 数据库初始化和更新完成！")
+
+"""

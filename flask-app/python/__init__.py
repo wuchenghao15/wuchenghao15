@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # 应用初始化
 from flask import Flask
 from .config import Config

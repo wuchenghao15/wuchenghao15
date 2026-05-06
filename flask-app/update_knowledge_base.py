@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 Update Knowledge Base with Login Page Fix Information
-"""
 
 import sys
 import os
@@ -14,7 +13,7 @@ def update_knowledge_base():
     try:
         # 创建知识库实例
         kb = KnowledgeBase()
-        
+
         # 定义知识内容
         contents = [
             {
@@ -30,41 +29,31 @@ def update_knowledge_base():
                 }
             },
             {
-                "content": "AI员工系统修复：TestSystemAIEmployee类缺少_get_questions_from_db方法，导致从数据库获取题目失败。修复方法：添加该方法并实现数据库查询逻辑。",
                 "source": "ai_employee_fix_20260321",
                 "confidence": 0.98,
                 "tags": ["ai_employee", "fix", "database", "questions"],
                 "metadata": {
                     "fix_time": 1774097150.0,
-                    "affected_file": "ai_employee_system.py",
                     "error_type": "AttributeError",
                     "solution": "Add _get_questions_from_db method to TestSystemAIEmployee class"
                 }
             },
             {
-                "content": "AI员工系统修复：缺少get_ai_route_system函数，导致无法导入该函数。修复方法：添加该函数并实现单例管理。",
-                "source": "ai_route_system_fix_20260321",
                 "confidence": 0.98,
-                "tags": ["ai_employee", "fix", "singleton", "import"],
                 "metadata": {
                     "fix_time": 1774097200.0,
                     "affected_file": "ai_employee_system.py",
-                    "error_type": "ImportError",
                     "solution": "Add get_ai_route_system function"
-                }
             }
         ]
-        
+
         # 添加所有知识到知识库
-        for item in contents:
-            kb.add_knowledge(
-                item["content"],
                 item["source"],
                 item["confidence"],
                 item["tags"],
                 item["metadata"]
             )
-        
+
         print("知识已成功添加到知识库")
         print(f"当前知识库条目数: {len(kb.knowledge['entries'])}")
         return True

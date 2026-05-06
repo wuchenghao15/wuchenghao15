@@ -3,7 +3,6 @@
 """
 创建服务器异常表脚本
 用于创建server_exceptions表，存储服务器异常和修复结果
-"""
 
 import os
 import sys
@@ -17,7 +16,7 @@ from app.utils.db import db_manager
 def create_server_exception_table():
     """创建服务器异常表"""
     table_name = "server_exceptions"
-    
+
     # 定义表结构
     columns = {
         "id": "INTEGER PRIMARY KEY AUTO_INCREMENT",
@@ -33,10 +32,10 @@ def create_server_exception_table():
         "server_stats": "TEXT",
         "created_at": "DATETIME DEFAULT CURRENT_TIMESTAMP"
     }
-    
+
     # 创建表
     success = db_manager.create_table(table_name, columns)
-    
+
     if success:
         logger.info(f"表 {table_name} 创建成功")
         return True
@@ -52,24 +51,20 @@ def add_indexes():
         "CREATE INDEX IF NOT EXISTS idx_occurred_at ON server_exceptions(occurred_at)",
         "CREATE INDEX IF NOT EXISTS idx_repair_success ON server_exceptions(repair_success)"
     ]
-    
+
     for index_sql in indexes:
         cursor, success = db_manager.execute(index_sql)
         if success:
-            logger.info(f"索引创建成功: {index_sql}")
         else:
             logger.error(f"索引创建失败: {index_sql}")
-
 if __name__ == "__main__":
     logger.info("开始创建服务器异常表...")
-    
+
     # 创建表
-    if create_server_exception_table():
         # 添加索引
         add_indexes()
         logger.info("服务器异常表创建完成")
     else:
         logger.error("服务器异常表创建失败")
         sys.exit(1)
-    
     sys.exit(0)

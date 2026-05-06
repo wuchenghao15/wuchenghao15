@@ -2,7 +2,6 @@
 """
 升级整合AI脑库脚本
 使用AI脑库增强器对AI脑库进行全面升级和优化
-"""
 
 import sys
 
@@ -17,15 +16,15 @@ def main():
     """主函数"""
     print("=== 开始升级整合AI脑库 ===")
     logger.info("=== 开始升级整合AI脑库 ===")
-    
+
     try:
         # 运行AI脑库增强器
         result = ai_brain_enhancer.enhance_knowledge_base()
-        
+
         if result["status"] == "success":
             print("=== AI脑库升级整合成功 ===")
             logger.info("=== AI脑库升级整合成功 ===")
-            
+
             # 打印增强历史
             print("\n增强内容：")
             for enhancement in result["enhancements"]:
@@ -34,12 +33,12 @@ def main():
         else:
             print("=== AI脑库升级整合失败 ===")
             logger.error("=== AI脑库升级整合失败 ===")
-            
+
     except Exception as e:
         print(f"=== AI脑库升级整合异常: {str(e)} ===")
         logger.error(f"=== AI脑库升级整合异常: {str(e)} ===")
         sys.exit(1)
-    
+
     sys.exit(0)
 
 

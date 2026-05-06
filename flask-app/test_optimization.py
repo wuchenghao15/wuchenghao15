@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 测试优化效果，确保系统正常运行
-"""
 
 import time
 import logging
@@ -16,7 +15,7 @@ logger = logging.getLogger(__name__)
 def test_database_manager():
     """测试数据库管理器优化效果"""
     logger.info("=== 测试数据库管理器优化效果 ===")
-    
+
     # 测试连接池
     start_time = time.time()
     for i in range(100):
@@ -25,43 +24,38 @@ def test_database_manager():
             db_manager.return_connection(conn)
     conn_time = time.time() - start_time
     logger.info(f"连接池测试：100次连接获取和返回耗时: {conn_time:.4f}秒")
-    
+
     # 测试查询缓存
     start_time = time.time()
-    for i in range(10):
         # 执行相同的查询，第二次应该从缓存获取
         db_manager.fetch_all("SELECT * FROM questions LIMIT 10")
     query_time = time.time() - start_time
     logger.info(f"查询缓存测试：10次相同查询耗时: {query_time:.4f}秒")
-    
+
     # 测试批量操作
     start_time = time.time()
-    # 这里可以添加批量操作测试
     batch_time = time.time() - start_time
     logger.info(f"批量操作测试：耗时: {batch_time:.4f}秒")
 
 def test_question_manager():
     """测试题库系统优化效果"""
     logger.info("=== 测试题库系统优化效果 ===")
-    
+
     question_manager = QuestionManager()
-    
+
     # 测试获取题目列表
     start_time = time.time()
-    questions = question_manager.get_questions(limit=50)
     get_time = time.time() - start_time
     logger.info(f"获取题目列表测试：获取{len(questions)}道题目耗时: {get_time:.4f}秒")
-    
+
     # 测试获取单个题目
     start_time = time.time()
-    if questions:
         question = question_manager.get_question(questions[0].id)
         single_time = time.time() - start_time
         logger.info(f"获取单个题目测试：耗时: {single_time:.4f}秒")
-    
+
     # 测试搜索题目
     start_time = time.time()
-    try:
         search_results = question_manager.search_questions("测试")
         search_time = time.time() - start_time
         logger.info(f"搜索题目测试：获取{len(search_results)}个结果耗时: {search_time:.4f}秒")
@@ -72,32 +66,25 @@ def test_question_manager():
 
 def test_config_manager():
     """测试系统配置库优化效果"""
-    logger.info("=== 测试系统配置库优化效果 ===")
-    
+
     # 测试配置加载
     start_time = time.time()
-    for i in range(10):
         config = load_config()
     load_time = time.time() - start_time
     logger.info(f"配置加载测试：10次加载耗时: {load_time:.4f}秒")
-    
+
     # 测试配置缓存
     start_time = time.time()
-    for i in range(10):
-        config = load_config()
     cache_time = time.time() - start_time
     logger.info(f"配置缓存测试：10次缓存加载耗时: {cache_time:.4f}秒")
-    
+
     # 测试配置保存
     start_time = time.time()
-    ConfigManager.save_config_to_db(config)
     save_time = time.time() - start_time
-    logger.info(f"配置保存测试：耗时: {save_time:.4f}秒")
 
 def main():
     """主测试函数"""
-    logger.info("开始测试优化效果...")
-    
+
     try:
         test_database_manager()
         test_question_manager()
@@ -109,4 +96,3 @@ def main():
         traceback.print_exc()
 
 if __name__ == "__main__":
-    main()

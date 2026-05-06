@@ -11,9 +11,9 @@
     <title>MTSCOS AI 管理系统 - {% block title %}{{ title }}{% endblock %}</title>
     
     <!-- 设计系统样式 -->
-    <link href="/static/css/mtscos-design-system.css" rel="stylesheet">
+    <link href="{{ url_for(\'static\', filename=\'css/mtscos-design-system.css\') }}" rel="stylesheet">
     <!-- 主样式文件 -->
-    <link href="/static/css/style.css" rel="stylesheet">
+    <link href="{{ url_for(\'static\', filename=\'css/style.css\') }}" rel="stylesheet">
     <!-- 图标库 -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
     <!-- 预加载关键资源 -->
@@ -605,6 +605,21 @@
             elements.forEach((element, index) => {
                 element.style.animationDelay = `${index * 0.1}s`;
             });
+            
+            // 为提示信息添加自动消失功能
+            setTimeout(function() {
+                const messageDivs = document.querySelectorAll('.bg-green-50, .bg-red-50');
+                messageDivs.forEach(function(div) {
+                    div.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                    div.style.opacity = '0';
+                    div.style.transform = 'translateY(-20px)';
+                    setTimeout(function() {
+                        div.style.display = 'none';
+                        // 清空数据
+                        div.innerHTML = '';
+                    }, 500);
+                });
+            }, 15000); // 15秒后自动消失
         });
         
         // 实时监控系统状态

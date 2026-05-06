@@ -1,0 +1,1143 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MTSCOS AI - 灰度测试环境</title>
+    <style>
+        /* 基础样式 */
+        :root {
+            --primary-color: #165DFF;
+            --secondary-color: #4E5969;
+            --background-color: #F5F7FA;
+            --text-color: #2C3E50;
+            --accent-color: #00D4AA;
+            --border-color: #E5E6EB;
+            --success-color: #52C41A;
+            --warning-color: #FAAD14;
+            --error-color: #F5222D;
+            --card-background: #FFFFFF;
+            --hover-color: #ECF5FF;
+            --shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 0;
+            margin: 0;
+        }
+
+        /* 顶部导航栏 */
+        .navbar {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(22, 93, 255, 0.3);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .navbar-logo {
+            font-size: 20px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .navbar-logo-icon {
+            width: 32px;
+            height: 32px;
+            background-color: white;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: var(--primary-color);
+            font-weight: bold;
+        }
+
+        .navbar-nav {
+            display: flex;
+            gap: 24px;
+        }
+
+        .nav-link {
+            color: rgba(255, 255, 255, 0.9);
+            text-decoration: none;
+            font-size: 14px;
+            transition: color 0.3s;
+        }
+
+        .nav-link:hover {
+            color: white;
+        }
+
+        .navbar-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 1px solid transparent;
+            outline: none;
+        }
+
+        .btn-outline-light {
+            background-color: transparent;
+            color: white;
+            border-color: white;
+        }
+
+        .btn-outline-light:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .btn-primary:hover {
+            background-color: #0E4FD8;
+        }
+
+        /* 主要内容区域 */
+        .main-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        /* 页面头部 */
+        .page-header {
+            margin-bottom: 32px;
+            text-align: center;
+        }
+
+        .page-title {
+            font-size: 32px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--text-color);
+        }
+
+        .page-subtitle {
+            font-size: 16px;
+            color: var(--secondary-color);
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        /* 状态卡片 */
+        .status-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        .status-card {
+            background-color: var(--card-background);
+            border-radius: 8px;
+            padding: 24px;
+            box-shadow: var(--shadow);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .status-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+        }
+
+        .status-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .status-card-title {
+            font-size: 16px;
+            font-weight: 500;
+            color: var(--secondary-color);
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-good {
+            background-color: rgba(82, 196, 26, 0.1);
+            color: var(--success-color);
+        }
+
+        .status-warning {
+            background-color: rgba(250, 173, 20, 0.1);
+            color: var(--warning-color);
+        }
+
+        .status-bad {
+            background-color: rgba(245, 34, 45, 0.1);
+            color: var(--error-color);
+        }
+
+        .status-value {
+            font-size: 32px;
+            font-weight: 600;
+            color: var(--text-color);
+            margin-bottom: 8px;
+        }
+
+        .status-description {
+            font-size: 14px;
+            color: var(--secondary-color);
+        }
+
+        /* 功能模块区域 */
+        .modules-section {
+            margin-bottom: 40px;
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 500;
+            margin-bottom: 24px;
+            color: var(--text-color);
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .modules-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 24px;
+        }
+
+        .module-card {
+            background-color: var(--card-background);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: transform 0.3s, box-shadow 0.3s;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .module-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+            border-color: var(--primary-color);
+        }
+
+        .module-header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .module-icon {
+            width: 64px;
+            height: 64px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 12px;
+            font-size: 24px;
+        }
+
+        .module-title {
+            font-size: 18px;
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .module-description {
+            font-size: 14px;
+            opacity: 0.9;
+            line-height: 1.5;
+        }
+
+        .module-body {
+            padding: 20px;
+            flex-grow: 1;
+        }
+
+        .module-features {
+            list-style: none;
+            margin-bottom: 20px;
+        }
+
+        .module-feature {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 12px;
+            font-size: 14px;
+            color: var(--text-color);
+        }
+
+        .module-feature::before {
+            content: '✓';
+            color: var(--success-color);
+            margin-right: 8px;
+            font-weight: bold;
+        }
+
+        .module-actions {
+            padding: 0 20px 20px;
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn-outline {
+            background-color: transparent;
+            color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        .btn-outline:hover {
+            background-color: var(--hover-color);
+        }
+
+        .btn-block {
+            width: 100%;
+        }
+
+        /* 系统信息区域 */
+        .system-info-section {
+            background-color: var(--card-background);
+            border-radius: 8px;
+            padding: 24px;
+            box-shadow: var(--shadow);
+            margin-bottom: 40px;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 24px;
+        }
+
+        .info-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .info-label {
+            font-size: 14px;
+            color: var(--secondary-color);
+            margin-bottom: 4px;
+        }
+
+        .info-value {
+            font-size: 16px;
+            font-weight: 500;
+            color: var(--text-color);
+        }
+
+        /* 最近活动区域 */
+        .activity-section {
+            background-color: var(--card-background);
+            border-radius: 8px;
+            padding: 24px;
+            box-shadow: var(--shadow);
+        }
+
+        .activity-list {
+            list-style: none;
+        }
+
+        .activity-item {
+            display: flex;
+            align-items: flex-start;
+            padding: 16px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+
+        .activity-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background-color: var(--background-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 16px;
+            flex-shrink: 0;
+            font-size: 16px;
+            color: var(--primary-color);
+        }
+
+        .activity-content {
+            flex-grow: 1;
+        }
+
+        .activity-title {
+            font-size: 16px;
+            font-weight: 500;
+            color: var(--text-color);
+            margin-bottom: 4px;
+        }
+
+        .activity-description {
+            font-size: 14px;
+            color: var(--secondary-color);
+            margin-bottom: 4px;
+        }
+
+        .activity-time {
+            font-size: 12px;
+            color: var(--secondary-color);
+        }
+
+        /* 页脚 */
+        .footer {
+            background-color: var(--text-color);
+            color: white;
+            padding: 40px 24px;
+            margin-top: 60px;
+        }
+
+        .footer-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 32px;
+        }
+
+        .footer-logo {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .footer-logo-icon {
+            width: 32px;
+            height: 32px;
+            background-color: white;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: var(--text-color);
+            font-weight: bold;
+        }
+
+        .footer-description {
+            font-size: 14px;
+            opacity: 0.8;
+            line-height: 1.6;
+            margin-bottom: 16px;
+        }
+
+        .footer-links {
+            list-style: none;
+        }
+
+        .footer-link-title {
+            font-size: 16px;
+            font-weight: 500;
+            margin-bottom: 16px;
+        }
+
+        .footer-link {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            display: block;
+            margin-bottom: 12px;
+            font-size: 14px;
+            transition: color 0.3s;
+        }
+
+        .footer-link:hover {
+            color: white;
+        }
+
+        .footer-bottom {
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: 32px;
+            padding-top: 24px;
+            text-align: center;
+            font-size: 14px;
+            opacity: 0.7;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .navbar {
+                flex-direction: column;
+                padding: 16px;
+                gap: 16px;
+            }
+
+            .navbar-nav {
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 16px;
+            }
+
+            .main-content {
+                padding: 16px;
+            }
+
+            .page-title {
+                font-size: 24px;
+            }
+
+            .status-cards,
+            .modules-grid,
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .module-actions {
+                flex-direction: column;
+            }
+        }
+
+        /* 加载状态 */
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+            color: var(--secondary-color);
+        }
+
+        .loading::after {
+            content: '';
+            width: 20px;
+            height: 20px;
+            margin-left: 10px;
+            border: 2px solid var(--border-color);
+            border-top: 2px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 通知组件 */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 16px 24px;
+            border-radius: 4px;
+            color: white;
+            font-size: 14px;
+            z-index: 1001;
+            transform: translateX(100%);
+            transition: transform 0.3s;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.success {
+            background-color: var(--success-color);
+        }
+
+        .notification.error {
+            background-color: var(--error-color);
+        }
+
+        .notification.warning {
+            background-color: var(--warning-color);
+        }
+
+        /* 标签样式 */
+        .tag {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+            margin-right: 8px;
+            margin-bottom: 8px;
+        }
+
+        .tag-primary {
+            background-color: rgba(22, 93, 255, 0.1);
+            color: var(--primary-color);
+        }
+
+        .tag-success {
+            background-color: rgba(82, 196, 26, 0.1);
+            color: var(--success-color);
+        }
+
+        .tag-warning {
+            background-color: rgba(250, 173, 20, 0.1);
+            color: var(--warning-color);
+        }
+
+        .tag-danger {
+            background-color: rgba(245, 34, 45, 0.1);
+            color: var(--error-color);
+        }
+
+        .tag-info {
+            background-color: rgba(64, 169, 255, 0.1);
+            color: #40A9FF;
+        }
+    </style>
+    <link rel="stylesheet" href="../../../../src/html/assets/css/theme.css">
+</head>
+<body>
+    <!-- 顶部导航栏 -->
+    <nav class="navbar">
+        <div class="navbar-logo">
+            <div class="navbar-logo-icon">M</div>
+            MTSCOS AI
+        </div>
+        <div class="navbar-nav">
+            <a href="#" class="nav-link">首页</a>
+            <a href="#modules" class="nav-link">功能模块</a>
+            <a href="#monitoring" class="nav-link">系统监控</a>
+            <a href="#settings" class="nav-link">设置</a>
+            <a href="#about" class="nav-link">关于</a>
+        </div>
+        <div class="navbar-actions">
+            <button class="btn btn-outline-light" onclick="showSystemStatus()">系统状态</button>
+            <button class="btn btn-outline-light" onclick="showHelp()">帮助</button>
+        </div>
+    </nav>
+
+    <!-- 主要内容区域 -->
+    <main class="main-content">
+        <!-- 页面头部 -->
+        <header class="page-header">
+            <h1 class="page-title">MTSCOS AI 灰度测试环境</h1>
+            <p class="page-subtitle">专为系统功能测试、升级验证和性能评估设计的一站式测试平台，支持自主检测、修复、维护和监控。</p>
+        </header>
+
+        <!-- 状态卡片 -->
+        <div class="status-cards">
+            <div class="status-card">
+                <div class="status-card-header">
+                    <span class="status-card-title">系统状态</span>
+                    <span class="status-badge status-good">正常</span>
+                </div>
+                <div class="status-value">100%</div>
+                <div class="status-description">所有服务正常运行中</div>
+            </div>
+            <div class="status-card">
+                <div class="status-card-header">
+                    <span class="status-card-title">测试用户</span>
+                    <span class="status-badge status-good">活跃</span>
+                </div>
+                <div class="status-value">8</div>
+                <div class="status-description">当前活跃的测试用户数</div>
+            </div>
+            <div class="status-card">
+                <div class="status-card-header">
+                    <span class="status-card-title">最近备份</span>
+                    <span class="status-badge status-good">已完成</span>
+                </div>
+                <div class="status-value">12:30</div>
+                <div class="status-description">今天 12:30 完成备份</div>
+            </div>
+            <div class="status-card">
+                <div class="status-card-header">
+                    <span class="status-card-title">资源使用率</span>
+                    <span class="status-badge status-warning">中等</span>
+                </div>
+                <div class="status-value">45%</div>
+                <div class="status-description">CPU 和内存平均使用率</div>
+            </div>
+        </div>
+
+        <!-- 功能模块区域 -->
+        <section class="modules-section" id="modules">
+            <h2 class="section-title">核心功能模块</h2>
+            <div class="modules-grid">
+                <!-- 系统监控模块 -->
+                <div class="module-card">
+                    <div class="module-header">
+                        <div class="module-icon">📊</div>
+                        <h3 class="module-title">系统监控</h3>
+                        <p class="module-description">实时监控系统运行状态，提供可视化数据展示</p>
+                    </div>
+                    <div class="module-body">
+                        <ul class="module-features">
+                            <li class="module-feature">实时系统状态监控</li>
+                            <li class="module-feature">可视化数据展示</li>
+                            <li class="module-feature">异常告警通知</li>
+                            <li class="module-feature">历史数据查询</li>
+                        </ul>
+                    </div>
+                    <div class="module-actions">
+                        <a href="#" class="btn btn-outline btn-block" onclick="openSystemMonitoring()">访问监控面板</a>
+                    </div>
+                </div>
+
+                <!-- 自动检测与修复模块 -->
+                <div class="module-card">
+                    <div class="module-header">
+                        <div class="module-icon">🔧</div>
+                        <h3 class="module-title">自动检测与修复</h3>
+                        <p class="module-description">自主检测系统问题并尝试智能修复</p>
+                    </div>
+                    <div class="module-body">
+                        <ul class="module-features">
+                            <li class="module-feature">文件完整性检查</li>
+                            <li class="module-feature">进程监控与恢复</li>
+                            <li class="module-feature">资源使用率优化</li>
+                            <li class="module-feature">网络连接修复</li>
+                        </ul>
+                    </div>
+                    <div class="module-actions">
+                        <button class="btn btn-outline btn-block" onclick="runAutoDetection()">运行检测</button>
+                    </div>
+                </div>
+
+                <!-- 测试用户管理模块 -->
+                <div class="module-card">
+                    <div class="module-header">
+                        <div class="module-icon">👥</div>
+                        <h3 class="module-title">测试用户管理</h3>
+                        <p class="module-description">管理测试用户信息，设置有效期和操作监控</p>
+                    </div>
+                    <div class="module-body">
+                        <ul class="module-features">
+                            <li class="module-feature">创建和管理测试用户组</li>
+                            <li class="module-feature">设置用户有效期</li>
+                            <li class="module-feature">监控用户活动</li>
+                            <li class="module-feature">记录修改操作日志</li>
+                        </ul>
+                    </div>
+                    <div class="module-actions">
+                        <a href="#" class="btn btn-outline btn-block" onclick="openUserManagement()">管理用户</a>
+                    </div>
+                </div>
+
+                <!-- GitHub备份模块 -->
+                <div class="module-card">
+                    <div class="module-header">
+                        <div class="module-icon">📁</div>
+                        <h3 class="module-title">GitHub备份</h3>
+                        <p class="module-description">自动备份项目到GitHub，设置定时备份计划</p>
+                    </div>
+                    <div class="module-body">
+                        <ul class="module-features">
+                            <li class="module-feature">自动定时备份</li>
+                            <li class="module-feature">文件压缩和上传</li>
+                            <li class="module-feature">备份历史记录</li>
+                            <li class="module-feature">快速恢复功能</li>
+                        </ul>
+                    </div>
+                    <div class="module-actions">
+                        <button class="btn btn-outline btn-block" onclick="runBackup()">立即备份</button>
+                        <a href="#" class="btn btn-outline btn-block" onclick="configureBackup()">配置备份</a>
+                    </div>
+                </div>
+
+                <!-- 安全机制模块 -->
+                <div class="module-card">
+                    <div class="module-header">
+                        <div class="module-icon">🔒</div>
+                        <h3 class="module-title">安全机制</h3>
+                        <p class="module-description">保护数据流、信道和敏感数据交互的安全机制</p>
+                    </div>
+                    <div class="module-body">
+                        <ul class="module-features">
+                            <li class="module-feature">滚码锁安全机制</li>
+                            <li class="module-feature">数据传输加密</li>
+                            <li class="module-feature">敏感数据保护</li>
+                            <li class="module-feature">安全握手协议</li>
+                        </ul>
+                    </div>
+                    <div class="module-actions">
+                        <a href="#" class="btn btn-outline btn-block" onclick="openSecuritySettings()">配置安全机制</a>
+                    </div>
+                </div>
+
+                <!-- 配色方案设置模块 -->
+                <div class="module-card">
+                    <div class="module-header">
+                        <div class="module-icon">🎨</div>
+                        <h3 class="module-title">配色方案设置</h3>
+                        <p class="module-description">智能推荐和自定义注册页面配色方案</p>
+                    </div>
+                    <div class="module-body">
+                        <ul class="module-features">
+                            <li class="module-feature">AI智能配色推荐</li>
+                            <li class="module-feature">实时预览效果</li>
+                            <li class="module-feature">自定义颜色选择</li>
+                            <li class="module-feature">方案保存和应用</li>
+                        </ul>
+                    </div>
+                    <div class="module-actions">
+                        <a href="settings/color-scheme-settings.html" target="_blank" class="btn btn-outline btn-block">设置配色</a>
+                    </div>
+                </div>
+
+                <!-- 智能适配引擎模块 -->
+                <div class="module-card">
+                    <div class="module-header">
+                        <div class="module-icon">🤖</div>
+                        <h3 class="module-title">智能适配引擎</h3>
+                        <p class="module-description">动态扩展系统功能和优化架构</p>
+                    </div>
+                    <div class="module-body">
+                        <ul class="module-features">
+                            <li class="module-feature">系统状态收集分析</li>
+                            <li class="module-feature">性能瓶颈检测</li>
+                            <li class="module-feature">组件智能管理</li>
+                            <li class="module-feature">资源优化调度</li>
+                        </ul>
+                    </div>
+                    <div class="module-actions">
+                        <button class="btn btn-outline btn-block" onclick="runAdaptiveAnalysis()">运行分析</button>
+                    </div>
+                </div>
+
+                <!-- 服务器管理模块 -->
+                <div class="module-card">
+                    <div class="module-header">
+                        <div class="module-icon">🖥️</div>
+                        <h3 class="module-title">服务器动态管理</h3>
+                        <p class="module-description">智能管理服务器端口、进程和依赖项</p>
+                    </div>
+                    <div class="module-body">
+                        <ul class="module-features">
+                            <li class="module-feature">端口自动管理</li>
+                            <li class="module-feature">进程监控与控制</li>
+                            <li class="module-feature">依赖项升级修复</li>
+                            <li class="module-feature">服务状态检查</li>
+                        </ul>
+                    </div>
+                    <div class="module-actions">
+                        <a href="#" class="btn btn-outline btn-block" onclick="openServerManagement()">管理服务器</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 系统信息区域 -->
+        <section class="system-info-section">
+            <h2 class="section-title">系统信息</h2>
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="info-label">环境名称</div>
+                    <div class="info-value">MTSCOS AI 灰度测试环境</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">环境类型</div>
+                    <div class="info-value">Staging</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">安全级别</div>
+                    <div class="info-value">高级</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">当前版本</div>
+                    <div class="info-value">v1.0.0</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">最后更新时间</div>
+                    <div class="info-value">2023-11-08 14:30:00</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">维护状态</div>
+                    <div class="info-value">自动维护中</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 最近活动区域 -->
+        <section class="activity-section">
+            <h2 class="section-title">最近活动</h2>
+            <ul class="activity-list">
+                <li class="activity-item">
+                    <div class="activity-icon">✅</div>
+                    <div class="activity-content">
+                        <div class="activity-title">自动备份完成</div>
+                        <div class="activity-description">系统数据已成功备份到GitHub</div>
+                        <div class="activity-time">2023-11-08 12:30:45</div>
+                    </div>
+                </li>
+                <li class="activity-item">
+                    <div class="activity-icon">🔍</div>
+                    <div class="activity-content">
+                        <div class="activity-title">系统检测完成</div>
+                        <div class="activity-description">自动检测完成，未发现异常</div>
+                        <div class="activity-time">2023-11-08 10:15:23</div>
+                    </div>
+                </li>
+                <li class="activity-item">
+                    <div class="activity-icon">👤</div>
+                    <div class="activity-content">
+                        <div class="activity-title">测试用户登录</div>
+                        <div class="activity-description">用户 test_user_1 登录系统</div>
+                        <div class="activity-time">2023-11-08 09:45:12</div>
+                    </div>
+                </li>
+                <li class="activity-item">
+                    <div class="activity-icon">🔧</div>
+                    <div class="activity-content">
+                        <div class="activity-title">依赖项更新</div>
+                        <div class="activity-description">已成功更新3个系统依赖项</div>
+                        <div class="activity-time">2023-11-07 23:00:05</div>
+                    </div>
+                </li>
+            </ul>
+        </section>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="footer" id="about">
+        <div class="footer-content">
+            <div>
+                <div class="footer-logo">
+                    <div class="footer-logo-icon">M</div>
+                    MTSCOS AI
+                </div>
+                <div class="footer-description">
+                    MTSCOS AI是一个智能化、模块化的系统平台，提供全方位的系统管理、监控、维护和安全保护功能。
+                </div>
+                <div>
+                    <span class="tag tag-primary">灰度测试环境</span>
+                    <span class="tag tag-success">自主修复</span>
+                    <span class="tag tag-info">智能监控</span>
+                    <span class="tag tag-warning">安全保护</span>
+                </div>
+            </div>
+            <div>
+                <h4 class="footer-link-title">快速链接</h4>
+                <ul class="footer-links">
+                    <li><a href="#" class="footer-link">首页</a></li>
+                    <li><a href="#modules" class="footer-link">功能模块</a></li>
+                    <li><a href="#settings" class="footer-link">系统设置</a></li>
+                    <li><a href="#about" class="footer-link">关于系统</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="footer-link-title">系统工具</h4>
+                <ul class="footer-links">
+                    <li><a href="#" class="footer-link" onclick="openSystemMonitoring()">系统监控</a></li>
+                    <li><a href="#" class="footer-link" onclick="openSecuritySettings()">安全中心</a></li>
+                    <li><a href="#" class="footer-link" onclick="openLogViewer()">日志查看</a></li>
+                    <li><a href="#" class="footer-link" onclick="openBackupManager()">备份管理</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="footer-link-title">支持</h4>
+                <ul class="footer-links">
+                    <li><a href="#" class="footer-link" onclick="showHelp()">帮助中心</a></li>
+                    <li><a href="#" class="footer-link" onclick="showDocumentation()">文档</a></li>
+                    <li><a href="#" class="footer-link" onclick="showContact()">联系我们</a></li>
+                    <li><a href="#" class="footer-link" onclick="showFeedback()">反馈建议</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            © 2023 MTSCOS AI 系统. 保留所有权利.
+        </div>
+    </footer>
+
+    <!-- 通知组件 -->
+    <div class="notification" id="notification"></div>
+
+    <script>
+        // 页面加载完成后执行初始化
+        document.addEventListener('DOMContentLoaded', () => {
+//             console.log('MTSCOS AI 灰度测试环境已加载'); /* 代码质量修复：调试语句 */
+            
+            // 模拟系统状态检查
+            checkSystemStatus();
+            
+            // 加载活动日志
+            loadActivityLogs();
+        });
+
+        // 检查系统状态
+//         function checkSystemStatus() { /* 代码质量修复：未使用的函数 */
+//             // 模拟系统状态检查 /* 代码质量修复：未使用的函数 */
+// //             console.log('正在检查系统状态...'); /* 代码质量修复：调试语句 */ /* 代码质量修复：未使用的函数 */
+//              /* 代码质量修复：未使用的函数 */
+//             // 显示系统正常运行的通知 /* 代码质量修复：未使用的函数 */
+//             showNotification('系统状态正常，所有服务运行良好', 'success'); /* 代码质量修复：未使用的函数 */
+//         } /* 代码质量修复：未使用的函数 */
+
+        // 加载活动日志
+//         function loadActivityLogs() { /* 代码质量修复：未使用的函数 */
+//             // 在实际应用中，这里应该从服务器获取活动日志 /* 代码质量修复：未使用的函数 */
+// //             console.log('加载活动日志...'); /* 代码质量修复：调试语句 */ /* 代码质量修复：未使用的函数 */
+//         } /* 代码质量修复：未使用的函数 */
+
+        // 打开系统监控面板
+//         function openSystemMonitoring() { /* 代码质量修复：未使用的函数 */
+//             showNotification('正在打开系统监控面板', 'info'); /* 代码质量修复：未使用的函数 */
+//             // 在实际应用中，这里应该跳转到监控面板页面 /* 代码质量修复：未使用的函数 */
+//             alert('系统监控面板功能正在开发中'); /* 代码质量修复：未使用的函数 */
+//         } /* 代码质量修复：未使用的函数 */
+
+        // 运行自动检测
+//         function runAutoDetection() { /* 代码质量修复：未使用的函数 */
+//             showNotification('正在运行系统自动检测...', 'info'); /* 代码质量修复：未使用的函数 */
+//              /* 代码质量修复：未使用的函数 */
+//             // 模拟检测过程 /* 代码质量修复：未使用的函数 */
+//             setTimeout(() => { /* 代码质量修复：未使用的函数 */
+//                 showNotification('系统检测完成，未发现异常', 'success'); /* 代码质量修复：未使用的函数 */
+//             }, 2000); /* 代码质量修复：未使用的函数 */
+//         } /* 代码质量修复：未使用的函数 */
+
+        // 打开用户管理
+//         function openUserManagement() { /* 代码质量修复：未使用的函数 */
+//             showNotification('正在打开用户管理页面', 'info'); /* 代码质量修复：未使用的函数 */
+//             // 在实际应用中，这里应该跳转到用户管理页面 /* 代码质量修复：未使用的函数 */
+//             alert('用户管理功能已实现，位于 /Staging/Scripts/testing/test-user-management.js'); /* 代码质量修复：未使用的函数 */
+//         } /* 代码质量修复：未使用的函数 */
+
+        // 运行备份
+//         function runBackup() { /* 代码质量修复：未使用的函数 */
+//             showNotification('正在执行系统备份...', 'info'); /* 代码质量修复：未使用的函数 */
+//              /* 代码质量修复：未使用的函数 */
+//             // 模拟备份过程 /* 代码质量修复：未使用的函数 */
+//             setTimeout(() => { /* 代码质量修复：未使用的函数 */
+//                 showNotification('系统备份完成，数据已上传至GitHub', 'success'); /* 代码质量修复：未使用的函数 */
+//             }, 3000); /* 代码质量修复：未使用的函数 */
+//         } /* 代码质量修复：未使用的函数 */
+
+        // 配置备份
+//         function configureBackup() { /* 代码质量修复：未使用的函数 */
+//             showNotification('正在打开备份配置页面', 'info'); /* 代码质量修复：未使用的函数 */
+//             // 在实际应用中，这里应该跳转到备份配置页面 /* 代码质量修复：未使用的函数 */
+//             alert('备份功能已实现，位于 /Staging/Scripts/backup/github-backup-manager.js'); /* 代码质量修复：未使用的函数 */
+//         } /* 代码质量修复：未使用的函数 */
+
+        // 打开安全设置
+//         function openSecuritySettings() { /* 代码质量修复：未使用的函数 */
+//             showNotification('正在打开安全机制配置页面', 'info'); /* 代码质量修复：未使用的函数 */
+//             // 在实际应用中，这里应该跳转到安全设置页面 /* 代码质量修复：未使用的函数 */
+//             alert('安全机制功能已实现，位于 /Staging/Scripts/security/rolling-code-lock.js'); /* 代码质量修复：未使用的函数 */
+//         } /* 代码质量修复：未使用的函数 */
+
+        // 运行自适应分析
+//         function runAdaptiveAnalysis() { /* 代码质量修复：未使用的函数 */
+//             showNotification('正在运行智能适配分析...', 'info'); /* 代码质量修复：未使用的函数 */
+//              /* 代码质量修复：未使用的函数 */
+//             // 模拟分析过程 /* 代码质量修复：未使用的函数 */
+//             setTimeout(() => { /* 代码质量修复：未使用的函数 */
+//                 showNotification('智能适配分析完成，系统已优化', 'success'); /* 代码质量修复：未使用的函数 */
+//             }, 2500); /* 代码质量修复：未使用的函数 */
+//         } /* 代码质量修复：未使用的函数 */
+
+        // 打开服务器管理
+//         function openServerManagement() { /* 代码质量修复：未使用的函数 */
+//             showNotification('正在打开服务器管理页面', 'info'); /* 代码质量修复：未使用的函数 */
+//             // 在实际应用中，这里应该跳转到服务器管理页面 /* 代码质量修复：未使用的函数 */
+//             alert('服务器管理功能已实现，位于 /Staging/Scripts/intelligence/server-management.js'); /* 代码质量修复：未使用的函数 */
+//         } /* 代码质量修复：未使用的函数 */
+
+        // 打开日志查看器
+//         function openLogViewer() { /* 代码质量修复：未使用的函数 */
+//             showNotification('正在打开日志查看器', 'info'); /* 代码质量修复：未使用的函数 */
+//             // 在实际应用中，这里应该跳转到日志查看器页面 /* 代码质量修复：未使用的函数 */
+//             alert('日志查看功能正在开发中'); /* 代码质量修复：未使用的函数 */
+//         } /* 代码质量修复：未使用的函数 */
+
+        // 打开备份管理器
+//         function openBackupManager() { /* 代码质量修复：未使用的函数 */
+//             showNotification('正在打开备份管理器', 'info'); /* 代码质量修复：未使用的函数 */
+//             // 在实际应用中，这里应该跳转到备份管理器页面 /* 代码质量修复：未使用的函数 */
+//             alert('备份管理器功能已实现，位于 /Staging/Scripts/backup/github-backup-manager.js'); /* 代码质量修复：未使用的函数 */
+//         } /* 代码质量修复：未使用的函数 */
+
+        // 显示系统状态
+//         function showSystemStatus() { /* 代码质量修复：未使用的函数 */
+//             showNotification('系统状态：正常运行中', 'info'); /* 代码质量修复：未使用的函数 */
+//         } /* 代码质量修复：未使用的函数 */
+
+        // 显示帮助
+//         function showHelp() { /* 代码质量修复：未使用的函数 */
+//             showNotification('正在加载帮助文档', 'info'); /* 代码质量修复：未使用的函数 */
+//             // 在实际应用中，这里应该显示帮助文档 /* 代码质量修复：未使用的函数 */
+//             alert('帮助文档功能正在开发中'); /* 代码质量修复：未使用的函数 */
+//         } /* 代码质量修复：未使用的函数 */
+
+        // 显示文档
+//         function showDocumentation() { /* 代码质量修复：未使用的函数 */
+//             showNotification('正在加载系统文档', 'info'); /* 代码质量修复：未使用的函数 */
+//             // 在实际应用中，这里应该显示系统文档 /* 代码质量修复：未使用的函数 */
+//             alert('系统文档功能正在开发中'); /* 代码质量修复：未使用的函数 */
+//         } /* 代码质量修复：未使用的函数 */
+
+        // 显示联系信息
+//         function showContact() { /* 代码质量修复：未使用的函数 */
+//             showNotification('显示联系信息', 'info'); /* 代码质量修复：未使用的函数 */
+//             alert('联系我们：support@mtscos-ai.com'); /* 代码质量修复：未使用的函数 */
+//         } /* 代码质量修复：未使用的函数 */
+
+        // 显示反馈表单
+//         function showFeedback() { /* 代码质量修复：未使用的函数 */
+//             showNotification('正在打开反馈表单', 'info'); /* 代码质量修复：未使用的函数 */
+//             // 在实际应用中，这里应该显示反馈表单 /* 代码质量修复：未使用的函数 */
+//             alert('反馈功能正在开发中'); /* 代码质量修复：未使用的函数 */
+//         } /* 代码质量修复：未使用的函数 */
+
+        // 显示通知
+//         function showNotification(message, type = 'info') { /* 代码质量修复：未使用的函数 */
+// //             const notification = document.getElementById('notification'); /* 代码质量修复：未使用的 常量 */ /* 代码质量修复：未使用的函数 */
+//             notification.textContent = message; /* 代码质量修复：未使用的函数 */
+//              /* 代码质量修复：未使用的函数 */
+//             // 设置通知类型 /* 代码质量修复：未使用的函数 */
+//             notification.className = `notification ${type}`; /* 代码质量修复：未使用的函数 */
+//              /* 代码质量修复：未使用的函数 */
+//             // 显示通知 /* 代码质量修复：未使用的函数 */
+//             setTimeout(() => { /* 代码质量修复：未使用的函数 */
+//                 notification.classList.add('show'); /* 代码质量修复：未使用的函数 */
+//             }, 10); /* 代码质量修复：未使用的函数 */
+//              /* 代码质量修复：未使用的函数 */
+//             // 3秒后隐藏通知 /* 代码质量修复：未使用的函数 */
+//             setTimeout(() => { /* 代码质量修复：未使用的函数 */
+//                 notification.classList.remove('show'); /* 代码质量修复：未使用的函数 */
+//             }, 3000); /* 代码质量修复：未使用的函数 */
+//         } /* 代码质量修复：未使用的函数 */
+    </script>
+</body>
+</html>

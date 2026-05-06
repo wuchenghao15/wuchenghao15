@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系统设置 - MTSCOS</title>
+    <link rel="stylesheet" href="../CSS/page_styles/settings.css">
+    <link rel="stylesheet" href="../CSS/component_styles/footer.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+</head>
+<body>
+    <div class="dashboard-header">
+        <div class="header-content">
+            <div class="logo-container">
+                <h1 class="system-title">MTSCOS - 系统设置</h1>
+            </div>
+            <div class="user-info">
+                <!-- 用户登录状态和头像菜单将由user_profile.js动态生成 -->
+            </div>
+        </div>
+    </div>
+
+    <div class="settings-container">
+        <div class="sidebar">
+            <div class="sidebar-menu">
+                <div class="menu-item active" data-target="general-settings">
+                    <i class="fas fa-cog"></i>
+                    <span>通用设置</span>
+                </div>
+                <div class="menu-item" data-target="database-settings">
+                    <i class="fas fa-database"></i>
+                    <span>数据库设置</span>
+                </div>
+                <div class="menu-item" data-target="python-settings">
+                    <i class="fab fa-python"></i>
+                    <span>Python设置</span>
+                </div>
+                <div class="menu-item" data-target="ai-settings">
+                    <i class="fas fa-robot"></i>
+                    <span>AI设置</span>
+                </div>
+                <div class="menu-item" data-target="security-settings">
+                    <i class="fas fa-shield-alt"></i>
+                    <span>安全设置</span>
+                </div>
+                <div class="menu-item" data-target="backup-settings">
+                    <i class="fas fa-hdd"></i>
+                    <span>备份设置</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="content">
+            <!-- 通用设置面板 -->
+            <div id="general-settings" class="settings-panel active">
+                <h2>通用设置</h2>
+                <div class="settings-form">
+                    <div class="form-group">
+                        <label for="session-timeout">会话超时时间（分钟）</label>
+                        <div class="input-group">
+                            <input type="number" id="session-timeout" min="1" max="1440" value="30">
+                            <span class="unit">分钟</span>
+                        </div>
+                        <small class="hint">设置用户会话自动超时的时间，超时后需要重新登录</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="page-auto-refresh">页面自动刷新（分钟）</label>
+                        <div class="input-group">
+                            <input type="number" id="page-auto-refresh" min="0" max="60" value="0">
+                            <span class="unit">分钟</span>
+                        </div>
+                        <small class="hint">设置为0表示禁用自动刷新</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="theme-select">界面主题</label>
+                        <select id="theme-select">
+                            <option value="light">浅色主题</option>
+                            <option value="dark">深色主题</option>
+                            <option value="auto">跟随系统</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="auto-logout">
+                            <span>启用自动登出提醒</span>
+                        </label>
+                        <small class="hint">在会话即将超时前显示提醒</small>
+                    </div>
+
+                    <div class="form-actions">
+                        <button id="save-general-settings" class="btn btn-primary">保存设置</button>
+                        <button id="reset-general-settings" class="btn btn-secondary">恢复默认</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 数据库设置面板 -->
+            <div id="database-settings" class="settings-panel">
+                <h2>数据库设置</h2>
+                <div class="settings-form">
+                    <div class="form-group">
+                        <label for="db-host">数据库主机</label>
+                        <input type="text" id="db-host" placeholder="localhost">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="db-port">数据库端口</label>
+                        <input type="number" id="db-port" placeholder="1433">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="db-name">数据库名称</label>
+                        <input type="text" id="db-name" placeholder="MTSCOS">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="db-user">数据库用户名</label>
+                        <input type="text" id="db-user" placeholder="sa">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="db-password">数据库密码</label>
+                        <input type="password" id="db-password" placeholder="********">
+                    </div>
+
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="save-credentials">
+                            <span>保存数据库凭证</span>
+                        </label>
+                        <small class="hint">勾选后将保存数据库连接信息</small>
+                    </div>
+
+                    <div class="form-actions">
+                        <button id="test-db-connection" class="btn btn-info">测试连接</button>
+                        <button id="save-db-settings" class="btn btn-primary">保存设置</button>
+                        <button id="reset-db-settings" class="btn btn-secondary">恢复默认</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Python版本设置面板 -->
+            <div id="python-settings" class="settings-panel">
+                <h2>Python版本管理</h2>
+                <div class="settings-form">
+                    <div class="form-group">
+                        <label>当前Python版本</label>
+                        <div id="current-python-version" class="readonly-field">
+                            <i class="fas fa-spinner fa-spin"></i> 正在检测...
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="python-path">Python执行路径</label>
+                        <input type="text" id="python-path" placeholder="/usr/bin/python3">
+                    </div>
+
+                    <div class="form-group">
+                        <label>可用Python版本</label>
+                        <div id="available-python-versions" class="version-list">
+                            <i class="fas fa-spinner fa-spin"></i> 正在检测可用版本...
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button id="check-python-update" class="btn btn-info">检查更新</button>
+                        <button id="update-python-version" class="btn btn-warning">升级Python</button>
+                        <button id="save-python-settings" class="btn btn-primary">保存设置</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 安全设置面板 -->
+            <div id="security-settings" class="settings-panel">
+                <h2>安全设置</h2>
+                <div class="settings-form">
+                    <div class="form-group">
+                        <label for="password-policy">密码策略</label>
+                        <select id="password-policy">
+                            <option value="low">低（最少6位）</option>
+                            <option value="medium">中（最少8位，包含字母和数字）</option>
+                            <option value="high">高（最少10位，包含大小写字母、数字和特殊字符）</option>
+                        </select>
+                        <small class="hint">设置用户密码的复杂度要求</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="failed-login-attempts">登录失败次数限制</label>
+                        <input type="number" id="failed-login-attempts" min="3" max="10" value="5">
+                        <small class="hint">超过次数后账户将被锁定一段时间</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="account-lockout-time">账户锁定时间（分钟）</label>
+                        <div class="input-group">
+                            <input type="number" id="account-lockout-time" min="5" max="120" value="15">
+                            <span class="unit">分钟</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="enable-2fa">
+                            <span>启用双因素认证</span>
+                        </label>
+                        <small class="hint">为所有用户启用双因素认证</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="enable-ip-restriction">
+                            <span>启用IP地址限制</span>
+                        </label>
+                        <small class="hint">只允许白名单IP地址访问系统</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="enable-login-alert">
+                            <span>启用登录告警</span>
+                        </label>
+                        <small class="hint">登录成功或失败时发送邮件通知</small>
+                    </div>
+
+                    <div class="form-actions">
+                        <button id="save-security-settings" class="btn btn-primary">保存设置</button>
+                        <button id="reset-security-settings" class="btn btn-secondary">恢复默认</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI设置面板 -->
+            <div id="ai-settings" class="settings-panel">
+                <h2>AI设置</h2>
+                <div class="settings-form">
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="enable-ai-assistant">
+                            <span>启用AI助手</span>
+                        </label>
+                        <small class="hint">启用系统内置的AI助手功能</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="enable-ai-learning">
+                            <span>启用AI自主学习</span>
+                        </label>
+                        <small class="hint">允许AI系统从用户行为中学习</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="ai-update-frequency">AI模型更新频率（天）</label>
+                        <div class="input-group">
+                            <input type="number" id="ai-update-frequency" min="1" max="30" value="7">
+                            <span class="unit">天</span>
+                        </div>
+                        <small class="hint">设置AI模型自动更新的频率</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="ai-confidence-threshold">AI决策置信度阈值</label>
+                        <div class="input-group">
+                            <input type="number" id="ai-confidence-threshold" min="50" max="100" value="80">
+                            <span class="unit">%</span>
+                        </div>
+                        <small class="hint">AI决策需要达到的最低置信度</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="enable-ai-logging">
+                            <span>启用AI操作日志</span>
+                        </label>
+                        <small class="hint">记录AI系统的所有操作</small>
+                    </div>
+
+                    <div class="form-actions">
+                        <button id="save-ai-settings" class="btn btn-primary">保存设置</button>
+                        <button id="reset-ai-settings" class="btn btn-secondary">恢复默认</button>
+                        <button id="update-ai-model" class="btn btn-warning">立即更新AI模型</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 备份设置面板 -->
+            <div id="backup-settings" class="settings-panel">
+                <h2>备份设置</h2>
+                <div class="settings-form">
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="enable-auto-backup">
+                            <span>启用自动备份</span>
+                        </label>
+                        <small class="hint">定期自动备份系统数据</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="backup-frequency">备份频率</label>
+                        <select id="backup-frequency">
+                            <option value="daily">每天</option>
+                            <option value="weekly" selected>每周</option>
+                            <option value="monthly">每月</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="backup-time">备份时间</label>
+                        <input type="time" id="backup-time" value="02:00">
+                        <small class="hint">设置自动备份的执行时间</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="backup-retention">备份保留数量</label>
+                        <input type="number" id="backup-retention" min="1" max="30" value="7">
+                        <small class="hint">保留最近的备份数量</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="backup-storage">备份存储位置</label>
+                        <input type="text" id="backup-storage" placeholder="/backup/mtscos">
+                        <small class="hint">设置备份文件的存储路径</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="enable-backup-notification">
+                            <span>启用备份通知</span>
+                        </label>
+                        <small class="hint">备份完成后发送通知</small>
+                    </div>
+
+                    <div class="form-actions">
+                        <button id="save-backup-settings" class="btn btn-primary">保存设置</button>
+                        <button id="reset-backup-settings" class="btn btn-secondary">恢复默认</button>
+                        <button id="create-backup-now" class="btn btn-info">立即创建备份</button>
+                        <button id="restore-backup" class="btn btn-warning">恢复备份</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 通知消息 -->
+    <div id="notification" class="notification">
+        <div class="notification-content">
+            <i class="fas fa-info-circle"></i>
+            <span id="notification-message"></span>
+        </div>
+        <button class="notification-close">&times;</button>
+    </div>
+
+    <script src="../MyScript/settings.js"></script>
+    
+    <!-- 页脚 -->
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>关于我们</h3>
+                    <ul class="footer-links">
+                        <li><a href="#"><i class="fas fa-info-circle"></i> 公司简介</a></li>
+                        <li><a href="#"><i class="fas fa-history"></i> 发展历程</a></li>
+                        <li><a href="#"><i class="fas fa-users"></i> 团队介绍</a></li>
+                        <li><a href="#"><i class="fas fa-newspaper"></i> 新闻动态</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>产品服务</h3>
+                    <ul class="footer-links">
+                        <li><a href="#"><i class="fas fa-cogs"></i> 系统功能</a></li>
+                        <li><a href="#"><i class="fas fa-rocket"></i> 解决方案</a></li>
+                        <li><a href="#"><i class="fas fa-chart-line"></i> 数据分析</a></li>
+                        <li><a href="#"><i class="fas fa-shield-alt"></i> 安全服务</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>帮助中心</h3>
+                    <ul class="footer-links">
+                        <li><a href="#"><i class="fas fa-book"></i> 使用文档</a></li>
+                        <li><a href="#"><i class="fas fa-question-circle"></i> 常见问题</a></li>
+                        <li><a href="#"><i class="fas fa-headset"></i> 技术支持</a></li>
+                        <li><a href="#"><i class="fas fa-life-ring"></i> 联系我们</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>联系我们</h3>
+                    <ul class="footer-links">
+                        <li><a href="#"><i class="fas fa-map-marker-alt"></i> 北京市海淀区科技园区</a></li>
+                        <li><a href="#"><i class="fas fa-phone"></i> 400-888-8888</a></li>
+                        <li><a href="#"><i class="fas fa-envelope"></i> contact@mtscos.com</a></li>
+                        <li><a href="#"><i class="fas fa-clock"></i> 周一至周五 9:00-18:00</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <div class="footer-social">
+                    <a href="#"><i class="fab fa-weixin"></i></a>
+                    <a href="#"><i class="fab fa-weibo"></i></a>
+                    <a href="#"><i class="fab fa-github"></i></a>
+                    <a href="#"><i class="fab fa-linkedin"></i></a>
+                </div>
+                <p class="footer-copyright">© 2025 MTSCOS 智能管理系统 版权所有 | 作者: Chenghao Wu | 京ICP备12345678号</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

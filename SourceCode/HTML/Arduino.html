@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arduino 在线开发平台</title>
+    <link rel="stylesheet" href="../../Styles/MyStyle/arduino.css">
+    <link rel="stylesheet" href="../../Styles/MyStyle/footer.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="../../SourceCode/JavaScript/MyScript/arduino.js"></script>
+    <style>
+        /* 基础样式已在arduino.css中定义 */
+        body {
+            padding: 0;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .login-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            position: relative;
+        }
+        
+        .status-indicator {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .status-indicator.guest {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+        
+        .status-indicator.logged-in {
+            background-color: rgba(76, 175, 80, 0.2);
+            color: #e8f5e9;
+        }
+        
+        /* 用户头像和下拉菜单样式 */
+        .user-profile {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .user-avatar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 50px;
+            transition: background-color 0.3s ease;
+        }
+        
+        .user-avatar:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        .user-avatar img {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .username {
+            color: white;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .user-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            min-width: 180px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            padding: 8px 0;
+            margin-top: 5px;
+            z-index: 1000;
+            display: none;
+        }
+        
+        .user-dropdown a {
+            display: block;
+            padding: 10px 16px;
+            color: #333;
+            text-decoration: none;
+            font-size: 14px;
+            transition: background-color 0.2s ease;
+        }
+        
+        .user-dropdown a:hover {
+            background-color: #f5f5f5;
+        }
+        
+        .dropdown-divider {
+            height: 1px;
+            background-color: #eee;
+            margin: 4px 0;
+        }
+        
+        .user-dropdown.active {
+            display: block;
+        }
+        
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+            
+            .login-status {
+                width: 100%;
+                justify-content: space-between;
+            }
+            
+            .user-dropdown {
+                right: auto;
+                left: 0;
+                width: 100%;
+            }
+        }
+    </style>
+<script src="../MyScript/anti_hotlink.js"></script>
+
+<body>
+    <div class="container">
+        <header>
+        <div class="header-content">
+            <div>
+                <h1>Arduino 在线开发平台</h1>
+                <p>在线编辑、编译和上传 Arduino 代码</p>
+            </div>
+            <div class="login-status">
+                <span id="auth-status" class="status-indicator">访客模式</span>
+                <button id="login-btn" class="tool-btn primary" style="display: none;">登录</button>
+                <!-- 用户头像和下拉菜单 -->
+                <div id="user-profile" class="user-profile" style="display: none;">
+                    <div class="user-avatar" id="user-avatar">
+                        <img src="../MyStyle/default-avatar.svg" alt="用户头像" id="avatar-img">
+                        <span class="username" id="display-username"></span>
+                    </div>
+                    <div class="user-dropdown">
+                        <a href="#" id="menu-profile">个人资料</a>
+                        <a href="#" id="menu-projects">我的项目</a>
+                        <a href="#" id="menu-settings">设置</a>
+                        <div class="dropdown-divider"></div>
+                        <a href="#" id="menu-logout">退出登录</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+        <div class="toolbar">
+        <div class="left-tools">
+            <select id="template-select" class="tool-select">
+                <option value="">选择模板</option>
+                <option value="blink">Blink（闪烁LED）</option>
+                <option value="button">按钮控制LED</option>
+                <option value="serial">串口通信</option>
+            </select>
+            <select id="board-select" class="tool-select">
+                <option value="">选择板型</option>
+                <option value="uno">Arduino Uno</option>
+                <option value="nano">Arduino Nano</option>
+                <option value="leonardo">Arduino Leonardo</option>
+                <option value="mega">Arduino Mega</option>
+                <option value="esp32">ESP32</option>
+                <option value="esp8266">ESP8266</option>
+            </select>
+            <select id="port-select" class="tool-select">
+                <option value="">选择端口</option>
+                <!-- 端口将通过JavaScript动态加载 -->
+            </select>
+            <button id="refresh-ports" class="tool-btn">刷新端口</button>
+        </div>
+            <div class="right-tools">
+                <button id="verify-btn" class="tool-btn">验证</button>
+                <button id="compile-btn" class="tool-btn primary">编译</button>
+                <button id="upload-btn" class="tool-btn success">上传</button>
+                <button id="save-btn" class="tool-btn">保存</button>
+                <button id="new-btn" class="tool-btn">新建</button>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="editor-container">
+                <div class="editor-header">
+                    <h3>代码编辑器</h3>
+                    <span id="line-count">0 行</span>
+                </div>
+                <textarea id="code-editor" placeholder="在此输入Arduino代码..."></textarea>
+            </div>
+
+            <div class="output-container">
+                <div class="output-tabs">
+                    <button class="tab-btn active" data-tab="console">控制台</button>
+                    <button class="tab-btn" data-tab="serial">串口监视器</button>
+                    <button class="tab-btn" data-tab="reference">API参考</button>
+                </div>
+                <div class="tab-content">
+                    <div id="console-tab" class="tab-pane active">
+                        <div id="console-output" class="output-box">
+                            <div class="console-welcome">欢迎使用Arduino在线开发平台！</div>
+                            <div class="console-welcome">选择板型和端口，编写代码后点击验证、编译或上传按钮。</div>
+                        </div>
+                    </div>
+                    <div id="serial-tab" class="tab-pane">
+                        <div class="serial-controls">
+                            <select id="baud-rate" class="serial-select">
+                                <option value="9600">9600</option>
+                                <option value="115200">115200</option>
+                                <option value="57600">57600</option>
+                                <option value="38400">38400</option>
+                                <option value="19200">19200</option>
+                            </select>
+                            <button id="connect-serial" class="serial-btn">连接</button>
+                            <button id="disconnect-serial" class="serial-btn" disabled>断开</button>
+                        </div>
+                        <div id="serial-output" class="output-box"></div>
+                        <div class="serial-input">
+                            <input type="text" id="serial-input-text" placeholder="输入要发送的数据...">
+                            <button id="send-serial" class="serial-btn" disabled>发送</button>
+                        </div>
+                    </div>
+                    <div id="reference-tab" class="tab-pane">
+                        <div class="reference-content">
+                            <h3>Arduino API 参考</h3>
+                            <div class="reference-section">
+                                <h4>基本函数</h4>
+                                <div class="reference-item">
+                                    <code>setup()</code>
+                                    <p>初始化代码，只运行一次</p>
+                                </div>
+                                <div class="reference-item">
+                                    <code>loop()</code>
+                                    <p>主循环，反复运行</p>
+                                </div>
+                            </div>
+                            <div class="reference-section">
+                                <h4>数字I/O</h4>
+                                <div class="reference-item">
+                                    <code>pinMode(pin, mode)</code>
+                                    <p>设置引脚模式：INPUT, OUTPUT, INPUT_PULLUP</p>
+                                </div>
+                                <div class="reference-item">
+                                    <code>digitalWrite(pin, value)</code>
+                                    <p>写入数字值：HIGH, LOW</p>
+                                </div>
+                                <div class="reference-item">
+                                    <code>digitalRead(pin)</code>
+                                    <p>读取数字值</p>
+                                </div>
+                            </div>
+                            <div class="reference-section">
+                                <h4>模拟I/O</h4>
+                                <div class="reference-item">
+                                    <code>analogRead(pin)</code>
+                                    <p>读取模拟值（0-1023）</p>
+                                </div>
+                                <div class="reference-item">
+                                    <code>analogWrite(pin, value)</code>
+                                    <p>PWM输出（0-255）</p>
+                                </div>
+                            </div>
+                            <div class="reference-section">
+                                <h4>时间函数</h4>
+                                <div class="reference-item">
+                                    <code>delay(ms)</code>
+                                    <p>延时（毫秒）</p>
+                                </div>
+                                <div class="reference-item">
+                                    <code>millis()</code>
+                                    <p>获取运行时间（毫秒）</p>
+                                </div>
+                            </div>
+                            <div class="reference-section">
+                                <h4>串口通信</h4>
+                                <div class="reference-item">
+                                    <code>Serial.begin(baud)</code>
+                                    <p>初始化串口通信</p>
+                                </div>
+                                <div class="reference-item">
+                                    <code>Serial.print(data)</code>
+                                    <p>发送数据</p>
+                                </div>
+                                <div class="reference-item">
+                                    <code>Serial.println(data)</code>
+                                    <p>发送数据并换行</p>
+                                </div>
+                                <div class="reference-item">
+                                    <code>Serial.available()</code>
+                                    <p>检查是否有可用数据</p>
+                                </div>
+                                <div class="reference-item">
+                                    <code>Serial.read()</code>
+                                    <p>读取一个字节</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 页脚 -->
+        <footer class="footer">
+            <div class="footer-container">
+                <div class="footer-content">
+                    <div class="footer-section">
+                        <h3>关于我们</h3>
+                        <ul class="footer-links">
+                            <li><a href="#"><i class="fas fa-info-circle"></i> 公司简介</a></li>
+                            <li><a href="#"><i class="fas fa-history"></i> 发展历程</a></li>
+                            <li><a href="#"><i class="fas fa-users"></i> 团队介绍</a></li>
+                            <li><a href="#"><i class="fas fa-newspaper"></i> 新闻动态</a></li>
+                        </ul>
+                    </div>
+                    <div class="footer-section">
+                        <h3>产品服务</h3>
+                        <ul class="footer-links">
+                            <li><a href="#"><i class="fas fa-cogs"></i> 系统功能</a></li>
+                            <li><a href="#"><i class="fas fa-rocket"></i> 解决方案</a></li>
+                            <li><a href="#"><i class="fas fa-chart-line"></i> 数据分析</a></li>
+                            <li><a href="#"><i class="fas fa-shield-alt"></i> 安全服务</a></li>
+                        </ul>
+                    </div>
+                    <div class="footer-section">
+                        <h3>帮助中心</h3>
+                        <ul class="footer-links">
+                            <li><a href="#"><i class="fas fa-book"></i> 使用文档</a></li>
+                            <li><a href="#"><i class="fas fa-question-circle"></i> 常见问题</a></li>
+                            <li><a href="#"><i class="fas fa-headset"></i> 技术支持</a></li>
+                            <li><a href="#"><i class="fas fa-life-ring"></i> 联系我们</a></li>
+                        </ul>
+                    </div>
+                    <div class="footer-section">
+                        <h3>联系我们</h3>
+                        <ul class="footer-links">
+                            <li><a href="#"><i class="fas fa-map-marker-alt"></i> 北京市海淀区科技园区</a></li>
+                            <li><a href="#"><i class="fas fa-phone"></i> 400-888-8888</a></li>
+                            <li><a href="#"><i class="fas fa-envelope"></i> contact@mtscos.com</a></li>
+                            <li><a href="#"><i class="fas fa-clock"></i> 周一至周五 9:00-18:00</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="footer-bottom">
+                    <div class="footer-social">
+                        <a href="#"><i class="fab fa-weixin"></i></a>
+                        <a href="#"><i class="fab fa-weibo"></i></a>
+                        <a href="#"><i class="fab fa-github"></i></a>
+                        <a href="#"><i class="fab fa-linkedin"></i></a>
+                    </div>
+                    <p class="footer-copyright">© 2025 MTSCOS 智能管理系统 版权所有 | 作者: Chenghao Wu | 京ICP备12345678号</p>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- 加载编辑器相关的JavaScript -->
+    <script>
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化Arduino平台
+            function init() {
+                // 初始化Arduino开发环境
+                if (typeof initArduinoIDE === 'function') {
+                    initArduinoIDE();
+                }
+                
+                // 加载模板和板型数据
+                if (typeof loadTemplates === 'function') {
+                    loadTemplates();
+                }
+                if (typeof loadBoards === 'function') {
+                    loadBoards();
+                }
+                if (typeof loadPorts === 'function') {
+                    loadPorts();
+                }
+            }
+            
+            init();
+            
+            // 设置登录按钮事件
+            const loginBtn = document.getElementById('login-btn');
+            if (loginBtn) {
+                loginBtn.addEventListener('click', function() {
+                    const currentPath = encodeURIComponent(window.location.pathname + window.location.search);
+                    window.location.href = `index.html?redirect=${currentPath}`;
+                });
+            }
+            
+            // 更新登录状态显示
+            function updateLoginStatus() {
+                const statusIndicator = document.getElementById('auth-status');
+                const loginBtn = document.getElementById('login-btn');
+                const userProfile = document.getElementById('user-profile');
+                const usernameDisplay = document.getElementById('display-username');
+                const avatarImg = document.getElementById('avatar-img');
+                
+                if (window.editorState && window.editorState.isLoggedIn && window.currentUser) {
+                    // 用户已登录
+                    statusIndicator.textContent = '已登录';
+                    statusIndicator.className = 'status-indicator logged-in';
+                    if (loginBtn) loginBtn.style.display = 'none';
+                    if (userProfile) userProfile.style.display = 'block';
+                    
+                    // 更新用户名和头像
+                    if (usernameDisplay) {
+                        usernameDisplay.textContent = window.currentUser.username || '用户';
+                    }
+                    if (avatarImg && window.currentUser.avatar) {
+                        avatarImg.src = window.currentUser.avatar;
+                    }
+                } else {
+                    // 用户未登录
+                    statusIndicator.textContent = '访客模式';
+                    statusIndicator.className = 'status-indicator guest';
+                    if (loginBtn) loginBtn.style.display = 'inline-block';
+                    if (userProfile) userProfile.style.display = 'none';
+                }
+            }
+            
+            // 设置用户头像菜单事件
+            function setupUserMenuEvents() {
+                const userAvatar = document.getElementById('user-avatar');
+                const userDropdown = document.querySelector('.user-dropdown');
+                const logoutMenuItem = document.getElementById('menu-logout');
+                
+                if (userAvatar) {
+                    // 点击头像切换下拉菜单
+                    userAvatar.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        if (userDropdown) {
+                            userDropdown.classList.toggle('active');
+                        }
+                    });
+                    
+                    // 点击退出登录
+                    if (logoutMenuItem) {
+                        logoutMenuItem.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            
+                            // 清除用户会话数据
+                            if (typeof logoutUser === 'function') {
+                                logoutUser();
+                            }
+                            
+                            // 关闭下拉菜单
+                            if (userDropdown) {
+                                userDropdown.classList.remove('active');
+                            }
+                            
+                            // 刷新页面
+                            window.location.reload();
+                        });
+                    }
+                    
+                    // 点击其他地方关闭下拉菜单
+                    document.addEventListener('click', function() {
+                        if (userDropdown && userDropdown.classList.contains('active')) {
+                            userDropdown.classList.remove('active');
+                        }
+                    });
+                }
+            }
+            
+            // 立即更新登录状态
+            updateLoginStatus();
+            
+            // 设置用户菜单事件
+            setupUserMenuEvents();
+            
+            // 定期更新登录状态
+            setInterval(updateLoginStatus, 5000);
+        });
+    </script>
+</body>
+</html>

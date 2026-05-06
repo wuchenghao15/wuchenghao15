@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 任务管理面板</title>
+    <link rel="stylesheet" href="/assets/css/ai_dashboard.css">
+    <link rel="stylesheet" href="assets/css/theme.css"></head>
+<body>
+    <div class="container">
+        <h1>AI 任务管理面板</h1>
+
+        <!-- 统计卡片 -->
+        <div class="dashboard-grid">
+            <div class="card">
+                <h2>系统概览</h2>
+                <div class="stats" id="systemStats">
+                    <!-- 统计数据将通过JS动态生成 -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 选项卡 -->
+        <div class="tabs">
+            <button class="tab active" data-tab="ai-instances">AI 实例</button>
+            <button class="tab" data-tab="supervision">监管关系</button>
+            <button class="tab" data-tab="tasks">任务管理</button>
+            <button class="tab" data-tab="optimization-history">优化历史</button>
+            <button class="tab" data-tab="generate-tasks">生成任务</button>
+        </div>
+
+        <!-- AI实例管理 -->
+        <div class="tab-content active" id="ai-instances">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h2>AI 实例管理</h2>
+                <button class="btn btn-primary" onclick="openAddAIModal()">添加 AI 实例</button>
+            </div>
+            <table id="aiInstancesTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>名称</th>
+                        <th>角色</th>
+                        <th>分组</th>
+                        <th>状态</th>
+                        <th>是否主AI</th>
+                        <th>监管者</th>
+                        <th>子AI数量</th>
+                        <th>当前任务</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- AI实例数据将通过JS动态生成 -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 监管关系 -->
+        <div class="tab-content" id="supervision">
+            <h2>监管关系管理</h2>
+            <div style="margin-bottom: 20px;">
+                <button class="btn btn-primary" onclick="refreshSupervision()">刷新监管关系</button>
+                <button class="btn btn-primary" onclick="reassignSupervision()">重新分配监管</button>
+            </div>
+            <div id="supervisionTree" style="margin-bottom: 20px; padding: 20px; background: #f8f9fa; border-radius: 6px;">
+                <!-- 监管关系树将通过JS动态生成 -->
+            </div>
+            <h3>监管统计</h3>
+            <div class="stats" id="supervisionStats">
+                <!-- 监管统计数据将通过JS动态生成 -->
+            </div>
+        </div>
+
+        <!-- 任务管理 -->
+        <div class="tab-content" id="tasks">
+            <h2>任务管理</h2>
+            <table id="tasksTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>名称</th>
+                        <th>类型</th>
+                        <th>优先级</th>
+                        <th>状态</th>
+                        <th>分配给</th>
+                        <th>创建时间</th>
+                        <th>完成时间</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- 任务数据将通过JS动态生成 -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 优化历史 -->
+        <div class="tab-content" id="optimization-history">
+            <h2>优化历史</h2>
+            <div id="optimizationHistory" style="max-height: 500px; overflow-y: auto;">
+                <!-- 优化历史数据将通过JS动态生成 -->
+            </div>
+        </div>
+
+        <!-- 生成任务 -->
+        <div class="tab-content" id="generate-tasks">
+            <h2>根据项目需求生成优化任务</h2>
+            <div class="generate-tasks-form">
+                <div class="form-group">
+                    <label for="functionalModules">功能优化模块（逗号分隔）</label>
+                    <input type="text" id="functionalModules" placeholder="例如：user,auth,admin">
+                </div>
+                <div class="form-group">
+                    <label for="performanceMetrics">性能优化指标（逗号分隔）</label>
+                    <input type="text" id="performanceMetrics" placeholder="例如：responseTime,throughput,resourceUsage">
+                </div>
+                <div class="form-group">
+                    <label for="managementProcesses">管理优化流程（逗号分隔）</label>
+                    <input type="text" id="managementProcesses" placeholder="例如：workflow,permission,logging">
+                </div>
+                <div class="form-group">
+                    <label for="securityVulnerabilities">安全优化漏洞（逗号分隔）</label>
+                    <input type="text" id="securityVulnerabilities" placeholder="例如：password,access,headers">
+                </div>
+                <button class="btn btn-primary" onclick="generateTasks()">生成任务</button>
+            </div>
+            <div id="generateTasksResult" style="margin-top: 20px;"></div>
+        </div>
+    </div>
+
+    <!-- 添加AI实例模态框 -->
+    <div id="addAIModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+        <div style="background: white; margin: 5% auto; padding: 20px; border-radius: 8px; max-width: 500px; box-shadow: 0 5px 15px rgba(0,0,0,0.3);">
+            <h2 style="margin-bottom: 20px;">添加 AI 实例</h2>
+            <div class="form-group">
+                <label for="aiName">名称</label>
+                <input type="text" id="aiName" required>
+            </div>
+            <div class="form-group">
+                <label for="aiRole">角色</label>
+                <select id="aiRole">
+                    <option value="functional">功能优化</option>
+                    <option value="management">管理优化</option>
+                    <option value="performance">性能优化</option>
+                    <option value="security">安全优化</option>
+                    <option value="integration">集成优化</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="aiGroup">分组</label>
+                <select id="aiGroup">
+                    <option value="core">核心组</option>
+                    <option value="optimization">优化组</option>
+                    <option value="monitoring">监控组</option>
+                    <option value="reporting">报告组</option>
+                </select>
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+                <button class="btn" onclick="closeAddAIModal()">取消</button>
+                <button class="btn btn-primary" onclick="addAIInstance()">添加</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/assets/js/ai_dashboard.js" async></script>
+</body>
+</html>

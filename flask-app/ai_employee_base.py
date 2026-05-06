@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 AI员工基类 - 定义所有AI员工的基本接口和属性
-"""
 
 from abc import ABC, abstractmethod
 from datetime import datetime
@@ -10,7 +9,7 @@ from ai_brain_library import AIBrainLibrary
 
 class AIEmployee(ABC):
     """AI员工基类"""
-    
+
     def __init__(self, employee_id: str, name: str, employee_type: str, level: int = 1):
         self.employee_id = employee_id
         self.name = name
@@ -26,24 +25,22 @@ class AIEmployee(ABC):
         self.brain_library = AIBrainLibrary()
         # 添加id属性作为employee_id的别名，提高兼容性
         self.id = employee_id
-    
+
     def start(self):
         """启动AI员工"""
         self.status = "active"
         self.last_active = datetime.now().isoformat()
         print(f"[AI员工] 启动AI员工: {self.name} ({self.type})")
-    
+
     def stop(self):
         """停止AI员工"""
         self.status = "inactive"
-        self.last_active = datetime.now().isoformat()
         print(f"[AI员工] 停止AI员工: {self.name} ({self.type})")
-    
     @abstractmethod
     def process(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """处理数据"""
         pass
-    
+
     def get_status(self) -> Dict[str, Any]:
         """获取AI员工状态"""
         return {
@@ -58,20 +55,19 @@ class AIEmployee(ABC):
             "last_active": self.last_active,
             "learning_enabled": self.learning_enabled
         }
-    
+
     def upgrade_self(self):
         """AI员工自我升级"""
         if self.status != "active":
             return {"success": False, "message": "AI员工未激活，无法升级"}
-        
+
         try:
             # 升级AI脑库
             upgrade_results = self.brain_library.upgrade_all_libraries()
-            
+
             # 更新最后活动时间
             self.last_active = datetime.now().isoformat()
-            
-            return {
+
                 "success": True,
                 "message": f"AI员工 {self.employee_id} 自我升级完成",
                 "upgrade_results": upgrade_results
@@ -81,17 +77,16 @@ class AIEmployee(ABC):
                 "success": False,
                 "message": f"AI员工自我升级失败: {str(e)}"
             }
-    
+
     def learn_from_data(self, data: Dict[str, Any]):
         """从数据中学习"""
         if not self.learning_enabled or self.status != "active":
             return {"success": False, "message": "学习功能未启用或AI员工未激活"}
-        
+
         try:
             # 根据数据类型选择合适的库进行学习
             data_type = data.get("type", "unknown")
             learning_result = False
-            
             if data_type in ["validation", "login", "register"]:
                 # 验证数据，更新知识库
                 learning_result = self.brain_library.learn_from_data(data, "knowledge")
@@ -107,25 +102,19 @@ class AIEmployee(ABC):
             else:
                 # 其他数据，更新知识库
                 learning_result = self.brain_library.learn_from_data(data, "knowledge")
-            
+
             # 更新最后活动时间
             self.last_active = datetime.now().isoformat()
-            
-            return {
-                "success": learning_result,
+
                 "message": f"AI员工 {self.employee_id} 从数据中学习完成"
-            }
         except Exception as e:
             return {
                 "success": False,
                 "message": f"AI员工学习失败: {str(e)}"
             }
-    
+
     def toggle_learning(self, enabled: bool):
-        """切换学习功能"""
         self.learning_enabled = enabled
         self.last_active = datetime.now().isoformat()
-        return {
-            "success": True,
             "message": f"学习功能已{'启用' if enabled else '禁用'}"
         }

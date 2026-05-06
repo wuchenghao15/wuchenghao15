@@ -1,9 +1,10 @@
-import json
+# -*- coding: utf-8 -*-
+# JSON import removed - using database
 from app.models.system_config import SystemConfig
 
 class APIService:
     """API服务配置和管理"""
-    
+
     @staticmethod
     def get_api_config():
         """获取API配置"""
@@ -15,18 +16,17 @@ class APIService:
             'api_rate_limit': 100,
             'enable_cors': True
         }
-        
+
         # 从系统配置中加载API配置
         api_config = SystemConfig.get_by_key('api_config')
         if api_config:
             try:
-                config.update(json.loads(api_config.config_value))
+                config.update(eval(api_config.config_value))
             except json.JSONDecodeError:
                 pass
-        
+
         return config
-    
-    @staticmethod
+
     def get_ai_brain_endpoints():
         """获取AI脑库API端点列表"""
         config = APIService.get_api_config()
@@ -37,8 +37,7 @@ class APIService:
             f"{config['ai_brain_prefix']}/exam",
             f"{config['ai_brain_prefix']}/status"
         ]
-    
-    @staticmethod
+
     def validate_api_request(request):
         """验证API请求"""
         # 这里可以添加请求验证逻辑

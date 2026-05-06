@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 """
 超简单Flask应用，只测试基本路由
-"""
 
 from flask import Flask
 
@@ -27,3 +26,5 @@ if __name__ == '__main__':
     print("  http://localhost:8000/api/health")
     print("  http://localhost:8000/test")
     app.run(host='0.0.0.0', port=8000, debug=True)
+
+"""

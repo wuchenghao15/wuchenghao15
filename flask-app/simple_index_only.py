@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 """
 超简单的Flask应用，只返回index.html，使用端口8888
-"""
 
 from flask import Flask, render_template
 import os

@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 修复app.ai.__init__.py文件，正确初始化所有必要的组件
-"""
 import os
 import shutil
 
@@ -18,7 +17,6 @@ print(f"已备份原始文件到: {backup_path}")
 
 # 创建新的__init__.py文件内容
 new_content = """# AI模块初始化
-"""
 # 导入必要的组件
 from app.ai.instances import ai_instance_manager
 from app.ai.monitoring import ai_monitor
@@ -35,10 +33,10 @@ except Exception as e:
     class SimpleLearningAI:
         def __init__(self):
             self.model_path = 'models/'
-        
+
         def learn(self, data):
             return {}
-    
+
     ai_learning = SimpleLearningAI()
 
 # 检查是否需要AILearning类
@@ -46,45 +44,35 @@ except Exception as e:
 class AILearning:
     def __init__(self):
         self.model_path = 'models/'
-    
     def process(self, data):
-        return {}
 
 # 导出AILearning类，解决导入错误
 
-# 其他模块导入
 try:
+pass
     from app.ai.route_optimizer import route_optimizer
-except ImportError:
     route_optimizer = None
 
 try:
     from app.ai.question_generator import ai_question_generator
-except ImportError:
     ai_question_generator = None
 
 try:
     from app.ai.sandbox_manager import sandbox_manager
-except ImportError:
     sandbox_manager = None
 
-try:
     from app.ai.code_analyzer import ai_code_analyzer
-except ImportError:
     ai_code_analyzer = None
 
 # 导出所有组件
-__all__ = [
     'ai_instance_manager',
     'ai_monitor',
     'ai_learning',
     'AILearning',
-    'route_optimizer',
     'ai_question_generator',
     'sandbox_manager',
     'ai_code_analyzer'
 ]
-"""
 
 # 写入新内容
 with open(original_path, 'w', encoding='utf-8') as f:

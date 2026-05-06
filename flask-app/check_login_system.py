@@ -17,7 +17,6 @@ except Exception as e:
 
 # 检查是否存在操作记录表
 print("\n检查是否存在操作记录表:")
-try:
     cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='user_operations';")
     result = cursor.fetchone()
     if result:
@@ -25,12 +24,8 @@ try:
         # 检查操作记录表的结构
         cursor.execute('PRAGMA table_info(user_operations)')
         columns = cursor.fetchall()
-        for column in columns:
             print(f"- {column[1]}: {column[2]}")
-    else:
         print("操作记录表不存在")
-except Exception as e:
     print(f"错误: {e}")
 
 # 关闭连接
-conn.close()

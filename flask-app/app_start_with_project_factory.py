@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 Flask app start script with project factory for MTSCOS AI Project
-"""
 
 import os
 import sys
@@ -31,7 +30,7 @@ def init_db():
     """初始化数据库"""
     conn = get_db_connection()
     cursor = conn.cursor()
-    
+
     try:
         # 创建用户表（如果不存在）
         cursor.execute('''
@@ -46,7 +45,7 @@ def init_db():
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         ''')
-        
+
         conn.commit()
         print("[INFO] 数据库表结构初始化完成")
     except Exception as e:
@@ -76,16 +75,14 @@ ai_cluster_manager = None
 def init_ai_services():
     """初始化AI服务"""
     global ai_service_manager, ai_learning_system, ai_cluster_manager
-    
+
     try:
-        print("[INFO] 初始化AI服务...")
         # 动态导入和初始化AI服务
         # 注意：这里只是模拟，实际项目中需要导入真实的AI服务模块
         print("[INFO] AI服务初始化成功")
         return True
     except Exception as e:
         print(f"[ERROR] 初始化AI服务失败: {str(e)}")
-        import traceback
         traceback.print_exc()
         return False
 
@@ -109,7 +106,6 @@ def index():
 def init_ai_services_route():
     """初始化AI服务的API端点"""
     try:
-        success = init_ai_services()
         if success:
             return jsonify({'success': True, 'message': 'AI services initialized successfully'})
         else:
@@ -117,37 +113,31 @@ def init_ai_services_route():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
-if __name__ == '__main__':
     print("[INFO] 启动MTSCOS AI应用...")
-    
+
     # 初始化数据库表结构
     print("[INFO] 初始化数据库表结构...")
     init_db()
     print("[INFO] 数据库表结构初始化完成")
-    
+
     # 初始化智能选项生成器
-    print("[INFO] 初始化智能选项生成器...")
     try:
-        init_option_generator()
         print("[INFO] 智能选项生成器初始化成功")
     except Exception as e:
         print(f"[WARNING] 智能选项生成器初始化失败: {str(e)}")
-    
+
     # 尝试导入并启动项目工场管理系统
     print("[INFO] 导入项目工场管理系统...")
-    try:
-        print("[INFO] 项目工场管理系统导入成功")
         # 注意：这里不调用start()方法，避免阻塞应用启动
         print("[INFO] 项目工场管理系统将在后续手动启动")
     except Exception as e:
         print(f"[WARNING] 项目工场管理系统导入失败: {str(e)}")
-    
+
     # 使用固定端口8888
     port = 8888
-    
-    print(f"[INFO] 监听地址: 0.0.0.0:{port}")
+
     print(f"[INFO] 访问地址: http://localhost:{port}")
-    
+
     # 启动服务器
     print("[INFO] 正在启动Flask服务器...")
     app.run(host='0.0.0.0', port=port, debug=True, use_reloader=False)

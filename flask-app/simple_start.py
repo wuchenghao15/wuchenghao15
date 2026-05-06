@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 简化的启动脚本，直接启动Flask应用
-"""
 
 # 只导入必要的模块
 from flask import Flask
@@ -27,6 +26,8 @@ if __name__ == '__main__':
     print("启动Flask服务器...")
     print("访问地址: http://localhost:8888")
     print("健康检查: http://localhost:8888/api/health")
-    
+
     # 直接启动服务器，不进行任何额外初始化
     app.run(host='0.0.0.0', port=8888, debug=True)
+
+"""

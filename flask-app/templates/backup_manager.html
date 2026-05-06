@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>备份管理 - MTSCOS AI项目</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #0f172a;
+            color: #f1f5f9;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3);
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+        }
+
+        .back-btn {
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            color: white;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+
+        .section {
+            background: #1e293b;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            border-left: 4px solid #3b82f6;
+        }
+
+        .section-title {
+            font-size: 1.4rem;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .info-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .info-card label {
+            display: block;
+            font-size: 0.9rem;
+            color: #94a3b8;
+            margin-bottom: 8px;
+        }
+
+        .info-card .value {
+            font-family: 'Courier New', monospace;
+            font-size: 0.95rem;
+            word-break: break-all;
+            color: #22c55e;
+        }
+
+        .info-card .value.warning {
+            color: #f59e0b;
+        }
+
+        .info-card .value.danger {
+            color: #ef4444;
+        }
+
+        .info-card .value.info {
+            color: #3b82f6;
+        }
+
+        .backup-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .backup-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            margin-bottom: 10px;
+            transition: background 0.3s ease;
+        }
+
+        .backup-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .backup-info {
+            flex: 1;
+        }
+
+        .backup-info h4 {
+            margin-bottom: 4px;
+        }
+
+        .backup-info p {
+            font-size: 0.85rem;
+            color: #94a3b8;
+        }
+
+        .backup-size {
+            padding: 4px 12px;
+            background: rgba(59, 130, 246, 0.2);
+            border-radius: 20px;
+            font-size: 0.85rem;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+        }
+
+        .btn-success {
+            background: #22c55e;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #16a34a;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .stats-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .stats-card .number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #3b82f6;
+        }
+
+        .stats-card .label {
+            font-size: 0.9rem;
+            color: #94a3b8;
+            margin-top: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.4rem;
+            }
+
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📦 备份管理</h1>
+        <a href="/admin_center" class="back-btn"><i class="fas fa-arrow-left"></i> 返回</a>
+    </div>
+
+    <div class="container">
+        <section class="section">
+            <h2 class="section-title">
+                <i class="fas fa-server"></i> 项目ISO备份镜像路径
+            </h2>
+            
+            <div class="info-grid">
+                <div class="info-card">
+                    <label>备份根目录</label>
+                    <div class="value info">{{ backup_paths.backup_root }}</div>
+                </div>
+                <div class="info-card">
+                    <label>ISO镜像目录</label>
+                    <div class="value">{{ backup_paths.iso_directory }}</div>
+                </div>
+                <div class="info-card">
+                    <label>数据库备份目录</label>
+                    <div class="value">{{ backup_paths.db_backup_directory }}</div>
+                </div>
+                <div class="info-card">
+                    <label>配置备份目录</label>
+                    <div class="value">{{ backup_paths.config_backup_directory }}</div>
+                </div>
+                <div class="info-card">
+                    <label>项目根目录</label>
+                    <div class="value info">{{ backup_paths.project_root }}</div>
+                </div>
+                <div class="info-card">
+                    <label>最近备份时间</label>
+                    <div class="value">{{ backup_paths.last_backup_time }}</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section">
+            <h2 class="section-title">
+                <i class="fas fa-database"></i> ISO镜像文件列表
+            </h2>
+            
+            <div class="backup-list">
+                {% if iso_files %}
+                    {% for file in iso_files %}
+                        <div class="backup-item">
+                            <div class="backup-info">
+                                <h4>{{ file.name }}</h4>
+                                <p>{{ file.path }}</p>
+                            </div>
+                            <div class="backup-size">{{ file.size }}</div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div style="text-align: center; padding: 40px; color: #94a3b8;">
+                        <i class="fas fa-folder-open" style="font-size: 48px; margin-bottom: 15px;"></i>
+                        <p>暂无ISO镜像文件</p>
+                    </div>
+                {% endif %}
+            </div>
+        </section>
+
+        <section class="section">
+            <h2 class="section-title">
+                <i class="fas fa-chart-bar"></i> 备份统计
+            </h2>
+            
+            <div class="info-grid">
+                <div class="stats-card">
+                    <div class="number">{{ stats.total_backups }}</div>
+                    <div class="label">备份总数</div>
+                </div>
+                <div class="stats-card">
+                    <div class="number">{{ stats.iso_count }}</div>
+                    <div class="label">ISO镜像数量</div>
+                </div>
+                <div class="stats-card">
+                    <div class="number">{{ stats.total_size }}</div>
+                    <div class="label">总大小</div>
+                </div>
+                <div class="stats-card">
+                    <div class="number">{{ stats.db_backups }}</div>
+                    <div class="label">数据库备份数</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section">
+            <h2 class="section-title">
+                <i class="fas fa-cog"></i> 备份操作
+            </h2>
+            
+            <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                <button class="btn btn-success" onclick="createBackup()">
+                    <i class="fas fa-download"></i> 创建备份
+                </button>
+                <button class="btn btn-primary" onclick="createISO()">
+                    <i class="fas fa-disc"></i> 生成ISO镜像
+                </button>
+                <button class="btn btn-danger" onclick="cleanOldBackups()">
+                    <i class="fas fa-trash"></i> 清理旧备份
+                </button>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        function createBackup() {
+            if (confirm('确定要创建备份吗？')) {
+                window.location.href = '/api/backup/create';
+            }
+        }
+
+        function createISO() {
+            if (confirm('确定要生成ISO镜像吗？这可能需要一些时间。')) {
+                window.location.href = '/api/backup/create-iso';
+            }
+        }
+
+        function cleanOldBackups() {
+            if (confirm('确定要清理旧备份吗？此操作不可恢复！')) {
+                window.location.href = '/api/backup/clean';
+            }
+        }
+    </script>
+</body>
+</html>

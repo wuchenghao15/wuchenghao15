@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 """
 AI线程进程管理器API蓝图
-"""
 
 from flask import Blueprint, jsonify, request
 from app.ai.thread_process_manager import ai_thread_process_manager
@@ -29,9 +28,7 @@ def get_status():
 def get_config():
     """获取AI线程进程管理器配置"""
     try:
-        status = ai_thread_process_manager.get_status()
         return jsonify({
-            'success': True,
             'data': status['config']
         })
     except Exception as e:
@@ -44,13 +41,12 @@ def get_config():
 def update_config():
     """更新AI线程进程管理器配置"""
     try:
-        new_config = request.json
         if not isinstance(new_config, dict):
             return jsonify({
                 'success': False,
                 'error': '配置必须是JSON对象'
             }), 400
-        
+
         ai_thread_process_manager.update_config(new_config)
         return jsonify({
             'success': True,
@@ -66,11 +62,9 @@ def update_config():
 def get_monitor_data():
     """获取监控数据"""
     try:
-        status = ai_thread_process_manager.get_status()
         return jsonify({
             'success': True,
             'data': status['monitor_data']
-        })
     except Exception as e:
         return jsonify({
             'success': False,
@@ -81,7 +75,6 @@ def get_monitor_data():
 def start_manager():
     """启动AI线程进程管理器"""
     try:
-        ai_thread_process_manager.start()
         return jsonify({
             'success': True,
             'message': 'AI线程进程管理器已启动'
@@ -96,7 +89,6 @@ def start_manager():
 def stop_manager():
     """停止AI线程进程管理器"""
     try:
-        ai_thread_process_manager.stop()
         return jsonify({
             'success': True,
             'message': 'AI线程进程管理器已停止'
@@ -111,7 +103,6 @@ def stop_manager():
 def restart_manager():
     """重启AI线程进程管理器"""
     try:
-        ai_thread_process_manager.stop()
         ai_thread_process_manager.start()
         return jsonify({
             'success': True,
@@ -120,5 +111,3 @@ def restart_manager():
     except Exception as e:
         return jsonify({
             'success': False,
-            'error': f'重启管理器失败: {str(e)}'
-        }), 500

@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 """
 智体管家API接口，用于查询和管理智体管家的状态和配置
-"""
 
 from flask import Blueprint, jsonify, request
 from app.ai.intelligence_manager import intelligence_manager
@@ -13,10 +12,8 @@ intelligence_manager_api_bp = Blueprint('intelligence_manager_api', __name__)
 
 @intelligence_manager_api_bp.route('/status', methods=['GET'])
 def get_intelligence_manager_status():
-    """
     获取智体管家的状态信息
     GET /api/intelligence-manager/status
-    """
     try:
         status = intelligence_manager.get_status()
         return jsonify({
@@ -32,10 +29,8 @@ def get_intelligence_manager_status():
 
 @intelligence_manager_api_bp.route('/config', methods=['GET'])
 def get_intelligence_manager_config():
-    """
     获取智体管家的配置信息
     GET /api/intelligence-manager/config
-    """
     try:
         config = intelligence_manager.config
         return jsonify({
@@ -51,10 +46,8 @@ def get_intelligence_manager_config():
 
 @intelligence_manager_api_bp.route('/config', methods=['PUT'])
 def update_intelligence_manager_config():
-    """
     更新智体管家的配置信息
     PUT /api/intelligence-manager/config
-    """
     try:
         new_config = request.json
         if not isinstance(new_config, dict):
@@ -62,7 +55,7 @@ def update_intelligence_manager_config():
                 'success': False,
                 'error': '配置必须是JSON对象'
             }), 400
-        
+
         intelligence_manager.update_config(new_config)
         return jsonify({
             'success': True,
@@ -78,10 +71,8 @@ def update_intelligence_manager_config():
 
 @intelligence_manager_api_bp.route('/restart-component/<component_name>', methods=['POST'])
 def restart_component(component_name):
-    """
     重启单个AI组件
     POST /api/intelligence-manager/restart-component/<component_name>
-    """
     try:
         intelligence_manager.restart_component(component_name)
         return jsonify({
@@ -97,10 +88,8 @@ def restart_component(component_name):
 
 @intelligence_manager_api_bp.route('/optimize-system', methods=['POST'])
 def optimize_system():
-    """
     优化整个系统
     POST /api/intelligence-manager/optimize-system
-    """
     try:
         intelligence_manager.optimize_system()
         return jsonify({
@@ -116,10 +105,8 @@ def optimize_system():
 
 @intelligence_manager_api_bp.route('/report', methods=['GET'])
 def get_system_report():
-    """
     获取当前系统报告
     GET /api/intelligence-manager/report
-    """
     try:
         report = intelligence_manager.generate_report()
         return jsonify({
@@ -135,10 +122,8 @@ def get_system_report():
 
 @intelligence_manager_api_bp.route('/start', methods=['POST'])
 def start_intelligence_manager():
-    """
     启动智体管家
     POST /api/intelligence-manager/start
-    """
     try:
         intelligence_manager.start()
         return jsonify({
@@ -154,10 +139,8 @@ def start_intelligence_manager():
 
 @intelligence_manager_api_bp.route('/stop', methods=['POST'])
 def stop_intelligence_manager():
-    """
     停止智体管家
     POST /api/intelligence-manager/stop
-    """
     try:
         intelligence_manager.stop()
         return jsonify({
@@ -170,3 +153,5 @@ def stop_intelligence_manager():
             'success': False,
             'error': f"停止智体管家失败: {str(e)}"
         }), 500
+
+"""

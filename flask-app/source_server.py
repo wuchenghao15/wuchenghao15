@@ -2,7 +2,6 @@
 """
 MTSCOS 源服务器
 使用完整的应用配置，包括所有路由和集群功能
-"""
 
 import os
 import sys
@@ -36,3 +35,5 @@ except Exception as e:
 if __name__ == '__main__':
     # 源服务器配置
     app.run(host='0.0.0.0', port=8889, debug=False, use_reloader=False)
+
+"""

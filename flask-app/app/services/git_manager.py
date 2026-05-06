@@ -1,38 +1,42 @@
+# -*- coding: utf-8 -*-
+"""Git管理器模块，负责整合Git核心功能"""
+
 import os
 import subprocess
 import logging
 from datetime import datetime
 from typing import Dict, List, Any, Optional
-from app.ai.server_ai import server_ai
 
-# 配置日志
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 class GitManager:
-    """Git 管理器，负责整合 Git 核心功能"""
-    
+    """Git管理器，负责整合Git核心功能"""
+
     def __init__(self, repo_path: str = None):
+        """初始化Git管理器
+        
+        Args:
+            repo_path: Git仓库路径，默认为当前工作目录
+        """
         self.instance_id = f"git_manager_{id(self)}"
-        self.name = "Git 管理器"
-        self.description = "负责整合 Git 核心功能"
+        self.name = "Git管理器"
+        self.description = "负责整合Git核心功能"
         self.logger = logger
-        self.logger.info(f"初始化 Git 管理器: {self.instance_id}")
-        
-        # 仓库路径
+        self.logger.info(f"初始化Git管理器: {self.instance_id}")
+
         self.repo_path = repo_path or os.getcwd()
-        
-        # 检查是否在 Git 仓库中
+
         if not self._is_git_repo():
-            self.logger.warning(f"当前目录 {self.repo_path} 不是 Git 仓库")
+            self.logger.warning(f"当前目录 {self.repo_path} 不是Git仓库")
         else:
-            self.logger.info(f"当前目录 {self.repo_path} 是 Git 仓库")
-    
+            self.logger.info(f"当前目录 {self.repo_path} 是Git仓库")
+
     def _is_git_repo(self) -> bool:
-        """检查当前目录是否是 Git 仓库
+        """检查当前目录是否是Git仓库
         
         Returns:
-            是否是 Git 仓库
+            bool: 是否是Git仓库
         """
         try:
             result = subprocess.run(
@@ -43,17 +47,17 @@ class GitManager:
             )
             return result.returncode == 0
         except Exception as e:
-            self.logger.error(f"检查 Git 仓库失败: {str(e)}")
+            self.logger.error(f"检查Git仓库失败: {str(e)}")
             return False
-    
+
     def _run_git_command(self, command: List[str]) -> Dict[str, Any]:
-        """运行 Git 命令
+        """运行Git命令
         
         Args:
-            command: Git 命令列表
+            command: Git命令列表（不包含'git'前缀）
             
         Returns:
-            命令执行结果
+            Dict[str, Any]: 命令执行结果
         """
         try:
             result = subprocess.run(
@@ -64,187 +68,337 @@ class GitManager:
             )
             return {
                 "success": result.returncode == 0,
-                "stdout": result.stdout,
-                "stderr": result.stderr,
+                "stdout": result.stdout.strip(),
+                "stderr": result.stderr.strip(),
                 "returncode": result.returncode
             }
         except Exception as e:
-            self.logger.error(f"运行 Git 命令失败: {str(e)}")
+            self.logger.error(f"运行Git命令失败: {str(e)}")
             return {
                 "success": False,
                 "stdout": "",
                 "stderr": str(e),
                 "returncode": 1
             }
-    
-    def init_repo(self) -> Dict[str, Any]:
-        """初始化 Git 仓库
-        
-        Returns:
-            命令执行结果
-        """
-        self.logger.info(f"初始化 Git 仓库: {self.repo_path}")
-        return self._run_git_command(['init'])
-    
-    def clone_repo(self, url: str, target_dir: str = None) -> Dict[str, Any]:
-        """克隆 Git 仓库
+
+    def init_repo(self, bare: bool = False) -> Dict[str, Any]:
+        """初始化Git仓库
         
         Args:
-            url: 仓库 URL
-            target_dir: 目标目录
+            bare: 是否创建裸仓库
             
         Returns:
-            命令执行结果
+            Dict[str, Any]: 命令执行结果
         """
-        command = ['clone', url]
+        self.logger.info(f"初始化Git仓库: {self.repo_path}")
+        command = ['init']
+        if bare:
+            command.append('--bare')
+        return self._run_git_command(command)
+
+    def clone_repo(self, url: str, target_dir: str = None, branch: str = None) -> Dict[str, Any]:
+        """克隆Git仓库
+        
+        Args:
+            url: 仓库URL
+            target_dir: 目标目录
+            branch: 指定分支
+            
+        Returns:
+            Dict[str, Any]: 命令执行结果
+        """
+        command = ['clone']
+        if branch:
+            command.extend(['-b', branch])
+        command.append(url)
         if target_dir:
             command.append(target_dir)
-        self.logger.info(f"克隆 Git 仓库: {url} -> {target_dir or os.path.basename(url)}")
+        
+        self.logger.info(f"克隆Git仓库: {url} -> {target_dir or os.path.basename(url)}")
         return self._run_git_command(command)
-    
+
     def add(self, paths: List[str] = None) -> Dict[str, Any]:
         """添加文件到暂存区
         
         Args:
-            paths: 文件路径列表，None 表示添加所有文件
+            paths: 文件路径列表，None表示添加所有文件
             
         Returns:
-            命令执行结果
+            Dict[str, Any]: 命令执行结果
         """
         command = ['add']
         if paths:
             command.extend(paths)
         else:
             command.append('.')
+        
         self.logger.info(f"添加文件到暂存区: {paths or 'all files'}")
         return self._run_git_command(command)
-    
-    def commit(self, message: str) -> Dict[str, Any]:
+
+    def commit(self, message: str, amend: bool = False, author: str = None) -> Dict[str, Any]:
         """提交更改
         
         Args:
             message: 提交消息
+            amend: 是否修改上一次提交
+            author: 指定作者（格式: "name <email>"）
             
         Returns:
-            命令执行结果
+            Dict[str, Any]: 命令执行结果
         """
+        command = ['commit', '-m', message]
+        if amend:
+            command.append('--amend')
+        if author:
+            command.extend(['--author', author])
+        
         self.logger.info(f"提交更改: {message}")
-        return self._run_git_command(['commit', '-m', message])
-    
-    def push(self, remote: str = 'origin', branch: str = 'master') -> Dict[str, Any]:
+        return self._run_git_command(command)
+
+    def push(self, remote: str = 'origin', branch: str = 'main', force: bool = False) -> Dict[str, Any]:
         """推送更改
         
         Args:
-            remote: 远程仓库
+            remote: 远程仓库名称
             branch: 分支名称
+            force: 是否强制推送
             
         Returns:
-            命令执行结果
+            Dict[str, Any]: 命令执行结果
         """
+        command = ['push', remote, branch]
+        if force:
+            command.append('--force')
+        
         self.logger.info(f"推送更改: {remote}/{branch}")
-        return self._run_git_command(['push', remote, branch])
-    
-    def pull(self, remote: str = 'origin', branch: str = 'master') -> Dict[str, Any]:
+        return self._run_git_command(command)
+
+    def pull(self, remote: str = 'origin', branch: str = 'main', rebase: bool = False) -> Dict[str, Any]:
         """拉取更改
         
         Args:
-            remote: 远程仓库
+            remote: 远程仓库名称
             branch: 分支名称
+            rebase: 是否使用rebase模式
             
         Returns:
-            命令执行结果
+            Dict[str, Any]: 命令执行结果
         """
+        command = ['pull', remote, branch]
+        if rebase:
+            command.append('--rebase')
+        
         self.logger.info(f"拉取更改: {remote}/{branch}")
-        return self._run_git_command(['pull', remote, branch])
-    
+        return self._run_git_command(command)
+
     def status(self) -> Dict[str, Any]:
         """查看仓库状态
         
         Returns:
-            命令执行结果
+            Dict[str, Any]: 仓库状态信息
         """
         self.logger.info("查看仓库状态")
-        return self._run_git_command(['status'])
-    
-    def log(self, limit: int = 10) -> Dict[str, Any]:
+        result = self._run_git_command(['status', '--porcelain'])
+        
+        if result['success']:
+            lines = result['stdout'].split('\n') if result['stdout'] else []
+            status_info = {
+                'staged': [],
+                'modified': [],
+                'untracked': [],
+                'deleted': []
+            }
+            
+            for line in lines:
+                if line:
+                    status = line[:2]
+                    filename = line[3:]
+                    if status.startswith('A'):
+                        status_info['staged'].append(filename)
+                    elif status.startswith('M'):
+                        status_info['modified'].append(filename)
+                    elif status == '??':
+                        status_info['untracked'].append(filename)
+                    elif status.startswith('D'):
+                        status_info['deleted'].append(filename)
+            
+            return {**result, 'parsed_status': status_info}
+        
+        return result
+
+    def log(self, limit: int = 10, full: bool = False) -> Dict[str, Any]:
         """查看提交日志
         
         Args:
             limit: 日志条数限制
+            full: 是否显示完整格式
             
         Returns:
-            命令执行结果
+            Dict[str, Any]: 提交日志信息
         """
         self.logger.info(f"查看提交日志，限制 {limit} 条")
-        return self._run_git_command(['log', '-n', str(limit), '--oneline'])
-    
-    def branch(self) -> Dict[str, Any]:
+        
+        if full:
+            result = self._run_git_command(['log', '-n', str(limit)])
+        else:
+            result = self._run_git_command(['log', '-n', str(limit), '--oneline'])
+            
+            if result['success']:
+                commits = []
+                for line in result['stdout'].split('\n'):
+                    if line:
+                        parts = line.split(' ', 1)
+                        commits.append({
+                            'hash': parts[0],
+                            'message': parts[1] if len(parts) > 1 else ''
+                        })
+                return {**result, 'commits': commits}
+        
+        return result
+
+    def branch(self, all: bool = False) -> Dict[str, Any]:
         """查看分支
         
+        Args:
+            all: 是否显示所有分支（包括远程）
+            
         Returns:
-            命令执行结果
+            Dict[str, Any]: 分支列表
         """
         self.logger.info("查看分支")
-        return self._run_git_command(['branch'])
-    
-    def checkout(self, branch: str) -> Dict[str, Any]:
+        command = ['branch']
+        if all:
+            command.append('-a')
+        
+        result = self._run_git_command(command)
+        
+        if result['success']:
+            branches = []
+            current_branch = None
+            for line in result['stdout'].split('\n'):
+                if line:
+                    if line.startswith('*'):
+                        current_branch = line[2:].strip()
+                        branches.append({'name': current_branch, 'current': True})
+                    else:
+                        branches.append({'name': line.strip(), 'current': False})
+            
+            return {**result, 'branches': branches, 'current_branch': current_branch}
+        
+        return result
+
+    def checkout(self, branch: str, create: bool = False) -> Dict[str, Any]:
         """切换分支
         
         Args:
             branch: 分支名称
+            create: 是否创建新分支
             
         Returns:
-            命令执行结果
+            Dict[str, Any]: 命令执行结果
         """
         self.logger.info(f"切换分支: {branch}")
+        
+        if create:
+            return self._run_git_command(['checkout', '-b', branch])
         return self._run_git_command(['checkout', branch])
-    
-    def create_branch(self, branch: str) -> Dict[str, Any]:
+
+    def create_branch(self, branch: str, base: str = 'HEAD') -> Dict[str, Any]:
         """创建分支
         
         Args:
-            branch: 分支名称
+            branch: 新分支名称
+            base: 基于哪个提交创建
             
         Returns:
-            命令执行结果
+            Dict[str, Any]: 命令执行结果
         """
         self.logger.info(f"创建分支: {branch}")
-        return self._run_git_command(['checkout', '-b', branch])
-    
-    def merge(self, branch: str) -> Dict[str, Any]:
+        return self._run_git_command(['checkout', '-b', branch, base])
+
+    def delete_branch(self, branch: str, force: bool = False) -> Dict[str, Any]:
+        """删除分支
+        
+        Args:
+            branch: 要删除的分支名称
+            force: 是否强制删除
+            
+        Returns:
+            Dict[str, Any]: 命令执行结果
+        """
+        self.logger.info(f"删除分支: {branch}")
+        command = ['branch']
+        if force:
+            command.append('-D')
+        else:
+            command.append('-d')
+        command.append(branch)
+        return self._run_git_command(command)
+
+    def merge(self, branch: str, no_ff: bool = False) -> Dict[str, Any]:
         """合并分支
         
         Args:
             branch: 要合并的分支名称
+            no_ff: 是否禁用快进合并
             
         Returns:
-            命令执行结果
+            Dict[str, Any]: 命令执行结果
         """
         self.logger.info(f"合并分支: {branch}")
-        return self._run_git_command(['merge', branch])
-    
-    def remote(self) -> Dict[str, Any]:
+        command = ['merge']
+        if no_ff:
+            command.append('--no-ff')
+        command.append(branch)
+        return self._run_git_command(command)
+
+    def remote(self, verbose: bool = False) -> Dict[str, Any]:
         """查看远程仓库
         
+        Args:
+            verbose: 是否显示详细信息
+            
         Returns:
-            命令执行结果
+            Dict[str, Any]: 远程仓库列表
         """
         self.logger.info("查看远程仓库")
-        return self._run_git_command(['remote', '-v'])
-    
+        command = ['remote']
+        if verbose:
+            command.append('-v')
+        
+        result = self._run_git_command(command)
+        
+        if result['success'] and verbose:
+            remotes = {}
+            for line in result['stdout'].split('\n'):
+                if line:
+                    parts = line.split('\t')
+                    name = parts[0]
+                    url_info = parts[1].split(' ')
+                    url = url_info[0]
+                    direction = url_info[1].strip('()') if len(url_info) > 1 else 'push'
+                    
+                    if name not in remotes:
+                        remotes[name] = {'url': url, 'fetch': None, 'push': None}
+                    remotes[name][direction] = url
+            
+            return {**result, 'remotes': remotes}
+        
+        return result
+
     def add_remote(self, name: str, url: str) -> Dict[str, Any]:
         """添加远程仓库
         
         Args:
             name: 远程仓库名称
-            url: 远程仓库 URL
+            url: 远程仓库URL
             
         Returns:
-            命令执行结果
+            Dict[str, Any]: 命令执行结果
         """
         self.logger.info(f"添加远程仓库: {name} -> {url}")
         return self._run_git_command(['remote', 'add', name, url])
-    
+
     def remove_remote(self, name: str) -> Dict[str, Any]:
         """移除远程仓库
         
@@ -252,67 +406,118 @@ class GitManager:
             name: 远程仓库名称
             
         Returns:
-            命令执行结果
+            Dict[str, Any]: 命令执行结果
         """
         self.logger.info(f"移除远程仓库: {name}")
         return self._run_git_command(['remote', 'remove', name])
-    
-    def diff(self, path: str = None) -> Dict[str, Any]:
+
+    def set_remote_url(self, name: str, url: str) -> Dict[str, Any]:
+        """设置远程仓库URL
+        
+        Args:
+            name: 远程仓库名称
+            url: 新的URL
+            
+        Returns:
+            Dict[str, Any]: 命令执行结果
+        """
+        self.logger.info(f"设置远程仓库URL: {name} -> {url}")
+        return self._run_git_command(['remote', 'set-url', name, url])
+
+    def diff(self, path: str = None, cached: bool = False) -> Dict[str, Any]:
         """查看文件差异
         
         Args:
-            path: 文件路径
+            path: 文件路径，None表示所有文件
+            cached: 是否查看暂存区差异
             
         Returns:
-            命令执行结果
+            Dict[str, Any]: 差异信息
         """
         command = ['diff']
+        if cached:
+            command.append('--cached')
         if path:
             command.append(path)
+        
         self.logger.info(f"查看文件差异: {path or 'all files'}")
         return self._run_git_command(command)
-    
+
     def reset(self, mode: str = 'mixed', commit: str = 'HEAD') -> Dict[str, Any]:
         """重置提交
         
         Args:
-            mode: 重置模式 (mixed, soft, hard)
-            commit: 提交 hash 或引用
+            mode: 重置模式 (soft, mixed, hard)
+            commit: 提交hash或引用
             
         Returns:
-            命令执行结果
+            Dict[str, Any]: 命令执行结果
         """
         self.logger.info(f"重置提交: {mode} {commit}")
         return self._run_git_command(['reset', f'--{mode}', commit])
-    
-    def tag(self, name: str, message: str = None) -> Dict[str, Any]:
+
+    def tag(self, name: str, message: str = None, commit: str = 'HEAD') -> Dict[str, Any]:
         """创建标签
         
         Args:
             name: 标签名称
-            message: 标签消息
+            message: 标签消息（用于附注标签）
+            commit: 关联的提交
             
         Returns:
-            命令执行结果
+            Dict[str, Any]: 命令执行结果
         """
-        command = ['tag', name]
+        command = ['tag', name, commit]
         if message:
             command.extend(['-m', message])
+        
         self.logger.info(f"创建标签: {name}")
         return self._run_git_command(command)
-    
-    def fetch(self, remote: str = 'origin') -> Dict[str, Any]:
+
+    def list_tags(self) -> Dict[str, Any]:
+        """列出所有标签
+        
+        Returns:
+            Dict[str, Any]: 标签列表
+        """
+        self.logger.info("列出所有标签")
+        result = self._run_git_command(['tag', '-l'])
+        
+        if result['success']:
+            tags = result['stdout'].split('\n') if result['stdout'] else []
+            return {**result, 'tags': tags}
+        
+        return result
+
+    def delete_tag(self, name: str) -> Dict[str, Any]:
+        """删除标签
+        
+        Args:
+            name: 标签名称
+            
+        Returns:
+            Dict[str, Any]: 命令执行结果
+        """
+        self.logger.info(f"删除标签: {name}")
+        return self._run_git_command(['tag', '-d', name])
+
+    def fetch(self, remote: str = 'origin', prune: bool = False) -> Dict[str, Any]:
         """获取远程更改
         
         Args:
-            remote: 远程仓库
+            remote: 远程仓库名称
+            prune: 是否删除已不存在的远程分支引用
             
         Returns:
-            命令执行结果
+            Dict[str, Any]: 命令执行结果
         """
+        command = ['fetch', remote]
+        if prune:
+            command.append('--prune')
+        
         self.logger.info(f"获取远程更改: {remote}")
-        return self._run_git_command(['fetch', remote])
-    
+        return self._run_git_command(command)
+
     def stash(self, message: str = None) -> Dict[str, Any]:
         """暂存更改
         
@@ -320,36 +525,85 @@ class GitManager:
             message: 暂存消息
             
         Returns:
-            命令执行结果
+            Dict[str, Any]: 命令执行结果
         """
         command = ['stash']
         if message:
             command.extend(['push', '-m', message])
+        else:
+            command.append('push')
+        
         self.logger.info(f"暂存更改: {message or 'no message'}")
         return self._run_git_command(command)
-    
-    def stash_pop(self) -> Dict[str, Any]:
+
+    def stash_pop(self, stash_id: str = None) -> Dict[str, Any]:
         """恢复暂存的更改
         
+        Args:
+            stash_id: 暂存记录ID（如stash@{0}）
+            
         Returns:
-            命令执行结果
+            Dict[str, Any]: 命令执行结果
         """
+        command = ['stash', 'pop']
+        if stash_id:
+            command.append(stash_id)
+        
         self.logger.info("恢复暂存的更改")
-        return self._run_git_command(['stash', 'pop'])
-    
+        return self._run_git_command(command)
+
+    def stash_list(self) -> Dict[str, Any]:
+        """列出所有暂存记录
+        
+        Returns:
+            Dict[str, Any]: 暂存记录列表
+        """
+        self.logger.info("列出所有暂存记录")
+        result = self._run_git_command(['stash', 'list'])
+        
+        if result['success']:
+            stashes = []
+            for line in result['stdout'].split('\n'):
+                if line:
+                    parts = line.split(':')
+                    stashes.append({
+                        'id': parts[0].strip(),
+                        'branch': parts[1].strip() if len(parts) > 1 else '',
+                        'message': parts[2].strip() if len(parts) > 2 else ''
+                    })
+            return {**result, 'stashes': stashes}
+        
+        return result
+
+    def stash_drop(self, stash_id: str = None) -> Dict[str, Any]:
+        """删除暂存记录
+        
+        Args:
+            stash_id: 暂存记录ID
+            
+        Returns:
+            Dict[str, Any]: 命令执行结果
+        """
+        command = ['stash', 'drop']
+        if stash_id:
+            command.append(stash_id)
+        
+        self.logger.info(f"删除暂存记录: {stash_id or 'latest'}")
+        return self._run_git_command(command)
+
     def get_repo_info(self) -> Dict[str, Any]:
         """获取仓库信息
         
         Returns:
-            仓库信息
+            Dict[str, Any]: 仓库综合信息
         """
         try:
             info = {
-                "repo_path": self.repo_path,
                 "is_git_repo": self._is_git_repo(),
+                "repo_path": self.repo_path,
                 "status": self.status(),
-                "branches": self.branch(),
-                "remotes": self.remote(),
+                "branches": self.branch(all=True),
+                "remotes": self.remote(verbose=True),
                 "last_commits": self.log(5)
             }
             return info
@@ -360,41 +614,29 @@ class GitManager:
                 "is_git_repo": False,
                 "error": str(e)
             }
-    
-    def __str__(self):
-        return f"GitManager(instance_id={self.instance_id}, repo_path={self.repo_path})"
-    
-    def __repr__(self):
-        return self.__str__()
-    
+
     def get_system_version(self) -> Dict[str, Any]:
         """获取系统版本信息
         
         Returns:
-            系统版本信息
+            Dict[str, Any]: 版本信息
         """
         try:
-            # 获取当前分支
             branch_result = self._run_git_command(['rev-parse', '--abbrev-ref', 'HEAD'])
             branch = branch_result['stdout'].strip() if branch_result['success'] else 'unknown'
-            
-            # 获取当前提交哈希
+
             commit_result = self._run_git_command(['rev-parse', 'HEAD'])
             commit_hash = commit_result['stdout'].strip() if commit_result['success'] else 'unknown'
-            
-            # 获取当前提交时间
+
             commit_time_result = self._run_git_command(['log', '-1', '--format=%ci', 'HEAD'])
             commit_time = commit_time_result['stdout'].strip() if commit_time_result['success'] else 'unknown'
-            
-            # 获取当前提交作者
-            author_result = self._run_git_command(['log', '-1', '--format=%an', 'HEAD'])
+
+            author_result = self._run_git_command(['log', '-1', '--format=%an <%ae>', 'HEAD'])
             author = author_result['stdout'].strip() if author_result['success'] else 'unknown'
-            
-            # 获取当前提交消息
+
             message_result = self._run_git_command(['log', '-1', '--format=%s', 'HEAD'])
             message = message_result['stdout'].strip() if message_result['success'] else 'unknown'
-            
-            # 构建版本信息
+
             version_info = {
                 "branch": branch,
                 "commit_hash": commit_hash,
@@ -404,7 +646,7 @@ class GitManager:
                 "timestamp": datetime.now().isoformat(),
                 "repo_path": self.repo_path
             }
-            
+
             self.logger.info(f"获取系统版本信息: {version_info}")
             return version_info
         except Exception as e:
@@ -419,69 +661,39 @@ class GitManager:
                 "repo_path": self.repo_path,
                 "error": str(e)
             }
-    
-    def analyze_version_with_ai(self, version_info: Dict[str, Any] = None) -> Dict[str, Any]:
-        """使用 AI 分析版本信息
-        
-        Args:
-            version_info: 版本信息，如果为 None 则自动获取
-            
-        Returns:
-            AI 分析结果
-        """
-        try:
-            # 如果没有提供版本信息，自动获取
-            if not version_info:
-                version_info = self.get_system_version()
-            
-            # 构建 AI 分析数据
-            ai_data = {
-                "version_info": version_info,
-                "analysis_type": "version_analysis",
-                "timestamp": datetime.now().isoformat()
-            }
-            
-            # 使用 AI 进行分析
-            analysis_result = server_ai.analyze_server_performance(
-                "system_version",
-                ai_data
-            )
-            
-            # 构建分析结果
-            result = {
-                "version_info": version_info,
-                "ai_analysis": analysis_result,
-                "timestamp": datetime.now().isoformat()
-            }
-            
-            self.logger.info(f"使用 AI 分析版本信息: {result}")
-            return result
-        except Exception as e:
-            self.logger.error(f"使用 AI 分析版本信息失败: {str(e)}")
-            return {
-                "error": str(e),
-                "timestamp": datetime.now().isoformat()
-            }
-    
-    def track_version_changes(self) -> Dict[str, Any]:
+
+    def track_version_changes(self, limit: int = 10) -> Dict[str, Any]:
         """跟踪版本变更
         
+        Args:
+            limit: 提交记录数量限制
+            
         Returns:
-            版本变更信息
+            Dict[str, Any]: 版本变更信息
         """
         try:
-            # 获取最近的提交记录
-            log_result = self._run_git_command(['log', '-n', '10', '--oneline'])
-            commits = log_result['stdout'].strip().split('\n') if log_result['success'] else []
+            log_result = self._run_git_command(['log', '-n', str(limit), '--oneline', '--format=%H|%an|%ae|%ci|%s'])
             
-            # 构建版本变更信息
+            commits = []
+            if log_result['success'] and log_result['stdout']:
+                for line in log_result['stdout'].split('\n'):
+                    if line:
+                        parts = line.split('|')
+                        commits.append({
+                            'hash': parts[0],
+                            'author_name': parts[1],
+                            'author_email': parts[2],
+                            'commit_time': parts[3],
+                            'message': parts[4] if len(parts) > 4 else ''
+                        })
+
             changes = {
                 "recent_commits": commits,
                 "total_commits": len(commits),
                 "timestamp": datetime.now().isoformat(),
                 "repo_path": self.repo_path
             }
-            
+
             self.logger.info(f"跟踪版本变更: {changes}")
             return changes
         except Exception as e:
@@ -490,32 +702,28 @@ class GitManager:
                 "error": str(e),
                 "timestamp": datetime.now().isoformat()
             }
-    
+
     def generate_version_report(self) -> Dict[str, Any]:
         """生成版本报告
         
         Returns:
-            版本报告
+            Dict[str, Any]: 版本报告
         """
         try:
-            # 获取版本信息
             version_info = self.get_system_version()
-            
-            # 跟踪版本变更
             changes = self.track_version_changes()
-            
-            # 使用 AI 分析版本信息
-            ai_analysis = self.analyze_version_with_ai(version_info)
-            
-            # 构建版本报告
+            branches = self.branch(all=True)
+            remotes = self.remote(verbose=True)
+
             report = {
                 "version_info": version_info,
                 "changes": changes,
-                "ai_analysis": ai_analysis,
+                "branches": branches,
+                "remotes": remotes,
                 "timestamp": datetime.now().isoformat(),
                 "repo_path": self.repo_path
             }
-            
+
             self.logger.info(f"生成版本报告: {report}")
             return report
         except Exception as e:
@@ -525,5 +733,119 @@ class GitManager:
                 "timestamp": datetime.now().isoformat()
             }
 
-# 创建全局 Git 管理器实例
+    def get_file_history(self, file_path: str, limit: int = 10) -> Dict[str, Any]:
+        """获取文件修改历史
+        
+        Args:
+            file_path: 文件路径
+            limit: 记录数量限制
+            
+        Returns:
+            Dict[str, Any]: 文件修改历史
+        """
+        self.logger.info(f"获取文件修改历史: {file_path}")
+        command = ['log', '-n', str(limit), '--oneline', '--follow', '--', file_path]
+        result = self._run_git_command(command)
+        
+        if result['success']:
+            history = []
+            for line in result['stdout'].split('\n'):
+                if line:
+                    parts = line.split(' ', 1)
+                    history.append({
+                        'hash': parts[0],
+                        'message': parts[1] if len(parts) > 1 else ''
+                    })
+            return {**result, 'history': history}
+        
+        return result
+
+    def show_commit(self, commit_hash: str = 'HEAD') -> Dict[str, Any]:
+        """查看提交详情
+        
+        Args:
+            commit_hash: 提交hash
+            
+        Returns:
+            Dict[str, Any]: 提交详情
+        """
+        self.logger.info(f"查看提交详情: {commit_hash}")
+        result = self._run_git_command(['show', commit_hash, '--stat'])
+        return result
+
+    def cherry_pick(self, commit_hash: str, no_commit: bool = False) -> Dict[str, Any]:
+        """樱桃采摘（将指定提交应用到当前分支）
+        
+        Args:
+            commit_hash: 要应用的提交hash
+            no_commit: 是否不自动提交
+            
+        Returns:
+            Dict[str, Any]: 命令执行结果
+        """
+        command = ['cherry-pick', commit_hash]
+        if no_commit:
+            command.append('--no-commit')
+        
+        self.logger.info(f"樱桃采摘: {commit_hash}")
+        return self._run_git_command(command)
+
+    def rebase(self, branch: str, interactive: bool = False) -> Dict[str, Any]:
+        """变基
+        
+        Args:
+            branch: 要变基到的分支
+            interactive: 是否交互式变基
+            
+        Returns:
+            Dict[str, Any]: 命令执行结果
+        """
+        command = ['rebase', branch]
+        if interactive:
+            command.append('-i')
+        
+        self.logger.info(f"变基到: {branch}")
+        return self._run_git_command(command)
+
+    def clean(self, dry_run: bool = False) -> Dict[str, Any]:
+        """清理未跟踪的文件
+        
+        Args:
+            dry_run: 是否仅预览不实际执行
+            
+        Returns:
+            Dict[str, Any]: 命令执行结果
+        """
+        command = ['clean', '-f']
+        if dry_run:
+            command.append('-n')
+        
+        self.logger.info(f"清理未跟踪文件{'(预览)' if dry_run else ''}")
+        return self._run_git_command(command)
+
+    def __str__(self):
+        return f"GitManager(instance_id={self.instance_id}, repo_path={self.repo_path})"
+
+    def __repr__(self):
+        return self.__str__()
+
 git_manager = GitManager()
+
+def get_git_manager(repo_path: str = None) -> GitManager:
+    """获取Git管理器实例
+    
+    Args:
+        repo_path: Git仓库路径
+        
+    Returns:
+        GitManager: Git管理器实例
+    """
+    if repo_path:
+        return GitManager(repo_path)
+    return git_manager
+
+def initialize():
+    """初始化Git管理器"""
+    global git_manager
+    git_manager = GitManager()
+    logger.info("Git管理器初始化完成")

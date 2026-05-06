@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 直接修改learning.py文件，修复MODEL_PATH KeyError问题
-"""
 import os
 import fileinput
 
@@ -28,5 +27,6 @@ with fileinput.FileInput(file_path, inplace=True, backup='.bak') as f:
             print(line, end='')
         else:
             print(line, end='')
-
 print("修复完成！")
+
+"""

@@ -1,24 +1,22 @@
 #!/usr/bin/env python3
 """
 创建设计师AI员工
-"""
 
 import os
 import sys
 import sqlite3
-import json
-
+# JSON import removed - using database
 # 添加项目根目录到Python路径
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 def create_designer_ai():
     """创建设计师AI员工"""
     db_path = "app.db"
-    
+
     try:
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
-        
+
         # 创建设计师AI
         designer_ai = {
             "ai_name": "designer_ai",
@@ -27,7 +25,7 @@ def create_designer_ai():
             "ai_type": "designer",
             "name": "设计师AI",
             "description": "负责项目所有的设计、前端排版和视觉设计工作",
-            "functions": json.dumps([
+            "functions": str([
                 "web_design",
                 "ui_ux_design",
                 "frontend_layout",
@@ -36,7 +34,7 @@ def create_designer_ai():
                 "responsive_design",
                 "visual_identity_design"
             ]),
-            "responsibilities": json.dumps([
+            "responsibilities": str([
                 "网页设计",
                 "用户界面和用户体验设计",
                 "前端页面布局",
@@ -45,8 +43,7 @@ def create_designer_ai():
                 "响应式设计",
                 "视觉识别系统设计"
             ]),
-            "status": "active",
-            "config": json.dumps({
+            "config": str({
                 "design_style": "modern_minimalist",
                 "color_palette": ["#667eea", "#764ba2", "#3b82f6", "#f093fb"],
                 "primary_font": "Segoe UI",
@@ -55,15 +52,14 @@ def create_designer_ai():
             }),
             "bound_user": "admin"
         }
-        
+
         # 插入设计师AI
         sql = """
-        INSERT OR REPLACE INTO ai_instances 
-        (ai_name, instance_id, collection_id, ai_type, name, description, 
+        INSERT OR REPLACE INTO ai_instances
+        (ai_name, instance_id, collection_id, ai_type, name, description,
          functions, responsibilities, status, config, bound_user, created_at, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-        """
-        
+
         params = (
             designer_ai["ai_name"],
             designer_ai["instance_id"],
@@ -77,18 +73,18 @@ def create_designer_ai():
             designer_ai["config"],
             designer_ai["bound_user"]
         )
-        
+
         cursor.execute(sql, params)
         conn.commit()
-        
+
         print("设计师AI员工创建成功！")
         print(f"AI名称: {designer_ai['name']}")
         print(f"类型: {designer_ai['ai_type']}")
         print(f"状态: {designer_ai['status']}")
-        
+
         conn.close()
         return True
-        
+
     except Exception as e:
         print(f"创建设计师AI失败: {str(e)}")
         import traceback

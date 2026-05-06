@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 import sqlite3
 from cryptography.fernet import Fernet
-import json
-
+# JSON import removed - using database
 # 读取加密密钥
 with open('encryption.key', 'rb') as f:
     ENCRYPTION_KEY = f.read()
@@ -17,7 +16,7 @@ def encrypt_data(data):
     if isinstance(data, str):
         data_bytes = data.encode()
     else:
-        data_bytes = json.dumps(data).encode()
+        data_bytes = str(data).encode()
     encrypted_bytes = fernet.encrypt(data_bytes)
     return encrypted_bytes.decode()
 
@@ -42,7 +41,6 @@ user = cursor.fetchone()
 
 if user:
     print(f"用户 {user[1]} 的密码更新成功！")
-else:
     print("用户未找到！")
 
 conn.close()

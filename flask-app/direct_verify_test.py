@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 Test script that directly calls User.verify_credentials
-"""
 
 import sys
 import os
@@ -28,7 +27,6 @@ print(f"Password: {password}")
 
 # Call the method
 try:
-    user = User.verify_credentials(username, password)
     print(f"\n✅ Verification result: {'Success' if user else 'Failed'}")
     if user:
         print(f"✅ User found: {user.username}, Role: {user.role}")
@@ -36,5 +34,6 @@ try:
         print("❌ User not found or password incorrect")
 except Exception as e:
     print(f"\n❌ Error during verification: {str(e)}")
-    import traceback
     traceback.print_exc()
+
+"""

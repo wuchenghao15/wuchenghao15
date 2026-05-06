@@ -1,4 +1,5 @@
-import json
+# -*- coding: utf-8 -*-
+# JSON import removed - using database
 import logging
 from typing import Dict, List, Any, Callable
 from flask import Blueprint, request, redirect, url_for
@@ -9,14 +10,14 @@ logger = logging.getLogger(__name__)
 
 class RouteManager:
     """路由管理器，负责管理和应用不同的路由规则"""
-    
+
     def __init__(self, config_file: str = None):
         self.instance_id = f"route_manager_{id(self)}"
         self.name = "路由管理器"
         self.description = "负责管理和应用不同的路由规则"
         self.logger = logger
         self.logger.info(f"初始化路由管理器: {self.instance_id}")
-        
+
         # 路由规则存储
         self.routes = {
             "auth": {
@@ -40,36 +41,29 @@ class RouteManager:
                 "index_html": "/index.html",
                 "admin_center": "/admin/center",
                 "test_system": "/test-system"
-            },
             "language_tests": {
                 "test_system": "/test-system",
                 "japanese_test": "/test-system/japanese"
-            },
             "integrated_design": {
                 "integrated_design": "/integrated-design"
-            },
             "api": {
                 "auto_update": "/api/auto-update",
                 "exam_test": "/api"
-            },
             "debug": {
                 "routes": "/debug/routes"
-            },
             "health": {
                 "check": "/health"
-            },
             "test": {
                 "test": "/test",
                 "preloader": "/test/preloader",
                 "auto_update_status": "/test/auto-update/status"
             }
         }
-        
+
         # 路由权限映射
         self.route_permissions = {
             "auth.login": [],  # 不需要权限
             "auth.register": [],  # 不需要权限
-            "auth.logout": [],  # 不需要权限
             "auth.forgot_password": [],  # 不需要权限
             "auth.reset_password": [],  # 不需要权限
             "auth.auto_guest_login": [],  # 不需要权限
@@ -96,17 +90,16 @@ class RouteManager:
             "test.preloader": [],  # 不需要权限
             "test.auto_update_status": ["admin"]  # 需要admin权限
         }
-        
+
         # 蓝图存储
         self.blueprints = {}
-        
+
         # 加载配置文件
-        if config_file:
             self.load_config(config_file)
-    
+
     def load_config(self, config_file: str):
         """加载路由配置文件
-        
+
         Args:
             config_file: 配置文件路径
         """
@@ -120,10 +113,10 @@ class RouteManager:
                 self.logger.info(f"加载路由配置文件成功: {config_file}")
         except Exception as e:
             self.logger.error(f"加载路由配置文件失败: {str(e)}")
-    
+
     def save_config(self, config_file: str):
         """保存路由配置到文件
-        
+
         Args:
             config_file: 配置文件路径
         """
@@ -132,29 +125,23 @@ class RouteManager:
                 "routes": self.routes,
                 "route_permissions": self.route_permissions
             }
-            with open(config_file, 'w', encoding='utf-8') as f:
                 json.dump(config, f, indent=2, ensure_ascii=False)
-                self.logger.info(f"保存路由配置文件成功: {config_file}")
         except Exception as e:
             self.logger.error(f"保存路由配置文件失败: {str(e)}")
-    
-    def get_route(self, blueprint: str, route_name: str) -> str:
         """获取路由
-        
+
         Args:
             blueprint: 蓝图名称
             route_name: 路由名称
-            
+
         Returns:
             路由路径
-        """
         if blueprint in self.routes and route_name in self.routes[blueprint]:
             return self.routes[blueprint][route_name]
-        return None
-    
+
     def set_route(self, blueprint: str, route_name: str, path: str):
         """设置路由
-        
+
         Args:
             blueprint: 蓝图名称
             route_name: 路由名称
@@ -164,111 +151,97 @@ class RouteManager:
             self.routes[blueprint] = {}
         self.routes[blueprint][route_name] = path
         self.logger.info(f"设置路由: {blueprint}.{route_name} = {path}")
-    
     def get_route_permissions(self, route: str) -> List[str]:
         """获取路由的权限要求
-        
+
         Args:
             route: 路由名称，格式为 "blueprint.route"
-            
-        Returns:
+
             权限列表
-        """
         if route in self.route_permissions:
             return self.route_permissions[route]
         return []
-    
     def set_route_permission(self, route: str, permissions: List[str]):
         """设置路由的权限要求
-        
+
         Args:
             route: 路由名称，格式为 "blueprint.route"
             permissions: 权限列表
         """
         self.route_permissions[route] = permissions
         self.logger.info(f"设置路由权限: {route} = {permissions}")
-    
+
     def register_blueprint(self, blueprint: Blueprint):
         """注册蓝图
-        
         Args:
             blueprint: 蓝图实例
         """
         self.blueprints[blueprint.name] = blueprint
         self.logger.info(f"注册蓝图: {blueprint.name}")
-    
+
     def get_blueprint(self, blueprint_name: str) -> Blueprint:
         """获取蓝图
-        
-        Args:
+
             blueprint_name: 蓝图名称
-            
         Returns:
             蓝图实例
         """
         if blueprint_name in self.blueprints:
             return self.blueprints[blueprint_name]
         return None
-    
     def register_all_routes(self, app):
         """注册所有路由
-        
+
         Args:
             app: Flask应用实例
         """
         for blueprint_name, blueprint in self.blueprints.items():
             app.register_blueprint(blueprint)
             self.logger.info(f"注册蓝图路由: {blueprint_name}")
-    
+
     def check_route_permission(self, route: str, user_role: str, user_permissions: List[str]) -> bool:
         """检查路由权限
-        
         Args:
             route: 路由名称，格式为 "blueprint.route"
             user_role: 用户角色
             user_permissions: 用户权限列表
-            
+
         Returns:
             是否有权限
-        """
         required_permissions = self.get_route_permissions(route)
-        
         # 如果不需要权限，直接通过
         if not required_permissions:
             return True
-        
+
         # 检查用户角色
         if user_role in required_permissions:
             return True
-        
+
         # 检查用户权限
         for permission in user_permissions:
             if permission in required_permissions:
                 return True
-        
+
         return False
-    
-    def get_all_routes(self) -> Dict[str, Dict[str, str]]:
+
         """获取所有路由
-        
+
         Returns:
             路由字典
         """
         return self.routes
-    
+
     def get_all_blueprints(self) -> Dict[str, Blueprint]:
         """获取所有蓝图
-        
+
         Returns:
             蓝图字典
         """
         return self.blueprints
-    
+
     def __str__(self):
-        return f"RouteManager(instance_id={self.instance_id}, name={self.name})"
-    
+
     def __repr__(self):
         return self.__str__()
 
-# 创建全局路由管理器实例
 route_manager = RouteManager()

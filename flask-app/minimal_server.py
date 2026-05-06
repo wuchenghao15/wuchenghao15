@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 最小化的MTSCOS AI服务器
-"""
 
 import os
 import sys
@@ -23,7 +22,7 @@ main_bp = Blueprint('main', __name__)
 @main_bp.route('/')
 def index():
     """主页路由"""
-    return render_template('index.html', 
+    return render_template('index.html',
                        user={'username': session.get('username', 'guest'), 'role': session.get('user_level', 'guest')})
 
 # 创建认证蓝图
@@ -44,10 +43,8 @@ def login():
             return redirect(url_for('main.index'))
         else:
             flash('请输入用户名和密码', 'danger')
-    return render_template('index.html', 
-                       user={'username': session.get('username', 'guest'), 'role': session.get('user_level', 'guest')})
+    return render_template('index.html',
 
-@auth_bp.route('/logout')
 def logout():
     """登出路由"""
     session.clear()
@@ -55,7 +52,6 @@ def logout():
     return redirect(url_for('main.index'))
 
 @auth_bp.route('/register')
-def register():
     """注册路由"""
     flash('注册功能开发中', 'info')
     return redirect(url_for('auth.login'))

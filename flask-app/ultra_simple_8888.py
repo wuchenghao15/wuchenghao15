@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 """
 超简单启动脚本，直接使用app实例，固定端口8888
-"""
 
 import sys
 import os
@@ -34,3 +33,5 @@ except Exception as e:
     print(f"Error running app: {e}")
     import traceback
     traceback.print_exc()
+
+"""

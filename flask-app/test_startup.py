@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 测试应用启动脚本
-"""
 
 import sys
 import os
@@ -20,26 +19,21 @@ except Exception as e:
 
 # 添加项目根目录到Python路径
 try:
-    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     logger.info(f"添加到Python路径: {os.path.dirname(os.path.abspath(__file__))}")
 except Exception as e:
     logger.error(f"添加Python路径失败: {str(e)}")
-    traceback.print_exc()
     sys.exit(1)
 
 # 尝试导入app模块
 try:
-    logger.info("开始导入app模块")
     from app import app
     logger.info("成功导入app模块")
 except Exception as e:
     logger.error(f"导入app模块失败: {str(e)}")
     traceback.print_exc()
-    sys.exit(1)
 
 # 尝试运行应用
 try:
-    logger.info("开始运行应用")
     app.run(host='0.0.0.0', port=8080, debug=True, load_dotenv=False, use_reloader=False)
     logger.info("应用运行成功")
 except KeyboardInterrupt:
@@ -48,5 +42,6 @@ except Exception as e:
     logger.error(f"应用运行失败: {str(e)}")
     traceback.print_exc()
     sys.exit(1)
-finally:
     logger.info("应用退出")
+
+"""

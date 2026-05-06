@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 """
 重置admin用户密码脚本
-"""
 
 import sqlite3
 import os
@@ -16,14 +15,14 @@ DATABASE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'app.db
 # 安全工具类 - 使用PBKDF2算法
 class SecurityUtils:
     """安全工具类，用于密码哈希"""
-    
+
     @staticmethod
     def hash_password(password):
         """使用PBKDF2算法进行密码哈希"""
         # 模拟原始应用的配置
         HASH_ALGORITHM = 'sha256'
         HASH_ITERATIONS = 100000
-        
+
         # 生成32字节的随机盐
         salt = os.urandom(32)
         hashed = hashlib.pbkdf2_hmac(
@@ -50,7 +49,7 @@ def reset_admin_password():
     """重置admin用户密码"""
     conn = connect_db()
     cursor = conn.cursor()
-    
+
     # 管理员数据
     admin_user = {
         'username': 'admin',
@@ -61,16 +60,15 @@ def reset_admin_password():
         'super_admin_approved': 1,
         'hardware_admin_approved': 1
     }
-    
+
     # 哈希密码
     hashed_password = security_utils.hash_password(admin_user['password'])
-    
+
     # 更新admin用户
     try:
-        cursor.execute('''
-            UPDATE users 
-            SET password = ?, email = ?, role = ?, is_active = ?, 
-                super_admin_approved = ?, hardware_admin_approved = ? 
+            UPDATE users
+            SET password = ?, email = ?, role = ?, is_active = ?,
+                super_admin_approved = ?, hardware_admin_approved = ?
             WHERE username = ?
         ''', (
             hashed_password,
@@ -81,40 +79,29 @@ def reset_admin_password():
             admin_user['hardware_admin_approved'],
             admin_user['username']
         ))
-        
+
         if cursor.rowcount > 0:
             print(f"✅ 成功更新admin用户密码")
         else:
             # 如果admin用户不存在，则创建
             cursor.execute('''
                 INSERT INTO users (username, email, password, role, is_active, super_admin_approved, hardware_admin_approved)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
             ''', (
                 admin_user['username'],
                 admin_user['email'],
-                hashed_password,
                 admin_user['role'],
                 admin_user['is_active'],
-                admin_user['super_admin_approved'],
-                admin_user['hardware_admin_approved']
             ))
             print(f"✅ 成功创建admin用户")
-        
         conn.commit()
-    except sqlite3.Error as e:
         print(f"❌ 操作失败: {e}")
-    
-    conn.close()
 
 def verify_admin_password():
-    """验证admin用户密码是否正确"""
     conn = connect_db()
     cursor = conn.cursor()
-    
-    # 获取admin用户
+
     cursor.execute('SELECT username, password FROM users WHERE username = ?', ('admin',))
-    user = cursor.fetchone()
-    
+
     if user:
         print(f"找到admin用户: {user[0]}")
         # 验证密码
@@ -122,7 +109,7 @@ def verify_admin_password():
         hashed_test = security_utils.hash_password(password_to_test)
         print(f"测试密码的哈希: {hashed_test}")
         print(f"数据库中的哈希: {user[1]}")
-    
+
     conn.close()
 
 if __name__ == '__main__':

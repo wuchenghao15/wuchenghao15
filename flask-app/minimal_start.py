@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 Minimal Flask app to test basic functionality
-"""
 
 import os
 import sys
@@ -34,6 +33,8 @@ if __name__ == '__main__':
     print("[INFO] 启动最小化Flask应用...")
     print("[INFO] 监听地址: 0.0.0.0:8888")
     print("[INFO] 访问地址: http://localhost:8888")
-    
+
     # 启动服务器
     app.run(host='0.0.0.0', port=8888, debug=True, use_reloader=False)
+
+"""

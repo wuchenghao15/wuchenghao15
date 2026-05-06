@@ -2,11 +2,10 @@
 """
 将HTML标签显示问题记录到AI脑库特征库
 用于AI学习升级，提供问题特征和解决方案
-"""
 
 import os
 import sqlite3
-import json
+# JSON import removed - using database
 from datetime import datetime
 
 # 获取数据库路径
@@ -37,11 +36,10 @@ def create_table(conn):
 def record_issue(conn):
     """记录span标签显示不全问题到AI脑库特征库"""
     cursor = conn.cursor()
-    
     # 问题特征
     feature_type = "HTML_DISPLAY"
     issue_description = "span标签文本显示不全"
-    issue_characteristics = json.dumps({
+    issue_characteristics = str({
         "element": "span",
         "class_names": ["text-sm", "text-gray-600", "hover:text-indigo-600", "transition-colors"],
         "text_content": "记住我",
@@ -50,7 +48,7 @@ def record_issue(conn):
         "context": "登录页面的'记住我'复选框文本",
         "browser": "all"
     })
-    solution = json.dumps({
+    solution = str({
         "type": "CSS_STYLE_ADJUSTMENT",
         "changes": [
             {"property": "min-width", "value": "60px", "reason": "确保标签有足够宽度显示文本"},
@@ -60,47 +58,44 @@ def record_issue(conn):
         "implementation": "直接在span标签中添加内联样式或修改CSS类"
     })
     severity = 1  # 1: 轻微, 2: 中等, 3: 严重
-    impact_scope = "FRONTEND_DISPLAY"
     created_at = datetime.utcnow().isoformat()
     updated_at = datetime.utcnow().isoformat()
-    
+
     # 插入记录
     cursor.execute('''
-        INSERT INTO ai_brain_features 
-        (feature_type, issue_description, issue_characteristics, solution, severity, impact_scope, created_at, updated_at) 
+        INSERT INTO ai_brain_features
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     ''', (
-        feature_type, 
-        issue_description, 
-        issue_characteristics, 
-        solution, 
-        severity, 
-        impact_scope, 
-        created_at, 
+        feature_type,
+        issue_description,
+        issue_characteristics,
+        solution,
+        severity,
+        impact_scope,
+        created_at,
         updated_at
     ))
-    
+
     conn.commit()
     print(f"问题特征已成功记录到AI脑库特征库，记录ID: {cursor.lastrowid}")
 
-def main():
     """主函数"""
     try:
         # 连接数据库
         conn = connect_db()
         print(f"成功连接到数据库: {db_path}")
-        
+
         # 创建表
         create_table(conn)
         print("AI脑库特征表检查/创建完成")
-        
+
         # 记录问题
         record_issue(conn)
-        
+
         # 关闭连接
         conn.close()
         print("数据库连接已关闭")
-        
+
     except Exception as e:
         print(f"记录问题到AI脑库特征库失败: {str(e)}")
         import traceback

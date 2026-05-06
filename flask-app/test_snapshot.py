@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 测试用户快照功能
-"""
 
 from app.models.user_snapshots import UserSnapshot
 
@@ -82,3 +81,5 @@ if not fetched_after_delete:
     print(f"   验证通过，快照已成功删除")
 
 print("\n所有测试完成！")
+
+"""

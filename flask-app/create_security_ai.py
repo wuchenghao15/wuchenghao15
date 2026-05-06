@@ -2,24 +2,22 @@
 """
 创建安全保安AI
 负责项目数字安全、数据库安全、本地缓存数据安全和项目后门漏洞安全
-"""
 
 import os
 import sys
 import sqlite3
-import json
-
+# JSON import removed - using database
 # 添加项目根目录到Python路径
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 def create_security_ai():
     """创建安全保安AI"""
     db_path = "app.db"
-    
+
     try:
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
-        
+
         # 创建安全保安AI
         security_ai = {
             "ai_name": "security_ai",
@@ -28,7 +26,7 @@ def create_security_ai():
             "ai_type": "security",
             "name": "安全保安AI",
             "description": "专门负责项目数字安全、数据库安全、本地缓存数据安全和项目后门漏洞安全，保护数据、中间件、cookie、session等安全",
-            "functions": json.dumps([
+            "functions": str([
                 "digital_security",
                 "database_security",
                 "cache_security",
@@ -40,7 +38,7 @@ def create_security_ai():
                 "encryption",
                 "threat_detection"
             ]),
-            "responsibilities": json.dumps([
+            "responsibilities": str([
                 "数字安全防护",
                 "数据库安全保护",
                 "本地缓存数据安全",
@@ -52,8 +50,7 @@ def create_security_ai():
                 "威胁检测与响应",
                 "安全漏洞扫描"
             ]),
-            "status": "active",
-            "config": json.dumps({
+            "config": str({
                 "security_level": "high",
                 "encryption_algorithm": "AES-256",
                 "scanning_interval": 300,  # 秒
@@ -70,12 +67,10 @@ def create_security_ai():
                         "validation": True
                     },
                     "cookie": {
-                        "http_only": True,
                         "secure": True,
                         "same_site": "strict"
                     },
                     "middleware": {
-                        "input_validation": True,
                         "output_encoding": True,
                         "rate_limiting": True
                     }
@@ -83,15 +78,12 @@ def create_security_ai():
             }),
             "bound_user": "admin"
         }
-        
         # 插入安全保安AI
         sql = """
-        INSERT OR REPLACE INTO ai_instances 
-        (ai_name, instance_id, collection_id, ai_type, name, description, 
+        (ai_name, instance_id, collection_id, ai_type, name, description,
          functions, responsibilities, status, config, bound_user, created_at, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-        """
-        
+
         params = (
             security_ai["ai_name"],
             security_ai["instance_id"],
@@ -105,26 +97,26 @@ def create_security_ai():
             security_ai["config"],
             security_ai["bound_user"]
         )
-        
+
         cursor.execute(sql, params)
         conn.commit()
-        
+
         print("安全保安AI创建成功！")
         print(f"AI名称: {security_ai['name']}")
         print(f"类型: {security_ai['ai_type']}")
         print(f"状态: {security_ai['status']}")
-        
+
         # 解析配置
-        config_dict = json.loads(security_ai['config'])
+        config_dict = eval(security_ai['config'])
         print(f"安全级别: {config_dict['security_level']}")
         print(f"加密算法: {config_dict['encryption_algorithm']}")
-        
+
         # 创建安全配置表
         create_security_tables(cursor)
-        
+
         conn.close()
         return True
-        
+
     except Exception as e:
         print(f"创建安全保安AI失败: {str(e)}")
         import traceback
@@ -148,50 +140,43 @@ def create_security_tables(cursor):
         details TEXT
     )
     ''')
-    
+
     # 安全扫描结果表
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS security_scans (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        scan_type TEXT NOT NULL,
         target TEXT NOT NULL,
         start_time DATETIME DEFAULT CURRENT_TIMESTAMP,
         end_time DATETIME,
         status TEXT DEFAULT 'running',
         findings TEXT,
         severity TEXT
-    )
     ''')
-    
+
     # 安全配置表
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS security_configs (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        config_key TEXT NOT NULL UNIQUE,
         config_value TEXT NOT NULL,
         description TEXT,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
     ''')
-    
+
     # 初始安全配置
-    initial_configs = [
         ("encryption_key", "your-secure-encryption-key", "数据加密密钥"),
         ("session_timeout", "3600", "Session超时时间（秒）"),
-        ("max_login_attempts", "5", "最大登录尝试次数"),
         ("block_duration", "300", "登录失败后阻塞时间（秒）"),
         ("api_rate_limit", "100", "API速率限制（次/分钟）"),
         ("enable_csrf_protection", "true", "启用CSRF保护"),
         ("enable_xss_protection", "true", "启用XSS保护"),
         ("enable_content_security_policy", "true", "启用内容安全策略")
-    ]
-    
+
     for config_key, config_value, description in initial_configs:
         cursor.execute('''
         INSERT OR REPLACE INTO security_configs (config_key, config_value, description)
         VALUES (?, ?, ?)
         ''', (config_key, config_value, description))
-    
+
     print("安全相关表创建成功！")
 
 if __name__ == "__main__":

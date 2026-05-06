@@ -1,8 +1,8 @@
+# -*- coding: utf-8 -*-
 
 #!/usr/bin/env python3
 """
 增强版权限管理系统
-"""
 
 from functools import wraps
 
@@ -24,14 +24,14 @@ def permission_required(permission):
         def decorated_function(*args, **kwargs):
             # 获取当前用户权限
             user_permissions = get_user_permissions()
-            
+
             if permission not in user_permissions:
                 return jsonify({
                     'error': '权限不足',
                     'required_permission': permission,
                     'user_permissions': user_permissions
                 }), 403
-            
+
             return f(*args, **kwargs)
         return decorated_function
     return decorator
@@ -42,7 +42,7 @@ def get_user_permissions():
     from flask import session
     import logging
     logging.info(f"Session contents: {session}")
-    
+
     if 'user_role' in session:
         role = session['user_role']
         logging.info(f"User role: {role}")
@@ -51,22 +51,19 @@ def get_user_permissions():
         user_permissions = permissions.get(role, [])
         logging.info(f"User permissions: {user_permissions}")
         return user_permissions
-    
+
     return ['guest']
 
 # 角色验证装饰器
 def role_required(role):
     def decorator(f):
-        @wraps(f)
         def decorated_function(*args, **kwargs):
-            from flask import session
-            
-            if 'user_role' not in session or session['user_role'] != role:
+
                 return jsonify({
-                    'error': '角色不足',
                     'required_role': role
                 }), 403
-            
             return f(*args, **kwargs)
         return decorated_function
     return decorator
+
+"""

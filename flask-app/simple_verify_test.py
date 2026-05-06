@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 Simple test of the verify_password function with exact values
-"""
 
 import sys
 import os
@@ -34,3 +33,5 @@ except Exception as e:
     print(f"\n❌ Error during verification: {str(e)}")
     import traceback
     traceback.print_exc()
+
+"""

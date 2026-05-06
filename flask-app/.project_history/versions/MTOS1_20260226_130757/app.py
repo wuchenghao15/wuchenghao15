@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 MTSCOS AI Project Main Application
-"""
 
 import sys
 import os
@@ -36,3 +35,5 @@ if __name__ == '__main__':
         traceback.print_exc()
         logger.error(f"应用运行出错: {str(e)}")
         logger.error("应用运行错误")
+
+"""

@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 SQL注入防护中间件，用于防止SQL注入攻击
-"""
 
 from flask import request, abort
 from app.utils.logging import logger
@@ -9,7 +8,7 @@ import re
 
 class SQLInjectionProtection:
     """SQL注入防护类"""
-    
+
     def __init__(self):
         # SQL注入模式
         self.sql_injection_patterns = [
@@ -31,22 +30,20 @@ class SQLInjectionProtection:
             # 内联注释
             r'/\*[^*]*\*/',
         ]
-        
+
         # 敏感参数名
         self.sensitive_params = [
             'username', 'email', 'password', 'id', 'user_id', 'admin', 'role',
             'token', 'key', 'secret', 'password_hash', 'auth', 'login'
         ]
-    
     def check_sql_injection(self, data):
         """检查数据是否包含SQL注入尝试
-        
+
         Args:
             data: 要检查的数据
-            
+
         Returns:
             bool: 是否包含SQL注入尝试
-        """
         if isinstance(data, dict):
             for key, value in data.items():
                 # 检查参数名是否敏感
@@ -59,39 +56,30 @@ class SQLInjectionProtection:
                         return True
         elif isinstance(data, list):
             for item in data:
-                if self.check_sql_injection(item):
                     return True
         elif isinstance(data, str):
             if self._check_value(data):
-                return True
         return False
-    
-    def _check_value(self, value):
+
         """检查单个值是否包含SQL注入尝试
-        
+
         Args:
             value: 要检查的值
-            
-        Returns:
+
             bool: 是否包含SQL注入尝试
-        """
         if not isinstance(value, str):
             return False
-        
         # 转换为小写进行检查
-        value_lower = value.lower()
-        
+
         # 检查SQL注入模式
         for pattern in self.sql_injection_patterns:
             if re.search(pattern, value, re.IGNORECASE):
                 return True
-        
-        # 检查常见的SQL注入字符组合
+
         suspicious_combos = [
             "' or '1'='1",
             "' or 1=1 --",
             "' union select",
-            "' and '1'='1",
             "' and 1=1 --",
             "\" or \"1\"=\"1",
             "\" or 1=1 --",
@@ -99,33 +87,28 @@ class SQLInjectionProtection:
             "\" and \"1\"=\"1",
             "\" and 1=1 --",
         ]
-        
+
         for combo in suspicious_combos:
-            if combo in value_lower:
                 return True
-        
+
         return False
-    
+
     def protect(self, app):
         """注册SQL注入防护中间件
-        
+
         Args:
-            app: Flask应用实例
-        """
         @app.before_request
         def sql_injection_protection():
             # 检查请求参数
-            if request.args:
                 if self.check_sql_injection(request.args):
                     logger.warning(f"SQL注入尝试检测到: {request.remote_addr}, URL: {request.url}")
                     abort(403, description="请求包含可疑的SQL注入尝试")
-            
             # 检查表单数据
             if request.form:
                 if self.check_sql_injection(request.form):
                     logger.warning(f"SQL注入尝试检测到: {request.remote_addr}, URL: {request.url}")
                     abort(403, description="请求包含可疑的SQL注入尝试")
-            
+
             # 检查JSON数据
             if request.is_json:
                 try:
@@ -135,13 +118,13 @@ class SQLInjectionProtection:
                         abort(403, description="请求包含可疑的SQL注入尝试")
                 except Exception:
                     pass
-            
+
             # 检查URL路径参数
             if request.view_args:
                 if self.check_sql_injection(request.view_args):
                     logger.warning(f"SQL注入尝试检测到: {request.remote_addr}, URL: {request.url}")
                     abort(403, description="请求包含可疑的SQL注入尝试")
-        
+
         logger.info("SQL注入防护中间件已注册")
 
 # 创建SQL注入防护实例

@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 测试9年制义务教育题目生成
-"""
 
 import sys
 import os
@@ -13,16 +12,12 @@ from app.ai.question_bank_expander import QuestionBankExpander
 from app.models.question import QuestionManager, Question
 
 class TestNineYearEducationExpander(QuestionBankExpander):
-    """
     9年制义务教育题库扩充器测试类
-    """
-    
+
     def __init__(self):
-        """
         初始化9年制义务教育题库扩充器
-        """
         super().__init__()
-        
+
         # 添加9年制义务教育的版本信息
         self._nine_year_education = {
             "versions": [
@@ -41,26 +36,23 @@ class TestNineYearEducationExpander(QuestionBankExpander):
             ],
             "subjects": ["math", "english", "chinese"]
         }
-    
+
     def _generate_exam_question(self, language_id: int, level_id: int, category_id: int, difficulty: str):
-        """
-        生成考试题目（中考题、高考题、压轴题）
-        """
         import random
-        
+
         # 确定题目类型
         exam_types = ["中考题", "高考题", "压轴题"]
         exam_type = random.choice(exam_types)
-        
+
         # 确定版本
         version = random.choice(self._nine_year_education["versions"])
-        
+
         # 确定年级
         grade = random.choice(self._nine_year_education["grades"])
-        
+
         # 随机选择学科
         subject = random.choice(self._nine_year_education["subjects"])
-        
+
         # 学科名称映射
         subject_map = {
             "math": "数学",
@@ -68,13 +60,12 @@ class TestNineYearEducationExpander(QuestionBankExpander):
             "chinese": "语文"
         }
         subject_cn = subject_map[subject]
-        
+
         # 根据学科生成题目内容
         if subject == "math":
             a = random.randint(1, 10)
             b = random.randint(1, 10)
             operation = random.choice(["+", "-", "×", "÷"])
-            
             if operation == "+":
                 answer = a + b
                 content = f"{a} {operation} {b} 的结果是多少？"
@@ -89,23 +80,19 @@ class TestNineYearEducationExpander(QuestionBankExpander):
                 b = random.randint(1, 10)
                 a = b * random.randint(1, 10)
                 answer = a // b
-                content = f"{a} {operation} {b} 的结果是多少？"
-            
+
             # 生成选项
-            options = [answer]
             while len(options) < 4:
                 wrong_answer = answer + random.randint(-5, 5)
-                if wrong_answer != answer and wrong_answer >= 0:
                     options.append(wrong_answer)
             random.shuffle(options)
-            
-            # 转换难度为难度分数
+
             difficulty_score = {
                 "easy": 1.0,
                 "medium": 2.0,
                 "hard": 3.0
             }.get(difficulty, 1.0)
-            
+
             # 创建题目
             question = Question(
                 content=f"[{version}][{grade}][{exam_type}][{subject_cn}] {content}",
@@ -119,115 +106,76 @@ class TestNineYearEducationExpander(QuestionBankExpander):
                 difficulty_score=difficulty_score
             )
             return question
-        
+
         elif subject == "english":
             word = "apple"
             content = f"选择{word}的正确中文意思"
-            
+
             # 生成选项
             options = ["苹果", "香蕉", "猫", "狗"]
             correct_answer = "0"  # 苹果
-            
+
             # 转换难度为难度分数
             difficulty_score = {
                 "easy": 1.0,
                 "medium": 2.0,
                 "hard": 3.0
             }.get(difficulty, 1.0)
-            
+
             # 创建题目
             question = Question(
-                content=f"[{version}][{grade}][{exam_type}][{subject_cn}] {content}",
                 question_type="single_choice",
                 language_id=language_id,
                 level_id=level_id,
                 category_id=category_id,
-                options=options,
                 answer=correct_answer,
-                explanation=f"{word}的正确意思是{options[int(correct_answer)]}",
                 difficulty_score=difficulty_score
-            )
             return question
-        
         elif subject == "chinese":
-            words = ["美丽", "漂亮", "好看", "美观"]
             word = random.choice(words)
-            content = f"选择与{word}意思最接近的词语"
-            
+
             # 生成选项
-            options = ["美丽", "漂亮", "好看", "美观"]
             random.shuffle(options)
-            correct_answer = str(options.index(word))
-            
-            # 转换难度为难度分数
+
             difficulty_score = {
-                "easy": 1.0,
                 "medium": 2.0,
-                "hard": 3.0
             }.get(difficulty, 1.0)
-            
             # 创建题目
-            question = Question(
-                content=f"[{version}][{grade}][{exam_type}][{subject_cn}] {content}",
                 question_type="single_choice",
-                language_id=language_id,
-                level_id=level_id,
                 category_id=category_id,
                 options=options,
                 answer=correct_answer,
-                explanation=f"{word}的意思是{word}",
-                difficulty_score=difficulty_score
             )
-            return question
-        
-        return None
 
 def test_9year_generation():
-    """
     测试9年制义务教育题目生成
-    """
-    print("================================================================================" )
     print("测试9年制义务教育题目生成")
     print("================================================================================" )
-    
     try:
         # 初始化9年制义务教育题库扩充器
-        expander = TestNineYearEducationExpander()
-        print("9年制义务教育题库扩充器初始化成功")
-        
+
         # 初始化题目管理器
         question_manager = QuestionManager()
-        print("题目管理器初始化成功")
-        
+
         # 生成10道题目
-        print("\n生成题目:")
         for i in range(10):
             # 生成随机题目参数
-            language_id = 3  # 中文
             level_id = 1 + (i % 5)  # 1-5
             category_id = 1 + (i % 5)  # 1-5
-            difficulty = ["easy", "medium", "hard"][i % 3]
-            
+
             # 生成考试题目
-            question = expander._generate_exam_question(
                 language_id=language_id,
                 level_id=level_id,
-                category_id=category_id,
                 difficulty=difficulty
             )
-            
             # 保存题目
             if question:
-                try:
                     # 使用 QuestionManager 创建题目
                     question_manager.create_question(
                         content=question.content,
                         answer=question.answer,
-                        explanation=question.explanation,
-                        category_id=question.category_id,
                         language_id=question.language_id,
                         level_id=question.level_id,
-                        question_type=question.question_type,
                         options=question.options,
                         tags=question.tags,
                         difficulty_score=question.difficulty_score,
@@ -239,7 +187,7 @@ def test_9year_generation():
                     print(f"生成题目 {i+1}: {question.content}")
                 except Exception as e:
                     print(f"保存题目失败: {str(e)}")
-        
+
         # 验证生成的题目
         print("\n验证生成的题目:")
         # 获取题目并过滤出包含版本、年级、考试类型和学科信息的题目
@@ -249,20 +197,17 @@ def test_9year_generation():
             if any(version in question.content for version in ['人教版', '北师大版', '苏教版', '沪教版', '鲁教版', '粤教版', '湘教版', '川教版']) and \
                any(grade in question.content for grade in ['小学一年级', '小学二年级', '小学三年级', '小学四年级', '小学五年级', '小学六年级', '初中一年级', '初中二年级', '初中三年级']) and \
                any(exam_type in question.content for exam_type in ['中考题', '高考题', '压轴题']) and \
-               any(subject in question.content for subject in ['数学', '英语', '语文']):
                 filtered_questions.append(question)
-        
+
         # 打印过滤后的题目
-        for i, question in enumerate(filtered_questions[:10], 1):
             print(f"\n题目 {i}:")
             print(f"内容: {question.content}")
             print(f"是否包含版本信息: {'是' if any(version in question.content for version in ['人教版', '北师大版', '苏教版', '沪教版', '鲁教版', '粤教版', '湘教版', '川教版']) else '否'}")
-            print(f"是否包含年级信息: {'是' if any(grade in question.content for grade in ['小学一年级', '小学二年级', '小学三年级', '小学四年级', '小学五年级', '小学六年级', '初中一年级', '初中二年级', '初中三年级']) else '否'}")
             print(f"是否包含考试类型信息: {'是' if any(exam_type in question.content for exam_type in ['中考题', '高考题', '压轴题']) else '否'}")
             print(f"是否包含学科信息: {'是' if any(subject in question.content for subject in ['数学', '英语', '语文']) else '否'}")
-        
+
         print(f"\n共找到 {len(filtered_questions)} 道符合条件的题目")
-        
+
     except Exception as e:
         print(f"测试失败: {str(e)}")
         import traceback
@@ -273,4 +218,5 @@ def test_9year_generation():
         print("================================================================================" )
 
 if __name__ == "__main__":
-    test_9year_generation()
+
+"""

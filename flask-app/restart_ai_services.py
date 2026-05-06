@@ -3,7 +3,6 @@
 """
 重启AI服务脚本
 重启AI、路由、蓝图、服务和常驻后台
-"""
 
 import os
 import sys
@@ -21,7 +20,7 @@ logger = logging.getLogger('restart_ai_services')
 
 class AIServicesRestarter:
     """AI服务重启器类"""
-    
+
     def __init__(self):
         """初始化AI服务重启器"""
         self.project_root = os.path.dirname(os.path.abspath(__file__))
@@ -39,40 +38,37 @@ class AIServicesRestarter:
             'app/ai/ai_performance_review.py',
             'app/ai/ai_knowledge_base.py'
         ]
-        
+
         logger.info("AI服务重启器初始化完成")
-    
+
     def restart_ai_instances(self) -> bool:
         """重启AI实例"""
         try:
             logger.info("开始重启AI实例")
-            
+
             # 重新加载AI模块
             for module_path in self.ai_modules:
                 module_name = module_path.replace('/', '.').replace('.py', '')
                 if module_name in sys.modules:
                     del sys.modules[module_name]
                     logger.info(f"卸载AI模块: {module_name}")
-            
+
             # 重新导入AI模块
             try:
-                from app.ai.ai_instance_manager import AIInstanceManager
                 from app.ai.base_ai import BaseAI
                 logger.info("AI模块重新导入成功")
             except Exception as e:
                 logger.warning(f"AI模块导入失败: {str(e)}")
-            
+
             logger.info("AI实例重启完成")
             return True
         except Exception as e:
             logger.error(f"重启AI实例失败: {str(e)}")
-            return False
-    
+
     def restart_routes(self) -> bool:
         """重启路由"""
         try:
-            logger.info("开始重启路由")
-            
+
             # 重新加载路由模块
             route_modules = [
                 'app/routes/__init__.py',
@@ -80,137 +76,102 @@ class AIServicesRestarter:
                 'app/routes/exam_routes.py',
                 'app/routes/user_routes.py'
             ]
-            
             for module_path in route_modules:
                 if os.path.exists(os.path.join(self.project_root, module_path)):
                     module_name = module_path.replace('/', '.').replace('.py', '')
                     if module_name in sys.modules:
                         del sys.modules[module_name]
                         logger.info(f"卸载路由模块: {module_name}")
-            
             logger.info("路由重启完成")
-            return True
         except Exception as e:
-            logger.error(f"重启路由失败: {str(e)}")
             return False
-    
+
     def restart_blueprints(self) -> bool:
         """重启蓝图"""
         try:
-            logger.info("开始重启蓝图")
-            
-            # 重新加载蓝图模块
             blueprint_modules = [
                 'app/blueprints/__init__.py'
             ]
-            
-            for module_path in blueprint_modules:
                 if os.path.exists(os.path.join(self.project_root, module_path)):
                     module_name = module_path.replace('/', '.').replace('.py', '')
                     if module_name in sys.modules:
                         del sys.modules[module_name]
                         logger.info(f"卸载蓝图模块: {module_name}")
-            
+
             logger.info("蓝图重启完成")
-            return True
         except Exception as e:
             logger.error(f"重启蓝图失败: {str(e)}")
-            return False
-    
+
     def restart_flask_service(self) -> bool:
-        """重启Flask服务"""
         try:
             logger.info("开始重启Flask服务")
-            
-            # 检查是否有正在运行的Flask进程
             try:
                 result = subprocess.run(
                     ['ps', 'aux'],
-                    capture_output=True,
-                    text=True
                 )
-                flask_processes = [line for line in result.stdout.split('\n') 
-                                if 'flask run' in line and 'python' in line]
-                
+
                 if flask_processes:
                     logger.info(f"找到 {len(flask_processes)} 个Flask进程")
                     # 这里可以添加终止进程的逻辑
-            except Exception as e:
                 logger.warning(f"检查Flask进程失败: {str(e)}")
-            
+
             # 重新启动Flask服务（这里只是模拟，实际需要在新的终端中启动）
             logger.info("Flask服务重启指令已准备就绪")
             logger.info("请在新的终端中运行: python3 -m flask run")
-            
+
             return True
         except Exception as e:
             logger.error(f"重启Flask服务失败: {str(e)}")
             return False
-    
+
     def restart_background_services(self) -> bool:
         """重启常驻后台服务"""
         try:
-            logger.info("开始重启常驻后台服务")
-            
+
             # 检查是否有正在运行的后台进程
-            try:
                 result = subprocess.run(
                     ['ps', 'aux'],
                     capture_output=True,
-                    text=True
                 )
-                background_processes = [line for line in result.stdout.split('\n') 
                                      if 'background' in line or 'ai_service' in line]
-                
                 if background_processes:
                     logger.info(f"找到 {len(background_processes)} 个后台进程")
                     # 这里可以添加终止进程的逻辑
-            except Exception as e:
                 logger.warning(f"检查后台进程失败: {str(e)}")
-            
+
             # 重新启动后台服务（这里只是模拟，实际需要根据具体服务启动）
             logger.info("后台服务重启指令已准备就绪")
             logger.info("请根据需要启动相关后台服务")
-            
             return True
         except Exception as e:
             logger.error(f"重启后台服务失败: {str(e)}")
             return False
-    
+
     def full_restart(self) -> Dict[str, bool]:
         """完全重启所有服务"""
         results = {
             'ai_instances': self.restart_ai_instances(),
             'routes': self.restart_routes(),
             'blueprints': self.restart_blueprints(),
-            'flask_service': self.restart_flask_service(),
             'background_services': self.restart_background_services()
-        }
-        
-        # 显示重启结果
+
         logger.info("\n重启结果汇总:")
-        for service, success in results.items():
             status = "✅ 成功" if success else "❌ 失败"
-            logger.info(f"{service}: {status}")
-        
         return results
 
 def main():
     """主函数"""
-    logger.info("=" * 60)
     logger.info("AI服务重启脚本")
     logger.info("=" * 60)
-    
-    restarter = AIServicesRestarter()
+
     results = restarter.full_restart()
-    
-    # 检查是否所有服务都重启成功
+
     all_success = all(results.values())
     if all_success:
         logger.info("\n🎉 所有服务重启成功！")
     else:
         logger.warning("\n⚠️  部分服务重启失败，请检查日志")
-    
+
     return 0 if all_success else 1
 
 if __name__ == '__main__':

@@ -1,18 +1,19 @@
-import json
+# -*- coding: utf-8 -*-
+# JSON import removed - using database
 import logging
 from app.utils.logging import logger
 from app.config import Config
 
 class ThemeAI:
     """主题配色AI，负责统一系统主题和配色方案"""
-    
+
     def __init__(self):
         self.instance_id = f"theme_ai_{id(self)}"
         self.name = "主题配色AI"
         self.description = "负责统一系统主题和配色方案"
         self.logger = logger
         self.logger.info(f"初始化主题配色AI: {self.instance_id}")
-        
+
         # 统一主题配置
         self.unified_theme = {
             "name": "MTSCOS_Unified_Theme",
@@ -46,37 +47,31 @@ class ThemeAI:
                     "h6": "1rem",
                     "p": "1rem",
                     "small": "0.875rem"
-                },
                 "line_height": {
                     "base": "1.5",
                     "headings": "1.2"
                 }
-            },
             "spacing": {
                 "base": "1rem",
                 "small": "0.5rem",
                 "large": "2rem"
-            },
             "border_radius": {
                 "base": "0.25rem",
                 "large": "0.5rem",
                 "circle": "50%"
-            },
             "box_shadow": {
                 "base": "0 2px 4px rgba(0, 0, 0, 0.1)",
                 "hover": "0 4px 8px rgba(0, 0, 0, 0.15)",
                 "active": "0 2px 4px rgba(0, 0, 0, 0.2)"
             }
         }
-    
+
     def unify_theme(self, ui_elements, language="english"):
-        """统一主题"""
-        try:
             self.logger.info(f"{self.instance_id} 正在统一主题，语言: {language}")
-            
+
             # 应用统一主题到UI元素
             themed_elements = self._apply_theme(ui_elements, language)
-            
+
             self.logger.info(f"{self.instance_id} 主题统一完成")
             return {
                 "success": True,
@@ -86,21 +81,18 @@ class ThemeAI:
         except Exception as e:
             self.logger.error(f"{self.instance_id} 主题统一失败: {str(e)}")
             return {
-                "success": False,
                 "message": f"主题统一过程中发生错误: {str(e)}"
             }
-    
+
     def optimize_ui(self, ui_elements):
         """优化UI元素"""
-        try:
             self.logger.info(f"{self.instance_id} 正在优化UI元素")
-            
+
             optimized_elements = []
-            
+
             for element in ui_elements:
                 optimized_element = self._optimize_element(element)
                 optimized_elements.append(optimized_element)
-            
             self.logger.info(f"{self.instance_id} UI优化完成")
             return {
                 "success": True,
@@ -109,34 +101,29 @@ class ThemeAI:
         except Exception as e:
             self.logger.error(f"{self.instance_id} UI优化失败: {str(e)}")
             return {
-                "success": False,
                 "message": f"UI优化过程中发生错误: {str(e)}"
             }
-    
+
     def adapt_styles(self, styles, target_platform="web"):
         """适配样式到目标平台"""
-        try:
             self.logger.info(f"{self.instance_id} 正在适配样式到目标平台: {target_platform}")
-            
+
             adapted_styles = self._adapt_to_platform(styles, target_platform)
-            
+
             self.logger.info(f"{self.instance_id} 样式适配完成")
             return {
                 "success": True,
                 "adapted_styles": adapted_styles
             }
-        except Exception as e:
             self.logger.error(f"{self.instance_id} 样式适配失败: {str(e)}")
             return {
-                "success": False,
                 "message": f"样式适配过程中发生错误: {str(e)}"
             }
-    
+
     def get_theme_config(self, language="english"):
         """获取主题配置"""
-        try:
             self.logger.info(f"{self.instance_id} 获取主题配置，语言: {language}")
-            
+
             # 返回适配后的主题配置
             return {
                 "success": True,
@@ -145,69 +132,65 @@ class ThemeAI:
         except Exception as e:
             self.logger.error(f"{self.instance_id} 获取主题配置失败: {str(e)}")
             return {
-                "success": False,
                 "message": f"获取主题配置过程中发生错误: {str(e)}"
-            }
-    
+
     def _apply_theme(self, ui_elements, language):
         """应用主题到UI元素"""
-        themed_elements = []
-        
+
         for element in ui_elements:
             themed_element = element.copy()
-            
+
             # 应用主题颜色
             if "color" in themed_element:
                 if themed_element["color"] in self.unified_theme["colors"]:
                     themed_element["color"] = self.unified_theme["colors"][themed_element["color"]]
-            
+
             # 应用主题字体
             if "font_family" in themed_element:
                 themed_element["font_family"] = self.unified_theme["typography"]["font_family"]
-            
+
             # 应用主题字体大小
             if "font_size" in themed_element:
                 font_size_key = themed_element["font_size"]
                 if font_size_key in self.unified_theme["typography"]["font_size"]:
                     themed_element["font_size"] = self.unified_theme["typography"]["font_size"][font_size_key]
-            
             # 应用边框圆角
             if "border_radius" in themed_element:
                 radius_key = themed_element["border_radius"]
                 if radius_key in self.unified_theme["border_radius"]:
                     themed_element["border_radius"] = self.unified_theme["border_radius"][radius_key]
-            
+
             themed_elements.append(themed_element)
-        
+
         return themed_elements
-    
+
     def _optimize_element(self, element):
         """优化单个UI元素"""
         optimized = element.copy()
-        
+
         # 确保元素有统一的类名前缀
         if "class" in optimized:
             if not optimized["class"].startswith("mtscos-"):
                 optimized["class"] = f"mtscos-{optimized['class']}"
-        
+
         # 确保元素有适当的间距
         if "margin" not in optimized:
             optimized["margin"] = self.unified_theme["spacing"]["base"]
-        
+
         if "padding" not in optimized:
             optimized["padding"] = self.unified_theme["spacing"]["small"]
-        
+
         # 确保元素有适当的边框
         if "border" in optimized and optimized["border"]:
             if "border_color" not in optimized:
                 optimized["border_color"] = self.unified_theme["colors"]["border"]
-        
+
         return optimized
-    
+
     def _adapt_to_platform(self, styles, platform):
         """适配样式到目标平台"""
         adapted = styles.copy()
-        
+
         # 根据平台调整样式
         if platform == "mobile":
             # 移动端适配
@@ -217,13 +200,12 @@ class ThemeAI:
             # 平板适配
             adapted["typography"]["font_size"]["base"] = "15px"
             adapted["spacing"]["base"] = "0.875rem"
-        
+
         return adapted
-    
+
     def _get_language_adapted_theme(self, language):
         """获取适配语言的主题"""
         theme = self.unified_theme.copy()
-        
         # 根据语言调整特定的主题元素
         if language == "japanese":
             # 日语特定调整
@@ -231,16 +213,16 @@ class ThemeAI:
         elif language == "english":
             # 英语特定调整
             theme["typography"]["font_family"] = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
-        
+
         return theme
-    
+
     def generate_css(self, theme=None):
         """生成统一的CSS样式"""
         try:
             self.logger.info(f"{self.instance_id} 生成统一CSS样式")
-            
+
             target_theme = theme or self.unified_theme
-            
+
             css = f"""/* MTSCOS 统一主题 CSS */
 :root {{
     /* 颜色变量 */
@@ -250,7 +232,6 @@ class ThemeAI:
     --warning-color: {target_theme['colors']['warning']};
     --danger-color: {target_theme['colors']['danger']};
     --info-color: {target_theme['colors']['info']};
-    --light-color: {target_theme['colors']['light']};
     --dark-color: {target_theme['colors']['dark']};
     --background-color: {target_theme['colors']['background']};
     --text-color: {target_theme['colors']['text']};
@@ -258,7 +239,7 @@ class ThemeAI:
     --border-color: {target_theme['colors']['border']};
     --hover-color: {target_theme['colors']['hover']};
     --active-color: {target_theme['colors']['active']};
-    
+
     /* 排版变量 */
     --font-family: {target_theme['typography']['font_family']};
     --font-size-base: {target_theme['typography']['font_size']['base']};
@@ -272,17 +253,17 @@ class ThemeAI:
     --font-size-small: {target_theme['typography']['font_size']['small']};
     --line-height-base: {target_theme['typography']['line_height']['base']};
     --line-height-headings: {target_theme['typography']['line_height']['headings']};
-    
+
     /* 间距变量 */
     --spacing-base: {target_theme['spacing']['base']};
     --spacing-small: {target_theme['spacing']['small']};
     --spacing-large: {target_theme['spacing']['large']};
-    
+
     /* 边框圆角变量 */
     --border-radius-base: {target_theme['border_radius']['base']};
     --border-radius-large: {target_theme['border_radius']['large']};
     --border-radius-circle: {target_theme['border_radius']['circle']};
-    
+
     /* 阴影变量 */
     --box-shadow-base: {target_theme['box_shadow']['base']};
     --box-shadow-hover: {target_theme['box_shadow']['hover']};
@@ -323,9 +304,8 @@ p {{ margin-bottom: var(--spacing-base); }}
 a {{ color: var(--primary-color); text-decoration: none; }}
 a:hover {{ color: var(--hover-color); text-decoration: underline; }}
 
-button {{ 
+button {{
     font-family: var(--font-family);
-    border: none;
     border-radius: var(--border-radius-base);
     cursor: pointer;
     transition: all 0.3s ease;
@@ -335,16 +315,15 @@ button:hover {{ opacity: 0.9; }}
 button:active {{ opacity: 0.8; }}
 
 /* 统一的容器样式 */
-.mtscos-container {{ 
+.mtscos-container {{
     max-width: 1200px;
     margin: 0 auto;
     padding: var(--spacing-base);
 }}
 
 /* 统一的卡片样式 */
-.mtscos-card {{ 
+.mtscos-card {{
     background-color: var(--background-color);
-    border: 1px solid var(--border-color);
     border-radius: var(--border-radius-base);
     box-shadow: var(--box-shadow-base);
     padding: var(--spacing-base);
@@ -352,7 +331,7 @@ button:active {{ opacity: 0.8; }}
 }}
 
 /* 统一的按钮样式 */
-.mtscos-btn {{ 
+.mtscos-btn {{
     display: inline-block;
     padding: var(--spacing-small) var(--spacing-base);
     font-size: var(--font-size-p);
@@ -365,42 +344,36 @@ button:active {{ opacity: 0.8; }}
     border-radius: var(--border-radius-base);
     transition: all 0.3s ease;
 }}
-
-.mtscos-btn-primary {{ 
+.mtscos-btn-primary {{
     color: var(--text-light-color);
     background-color: var(--primary-color);
     border-color: var(--primary-color);
-}}
-
-.mtscos-btn-primary:hover {{ 
+.mtscos-btn-primary:hover {{
     background-color: var(--active-color);
     border-color: var(--active-color);
 }}
 
-.mtscos-btn-secondary {{ 
+.mtscos-btn-secondary {{
     color: var(--text-color);
     background-color: var(--light-color);
     border-color: var(--border-color);
 }}
 
-.mtscos-btn-secondary:hover {{ 
-    background-color: var(--border-color);
+.mtscos-btn-secondary:hover {{
     border-color: var(--border-color);
 }}
 
-/* 统一的表单样式 */
-.mtscos-form-group {{ 
+.mtscos-form-group {{
     margin-bottom: var(--spacing-base);
 }}
 
-.mtscos-form-label {{ 
+.mtscos-form-label {{
     display: block;
     margin-bottom: var(--spacing-small);
     font-weight: 600;
 }}
 
-.mtscos-form-control {{ 
-    display: block;
+.mtscos-form-control {{
     width: 100%;
     padding: var(--spacing-small);
     font-size: var(--font-size-p);
@@ -413,29 +386,20 @@ button:active {{ opacity: 0.8; }}
     transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
 }}
 
-.mtscos-form-control:focus {{ 
-    border-color: var(--hover-color);
     outline: 0;
     box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
 }}
 """
-            
+
             return {
                 "success": True,
                 "css": css
             }
         except Exception as e:
             self.logger.error(f"{self.instance_id} 生成CSS失败: {str(e)}")
-            return {
-                "success": False,
                 "message": f"生成CSS过程中发生错误: {str(e)}"
-            }
-    
-    def __str__(self):
-        return f"ThemeAI(instance_id={self.instance_id}, name={self.name})"
-    
-    def __repr__(self):
-        return self.__str__()
 
-# 创建全局主题配色AI实例
+    def __str__(self):
+    def __repr__(self):
+
 theme_ai = ThemeAI()

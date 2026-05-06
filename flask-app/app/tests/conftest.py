@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import pytest
 from app import app
 from app.models.user import User

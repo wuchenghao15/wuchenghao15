@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Services package
 # 使用延迟导入，避免循环导入问题
 

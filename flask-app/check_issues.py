@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 查看系统检测到的具体问题
-"""
 
 import sys
 import os
@@ -16,18 +15,18 @@ from app.ai.instances import ai_instance_manager
 def check_detailed_issues():
     """查看详细的系统问题"""
     print("=== 系统问题详细报告 ===")
-    
+
     try:
         if hasattr(ai_instance_manager, 'self_healing_system'):
             # 获取系统健康状况
             health = ai_instance_manager.self_healing_system.get_system_health()
-            
+
             print(f"系统健康分数: {health['health_score']}")
             print(f"检测到的问题数: {len(health['detected_issues'])}")
             print(f"活跃实例数: {health['instance_stats']['active_instances']}")
             print(f"总实例数: {health['instance_stats']['total_instances']}")
             print(f"最后检查时间: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(health['last_check_time']))}")
-            
+
             # 输出检测到的具体问题
             if health['detected_issues']:
                 print("\n详细问题列表:")
@@ -41,7 +40,7 @@ def check_detailed_issues():
                         print(f"   详细信息: {issue['details']}")
             else:
                 print("\n✓ 未检测到问题")
-            
+
             # 输出修复历史
             history = ai_instance_manager.self_healing_system.get_fix_history(limit=10)
             if history:
@@ -52,10 +51,9 @@ def check_detailed_issues():
                     print(f"   时间: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(record['fixed_at']))}")
                     if 'error' in record:
                         print(f"   错误信息: {record['error']}")
-            
+
             return True
         else:
-            print("✗ 自我修复系统未初始化")
             return False
     except Exception as e:
         print(f"检查系统问题失败: {str(e)}")
@@ -63,12 +61,10 @@ def check_detailed_issues():
         traceback.print_exc()
         return False
 
-
 def run_auto_upgrade():
     """运行自动升级"""
     print("\n=== 运行自动升级 ===")
     try:
-        result = ai_instance_manager.auto_upgrade()
         print(f"升级结果: {result}")
         print(f"成功升级了 {result['upgraded_instances']} 个AI实例")
         print(f"成功升级了 {result['upgraded_collections']} 个AI集")
@@ -76,16 +72,11 @@ def run_auto_upgrade():
         return True
     except Exception as e:
         print(f"自动升级失败: {str(e)}")
-        import traceback
         traceback.print_exc()
         return False
 
-
 def main():
-    """主函数"""
-    check_detailed_issues()
     run_auto_upgrade()
-    print("\n=== 升级后再次检查问题 ===")
     check_detailed_issues()
 
 
