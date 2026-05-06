@@ -20,8 +20,12 @@ def execute_git_backup():
         subprocess.run(['git', 'add', '.'], check=True, capture_output=True)
         commit_msg = f"Auto backup - System upgrade {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
         subprocess.run(['git', 'commit', '-m', commit_msg], check=True, capture_output=True)
-        subprocess.run(['git', 'push'], check=True, capture_output=True)
-        print("✅ Git备份完成")
+        print("✅ Git提交完成")
+        try:
+            subprocess.run(['git', 'push'], check=True, capture_output=True)
+            print("✅ Git推送完成")
+        except:
+            print("⚠️ Git推送失败（可能需要配置远程仓库）")
         return True
     except Exception as e:
         print(f"❌ Git备份失败: {e}")
@@ -30,7 +34,7 @@ def execute_git_backup():
 def create_system_snapshot():
     """创建系统快照"""
     print("📸 创建系统快照...")
-    snapshot_dir = '/opt/mtscos/snapshots'
+    snapshot_dir = '/Users/wuchenghao/Library/CloudStorage/OneDrive-个人/文档/MTSCOS_AI_Project/snapshots'
     os.makedirs(snapshot_dir, exist_ok=True)
     
     snapshot_name = f"snapshot_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
@@ -45,6 +49,17 @@ def create_system_snapshot():
         
         conn = sqlite3.connect(DATABASE_PATH)
         cursor = conn.cursor()
+        
+        cursor.execute('''CREATE TABLE IF NOT EXISTS system_snapshots (
+            snapshot_id TEXT PRIMARY KEY,
+            snapshot_name TEXT,
+            snapshot_type TEXT,
+            timestamp TEXT,
+            version TEXT,
+            status TEXT,
+            details TEXT
+        )''')
+        
         cursor.execute('''
             INSERT INTO system_snapshots 
             (snapshot_id, snapshot_name, snapshot_type, timestamp, version, status, details)
@@ -65,7 +80,14 @@ def update_system_version():
     conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
     
-    cursor.execute('SELECT version FROM version_control ORDER BY created_at DESC LIMIT 1')
+    cursor.execute('''CREATE TABLE IF NOT EXISTS version_control (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        version TEXT,
+        description TEXT,
+        created_at TEXT
+    )''')
+    
+    cursor.execute('SELECT version FROM version_control ORDER BY id DESC LIMIT 1')
     result = cursor.fetchone()
     
     if result:
@@ -93,6 +115,13 @@ def update_system_chronicles(new_version):
     
     conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
+    
+    cursor.execute('''CREATE TABLE IF NOT EXISTS system_chronicles (
+        record_id TEXT PRIMARY KEY,
+        timestamp TEXT,
+        version TEXT,
+        events TEXT
+    )''')
     
     chronicle = {
         'version': new_version,
@@ -273,6 +302,15 @@ def add_additional_features():
     conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
     
+    cursor.execute('''CREATE TABLE IF NOT EXISTS system_features (
+        id TEXT PRIMARY KEY,
+        name TEXT,
+        description TEXT,
+        category TEXT,
+        enabled INTEGER,
+        created_at TEXT
+    )''')
+    
     features = [
         {'name': '学习进度追踪', 'description': '追踪用户学习进度和成绩变化', 'category': '学习', 'enabled': True},
         {'name': '智能推荐系统', 'description': '根据学习情况推荐合适的题目', 'category': 'AI', 'enabled': True},
@@ -291,7 +329,7 @@ def add_additional_features():
                 INSERT INTO system_features (id, name, description, category, enabled, created_at)
                 VALUES (?, ?, ?, ?, ?, ?)
             ''', (str(uuid.uuid4())[:16], feature['name'], feature['description'], 
-                  feature['category'], feature['enabled'], datetime.now().isoformat()))
+                  feature['category'], 1 if feature['enabled'] else 0, datetime.now().isoformat()))
     
     conn.commit()
     conn.close()
@@ -303,28 +341,13 @@ def main():
     print("🚀 开始系统全面升级...")
     print("=" * 60)
     
-    # 1. Git备份
     execute_git_backup()
-    
-    # 2. 创建快照
     create_system_snapshot()
-    
-    # 3. 更新版本
     new_version = update_system_version()
-    
-    # 4. 更新编年史
     update_system_chronicles(new_version)
-    
-    # 5. 更新文档
     update_documentation()
-    
-    # 6. 优化UI主题
     optimize_ui_theme()
-    
-    # 7. 优化路由
     optimize_routes()
-    
-    # 8. 添加附加功能
     add_additional_features()
     
     print("=" * 60)
