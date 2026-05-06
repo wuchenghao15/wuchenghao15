@@ -80,29 +80,21 @@ def update_system_version():
     conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
     
-    cursor.execute('''CREATE TABLE IF NOT EXISTS version_control (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        version TEXT,
-        description TEXT,
-        created_at TEXT
-    )''')
-    
-    cursor.execute('SELECT version FROM version_control ORDER BY id DESC LIMIT 1')
+    cursor.execute('SELECT version, major, minor, patch, build FROM version_control ORDER BY id DESC LIMIT 1')
     result = cursor.fetchone()
     
     if result:
-        current_version = result[0]
-        parts = current_version.split('.')
-        major, minor, patch = int(parts[0]), int(parts[1]), int(parts[2])
+        current_version, major, minor, patch, build = result
         patch += 1
         new_version = f"{major}.{minor}.{patch}"
     else:
+        major, minor, patch, build = 1, 0, 1, 0
         new_version = "1.0.1"
     
     cursor.execute('''
-        INSERT INTO version_control (version, description, created_at)
-        VALUES (?, ?, ?)
-    ''', (new_version, f"Auto upgrade - {datetime.now().strftime('%Y-%m-%d')}", datetime.now().isoformat()))
+        INSERT INTO version_control (version, major, minor, patch, build, description, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    ''', (new_version, major, minor, patch, build, f"Auto upgrade - {datetime.now().strftime('%Y-%m-%d')}", datetime.now().isoformat()))
     conn.commit()
     conn.close()
     
