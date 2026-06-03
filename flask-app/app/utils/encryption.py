@@ -1,9 +1,11 @@
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+#!/usr/bin/env python3
 """
-数据加密工具，用于加密和解密敏感数据
+数据加密工具,用于加密和解密敏感数据
 """
 
+import logging
+logger = logging.getLogger(__name__)
 import base64
 import hashlib
 import json

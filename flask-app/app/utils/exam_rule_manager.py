@@ -3,13 +3,15 @@
 import logging
 from datetime import datetime
 from typing import Dict, List, Any, Optional
+import json
+import os
 
 # 配置日志
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 class ExamRuleManager:
-    """考试规则管理器，负责管理和应用考试系统的规则"""
+    """考试规则管理器: 负责管理和应用考试系统的规则"""
 
     def __init__(self, config_file: str = None):
         self.instance_id = f"exam_rule_manager_{id(self)}"
@@ -31,27 +33,28 @@ class ExamRuleManager:
                 "max_questions": 100,
                 "min_time_limit": 10,
                 "max_time_limit": 300,
-            },
                 "passing_score": 60,
                 "excellent_score": 90,
                 "good_score": 80,
-                "fair_score": 70,
+                "fair_score": 70
             },
             "adaptive_testing": {
                 "max_questions": 50,
-                "difficulty_adjustment_rate": 0.2,
+                "difficulty_adjustment_rate": 0.2
             },
             "cheating_detection": {
                 "max_time_variation": 0.5,
-                "max_modification_rate": 0.5,
+                "max_modification_rate": 0.5
             },
             "feedback": {
                 "min_score_for_positive_feedback": 70,
-                "max_score_for_improvement_feedback": 89,
+                "max_score_for_improvement_feedback": 89
+            },
             "user_access": {
                 "max_exams_per_day": 10,
-                "min_time_between_exams": 30,
+                "min_time_between_exams": 30
             }
+        }
 
         # 规则历史记录
         self.rule_history = {
@@ -62,6 +65,7 @@ class ExamRuleManager:
             "cheating_detection": [],
             "feedback": [],
             "user_access": []
+        }
 
         # 加载配置文件
         if config_file:
@@ -72,6 +76,7 @@ class ExamRuleManager:
 
         Args:
             config_file: 配置文件路径
+        """
         try:
             with open(config_file, 'r', encoding='utf-8') as f:
                 config = json.load(f)
@@ -97,9 +102,13 @@ class ExamRuleManager:
         except Exception as e:
             self.logger.error(f"保存考试规则配置文件失败: {str(e)}")
 
+    def get_rule(self, rule_type: str, rule_name: str) -> Any:
         """获取规则
+
         Args:
+            rule_type: 规则类型
             rule_name: 规则名称
+
         Returns:
             规则值
         """
@@ -110,6 +119,7 @@ class ExamRuleManager:
     def set_rule(self, rule_type: str, rule_name: str, value: Any):
         """设置规则
 
+        Args:
             rule_type: 规则类型
             rule_name: 规则名称
             value: 规则值
@@ -147,6 +157,7 @@ class ExamRuleManager:
         """更新指定类型的规则
 
         Args:
+            rule_type: 规则类型
             rules: 规则字典
         """
         if rule_type not in self.rules:
@@ -159,6 +170,7 @@ class ExamRuleManager:
 
     def check_question_generation(self, question: Dict[str, Any]) -> Dict[str, Any]:
         """检查题目生成规则
+
         Args:
             question: 题目
 
@@ -169,12 +181,15 @@ class ExamRuleManager:
             rules = self.rules.get("question_generation", {})
             errors = []
 
-            # 检查题目长度
+            content = question.get("content", "")
             min_length = rules.get("min_length", 15)
+            max_length = rules.get("max_length", 600)
+
+            # 检查题目长度
             if len(content) < min_length:
-                errors.append(f"题目内容长度不足，至少需要 {min_length} 个字符")
+                errors.append(f"题目内容长度不足, 至少需要 {min_length} 个字符")
             if len(content) > max_length:
-                errors.append(f"题目内容长度过长，最多允许 {max_length} 个字符")
+                errors.append(f"题目内容长度过长, 最多允许 {max_length} 个字符")
 
             # 检查题目类型
             question_type = question.get("type")
@@ -183,6 +198,7 @@ class ExamRuleManager:
 
             # 检查难度级别
             difficulty = question.get("difficulty")
+            if not difficulty:
                 errors.append("题目难度级别不能为空")
 
             # 检查教育版本
@@ -195,7 +211,7 @@ class ExamRuleManager:
             if not correct_answer:
                 errors.append("正确答案不能为空")
 
-            # 检查选项（如果是选择题）
+            # 检查选项(如果是选择题)
             if question_type in ["multiple_choice", "true_false"]:
                 options = question.get("options", [])
                 if not options:
@@ -214,173 +230,13 @@ class ExamRuleManager:
             return result
         except Exception as e:
             self.logger.error(f"检查题目生成规则失败: {str(e)}")
-            return {
-                "success": False,
-                "errors": [f"检查题目生成规则失败: {str(e)}"],
-                "warnings": [],
-                "rule_type": "question_generation"
-
-    def check_exam_creation(self, exam: Dict[str, Any]) -> Dict[str, Any]:
-        """检查考试创建规则
-
-        Args:
-            exam: 考试
-
-        Returns:
-            检查结果
-        """
-            rules = self.rules.get("exam_creation", {})
-            errors = []
-
-            # 检查考试名称
-            name = exam.get("name", "")
-            if not name:
-                errors.append("考试名称不能为空")
-
-            # 检查题目数量
-            min_questions = rules.get("min_questions", 5)
-            max_questions = rules.get("max_questions", 100)
-
-            if len(questions) < min_questions:
-                errors.append(f"题目数量不足，至少需要 {min_questions} 道题目")
-            if len(questions) > max_questions:
-
-            # 检查时间限制
-            time_limit = exam.get("time_limit")
-            min_time_limit = rules.get("min_time_limit", 10)
-            max_time_limit = rules.get("max_time_limit", 300)
-
-                errors.append("时间限制不能为空")
-            elif time_limit < min_time_limit:
-                errors.append(f"时间限制不足，至少需要 {min_time_limit} 分钟")
-                errors.append(f"时间限制过长，最多允许 {max_time_limit} 分钟")
-
-            # 检查教育版本
-            education_version = exam.get("education_version")
-                errors.append("教育版本不能为空")
-
-            result = {
-                "success": len(errors) == 0,
-                "errors": errors,
-                "warnings": [],
-                "rule_type": "exam_creation"
-            }
-
-            self.logger.info(f"检查考试创建规则: {result['success']}, 错误数: {len(errors)}")
-            return result
-        except Exception as e:
-            self.logger.error(f"检查考试创建规则失败: {str(e)}")
-            return {
-                "success": False,
-                "errors": [f"检查考试创建规则失败: {str(e)}"],
-                "warnings": [],
-                "rule_type": "exam_creation"
-
-    def check_scoring(self, score: float) -> Dict[str, Any]:
-        """检查评分规则
-
-        Args:
-            score: 分数
-
-        Returns:
-            检查结果
-        """
-            rules = self.rules.get("scoring", {})
-
-            # 检查分数范围
-                errors.append("分数必须在 0-100 之间")
-            # 确定分数等级
-            passing_score = rules.get("passing_score", 60)
-            excellent_score = rules.get("excellent_score", 90)
-            good_score = rules.get("good_score", 80)
-
-            if score >= excellent_score:
-                grade = "优秀"
-            elif score >= good_score:
-                grade = "良好"
-            elif score >= fair_score:
-                grade = "一般"
-            elif score >= passing_score:
-                grade = "及格"
-            else:
-                grade = "不及格"
-
-            result = {
-                "success": len(errors) == 0,
-                "grade": grade,
-                "rule_type": "scoring"
-            }
-            self.logger.info(f"检查评分规则: {result['success']}, 分数: {score}, 等级: {grade}")
-            return result
-        except Exception as e:
-            self.logger.error(f"检查评分规则失败: {str(e)}")
-            return {
-                "errors": [f"检查评分规则失败: {str(e)}"],
-                "warnings": [],
-                "rule_type": "scoring"
-
-    def check_user_access(self, user_id: str, exam_count: int, last_exam_time: Optional[datetime] = None) -> Dict[str, Any]:
-        """检查用户访问规则
-
-        Args:
-            user_id: 用户ID
-            exam_count: 今日考试次数
-            last_exam_time: 上次考试时间
-
-        Returns:
-        """
-        try:
-            rules = self.rules.get("user_access", {})
-            errors = []
-
-            # 检查每日考试次数
-            max_exams_per_day = rules.get("max_exams_per_day", 10)
-            if exam_count >= max_exams_per_day:
-                errors.append(f"今日考试次数已达上限，最多允许 {max_exams_per_day} 次考试")
-
-            # 检查考试间隔时间
-            min_time_between_exams = rules.get("min_time_between_exams", 30)
-            if last_exam_time:
-                if time_diff < min_time_between_exams:
-                    errors.append(f"考试间隔时间不足，至少需要 {min_time_between_exams} 分钟")
-
-            result = {
-                "success": len(errors) == 0,
-                "errors": errors,
-                "warnings": [],
-                "rule_type": "user_access"
-            }
-
-            self.logger.info(f"检查用户访问规则: {result['success']}, 错误数: {len(errors)}")
-            return result
-        except Exception as e:
-            self.logger.error(f"检查用户访问规则失败: {str(e)}")
-            return {
-                "success": False,
-                "errors": [f"检查用户访问规则失败: {str(e)}"],
-                "rule_type": "user_access"
-
-        """获取规则历史记录
-
-            rule_type: 规则类型
-
-        Returns:
-            规则历史记录
-        """
-            return self.rule_history[rule_type]
-
-    def get_all_rules(self) -> Dict[str, Dict[str, Any]]:
-        """获取所有规则
-
-        Returns:
-            规则字典
-        """
-        return self.rules
+            return {"success": False, "errors": [str(e)], "warnings": [], "rule_type": "question_generation"}
 
     def __str__(self):
         return f"ExamRuleManager(instance_id={self.instance_id}, name={self.name})"
 
     def __repr__(self):
+        return self.__str__()
 
 # 创建全局考试规则管理器实例
 exam_rule_manager = ExamRuleManager()

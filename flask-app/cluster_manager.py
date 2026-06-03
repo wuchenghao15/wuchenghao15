@@ -1,6 +1,8 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
 集群管理器 - 负责节点发现、状态监控、负载均衡和高可用管理
+"""
 
 import os
 # JSON import removed - using database
@@ -11,6 +13,7 @@ import datetime
 import logging
 from typing import Dict, List, Any, Optional
 from enum import Enum
+import json
 
 # 配置日志
 logging.basicConfig(
@@ -41,6 +44,7 @@ class ClusterManager:
 
         Args:
             cluster_config: 集群配置字典
+        """
         self.config = cluster_config
         self.cluster_name = cluster_config.get("CLUSTER_NAME", "mtscos-cluster")
         self.node_id = cluster_config.get("CLUSTER_NODE_ID", self._generate_node_id())
@@ -68,7 +72,7 @@ class ClusterManager:
 
         # 初始化
         self._load_cluster_config()
-        logger.info(f"集群管理器初始化完成，节点ID: {self.node_id}, 角色: {self.node_role.value}")
+        logger.info(f"集群管理器初始化完成,节点ID: {self.node_id}, 角色: {self.node_role.value}")
 
     def _generate_node_id(self) -> str:
         """生成唯一节点ID"""
@@ -92,7 +96,7 @@ class ClusterManager:
     def start(self):
         """启动集群管理器"""
         if not self.cluster_enabled:
-            logger.info("集群功能已禁用，跳过启动")
+            logger.info("集群功能已禁用,跳过启动")
             return
 
         with self.lock:
@@ -106,7 +110,7 @@ class ClusterManager:
         self._start_health_check()
         self._start_data_sync()
 
-        # 如果是主节点或需要选举，启动领导选举
+        # 如果是主节点或需要选举,启动领导选举
         if self.node_role == NodeRole.MASTER:
             self.current_master = self.node_id
             self._start_master_services()
@@ -164,10 +168,10 @@ class ClusterManager:
         with self.lock:
             self.nodes[self.node_id] = node_status
 
-        # 如果是主节点，处理心跳信息
+        # 如果是主节点,处理心跳信息
         if self.is_master():
             self._process_heartbeat(node_status)
-        # 发送心跳到其他节点（简化实现，实际应使用更可靠的通信机制）
+        # 发送心跳到其他节点(简化实现,实际应使用更可靠的通信机制)
         self._broadcast_heartbeat(node_status)
 
     def _start_health_check(self):
@@ -190,12 +194,14 @@ class ClusterManager:
             current_time = time.time()
             nodes_to_remove = []
 
-                # 检查心跳是否超时（3倍心跳间隔）
+            for node_id, node in self.cluster_nodes.items():
+                # 检查心跳是否超时(3倍心跳间隔)
+                if current_time - node.get('last_heartbeat', 0) > self.heartbeat_interval * 3:
                     node["status"] = NodeStatus.UNHEALTHY.value
 
-                    # 如果是主节点超时，触发故障转移
+                    # 如果是主节点超时,触发故障转移
                     if node_id == self.current_master:
-                        logger.error(f"主节点 {node_id} 心跳超时，触发故障转移")
+                        logger.error(f"主节点 {node_id} 心跳超时,触发故障转移")
                         self._trigger_failover()
 
     def _start_data_sync(self):
@@ -217,14 +223,14 @@ class ClusterManager:
         if not self.is_master():
             return
 
-        # 同步数据到所有节点（简化实现）
+        # 同步数据到所有节点(简化实现)
         logger.info("开始同步数据到集群")
-        # 实际实现应包括：
+        # 实际实现应包括:
         # 1. 数据变更检测
         # 4. 冲突解决
 
         """启动主节点服务"""
-        # 主节点负责：
+        # 主节点负责:
         # 1. 节点管理
         # 2. 负载均衡
         # 3. 数据同步协调
@@ -236,6 +242,8 @@ class ClusterManager:
         def election_loop():
             while self.running:
                 try:
+
+                    pass
                     if not self.current_master or self.current_master not in self.nodes:
                         self._run_leader_election()
                     time.sleep(30)  # 每30秒检查一次
@@ -258,14 +266,14 @@ class ClusterManager:
             if not healthy_nodes:
                 logger.error("没有健康节点可以选举")
                 return
-            # 按节点ID排序，选择第一个作为主节点
+            # 按节点ID排序,选择第一个作为主节点
 
                 logger.info(f"新主节点选举产生: {new_master}")
 
-                # 如果当前节点被选为新主节点，切换角色
+                # 如果当前节点被选为新主节点,切换角色
                 if new_master == self.node_id:
                     self.node_role = NodeRole.MASTER
-                    logger.info("当前节点被选为新主节点，切换角色")
+                    logger.info("当前节点被选为新主节点,切换角色")
                     self._start_master_services()
 
     def _trigger_failover(self):
@@ -305,6 +313,7 @@ class ClusterManager:
 
     def remove_node(self, node_id: str):
         """从集群中移除节点"""
+        with self.lock:
             if node_id in self.nodes:
                 del self.nodes[node_id]
                 logger.info(f"节点从集群移除: {node_id}")
@@ -332,17 +341,18 @@ class ClusterManager:
             s.close()
             return ip
         except Exception:
+            return None
 
     def _get_cpu_usage(self) -> float:
-        """获取CPU使用率（简化实现）"""
+        """获取CPU使用率(简化实现)"""
         return 0.0  # 实际应使用psutil等库获取
 
     def _get_memory_usage(self) -> float:
-        """获取内存使用率（简化实现）"""
+        """获取内存使用率(简化实现)"""
         return 0.0  # 实际应使用psutil等库获取
 
     def _get_load_average(self) -> List[float]:
-        """获取负载平均值（简化实现）"""
+        """获取负载平均值(简化实现)"""
         return [0.0, 0.0, 0.0]  # 实际应使用os.getloadavg()获取
 
     def shutdown(self):
@@ -352,7 +362,8 @@ class ClusterManager:
             self.running = False
 
         # 等待所有线程退出
-                thread.join(timeout=5.0)
+        for thread in self.threads:
+            thread.join(timeout=5.0)
 
         self.threads.clear()
         logger.info("集群管理器已关闭")
@@ -373,10 +384,21 @@ class DistributedDataSync:
         self.thread = threading.Thread(target=self._sync_loop, daemon=True)
         self.thread.start()
         logger.info("分布式数据同步服务启动")
-        if self.thread and self.thread.is_alive():
+        return self.thread and self.thread.is_alive()
+    pass
+    pass
+    pass
+    pass
+    pass
+    pass
+    pass
+    pass
     def _sync_loop(self):
         while self.running:
             try:
+
+                pass
+                if self.node_role == NodeRole.WORKER:
                     self._sync_from_master()
                 else:
                     self._sync_from_remote()
@@ -400,6 +422,8 @@ class DistributedDataSync:
         if self.cluster_manager.is_master():
             self._sync_from_master()
         else:
+
+            pass
 
 class ClusterAPI:
     """集群API服务"""
@@ -450,9 +474,11 @@ def initialize_cluster(config: Optional[Dict[str, Any]] = None):
 
 def shutdown_cluster():
     global cluster_manager
+    if cluster_manager:
         cluster_manager.shutdown()
 
 if __name__ == "__main__":
+    config = {
         "CLUSTER_ENABLED": True,
         "SERVER_HOST": "0.0.0.0",
         "SERVER_PORT": 8888

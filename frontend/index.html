@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MTSCOS - 智能管理系统</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --cyber-black: #0a0a0f;
+            --cyber-deep: #0f172a;
+            --cyber-card: rgba(30, 27, 75, 0.85);
+            --neon-cyan: #00f0ff;
+            --neon-pink: #ff00ff;
+            --neon-purple: #8b5cf6;
+            --text-primary: #ffffff;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --accent-gradient: linear-gradient(135deg, #00f0ff, #8b5cf6, #ff00ff);
+            --transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'PingFang SC', 'Microsoft YaHei', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(180deg, var(--cyber-black), var(--cyber-deep));
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        
+        .cyber-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: 
+                radial-gradient(ellipse at 20% 80%, rgba(0, 240, 255, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(255, 0, 255, 0.15) 0%, transparent 50%),
+                linear-gradient(180deg, var(--cyber-black) 0%, var(--cyber-deep) 100%);
+        }
+        
+        #particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+        
+        .cyber-particle {
+            position: fixed;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: -1;
+        }
+        
+        .cyber-particle.cyan { background: var(--neon-cyan); box-shadow: 0 0 20px var(--neon-cyan); }
+        .cyber-particle.pink { background: var(--neon-pink); box-shadow: 0 0 20px var(--neon-pink); }
+        .cyber-particle.purple { background: var(--neon-purple); box-shadow: 0 0 20px var(--neon-purple); }
+        
+        @keyframes particleFloat {
+            0% { transform: translateY(0) translateX(0) scale(1); opacity: 0; }
+            10% { opacity: 0.8; }
+            90% { opacity: 0.8; }
+            100% { transform: translateY(-100vh) translateX(100px) scale(0.5); opacity: 0; }
+        }
+        
+        .cyber-app {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .cyber-header {
+            backdrop-filter: blur(30px);
+            background: rgba(10, 10, 15, 0.9);
+            border-bottom: 1px solid var(--glass-border);
+            padding: 16px 32px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .cyber-header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .cyber-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        
+        .cyber-logo-icon {
+            width: 44px;
+            height: 44px;
+            background: var(--accent-gradient);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: 700;
+            box-shadow: 0 8px 24px rgba(0, 240, 255, 0.3);
+            animation: logoFloat 3s ease-in-out infinite;
+        }
+        
+        @keyframes logoFloat {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-4px) rotate(2deg); }
+        }
+        
+        .cyber-logo-text {
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+        }
+        
+        .header-nav {
+            display: flex;
+            gap: 16px;
+        }
+        
+        .header-nav a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 14px;
+            padding: 8px 16px;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+        
+        .header-nav a:hover {
+            color: var(--neon-cyan);
+            background: rgba(0, 240, 255, 0.1);
+        }
+        
+        .cyber-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: var(--accent-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 16px;
+            box-shadow: 0 4px 15px rgba(0, 240, 255, 0.3);
+            cursor: pointer;
+        }
+        
+        .cyber-main {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 32px;
+            flex: 1;
+            width: 100%;
+        }
+        
+        .cyber-hero {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+        
+        .cyber-title {
+            font-size: clamp(2.5rem, 5vw, 3.5rem);
+            font-weight: 700;
+            margin-bottom: 12px;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .cyber-subtitle {
+            font-size: 18px;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .cyber-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 24px;
+            margin-bottom: 48px;
+        }
+        
+        .cyber-stat-card {
+            background: var(--cyber-card);
+            backdrop-filter: blur(25px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 24px;
+            position: relative;
+            overflow: hidden;
+            transition: all var(--transition-normal);
+        }
+        
+        .cyber-stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--accent-gradient);
+        }
+        
+        .cyber-stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            border-color: rgba(0, 240, 255, 0.3);
+        }
+        
+        .cyber-stat-value {
+            font-size: 36px;
+            font-weight: 700;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+        }
+        
+        .cyber-stat-label {
+            color: var(--text-secondary);
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .cyber-section-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 24px;
+            color: var(--text-primary);
+        }
+        
+        .cyber-features {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 24px;
+            margin-bottom: 48px;
+        }
+        
+        .cyber-feature-card {
+            background: var(--cyber-card);
+            backdrop-filter: blur(25px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 32px;
+            cursor: pointer;
+            transition: all var(--transition-normal);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .cyber-feature-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+            border-color: rgba(0, 240, 255, 0.3);
+        }
+        
+        .cyber-feature-icon {
+            width: 56px;
+            height: 56px;
+            background: rgba(0, 240, 255, 0.1);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        
+        .cyber-feature-title {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: var(--text-primary);
+        }
+        
+        .cyber-feature-desc {
+            color: var(--text-secondary);
+            font-size: 14px;
+            line-height: 1.7;
+        }
+        
+        .cyber-quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 16px;
+        }
+        
+        .cyber-action-btn {
+            background: var(--cyber-card);
+            backdrop-filter: blur(25px);
+            border: 1px solid var(--glass-border);
+            border-radius: 14px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all var(--transition-normal);
+            text-decoration: none;
+            color: var(--text-primary);
+        }
+        
+        .cyber-action-btn:hover {
+            transform: translateY(-4px);
+            background: rgba(0, 240, 255, 0.1);
+            border-color: var(--neon-cyan);
+        }
+        
+        .cyber-action-icon {
+            font-size: 28px;
+            margin-bottom: 12px;
+            display: block;
+        }
+        
+        .cyber-action-label {
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .cyber-footer {
+            text-align: center;
+            padding: 32px;
+            color: var(--text-muted);
+            font-size: 13px;
+            border-top: 1px solid var(--glass-border);
+            margin-top: 48px;
+        }
+        
+        @media (max-width: 768px) {
+            .cyber-header {
+                padding: 12px 16px;
+            }
+            
+            .cyber-main {
+                padding: 24px 16px;
+            }
+            
+            .cyber-title {
+                font-size: 28px;
+            }
+            
+            .header-nav {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="cyber-bg"></div>
+    <div id="particles"></div>
+    
+    <div class="cyber-app">
+        <header class="cyber-header">
+            <div class="cyber-header-content">
+                <div class="cyber-logo" onclick="location.reload()">
+                    <div class="cyber-logo-icon">
+                        <i class="fas fa-brain"></i>
+                    </div>
+                    <span class="cyber-logo-text">MTSCOS</span>
+                </div>
+                
+                <nav class="header-nav">
+                    <a href="index.html"><i class="fas fa-home"></i> 首页</a>
+                    <a href="pages/dashboard.html"><i class="fas fa-chart-line"></i> 仪表板</a>
+                    <a href="pages/exam.html"><i class="fas fa-graduation-cap"></i> 考试系统</a>
+                    <a href="pages/learning.html"><i class="fas fa-book"></i> 学习中心</a>
+                    <a href="pages/settings-v3.html"><i class="fas fa-cog"></i> 系统设置</a>
+                </nav>
+                
+                <div class="header-right">
+                    <div id="liveTime" style="font-family: 'Consolas', monospace; font-size: 13px; color: var(--text-secondary);"></div>
+                    <div class="cyber-avatar" id="userAvatar" onclick="goToSettings()">U</div>
+                </div>
+            </div>
+        </header>
+        
+        <main class="cyber-main">
+            <div class="cyber-hero">
+                <h1 class="cyber-title">MTSCOS 智能管理系统</h1>
+                <p class="cyber-subtitle">欢迎回来，探索 AI 驱动的智能管理平台</p>
+            </div>
+            
+            <section>
+                <div class="cyber-stats">
+                    <div class="cyber-stat-card">
+                        <div class="cyber-stat-value">8</div>
+                        <div class="cyber-stat-label">系统模块</div>
+                    </div>
+                    <div class="cyber-stat-card">
+                        <div class="cyber-stat-value">99.9%</div>
+                        <div class="cyber-stat-label">系统可用性</div>
+                    </div>
+                    <div class="cyber-stat-card">
+                        <div class="cyber-stat-value">24/7</div>
+                        <div class="cyber-stat-label">服务响应</div>
+                    </div>
+                    <div class="cyber-stat-card">
+                            <div class="cyber-stat-value">3.2.0</div>
+                            <div class="cyber-stat-label">系统版本</div>
+                        </div>
+                </div>
+            </section>
+            
+            <section>
+                <h2 class="cyber-section-title">核心功能</h2>
+                <div class="cyber-features">
+                    <div class="cyber-feature-card" onclick="location.href='pages/designer_ai.html'">
+                        <div class="cyber-feature-icon">
+                            <i class="fas fa-palette" style="color: var(--neon-cyan);"></i>
+                        </div>
+                        <div class="cyber-feature-title">设计 AI</div>
+                        <div class="cyber-feature-desc">智能 UI 设计助手，自动生成美观界面</div>
+                    </div>
+                    <div class="cyber-feature-card" onclick="location.href='pages/learning.html'">
+                        <div class="cyber-feature-icon">
+                            <i class="fas fa-brain" style="color: var(--neon-purple);"></i>
+                        </div>
+                        <div class="cyber-feature-title">AI 学习引擎</div>
+                        <div class="cyber-feature-desc">自适应学习系统，持续优化性能</div>
+                    </div>
+                    <div class="cyber-feature-card" onclick="location.href='pages/exam.html'">
+                        <div class="cyber-feature-icon">
+                            <i class="fas fa-graduation-cap" style="color: var(--neon-pink);"></i>
+                        </div>
+                        <div class="cyber-feature-title">考试系统</div>
+                        <div class="cyber-feature-desc">9年制、成人考试、JLPT等多种考试</div>
+                    </div>
+                    <div class="cyber-feature-card" onclick="location.href='pages/settings-v3.html'">
+                        <div class="cyber-feature-icon">
+                            <i class="fas fa-shield-alt" style="color: var(--neon-cyan);"></i>
+                        </div>
+                        <div class="cyber-feature-title">安全管理</div>
+                        <div class="cyber-feature-desc">多层安全防护，数据加密存储</div>
+                    </div>
+                </div>
+            </section>
+            
+            <section>
+                <h2 class="cyber-section-title">快速入口</h2>
+                <div class="cyber-quick-actions">
+                    <a href="pages/routing-demo.html" class="cyber-action-btn">
+                        <span class="cyber-action-icon">🎨</span>
+                        <span class="cyber-action-label">路由演示</span>
+                    </a>
+                    <a href="pages/ai-employee-management.html" class="cyber-action-btn">
+                        <span class="cyber-action-icon">🤖</span>
+                        <span class="cyber-action-label">AI 员工</span>
+                    </a>
+                    <a href="pages/adaptive_center.html" class="cyber-action-btn">
+                        <span class="cyber-action-icon">📊</span>
+                        <span class="cyber-action-label">自适应中心</span>
+                    </a>
+                    <a href="pages/system_monitor.html" class="cyber-action-btn">
+                        <span class="cyber-action-icon">📈</span>
+                        <span class="cyber-action-label">系统监控</span>
+                    </a>
+                </div>
+            </section>
+            
+            <footer class="cyber-footer">
+                © 2026 MTSCOS AI Project. All rights reserved. | 版本 3.2.0
+            </footer>
+        </main>
+    </div>
+    
+    <script>
+        function init() {
+            createParticles();
+            updateTime();
+            loadUser();
+            setInterval(updateTime, 1000);
+        }
+        
+        function createParticles() {
+            const container = document.getElementById('particles');
+            for (let i = 0; i < 50; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'cyber-particle ' + ['cyan', 'pink', 'purple'][Math.floor(Math.random() * 3)];
+                const size = 2 + Math.random() * 5;
+                particle.style.width = size + 'px';
+                particle.style.height = size + 'px';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.top = (Math.random() * 100 + 100) + '%';
+                particle.style.animation = 'particleFloat ' + (15 + Math.random() * 20) + 's linear infinite';
+                container.appendChild(particle);
+            }
+        }
+        
+        function updateTime() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('zh-CN', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            });
+            const dateStr = now.toLocaleDateString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            });
+            document.getElementById('liveTime').textContent = dateStr + ' ' + timeStr;
+        }
+        
+        function loadUser() {
+            const username = localStorage.getItem('mtcos_username') || 'User';
+            document.getElementById('userAvatar').textContent = username.charAt(0).toUpperCase();
+        }
+        
+        function goToSettings() {
+            location.href = 'pages/settings-v3.html';
+        }
+        
+        init();
+    </script>
+</body>
+</html>

@@ -1,7 +1,9 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 数据库备份脚本
+"""
 
 import os
 import shutil
@@ -52,11 +54,12 @@ def backup_database():
         else:
             logging.error("备份文件创建失败")
             return False
+    except Exception as e:
         logging.error(f"备份过程中出现错误: {str(e)}")
         return False
 
 def clean_old_backups(max_backups=10):
-    """清理旧备份文件，保留最新的max_backups个"""
+    """清理旧备份文件,保留最新的max_backups个"""
     if not os.path.exists(BACKUP_DIR):
         return
 
@@ -67,7 +70,7 @@ def clean_old_backups(max_backups=10):
             if os.path.isfile(file_path):
                 backup_files.append((file_path, os.path.getmtime(file_path)))
 
-    # 按修改时间排序，最新的在前
+    # 按修改时间排序,最新的在前
     backup_files.sort(key=lambda x: x[1], reverse=True)
 
     # 删除多余的备份
@@ -77,6 +80,7 @@ def clean_old_backups(max_backups=10):
                 os.remove(file_path)
                 logging.info(f"删除旧备份文件: {file_path}")
             except Exception as e:
+                logging.error(f"删除备份文件失败: {file_path}, 错误: {str(e)}")
 
 
 if __name__ == '__main__':

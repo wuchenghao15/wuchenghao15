@@ -1,7 +1,11 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
 简化版部署OpenCLAW模型脚本
+"""
 
+import logging
+logger = logging.getLogger(__name__)
 import sys
 import os
 import time
@@ -77,6 +81,7 @@ def deploy_openclaw_simple():
             "temperature": 0.7,
             "top_p": 0.9
         }
+    )
 
     # 启动AI实例
     deployer.start_ai_instance(openclaw_instance["instance_id"])

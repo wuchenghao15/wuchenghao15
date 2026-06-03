@@ -1,5 +1,6 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
-"""服务器部署管理模块，负责自动化部署、配置管理、环境准备和部署验证"""
+"""服务器部署管理模块,负责自动化部署,配置管理,环境准备和部署验证"""
 
 import os
 import sys
@@ -464,7 +465,7 @@ WantedBy=multi-user.target
                         subprocess.run(['rm', '-rf', backup_path])
                         result['cleaned'].append(backup_name)
             
-            logger.info(f"清理完成，共删除 {len(result['cleaned'])} 个旧备份")
+            logger.info(f"清理完成,共删除 {len(result['cleaned'])} 个旧备份")
             
         except Exception as e:
             result['errors'].append(str(e))

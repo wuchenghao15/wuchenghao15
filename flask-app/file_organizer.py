@@ -1,12 +1,16 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 系统文件整理和路径修复工具
-根据AI建议整理系统文件，归类同类型文件文档，自动修复路径引用
+根据AI建议整理系统文件,归类同类型文件文档,自动修复路径引用
 """
+import logging
+logger = logging.getLogger(__name__)
 import os
 import re
 import sqlite3
+from contextlib import contextmanager
 import hashlib
 import json
 from datetime import datetime
@@ -56,7 +60,7 @@ class FileOrganizer:
         try:
             with open(filepath, 'rb') as f:
                 return hashlib.md5(f.read()).hexdigest()
-        except:
+        except Exception:
             return None
     
     def scan_project(self):
@@ -119,7 +123,7 @@ class FileOrganizer:
                 self.duplicate_files.append({
                     'hash': file_hash,
                     'files': files,
-                    'action': '保留最新，删除其他' if len(files) > 1 else '保留'
+                    'action': '保留最新,删除其他' if len(files) > 1 else '保留'
                 })
         
         print(f"  发现 {len(self.duplicate_files)} 组重复文件")
@@ -190,7 +194,7 @@ class FileOrganizer:
             rec = {
                 'type': 'duplicate_files',
                 'description': f"发现 {len(dup['files'])} 个重复文件: {[f['relative_path'] for f in dup['files']]}",
-                'action': '整理重复文件，保留最新版本',
+                'action': '整理重复文件,保留最新版本',
                 'priority': 'high' if len(dup['files']) > 2 else 'medium',
                 'files': [f['relative_path'] for f in dup['files']],
                 'suggested_action': 'merge' if len(dup['files']) > 2 else 'keep_latest'
@@ -299,7 +303,7 @@ class FileOrganizer:
         self.save_to_database()
         
         print("\n" + "=" * 60)
-        print("整理完成！")
+        print("整理完成!")
         print("=" * 60)
         print(f"总文件数: {len(all_files)}")
         print(f"重复文件组: {len(self.duplicate_files)}")

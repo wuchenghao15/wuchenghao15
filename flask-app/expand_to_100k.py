@@ -1,6 +1,7 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
-扩充题库到10万题，覆盖所有学科、所有等级和所有难度
+扩充题库到10万题,覆盖所有学科、所有等级和所有难度
 
 import sys
 import os
@@ -18,7 +19,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(level
 logger = logging.getLogger(__name__)
 
 def expand_to_100k():
-    扩充题库到10万题，覆盖所有学科、所有等级和所有难度
+    扩充题库到10万题,覆盖所有学科、所有等级和所有难度
     print("================================================================================")
     print("================================================================================")
 
@@ -40,7 +41,7 @@ def expand_to_100k():
         needed_count = target_count - current_count
 
         if needed_count <= 0:
-            logger.info(f"题库已经达到或超过目标数量 {target_count}，无需扩充")
+            logger.info(f"题库已经达到或超过目标数量 {target_count},无需扩充")
             return
 
         logger.info(f"需要生成的题目数量: {needed_count}")
@@ -58,7 +59,7 @@ def expand_to_100k():
             batches += 1
         logger.info(f"需要的批次数: {batches}")
 
-        # 执行扩充（跳过重复检测，直接生成题目）
+        # 执行扩充(跳过重复检测,直接生成题目)
         total_generated = 0
         for i in range(batches):
             logger.info(f"开始第 {i+1}/{batches} 批扩充")
@@ -66,20 +67,20 @@ def expand_to_100k():
             # 计算本次需要生成的题目数量
             current_needed = min(batch_size, needed_count - total_generated)
 
-            # 直接生成题目，跳过重复检测
+            # 直接生成题目,跳过重复检测
             batch_generated = 0
             for _ in range(current_needed):
                 # 确定题目参数
                 bank_status = expander._analyze_question_bank()
                 question_params = expander._determine_question_params(bank_status)
 
-                # 生成题目，跳过重复检测
+                # 生成题目,跳过重复检测
                 question = expander._generate_question(
                     **question_params,
                     check_duplicate=False
                 )
 
-                # 直接保存题目，跳过重复检测
+                # 直接保存题目,跳过重复检测
                 if question:
                     try:
                         question.save()
@@ -87,14 +88,14 @@ def expand_to_100k():
                         total_generated += 1
                         logger.error(f"保存题目失败: {str(e)}")
 
-            logger.info(f"第 {i+1} 批扩充完成，生成 {batch_generated} 道题目")
+            logger.info(f"第 {i+1} 批扩充完成,生成 {batch_generated} 道题目")
             logger.info(f"累计生成 {total_generated} 道题目")
 
             # 检查是否达到目标
             if total_generated >= needed_count:
                 break
 
-            # 短暂休息，避免系统过载
+            # 短暂休息,避免系统过载
             time.sleep(0.1)
 
         # 记录结束时间
@@ -105,7 +106,7 @@ def expand_to_100k():
         final_questions = question_manager.get_questions()
         final_count = len(final_questions)
 
-        logger.info("\n扩充完成！")
+        logger.info("\n扩充完成!")
         logger.info(f"开始时题库题目数量: {current_count}")
         logger.info(f"结束时题库题目数量: {final_count}")
         logger.info(f"实际生成题目数量: {final_count - current_count}")
@@ -115,7 +116,7 @@ def expand_to_100k():
         if final_count >= target_count:
             logger.info(f"✅ 成功达到目标数量 {target_count} 题")
         else:
-            logger.warning(f"❌ 未达到目标数量 {target_count} 题，当前数量: {final_count}")
+            logger.warning(f"❌ 未达到目标数量 {target_count} 题,当前数量: {final_count}")
 
         # 验证覆盖范围
         logger.info("\n验证覆盖范围:")

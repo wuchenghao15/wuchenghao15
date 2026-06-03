@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 # MTSCOS AI Project 权限管理器
 """
-权限管理器，负责文件系统的权限控制
+权限管理器,负责文件系统的权限控制
 
 from app.utils.logging import logger
+import logging
 
 
 class PermissionManager:
-    权限管理器，负责文件系统的权限控制
+    权限管理器,负责文件系统的权限控制
 
         self._permissions = {}  # 存储权限信息
         self._default_permissions = {
@@ -23,7 +24,7 @@ class PermissionManager:
         Args:
             path: 文件或目录路径
             user_id: 用户ID
-            permissions: 权限字典，包含read、write、execute、admin等键
+            permissions: 权限字典,包含read,write,execute,admin等键
 
         Returns:
             bool: 是否设置成功
@@ -54,7 +55,7 @@ class PermissionManager:
         try:
             # 检查是否有直接权限设置
                 return self._permissions[path][user_id]
-            # 检查父目录权限（继承）
+            # 检查父目录权限(继承)
             parent_path = path.rsplit('/', 1)[0] if '/' in path else ''
             if parent_path:
                 return self.get_permission(parent_path, user_id)
@@ -71,7 +72,7 @@ class PermissionManager:
         Args:
             path: 文件或目录路径
             user_id: 用户ID
-            permission: 权限类型（read、write、execute、admin）
+            permission: 权限类型(read,write,execute,admin)
 
             bool: 是否有该权限
         try:
@@ -89,7 +90,7 @@ class PermissionManager:
 
         Args:
             path: 文件或目录路径
-            user_id: 用户ID，如果为None则移除该路径的所有权限
+            user_id: 用户ID,如果为None则移除该路径的所有权限
 
         Returns:
             bool: 是否移除成功
@@ -122,7 +123,7 @@ class PermissionManager:
             return {}
 
     def set_default_permission(self, path: str, permissions: Dict[str, bool]) -> bool:
-        设置路径的默认权限（对未设置特定权限的用户）
+        设置路径的默认权限(对未设置特定权限的用户)
 
             path: 文件或目录路径
             permissions: 默认权限字典
@@ -173,6 +174,7 @@ class PermissionManager:
             src_path: 源路径
 
         Returns:
+    pass
         try:
             if src_path in self._permissions:
                 self._permissions[dest_path] = self._permissions[src_path].copy()
@@ -189,7 +191,7 @@ class PermissionManager:
         Args:
             path: 文件或目录路径
             user_id: 用户ID
-            action: 操作类型（read、write、execute、delete、create等）
+            action: 操作类型(read,write,execute,delete,create等)
 
         Returns:
             bool: 是否允许执行该操作
@@ -282,6 +284,7 @@ class PermissionManager:
         清除路径的所有权限设置
 
         Args:
+    pass
 
         Returns:
             bool: 是否清除成功

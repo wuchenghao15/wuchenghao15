@@ -1,7 +1,10 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
-应用路由诊断脚本，用于分析登录跳转问题
+应用路由诊断脚本,用于分析登录跳转问题
 
+import logging
+logger = logging.getLogger(__name__)
 import sys
 import os
 
@@ -22,7 +25,7 @@ register_blueprints(app)
 print("=== 蓝图注册完成 ===")
 
 # 打印所有注册的路由
-print("\n=== 已注册路由列表 ===")
+print("\n == 已注册路由列表 ===")
 for rule in app.url_map.iter_rules():
     # 排除静态文件路由
     if 'static' not in str(rule):
@@ -43,12 +46,12 @@ endpoints_to_check = [
 for endpoint in endpoints_to_check:
     try:
         url = url_for(endpoint)
-        print(f"✓ 端点 {endpoint} 存在，URL: {url}")
+        print(f"✓ 端点 {endpoint} 存在,URL: {url}")
     except Exception as e:
         print(f"✗ 端点 {endpoint} 不存在: {e}")
 
 # 测试URL生成
-print("\n=== URL生成测试 ===")
+print("\n == URL生成测试 ===")
 try:
     login_url = url_for('auth.login')
     index_url = url_for('main.index')
@@ -61,6 +64,6 @@ except Exception as e:
     print(f"URL生成失败: {e}")
     traceback.print_exc()
 
-print("\n=== 诊断完成 ===")
+print("\n == 诊断完成 ===")
 
 """

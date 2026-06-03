@@ -1,14 +1,20 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 逻辑模型 - 系统核心业务逻辑处理
 包含业务规则引擎、工作流管理、状态机等核心逻辑组件
+"""
 
 import logging
 from datetime import datetime
 from typing import Dict, Any, Optional, List
 
 logger = logging.getLogger(__name__)
+
+business_logic_engine = None
+decision_engine = None
+
 
 class BusinessLogicEngine:
     """业务逻辑引擎"""
@@ -33,9 +39,10 @@ class BusinessLogicEngine:
                 return result
             except Exception as e:
                 logger.error(f"执行规则 {rule_id} 失败: {str(e)}")
-                raise
+                return None
         else:
-            raise ValueError(f"规则 {rule_id} 不存在")
+            logger.warning(f"规则 {rule_id} 不存在")
+            return None
 
     def register_workflow(self, workflow_id: str, steps: List):
         """注册工作流"""
@@ -53,20 +60,25 @@ class BusinessLogicEngine:
         for i, step in enumerate(steps):
             step_name = step.get('name', f'step_{i}')
             try:
+                handler = step.get('handler')
+                result = handler(context) if handler else None
                 results[step_name] = {'success': True, 'result': result}
                 logger.info(f"工作流 {workflow_id} 步骤 {step_name} 完成")
 
-                # 检查是否需要终止
                 if step.get('terminate_on_success') and result:
                     break
                 if step.get('terminate_on_failure') and not result:
                     results[step_name]['success'] = False
                     break
             except Exception as e:
+                results[step_name] = {'success': False, 'error': str(e)}
+                logger.error(f"工作流 {workflow_id} 步骤 {step_name} 失败: {str(e)}")
                 if not step.get('continue_on_error'):
                     break
 
         return results
+
+
 class StateMachine:
     """状态机"""
 
@@ -75,7 +87,7 @@ class StateMachine:
         self.transitions = transitions
         self.current_state = None
         self.state_history = []
-        logger.info(f"状态机初始化，状态: {states}")
+        logger.info(f"状态机初始化, 状态: {states}")
 
     def start(self, initial_state: str):
         """启动状态机"""
@@ -83,7 +95,7 @@ class StateMachine:
             raise ValueError(f"初始状态 {initial_state} 不存在")
         self.current_state = initial_state
         self.state_history.append({'state': initial_state, 'timestamp': datetime.now()})
-        logger.info(f"状态机启动，初始状态: {initial_state}")
+        logger.info(f"状态机启动, 初始状态: {initial_state}")
 
     def transition(self, new_state: str):
         """状态转换"""
@@ -101,14 +113,12 @@ class StateMachine:
         """获取当前状态"""
         return self.current_state
 
-    def get_history(self) -> List[Dict]:
-        """获取状态历史"""
-        return self.state_history
 
 class DecisionEngine:
     """决策引擎"""
 
     def __init__(self):
+        self.strategies = {}
         logger.info("决策引擎初始化完成")
 
     def register_strategy(self, strategy_id: str, strategy):
@@ -125,15 +135,19 @@ class DecisionEngine:
             result = self.strategies[strategy_id](context)
             return result
         except Exception as e:
-            logger.error(f"决策 {strategy_id} 失败: {str(e)}")
-            raise
-# 全局实例
-decision_engine = DecisionEngine()
+            logger.error(f"执行决策策略 {strategy_id} 失败: {str(e)}")
+            return {'error': str(e)}
+
 
 def init_logic_model():
+    """初始化逻辑模型"""
+    global business_logic_engine, decision_engine
+
     logger.info("初始化逻辑模型...")
 
-    # 注册核心业务规则
+    business_logic_engine = BusinessLogicEngine()
+    decision_engine = DecisionEngine()
+
     business_logic_engine.register_rule(
         'user_registration_validation',
         lambda data: all([data.get('username'), data.get('email'), data.get('password')])
@@ -144,14 +158,12 @@ def init_logic_model():
         lambda data: {'status': 'processed', 'timestamp': datetime.now().isoformat()}
     )
 
-    # 注册工作流
     business_logic_engine.register_workflow('user_onboarding', [
         {'name': 'validate_input', 'handler': lambda c: True},
         {'name': 'create_user', 'handler': lambda c: {'user_id': '123'}},
         {'name': 'send_welcome_email', 'handler': lambda c: {'email_sent': True}},
     ])
 
-    # 注册决策策略
     decision_engine.register_strategy(
         'risk_assessment',
         lambda context: {'risk_level': 'low', 'score': 0.2}
@@ -163,6 +175,7 @@ def init_logic_model():
     )
 
     logger.info("逻辑模型初始化完成")
+
 
 if __name__ == "__main__":
     init_logic_model()

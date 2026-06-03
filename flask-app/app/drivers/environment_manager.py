@@ -1,13 +1,14 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 系统环境管理器
 负责系统环境的监控、优化和管理
+"""
 
 import os
 import sys
 import time
-# JSON import removed - using database
 import logging
 import platform
 import psutil
@@ -18,7 +19,9 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
+
 logger = logging.getLogger('environment_manager')
+
 
 class EnvironmentManager:
     """系统环境管理器"""
@@ -29,21 +32,24 @@ class EnvironmentManager:
         self.system_version = platform.version()
         self.python_version = platform.python_version()
         self.manager_version = "1.0.0"
-        logger.info(f"环境管理器初始化完成，系统: {self.system_type}, 版本: {self.manager_version}")
+        logger.info(f"环境管理器初始化完成,系统: {self.system_type}, 版本: {self.manager_version}")
 
     def monitor_system(self) -> Dict:
-        """监控系统状态
+        """
+        监控系统状态
 
         Returns:
             Dict: 系统状态信息
+        """
         try:
             logger.info("开始监控系统状态...")
 
+            cpu_freq = psutil.cpu_freq()
             system_status = {
                 'cpu': {
                     'count': psutil.cpu_count(),
                     'usage': psutil.cpu_percent(interval=1),
-                    'frequency': psutil.cpu_freq().current if hasattr(psutil.cpu_freq(), 'current') else None
+                    'frequency': cpu_freq.current if cpu_freq else None
                 },
                 'memory': {
                     'total': psutil.virtual_memory().total,
@@ -64,137 +70,10 @@ class EnvironmentManager:
                     'python_version': self.python_version
                 },
                 'timestamp': time.time()
+            }
 
             logger.info("系统状态监控完成")
-            return {
-                "success": True,
-                "status": system_status
-            }
-
+            return system_status
         except Exception as e:
-            logger.error(f"监控系统状态失败: {str(e)}")
-            return {
-                "success": False,
-                "error": str(e)
-            }
-
-    def optimize_environment(self) -> Dict:
-        """优化系统环境
-
-        Returns:
-            Dict: 优化结果
-        try:
-            logger.info("开始优化系统环境...")
-
-
-            # 1. 检查并优化内存使用
-            memory_percent = psutil.virtual_memory().percent
-            if memory_percent > 80:
-                optimizations.append("内存使用率过高，建议关闭不必要的应用程序")
-
-            # 2. 检查并优化磁盘空间
-            disk_percent = psutil.disk_usage('/').percent
-            if disk_percent > 90:
-                optimizations.append("磁盘空间不足，建议清理临时文件")
-
-            # 3. 检查并优化CPU使用
-            cpu_usage = psutil.cpu_percent(interval=1)
-            if cpu_usage > 90:
-                optimizations.append("CPU使用率过高，建议检查运行中的进程")
-
-            logger.info("系统环境优化完成")
-            return {
-                "success": True,
-                "optimizations": optimizations,
-                "system_status": {
-                    "memory_percent": memory_percent,
-                    "disk_percent": disk_percent,
-                    "cpu_usage": cpu_usage
-                }
-            }
-
-        except Exception as e:
-            logger.error(f"优化系统环境失败: {str(e)}")
-            return {
-                "success": False,
-                "error": str(e)
-            }
-
-    def cleanup_system(self) -> Dict:
-        """清理系统
-
-        Returns:
-            Dict: 清理结果
-        try:
-            logger.info("开始清理系统...")
-
-            cleanup_tasks = []
-            # 1. 清理临时文件
-            try:
-                temp_dir = os.path.join(os.path.expanduser('~'), 'tmp')
-                if os.path.exists(temp_dir):
-                    files = os.listdir(temp_dir)
-                        cleanup_tasks.append(f"清理临时目录: {temp_dir} ({len(files)} 个文件)")
-            except Exception as e:
-                logger.warning(f"清理临时文件失败: {str(e)}")
-
-            # 2. 清理Python缓存
-            try:
-                import glob
-                pycache_dirs = glob.glob('**/__pycache__', recursive=True)
-                if pycache_dirs:
-            except Exception as e:
-                logger.warning(f"清理Python缓存失败: {str(e)}")
-
-            logger.info("系统清理完成")
-            return {
-                "success": True,
-                "tasks": cleanup_tasks
-            }
-
-        except Exception as e:
-            logger.error(f"清理系统失败: {str(e)}")
-            return {
-                "success": False,
-                "error": str(e)
-            }
-
-    def get_environment_report(self) -> Dict:
-        """获取环境报告
-
-        Returns:
-            Dict: 环境报告
-        try:
-            logger.info("生成环境报告...")
-
-            report = {
-                'system': {
-                    'version': self.system_version,
-                    'python_version': self.python_version
-                },
-                'resources': {
-                    'cpu': {
-                        'count': psutil.cpu_count(),
-                        'usage': psutil.cpu_percent(interval=1),
-                        'frequency': psutil.cpu_freq().current if hasattr(psutil.cpu_freq(), 'current') else None
-                    },
-                    'memory': {
-                        'total': psutil.virtual_memory().total,
-                        'available': psutil.virtual_memory().available,
-                    'disk': {
-                        'percent': psutil.disk_usage('/').percent
-                    'PATH': os.environ.get('PATH', 'N/A')[:500],  # 截断长路径
-                    'USER': os.environ.get('USER', 'N/A')
-                },
-                'timestamp': time.time()
-
-            return {
-                "report": report
-        except Exception as e:
-            return {
-            }
-
-environment_manager = EnvironmentManager()
-def get_environment_manager() -> EnvironmentManager:
-
-        EnvironmentManager: 环境管理器实例
+            logger.error(f"监控系统状态失败: {e}")
+            return {}

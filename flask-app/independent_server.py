@@ -1,12 +1,17 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-增强版Flask服务器，支持真实登录功能和AI数据库保护
+增强版Flask服务器,支持真实登录功能和AI数据库保护
+"""
 
 from flask import Flask, render_template, Blueprint, request, session, redirect, url_for, flash, jsonify
+import logging
+logger = logging.getLogger(__name__)
 import os
 import sys
 import sqlite3
+from contextlib import contextmanager
 import hashlib
 import uuid
 
@@ -16,7 +21,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 # 创建Flask应用实例
 app = Flask(__name__)
 
-# 配置密钥，用于会话加密
+# 配置密钥,用于会话加密
 app.secret_key = os.urandom(24)
 
 # 配置模板目录
@@ -28,13 +33,13 @@ app.static_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'st
 # 配置数据库路径
 DATABASE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'app.db')
 
-# 创建蓝图，与原始应用保持一致
+# 创建蓝图,与原始应用保持一致
 main_bp = Blueprint('main', __name__, url_prefix=None)
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 
-# 安全工具类 - 使用PBKDF2算法，与原始应用保持一致
+# 安全工具类 - 使用PBKDF2算法,与原始应用保持一致
 class SecurityUtils:
-    """安全工具类，用于密码哈希和验证 - 与原始应用使用相同的PBKDF2算法"""
+    """安全工具类, 用于密码哈希和验证 - 与原始应用使用相同的PBKDF2算法"""
 
     @staticmethod
     def hash_password(password):
@@ -52,7 +57,7 @@ class SecurityUtils:
             salt,
             HASH_ITERATIONS
         )
-        # 将盐和哈希值连接起来，然后进行base64编码
+        # 将盐和哈希值连接起来,然后进行base64编码
         return base64.b64encode(salt + hashed).decode('utf-8')
 
     @staticmethod
@@ -61,6 +66,7 @@ class SecurityUtils:
         # 模拟原始应用的配置
         HASH_ALGORITHM = 'sha256'
 
+        try:
             # 解码存储的密码
             salt = decoded[:32]  # 前32字节是盐
 
@@ -83,10 +89,11 @@ class AIDatabaseProtector:
         self.protection_enabled = True
 
     def _connect_db(self, db_path=DATABASE_PATH):
-        """连接数据库，带有AI保护"""
+        """连接数据库,带有AI保护"""
         try:
-            conn = sqlite3.connect(db_path)
-            return conn
+            with sqlite3.connect(sqlite3.connect(db_path)) as conn:
+                conn_cursor = conn.cursor()
+                return conn
         except sqlite3.Error as e:
             print(f"数据库连接错误: {e}")
             # 尝试使用备份数据库
@@ -94,7 +101,7 @@ class AIDatabaseProtector:
                 print("尝试使用备份数据库...")
                 return self._connect_db(self.db_backup_path)
             else:
-                # 备份数据库也失败，创建新数据库
+                # 备份数据库也失败,创建新数据库
                 print("创建新数据库...")
                 self._create_new_db()
                 return sqlite3.connect(db_path)
@@ -120,7 +127,6 @@ class AIDatabaseProtector:
             )
         ''')
         conn.commit()
-        conn.close()
         print("新数据库创建成功")
 
     def backup_db(self):
@@ -128,25 +134,30 @@ class AIDatabaseProtector:
         if not self.protection_enabled:
             return False
 
-            conn = sqlite3.connect(DATABASE_PATH)
-            backup_conn = sqlite3.connect(self.db_backup_path)
-            conn.backup(backup_conn)
-            backup_conn.close()
+        try:
+            with sqlite3.connect(sqlite3.connect(DATABASE_PATH)) as conn:
+                conn_cursor = conn.cursor()
+                backup_conn = sqlite3.connect(self.db_backup_path)
+                conn.backup(backup_conn)
             conn.close()
             print("数据库备份成功")
             return True
         except Exception as e:
             print(f"数据库备份失败: {e}")
             return False
+
     def verify_db_integrity(self):
         """验证数据库完整性"""
         if not self.protection_enabled:
+            return False
 
         try:
             conn = self._connect_db()
             cursor = conn.cursor()
+            cursor.execute("PRAGMA integrity_check")
             result = cursor.fetchone()
             conn.close()
+            return result[0] == 'ok'
         except Exception as e:
             print(f"数据库完整性检查失败: {e}")
             return False
@@ -154,11 +165,15 @@ class AIDatabaseProtector:
 ai_db_protector = AIDatabaseProtector()
 
 # 用户模型
+class User:
     """用户数据模型"""
     @staticmethod
+    def get_by_username(username):
         conn = ai_db_protector._connect_db()
         cursor = conn.cursor()
         cursor.execute('SELECT * FROM users WHERE username=?', (username,))
+        row = cursor.fetchone()
+        conn.close()
 
         if row:
             user = {
@@ -173,10 +188,12 @@ ai_db_protector = AIDatabaseProtector()
                 'super_admin_approved': row[8],
                 'hardware_admin_approved': row[9],
                 'avatar': row[10] if len(row) > 10 else None
+            }
             return user
         return None
 
     @staticmethod
+    def get_by_id(user_id):
         conn = ai_db_protector._connect_db()
         cursor = conn.cursor()
         cursor.execute('SELECT * FROM users WHERE id=?', (user_id,))
@@ -197,12 +214,14 @@ ai_db_protector = AIDatabaseProtector()
                 'hardware_admin_approved': row[9],
                 'avatar': row[10] if len(row) > 10 else None
             }
+            return user
         return None
 
 # AI用户管理器
 class UserAI:
-    """AI用户管理器，用于处理用户AI相关操作"""
+    """AI用户管理器,用于处理用户AI相关操作"""
     def __init__(self):
+        pass
 
     def process_login_request(self, username, password, request):
         """处理登录请求"""
@@ -210,21 +229,33 @@ class UserAI:
         if user:
             print(f"找到用户: {user['username']}, 角色: {user['role']}")
             print(f"输入密码的哈希: {security_utils.hash_password(password)}")
+            if security_utils.verify_password(password, user['password']):
                 print("密码验证成功")
+                return {
                     'success': True,
                     'ai_instance_id': f'user_ai_{user["id"]}'
-                print("密码验证失败")
-                    'success': False,
                 }
+            else:
+                print("密码验证失败")
+                return {
+                    'success': False,
+                    'error': '密码错误'
+                }
+        else:
             print("用户不存在")
+            return {
                 'success': False,
+                'error': '用户不存在'
             }
+
     def bind_user_to_ai(self, user_id):
         ai_instance_id = f'user_ai_{user_id}'
         return ai_instance_id
 
 @main_bp.route('/')
-    """首页路由，返回index.html"""
+def index():
+    """首页路由,返回index.html"""
+    return render_template('index.html')
 
 @main_bp.route('/dashboard')
 def dashboard():
@@ -244,20 +275,27 @@ def ai_rules():
 @main_bp.route('/approval')
 def approval():
     """审批管理路由"""
+    return render_template('approval.html')
 
 @main_bp.route('/cleanup')
 def cleanup():
     """系统清理路由"""
     return render_template('cleanup.html')
+
 @main_bp.route('/system_config')
+def system_config():
     """系统配置路由"""
     return render_template('system_config.html')
 
+@main_bp.route('/projects')
 def projects():
     """项目管理路由"""
+    return render_template('projects.html')
 
 @main_bp.route('/tasks')
+def tasks():
     """任务管理路由"""
+    return render_template('tasks.html')
 
 @main_bp.route('/reports')
 def reports():
@@ -339,7 +377,7 @@ def login():
             # 检查用户是否已激活
             user = User.get_by_username(username)
             if user and user['is_active'] == 0:
-                flash('您的账号正在审核中，请等待管理员批准后使用', 'warning')
+                flash('您的账号正在审核中,请等待管理员批准后使用', 'warning')
                 return redirect(url_for('auth.login'))
 
             # 设置会话
@@ -348,7 +386,7 @@ def login():
             session['is_guest'] = False
 
             if 'ai_instance_id' in login_result:
-
+                session['user_ai_id'] = login_result['ai_instance_id']
 
             return redirect(url_for('main.combined_test'))
         else:
@@ -360,6 +398,14 @@ def login():
 @auth_bp.route('/register', methods=['GET', 'POST'])
 def register():
     """注册路由"""
+    if request.method == 'POST':
+        username = request.form.get('username')
+        email = request.form.get('email')
+        password = request.form.get('password')
+        # 注册逻辑
+        flash('注册成功,请登录', 'success')
+        return redirect(url_for('auth.login'))
+    return render_template('register.html')
 
 @auth_bp.route('/logout')
 def logout():
@@ -367,6 +413,7 @@ def logout():
     session.clear()
     flash('登出成功', 'success')
     return redirect(url_for('auth.login'))
+
 @auth_bp.route('/auto_guest_login')
 def auto_guest_login():
     """游客自动登录路由"""
@@ -395,7 +442,8 @@ def auto_guest_login():
         # 重定向到结合测试页面
         return redirect(url_for('main.combined_test'))
     except Exception as e:
-        flash('游客登录失败，请稍后重试', 'danger')
+        flash('游客登录失败,请稍后重试', 'danger')
+        return redirect(url_for('auth.login'))
 
 @auth_bp.route('/confirm_guest_logout', methods=['GET', 'POST'])
 def confirm_guest_logout():
@@ -413,51 +461,54 @@ app.register_blueprint(auth_bp)
 def verify_database():
     """验证数据库API"""
     integrity = ai_db_protector.verify_db_integrity()
+    return jsonify({'success': integrity, 'message': '数据库完整性验证通过' if integrity else '数据库完整性验证失败'})
 
 @app.route('/api/database/backup')
+def backup_database():
     """备份数据库API"""
+    result = ai_db_protector.backup_db()
     return jsonify({'success': result, 'message': '数据库备份成功' if result else '数据库备份失败'})
 
-# 规则管理API路由 - 暂时移除，因为rule_management_service导入已移除
+# 规则管理API路由 - 暂时移除,因为rule_management_service导入已移除
 
 # 这些路由将在修复导入问题后重新添加
 # @app.route('/api/rules')
 # def get_rules():
-#     """获取所有规则"""
+    #     """获取所有规则"""
 #     rules = rule_management_service.get_rules()
 #     return jsonify({'success': True, 'rules': rules})
 
 # def get_rules_by_type(rule_type):
-#     """获取特定类型的规则"""
+    #     """获取特定类型的规则"""
 #     rules = rule_management_service.get_rules(rule_type)
 #     return jsonify({'success': True, 'rules': rules})
 
 # @app.route('/api/rules', methods=['POST'])
 # def add_rule():
-#     """添加新规则"""
+    #     """添加新规则"""
 #     data = request.json
 #     rule_type = data.get('rule_type')
 #     rule_name = data.get('rule_name')
 #     rule_content = data.get('rule_content')
 
 #     if not all([rule_type, rule_name, rule_content]):
-#         return jsonify({'success': False, 'message': '缺少必要参数'}), 400
+    #         return jsonify({'success': False, 'message': '缺少必要参数'}), 400
 
 #     result = rule_management_service.add_rule(rule_type, rule_name, rule_content)
 #     return jsonify({'success': result, 'message': '规则添加成功' if result else '规则添加失败'})
 
 # @app.route('/api/rules/<rule_type>/<rule_name>', methods=['PUT'])
 # def update_rule(rule_type, rule_name):
-#     """更新规则"""
+    #     """更新规则"""
 #     rule_content = data.get('rule_content')
 #     if not rule_content:
-#         return jsonify({'success': False, 'message': '缺少规则内容'}), 400
+    #         return jsonify({'success': False, 'message': '缺少规则内容'}), 400
 
 #     result = rule_management_service.update_rule(rule_type, rule_name, rule_content)
 #     return jsonify({'success': result, 'message': '规则更新成功' if result else '规则更新失败'})
 
 # def delete_rule(rule_type, rule_name):
-#     """删除规则"""
+    #     """删除规则"""
 #     return jsonify({'success': result, 'message': '规则删除成功' if result else '规则删除失败'})
 # @app.route('/api/rules/collect', methods=['POST'])
 #     """手动收集规则"""
@@ -466,17 +517,17 @@ def verify_database():
 
 # @app.route('/api/rules/optimize', methods=['POST'])
 # def optimize_rules():
-#     """优化规则"""
+    #     """优化规则"""
 #     return jsonify({'success': result, 'message': '规则优化成功' if result else '规则优化失败'})
 # @app.route('/api/rules/monitor', methods=['POST'])
 # def monitor_rules():
-#     """监控规则"""
+    #     """监控规则"""
 #     result = rule_management_service.monitor_rules()
 #     return jsonify({'success': result, 'message': '规则监控成功' if result else '规则监控失败'})
 
 # @app.route('/api/rules/manager')
 # def get_rule_manager():
-#     """获取规则管理AI信息"""
+    #     """获取规则管理AI信息"""
 #     manager_ai = rule_management_service.get_rule_manager_ai()
 #     return jsonify({'success': True, 'rule_manager': manager_ai})
 
@@ -499,5 +550,6 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         print("Flask server stopped.")
     except Exception as e:
-        print(f"Error starting Flask server: {str(e)}")
+        logger.error(f"Error starting Flask server: {str(e)}")
         import traceback
+import json

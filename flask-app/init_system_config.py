@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
 初始化系统配置表并添加默认配置
+"""
 
 from app.models.system_config import SystemConfig, SystemConfigManager
 from app.utils.logging import logger

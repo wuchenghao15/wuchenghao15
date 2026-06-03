@@ -1,7 +1,10 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
-最小化Flask应用启动脚本，用于测试基本功能
+最小化Flask应用启动脚本,用于测试基本功能
 from flask import Flask, jsonify
+import json
+import os
 
 # 创建一个简单的Flask应用
 app = Flask(__name__)

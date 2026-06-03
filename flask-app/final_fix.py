@@ -1,6 +1,9 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
-最终修复脚本，直接修改learning.py文件，解决MODEL_PATH KeyError问题
+最终修复脚本,直接修改learning.py文件,解决MODEL_PATH KeyError问题
+import logging
+logger = logging.getLogger(__name__)
 import os
 import tempfile
 
@@ -28,7 +31,7 @@ try:
         elif "config["'MODEL_PATH'""]" in lines[15]:
             lines[15] = lines[15].replace("config["'MODEL_PATH'""]", "config.get('MODEL_PATH', os.environ.get('MODEL_PATH', 'models/'))")
             print(f"修复后的第16行: {lines[15]}")
-            print("未找到直接的MODEL_PATH访问，尝试全局替换")
+            print("未找到直接的MODEL_PATH访问,尝试全局替换")
             for i, line in enumerate(lines):
                 if "['MODEL_PATH']" in line:
                     lines[i] = line.replace("['MODEL_PATH']", ".get('MODEL_PATH', os.environ.get('MODEL_PATH', 'models/'))")
@@ -49,17 +52,18 @@ try:
     os.replace(temp_file_path, file_path)
     print("原文件已替换")
 
-    print("修复完成！")
+    print("修复完成!")
 
     # 重启服务器
     print("正在重启服务器...")
     os.system("pkill -f 'python3 start_server.py'")
     os.system("nohup python3 start_server.py > server.log 2>&1 &")
-    print("服务器已重启，请查看server.log获取更多信息")
+    print("服务器已重启,请查看server.log获取更多信息")
 
 except Exception as e:
     print(f"修复失败: {e}")
     import traceback
+import sys
     traceback.print_exc()
     # 清理临时文件
     if os.path.exists(temp_file_path):

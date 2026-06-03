@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# 猴子补丁脚本，用于修复learning.py中的MODEL_PATH KeyError问题
+# 猴子补丁脚本,用于修复learning.py中的MODEL_PATH KeyError问题
 import sys
 import os
 import types
@@ -25,11 +25,16 @@ fake_config.DEFAULT_CONFIG = {
     'AI_CONFIG': {
         'LEARNING_ENABLED': True,
         'AI_ENHANCEMENT': True,
-        'AUTO_CLOSURE': True,
+        'AUTO_CLOSURE': True
     }
+}
 
 sys.modules['app.config'] = fake_config
 # 现在导入并修复learning.py
+try:
+    from app.ai import learning
     print("成功修复了app.ai.learning模块")
+except Exception as e:
+    print(f"修复失败: {str(e)}")
     import traceback
     traceback.print_exc()

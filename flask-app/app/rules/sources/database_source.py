@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 # MTSCOS AI Project 数据库规则源
 """
-数据库规则源，用于从数据库加载和保存规则。
+数据库规则源,用于从数据库加载和保存规则.
 
 from typing import List, Dict, Any
 from app.utils.logging import logger
 
 
 class DatabaseRuleSource:
-    数据库规则源，从数据库加载规则并保存规则到数据库
+    数据库规则源,从数据库加载规则并保存规则到数据库
 
     def __init__(self):
         self._table_name = "rules"
@@ -21,7 +21,7 @@ class DatabaseRuleSource:
         rules = []
 
         try:
-            # 延迟导入，避免循环依赖
+            # 延迟导入,避免循环依赖
             from app.utils.db import db_manager
 
             # 查询所有规则
@@ -48,7 +48,7 @@ class DatabaseRuleSource:
         Returns:
             bool: 是否保存成功
         try:
-            # 延迟导入，避免循环依赖
+            # 延迟导入,避免循环依赖
             from app.utils.db import db_manager
 
             existing_rule = self._get_rule_by_id(rule.get("id"))
@@ -81,7 +81,7 @@ class DatabaseRuleSource:
                     "description": rule.get("description"),
                     "priority": rule.get("priority", 5),
                     "enabled": 1 if rule.get("status") == "active" else 0,
-                    "version": 1
+                    version = 1
                 }
                     table=self._table_name,
                     data=insert_data
@@ -99,8 +99,9 @@ class DatabaseRuleSource:
             rule_id: 规则ID
 
         Returns:
+    pass
         try:
-            # 延迟导入，避免循环依赖
+            # 延迟导入,避免循环依赖
             from app.utils.db import db_manager
 
             success = db_manager.delete(
@@ -127,10 +128,11 @@ class DatabaseRuleSource:
 rule_content = row.get("rule_content", "{}")
 
         try:
+    pass
         except json.JSONDecodeError:
-            # 如果解析失败，使用默认值
+            # 如果解析失败,使用默认值
                 "conditions": [],
-                "actions": []
+                actions = []
             }
         return {
             "id": row.get("id"),
@@ -142,7 +144,7 @@ rule_content = row.get("rule_content", "{}")
             "status": "active" if row.get("enabled") == 1 else "inactive",
             "version": row.get("version", 1),
             "created_at": row.get("created_at"),
-            "updated_at": row.get("updated_at")
+            updated_at = row.get("updated_at")
         }
 
     def _rule_to_content(self, rule: Dict[str, Any]) -> str:
@@ -163,14 +165,17 @@ rule_content = row.get("rule_content", "{}")
         return str(content)
 
     def _get_rule_by_id(self, rule_id: str) -> Dict[str, Any]:
+    pass
 
             rule_id: 规则ID
 
         Returns:
             Dict[str, Any]: 规则定义
         try:
-            # 延迟导入，避免循环依赖
+            # 延迟导入,避免循环依赖
             from app.utils.db import db_manager
+import logging
+import json
 
             query = f"SELECT * FROM {self._table_name} WHERE id = ?"
             row = db_manager.fetch_one(query, (rule_id,))

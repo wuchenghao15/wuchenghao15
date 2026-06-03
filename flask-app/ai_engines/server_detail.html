@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MTSCOS AI 管理系统 - 服务器详情</title>
+    <style>
+        /* 基础样式重置 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+            color: #343a40;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* 头部样式 */
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 0;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header-content h1 {
+            font-size: 24px;
+            font-weight: 700;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+        }
+        
+        .user-info span {
+            margin-right: 20px;
+        }
+        
+        .logout-btn {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .logout-btn:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+        
+        /* 导航样式 */
+        nav {
+            margin-bottom: 30px;
+            background-color: white;
+            padding: 10px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+        
+        nav ul {
+            display: flex;
+            list-style-type: none;
+            padding: 0 20px;
+        }
+        
+        nav ul li {
+            margin-right: 30px;
+        }
+        
+        nav ul li a {
+            color: #6c757d;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            padding: 10px 0;
+            display: inline-block;
+        }
+        
+        nav ul li a.active, nav ul li a:hover {
+            color: #667eea;
+            border-bottom: 2px solid #667eea;
+        }
+        
+        /* 卡片样式 */
+        .card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            padding: 30px;
+            margin-bottom: 20px;
+        }
+        
+        .card h2 {
+            font-size: 20px;
+            margin-bottom: 20px;
+            color: #343a40;
+        }
+        
+        /* 按钮样式 */
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background-color: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #5568d3;
+        }
+        
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+            margin-right: 10px;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #5a6268;
+        }
+        
+        /* 消息样式 */
+        .message {
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+        
+        .message.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        /* 详情信息样式 */
+        .detail-info {
+            margin-bottom: 30px;
+        }
+        
+        .detail-row {
+            display: flex;
+            margin-bottom: 15px;
+        }
+        
+        .detail-label {
+            width: 120px;
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .detail-value {
+            flex: 1;
+            color: #343a40;
+        }
+        
+        /* 状态标签样式 */
+        .status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .status.active {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .status.inactive {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        .status.maintenance {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        
+        /* 表单样式 */
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 8px;
+        }
+        
+        .form-select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e9ecef;
+            border-radius: 4px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+        
+        .form-select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        /* 表单操作按钮 */
+        .form-actions {
+            margin-top: 30px;
+        }
+        
+        /* 返回链接 */
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #667eea;
+            font-weight: 600;
+            text-decoration: none;
+        }
+        
+        .back-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <h1>MTSCOS AI 管理系统</h1>
+            <div class="user-info">
+                <span>{{ session['username'] }}</span>
+                <span>{{ session['role'] }}</span>
+                <a href="/auth/logout"><button class="logout-btn">退出登录</button></a>
+            </div>
+        </div>
+    </header>
+    
+    <div class="container">
+        <!-- 消息显示 -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="message {{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        <!-- 导航菜单 -->
+        <nav>
+            <ul>
+                <li><a href="/dashboard">仪表板</a></li>
+                <li><a href="/servers" class="active">子服务器管理</a></li>
+            </ul>
+        </nav>
+        
+        <!-- 返回链接 -->
+        <a href="/servers" class="back-link">&larr; 返回服务器列表</a>
+        
+        <!-- 服务器详情卡片 -->
+        <div class="card">
+            <h2>服务器详情</h2>
+            
+            <div class="detail-info">
+                <div class="detail-row">
+                    <div class="detail-label">ID</div>
+                    <div class="detail-value">{{ server[0] }}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">名称</div>
+                    <div class="detail-value">{{ server[1] }}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">IP地址</div>
+                    <div class="detail-value">{{ server[2] }}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">端口</div>
+                    <div class="detail-value">{{ server[3] }}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">状态</div>
+                    <div class="detail-value">
+                        <span class="status {{ server[4] }}">{{ server[4] }}</span>
+                    </div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">创建时间</div>
+                    <div class="detail-value">{{ server[5] }}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">更新时间</div>
+                    <div class="detail-value">{{ server[6] }}</div>
+                </div>
+            </div>
+            
+            <!-- 更新状态表单 -->
+            <h3 style="margin-bottom: 20px; font-size: 18px; color: #343a40;">更新服务器状态</h3>
+            <form method="POST" action="/servers/{{ server[0] }}/status">
+                <div class="form-group">
+                    <label for="status" class="form-label">新状态</label>
+                    <select id="status" name="status" class="form-select" required>
+                        <option value="active" {% if server[4] == 'active' %}selected{% endif %}>活跃</option>
+                        <option value="inactive" {% if server[4] == 'inactive' %}selected{% endif %}>停用</option>
+                        <option value="maintenance" {% if server[4] == 'maintenance' %}selected{% endif %}>维护中</option>
+                    </select>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">更新状态</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

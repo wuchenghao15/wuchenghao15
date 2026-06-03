@@ -1,17 +1,21 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
 Library Management Module - Handles system library management, registration, and dependency tracking
+"""
 
+import logging
+logger = logging.getLogger(__name__)
 import os
 import sys
 import importlib
-# JSON import removed - using database
+import json
 import datetime
 import threading
 from typing import Dict, List, Any, Optional
 
 class LibraryManager:
-    """Library Manager - Handles system library management, registration, and dependency tracking"""
+    """Library Manager - Handles system library management: registration, and dependency tracking"""
 
     def __init__(self, libraries_dir: str = "data/libraries"):
         self.libraries_dir = libraries_dir
@@ -20,10 +24,8 @@ class LibraryManager:
         self.loaded_libraries = {}
         self.lock = threading.RLock()
 
-        # Ensure libraries directory exists
         os.makedirs(self.libraries_dir, exist_ok=True)
 
-        # Load libraries from file
         self._load_libraries()
 
     def _load_libraries(self):
@@ -36,43 +38,41 @@ class LibraryManager:
                     self.libraries = library_data.get('libraries', {})
                     self.dependencies = library_data.get('dependencies', {})
         except Exception as e:
-            print(f"Error loading libraries: {e}")
+            logger.error(f"Error loading libraries: {e}")
             self.libraries = {}
 
+    def _save_libraries(self):
         """Save libraries to configuration file"""
         try:
             libraries_file = os.path.join(self.libraries_dir, "libraries.json")
             library_data = {
-                'dependencies': self.dependencies,
+                'libraries': self.libraries,
+                'dependencies': self.dependencies
             }
             with open(libraries_file, 'w', encoding='utf-8') as f:
                 json.dump(library_data, f, ensure_ascii=False, indent=2)
         except Exception as e:
-            print(f"Error saving libraries: {e}")
+            logger.error(f"Error saving libraries: {e}")
 
     def register_library(self, name: str, library_info: Dict[str, Any]):
         """Register a new library"""
-            # Validate library info
+        with self.lock:
             if not all(key in library_info for key in ['version', 'path', 'description']):
                 raise ValueError("Library info must contain version, path, and description")
 
-            # Add default values
             library_info.setdefault('enabled', True)
             library_info.setdefault('dependencies', [])
             library_info.setdefault('created_at', datetime.datetime.now().isoformat())
             library_info.setdefault('last_updated', datetime.datetime.now().isoformat())
 
-            # Register the library
             self.libraries[name] = library_info
 
-            # Update dependencies
             for dep in library_info['dependencies']:
                 if dep not in self.dependencies:
                     self.dependencies[dep] = []
                 if name not in self.dependencies[dep]:
                     self.dependencies[dep].append(name)
 
-            # Save to file
             self._save_libraries()
 
             print(f"Library {name} registered successfully")
@@ -82,184 +82,87 @@ class LibraryManager:
         """Unregister a library"""
         with self.lock:
             if name in self.libraries:
-                # Remove from dependencies
                 library = self.libraries[name]
                 for dep in library['dependencies']:
                     if dep in self.dependencies and name in self.dependencies[dep]:
+                        self.dependencies[dep].remove(name)
 
-                # Remove the library
                 del self.libraries[name]
 
-                # Unload if loaded
                 if name in self.loaded_libraries:
                     self.unload_library(name)
 
-                # Save to file
                 self._save_libraries()
 
                 print(f"Library {name} unregistered successfully")
                 return True
             return False
 
-        """Get library information"""
-            return self.libraries.get(name, None)
+    def load_library(self, name: str):
+        """Load a library"""
+        if name not in self.libraries:
+            print(f"Library {name} not found")
+            return None
 
-    def list_libraries(self, enabled_only: bool = False) -> Dict[str, Any]:
-        with self.lock:
-                return {k: v for k, v in self.libraries.items() if v.get('enabled', True)}
-            return self.libraries.copy()
+        if name in self.loaded_libraries:
+            return self.loaded_libraries[name]
 
-    def load_library(self, name: str) -> bool:
-        with self.lock:
-            if name not in self.libraries:
-                print(f"Library {name} not registered")
-                return False
-
-            if name in self.loaded_libraries:
-                return True
-
-            library = self.libraries[name]
-            if not library.get('enabled', True):
-                print(f"Library {name} is disabled")
-                return False
-
-            try:
-                # Check dependencies first
-                        if not self.load_library(dep):
-
-                # Add library path to sys.path if needed
-                lib_path = library['path']
-                    sys.path.insert(0, lib_path)
-
-                # Import the library
-                module = importlib.import_module(name)
-                    'module': module,
-                    'loaded_at': datetime.datetime.now().isoformat()
-
+        try:
+            library_info = self.libraries[name]
+            module_path = library_info['path']
+            
+            if os.path.exists(module_path):
+                spec = importlib.util.spec_from_file_location(name, module_path)
+                module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(module)
+                self.loaded_libraries[name] = module
                 print(f"Library {name} loaded successfully")
-                return True
-            except Exception as e:
-                print(f"Failed to load library {name}: {e}")
-    def unload_library(self, name: str) -> bool:
+                return module
+            else:
+                print(f"Library path not found: {module_path}")
+                return None
+        except Exception as e:
+            print(f"Error loading library {name}: {e}")
+            return None
+
+    def unload_library(self, name: str):
         """Unload a library"""
-            if name not in self.loaded_libraries:
-                print(f"Library {name} not loaded")
-                return False
+        if name in self.loaded_libraries:
+            del self.loaded_libraries[name]
+            if name in sys.modules:
+                del sys.modules[name]
+            print(f"Library {name} unloaded successfully")
+            return True
+        return False
 
-            # Check if any other library depends on this one
-            if name in self.dependencies:
-                dependent_libraries = self.dependencies[name]
-                        print(f"Cannot unload {name}: {dep_lib} depends on it")
-                        return False
+    def get_library(self, name: str):
+        """Get a loaded library"""
+        return self.loaded_libraries.get(name)
 
-            try:
-                # Remove from loaded libraries
-                del self.loaded_libraries[name]
-                # Remove from sys.path if not needed by other libraries
-                if name in self.libraries:
-                    if lib_path in sys.path:
-                        # Check if other libraries use the same path
-                        other_uses = any(
-                            lib['path'] == lib_path and lib_name != name and lib_name in self.loaded_libraries
-                            for lib_name, lib in self.libraries.items()
-                        )
-                            sys.path.remove(lib_path)
+    def list_libraries(self):
+        """List all registered libraries"""
+        return list(self.libraries.keys())
 
-                print(f"Library {name} unloaded successfully")
-                return True
-            except Exception as e:
-                print(f"Failed to unload library {name}: {e}")
-                return False
-    def is_loaded(self, name: str) -> bool:
-        """Check if a library is loaded"""
-        with self.lock:
-    def get_loaded_libraries(self) -> List[str]:
-        """Get list of loaded libraries"""
-        with self.lock:
-            return list(self.loaded_libraries.keys())
+    def get_library_info(self, name: str):
+        """Get library information"""
+        return self.libraries.get(name)
 
-    def enable_library(self, name: str) -> bool:
+    def enable_library(self, name: str):
         """Enable a library"""
-        with self.lock:
-                self.libraries[name]['last_updated'] = datetime.datetime.now().isoformat()
-                self._save_libraries()
-                print(f"Library {name} enabled")
-            return False
+        if name in self.libraries:
+            self.libraries[name]['enabled'] = True
+            self.libraries[name]['last_updated'] = datetime.datetime.now().isoformat()
+            self._save_libraries()
+            return True
+        return False
 
-    def disable_library(self, name: str) -> bool:
+    def disable_library(self, name: str):
         """Disable a library"""
-            if name in self.libraries:
-                self.libraries[name]['enabled'] = False
-                self.libraries[name]['last_updated'] = datetime.datetime.now().isoformat()
-                # Unload if currently loaded
-                if name in self.loaded_libraries:
-                    self.unload_library(name)
+        if name in self.libraries:
+            self.libraries[name]['enabled'] = False
+            self.libraries[name]['last_updated'] = datetime.datetime.now().isoformat()
+            self._save_libraries()
+            return True
+        return False
 
-                self._save_libraries()
-                print(f"Library {name} disabled")
-            return False
-
-        """Check dependencies for a library"""
-        with self.lock:
-                    'library': name,
-                    'exists': False,
-                    'dependencies': [],
-                    'missing_dependencies': [],
-                    'status': 'error'
-                }
-
-            library = self.libraries[name]
-            missing_deps = [dep for dep in dependencies if dep not in self.libraries]
-
-                'dependencies': dependencies,
-                'status': 'ok' if not missing_deps else 'missing_dependencies'
-            }
-    def get_dependency_tree(self, name: str) -> Dict[str, Any]:
-        """Get dependency tree for a library"""
-        with self.lock:
-            if name not in self.libraries:
-                return {
-                    'exists': False,
-                    'tree': {}
-
-            def build_tree(lib_name):
-                if lib_name not in self.libraries:
-                    return None
-                    'info': lib,
-                    'dependencies': {}
-
-                for dep in lib['dependencies']:
-                    dep_tree = build_tree(dep)
-                    if dep_tree:
-                        tree['dependencies'][dep] = dep_tree
-
-                return tree
-            return {
-                'exists': True,
-                'tree': build_tree(name)
-            }
-    def reload_library(self, name: str) -> bool:
-        """Reload a library"""
-        with self.lock:
-            if name not in self.loaded_libraries:
-                return self.load_library(name)
-
-            # Unload first, then load again
-            self.unload_library(name)
-
-    def reload_all_libraries(self) -> Dict[str, bool]:
-        """Reload all loaded libraries"""
-        with self.lock:
-            results = {}
-            loaded_libs = list(self.loaded_libraries.keys())
-
-            # Unload all first
-            for lib_name in loaded_libs:
-
-            # Load them back
-            for lib_name in loaded_libs:
-                results[lib_name] = self.load_library(lib_name)
-
-            return results
-
-# Global library manager instance
+library_manager = LibraryManager()

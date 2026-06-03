@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>成人教育摸底测试 - 选择科目</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 48px;
+            max-width: 800px;
+            width: 100%;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+        .icon {
+            font-size: 72px;
+            margin-bottom: 20px;
+        }
+        .title {
+            color: #333;
+            font-size: 32px;
+            margin-bottom: 12px;
+        }
+        .subtitle {
+            color: #666;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+        .ai-info {
+            background: #ECFDF5;
+            border-left: 4px solid #10B981;
+            padding: 16px 20px;
+            border-radius: 0 12px 12px 0;
+            margin-bottom: 32px;
+        }
+        .ai-info p {
+            color: #065F46;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .subject-section {
+            margin-bottom: 32px;
+        }
+        .section-title {
+            color: #333;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .subject-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+        .subject-card {
+            background: #f8f9fa;
+            border: 2px solid #e0e0e0;
+            border-radius: 16px;
+            padding: 24px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+        .subject-card:hover {
+            border-color: #10B981;
+            background: #ECFDF5;
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.2);
+        }
+        .subject-card.selected {
+            border-color: #10B981;
+            background: linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%);
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+        }
+        .subject-icon {
+            font-size: 40px;
+            margin-bottom: 12px;
+        }
+        .subject-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        .subject-desc {
+            font-size: 13px;
+            color: #666;
+            line-height: 1.4;
+        }
+        .subject-levels {
+            margin-top: 12px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            justify-content: center;
+        }
+        .level-tag {
+            padding: 4px 10px;
+            background: rgba(16, 185, 129, 0.1);
+            color: #059669;
+            border-radius: 12px;
+            font-size: 11px;
+        }
+        .submit-area {
+            text-align: center;
+            margin-top: 48px;
+        }
+        .submit-btn {
+            padding: 18px 60px;
+            border: none;
+            border-radius: 30px;
+            background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .submit-btn:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 35px rgba(16, 185, 129, 0.4);
+        }
+        .submit-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .selected-info {
+            background: #F0FDF4;
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            display: none;
+        }
+        .selected-info.show {
+            display: block;
+        }
+        .selected-info h4 {
+            color: #059669;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+        .selected-info p {
+            color: #333;
+            font-size: 14px;
+        }
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 24px;
+            color: #666;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .back-link:hover {
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="icon">🎓</div>
+            <h1 class="title">成人教育摸底测试</h1>
+            <p class="subtitle">请选择您想要学习的科目，专家AI将为您定制专属摸底测试试卷</p>
+        </div>
+        
+        <div class="ai-info">
+            <p><strong>🤖 专家AI提示：</strong>选择您感兴趣的科目后，系统将根据您的选择自动生成针对性的摸底测试，帮助评估您当前的知识水平，为后续学习提供精准推荐。</p>
+        </div>
+        
+        <div class="selected-info" id="selectedInfo">
+            <h4>✓ 已选择科目</h4>
+            <p id="selectedSubject">-</p>
+        </div>
+        
+        <form method="POST">
+            <div class="subject-section">
+                <h2 class="section-title">📚 语言学习</h2>
+                <div class="subject-grid">
+                    <div class="subject-card" onclick="selectSubject('japanese', '日语学习')">
+                        <div class="subject-icon">🗾</div>
+                        <div class="subject-name">日语学习</div>
+                        <div class="subject-desc">从N5到N1，全面覆盖日语能力考试</div>
+                        <div class="subject-levels">
+                            <span class="level-tag">N5</span>
+                            <span class="level-tag">N4</span>
+                            <span class="level-tag">N3</span>
+                            <span class="level-tag">N2</span>
+                            <span class="level-tag">N1</span>
+                        </div>
+                    </div>
+                    
+                    <div class="subject-card" onclick="selectSubject('english', '英语学习')">
+                        <div class="subject-icon">🔤</div>
+                        <div class="subject-name">英语学习</div>
+                        <div class="subject-desc">综合提升英语听说读写能力</div>
+                        <div class="subject-levels">
+                            <span class="level-tag">初级</span>
+                            <span class="level-tag">中级</span>
+                            <span class="level-tag">高级</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="subject-section">
+                <h2 class="section-title">📖 学历提升</h2>
+                <div class="subject-grid">
+                    <div class="subject-card" onclick="selectSubject('adult_college', '成人大学')">
+                        <div class="subject-icon">🏛️</div>
+                        <div class="subject-name">成人大学</div>
+                        <div class="subject-desc">成人高等教育入学考试准备</div>
+                        <div class="subject-levels">
+                            <span class="level-tag">高起专</span>
+                            <span class="level-tag">高起本</span>
+                            <span class="level-tag">专升本</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="subject-section">
+                <h2 class="section-title">🌍 留学考试</h2>
+                <div class="subject-grid">
+                    <div class="subject-card" onclick="selectSubject('ielts', '雅思')">
+                        <div class="subject-icon">🇬🇧</div>
+                        <div class="subject-name">雅思考试</div>
+                        <div class="subject-desc">IELTS听说读写专项训练</div>
+                        <div class="subject-levels">
+                            <span class="level-tag">听力</span>
+                            <span class="level-tag">阅读</span>
+                            <span class="level-tag">写作</span>
+                            <span class="level-tag">口语</span>
+                        </div>
+                    </div>
+                    
+                    <div class="subject-card" onclick="selectSubject('toefl', '托福')">
+                        <div class="subject-icon">🇺🇸</div>
+                        <div class="subject-name">托福考试</div>
+                        <div class="subject-desc">TOEFL iBT全面备考</div>
+                        <div class="subject-levels">
+                            <span class="level-tag">听力</span>
+                            <span class="level-tag">阅读</span>
+                            <span class="level-tag">口语</span>
+                            <span class="level-tag">写作</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <input type="hidden" id="selected_subject" name="subject" value="">
+            
+            <div class="submit-area">
+                <button type="submit" class="submit-btn" id="submit_btn" disabled>开始摸底测试</button>
+            </div>
+        </form>
+        
+        <a href="/exam/set_grade" class="back-link">← 返回年级设置</a>
+    </div>
+
+    <script>
+        function selectSubject(subject, name) {
+            // 移除所有选中状态
+            document.querySelectorAll('.subject-card').forEach(card => card.classList.remove('selected'));
+            
+            // 添加当前选中状态
+            event.currentTarget.classList.add('selected');
+            
+            // 设置隐藏字段值
+            document.getElementById('selected_subject').value = subject;
+            document.getElementById('submit_btn').disabled = false;
+            
+            // 更新选中信息
+            document.getElementById('selectedSubject').textContent = name;
+            document.getElementById('selectedInfo').classList.add('show');
+        }
+    </script>
+</body>
+</html>

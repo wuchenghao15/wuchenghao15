@@ -1,7 +1,8 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-显式启动Flask应用，显示详细日志
+显式启动Flask应用,显示详细日志
 
 import os
 import sys
@@ -49,7 +50,7 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         print("Flask app stopped by KeyboardInterrupt.")
     except Exception as e:
-        print(f"Error starting Flask app: {str(e)}")
+        logger.error(f"Error starting Flask app: {str(e)}")
         import traceback
         traceback.print_exc()
     print("Start script completed.")

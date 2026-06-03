@@ -1,7 +1,9 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 修复 threading 导入问题
+"""
 
 import os
 import re
@@ -61,6 +63,7 @@ def main():
             logger.info(f"检查文件: {file_path}")
             fix_threading_in_file(file_path)
         else:
+            logger.info(f"文件不存在: {file_path}")
 
     logger.info("=== threading 导入修复完成 ===")
 

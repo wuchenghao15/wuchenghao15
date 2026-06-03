@@ -1,9 +1,13 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 """
-批量生成题目脚本，用于丰富题库题量和题型
+批量生成题目脚本,用于丰富题库题量和题型
 
+import logging
+"""
+logger = logging.getLogger(__name__)
 import sys
 import os
 import time
@@ -38,7 +42,7 @@ def batch_generate_questions():
         ]
         total_generated = 0
 
-        # 遍历配置，生成题目
+        # 遍历配置,生成题目
         for config in configs:
             language = config['language']
             print(f"\n开始生成 {language} 题目...")
@@ -51,6 +55,7 @@ def batch_generate_questions():
                         # 生成题目
                         try:
                             generated = 0
+                            for i in range(count):
                                 # 生成单道题目
                                 result = ai_question_generator.generate_question(
                                     language=language,
@@ -79,15 +84,16 @@ def batch_generate_questions():
                                         question_obj.save()
                                         print(f"    ✅ 生成题目: {result.content[:30]}...")
                                     else:
-                                        print(f"    ⚠️  题目重复，已跳过")
+                                        print(f"    ⚠️  题目重复,已跳过")
 
                             print(f"    共生成 {generated} 道题目")
+                        except Exception as e:
                             print(f"    ❌ 生成失败: {str(e)}")
                             continue
 
         end_time = time.time()
         print(f"\n" + "=" * 60)
-        print(f"✅ 批量生成完成！")
+        print(f"✅ 批量生成完成!")
         print(f"总共生成: {total_generated} 道题目")
         print(f"耗时: {end_time - start_time:.2f} 秒")
         print("=" * 60)
@@ -97,6 +103,5 @@ def batch_generate_questions():
         traceback.print_exc()
         return False
 
-    return True
-
 if __name__ == "__main__":
+    batch_generate_questions()

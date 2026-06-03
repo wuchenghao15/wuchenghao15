@@ -1,12 +1,14 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
-备份管理服务，负责统一管理所有备份、回滚机制和快照保存
+备份管理服务,负责统一管理所有备份,回滚机制和快照保存
 
 import logging
 from app.ai.backup_management_ai import backup_management_ai
+import sys
 
 class BackupManagementService:
-    备份管理服务，负责统一管理所有备份、回滚机制和快照保存
+    备份管理服务,负责统一管理所有备份,回滚机制和快照保存
 
         self.logger = logging.getLogger("BackupManagementService")
         self.backup_ai = backup_management_ai
@@ -15,14 +17,14 @@ class BackupManagementService:
         创建系统备份
 
         Args:
-            backup_type: 备份类型，full或incremental
+            backup_type: 备份类型,full或incremental
             description: 备份描述
             created_by: 创建者
 
         Returns:
             备份ID
         try:
-            self.logger.info(f"调用备份管理AI创建备份，类型: {backup_type}")
+            self.logger.info(f"调用备份管理AI创建备份,类型: {backup_type}")
             return self.backup_ai.create_backup(backup_type, description, created_by)
         except Exception as e:
             self.logger.error(f"创建备份失败: {str(e)}")
@@ -38,7 +40,7 @@ class BackupManagementService:
         Returns:
             bool: 是否恢复成功
         try:
-            self.logger.info(f"调用备份管理AI恢复备份，备份ID: {backup_id}")
+            self.logger.info(f"调用备份管理AI恢复备份,备份ID: {backup_id}")
             return self.backup_ai.restore_backup(backup_id, created_by)
         except Exception as e:
             self.logger.error(f"恢复备份失败: {str(e)}")
@@ -53,7 +55,7 @@ class BackupManagementService:
         Returns:
             bool: 是否删除成功
         try:
-            self.logger.info(f"调用备份管理AI删除备份，备份ID: {backup_id}")
+            self.logger.info(f"调用备份管理AI删除备份,备份ID: {backup_id}")
             return self.backup_ai.delete_backup(backup_id)
         except Exception as e:
             self.logger.error(f"删除备份失败: {str(e)}")
@@ -70,7 +72,7 @@ class BackupManagementService:
         Returns:
             快照ID
         try:
-            self.logger.info(f"调用备份管理AI创建快照，用户ID: {user_id}")
+            self.logger.info(f"调用备份管理AI创建快照,用户ID: {user_id}")
             return self.backup_ai.create_snapshot(user_id, session_id, snapshot_type, data)
         except Exception as e:
             self.logger.error(f"创建快照失败: {str(e)}")
@@ -85,7 +87,7 @@ class BackupManagementService:
         Returns:
             快照对象
         try:
-            self.logger.info(f"调用备份管理AI获取快照，快照ID: {snapshot_id}")
+            self.logger.info(f"调用备份管理AI获取快照,快照ID: {snapshot_id}")
             return self.backup_ai.get_snapshot(snapshot_id)
         except Exception as e:
             self.logger.error(f"获取快照失败: {str(e)}")
@@ -100,7 +102,7 @@ class BackupManagementService:
         Returns:
             bool: 是否删除成功
         try:
-            self.logger.info(f"调用备份管理AI删除快照，快照ID: {snapshot_id}")
+            self.logger.info(f"调用备份管理AI删除快照,快照ID: {snapshot_id}")
             return self.backup_ai.delete_snapshot(snapshot_id)
         except Exception as e:
             self.logger.error(f"删除快照失败: {str(e)}")
@@ -114,8 +116,9 @@ class BackupManagementService:
             offset: 偏移量
 
         Returns:
+    pass
         try:
-            self.logger.info(f"调用备份管理AI获取备份列表，限制: {limit}, 偏移: {offset}")
+            self.logger.info(f"调用备份管理AI获取备份列表,限制: {limit}, 偏移: {offset}")
             return self.backup_ai.get_all_backups(limit, offset)
         except Exception as e:
             self.logger.error(f"获取备份列表失败: {str(e)}")
@@ -130,7 +133,7 @@ class BackupManagementService:
         Returns:
             快照列表
         try:
-            self.logger.info(f"调用备份管理AI获取快照列表，限制: {limit}")
+            self.logger.info(f"调用备份管理AI获取快照列表,限制: {limit}")
             return self.backup_ai.get_all_snapshots(limit)
         except Exception as e:
             self.logger.error(f"获取快照列表失败: {str(e)}")
@@ -145,7 +148,7 @@ class BackupManagementService:
         Returns:
             删除的备份数量
         try:
-            self.logger.info(f"调用备份管理AI清理旧备份，保留天数: {keep_days}")
+            self.logger.info(f"调用备份管理AI清理旧备份,保留天数: {keep_days}")
         except Exception as e:
             self.logger.error(f"清理旧备份失败: {str(e)}")
             return 0
@@ -158,7 +161,7 @@ class BackupManagementService:
 
             删除的快照数量
         try:
-            self.logger.info(f"调用备份管理AI清理旧快照，保留天数: {keep_days}")
+            self.logger.info(f"调用备份管理AI清理旧快照,保留天数: {keep_days}")
             return self.backup_ai.clean_old_snapshots(keep_days)
         except Exception as e:
             self.logger.error(f"清理旧快照失败: {str(e)}")
@@ -180,6 +183,7 @@ class BackupManagementService:
         执行自动备份
 
         Returns:
+    pass
         try:
             self.logger.info("调用备份管理AI执行自动备份")
             return self.backup_ai.auto_backup()
@@ -195,7 +199,7 @@ class BackupManagementService:
         Returns:
             bool: 是否回滚成功
         try:
-            self.logger.info(f"调用备份管理AI回滚到快照，快照ID: {snapshot_id}")
+            self.logger.info(f"调用备份管理AI回滚到快照,快照ID: {snapshot_id}")
             return self.backup_ai.rollback_to_snapshot(snapshot_id)
         except Exception as e:
             self.logger.error(f"回滚到快照失败: {str(e)}")

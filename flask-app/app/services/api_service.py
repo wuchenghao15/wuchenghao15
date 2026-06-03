@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 # JSON import removed - using database
 from app.models.system_config import SystemConfig
+import json
+import sys
 
 class APIService:
     """API服务配置和管理"""
@@ -41,5 +43,5 @@ class APIService:
     def validate_api_request(request):
         """验证API请求"""
         # 这里可以添加请求验证逻辑
-        # 如API密钥验证、速率限制等
+        # 如API密钥验证,速率限制等
         return True

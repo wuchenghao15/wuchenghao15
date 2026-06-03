@@ -1,7 +1,7 @@
 // DOM加载完成后执行
 window.addEventListener('DOMContentLoaded', function() {
     // 添加表单验证功能
-    const loginForm = document.getElementById('login-form');
+    const loginForm = document.getElementById('loginForm');
     if (loginForm) {
         loginForm.addEventListener('submit', function(event) {
             // 阻止默认提交
@@ -55,11 +55,19 @@ window.addEventListener('DOMContentLoaded', function() {
     
     // 获取UI元素
     const vkeyStatusLabel = document.getElementById('vkey-status');
-    const vkeyText = vkeyStatusLabel.querySelector('.vkey-text');
     const hiddenVkeyInput = document.getElementById('vkey');
+    let vkeyText = null;
+    if (vkeyStatusLabel) {
+        vkeyText = vkeyStatusLabel.querySelector('.vkey-text');
+    }
     
-    // 开始定期检测Vikey设备
+    // 开始定期检测Vikey设备（仅当vkey-status元素存在时）
     function startVikeyDetection() {
+        if (!vkeyStatusLabel || !vkeyText) {
+            console.log('Vikey状态元素不存在，跳过设备检测');
+            return;
+        }
+        
         // 立即执行一次检测
         detectVikeyDevice();
         

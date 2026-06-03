@@ -24,4 +24,4 @@ def setup_database():
     # 创建表
     User.create_table()
     yield
-    # 清理数据库（如果需要）
+    # 清理数据库(如果需要)

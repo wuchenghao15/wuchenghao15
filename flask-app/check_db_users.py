@@ -1,7 +1,10 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
-简单脚本，用于检查数据库中用户表的内容
+简单脚本,用于检查数据库中用户表的内容
 
+import logging
+logger = logging.getLogger(__name__)
 import sys
 import os
 

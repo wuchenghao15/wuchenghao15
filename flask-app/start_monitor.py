@@ -1,32 +1,34 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
 项目启动器和监控工具
 监控项目中所有已激活的AI员工、功能状态和用户状态
+"""
 
+import logging
+logger = logging.getLogger(__name__)
 import os
 import sys
 import time
 import threading
 import subprocess
-# JSON import removed - using database
 from datetime import datetime
 from typing import Dict, List, Optional
 
-# 添加项目根目录到Python路径
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
-# 导入项目模块
 from app.config import Config
 from app.ai.instances import ai_instance_manager
 from app.ai.ai_ensemble import ai_ensemble
 from app.models.user import User
 from app.utils.logging import logger
 
+
 class ProjectMonitor:
-    """项目监控器，用于监控AI员工、功能状态和用户状态"""
+    """项目监控器,用于监控AI员工、功能状态和用户状态"""
 
     def __init__(self):
-        self.monitor_interval = 30  # 监控间隔（秒）
+        self.monitor_interval = 30
         self.running = False
         self.flask_process: Optional[subprocess.Popen] = None
         self.monitor_thread: Optional[threading.Thread] = None
@@ -37,7 +39,6 @@ class ProjectMonitor:
         print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 正在启动Flask应用...")
         print("="*60 + "\n")
 
-        # 启动Flask应用
         cmd = [sys.executable, "-m", "flask", "--app", "app", "run", "--port", "8888", "--debug"]
         self.flask_process = subprocess.Popen(
             cmd,
@@ -47,7 +48,6 @@ class ProjectMonitor:
             cwd=os.path.abspath(os.path.dirname(__file__))
         )
 
-        # 读取并打印Flask输出
         def read_flask_output():
             while self.flask_process and self.flask_process.poll() is None:
                 try:
@@ -57,24 +57,22 @@ class ProjectMonitor:
                 except Exception:
                     break
 
-        # 启动线程读取Flask输出
         output_thread = threading.Thread(target=read_flask_output, daemon=True)
         output_thread.start()
 
-        # 等待Flask应用启动
         time.sleep(5)
 
     def stop_flask_app(self):
         """停止Flask应用"""
         if self.flask_process:
             print("\n" + "="*60)
+            print("正在停止Flask应用...")
             print("="*60 + "\n")
 
-                # 尝试优雅关闭
+            try:
                 self.flask_process.terminate()
                 self.flask_process.wait(timeout=5)
             except subprocess.TimeoutExpired:
-                # 强制关闭
                 self.flask_process.kill()
                 self.flask_process.wait()
 
@@ -83,13 +81,10 @@ class ProjectMonitor:
     def get_ai_instance_status(self):
         """获取AI实例状态"""
         try:
-            # 获取AI实例统计信息
             ai_stats = ai_instance_manager.get_instance_stats()
-            # 获取所有AI实例
             all_instances = ai_instance_manager.get_all_instances()
             active_instances = [ai for ai in all_instances if ai.get('status') == 'active']
 
-            # 统计各类型AI实例数量
             ai_type_stats = {}
             for ai in all_instances:
                 ai_type = ai.get('type', 'unknown')
@@ -122,12 +117,16 @@ class ProjectMonitor:
     def get_feature_status(self):
         """获取功能状态"""
         try:
-            # 获取项目功能列表
-            # 获取所需AI类型
-            required_ai_types = ai_ensemble.required_ai_types
+            required_ai_types = ai_ensemble.required_ai_types if hasattr(ai_ensemble, 'required_ai_types') else []
+            ensemble_stats = ai_ensemble.get_ensemble_stats() if hasattr(ai_ensemble, 'get_ensemble_stats') else {}
 
-            # 获取AI集统计信息
-            ensemble_stats = ai_ensemble.get_ensemble_stats()
+            project_features = [
+                "AI对话系统",
+                "题库管理",
+                "用户管理",
+                "考试系统",
+                "AI脑库"
+            ]
 
             return {
                 'project_features': project_features,
@@ -140,21 +139,24 @@ class ProjectMonitor:
                 'project_features': [],
                 'required_ai_types': [],
                 'ensemble_stats': {}
+            }
+
     def get_user_status(self):
         """获取用户状态"""
-            # 获取所有用户
-            all_users = User.get_all_users()
-            # 统计各角色用户数量
+        try:
+            all_users = User.get_all_users() if hasattr(User, 'get_all_users') else []
+            role_stats = {}
+            active_users = []
             inactive_users = []
 
             for user in all_users:
-                role = user.role
+                role = user.role if hasattr(user, 'role') else 'unknown'
                 role_stats[role] = role_stats.get(role, 0) + 1
 
-                if user.is_active == 1:
-                    active_users.append(user.username)
+                if hasattr(user, 'is_active') and user.is_active == 1:
+                    active_users.append(user.username if hasattr(user, 'username') else str(user.id))
                 else:
-                    inactive_users.append(user.username)
+                    inactive_users.append(user.username if hasattr(user, 'username') else str(user.id))
 
             return {
                 'total_users': len(all_users),
@@ -163,6 +165,7 @@ class ProjectMonitor:
                 'role_distribution': role_stats,
                 'active_users': active_users,
                 'inactive_users': inactive_users
+            }
         except Exception as e:
             logger.error(f"获取用户状态失败: {str(e)}")
             return {
@@ -172,41 +175,44 @@ class ProjectMonitor:
                 'inactive_users_count': 0,
                 'role_distribution': {},
                 'active_users': [],
+                'inactive_users': []
             }
+
     def monitor_loop(self):
         """监控循环"""
         while self.running:
             try:
                 print("\n" + "="*60)
+                print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 监控报告")
+                print("="*60)
 
-                # 获取并打印AI实例状态
+                ai_status = self.get_ai_instance_status()
                 print("\n1. AI员工状态:")
+                print("-" * 40)
                 print(f"  总AI实例数: {ai_status['total_instances']}")
                 print(f"  活跃AI实例数: {ai_status['active_instances']}")
                 print(f"  已绑定AI实例数: {ai_status['bound_instances']}")
                 print(f"  AI类型分布: {str(ai_status['instance_types'])}")
                 print(f"  活跃AI实例列表: {str([ai['name'] for ai in ai_status['active_instances_list']])}")
 
-                # 获取并打印功能状态
+                feature_status = self.get_feature_status()
                 print("\n2. 功能状态:")
                 print("-" * 40)
-                feature_status = self.get_feature_status()
                 print(f"  项目功能: {str(feature_status['project_features'])}")
                 print(f"  所需AI类型: {str(feature_status['required_ai_types'])}")
                 print(f"  AI集统计: {str(feature_status['ensemble_stats'])}")
 
-                # 获取并打印用户状态
+                user_status = self.get_user_status()
                 print("\n3. 用户状态:")
                 print("-" * 40)
-                user_status = self.get_user_status()
                 print(f"  总用户数: {user_status['total_users']}")
                 print(f"  活跃用户数: {user_status['active_users_count']}")
                 print(f"  非活跃用户数: {user_status['inactive_users_count']}")
                 print(f"  角色分布: {str(user_status['role_distribution'])}")
                 print(f"  活跃用户: {str(user_status['active_users'])}")
 
-                # 打印监控结束
                 print("\n" + "="*60)
+                print(f"下次监控将在 {self.monitor_interval} 秒后执行")
                 print("="*60)
             except Exception as e:
                 logger.error(f"监控循环出错: {str(e)}")
@@ -218,29 +224,28 @@ class ProjectMonitor:
         """启动监控器"""
         self.running = True
 
-        # 启动Flask应用
+        self.start_flask_app()
 
-        # 启动监控线程
         self.monitor_thread = threading.Thread(target=self.monitor_loop, daemon=True)
+        self.monitor_thread.start()
 
-        # 保持主程序运行
         try:
-            while True:
+            while self.running:
                 time.sleep(1)
         except KeyboardInterrupt:
             self.stop()
+
     def stop(self):
         """停止监控器"""
         self.running = False
-        # 停止Flask应用
         self.stop_flask_app()
 
-        # 等待监控线程结束
         if self.monitor_thread:
             self.monitor_thread.join(timeout=5)
             self.monitor_thread = None
 
         print("\n监控器已停止")
+
 
 def main():
     """主函数"""
@@ -251,8 +256,9 @@ def main():
     print("按 Ctrl+C 停止监控和项目")
     print("="*60 + "\n")
 
-    # 创建并启动监控器
     monitor = ProjectMonitor()
     monitor.start()
+
+
 if __name__ == "__main__":
     main()

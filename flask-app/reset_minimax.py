@@ -1,14 +1,14 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 重置 Minimax AI 引擎
+"""
 
 import os
-# JSON import removed - using database
 import logging
 from datetime import datetime
 
-# 配置日志
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -23,7 +23,6 @@ def reset_minimax_config():
     """重置 Minimax 配置"""
     logger.info("开始重置 Minimax 配置...")
 
-    # 重置 AI 引擎配置文件
     config_dir = 'app/config'
     if not os.path.exists(config_dir):
         os.makedirs(config_dir)
@@ -38,10 +37,12 @@ def reset_minimax_config():
                 "timeout": 30
             },
             {
+                "name": "local",
                 "api_key": "local-dev",
                 "api_url": "http://localhost:8000/v1/chat/completions",
                 "enabled": False,
                 "timeout": 30
+            }
         ],
         "retry_attempts": 3,
         "cache_enabled": True
@@ -49,13 +50,12 @@ def reset_minimax_config():
 
     config_file = os.path.join(config_dir, 'ai_engine_config.json')
     with open(config_file, 'w', encoding='utf-8') as f:
+        import json
+        json.dump(ai_engine_config, f, ensure_ascii=False, indent=2)
 
     logger.info(f"重置 Minimax 配置文件: {config_file}")
-
-    # 重置 AI 引擎集成器的配置
     logger.info("重置 AI 引擎集成器配置...")
 
-    # 清理 AI 引擎相关的缓存文件
     cache_dirs = ['cache', 'temp']
     for cache_dir in cache_dirs:
         if os.path.exists(cache_dir):
@@ -75,11 +75,9 @@ def restart_ai_engine():
     """重启 AI 引擎服务"""
     logger.info("开始重启 AI 引擎服务...")
 
-    # 导入 AI 引擎集成器并重置
     try:
         from app.ai.ai_engine_integrator import ai_engine_integrator
 
-        # 重置 Minimax 引擎配置
         minimax_config = {
             "endpoint": "https://api.minimax.chat/v1/text/chatcompletion",
             "max_tokens": 4096,
@@ -91,13 +89,8 @@ def restart_ai_engine():
             "top_k": 50
         }
 
-        # 配置 Minimax 引擎
         ai_engine_integrator.configure_engine('minimax', minimax_config)
         logger.info("重置 Minimax 引擎配置成功")
-        # 清除 Minimax 引擎实例
-        # 注意：这里我们不能直接访问 ai_engine_integrator.engines，因为它是私有属性
-        # 但我们可以通过重新创建实例来重置
-
         logger.info("AI 引擎服务重启完成")
 
     except Exception as e:
@@ -112,10 +105,10 @@ def verify_minimax_status():
     try:
         from app.ai.ai_engine_integrator import ai_engine_integrator
 
-        # 获取 Minimax 引擎配置
         minimax_config = ai_engine_integrator.get_engine_config('minimax')
         if minimax_config:
             logger.info(f"Minimax 引擎配置: {minimax_config}")
+        else:
             logger.warning("无法获取 Minimax 引擎配置")
 
         health_status = ai_engine_integrator.health_status.get('minimax')
@@ -124,33 +117,28 @@ def verify_minimax_status():
         else:
             logger.warning("无法获取 Minimax 健康状态")
 
-        # 获取 Minimax 引擎性能数据
         performance_data = ai_engine_integrator.engine_performance.get('minimax')
         if performance_data:
             logger.info(f"Minimax 性能数据: {performance_data}")
         else:
             logger.warning("无法获取 Minimax 性能数据")
 
-
     except Exception as e:
         logger.error(f"验证 Minimax 状态失败: {str(e)}")
         import traceback
         traceback.print_exc()
 
+def main():
     """主函数"""
     logger.info("=== 开始重置 Minimax ===")
 
     try:
-        # 1. 重置 Minimax 配置
         reset_minimax_config()
-
-        # 2. 重启 AI 引擎服务
         restart_ai_engine()
-
         verify_minimax_status()
 
         logger.info("=== Minimax 重置完成 ===")
-        logger.info("Minimax 已成功重置，现在可以重新配置和使用")
+        logger.info("Minimax 已成功重置,现在可以重新配置和使用")
 
     except Exception as e:
         logger.error(f"重置 Minimax 失败: {str(e)}")

@@ -1,9 +1,13 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 头像爬虫工具
 用于爬取可爱的头像供用户选择
+"""
 
+import logging
+logger = logging.getLogger(__name__)
 import os
 import requests
 import shutil
@@ -57,12 +61,3 @@ class AvatarScraper:
                 })
 
         return avatars
-
-if __name__ == "__main__":
-    # 测试爬虫功能
-    scraper = AvatarScraper()
-    scraper.scrape_avatars()
-    avatars = scraper.get_scraped_avatars()
-    print(f"爬取到 {len(avatars)} 个头像")
-    for avatar in avatars:
-        print(f"- {avatar['path']}")

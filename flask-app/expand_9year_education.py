@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
 扩充9年制义务教育所有版本的适配习题、中考题、高考题和压轴题到题库
@@ -63,7 +64,7 @@ class NineYearEducationExpander(QuestionBankExpander):
         }
 
     def _generate_exam_question(self, language_id: int, level_id: int, category_id: int, difficulty: str) -> Optional[Question]:
-        生成考试题目（中考题、高考题、压轴题）
+        生成考试题目(中考题、高考题、压轴题)
 
             language_id: 语言ID
             level_id: 等级ID
@@ -96,19 +97,19 @@ class NineYearEducationExpander(QuestionBankExpander):
 
                     if operation == "+":
                         answer = a + b
-                        content = f"{a} {operation} {b} 的结果是多少？"
+                        content = f"{a} {operation} {b} 的结果是多少?"
                     elif operation == "-":
                         answer = a - b
-                        content = f"{a} {operation} {b} 的结果是多少？"
+                        content = f"{a} {operation} {b} 的结果是多少?"
                     elif operation == "×":
                         answer = a * b
-                        content = f"{a} {operation} {b} 的结果是多少？"
-                    else:  # ÷
+                        content = f"{a} {operation} {b} 的结果是多少?"
+                    else:  # ÷:
                         # 确保能整除
                         b = random.randint(1, 10)
                         a = b * random.randint(1, 10)
                         answer = a // b
-                        content = f"{a} {operation} {b} 的结果是多少？"
+                        content = f"{a} {operation} {b} 的结果是多少?"
 
                     # 生成选项
                     options = [answer]
@@ -140,7 +141,7 @@ class NineYearEducationExpander(QuestionBankExpander):
                 word = self._generate_english_word(difficulty)
                 content = f"选择{word}的正确中文意思"
 
-                # 生成选项（这里简化处理，实际应该有真实的翻译）
+                # 生成选项(这里简化处理,实际应该有真实的翻译)
                 options = [f"选项1", f"选项2", f"选项3", f"选项4"]
                 correct_answer = str(random.randint(0, 3))
 
@@ -232,7 +233,7 @@ class NineYearEducationExpander(QuestionBankExpander):
                         )
                         batch_generated += 1
                         generated_count += 1
-                        # 每生成100道题目，打印一次进度
+                        # 每生成100道题目,打印一次进度
                         if generated_count % 100 == 0:
                             logger.info(f"已生成 {generated_count}/{target_count} 道题目")
                     except Exception as e:
@@ -240,9 +241,9 @@ class NineYearEducationExpander(QuestionBankExpander):
 
             batch_end = time.time()
             batch_time = batch_end - batch_start
-            logger.info(f"第 {generated_count // batch_size} 批生成完成，耗时 {batch_time:.2f} 秒，生成 {batch_generated} 道题目")
+            logger.info(f"第 {generated_count // batch_size} 批生成完成,耗时 {batch_time:.2f} 秒,生成 {batch_generated} 道题目")
 
-            # 短暂休息，避免系统过载
+            # 短暂休息,避免系统过载
             time.sleep(0.5)
 
         # 记录结束时间
@@ -257,7 +258,7 @@ class NineYearEducationExpander(QuestionBankExpander):
         import traceback
     finally:
         print("\n================================================================================" )
-        print("扩充完成！")
+        print("扩充完成!")
         print("================================================================================" )
 
 if __name__ == "__main__":

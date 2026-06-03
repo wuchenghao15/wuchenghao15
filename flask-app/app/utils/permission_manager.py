@@ -1,204 +1,682 @@
 # -*- coding: utf-8 -*-
-# JSON import removed - using database
+#!/usr/bin/env python3
+"""
+Permission Manager for MTSCOS AI System
+权限管理模块 - 硬件管理员最高权限体系
+"""
+
 import logging
-from typing import Dict, List, Any
-
-# 配置日志
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+import sqlite3
+from contextlib import contextmanager
+import hashlib
+import time
+import uuid
+from datetime import datetime, timedelta
+from typing import Dict, List, Optional, Tuple
+from flask import session, request
+import sys
 
-class PermissionManager:
-    """权限管理器，负责管理和应用不同的权限规则"""
+ROLE_HIERARCHY = ['guest', 'student', 'designer', 'admin', 'super_admin', 'hardware_admin']
 
-    def __init__(self, config_file: str = None):
-        self.instance_id = f"permission_manager_{id(self)}"
-        self.name = "权限管理器"
-        self.description = "负责管理和应用不同的权限规则"
-        self.logger = logger
-        self.logger.info(f"初始化权限管理器: {self.instance_id}")
+ROLES = {
+    'guest': {
+        'name': '访客',
+        'description': '未登录访客',
+        'level': 0,
+        'permissions': []
+    },
+    'student': {
+        'name': '学生',
+        'description': '学生用户',
+        'level': 1,
+        'permissions': ['view_profile', 'change_language', 'view_exams', 'take_exam']
+    },
+    'designer': {
+        'name': '设计师',
+        'description': '设计人员',
+        'level': 1,
+        'permissions': ['view_profile', 'change_language', 'view_exams', 'design_questions']
+    },
+    'admin': {
+        'name': '管理员',
+        'description': '系统管理员',
+        'level': 3,
+        'permissions': ['view_profile', 'change_language', 'view_exams', 'take_exam',
+                       'create_exam', 'manage_questions', 'view_settings', 'manage_settings',
+                       'manage_users', 'view_logs', 'manage_system', 'manage_exams']
+    },
+    'super_admin': {
+        'name': '超级管理员',
+        'description': '超级管理员',
+        'level': 4,
+        'permissions': ['*']
+    },
+    'hardware_admin': {
+        'name': '硬件管理员',
+        'description': '硬件管理员 - 最高权限,需硬件加密狗',
+        'level': 5,
+        'permissions': ['*'],
+        'require_hardware': True
+    }
+}
 
-        # 权限存储
-        self.permissions = {
-            "admin": {
-                "name": "管理员",
-                "permissions": [
-                    "manage_users", "manage_system", "view_reports", "manage_ai_rules",
-                    "manage_approvals", "view_logs", "system_cleanup", "system_config",
-                    "manage_roles", "manage_permissions", "access_all_data", "manage_api_keys",
-                    "manage_backups", "manage_security_settings", "manage_logs", "view_audit_logs",
-                    "manage_sandboxes", "manage_ai_models", "manage_question_banks", "manage_tests",
-                    "manage_language_tests", "access_language_tests", "manage_admin_approval",
-                    "manage_sensitive_data", "manage_underlying_settings", "auto_expand_features"
-                ]
-            },
-            "super_admin": {
-                "name": "超级管理员",
-                    "admin", "manage_users", "manage_system", "view_reports", "manage_ai_rules",
-                    "manage_approvals", "view_logs", "system_config", "manage_roles", "manage_permissions",
-                    "access_all_data", "manage_api_keys", "manage_backups", "manage_security_settings",
-                    "manage_logs", "view_audit_logs", "manage_ai_models", "manage_question_banks", "manage_tests",
-                    "manage_language_tests", "access_language_tests", "manage_admin_approval",
-                ]
-            },
-                "name": "硬件Vikey管理员",
-                    "manage_ai_rules", "manage_approvals", "view_logs", "system_cleanup", "system_config",
-                    "manage_roles", "manage_permissions", "access_all_data", "manage_api_keys",
-                    "manage_backups", "manage_security_settings", "manage_logs", "view_audit_logs",
-                    "manage_language_tests", "access_language_tests", "manage_admin_approval",
-                ]
-            "teacher": {
-                    "manage_tests", "view_students", "generate_reports", "grade_tests",
-                    "manage_student_groups", "view_class_stats", "create_test_templates",
-                    "grade_language_tests", "manage_language_test_settings"
-            },
-            "user": {
-                    "take_tests", "view_results", "update_profile", "manage_projects", "manage_tasks",
-                    "view_reports", "save_test_progress", "view_test_history", "manage_favorites",
-                    "access_language_tests", "take_language_tests", "view_language_test_results"
-                ]
-            },
-                "name": "游客",
-                    "take_tests", "view_results", "view_test_history",
-                    "access_language_tests", "take_language_tests", "view_language_test_results"
-            }
-        }
+PAGE_PERMISSIONS = {
+    '/': ['guest', 'student', 'designer', 'admin', 'super_admin', 'hardware_admin'],
+    '/login': ['guest'],
+    '/register': ['guest'],
+    '/dashboard': ['student', 'designer', 'admin', 'super_admin', 'hardware_admin'],
+    '/settings': ['admin', 'super_admin', 'hardware_admin'],
+    '/admin_center': ['admin', 'super_admin', 'hardware_admin'],
+    '/super_admin_dashboard': ['super_admin', 'hardware_admin'],
+    '/exam': ['student', 'designer', 'admin', 'super_admin', 'hardware_admin'],
+    '/exam_system': ['admin', 'super_admin', 'hardware_admin'],
+    '/api/admin/users': ['admin', 'super_admin', 'hardware_admin'],
+    '/api/admin/system': ['admin', 'super_admin', 'hardware_admin'],
+    '/api/admin/monitor': ['admin', 'super_admin', 'hardware_admin'],
+    '/api/admin/settings': ['admin', 'super_admin', 'hardware_admin'],
+    '/api/admin/database': ['super_admin', 'hardware_admin'],
+    '/api/admin/permissions': ['super_admin', 'hardware_admin'],
+    '/api/admin/hardware': ['hardware_admin'],
+    '/api/hardware/verify': ['hardware_admin']
+}
 
-        if config_file:
-            self.load_config(config_file)
 
-    def load_config(self, config_file: str):
+class HardwareAuthManager:
+    """硬件加密狗认证管理器"""
 
-            config_file: 配置文件路径
-        """
+    def __init__(self, db_path: str):
+        self.db_path = db_path
+        self._init_hardware_db()
+
+    def _init_hardware_db(self):
+        """初始化硬件认证数据库表"""
+        with sqlite3.connect(self.db_path) as conn:
+            
+            cursor = conn.cursor()
+            
+            cursor.execute('''
+            CREATE TABLE IF NOT EXISTS hardware_keys (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            hardware_id TEXT UNIQUE NOT NULL,
+            hardware_name TEXT NOT NULL,
+            hardware_type TEXT DEFAULT 'usb',
+            bound_user_id INTEGER,
+            bound_username TEXT,
+            is_active INTEGER DEFAULT 1,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            last_used_at TIMESTAMP,
+            use_count INTEGER DEFAULT 0
+            )
+            ''')
+            
+            cursor.execute('''
+            CREATE TABLE IF NOT EXISTS hardware_auth_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            hardware_id TEXT NOT NULL,
+            user_id INTEGER,
+            username TEXT,
+            auth_result INTEGER NOT NULL,
+            auth_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            ip_address TEXT,
+            user_agent TEXT
+            )
+            ''')
+            
+            cursor.execute('''
+            CREATE TABLE IF NOT EXISTS hardware_sessions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            session_id TEXT UNIQUE NOT NULL,
+            hardware_id TEXT NOT NULL,
+            user_id INTEGER NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            expires_at TIMESTAMP NOT NULL,
+            is_valid INTEGER DEFAULT 1
+            )
+            ''')
+            
+            conn.commit()
+
+    def register_hardware_key(self, hardware_id: str, hardware_name: str, hardware_type: str = 'usb') -> bool:
+        """注册硬件加密狗"""
         try:
-            with open(config_file, 'r', encoding='utf-8') as f:
-                config = json.load(f)
-                if "permissions" in config:
-                    self.permissions.update(config["permissions"])
+            with sqlite3.connect(self.db_path) as conn:
+                
+                cursor = conn.cursor()
+                
+                cursor.execute('''
+                INSERT OR REPLACE INTO hardware_keys
+                (hardware_id, hardware_name, hardware_type, is_active)
+                VALUES (?, ?, ?, 1)
+                ''', (hardware_id, hardware_name, hardware_type))
+                
+                conn.commit()
+            return True
         except Exception as e:
-            self.logger.error(f"加载权限配置文件失败: {str(e)}")
-
-        """保存权限配置到文件
-
-        Args:
-            config_file: 配置文件路径
-        """
-        try:
-            config = {"permissions": self.permissions}
-            with open(config_file, 'w', encoding='utf-8') as f:
-                json.dump(config, f, indent=2, ensure_ascii=False)
-                self.logger.info(f"保存权限配置文件成功: {config_file}")
-        except Exception as e:
-            self.logger.error(f"保存权限配置文件失败: {str(e)}")
-
-    def get_role_permissions(self, role: str) -> List[str]:
-        """获取角色的权限列表
-
-        Args:
-            role: 角色名称
-
-        Returns:
-            权限列表
-        """
-        if role in self.permissions:
-            return self.permissions[role].get("permissions", [])
-        return []
-    def has_permission(self, role: str, permission: str) -> bool:
-        """检查角色是否拥有指定权限
-        Args:
-            role: 角色名称
-            permission: 权限名称
-
-        Returns:
-        """
-        if role not in self.permissions:
+            logger.error(f"Failed to register hardware key: {e}")
             return False
 
-        role_permissions = self.permissions[role].get("permissions", [])
+    def bind_hardware_to_user(self, hardware_id: str, user_id: int, username: str) -> bool:
+        """绑定硬件到用户"""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                
+                cursor = conn.cursor()
+                
+                cursor.execute('''
+                UPDATE hardware_keys
+                SET bound_user_id = ?, bound_username = ?, is_active = 1
+                WHERE hardware_id = ?
+                ''', (user_id, username, hardware_id))
+                
+                conn.commit()
+            return True
+        except Exception as e:
+            logger.error(f"Failed to bind hardware: {e}")
+            return False
 
-        # 检查直接权限
-        if permission in role_permissions:
+    def verify_hardware(self, hardware_id: str, user_id: int) -> Tuple[bool, str]:
+        """验证硬件是否有效"""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                
+                cursor = conn.cursor()
+                
+                cursor.execute('''
+                SELECT bound_user_id, is_active FROM hardware_keys
+                WHERE hardware_id = ?
+                ''', (hardware_id,))
+                
+                result = cursor.fetchone()
+
+            if not result:
+                return False, '硬件密钥不存在'
+
+            bound_user_id, is_active = result
+
+            if not is_active:
+                return False, '硬件密钥已被禁用'
+
+            if bound_user_id != user_id:
+                return False, '硬件密钥与用户不匹配'
+
+            return True, '硬件验证成功'
+
+        except Exception as e:
+            return False, f'验证失败: {str(e)}'
+
+    def create_hardware_session(self, session_id: str, hardware_id: str, user_id: int, timeout_hours: int = 8) -> bool:
+        """创建硬件会话"""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                
+                cursor = conn.cursor()
+                
+                expires_at = datetime.now() + timedelta(hours=timeout_hours)
+                
+                cursor.execute('''
+                INSERT INTO hardware_sessions
+                (session_id, hardware_id, user_id, expires_at)
+                VALUES (?, ?, ?, ?)
+                ''', (session_id, hardware_id, user_id, expires_at))
+                
+                cursor.execute('''
+                UPDATE hardware_keys SET last_used_at = ?, use_count = use_count + 1
+                WHERE hardware_id = ?
+                ''', (datetime.now(), hardware_id))
+                
+                conn.commit()
+            return True
+        except Exception as e:
+            logger.error(f"Failed to create hardware session: {e}")
+            return False
+
+    def validate_hardware_session(self, session_id: str, hardware_id: str) -> bool:
+        """验证硬件会话"""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                
+                cursor = conn.cursor()
+                
+                cursor.execute('''
+                SELECT is_valid, expires_at FROM hardware_sessions
+                WHERE session_id = ? AND hardware_id = ? AND is_valid = 1
+                ''', (session_id, hardware_id))
+                
+                result = cursor.fetchone()
+
+            if not result:
+                return False
+
+            is_valid, expires_at = result
+            if datetime.now() > datetime.strptime(expires_at, '%Y-%m-%d %H:%M:%S.%f'):
+                return False
+
             return True
 
-        # 检查继承权限（例如，admin权限包含所有子权限）
-        for perm in role_permissions:
-            if perm == "admin" or permission.startswith(perm + "."):
+        except Exception as e:
+            logger.error(f"Failed to validate hardware session: {e}")
+            return False
+
+    def invalidate_hardware_session(self, session_id: str) -> bool:
+        """使硬件会话失效"""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                
+                cursor = conn.cursor()
+                
+                cursor.execute('''
+                UPDATE hardware_sessions SET is_valid = 0
+                WHERE session_id = ?
+                ''', (session_id,))
+                
+                conn.commit()
+            return True
+        except Exception as e:
+            logger.error(f"Failed to invalidate hardware session: {e}")
+            return False
+
+    def log_hardware_auth(self, hardware_id: str, user_id: int, username: str, success: bool, ip_address: str = '', user_agent: str = ''):
+        """记录硬件认证日志"""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                
+                cursor = conn.cursor()
+                
+                cursor.execute('''
+                INSERT INTO hardware_auth_logs
+                (hardware_id, user_id, username, auth_result, ip_address, user_agent)
+                VALUES (?, ?, ?, ?, ?, ?)
+                ''', (hardware_id, user_id, username, 1 if success else 0, ip_address, user_agent))
+                
+                conn.commit()
+        except Exception as e:
+            logger.error(f"Failed to log hardware auth: {e}")
+
+    def get_hardware_keys(self, user_id: int = None) -> List[Dict]:
+        """获取硬件密钥列表"""
+        with sqlite3.connect(self.db_path) as conn:
+            
+            cursor = conn.cursor()
+            
+            if user_id:
+                cursor.execute('SELECT * FROM hardware_keys WHERE bound_user_id = ?', (user_id,))
+            else:
+                cursor.execute('SELECT * FROM hardware_keys')
+            
+            columns = ['id', 'hardware_id', 'hardware_name', 'hardware_type', 'bound_user_id',
+                       'bound_username', 'is_active', 'created_at', 'last_used_at', 'use_count']
+            
+            keys = []
+            for row in cursor.fetchall():
+                keys.append(dict(zip(columns, row)))
+            
+        return keys
+
+    def get_hardware_auth_logs(self, hardware_id: str = None, limit: int = 100) -> List[Dict]:
+        """获取硬件认证日志"""
+        with sqlite3.connect(self.db_path) as conn:
+            
+            cursor = conn.cursor()
+            
+            if hardware_id:
+                cursor.execute('''
+                SELECT * FROM hardware_auth_logs
+                WHERE hardware_id = ?
+                ORDER BY auth_time DESC LIMIT ?
+                ''', (hardware_id, limit))
+            else:
+                cursor.execute('SELECT * FROM hardware_auth_logs ORDER BY auth_time DESC LIMIT ?', (limit,))
+            
+            columns = ['id', 'hardware_id', 'user_id', 'username', 'auth_result', 'auth_time', 'ip_address', 'user_agent']
+            
+            logs = []
+            for row in cursor.fetchall():
+                logs.append(dict(zip(columns, row)))
+            
+        return logs
+
+
+class PermissionManager:
+    """权限管理器"""
+
+    def __init__(self, db_path: str):
+        self.db_path = db_path
+        self.hardware_auth = HardwareAuthManager(db_path)
+        self._init_db()
+
+    def _init_db(self):
+        """初始化数据库表"""
+        with sqlite3.connect(self.db_path) as conn:
+            
+            cursor = conn.cursor()
+            
+            cursor.execute('''
+            CREATE TABLE IF NOT EXISTS roles (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            role_name TEXT UNIQUE NOT NULL,
+            display_name TEXT NOT NULL,
+            description TEXT,
+            role_level INTEGER DEFAULT 0,
+            require_hardware INTEGER DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+            ''')
+            
+            cursor.execute('''
+            CREATE TABLE IF NOT EXISTS permissions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            permission_code TEXT UNIQUE NOT NULL,
+            permission_name TEXT NOT NULL,
+            description TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+            ''')
+            
+            cursor.execute('''
+            CREATE TABLE IF NOT EXISTS role_permissions (
+            role_name TEXT NOT NULL,
+            permission_code TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (role_name, permission_code)
+            )
+            ''')
+            
+            cursor.execute('''
+            CREATE TABLE IF NOT EXISTS user_roles (
+            user_id INTEGER NOT NULL,
+            role_name TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (user_id, role_name)
+            )
+            ''')
+            
+            conn.commit()
+
+        self._init_default_roles()
+        self._init_default_permissions()
+
+    def _init_default_roles(self):
+        """初始化默认角色"""
+        with sqlite3.connect(self.db_path) as conn:
+            
+            cursor = conn.cursor()
+            
+            for role_code, role_info in ROLES.items():
+                require_hw = 1 if role_info.get('require_hardware') else 0
+                cursor.execute('SELECT COUNT(*) FROM roles WHERE role_name = ?', (role_code,))
+                if cursor.fetchone()[0] == 0:
+                    cursor.execute(
+                        'INSERT INTO roles (role_name, display_name, description, role_level, require_hardware) VALUES (?, ?, ?, ?, ?)',
+                        (role_code, role_info['name'], role_info['description'], role_info['level'], require_hw)
+                    )
+            
+            conn.commit()
+
+    def _init_default_permissions(self):
+        """初始化默认权限并关联角色"""
+        with sqlite3.connect(self.db_path) as conn:
+            
+            cursor = conn.cursor()
+            
+            all_permissions = set()
+            for role_code, role_info in ROLES.items():
+                if role_info['permissions'] != ['*']:
+                    all_permissions.update(role_info['permissions'])
+            
+            for perm in all_permissions:
+                cursor.execute('SELECT COUNT(*) FROM permissions WHERE permission_code = ?', (perm,))
+                if cursor.fetchone()[0] == 0:
+                    cursor.execute(
+                        'INSERT INTO permissions (permission_code, permission_name, description) VALUES (?, ?, ?)',
+                        (perm, perm.replace('_', ' ').title(), f'权限: {perm}')
+                    )
+            
+            for role_code, role_info in ROLES.items():
+                if role_info['permissions'] == ['*']:
+                    cursor.execute('SELECT permission_code FROM permissions')
+                    perms = [row[0] for row in cursor.fetchall()]
+                    for perm in perms:
+                        cursor.execute(
+                            'INSERT OR IGNORE INTO role_permissions (role_name, permission_code) VALUES (?, ?)',
+                            (role_code, perm)
+                        )
+                else:
+                    for perm in role_info['permissions']:
+                        cursor.execute(
+                            'INSERT OR IGNORE INTO role_permissions (role_name, permission_code) VALUES (?, ?)',
+                            (role_code, perm)
+                        )
+            
+            conn.commit()
+
+    def get_role_level(self, role_name: str) -> int:
+        """获取角色等级"""
+        return ROLES.get(role_name, {}).get('level', 0)
+
+    def is_hardware_required(self, role_name: str) -> bool:
+        """检查角色是否需要硬件验证"""
+        return ROLES.get(role_name, {}).get('require_hardware', False)
+
+    def compare_roles(self, role1: str, role2: str) -> int:
+        """比较两个角色的等级"""
+        level1 = self.get_role_level(role1)
+        level2 = self.get_role_level(role2)
+        if level1 > level2:
+            return 1
+        elif level1 < level2:
+            return -1
+        return 0
+
+    def get_user_role(self, user_id: int) -> str:
+        """获取用户角色"""
+        with sqlite3.connect(self.db_path) as conn:
+            
+            cursor = conn.cursor()
+            
+            cursor.execute('SELECT role_name FROM user_roles WHERE user_id = ? ORDER BY created_at DESC LIMIT 1', (user_id,))
+            result = cursor.fetchone()
+            
+
+        if result:
+            return result[0]
+        return 'guest'
+
+    def set_user_role(self, user_id: int, role_name: str) -> bool:
+        """设置用户角色"""
+        if role_name not in ROLES:
+            return False
+
+        with sqlite3.connect(self.db_path) as conn:
+            
+            cursor = conn.cursor()
+            
+            try:
+                cursor.execute(
+                    'INSERT OR REPLACE INTO user_roles (user_id, role_name) VALUES (?, ?)',
+                    (user_id, role_name)
+                )
+                conn.commit()
                 return True
+            except Exception as e:
+                conn.rollback()
+                return False
+            finally:
+                pass
 
-        return False
+    def get_role_permissions(self, role_name: str) -> List[str]:
+        """获取角色权限"""
+        if role_name not in ROLES:
+            return []
 
-    def add_permission(self, role: str, permission: str):
-        """为角色添加权限
+        if ROLES[role_name]['permissions'] == ['*']:
+            return ['*']
 
-        Args:
-            role: 角色名称
-            permission: 权限名称
-        """
-        if role not in self.permissions:
-            self.permissions[role] = {
-                "name": role,
-                "permissions": []
-            }
+        with sqlite3.connect(self.db_path) as conn:
+            
+            cursor = conn.cursor()
+            
+            cursor.execute('SELECT permission_code FROM role_permissions WHERE role_name = ?', (role_name,))
+            perms = [row[0] for row in cursor.fetchall()]
+            
 
-        if permission not in self.permissions[role].get("permissions", []):
-            self.permissions[role]["permissions"].append(permission)
-            self.logger.info(f"为角色 {role} 添加权限: {permission}")
+        return perms
 
-    def remove_permission(self, role: str, permission: str):
-        """从角色中移除权限
+    def has_permission(self, user_id: int, permission: str) -> bool:
+        """检查用户是否有指定权限"""
+        role = self.get_user_role(user_id)
+        permissions = self.get_role_permissions(role)
 
-        Args:
-            permission: 权限名称
-        if role in self.permissions:
-            permissions = self.permissions[role].get("permissions", [])
-            if permission in permissions:
-                permissions.remove(permission)
-                self.logger.info(f"从角色 {role} 移除权限: {permission}")
+        if '*' in permissions:
+            return True
 
-        """添加新角色
-        Args:
-            name: 角色显示名称
-            permissions: 权限列表
-        """
-        if role not in self.permissions:
-            self.permissions[role] = {
-                "name": name,
-                "permissions": permissions or []
-            }
-            self.logger.info(f"添加新角色: {role}, 名称: {name}")
+        return permission in permissions
 
-    def remove_role(self, role: str):
-        """移除角色
+    def check_page_access(self, user_id: Optional[int], path: str) -> bool:
+        """检查用户是否有权限访问页面"""
+        if path in PAGE_PERMISSIONS:
+            allowed_roles = PAGE_PERMISSIONS[path]
 
-            role: 角色名称
-        """
-        if role in self.permissions:
-            del self.permissions[role]
-            self.logger.info(f"移除角色: {role}")
+            if not user_id:
+                return 'guest' in allowed_roles
 
-    def get_all_roles(self) -> Dict[str, Dict[str, Any]]:
-        """获取所有角色
+            user_role = self.get_user_role(user_id)
+            return user_role in allowed_roles
 
-        Returns:
-            角色字典
-        """
-        return self.permissions
+        return True
 
-        """获取角色信息
+    def check_hardware_access(self, user_id: int, hardware_id: str) -> Tuple[bool, str]:
+        """检查硬件访问权限"""
+        user_role = self.get_user_role(user_id)
 
-        Args:
+        if not self.is_hardware_required(user_role):
+            return True, '该角色不需要硬件验证'
 
-        Returns:
-            角色信息
-        """
-            return self.permissions[role]
-        return {}
+        verified, message = self.hardware_auth.verify_hardware(hardware_id, user_id)
+        return verified, message
 
-    def __str__(self):
-        return f"PermissionManager(instance_id={self.instance_id}, name={self.name})"
+    def requires_hardware_auth(self, role_name: str) -> bool:
+        """检查角色是否需要硬件认证"""
+        return self.is_hardware_required(role_name)
 
-    def __repr__(self):
-        return self.__str__()
+    def get_all_roles(self) -> List[Dict]:
+        """获取所有角色"""
+        with sqlite3.connect(self.db_path) as conn:
+            
+            cursor = conn.cursor()
+            
+            cursor.execute('SELECT role_name, display_name, description, role_level, require_hardware FROM roles')
+            roles = []
+            for row in cursor.fetchall():
+                roles.append({
+                    'role_name': row[0],
+                    'display_name': row[1],
+                    'description': row[2],
+                    'role_level': row[3],
+                    'require_hardware': bool(row[4])
+                })
+            
+        return roles
 
-# 创建全局权限管理器实例
-permission_manager = PermissionManager()
+    def get_all_permissions(self) -> List[Dict]:
+        """获取所有权限"""
+        with sqlite3.connect(self.db_path) as conn:
+            
+            cursor = conn.cursor()
+            
+            cursor.execute('SELECT permission_code, permission_name, description FROM permissions')
+            perms = []
+            for row in cursor.fetchall():
+                perms.append({
+                    'permission_code': row[0],
+                    'permission_name': row[1],
+                    'description': row[2]
+                })
+            
+        return perms
+
+
+permission_manager: Optional[PermissionManager] = None
+
+
+def init_permission_manager(db_path: str):
+    """初始化权限管理器"""
+    global permission_manager
+    permission_manager = PermissionManager(db_path)
+    return permission_manager
+
+
+def get_permission_manager() -> PermissionManager:
+    """获取权限管理器实例"""
+    global permission_manager
+    if permission_manager is None:
+        permission_manager = PermissionManager('/Users/wuchenghao/Library/CloudStorage/OneDrive-个人/文档/MTSCOS_AI_Project/flask-app/app.db')
+    return permission_manager
+
+
+def get_hardware_auth_manager() -> HardwareAuthManager:
+    """获取硬件认证管理器"""
+    pm = get_permission_manager()
+    return pm.hardware_auth
+
+
+def check_permission(permission: str):
+    """装饰器:检查权限"""
+    def decorator(f):
+        def wrapper(*args, **kwargs):
+            user_id = session.get('user_id')
+            if not user_id:
+                return {'success': False, 'error': 'Unauthorized', 'message': '请先登录'}, 401
+
+            pm = get_permission_manager()
+            if not pm.has_permission(user_id, permission):
+                return {'success': False, 'error': 'Forbidden', 'message': '没有权限访问此资源'}, 403
+
+            return f(*args, **kwargs)
+        return wrapper
+    return decorator
+
+
+def check_role(allowed_roles: List[str]):
+    """装饰器:检查角色"""
+    def decorator(f):
+        def wrapper(*args, **kwargs):
+            user_id = session.get('user_id')
+            pm = get_permission_manager()
+
+            if user_id:
+                user_role = pm.get_user_role(user_id)
+            else:
+                user_role = 'guest'
+
+            if user_role not in allowed_roles:
+                return {'success': False, 'error': 'Forbidden', 'message': '没有权限访问此资源'}, 403
+
+            return f(*args, **kwargs)
+        return wrapper
+    return decorator
+
+
+def require_hardware_auth(f):
+    """装饰器:需要硬件认证"""
+    def wrapper(*args, **kwargs):
+        user_id = session.get('user_id')
+        if not user_id:
+            return {'success': False, 'error': 'Unauthorized', 'message': '请先登录'}, 401
+
+        pm = get_permission_manager()
+        user_role = pm.get_user_role(user_id)
+
+        if pm.requires_hardware_auth(user_role):
+            hardware_session = session.get('hardware_session_id')
+            hardware_id = session.get('hardware_id')
+
+            if not hardware_session or not hardware_id:
+                return {'success': False, 'error': 'HardwareRequired', 'message': '需要硬件加密狗才能使用此权限'}, 403
+
+            ham = get_hardware_auth_manager()
+            if not ham.validate_hardware_session(hardware_session, hardware_id):
+                return {'success': False, 'error': 'HardwareSessionInvalid', 'message': '硬件会话已失效,请重新验证'}, 403
+
+        return f(*args, **kwargs)
+    return wrapper

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
 保存配置到数据库 - 确保所有配置项都被正确写入数据库
@@ -7,6 +8,7 @@ import sys
 import logging
 # JSON import removed - using database
 import sqlite3
+from contextlib import contextmanager
 from typing import Dict, Any
 
 # 添加项目根目录到Python路径
@@ -42,45 +44,45 @@ def save_config_to_db(config: Dict[str, Any]):
     将配置保存到数据库
     try:
         # 连接数据库
-        conn = sqlite3.connect('app.db')
-        cursor = conn.cursor()
-
-        # 创建表（如果不存在）
-        create_system_config_table(conn)
-
-        total = 0
-        updated = 0
-
-        for key, value in config.items():
+        with sqlite3.connect(sqlite3.connect('app.db')) as conn:
+            conn_cursor = conn.cursor()
+            cursor = conn.cursor()
+            
+            # 创建表(如果不存在)
+            create_system_config_table(conn)
+            
+            total = 0
+            updated = 0
+            
+            for key, value in config.items():
             # 将复杂类型转换为JSON字符串
             if isinstance(value, (dict, list)):
-                value_str = str(value)
+            value_str = str(value)
             else:
-                value_str = str(value)
-
+            value_str = str(value)
+            
             # 检查配置是否已存在
             cursor.execute('SELECT id FROM system_config WHERE config_key = ?', (key,))
             existing = cursor.fetchone()
-
+            
             if existing:
-                # 更新现有配置
-                cursor.execute('''
-                UPDATE system_config
-                SET config_value = ?, updated_at = CURRENT_TIMESTAMP
-                WHERE config_key = ?
-                ''', (value_str, key))
-                updated += 1
-                # 插入新配置
-                cursor.execute('''
-                INSERT INTO system_config (config_key, config_value, is_active)
-                VALUES (?, ?, 1)
-                ''', (key, value_str))
-                total += 1
-
-        logger.info(f"[配置管理] 保存配置到数据库成功: 新增 {total} 项, 更新 {updated} 项")
-
-        # 关闭连接
-        conn.close()
+            # 更新现有配置
+            cursor.execute('''
+            UPDATE system_config
+            SET config_value = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE config_key = ?
+            ''', (value_str, key))
+            updated += 1
+            # 插入新配置
+            cursor.execute('''
+            INSERT INTO system_config (config_key, config_value, is_active)
+            VALUES (?, ?, 1)
+            ''', (key, value_str))
+            total += 1
+            
+            logger.info(f"[配置管理] 保存配置到数据库成功: 新增 {total} 项, 更新 {updated} 项")
+            
+            # 关闭连接
 
         return True
     except Exception as e:
@@ -92,16 +94,16 @@ def verify_config_in_db():
     验证配置是否已正确保存到数据库
     try:
         # 连接数据库
-        conn = sqlite3.connect('app.db')
-        cursor = conn.cursor()
-
-        # 查询配置项数量
-        cursor.execute('SELECT COUNT(*) FROM system_config')
-        count = cursor.fetchone()[0]
-
-        # 查询部分配置项
-        sample_configs = cursor.fetchall()
-        conn.close()
+        with sqlite3.connect(sqlite3.connect('app.db')) as conn:
+            conn_cursor = conn.cursor()
+            cursor = conn.cursor()
+            
+            # 查询配置项数量
+            cursor.execute('SELECT COUNT(*) FROM system_config')
+            count = cursor.fetchone()[0]
+            
+            # 查询部分配置项
+            sample_configs = cursor.fetchall()
         logger.info(f"[配置管理] 数据库中配置项数量: {count}")
 
         return count > 0

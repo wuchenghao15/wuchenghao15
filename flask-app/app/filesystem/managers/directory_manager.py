@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # MTSCOS AI Project 目录管理器
 """
-目录管理器，负责目录相关的操作
+目录管理器,负责目录相关的操作
 
 import os
 from typing import Dict, Any, List
@@ -9,7 +9,7 @@ from app.utils.logging import logger
 
 
 class DirectoryManager:
-    目录管理器，负责目录相关的操作
+    目录管理器,负责目录相关的操作
 
         self._storage_manager = storage_manager
 
@@ -169,14 +169,16 @@ class DirectoryManager:
             new_path: 新目录路径
 
         Returns:
+    pass
         return self.move_directory(old_path, new_path, overwrite=True)
     def get_directory_size(self, path: str) -> int:
+    pass
 
         Args:
             path: 目录路径
 
         Returns:
-            int: 目录大小（字节）
+            int: 目录大小(字节)
             if not self._storage_manager.exists(path):
                 return 0
             # 检查是否为目录
@@ -218,6 +220,7 @@ class DirectoryManager:
                 return []
 
             import fnmatch
+import logging
 
             # 获取完整路径
 
@@ -249,6 +252,7 @@ class DirectoryManager:
             path: 目录路径
 
         Returns:
+    pass
         try:
             # 获取完整路径
             full_path = self._storage_manager.resolve_path(path)

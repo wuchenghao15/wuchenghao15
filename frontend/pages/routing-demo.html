@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>权限路由演示 - MTSCOS AI</title>
+    <link rel="stylesheet" href="../assets/css/cybertech-theme.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <style>
+        .cyber-app {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .cyber-sidebar {
+            width: 260px;
+            background: rgba(10, 10, 15, 0.95);
+            border-right: 1px solid var(--glass-border);
+            backdrop-filter: blur(20px);
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
+        }
+        
+        .cyber-logo-small {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 32px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--glass-border);
+        }
+        
+        .cyber-logo-small-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--accent-gradient);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+        
+        .cyber-nav-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            flex: 1;
+        }
+        
+        .cyber-nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            color: var(--text-secondary);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all var(--transition-normal);
+            text-decoration: none;
+        }
+        
+        .cyber-nav-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+        }
+        
+        .cyber-nav-item.active {
+            background: rgba(0, 240, 255, 0.15);
+            color: var(--neon-cyan);
+            border: 1px solid rgba(0, 240, 255, 0.3);
+        }
+        
+        .cyber-nav-section {
+            margin-top: 24px;
+            padding-top: 20px;
+            border-top: 1px solid var(--glass-border);
+        }
+        
+        .cyber-nav-section-title {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+            padding: 0 8px;
+        }
+        
+        .cyber-content {
+            margin-left: 260px;
+            padding: 24px 32px;
+            min-height: 100vh;
+        }
+        
+        .cyber-page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+        }
+        
+        .cyber-page-title {
+            font-size: 28px;
+            font-weight: 700;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .cyber-role-selector {
+            display: flex;
+            gap: 8px;
+            background: rgba(15, 23, 42, 0.6);
+            padding: 6px;
+            border-radius: 10px;
+            border: 1px solid var(--glass-border);
+        }
+        
+        .cyber-role-btn {
+            padding: 8px 16px;
+            background: transparent;
+            border: none;
+            border-radius: 6px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        
+        .cyber-role-btn:hover {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        .cyber-role-btn.active {
+            background: var(--accent-gradient);
+            color: var(--cyber-black);
+        }
+        
+        .cyber-route-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+        }
+        
+        .cyber-route-card {
+            background: var(--cyber-card);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(20px);
+            cursor: pointer;
+            transition: all var(--transition-normal);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .cyber-route-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--accent-gradient);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .cyber-route-card:hover::before {
+            opacity: 1;
+        }
+        
+        .cyber-route-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            border-color: rgba(0, 240, 255, 0.3);
+        }
+        
+        .cyber-route-card.locked {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .cyber-route-icon {
+            width: 48px;
+            height: 48px;
+            background: rgba(0, 240, 255, 0.1);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            margin-bottom: 16px;
+        }
+        
+        .cyber-route-card.locked .cyber-route-icon {
+            background: rgba(255, 0, 0, 0.1);
+            color: var(--neon-red);
+        }
+        
+        .cyber-route-name {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 6px;
+            color: var(--text-primary);
+        }
+        
+        .cyber-route-path {
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace, monospace;
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 16px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 6px 10px;
+            border-radius: 6px;
+            display: inline-block;
+        }
+        
+        .cyber-route-meta {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        
+        .cyber-status-log {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 32px;
+            max-height: 280px;
+            overflow-y: auto;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace, monospace;
+            font-size: 12px;
+        }
+        
+        .cyber-log-entry {
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        
+        .cyber-log-time {
+            color: var(--text-muted);
+            min-width: 80px;
+        }
+        
+        .cyber-log-content.success {
+            color: var(--neon-green);
+        }
+        
+        .cyber-log-content.error {
+            color: var(--neon-red);
+        }
+        
+        .cyber-log-content.info {
+            color: var(--neon-cyan);
+        }
+        
+        .cyber-breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 16px;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+        
+        .cyber-breadcrumb a {
+            color: var(--text-secondary);
+            text-decoration: none;
+        }
+        
+        .cyber-breadcrumb a:hover {
+            color: var(--neon-cyan);
+        }
+        
+        @media (max-width: 900px) {
+            .cyber-sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s;
+            }
+            
+            .cyber-sidebar.open {
+                transform: translateX(0);
+            }
+            
+            .cyber-content {
+                margin-left: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="cyber-bg"></div>
+    <div id="particles"></div>
+    
+    <div class="cyber-app">
+        <!-- Sidebar -->
+        <aside class="cyber-sidebar">
+            <div class="cyber-logo-small">
+                <div class="cyber-logo-small-icon">
+                    <i class="fas fa-brain"></i>
+                </div>
+                <div>
+                    <div class="cyber-logo-text" style="font-size: 16px;">MTSCOS</div>
+                    <div class="cyber-text-small" style="margin-top: 2px;">权限路由系统</div>
+                </div>
+            </div>
+            
+            <nav class="cyber-nav-list">
+                <a href="index.html" class="cyber-nav-item">
+                    <i class="fas fa-home"></i>
+                    <span>仪表板</span>
+                </a>
+                <a href="routing-demo.html" class="cyber-nav-item active">
+                    <i class="fas fa-route"></i>
+                    <span>路由演示</span>
+                </a>
+                <a href="#" class="cyber-nav-item">
+                    <i class="fas fa-microchip"></i>
+                    <span>Arduino</span>
+                </a>
+                
+                <div class="cyber-nav-section">
+                    <div class="cyber-nav-section-title">系统</div>
+                    <a href="settings-v3.html" class="cyber-nav-item">
+                        <i class="fas fa-cog"></i>
+                        <span>设置</span>
+                    </a>
+                    <a href="../index.html" class="cyber-nav-item">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>退出登录</span>
+                    </a>
+                </div>
+            </nav>
+        </aside>
+        
+        <!-- Main Content -->
+        <main class="cyber-content">
+            <div class="cyber-breadcrumb">
+                <a href="index.html">仪表板</a>
+                <i class="fas fa-chevron-right" style="font-size: 10px;"></i>
+                <span>路由演示</span>
+            </div>
+            
+            <div class="cyber-page-header">
+                <div>
+                    <h1 class="cyber-page-title">权限路由演示</h1>
+                    <p class="cyber-subtitle" style="margin: 0;">体验基于角色的智能权限路由系统</p>
+                </div>
+                
+                <div class="cyber-role-selector">
+                    <button class="cyber-role-btn active" data-role="guest" onclick="switchRole('guest')">
+                        访客
+                    </button>
+                    <button class="cyber-role-btn" data-role="student" onclick="switchRole('student')">
+                        学生
+                    </button>
+                    <button class="cyber-role-btn" data-role="teacher" onclick="switchRole('teacher')">
+                        教师
+                    </button>
+                    <button class="cyber-role-btn" data-role="admin" onclick="switchRole('admin')">
+                        管理员
+                    </button>
+                    <button class="cyber-role-btn" data-role="super_admin" onclick="switchRole('super_admin')">
+                        超管
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Route Cards -->
+            <div class="cyber-route-grid" id="routeGrid">
+                <!-- Generated dynamically -->
+            </div>
+            
+            <!-- Status Log -->
+            <div class="cyber-status-log" id="statusLog">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                    <div style="font-weight: 600; color: var(--text-primary);">
+                        <i class="fas fa-terminal" style="margin-right: 8px; color: var(--neon-cyan);"></i>
+                        系统日志
+                    </div>
+                    <button class="cyber-btn-ghost" style="padding: 6px 12px; font-size: 12px;" onclick="clearLog()">
+                        <i class="fas fa-trash"></i>
+                        清空
+                    </button>
+                </div>
+                <div id="logContent">
+                    <div class="cyber-log-entry">
+                        <span class="cyber-log-time" id="initTime"></span>
+                        <span class="cyber-log-content info">
+                            <i class="fas fa-check-circle"></i> 系统初始化完成
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script src="../assets/js/permission-routing.js"></script>
+    <script>
+        // Route definitions
+        const routes = [
+            { 
+                path: '/dashboard', 
+                name: '仪表板', 
+                icon: 'fa-tachometer-alt', 
+                roles: ['teacher', 'admin', 'hardware_admin', 'super_admin'],
+                permissions: ['view']
+            },
+            { 
+                path: '/admin', 
+                name: '管理中心', 
+                icon: 'fa-cog', 
+                roles: ['admin', 'super_admin'],
+                permissions: ['admin']
+            },
+            { 
+                path: '/exams', 
+                name: '考试管理', 
+                icon: 'fa-file-alt', 
+                roles: ['teacher', 'admin', 'super_admin'],
+                permissions: ['view', 'create']
+            },
+            { 
+                path: '/hardware', 
+                name: '硬件管理', 
+                icon: 'fa-microchip', 
+                roles: ['hardware_admin', 'super_admin'],
+                permissions: []
+            },
+            { 
+                path: '/analytics', 
+                name: '数据分析', 
+                icon: 'fa-chart-bar', 
+                roles: ['admin', 'super_admin'],
+                permissions: ['view', 'admin']
+            },
+            { 
+                path: '/settings', 
+                name: '系统设置', 
+                icon: 'fa-sliders-h', 
+                roles: ['admin', 'super_admin'],
+                permissions: ['admin']
+            },
+            { 
+                path: '/users', 
+                name: '用户管理', 
+                icon: 'fa-users', 
+                roles: ['admin', 'super_admin'],
+                permissions: ['view', 'create', 'edit', 'delete']
+            },
+            { 
+                path: '/reports', 
+                name: '报表导出', 
+                icon: 'fa-file-export', 
+                roles: ['teacher', 'admin', 'super_admin'],
+                permissions: ['view', 'export']
+            }
+        ];
+        
+        // Role permissions
+        const rolePermissions = {
+            guest: { isAuthenticated: false, permissions: [] },
+            student: { isAuthenticated: true, permissions: ['view'] },
+            teacher: { isAuthenticated: true, permissions: ['view', 'create', 'edit'] },
+            admin: { isAuthenticated: true, permissions: ['view', 'create', 'edit', 'delete', 'admin'] },
+            hardware_admin: { isAuthenticated: true, permissions: ['view', 'create', 'edit', 'delete'] },
+            super_admin: { isAuthenticated: true, permissions: ['view', 'create', 'edit', 'delete', 'admin', 'export'] }
+        };
+        
+        let currentRole = 'guest';
+        let logs = [];
+        
+        // Initialize
+        function init() {
+            document.getElementById('initTime').textContent = new Date().toLocaleTimeString('zh-CN');
+            createParticles();
+            renderRoutes();
+            updateTime();
+            setInterval(updateTime, 1000);
+        }
+        
+        // Create particles
+        function createParticles() {
+            const container = document.getElementById('particles');
+            for (let i = 0; i < 30; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'cyber-particle ' + ['cyan', 'pink', 'purple'][Math.floor(Math.random() * 3)];
+                const size = 2 + Math.random() * 4;
+                particle.style.width = size + 'px';
+                particle.style.height = size + 'px';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.top = (Math.random() * 100 + 100) + '%';
+                particle.style.animationDuration = (15 + Math.random() * 15) + 's';
+                particle.style.animation = 'particleFloat ' + (15 + Math.random() * 15) + 's linear infinite';
+                container.appendChild(particle);
+            }
+        }
+        
+        // Render routes
+        function renderRoutes() {
+            const grid = document.getElementById('routeGrid');
+            grid.innerHTML = '';
+            
+            const roleConfig = rolePermissions[currentRole];
+            
+            routes.forEach(route => {
+                const hasAccess = checkAccess(route, roleConfig);
+                
+                const card = document.createElement('div');
+                card.className = 'cyber-route-card' + (hasAccess ? '' : ' locked');
+                card.onclick = () => hasAccess && navigateTo(route);
+                
+                card.innerHTML = `
+                    <div class="cyber-route-icon">
+                        <i class="fas ${hasAccess ? route.icon : 'fa-lock'}"></i>
+                    </div>
+                    <div class="cyber-route-name">${route.name}</div>
+                    <div class="cyber-route-path">${route.path}</div>
+                    <div class="cyber-route-meta">
+                        <span class="cyber-badge ${hasAccess ? 'cyber-badge-success' : 'cyber-badge-error'}">
+                            ${hasAccess ? '可访问' : '权限不足'}
+                        </span>
+                        ${route.roles.map(role => 
+                            `<span class="cyber-badge cyber-badge-info">${role}</span>`
+                        ).join('')}
+                    </div>
+                `;
+                
+                grid.appendChild(card);
+            });
+            
+            addLog('info', `角色切换为: ${currentRole}`);
+        }
+        
+        // Check access
+        function checkAccess(route, roleConfig) {
+            if (currentRole === 'super_admin') return true;
+            
+            const hasRole = route.roles.includes(currentRole);
+            
+            if (!hasRole) return false;
+            
+            if (route.permissions.length === 0) return true;
+            
+            return route.permissions.some(p => roleConfig.permissions.includes(p));
+        }
+        
+        // Switch role
+        function switchRole(role) {
+            currentRole = role;
+            
+            document.querySelectorAll('.cyber-role-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.role === role);
+            });
+            
+            renderRoutes();
+        }
+        
+        // Navigate to route
+        function navigateTo(route) {
+            addLog('success', `访问路由: ${route.path}`);
+        }
+        
+        // Log functions
+        function addLog(type, message) {
+            const logContent = document.getElementById('logContent');
+            const time = new Date().toLocaleTimeString('zh-CN');
+            
+            const entry = document.createElement('div');
+            entry.className = 'cyber-log-entry';
+            entry.innerHTML = `
+                <span class="cyber-log-time">${time}</span>
+                <span class="cyber-log-content ${type}">
+                    <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'times-circle' : 'info-circle'}"></i>
+                    ${message}
+                </span>
+            `;
+            
+            logContent.insertBefore(entry, logContent.firstChild);
+        }
+        
+        function clearLog() {
+            const logContent = document.getElementById('logContent');
+            logContent.innerHTML = `
+                <div class="cyber-log-entry">
+                    <span class="cyber-log-time">${new Date().toLocaleTimeString('zh-CN')}</span>
+                    <span class="cyber-log-content info">
+                        <i class="fas fa-trash"></i> 日志已清空
+                    </span>
+                </div>
+            `;
+        }
+        
+        function updateTime() {
+        }
+        
+        // Initialize on load
+        init();
+    </script>
+</body>
+</html>

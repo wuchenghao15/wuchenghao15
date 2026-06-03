@@ -1,11 +1,15 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
 游客用户权限中间件
 限制游客用户只能访问考试和语言测试相关的功能
+"""
 
-from flask import session, redirect, url_for, flash
+from flask import session, redirect, url_for, flash, request
 from functools import wraps
 from app.utils.logging import logger
+import logging
+import sys
 
 class GuestPermissionMiddleware:
     """游客用户权限中间件"""
@@ -17,9 +21,7 @@ class GuestPermissionMiddleware:
             @wraps(f)
             def decorated_function(*args, **kwargs):
                 try:
-                    # 检查用户是否为游客
                     if session.get('is_guest'):
-                        # 检查访问的路由是否允许游客访问
                         allowed_routes = [
                             'language_tests.test_system',
                             'language_tests.test_system_japanese',
@@ -38,8 +40,6 @@ class GuestPermissionMiddleware:
                             'main.combined_test'
                         ]
 
-                        # 获取当前路由
-                        from flask import request
                         current_route = request.endpoint
                         logger.info(f"当前路由: {current_route}")
 
@@ -47,18 +47,9 @@ class GuestPermissionMiddleware:
                             logger.warning(f"游客用户 {session.get('username')} 尝试访问受限路由: {current_route}")
                             flash('游客用户只能参加考试和语言等级测试', 'warning')
                             return redirect(url_for('language_tests.test_system'))
-
-                    return f(*args, **kwargs)
                 except Exception as e:
                     logger.error(f"游客权限检查失败: {str(e)}")
-                    import traceback
-                    traceback.print_exc()
-                    # 清除会话
-                    session.clear()
-                    # 重定向到首页
-                    return redirect(url_for('main.index'))
+
+                return f(*args, **kwargs)
             return decorated_function
         return decorator
-
-# 创建中间件实例
-guest_permission_middleware = GuestPermissionMiddleware()

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
@@ -5,6 +6,8 @@
 用于加密现有数据库中的敏感数据并设置加密表结构
 """
 
+import logging
+logger = logging.getLogger(__name__)
 import os
 import sys
 
@@ -38,7 +41,7 @@ def initialize_encryption():
     print(f"   解密后: {decrypted}")
     print(f"   ✓ 加密/解密测试通过: {test_data == decrypted}")
     
-    print("\n=== 数据库加密初始化完成 ===")
+    print("\n == 数据库加密初始化完成 ===")
 
 if __name__ == '__main__':
     initialize_encryption()

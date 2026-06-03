@@ -1,10 +1,13 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
 简单的系统配置初始化脚本
+"""
 
 import os
 import sys
 import sqlite3
+from contextlib import contextmanager
 
 # 添加项目根目录到Python路径
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -12,12 +15,13 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 def create_system_config_table():
     """创建系统配置表"""
     # 连接到数据库
-    conn = sqlite3.connect('app.db')
-    cursor = conn.cursor()
-
-    # 创建系统配置表
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS system_config (
+    with sqlite3.connect(sqlite3.connect('app.db')) as conn:
+        conn_cursor = conn.cursor()
+        cursor = conn.cursor()
+        
+        # 创建系统配置表
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS system_config (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         key VARCHAR(100) UNIQUE NOT NULL,
         value TEXT,
@@ -27,12 +31,11 @@ def create_system_config_table():
         is_active BOOLEAN DEFAULT TRUE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )
-    ''')
-
-    # 提交更改并关闭连接
-    conn.commit()
-    conn.close()
+        )
+        ''')
+        
+        # 提交更改并关闭连接
+        conn.commit()
 
     print("[INFO] 系统配置表创建成功")
 
@@ -41,6 +44,7 @@ def init_default_configs():
     # 连接到数据库
     cursor = conn.cursor()
     # 默认配置列表
+    configs = [
         # AI配置参数
         ("ai_model_type", "gpt-4o-mini", "默认使用的AI模型类型", "ai_config", "string", True),
         ("ai_api_key", "", "AI API密钥", "ai_config", "string", True),
@@ -85,4 +89,4 @@ if __name__ == "__main__":
 
     # 初始化默认配置
 
-    print("[INFO] 系统配置初始化完成！")
+    print("[INFO] 系统配置初始化完成!")

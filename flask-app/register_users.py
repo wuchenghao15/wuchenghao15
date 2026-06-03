@@ -1,9 +1,14 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-注册用户脚本，用于批量注册不同角色的用户
+注册用户脚本,用于批量注册不同角色的用户
+"""
 
+import logging
+logger = logging.getLogger(__name__)
 import sqlite3
+from contextlib import contextmanager
 import os
 import sys
 import hashlib
@@ -13,7 +18,7 @@ DATABASE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'app.db
 
 # 安全工具类
 class SecurityUtils:
-    """安全工具类，用于密码哈希"""
+    """安全工具类,用于密码哈希"""
 
     @staticmethod
     def hash_password(password):
@@ -36,28 +41,36 @@ USERS = [
     },
     # 管理员
     {
+        'username': 'admin',
         'password': 'ppo900lik',
         'email': '2@2.com',
         'role': 'admin',
         'is_active': 1,
         'super_admin_approved': 1,
+        'hardware_admin_approved': 0
     },
     {
+        'username': 'testuser',
+        'password': 'testpass123',
         'email': '3@3.com',
+        'role': 'user',
         'is_active': 1,
         'super_admin_approved': 1,
         'hardware_admin_approved': 1
+    }
 ]
 
+def connect_db():
     """连接数据库"""
     try:
+        conn = sqlite3.connect(DATABASE_PATH)
         return conn
     except sqlite3.Error as e:
         print(f"数据库连接错误: {e}")
         sys.exit(1)
 
 def create_users_table():
-    """创建用户表（如果不存在）"""
+    """创建用户表(如果不存在)"""
     conn = connect_db()
     cursor = conn.cursor()
     cursor.execute('''
@@ -119,12 +132,17 @@ def verify_users():
         cursor.execute('SELECT username, role, is_active FROM users WHERE username=?', (user_data['username'],))
         user = cursor.fetchone()
         if user:
-            print(f"验证通过：用户 {user[0]}，角色 {user[1]}，状态 {'已激活' if user[2] == 1 else '未激活'}")
-            print(f"验证失败：用户 {user_data['username']} 不存在")
+            print(f"验证通过:用户 {user[0]},角色 {user[1]},状态 {'已激活' if user[2] == 1 else '未激活'}")
+        else:
+            print(f"验证失败:用户 {user_data['username']} 不存在")
     conn.close()
 
+def main():
     print("开始注册用户...")
     create_users_table()
     register_users()
     print("\n验证用户注册结果...")
     verify_users()
+
+if __name__ == '__main__':
+    main()

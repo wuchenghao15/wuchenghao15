@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """
 系统优化脚本
-用于优化系统功能，保证系统运行流畅
+用于优化系统功能,保证系统运行流畅
+"""
 
 import os
 # JSON import removed - using database
 import sqlite3
+from contextlib import contextmanager
 import logging
 import shutil
 import time
@@ -38,35 +40,39 @@ class SystemOptimizer:
 
         try:
             # 连接数据库
-            conn = sqlite3.connect(self.db_path)
-            cursor = conn.cursor()
-
-            # 执行数据库优化
-            cursor.execute('VACUUM;')
-            cursor.execute('ANALYZE;')
-
-            # 优化数据库索引
-            tables = ['users', 'questions', 'question_options', 'test_scores', 'system_configs']
-            for table in tables:
-                try:
-                    logger.info(f"已优化表 {table} 的索引")
-                except Exception as idx_e:
-                    logger.warning(f"优化表 {table} 索引失败: {str(idx_e)}")
-
-            # 清理旧的测试记录（保留最近30天的记录）
-            cursor.execute('''
+            with sqlite3.connect(sqlite3.connect(self.db_path)) as conn:
+                conn_cursor = conn.cursor()
+                cursor = conn.cursor()
+                
+                # 执行数据库优化
+                cursor.execute('VACUUM;')
+                cursor.execute('ANALYZE;')
+                
+                # 优化数据库索引
+                tables = ['users', 'questions', 'question_options', 'test_scores', 'system_configs']
+                for table in tables:
+                    try:
+                        cursor.execute(f"CREATE INDEX IF NOT EXISTS idx_{table}_id ON {table}(id)")
+                        logger.info(f"已优化表 {table} 的索引")
+                    except Exception as idx_e:
+                        logger.warning(f"优化表 {table} 索引失败: {str(idx_e)}")
+                
+                # 清理旧的测试记录(保留最近30天的记录)
+                cursor.execute('''
                 DELETE FROM test_scores WHERE assessment_date < datetime('now', '-30 days');
-            ''')
-
-            # 清理旧的系统更新报告（保留最近30天的记录）
-            cursor.execute('''
+                ''')
+                
+                # 清理旧的系统更新报告(保留最近30天的记录)
+                cursor.execute('''
                 DELETE FROM system_upgrade_reports WHERE created_at < datetime('now', '-30 days');
-
-            # 清理旧的JSON文件记录（保留最近60天的记录）
+                ''')
+                
+                # 清理旧的JSON文件记录(保留最近60天的记录)
+                cursor.execute('''
                 DELETE FROM json_files WHERE uploaded_at < datetime('now', '-60 days');
-
-            conn.commit()
-            conn.close()
+                ''')
+                
+                conn.commit()
             logger.info("数据库优化完成")
             return True
 
@@ -104,13 +110,16 @@ class SystemOptimizer:
             logger.info(f"  Python进程数: {python_process_count}")
 
             # 保存监控结果到数据库
-            conn = sqlite3.connect(self.db_path)
-            cursor = conn.cursor()
-
-                INSERT INTO system_health_logs (timestamp, cpu_usage, memory_usage, disk_usage, python_process_count)
-            ''', (datetime.now().strftime("%Y-%m-%d %H:%M:%S"), cpu_percent, mem_percent, disk_percent, python_process_count))
-
-            conn.close()
+            try:
+                with sqlite3.connect(self.db_path) as conn:
+                    cursor = conn.cursor()
+                    cursor.execute("""
+                        INSERT INTO system_health_logs (timestamp, cpu_usage, memory_usage, disk_usage, python_process_count)
+                        VALUES (?, ?, ?, ?, ?)
+                    """, (datetime.now().strftime("%Y-%m-%d %H:%M:%S"), cpu_percent, mem_percent, disk_percent, python_process_count))
+                    conn.commit()
+            except Exception as db_e:
+                logger.warning(f"保存监控结果失败: {str(db_e)}")
 
             return {
                 'cpu_percent': cpu_percent,
@@ -119,7 +128,9 @@ class SystemOptimizer:
                 'python_process_count': python_process_count
             }
 
+        except Exception as e:
             logger.error(f"监控系统资源失败: {str(e)}")
+            return None
 
     def clean_log_files(self):
         """清理旧的日志文件"""
@@ -150,6 +161,7 @@ class SystemOptimizer:
         logger.info("开始清理临时文件...")
 
         try:
+            temp_files = [
                 'test_sync.json',
                 'test_*.json',
                 '*.pyc',
@@ -183,17 +195,19 @@ class SystemOptimizer:
 
 
             # 更新系统配置表
-            conn = sqlite3.connect(self.db_path)
-
-            for key, value in config_updates.items():
-                # 将Python类型转换为JSON字符串
-                value_str = str(value)
-                cursor.execute('''
-                    INSERT OR REPLACE INTO system_configs (key, value, description)
-                    VALUES (?, ?, ?)
-                ''', (key, value_str, f"系统优化配置: {key}"))
-            conn.commit()
-            conn.close()
+            try:
+                with sqlite3.connect(self.db_path) as conn:
+                    cursor = conn.cursor()
+                    for key, value in config_updates.items():
+                        # 将Python类型转换为JSON字符串
+                        value_str = str(value)
+                        cursor.execute('''
+                        INSERT OR REPLACE INTO system_configs (key, value, description)
+                        VALUES (?, ?, ?)
+                        ''', (key, value_str, f"系统优化配置: {key}"))
+                    conn.commit()
+            except Exception as db_e:
+                logger.warning(f"更新系统配置失败: {str(db_e)}")
             logger.info("系统配置优化完成")
             return True
 
@@ -252,13 +266,13 @@ class SystemOptimizer:
         if all(results.values()):
             logger.info("系统优化成功完成")
         else:
-            logger.warning("系统优化部分项目失败，请查看日志")
+            logger.warning("系统优化部分项目失败,请查看日志")
 
         return all(results.values())
 
     def start_scheduled_optimization(self, interval_hours=24):
         """启动定时优化任务"""
-        logger.info(f"启动定时优化任务，每 {interval_hours} 小时执行一次")
+        logger.info(f"启动定时优化任务,每 {interval_hours} 小时执行一次")
 
         def scheduled_task():
             while True:
@@ -277,7 +291,7 @@ class SystemOptimizer:
 
         """停止定时优化任务"""
         if hasattr(self, 'scheduled_thread') and self.scheduled_thread.is_alive():
-            # 由于线程是守护线程，会随主进程结束而结束
+            # 由于线程是守护线程,会随主进程结束而结束
             logger.info("定时优化任务已停止")
             return True
         return False
@@ -290,7 +304,7 @@ if __name__ == "__main__":
     parser.add_argument('--run', action='store_true', help='运行一次完整优化')
     parser.add_argument('--start-schedule', action='store_true', help='启动定时优化任务')
     parser.add_argument('--stop-schedule', action='store_true', help='停止定时优化任务')
-    parser.add_argument('--interval', type=int, default=24, help='定时优化间隔（小时），默认24小时')
+    parser.add_argument('--interval', type=int, default=24, help='定时优化间隔(小时),默认24小时')
 
     args = parser.parse_args()
     optimizer = SystemOptimizer()
@@ -299,11 +313,14 @@ if __name__ == "__main__":
         optimizer.run_full_optimization()
     elif args.start_schedule:
         optimizer.start_scheduled_optimization(args.interval)
-        print(f"定时优化任务已启动，每 {args.interval} 小时执行一次")
+        print(f"定时优化任务已启动,每 {args.interval} 小时执行一次")
         try:
             # 保持主进程运行
             while True:
+                time.sleep(1)
         except KeyboardInterrupt:
+            optimizer.stop_scheduled_optimization()
+            print("定时优化任务已停止")
     elif args.stop_schedule:
         optimizer.stop_scheduled_optimization()
         print("定时优化任务已停止")

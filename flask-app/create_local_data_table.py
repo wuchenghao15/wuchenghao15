@@ -1,8 +1,13 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
 创建local_data_uploads表
+"""
 
+import logging
+logger = logging.getLogger(__name__)
 import sqlite3
+from contextlib import contextmanager
 import os
 
 # 直接指定数据库路径
@@ -15,12 +20,13 @@ def create_table():
     print("=" * 60)
 
     try:
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
-
-        # 创建表
-        create_table_sql = '''
-        CREATE TABLE IF NOT EXISTS local_data_uploads (
+        with sqlite3.connect(sqlite3.connect(DB_PATH)) as conn:
+            conn_cursor = conn.cursor()
+            cursor = conn.cursor()
+            
+            # 创建表
+            create_table_sql = '''
+            CREATE TABLE IF NOT EXISTS local_data_uploads (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             data_type TEXT NOT NULL,
             file_path TEXT,
@@ -30,20 +36,19 @@ def create_table():
             process_result TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-        '''
-
-        cursor.execute(create_table_sql)
-        conn.commit()
-
-        print("✅ local_data_uploads表创建成功")
-
-        # 验证表是否存在
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='local_data_uploads'")
-        if cursor.fetchone():
-            print("✅ 验证成功: local_data_uploads表确实存在")
-
-        conn.close()
+            )
+            '''
+            
+            cursor.execute(create_table_sql)
+            conn.commit()
+            
+            print("✅ local_data_uploads表创建成功")
+            
+            # 验证表是否存在
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='local_data_uploads'")
+            if cursor.fetchone():
+                print("✅ 验证成功: local_data_uploads表确实存在")
+            
         return True
 
     except Exception as e:

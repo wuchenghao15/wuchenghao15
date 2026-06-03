@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """修复已注册用户登录问题"""
 
@@ -7,7 +8,7 @@ from app.ai.user_ai_manager import user_ai_manager
 
 print("=== 修复已注册用户登录问题 ===")
 
-# 检查所有用户并修复密码（如果需要）
+# 检查所有用户并修复密码(如果需要)
 users = User.get_all_users()
 print(f"\n1. 系统中共有 {len(users)} 个用户")
 
@@ -48,7 +49,7 @@ for user in users:
     else:
         print(f"   ❌ 登录失败: {login_result['message']}")
 
-print("\n=== 修复完成 ===")
+print("\n == 修复完成 ===")
 print("\n用户登录信息:")
 print("- 管理员: admin / LoginMe.1988")
 print("- 硬件管理员: wuchenghao15 / LoginMe.1988")

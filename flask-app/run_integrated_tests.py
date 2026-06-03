@@ -1,11 +1,15 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 全自动测试运行器 - 集成测试AI、日志AI、自动修复上报
 """
+import logging
+logger = logging.getLogger(__name__)
 import os
 import sys
 import sqlite3
+from contextlib import contextmanager
 import json
 import requests
 import traceback
@@ -74,7 +78,7 @@ class IntegratedTestRunner:
             )
         
         print("\n" + "=" * 80)
-        print("                        测试流程完成！")
+        print("                        测试流程完成!")
         print("=" * 80)
     
     def step1_server_check(self):
@@ -107,14 +111,14 @@ class IntegratedTestRunner:
         self.log('INFO', '数据库检查', '开始数据库连接检查')
         
         try:
-            conn = sqlite3.connect(self.db_path)
-            cursor = conn.cursor()
-            cursor.execute('SELECT name FROM sqlite_master WHERE type="table"')
-            tables = [row[0] for row in cursor.fetchall()]
-            cursor.execute('SELECT COUNT(*) FROM sqlite_master')
-            conn.close()
+            with sqlite3.connect(sqlite3.connect(self.db_path)) as conn:
+                conn_cursor = conn.cursor()
+                cursor = conn.cursor()
+                cursor.execute('SELECT name FROM sqlite_master WHERE type="table"')
+                tables = [row[0] for row in cursor.fetchall()]
+                cursor.execute('SELECT COUNT(*) FROM sqlite_master')
             
-            self.log('INFO', '数据库检查', f'数据库连接正常，包含 {len(tables)} 个表', {'tables': tables})
+            self.log('INFO', '数据库检查', f'数据库连接正常,包含 {len(tables)} 个表', {'tables': tables})
             self.record_result('数据库连接', 'PASS', f'包含 {len(tables)} 个表')
         except Exception as e:
             self.log('ERROR', '数据库检查', f'数据库连接失败: {str(e)}', {'exception': str(e)})
@@ -216,26 +220,26 @@ class IntegratedTestRunner:
         self.log('INFO', '安全检查', '开始安全功能检查')
         
         try:
-            conn = sqlite3.connect(self.db_path)
-            cursor = conn.cursor()
-            
-            security_tables = [
+            with sqlite3.connect(sqlite3.connect(self.db_path)) as conn:
+                conn_cursor = conn.cursor()
+                cursor = conn.cursor()
+                
+                security_tables = [
                 't_aaef114130946f87',
                 'login_attempts',
                 'session_data',
                 'permission_data'
-            ]
-            
-            for table in security_tables:
-                cursor.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{table}'")
-                if cursor.fetchone():
-                    self.log('INFO', '安全检查', f'安全表 {table} 存在')
-                    self.record_result(f'安全-{table}', 'PASS', '存在')
-                else:
-                    self.log('WARNING', '安全检查', f'安全表 {table} 不存在')
-                    self.record_result(f'安全-{table}', 'WARNING', '不存在')
-            
-            conn.close()
+                ]
+                
+                for table in security_tables:
+                    cursor.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{table}'")
+                    if cursor.fetchone():
+                        self.log('INFO', '安全检查', f'安全表 {table} 存在')
+                        self.record_result(f'安全-{table}', 'PASS', '存在')
+                    else:
+                        self.log('WARNING', '安全检查', f'安全表 {table} 不存在')
+                        self.record_result(f'安全-{table}', 'WARNING', '不存在')
+                
         except Exception as e:
             self.log('ERROR', '安全检查', f'安全检查失败: {str(e)}')
             self.record_result('安全检查', 'FAIL', f'检查失败: {str(e)}')
@@ -260,7 +264,7 @@ class IntegratedTestRunner:
                     self.log('WARNING', '文件整理', f'文件整理执行失败: {data.get("message")}')
                     self.record_result('文件整理功能', 'FAIL', f"执行失败: {data.get('message')}")
             else:
-                self.log('ERROR', '文件整理', f'文件整理请求失败，状态码: {response.status_code}')
+                self.log('ERROR', '文件整理', f'文件整理请求失败,状态码: {response.status_code}')
                 self.record_result('文件整理功能', 'FAIL', f'请求失败')
         except Exception as e:
             self.log('ERROR', '文件整理', f'文件整理执行异常: {str(e)}')
@@ -278,12 +282,12 @@ class IntegratedTestRunner:
             fixer = AutoFixer()
             result = fixer.run()
             
-            self.log('INFO', '自动修复', f'修复完成: 修复 {result["fixed"]} 项，跳过 {result["skipped"]} 项')
-            self.record_result('自动修复', 'PASS', f'修复 {result["fixed"]} 项，跳过 {result["skipped"]} 项')
+            self.log('INFO', '自动修复', f'修复完成: 修复 {result["fixed"]} 项,跳过 {result["skipped"]} 项')
+            self.record_result('自动修复', 'PASS', f'修复 {result["fixed"]} 项,跳过 {result["skipped"]} 项')
             
             self.reporter.report_system_event(
                 '自动修复完成',
-                f'修复 {result["fixed"]} 项，跳过 {result["skipped"]} 项',
+                f'修复 {result["fixed"]} 项,跳过 {result["skipped"]} 项',
                 'AutoFixer',
                 result
             )

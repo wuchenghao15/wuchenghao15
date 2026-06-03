@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 # MTSCOS AI Project 规则系统
 """
-规则系统是一个模块化、可扩展的规则管理框架，用于定义、存储、执行和管理系统中的各种规则。
+规则系统是一个模块化,可扩展的规则管理框架,用于定义,存储,执行和管理系统中的各种规则.
 
 from typing import Dict, Any, List, Optional
 from app.utils.logging import logger
 
 
 class RuleSystem:
-    规则系统主类，负责管理规则系统的各个组件
+    规则系统主类,负责管理规则系统的各个组件
 
     def __init__(self):
         self._rule_manager = None
@@ -23,7 +23,7 @@ class RuleSystem:
 
         logger.info("初始化规则系统...")
 
-        # 延迟导入，避免循环依赖
+        # 延迟导入,避免循环依赖
         from app.rules.managers.rule_manager import RuleManager
         from app.rules.engines.rule_engine import RuleEngine
 
@@ -46,6 +46,8 @@ class RuleSystem:
         初始化规则源
         from app.rules.sources.file_source import FileRuleSource
         from app.rules.sources.database_source import DatabaseRuleSource
+import logging
+import sys
 
         # 添加文件规则源
         file_source = FileRuleSource()
@@ -59,11 +61,11 @@ class RuleSystem:
         添加规则源
 
         Args:
-            source: 规则源对象，必须实现IRuleSource接口
+            source: 规则源对象,必须实现IRuleSource接口
         self._rule_sources.append(source)
         logger.info(f"添加规则源: {source.__class__.__name__}")
 
-        # 如果规则系统已经初始化，立即从新源加载规则
+        # 如果规则系统已经初始化,立即从新源加载规则
         if self._initialized and self._rule_manager:
             self._rule_manager.load_rules_from_source(source)
 
@@ -104,7 +106,7 @@ class RuleSystem:
             **context: 规则执行上下文
 
         Returns:
-            Dict[str, Any]: 规则执行结果，键为规则ID，值为执行结果
+            Dict[str, Any]: 规则执行结果,键为规则ID,值为执行结果
             self.initialize()
         return self._rule_engine.execute_rules_by_type(rule_type, **context)
 
@@ -149,13 +151,15 @@ class RuleSystem:
             self.initialize()
         return self._rule_manager.get_rule(rule_id)
     def get_rules(self, rule_type: Optional[str] = None) -> List[Dict[str, Any]]:
+    pass
 
         Args:
-            rule_type: 规则类型，可选
+            rule_type: 规则类型,可选
 
         Returns:
             List[Dict[str, Any]]: 规则列表
         if not self._initialized:
+    pass
         return self._rule_manager.get_rules(rule_type)
 
 
@@ -172,13 +176,13 @@ RULE_TYPES = {
 
 RULE_STATUS = {
     "ACTIVE": "active",
-    "ARCHIVED": "archived"
+    ARCHIVED = "archived"
 }
 
 RULE_PRIORITIES = {
     "LOW": 1,
     "MEDIUM": 5,
     "HIGH": 10,
-    "URGENT": 15
+    URGENT = 15
 
 """

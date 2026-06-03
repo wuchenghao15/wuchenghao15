@@ -1,7 +1,10 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
 检查数据库中题目的实际内容
 
+import logging
+logger = logging.getLogger(__name__)
 import sys
 import os
 
@@ -42,7 +45,7 @@ def check_question_content():
         traceback.print_exc()
     finally:
         print("\n================================================================================" )
-        print("检查完成！")
+        print("检查完成!")
         print("================================================================================" )
 
 if __name__ == "__main__":

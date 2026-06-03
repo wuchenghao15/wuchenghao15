@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""API路由管理模块，实现统一的API路由管理系统"""
+"""API路由管理模块,实现统一的API路由管理系统"""
 
 from flask import jsonify, request
 from app.api import api_bp

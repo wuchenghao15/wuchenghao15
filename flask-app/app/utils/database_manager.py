@@ -3,10 +3,11 @@
 """数据库绑定模块"""
 import logging
 import sqlite3
+from contextlib import contextmanager
 import os
-# JSON import removed - using database
 from datetime import datetime
 from typing import Dict, Any, Optional
+
 logger = logging.getLogger(__name__)
 
 class DatabaseManager:
@@ -14,6 +15,7 @@ class DatabaseManager:
         self.connection = None
         self.db_path = None
         self.connected = False
+        self.db_type = 'sqlite'
         logger.info("数据库管理器初始化完成")
 
     def connect(self, db_path: str = 'app.db'):
@@ -32,6 +34,7 @@ class DatabaseManager:
     def disconnect(self):
         if self.connection:
             self.connection.close()
+            self.connected = False
             logger.info("数据库连接已断开")
 
     def _create_tables(self):
@@ -49,25 +52,34 @@ class DatabaseManager:
         if not self.connected:
             raise Exception("数据库未连接")
         cursor = self.connection.cursor()
+        try:
+            if params:
                 cursor.execute(query, params)
             else:
                 cursor.execute(query)
             self.connection.commit()
             return cursor
         except Exception as e:
+            logger.error(f"执行SQL失败: {str(e)}")
             raise
 
     def fetch_one(self, query: str, params: tuple = None) -> Optional[Dict[str, Any]]:
         cursor = self.execute(query, params)
-        row = cursor.fetchone()
-        return dict(row) if row else None
+        if cursor:
+            row = cursor.fetchone()
+            if row:
+                return dict(row)
+        return None
 
     def fetch_all(self, query: str, params: tuple = None) -> list:
         cursor = self.execute(query, params)
-        rows = cursor.fetchall()
-        return [dict(row) for row in rows]
+        if cursor:
+            rows = cursor.fetchall()
+            return [dict(row) for row in rows]
+        return []
 
     def insert_user(self, username: str, password: str, email: str = "", role: str = "user"):
+        now = datetime.now().isoformat()
         self.execute("INSERT OR IGNORE INTO users (username, password, email, role, active, created_at, updated_at) VALUES (?, ?, ?, ?, 1, ?, ?)", (username, password, email, role, now, now))
         logger.info(f"用户插入成功: {username}")
 
@@ -81,6 +93,7 @@ class DatabaseManager:
 
 db_manager = DatabaseManager()
 
+def init_db(db_path: str = 'app.db'):
     logger.info("初始化数据库...")
     success = db_manager.connect(db_path)
     if success:
@@ -89,6 +102,3 @@ db_manager = DatabaseManager()
         db_manager.insert_user('admin', admin_password, 'admin@example.com', 'admin')
         logger.info("数据库初始化完成")
     return success
-
-if __name__ == "__main__":
-    init_database()

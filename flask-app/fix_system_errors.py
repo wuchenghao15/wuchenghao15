@@ -1,17 +1,18 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 系统异常修复脚本
 修复系统初始化过程中出现的各种异常
+"""
 
 import os
 import sys
 import logging
 import subprocess
-# JSON import removed - using database
+import json
 from datetime import datetime
 
-# 配置日志
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -26,7 +27,6 @@ def fix_missing_modules():
     """修复缺失的模块"""
     logger.info("开始修复缺失的模块...")
 
-    # 创建缺失的目录
     missing_dirs = [
         'app/utils',
         'app/ai',
@@ -37,10 +37,8 @@ def fix_missing_modules():
             os.makedirs(dir_path)
             logger.info(f"创建目录: {dir_path}")
 
-    # 创建缺失的permission模块
     permission_module = '''#!/usr/bin/env python3
-"""
-"""
+"""权限模块"""
 from functools import wraps
 from flask import session, jsonify
 
@@ -64,23 +62,21 @@ def permission_required(required_roles):
             f.write(permission_module)
         logger.info(f"创建权限模块: {permission_file}")
 
-    # 创建缺失的route_optimizer模块
     route_optimizer_module = '''#!/usr/bin/env python3
-"""
-路由优化模块
-
+"""路由优化模块"""
+import logging
 
 logger = logging.getLogger('route_optimizer')
 
 class RouteOptimizer:
     """路由优化器"""
 
+    def __init__(self):
         self.routes = []
         logger.info("路由优化器初始化完成")
 
     def optimize_routes(self, routes):
         """优化路由"""
-        # 简单的路由优化逻辑
         optimized_routes = sorted(routes, key=lambda x: x.get('priority', 0), reverse=True)
         logger.info(f"优化了 {len(routes)} 个路由")
         return optimized_routes
@@ -103,45 +99,47 @@ class RouteOptimizer:
 
     logger.info("缺失模块修复完成")
 
+def fix_ai_engine_config():
     """修复AI引擎配置"""
     logger.info("开始修复AI引擎配置...")
 
-    # 创建AI引擎配置文件
     ai_engine_config = {
         "engines": [
             {
                 "name": "minimax",
                 "api_key": "your-api-key-here",
                 "api_url": "https://api.minimax.chat/v1/text/chatcompletion",
-                "enabled": False,  # 暂时禁用，避免API调用失败
+                "enabled": False,
                 "timeout": 30
             },
             {
                 "name": "local",
                 "api_key": "local-dev",
                 "api_url": "http://localhost:8000/v1/chat/completions",
-                "enabled": False,  # 暂时禁用，避免连接失败
+                "enabled": False,
                 "timeout": 30
             }
         ],
         "default_engine": "minimax",
         "retry_attempts": 3,
         "cache_enabled": True
+    }
 
     config_dir = 'app/config'
     if not os.path.exists(config_dir):
         os.makedirs(config_dir)
 
+    config_file = os.path.join(config_dir, 'ai_engine_config.json')
     with open(config_file, 'w', encoding='utf-8') as f:
         json.dump(ai_engine_config, f, ensure_ascii=False, indent=2)
 
     logger.info(f"创建AI引擎配置文件: {config_file}")
     logger.info("AI引擎配置修复完成")
 
+def fix_system_config():
     """修复系统配置"""
     logger.info("开始修复系统配置...")
 
-    # 创建系统配置文件
     system_config = {
         "monitoring": {
             "enabled": True,
@@ -160,37 +158,46 @@ class RouteOptimizer:
             "enabled": True,
             "interval": 3600
         }
+    }
 
     config_dir = 'app/config'
     if not os.path.exists(config_dir):
+        os.makedirs(config_dir)
     config_file = os.path.join(config_dir, 'system_config.json')
     with open(config_file, 'w', encoding='utf-8') as f:
+        json.dump(system_config, f, ensure_ascii=False, indent=2)
 
     logger.info("系统配置修复完成")
 
 def fix_service_config():
-    # 创建服务配置文件
+    """修复服务配置"""
     service_config = {
         "services": [
             {
+                "name": "Flask服务",
                 "command": "FLASK_APP=app.py flask run",
                 "restart_on_failure": True
+            },
             {
                 "name": "AI引擎服务",
                 "command": "python -m app.ai.engine",
                 "restart_on_failure": True
+            },
             {
                 "name": "线程管理服务",
                 "command": "python -m app.ai.thread_process_manager",
                 "auto_start": True,
                 "restart_on_failure": True
+            }
         ]
     }
     config_dir = 'app/config'
     if not os.path.exists(config_dir):
+        os.makedirs(config_dir)
 
     config_file = os.path.join(config_dir, 'services_config.json')
     with open(config_file, 'w', encoding='utf-8') as f:
+        json.dump(service_config, f, ensure_ascii=False, indent=2)
     logger.info(f"创建服务配置文件: {config_file}")
     logger.info("服务配置修复完成")
 
@@ -198,9 +205,9 @@ def fix_database_issues():
     """修复数据库问题"""
     logger.info("开始修复数据库问题...")
 
-    # 确保数据库目录存在
     data_dir = 'data'
     if not os.path.exists(data_dir):
+        os.makedirs(data_dir)
 
     db_file = os.path.join(data_dir, 'mtscos_ai_project.db')
     if not os.path.exists(db_file):
@@ -208,11 +215,13 @@ def fix_database_issues():
     else:
         logger.info(f"数据库文件存在: {db_file}")
     logger.info("数据库问题修复完成")
+
+def optimize_memory_usage():
     """优化内存使用"""
-    # 清理临时文件
     temp_dirs = ['temp', 'cache']
     for temp_dir in temp_dirs:
         if os.path.exists(temp_dir):
+            try:
                 import shutil
                 shutil.rmtree(temp_dir)
                 os.makedirs(temp_dir)
@@ -226,13 +235,11 @@ def restart_services():
     """重启服务"""
     logger.info("开始重启服务...")
 
-    # 停止所有服务
     try:
-        # 查找并停止Flask服务
         result = subprocess.run(['lsof', '-i', ':5000'], capture_output=True, text=True)
         if result.stdout:
             lines = result.stdout.strip().split('\n')
-            for line in lines[1:]:  # 跳过标题行
+            for line in lines[1:]:
                 parts = line.split()
                 if len(parts) >= 2:
                     pid = parts[1]
@@ -251,29 +258,16 @@ def main():
     logger.info("=== 开始系统异常修复 ===")
 
     try:
-        # 1. 修复缺失的模块
         fix_missing_modules()
-
-        # 2. 修复AI引擎配置
         fix_ai_engine_config()
-
-        # 3. 修复系统配置
         fix_system_config()
-
-        # 4. 修复服务配置
         fix_service_config()
-
-        # 5. 修复数据库问题
         fix_database_issues()
-
-        # 6. 优化内存使用
         optimize_memory_usage()
-
-        # 7. 重启服务
         restart_services()
 
         logger.info("=== 系统异常修复完成 ===")
-        logger.info("系统已修复，现在可以重新启动")
+        logger.info("系统已修复,现在可以重新启动")
 
     except Exception as e:
         logger.error(f"修复过程中出现错误: {str(e)}")

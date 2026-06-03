@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 """
 简化版系统版本升级脚本
-不依赖完整的Flask应用程序，直接实现版本升级功能
+不依赖完整的Flask应用程序,直接实现版本升级功能
+"""
 
 # JSON import removed - using database
+import logging
+logger = logging.getLogger(__name__)
 import os
 import re
 
@@ -51,13 +54,17 @@ def get_current_version():
                 print(f"📄 从配置文件提取版本信息: {current_versions}")
                 return current_versions
         except Exception as e:
+            print(f"❌ 从配置文件提取版本信息失败: {str(e)}")
 
     print(f"📄 使用默认版本信息: {current_versions}")
     return current_versions
 
+def save_version_to_file(version_data):
     """保存版本信息到VERSION文件"""
     version_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'VERSION')
+    try:
         with open(version_file, 'w', encoding='utf-8') as f:
+            json.dump(version_data, f, ensure_ascii=False, indent=2)
         print(f"✅ 版本信息已保存到文件: {version_file}")
         return True
     except Exception as e:
@@ -119,11 +126,11 @@ def main():
 
         # 3. 保存新版本到文件
         if save_version_file(new_versions):
-            print("\n✅ 系统版本升级完成！")
+            print("\n✅ 系统版本升级完成!")
             print(f"📦 新版本信息: {new_versions}")
             print("💡 建议重启系统以应用所有更改")
         else:
-            print("\n❌ 保存新版本失败！")
+            print("\n❌ 保存新版本失败!")
 
         print("=" * 80)
         return 0
@@ -136,3 +143,4 @@ def main():
         return 1
 
 if __name__ == "__main__":
+    sys.exit(main())

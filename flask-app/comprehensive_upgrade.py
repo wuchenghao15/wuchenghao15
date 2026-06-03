@@ -1,25 +1,22 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
 项目全面升级脚本
-功能：
-1. 项目版本号升级
-2. 代码异常处理增强
-3. 前后端中间件完善
-4. 数据库规则策略优化
+功能:
 5. 权限流程增强
 6. AI集群功能完善
 7. 子服务器升级与维护机制
+"""
 
 import os
 import sys
-# JSON import removed - using database
+import json
 import logging
 import datetime
 import hashlib
 import subprocess
 from pathlib import Path
 
-# 配置日志
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -62,28 +59,28 @@ class ComprehensiveUpgrader:
 
         new_system_version = f"{new_major}.{new_minor}.{new_patch}"
 
-        # 计算内部版本号
         internal_major, internal_minor, internal_build, internal_revision = map(int, current['internal_version'].split('.'))
         new_internal_revision = internal_revision + 1
         new_internal_version = f"{internal_major}.{internal_minor}.{internal_build}.{new_internal_revision}"
 
         return {
+            "system_version": new_system_version,
             "internal_version": new_internal_version,
             "test_version": f"{new_system_version}-beta",
             "api_version": f"{new_major}.{new_minor}"
         }
 
+    def upgrade_version(self):
         """升级项目版本号"""
         logger.info(f"开始升级版本: {self.current_version['system_version']} -> {self.new_version['system_version']}")
 
-        # 更新VERSION文件
         try:
+            with open(self.version_file, 'w', encoding='utf-8') as f:
                 json.dump(self.new_version, f, ensure_ascii=False, indent=2)
             logger.info(f"版本文件已更新: {self.new_version}")
         except Exception as e:
             logger.error(f"更新版本文件失败: {e}")
 
-        # 更新项目中所有引用版本号的文件
         self._update_version_references()
         return True
 
@@ -103,24 +100,26 @@ class ComprehensiveUpgrader:
 
             try:
                 with open(full_path, 'r', encoding='utf-8') as f:
+                    content = f.read()
 
-                # 更新版本号引用
                 content = content.replace(
                     self.current_version['system_version'],
                     self.new_version['system_version']
                 )
                 content = content.replace(
+                    self.current_version['api_version'],
                     self.new_version['api_version']
                 )
 
+                with open(full_path, 'w', encoding='utf-8') as f:
                     f.write(content)
                 logger.info(f"已更新文件中的版本号: {file_path}")
             except Exception as e:
+                logger.error(f"更新文件 {file_path} 失败: {e}")
 
     def enhance_error_handling(self):
         """增强代码异常处理"""
         logger.info("开始增强代码异常处理")
-        # 更新app.py中的异常处理
         app_file = os.path.join(self.project_root, 'app.py')
         if os.path.exists(app_file):
             try:
@@ -133,6 +132,7 @@ class ComprehensiveUpgrader:
 def global_error_handler(e):
     """全局异常处理"""
     import traceback
+    import uuid
     error_info = {
         'error': str(e),
         'traceback': traceback.format_exc(),
@@ -148,7 +148,8 @@ def global_error_handler(e):
 '''
                     content = content + error_handler_code
 
-                    f.write(content)
+                    with open(app_file, 'w', encoding='utf-8') as f:
+                        f.write(content)
                 logger.info("已添加全局异常处理中间件")
             except Exception as e:
                 logger.error(f"更新app.py异常处理失败: {e}")
@@ -177,11 +178,9 @@ def enhanced_security_middleware():
 
     # API请求限流
     if request.path.startswith('/api/'):
-        # 实现基于IP的API限流
         client_ip = request.remote_addr
         endpoint = request.path
 
-        # 简单的内存限流实现
         if client_ip not in access_counts:
             access_counts[client_ip] = {}
         if endpoint not in access_counts[client_ip]:
@@ -190,18 +189,17 @@ def enhanced_security_middleware():
         current_time = time.time()
         access_counts[client_ip][endpoint] = [
             t for t in access_counts[client_ip][endpoint]
-            if current_time - t < 60  # 60秒内的请求
+            if current_time - t < 60
         ]
-        if len(access_counts[client_ip][endpoint]) > 100:  # 每分钟100次请求限制
+        if len(access_counts[client_ip][endpoint]) > 100:
             return custom_json_response({
-                'error': 'API请求频率过高，请稍后重试',
+                'error': 'API请求频率过高,请稍后重试',
                 'status': 429
             }, status_code=429)
 
         access_counts[client_ip][endpoint].append(current_time)
 '''
 
-                # 添加到文件中
                 if 'enhanced_security_middleware' not in content:
                     content = content.replace('@app.before_request\ndef security_defense_middleware():',
                                              enhanced_middleware + '@app.before_request\ndef security_defense_middleware():')
@@ -211,55 +209,58 @@ def enhanced_security_middleware():
                     logger.info("已增强安全中间件")
             except Exception as e:
                 logger.error(f"更新中间件失败: {e}")
+
     def optimize_database_rules(self):
         """优化数据库规则策略"""
         logger.info("开始优化数据库规则策略")
 
-        # 检查并更新数据库连接池配置
         db_config_file = os.path.join(self.project_root, 'app/utils/database.py')
+        if os.path.exists(db_config_file):
+            try:
                 with open(db_config_file, 'r', encoding='utf-8') as f:
                     content = f.read()
 
-                # 添加连接池配置
-                    pool_config = '''
+                pool_config = '''
 # 数据库连接池配置
 app.config['SQLALCHEMY_POOL_SIZE'] = 10
 app.config['SQLALCHEMY_POOL_TIMEOUT'] = 30
 app.config['SQLALCHEMY_POOL_RECYCLE'] = 3600
 app.config['SQLALCHEMY_MAX_OVERFLOW'] = 20
 '''
-                    content = content + pool_config
+                content = content + pool_config
 
-                    with open(db_config_file, 'w', encoding='utf-8') as f:
-                        f.write(content)
-                    logger.info("已优化数据库连接池配置")
+                with open(db_config_file, 'w', encoding='utf-8') as f:
+                    f.write(content)
+                logger.info("已优化数据库连接池配置")
             except Exception as e:
+                logger.error(f"优化数据库规则失败: {e}")
 
     def enhance_permission_system(self):
         """增强权限流程"""
         logger.info("开始增强权限流程")
 
-        # 创建权限管理增强文件
         permission_enhance_file = os.path.join(self.project_root, 'app/utils/permission_enhance.py')
         permission_code = '''
+"""
+权限管理增强模块
 """
 from functools import wraps
 from flask import request, jsonify
 
-# 权限常量
-define_permissions():
+def define_permissions():
+    """定义权限"""
+    return {
         'admin': ['user_management', 'system_config', 'ai_management', 'log_view', 'permission_management'],
         'manager': ['user_management', 'log_view', 'ai_management'],
         'user': ['self_profile', 'ai_request', 'data_view'],
         'guest': ['basic_access']
     }
 
-# 权限验证装饰器
 def permission_required(permission):
+    """权限验证装饰器"""
     def decorator(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
-            # 获取当前用户权限
             user_permissions = get_user_permissions()
 
             if permission not in user_permissions:
@@ -271,9 +272,9 @@ def permission_required(permission):
             return f(*args, **kwargs)
         return decorated_function
     return decorator
-# 获取用户权限
+
 def get_user_permissions():
-    # 从session或JWT中获取用户权限
+    """获取用户权限"""
     from flask import session
 
     if 'user_role' in session:
@@ -283,8 +284,8 @@ def get_user_permissions():
 
     return ['guest']
 
-# 角色验证装饰器
 def role_required(role):
+    """角色验证装饰器"""
     def decorator(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
@@ -309,38 +310,43 @@ def role_required(role):
             logger.error(f"创建权限增强文件失败: {e}")
 
     def upgrade_ai_cluster(self):
+        """升级AI集群功能"""
         logger.info("开始升级AI集群功能")
 
-        # 更新AI集群管理器
         ai_cluster_file = os.path.join(self.project_root, 'ai_cluster_manager.py')
         if os.path.exists(ai_cluster_file):
             try:
+                with open(ai_cluster_file, 'r', encoding='utf-8') as f:
                     content = f.read()
                 cluster_health_check = '''
+    def cluster_health_check(self):
         """AI集群健康检查"""
+        health_status = {}
+        for instance_id, instance in self.ai_instances.items():
             try:
-                # 检查实例是否在线
                 health_status[instance_id] = {
                     'status': 'healthy',
                     'load': instance.get_load()
+                }
+            except Exception as e:
                 health_status[instance_id] = {
                     'status': 'unhealthy',
                     'error': str(e)
+                }
         return health_status
+
     def auto_scale_cluster(self, target_load=0.7):
         """自动扩展AI集群"""
         current_health = self.cluster_health_check()
+        healthy_instances = [i for i in current_health.values() if i['status'] == 'healthy']
 
         if not healthy_instances:
-            # 如果没有健康实例，添加一个新实例
             self.add_ai_instance()
             return True
 
-        # 计算平均负载
         avg_load = sum([i['load'] for i in healthy_instances]) / len(healthy_instances)
 
         if avg_load > target_load:
-            # 负载过高，添加新实例
             logger.info(f"集群自动扩展: 平均负载 {avg_load:.2f} 超过阈值 {target_load}, 添加了一个新实例")
             return True
 
@@ -351,7 +357,7 @@ def role_required(role):
 
                     with open(ai_cluster_file, 'w', encoding='utf-8') as f:
                         f.write(content)
-                    logger.info("已升级AI集群功能，添加了健康检查和自动扩展")
+                    logger.info("已升级AI集群功能,添加了健康检查和自动扩展")
             except Exception as e:
                 logger.error(f"升级AI集群功能失败: {e}")
 
@@ -359,18 +365,11 @@ def role_required(role):
         """执行完整升级"""
         logger.info("开始执行完整项目升级")
 
-        # 1. 升级版本号
         self.upgrade_version()
-
-        # 2. 增强异常处理
         self.enhance_error_handling()
-        # 3. 完善中间件
         self.enhance_middleware()
         self.optimize_database_rules()
-
-        # 5. 增强权限系统
         self.enhance_permission_system()
-
         self.upgrade_ai_cluster()
 
         logger.info("完整项目升级完成")
@@ -378,4 +377,5 @@ def role_required(role):
         return True
 
 if __name__ == "__main__":
+    upgrader = ComprehensiveUpgrader()
     upgrader.run_full_upgrade()

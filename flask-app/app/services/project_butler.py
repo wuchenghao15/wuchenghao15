@@ -1,7 +1,8 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
-项目管家，用于管理和协调项目开发流程
-提供项目创建、任务分配、进度跟踪、资源管理等功能
+项目管家,用于管理和协调项目开发流程
+提供项目创建,任务分配,进度跟踪,资源管理等功能
 
 import time
 import threading
@@ -11,7 +12,7 @@ from app.utils.logging import logger
 from app.services.butler_system import butler_system
 
 class ProjectButler:
-    项目管家主类，负责项目管理和协调
+    项目管家主类,负责项目管理和协调
 
     def __init__(self):
         初始化项目管家
@@ -24,7 +25,7 @@ class ProjectButler:
             "running": False,
             "projects_count": 0,
             "tasks_count": 0,
-            "resources_count": 0
+            resources_count = 0
         }
         self._lock = threading.Lock()
         self._event_handlers = {}
@@ -57,32 +58,34 @@ class ProjectButler:
             except Exception as e:
                 logger.error(f"项目管家初始化失败: {str(e)}")
                 import traceback
+import logging
+import sys
                 traceback.print_exc()
                 return False
 
     def _initialize_resources(self):
         # 初始化默认资源类型
         self._resources = {
-            "ai_engines": {
+            ai_engines = {
                 "available": butler_system.get_supported_ai_engines() if butler_system else [],
-                "usage": {}
+                usage = {}
             },
-            "computing": {
+            computing = {
                 "cpu": 8,
                 "memory": 32,
-                "usage": {}
+                usage = {}
             },
-            "storage": {
+            storage = {
                 "total": 1024,
                 "used": 0,
-                "usage": {}
+                usage = {}
             }
         }
 
     def _initialize_teams(self):
         初始化团队管理
         self._teams = {
-            "default": {
+            default = {
                 "name": "默认团队",
                 "members": ["system"],
                     "system": ["admin", "developer", "analyst"]
@@ -94,7 +97,7 @@ class ProjectButler:
         创建新项目
 
         Args:
-            project_info: 项目信息，包含名称、描述、目标、团队等
+            project_info: 项目信息,包含名称,描述,目标,团队等
 
         Returns:
             str: 项目ID
@@ -210,6 +213,7 @@ class ProjectButler:
             task_info: 任务信息
 
         Returns:
+    pass
         with self._lock:
             if project_id not in self._projects:
                 logger.error(f"项目不存在: {project_id}")
@@ -373,6 +377,7 @@ class ProjectButler:
         for task in project_tasks:
             task_type = task.get("type", "general")
             if task_type not in task_types:
+    pass
             task_types[task_type] += 1
 
         # 任务优先级分布
@@ -389,7 +394,7 @@ class ProjectButler:
 
         avg_completion_time = sum(completion_times) / len(completion_times) if completion_times else 0
 
-        # 进度趋势（模拟数据）
+        # 进度趋势(模拟数据)
         current_time = time.time()
         start_time = project.get("created_at", current_time)
         days_passed = (current_time - start_time) / 86400
@@ -403,7 +408,7 @@ class ProjectButler:
                 "progress": round(day_progress, 2)
             })
 
-        # 资源使用趋势（模拟数据）
+        # 资源使用趋势(模拟数据)
         resource_trend = []
         for i in range(7):
             resource_trend.append({
@@ -421,7 +426,7 @@ class ProjectButler:
 
         return {
             "project": project,
-            "statistics": {
+            statistics = {
                 "total_tasks": total_tasks,
                 "completed_tasks": completed_tasks,
                 "pending_tasks": pending_tasks,
@@ -430,7 +435,7 @@ class ProjectButler:
                 "completion_rate": round((completed_tasks / total_tasks) * 100, 2) if total_tasks > 0 else 0,
                 "avg_completion_time": round(avg_completion_time / 3600, 2) if avg_completion_time > 0 else 0,
                 "task_types": task_types,
-                "task_priorities": task_priorities
+                task_priorities = task_priorities
             },
             "resource_usage": resource_usage,
             "resource_trend": resource_trend,
@@ -440,17 +445,17 @@ class ProjectButler:
             "recent_tasks": sorted(project_tasks, key=lambda x: x["updated_at"], reverse=True)[:5],
             "upcoming_deadlines": self._get_upcoming_deadlines(project_tasks)[:5],
             "timeline": self._generate_project_timeline(project_id),
-            "visualization_data": {
-                "status_distribution": {
+            visualization_data = {
+                status_distribution = {
                     "labels": ["已完成", "进行中", "待处理"],
                     "data": [completed_tasks, in_progress_tasks, pending_tasks]
                 },
                     "labels": list(task_priorities.keys()),
-                    "data": list(task_priorities.values())
+                    data = list(task_priorities.values())
                 },
-                "resource_usage_chart": {
+                resource_usage_chart = {
                     "labels": list(resource_usage.keys()),
-                    "data": list(resource_usage.values())
+                    data = list(resource_usage.values())
                 }
         }
 
@@ -486,6 +491,7 @@ class ProjectButler:
         生成项目时间线
 
         Args:
+    pass
 
         Returns:
             List[Dict[str, Any]]: 时间线事件
@@ -499,7 +505,7 @@ class ProjectButler:
             "type": "project_created",
             "timestamp": project["created_at"],
             "description": f"项目创建: {project['name']}",
-            "user": project["owner"]
+            user = project["owner"]
         })
 
         # 添加任务事件
@@ -509,7 +515,7 @@ class ProjectButler:
                 "type": "task_created",
                 "timestamp": task["created_at"],
                 "description": f"任务创建: {task['name']}",
-                "user": task["assignee"]
+                user = task["assignee"]
             })
 
             if task["status"] == "completed":
@@ -517,7 +523,7 @@ class ProjectButler:
                     "type": "task_completed",
                     "timestamp": task["updated_at"],
                     "description": f"任务完成: {task['name']}",
-                    "user": task["assignee"]
+                    user = task["assignee"]
                 })
 
         # 按时间排序
@@ -543,7 +549,7 @@ class ProjectButler:
         event = {
             "type": event_type,
             "data": event_data,
-            "timestamp": time.time()
+            timestamp = time.time()
         }
             handlers = self._event_handlers.get(event_type, [])
 
@@ -588,6 +594,7 @@ class ProjectButler:
                 logger.info("项目管家关闭成功")
                 return True
             except Exception as e:
+    pass
 
     def predict_project_completion(self, project_id: str) -> Dict[str, Any]:
         预测项目完成时间
@@ -595,18 +602,18 @@ class ProjectButler:
         Args:
             project_id: 项目ID
         Returns:
-            logger.info(f"开始预测项目完成时间，项目: {project_id}")
+            logger.info(f"开始预测项目完成时间,项目: {project_id}")
 
             project = self.get_project(project_id)
             if not project:
                 return {
                     "message": "项目不存在",
-                    "timestamp": time.time()
+                    timestamp = time.time()
             project_tasks = self.list_tasks({"project_id": project_id})
             if not project_tasks:
                 return {
                     "status": "error",
-                    "timestamp": time.time()
+                    timestamp = time.time()
 
             # 计算当前进度
             total_tasks = len(project_tasks)
@@ -628,7 +635,7 @@ class ProjectButler:
                 estimated_total_time = (elapsed_time / current_progress) * 100
                 estimated_completion_date = current_time + estimated_remaining_time
             else:
-                # 如果没有进度，基于任务数量和平均任务时间预测
+                # 如果没有进度,基于任务数量和平均任务时间预测
                 average_task_time = 86400  # 假设每个任务平均需要1天
                 estimated_remaining_time = total_tasks * average_task_time
                 estimated_total_time = estimated_remaining_time
@@ -645,11 +652,11 @@ class ProjectButler:
                 "estimated_remaining_days": round(estimated_remaining_time / 86400, 2),
                 "estimated_total_days": round(estimated_total_time / 86400, 2),
                 "estimated_completion_date": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(estimated_completion_date)),
-                "tasks_status": {
+                tasks_status = {
                     "total": total_tasks,
                     "completed": completed_tasks,
                     "in_progress": in_progress_tasks,
-                    "pending": total_tasks - completed_tasks - in_progress_tasks
+                    pending = total_tasks - completed_tasks - in_progress_tasks
                 },
                 "recommendations": self._generate_completion_recommendations(current_progress, estimated_remaining_time)
             }
@@ -666,7 +673,7 @@ class ProjectButler:
             return {
                 "status": "error",
                 "message": f"项目完成时间预测失败: {str(e)}",
-                "timestamp": time.time()
+                timestamp = time.time()
             }
 
     def _generate_completion_recommendations(self, current_progress: float, estimated_remaining_time: float) -> List[str]:
@@ -681,18 +688,18 @@ class ProjectButler:
         recommendations = []
 
         if current_progress < 30:
-            recommendations.append("项目处于初期阶段，建议制定详细的项目计划")
+            recommendations.append("项目处于初期阶段,建议制定详细的项目计划")
         elif current_progress < 70:
-            recommendations.append("项目处于中期阶段，建议加强进度监控")
+            recommendations.append("项目处于中期阶段,建议加强进度监控")
         else:
-            recommendations.append("项目处于后期阶段，建议准备项目验收")
+            recommendations.append("项目处于后期阶段,建议准备项目验收")
 
         if estimated_remaining_time > 30 * 86400:  # 超过30天
-            recommendations.append("预计完成时间较长，建议优化项目计划")
-        elif estimated_remaining_time > 14 * 86400:  # 超过14天
-            recommendations.append("预计完成时间适中，建议保持当前进度")
+            recommendations.append("预计完成时间较长,建议优化项目计划")
+        elif estimated_remaining_time > 14 * 86400:  # 超过14天:
+            recommendations.append("预计完成时间适中,建议保持当前进度")
         else:
-            recommendations.append("预计完成时间较短，建议确保任务质量")
+            recommendations.append("预计完成时间较短,建议确保任务质量")
 
         recommendations.extend([
             "定期更新项目进度",
@@ -711,14 +718,14 @@ class ProjectButler:
         Returns:
             Dict[str, Any]: 项目健康状态
         try:
-            logger.info(f"开始获取项目健康状态，项目: {project_id}")
+            logger.info(f"开始获取项目健康状态,项目: {project_id}")
 
             project = self.get_project(project_id)
             if not project:
                 return {
                     "status": "error",
                     "message": "项目不存在",
-                    "timestamp": time.time()
+                    timestamp = time.time()
                 }
 
             # 获取项目任务
@@ -759,23 +766,23 @@ class ProjectButler:
                 "health_score": round(health_score, 2),
                 "health_status": health_status,
                 "progress": round(progress, 2),
-                "tasks_status": {
+                tasks_status = {
                     "total": total_tasks,
                     "completed": completed_tasks,
                     "in_progress": in_progress_tasks,
-                    "pending": pending_tasks
+                    pending = pending_tasks
                 },
                 "recommendations": self._generate_health_recommendations(health_status, progress)
             }
 
-            logger.info(f"项目健康状态评估完成，健康得分: {health_score}")
+            logger.info(f"项目健康状态评估完成,健康得分: {health_score}")
             self._notify_event("project_health_evaluated", result)
 
             return {
                 "status": "success",
                 "message": "项目健康状态评估成功",
                 "result": result,
-                "timestamp": time.time()
+                timestamp = time.time()
             }
         except Exception as e:
             logger.error(f"项目健康状态评估失败: {str(e)}")
@@ -795,22 +802,22 @@ class ProjectButler:
         recommendations = []
 
         if health_status == "healthy":
-            recommendations.append("项目健康状态良好，继续保持")
+            recommendations.append("项目健康状态良好,继续保持")
             recommendations.append("建议定期监控项目进度")
         elif health_status == "warning":
             recommendations.append("项目健康状态需要关注")
             recommendations.append("建议分析项目瓶颈并解决")
         else:
-            recommendations.append("项目健康状态不佳，需要紧急干预")
+            recommendations.append("项目健康状态不佳,需要紧急干预")
             recommendations.append("建议重新评估项目计划")
             recommendations.append("考虑调整资源分配")
 
         if progress < 20:
-            recommendations.append("项目处于初期，建议加强规划")
+            recommendations.append("项目处于初期,建议加强规划")
         elif progress < 80:
-            recommendations.append("项目处于中期，建议加强执行")
+            recommendations.append("项目处于中期,建议加强执行")
         else:
-            recommendations.append("项目接近完成，建议准备验收")
+            recommendations.append("项目接近完成,建议准备验收")
 
         return recommendations
 

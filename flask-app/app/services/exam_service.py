@@ -1,206 +1,1060 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 考试管理服务模块
-负责考试系统的管理和优化，集成本地AI自动填充功能
+集成数据库优化工具,实现高效的考试系统管理
+"""
 
-import os
-import sys
-import sqlite3
-# JSON import removed - using database
-import time
-from datetime import datetime
+import json
+import random
+from datetime import datetime, timezone, timedelta
+from typing import Dict, List, Optional, Any, Union
+from uuid import uuid4
 
-# 添加项目根目录到Python路径
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from app.utils.logging import logger
+from app.utils.db import db_manager
+from app.utils.db_index_manager import index_manager
+from app.utils.fast_query_engine import fast_query
+from app.utils.lock_sync_manager import lock_sync_manager, LockType, synchronized
+from app.utils.db_sync_manager import db_sync_manager, ChangeType
+from app.models.exam_system import (
+    Question, QuestionType, Exam, ExamStatus, ExamPaper, ExamPaperStatus,
+    ExamResult, QuestionAnalysis, UserExamProgress, ExamTemplate
+)
 
-# 导入考试系统AI
-from app.ai.exam_ai import exam_ai
-# 导入考试规则管理器
-from app.utils.exam_rule_manager import exam_rule_manager
-# 导入考试权限管理器
-from app.utils.exam_permission_manager import exam_permission_manager
 
 class ExamService:
     """考试管理服务类"""
 
-    def __init__(self, db_path="app.db"):
+    def __init__(self):
         """初始化考试管理服务"""
-        self.db_path = db_path
-        self.conn = None
-        self.cursor = None
+        self._init_tables()
+        self._init_indexes()
+        logger.info("考试管理服务初始化完成")
 
-        # 自动填充配置
-        self.auto_fill_config = {
-            "enabled": True,
-            "fields": ["answer", "essay", "short_answer"],
-            "context_aware": True,
-            "learning_rate": 0.1
-        }
-
-    def connect(self):
-        """连接数据库"""
+    def _init_tables(self):
+        """初始化数据库表"""
         try:
-            self.conn = sqlite3.connect(self.db_path)
-            self.cursor = self.conn.cursor()
-            return True
+            # 创建考试表
+            db_manager.execute("""
+                CREATE TABLE IF NOT EXISTS exams (
+                    id TEXT PRIMARY KEY,
+                    title TEXT NOT NULL,
+                    description TEXT,
+                    language TEXT NOT NULL DEFAULT 'zh',
+                    level TEXT NOT NULL DEFAULT 'intermediate',
+                    duration INTEGER NOT NULL DEFAULT 60,
+                    question_count INTEGER NOT NULL DEFAULT 20,
+                    total_points REAL NOT NULL DEFAULT 100.0,
+                    passing_score REAL NOT NULL DEFAULT 60.0,
+                    status TEXT NOT NULL DEFAULT 'draft',
+                    shuffle_questions INTEGER NOT NULL DEFAULT 1,
+                    shuffle_options INTEGER NOT NULL DEFAULT 1,
+                    allow_retake INTEGER NOT NULL DEFAULT 0,
+                    max_retakes INTEGER NOT NULL DEFAULT 3,
+                    time_between_retakes INTEGER NOT NULL DEFAULT 0,
+                    created_by TEXT,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                )
+            """)
+
+            # 创建题目表
+            db_manager.execute("""
+                CREATE TABLE IF NOT EXISTS questions (
+                    id TEXT PRIMARY KEY,
+                    exam_id TEXT,
+                    type TEXT NOT NULL DEFAULT 'single_choice',
+                    content TEXT NOT NULL,
+                    options TEXT NOT NULL DEFAULT '[]',
+                    correct_answer TEXT NOT NULL DEFAULT '',
+                    difficulty INTEGER NOT NULL DEFAULT 1,
+                    points REAL NOT NULL DEFAULT 1.0,
+                    audio_url TEXT,
+                    tags TEXT NOT NULL DEFAULT '[]',
+                    explanation TEXT NOT NULL DEFAULT '',
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    FOREIGN KEY (exam_id) REFERENCES exams(id)
+                )
+            """)
+
+            # 创建试卷表
+            db_manager.execute("""
+                CREATE TABLE IF NOT EXISTS exam_papers (
+                    id TEXT PRIMARY KEY,
+                    exam_id TEXT NOT NULL,
+                    user_id TEXT NOT NULL,
+                    questions TEXT NOT NULL DEFAULT '[]',
+                    scores TEXT NOT NULL DEFAULT '{}',
+                    answers TEXT NOT NULL DEFAULT '{}',
+                    status TEXT NOT NULL DEFAULT 'not_started',
+                    start_time TEXT,
+                    end_time TEXT,
+                    submitted_at TEXT,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    FOREIGN KEY (exam_id) REFERENCES exams(id)
+                )
+            """)
+
+            # 创建考试结果表
+            db_manager.execute("""
+                CREATE TABLE IF NOT EXISTS exam_results (
+                    id TEXT PRIMARY KEY,
+                    exam_paper_id TEXT NOT NULL,
+                    exam_id TEXT NOT NULL,
+                    user_id TEXT NOT NULL,
+                    total_score REAL NOT NULL DEFAULT 0.0,
+                    correct_count INTEGER NOT NULL DEFAULT 0,
+                    total_count INTEGER NOT NULL DEFAULT 0,
+                    accuracy REAL NOT NULL DEFAULT 0.0,
+                    time_taken INTEGER NOT NULL DEFAULT 0,
+                    passed INTEGER NOT NULL DEFAULT 0,
+                    analysis TEXT NOT NULL DEFAULT '{}',
+                    created_at TEXT NOT NULL,
+                    FOREIGN KEY (exam_paper_id) REFERENCES exam_papers(id)
+                )
+            """)
+
+            # 创建题目分析表
+            db_manager.execute("""
+                CREATE TABLE IF NOT EXISTS question_analysis (
+                    id TEXT PRIMARY KEY,
+                    question_id TEXT NOT NULL,
+                    user_id TEXT NOT NULL,
+                    exam_id TEXT NOT NULL,
+                    is_correct INTEGER NOT NULL DEFAULT 0,
+                    time_spent INTEGER NOT NULL DEFAULT 0,
+                    attempts INTEGER NOT NULL DEFAULT 1,
+                    selected_answer TEXT,
+                    correct_answer TEXT,
+                    difficulty INTEGER NOT NULL DEFAULT 1,
+                    tags TEXT NOT NULL DEFAULT '[]',
+                    created_at TEXT NOT NULL
+                )
+            """)
+
+            # 创建用户考试进度表
+            db_manager.execute("""
+                CREATE TABLE IF NOT EXISTS user_exam_progress (
+                    user_id TEXT NOT NULL,
+                    exam_id TEXT NOT NULL,
+                    current_question INTEGER NOT NULL DEFAULT 0,
+                    answers TEXT NOT NULL DEFAULT '{}',
+                    time_spent INTEGER NOT NULL DEFAULT 0,
+                    started_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    PRIMARY KEY (user_id, exam_id)
+                )
+            """)
+
+            # 创建考试模板表
+            db_manager.execute("""
+                CREATE TABLE IF NOT EXISTS exam_templates (
+                    id TEXT PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    description TEXT,
+                    language TEXT NOT NULL DEFAULT 'zh',
+                    level TEXT NOT NULL DEFAULT 'intermediate',
+                    duration INTEGER NOT NULL DEFAULT 60,
+                    question_count INTEGER NOT NULL DEFAULT 20,
+                    question_types TEXT NOT NULL DEFAULT '[]',
+                    difficulty_distribution TEXT NOT NULL DEFAULT '{}',
+                    tags TEXT NOT NULL DEFAULT '[]',
+                    created_by TEXT,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                )
+            """)
+
+            logger.info("考试系统表结构创建完成")
         except Exception as e:
-            print(f"连接数据库失败: {str(e)}")
-            return False
+            logger.error(f"创建考试系统表结构失败: {str(e)}")
 
-    def close(self):
-        """关闭数据库连接"""
-        if self.conn:
-            self.conn.close()
-
-    def save_exam_auto_fill(self, user_id, exam_id, question_id, field_name, field_value, context=None):
-        """保存考试自动填充数据"""
-        if not self.connect():
-            return False
-
+    def _init_indexes(self):
+        """初始化索引"""
         try:
-            sql = """
-            SELECT id, usage_count FROM exam_auto_fill
-            WHERE user_id = ? AND exam_id = ? AND question_id = ? AND field_name = ? AND field_value = ?
-            self.cursor.execute(sql, (user_id, exam_id, question_id, field_name, field_value))
-            existing = self.cursor.fetchone()
+            # 为考试表创建索引
+            index_manager.create_index('exams', ['status'])
+            index_manager.create_index('exams', ['created_by'])
+            index_manager.create_index('exams', ['language', 'level'])
 
-            if existing:
-                # 更新使用次数
-                sql = """
-                UPDATE exam_auto_fill
-                SET usage_count = usage_count + 1, last_used = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
-                self.cursor.execute(sql, (existing[0],))
+            # 为题目表创建索引
+            index_manager.create_index('questions', ['exam_id'])
+            index_manager.create_index('questions', ['type'])
+            index_manager.create_index('questions', ['difficulty'])
+            index_manager.create_index('questions', ['tags'])
+
+            # 为试卷表创建索引
+            index_manager.create_index('exam_papers', ['exam_id'])
+            index_manager.create_index('exam_papers', ['user_id'])
+            index_manager.create_index('exam_papers', ['status'])
+
+            # 为考试结果表创建索引
+            index_manager.create_index('exam_results', ['exam_id'])
+            index_manager.create_index('exam_results', ['user_id'])
+
+            # 为题目分析表创建索引
+            index_manager.create_index('question_analysis', ['question_id'])
+            index_manager.create_index('question_analysis', ['user_id'])
+            index_manager.create_index('question_analysis', ['exam_id'])
+
+            # 为用户考试进度表创建索引
+            index_manager.create_index('user_exam_progress', ['user_id'])
+            index_manager.create_index('user_exam_progress', ['exam_id'])
+
+            logger.info("考试系统索引创建完成")
+        except Exception as e:
+            logger.warning(f"创建索引失败: {str(e)}")
+
+    @synchronized(resource='exam_create', lock_type=LockType.WRITE)
+    def create_exam(self, exam_data: Dict) -> Optional[str]:
+        """创建考试"""
+        try:
+            now = datetime.now(timezone.utc).isoformat()
+            exam = Exam(
+                id=str(uuid4()),
+                title=exam_data.get('title', ''),
+                description=exam_data.get('description', ''),
+                language=exam_data.get('language', 'zh'),
+                level=exam_data.get('level', 'intermediate'),
+                duration=exam_data.get('duration', 60),
+                question_count=exam_data.get('question_count', 20),
+                total_points=exam_data.get('total_points', 100.0),
+                passing_score=exam_data.get('passing_score', 60.0),
+                status=ExamStatus(exam_data.get('status', 'draft')),
+                shuffle_questions=exam_data.get('shuffle_questions', True),
+                shuffle_options=exam_data.get('shuffle_options', True),
+                allow_retake=exam_data.get('allow_retake', False),
+                max_retakes=exam_data.get('max_retakes', 3),
+                time_between_retakes=exam_data.get('time_between_retakes', 0),
+                created_by=exam_data.get('created_by'),
+                created_at=datetime.fromisoformat(now),
+                updated_at=datetime.fromisoformat(now)
+            )
+
+            query = """INSERT INTO exams 
+                      (id, title, description, language, level, duration, question_count,
+                       total_points, passing_score, status, shuffle_questions, shuffle_options,
+                       allow_retake, max_retakes, time_between_retakes, created_by, created_at, updated_at)
+                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
+
+            db_manager.execute(query, (
+                exam.id, exam.title, exam.description, exam.language, exam.level,
+                exam.duration, exam.question_count, exam.total_points, exam.passing_score,
+                exam.status.value, 1 if exam.shuffle_questions else 0,
+                1 if exam.shuffle_options else 0, 1 if exam.allow_retake else 0,
+                exam.max_retakes, exam.time_between_retakes, exam.created_by,
+                exam.created_at.isoformat(), exam.updated_at.isoformat()
+            ))
+
+            db_sync_manager.track_change('exams', exam.id, ChangeType.INSERT, new_data=exam.to_dict())
+            logger.info(f"创建考试成功: {exam.id}")
+            return exam.id
+        except Exception as e:
+            logger.error(f"创建考试失败: {str(e)}")
+            return None
+
+    def get_exam(self, exam_id: str) -> Optional[Exam]:
+        """获取考试"""
+        try:
+            query = "SELECT * FROM exams WHERE id = ?"
+            result = db_manager.fetch_one(query, (exam_id,))
+            if not result:
+                return None
+
+            if isinstance(result, dict):
+                return Exam(
+                    id=result['id'],
+                    title=result['title'],
+                    description=result.get('description', ''),
+                    language=result.get('language', 'zh'),
+                    level=result.get('level', 'intermediate'),
+                    duration=result.get('duration', 60),
+                    question_count=result.get('question_count', 20),
+                    total_points=result.get('total_points', 100.0),
+                    passing_score=result.get('passing_score', 60.0),
+                    status=ExamStatus(result.get('status', 'draft')),
+                    shuffle_questions=bool(result.get('shuffle_questions', 1)),
+                    shuffle_options=bool(result.get('shuffle_options', 1)),
+                    allow_retake=bool(result.get('allow_retake', 0)),
+                    max_retakes=result.get('max_retakes', 3),
+                    time_between_retakes=result.get('time_between_retakes', 0),
+                    created_by=result.get('created_by'),
+                    created_at=datetime.fromisoformat(result['created_at']),
+                    updated_at=datetime.fromisoformat(result['updated_at'])
+                )
             else:
-                # 插入新数据
-                sql = """
-                INSERT INTO exam_auto_fill (user_id, exam_id, question_id, field_name, field_value, context, usage_count, last_used)
-                VALUES (?, ?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP)
-                self.cursor.execute(sql, (user_id, exam_id, question_id, field_name, field_value, str(context) if context else None))
-            self.conn.commit()
+                return Exam(
+                    id=result[0],
+                    title=result[1],
+                    description=result[2] if result[2] else '',
+                    language=result[3] if result[3] else 'zh',
+                    level=result[4] if result[4] else 'intermediate',
+                    duration=result[5] if result[5] else 60,
+                    question_count=result[6] if result[6] else 20,
+                    total_points=result[7] if result[7] else 100.0,
+                    passing_score=result[8] if result[8] else 60.0,
+                    status=ExamStatus(result[9] if result[9] else 'draft'),
+                    shuffle_questions=bool(result[10] if result[10] else 1),
+                    shuffle_options=bool(result[11] if result[11] else 1),
+                    allow_retake=bool(result[12] if result[12] else 0),
+                    max_retakes=result[13] if result[13] else 3,
+                    time_between_retakes=result[14] if result[14] else 0,
+                    created_by=result[15],
+                    created_at=datetime.fromisoformat(result[16]),
+                    updated_at=datetime.fromisoformat(result[17])
+                )
+        except Exception as e:
+            logger.error(f"获取考试失败: {str(e)}")
+            return None
+
+    @synchronized(resource='exam_update', lock_type=LockType.WRITE)
+    def update_exam(self, exam_id: str, exam_data: Dict) -> bool:
+        """更新考试"""
+        try:
+            exam = self.get_exam(exam_id)
+            if not exam:
+                return False
+
+            old_data = exam.to_dict()
+
+            if 'title' in exam_data:
+                exam.title = exam_data['title']
+            if 'description' in exam_data:
+                exam.description = exam_data['description']
+            if 'language' in exam_data:
+                exam.language = exam_data['language']
+            if 'level' in exam_data:
+                exam.level = exam_data['level']
+            if 'duration' in exam_data:
+                exam.duration = exam_data['duration']
+            if 'question_count' in exam_data:
+                exam.question_count = exam_data['question_count']
+            if 'total_points' in exam_data:
+                exam.total_points = exam_data['total_points']
+            if 'passing_score' in exam_data:
+                exam.passing_score = exam_data['passing_score']
+            if 'status' in exam_data:
+                exam.status = ExamStatus(exam_data['status'])
+            if 'shuffle_questions' in exam_data:
+                exam.shuffle_questions = exam_data['shuffle_questions']
+            if 'shuffle_options' in exam_data:
+                exam.shuffle_options = exam_data['shuffle_options']
+            if 'allow_retake' in exam_data:
+                exam.allow_retake = exam_data['allow_retake']
+            if 'max_retakes' in exam_data:
+                exam.max_retakes = exam_data['max_retakes']
+            if 'time_between_retakes' in exam_data:
+                exam.time_between_retakes = exam_data['time_between_retakes']
+
+            exam.updated_at = datetime.now(timezone.utc)
+
+            query = """UPDATE exams SET
+                      title = ?, description = ?, language = ?, level = ?, duration = ?,
+                      question_count = ?, total_points = ?, passing_score = ?, status = ?,
+                      shuffle_questions = ?, shuffle_options = ?, allow_retake = ?,
+                      max_retakes = ?, time_between_retakes = ?, updated_at = ?
+                      WHERE id = ?"""
+
+            db_manager.execute(query, (
+                exam.title, exam.description, exam.language, exam.level, exam.duration,
+                exam.question_count, exam.total_points, exam.passing_score, exam.status.value,
+                1 if exam.shuffle_questions else 0, 1 if exam.shuffle_options else 0,
+                1 if exam.allow_retake else 0, exam.max_retakes, exam.time_between_retakes,
+                exam.updated_at.isoformat(), exam.id
+            ))
+
+            db_sync_manager.track_change('exams', exam.id, ChangeType.UPDATE, old_data=old_data, new_data=exam.to_dict())
+            logger.info(f"更新考试成功: {exam.id}")
             return True
         except Exception as e:
-            print(f"保存考试自动填充数据失败: {str(e)}")
+            logger.error(f"更新考试失败: {str(e)}")
             return False
-        finally:
 
-    def get_exam_auto_fill(self, user_id, exam_id=None, question_id=None, field_name=None):
-        """获取考试自动填充数据"""
-        if not self.connect():
-            return []
-
+    @synchronized(resource='exam_delete', lock_type=LockType.WRITE)
+    def delete_exam(self, exam_id: str) -> bool:
+        """删除考试"""
         try:
-            # 构建查询
-            conditions = ["user_id = ?"]
+            exam = self.get_exam(exam_id)
+            if not exam:
+                return False
+
+            old_data = exam.to_dict()
+
+            db_manager.execute("DELETE FROM exams WHERE id = ?", (exam_id,))
+            db_manager.execute("DELETE FROM questions WHERE exam_id = ?", (exam_id,))
+            db_manager.execute("DELETE FROM exam_papers WHERE exam_id = ?", (exam_id,))
+            db_manager.execute("DELETE FROM exam_results WHERE exam_id = ?", (exam_id,))
+            db_manager.execute("DELETE FROM question_analysis WHERE exam_id = ?", (exam_id,))
+
+            db_sync_manager.track_change('exams', exam_id, ChangeType.DELETE, old_data=old_data)
+            logger.info(f"删除考试成功: {exam_id}")
+            return True
+        except Exception as e:
+            logger.error(f"删除考试失败: {str(e)}")
+            return False
+
+    def list_exams(self, filters: Optional[Dict] = None, page: int = 1, page_size: int = 20) -> Dict:
+        """列出考试"""
+        try:
+            conditions = []
+            params = []
+
+            if filters:
+                if 'status' in filters:
+                    conditions.append("status = ?")
+                    params.append(filters['status'])
+                if 'language' in filters:
+                    conditions.append("language = ?")
+                    params.append(filters['language'])
+                if 'level' in filters:
+                    conditions.append("level = ?")
+                    params.append(filters['level'])
+                if 'created_by' in filters:
+                    conditions.append("created_by = ?")
+                    params.append(filters['created_by'])
+
+            where_str = " AND ".join(conditions) if conditions else "1=1"
+
+            count_query = f"SELECT COUNT(*) FROM exams WHERE {where_str}"
+            total = db_manager.fetch_scalar(count_query, tuple(params)) or 0
+
+            offset = (page - 1) * page_size
+            query = f"SELECT * FROM exams WHERE {where_str} ORDER BY created_at DESC LIMIT ? OFFSET ?"
+            params.extend([page_size, offset])
+
+            rows = db_manager.fetch_all(query, tuple(params))
+            exams = []
+
+            for row in rows:
+                if isinstance(row, dict):
+                    exams.append(Exam(
+                        id=row['id'],
+                        title=row['title'],
+                        description=row.get('description', ''),
+                        language=row.get('language', 'zh'),
+                        level=row.get('level', 'intermediate'),
+                        duration=row.get('duration', 60),
+                        question_count=row.get('question_count', 20),
+                        total_points=row.get('total_points', 100.0),
+                        passing_score=row.get('passing_score', 60.0),
+                        status=ExamStatus(row.get('status', 'draft')),
+                        shuffle_questions=bool(row.get('shuffle_questions', 1)),
+                        shuffle_options=bool(row.get('shuffle_options', 1)),
+                        allow_retake=bool(row.get('allow_retake', 0)),
+                        max_retakes=row.get('max_retakes', 3),
+                        time_between_retakes=row.get('time_between_retakes', 0),
+                        created_by=row.get('created_by'),
+                        created_at=datetime.fromisoformat(row['created_at']),
+                        updated_at=datetime.fromisoformat(row['updated_at'])
+                    ).to_dict())
+                else:
+                    exams.append(Exam(
+                        id=row[0],
+                        title=row[1],
+                        description=row[2] if row[2] else '',
+                        language=row[3] if row[3] else 'zh',
+                        level=row[4] if row[4] else 'intermediate',
+                        duration=row[5] if row[5] else 60,
+                        question_count=row[6] if row[6] else 20,
+                        total_points=row[7] if row[7] else 100.0,
+                        passing_score=row[8] if row[8] else 60.0,
+                        status=ExamStatus(row[9] if row[9] else 'draft'),
+                        shuffle_questions=bool(row[10] if row[10] else 1),
+                        shuffle_options=bool(row[11] if row[11] else 1),
+                        allow_retake=bool(row[12] if row[12] else 0),
+                        max_retakes=row[13] if row[13] else 3,
+                        time_between_retakes=row[14] if row[14] else 0,
+                        created_by=row[15],
+                        created_at=datetime.fromisoformat(row[16]),
+                        updated_at=datetime.fromisoformat(row[17])
+                    ).to_dict())
+
+            return {
+                'total': total,
+                'page': page,
+                'page_size': page_size,
+                'exams': exams
+            }
+        except Exception as e:
+            logger.error(f"列出考试失败: {str(e)}")
+            return {'total': 0, 'page': page, 'page_size': page_size, 'exams': []}
+
+    @synchronized(resource='question_create', lock_type=LockType.WRITE)
+    def create_question(self, exam_id: str, question_data: Dict) -> Optional[str]:
+        """创建题目"""
+        try:
+            now = datetime.now(timezone.utc)
+            question = Question(
+                id=str(uuid4()),
+                exam_id=exam_id,
+                type=QuestionType(question_data.get('type', 'single_choice')),
+                content=question_data.get('content', ''),
+                options=question_data.get('options', []),
+                correct_answer=question_data.get('correct_answer', ''),
+                difficulty=question_data.get('difficulty', 1),
+                points=question_data.get('points', 1.0),
+                audio_url=question_data.get('audio_url'),
+                tags=question_data.get('tags', []),
+                explanation=question_data.get('explanation', ''),
+                created_at=now,
+                updated_at=now
+            )
+
+            query = """INSERT INTO questions 
+                      (id, exam_id, type, content, options, correct_answer, difficulty,
+                       points, audio_url, tags, explanation, created_at, updated_at)
+                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
+
+            db_manager.execute(query, (
+                question.id, question.exam_id, question.type.value,
+                question.content, json.dumps(question.options),
+                json.dumps(question.correct_answer) if isinstance(question.correct_answer, list) else question.correct_answer,
+                question.difficulty, question.points, question.audio_url,
+                json.dumps(question.tags), question.explanation,
+                question.created_at.isoformat(), question.updated_at.isoformat()
+            ))
+
+            db_sync_manager.track_change('questions', question.id, ChangeType.INSERT, new_data=question.to_dict())
+            logger.info(f"创建题目成功: {question.id}")
+            return question.id
+        except Exception as e:
+            logger.error(f"创建题目失败: {str(e)}")
+            return None
+
+    def get_question(self, question_id: str) -> Optional[Question]:
+        """获取题目"""
+        try:
+            query = "SELECT * FROM questions WHERE id = ?"
+            result = db_manager.fetch_one(query, (question_id,))
+            if not result:
+                return None
+
+            if isinstance(result, dict):
+                return Question(
+                    id=result['id'],
+                    exam_id=result.get('exam_id'),
+                    type=QuestionType(result.get('type', 'single_choice')),
+                    content=result['content'],
+                    options=json.loads(result.get('options', '[]')),
+                    correct_answer=json.loads(result.get('correct_answer', '')) if result.get('correct_answer', '').startswith('[') else result.get('correct_answer', ''),
+                    difficulty=result.get('difficulty', 1),
+                    points=result.get('points', 1.0),
+                    audio_url=result.get('audio_url'),
+                    tags=json.loads(result.get('tags', '[]')),
+                    explanation=result.get('explanation', ''),
+                    created_at=datetime.fromisoformat(result['created_at']),
+                    updated_at=datetime.fromisoformat(result['updated_at'])
+                )
+            else:
+                return Question(
+                    id=result[0],
+                    exam_id=result[1] if result[1] else None,
+                    type=QuestionType(result[2] if result[2] else 'single_choice'),
+                    content=result[3],
+                    options=json.loads(result[4] if result[4] else '[]'),
+                    correct_answer=json.loads(result[5]) if (result[5] and result[5].startswith('[')) else (result[5] if result[5] else ''),
+                    difficulty=result[6] if result[6] else 1,
+                    points=result[7] if result[7] else 1.0,
+                    audio_url=result[8] if result[8] else None,
+                    tags=json.loads(result[9] if result[9] else '[]'),
+                    explanation=result[10] if result[10] else '',
+                    created_at=datetime.fromisoformat(result[11]),
+                    updated_at=datetime.fromisoformat(result[12])
+                )
+        except Exception as e:
+            logger.error(f"获取题目失败: {str(e)}")
+            return None
+
+    def list_questions(self, exam_id: Optional[str] = None, filters: Optional[Dict] = None, 
+                       page: int = 1, page_size: int = 50) -> Dict:
+        """列出题目"""
+        try:
+            conditions = []
+            params = []
+
             if exam_id:
                 conditions.append("exam_id = ?")
                 params.append(exam_id)
 
-            if question_id:
-                conditions.append("question_id = ?")
-                params.append(question_id)
+            if filters:
+                if 'type' in filters:
+                    conditions.append("type = ?")
+                    params.append(filters['type'])
+                if 'difficulty' in filters:
+                    conditions.append("difficulty = ?")
+                    params.append(filters['difficulty'])
 
-            if field_name:
-                conditions.append("field_name = ?")
-                params.append(field_name)
+            where_str = " AND ".join(conditions) if conditions else "1=1"
 
-            where_clause = " AND ".join(conditions)
-            sql = f"""
-            SELECT field_name, field_value, context, usage_count, last_used
-            FROM exam_auto_fill
-            WHERE {where_clause}
-            ORDER BY usage_count DESC, last_used DESC
+            count_query = f"SELECT COUNT(*) FROM questions WHERE {where_str}"
+            total = db_manager.fetch_scalar(count_query, tuple(params)) or 0
 
-            self.cursor.execute(sql, params)
+            offset = (page - 1) * page_size
+            query = f"SELECT * FROM questions WHERE {where_str} ORDER BY created_at DESC LIMIT ? OFFSET ?"
+            params.extend([page_size, offset])
 
-            results = []
-            for row in self.cursor.fetchall():
-                result = {
-                    "field_name": row[0],
-                    "field_value": row[1],
-                    "context": eval(row[2]) if row[2] else None,
-                    "usage_count": row[3],
-                    "last_used": row[4]
-                }
-                results.append(result)
+            rows = db_manager.fetch_all(query, tuple(params))
+            questions = []
 
-            return results
+            for row in rows:
+                if isinstance(row, dict):
+                    questions.append(Question(
+                        id=row['id'],
+                        exam_id=row.get('exam_id'),
+                        type=QuestionType(row.get('type', 'single_choice')),
+                        content=row['content'],
+                        options=json.loads(row.get('options', '[]')),
+                        correct_answer=json.loads(row.get('correct_answer', '')) if row.get('correct_answer', '').startswith('[') else row.get('correct_answer', ''),
+                        difficulty=row.get('difficulty', 1),
+                        points=row.get('points', 1.0),
+                        audio_url=row.get('audio_url'),
+                        tags=json.loads(row.get('tags', '[]')),
+                        explanation=row.get('explanation', ''),
+                        created_at=datetime.fromisoformat(row['created_at']),
+                        updated_at=datetime.fromisoformat(row['updated_at'])
+                    ).to_dict())
+                else:
+                    questions.append(Question(
+                        id=row[0],
+                        exam_id=row[1] if row[1] else None,
+                        type=QuestionType(row[2] if row[2] else 'single_choice'),
+                        content=row[3],
+                        options=json.loads(row[4] if row[4] else '[]'),
+                        correct_answer=json.loads(row[5]) if (row[5] and row[5].startswith('[')) else (row[5] if row[5] else ''),
+                        difficulty=row[6] if row[6] else 1,
+                        points=row[7] if row[7] else 1.0,
+                        audio_url=row[8] if row[8] else None,
+                        tags=json.loads(row[9] if row[9] else '[]'),
+                        explanation=row[10] if row[10] else '',
+                        created_at=datetime.fromisoformat(row[11]),
+                        updated_at=datetime.fromisoformat(row[12])
+                    ).to_dict())
+
+            return {
+                'total': total,
+                'page': page,
+                'page_size': page_size,
+                'questions': questions
+            }
         except Exception as e:
-            return []
-        finally:
-            self.close()
+            logger.error(f"列出题目失败: {str(e)}")
+            return {'total': 0, 'page': page, 'page_size': page_size, 'questions': []}
 
-    def get_auto_fill_suggestions(self, user_id, exam_id, question_id, field_name, context=None):
-        """获取自动填充建议"""
-        if not self.connect():
-            return []
-
+    @synchronized(resource='exam_paper_create', lock_type=LockType.WRITE)
+    def create_exam_paper(self, exam_id: str, user_id: str) -> Optional[str]:
+        """创建试卷"""
         try:
-            # 获取相关的自动填充数据
-            sql = """
-            SELECT field_value, usage_count, context
-            WHERE user_id = ? AND field_name = ?
+            exam = self.get_exam(exam_id)
+            if not exam:
+                return None
 
-            suggestions = []
-            for row in self.cursor.fetchall():
-                # 计算匹配度
-                score = row[1]  # 基础分数基于使用次数
-                # 如果提供了上下文，计算上下文匹配度
-                if context and row[2]:
-                    try:
-                        stored_context = eval(row[2])
-                        if isinstance(stored_context, dict) and isinstance(context, dict):
-                            # 简单的上下文匹配计算
-                            if common_keys:
-                                match_count = sum(1 for key in common_keys if stored_context.get(key) == context.get(key))
-                        pass
+            # 获取题目
+            questions = self.list_questions(exam_id=exam_id)
+            question_ids = [q['id'] for q in questions.get('questions', [])]
 
-                suggestions.append({
-                    "value": row[0],
-                    "score": score,
-                    "context": eval(row[2]) if row[2] else None
+            # 如果需要打乱题目顺序
+            if exam.shuffle_questions:
+                random.shuffle(question_ids)
 
-            # 按分数排序
-            suggestions.sort(key=lambda x: x["score"], reverse=True)
+            # 限制题目数量
+            if exam.question_count > 0 and len(question_ids) > exam.question_count:
+                question_ids = question_ids[:exam.question_count]
 
-            return suggestions
-        except Exception as e:
-            print(f"获取自动填充建议失败: {str(e)}")
-            return []
-        finally:
-            self.close()
-
-    def save_exam_performance(self, user_id, exam_id, score, time_spent=None, correct_answers=None, total_questions=None, difficulty_level=None, strengths=None, weaknesses=None):
-        """保存考试性能数据"""
-        if not self.connect():
-            return False
-
-        try:
-            sql = """
-            INSERT INTO exam_performance
-            (user_id, exam_id, score, time_spent, correct_answers, total_questions,
-             difficulty_level, strengths, weaknesses)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            params = (
-                exam_id,
-                score,
-                total_questions,
-                difficulty_level,
-                str(weaknesses) if weaknesses else None
+            now = datetime.now(timezone.utc)
+            paper = ExamPaper(
+                id=str(uuid4()),
+                exam_id=exam_id,
+                user_id=user_id,
+                questions=question_ids,
+                scores={},
+                answers={},
+                status=ExamPaperStatus.NOT_STARTED,
+                created_at=now,
+                updated_at=now
             )
-            self.cursor.execute(sql, params)
-            self.conn.commit()
+
+            query = """INSERT INTO exam_papers 
+                      (id, exam_id, user_id, questions, scores, answers, status,
+                       created_at, updated_at)
+                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"""
+
+            db_manager.execute(query, (
+                paper.id, paper.exam_id, paper.user_id,
+                json.dumps(paper.questions),
+                json.dumps(paper.scores),
+                json.dumps(paper.answers),
+                paper.status.value,
+                paper.created_at.isoformat(),
+                paper.updated_at.isoformat()
+            ))
+
+            db_sync_manager.track_change('exam_papers', paper.id, ChangeType.INSERT, new_data=paper.to_dict())
+            logger.info(f"创建试卷成功: {paper.id}")
+            return paper.id
+        except Exception as e:
+            logger.error(f"创建试卷失败: {str(e)}")
+            return None
+
+    def get_exam_paper(self, paper_id: str) -> Optional[ExamPaper]:
+        """获取试卷"""
+        try:
+            query = "SELECT * FROM exam_papers WHERE id = ?"
+            result = db_manager.fetch_one(query, (paper_id,))
+            if not result:
+                return None
+
+            if isinstance(result, dict):
+                return ExamPaper(
+                    id=result['id'],
+                    exam_id=result['exam_id'],
+                    user_id=result['user_id'],
+                    questions=json.loads(result.get('questions', '[]')),
+                    scores=json.loads(result.get('scores', '{}')),
+                    answers=json.loads(result.get('answers', '{}')),
+                    status=ExamPaperStatus(result.get('status', 'not_started')),
+                    start_time=datetime.fromisoformat(result['start_time']) if result.get('start_time') else None,
+                    end_time=datetime.fromisoformat(result['end_time']) if result.get('end_time') else None,
+                    submitted_at=datetime.fromisoformat(result['submitted_at']) if result.get('submitted_at') else None,
+                    created_at=datetime.fromisoformat(result['created_at']),
+                    updated_at=datetime.fromisoformat(result['updated_at'])
+                )
+            else:
+                return ExamPaper(
+                    id=result[0],
+                    exam_id=result[1],
+                    user_id=result[2],
+                    questions=json.loads(result[3] if result[3] else '[]'),
+                    scores=json.loads(result[4] if result[4] else '{}'),
+                    answers=json.loads(result[5] if result[5] else '{}'),
+                    status=ExamPaperStatus(result[6] if result[6] else 'not_started'),
+                    start_time=datetime.fromisoformat(result[7]) if result[7] else None,
+                    end_time=datetime.fromisoformat(result[8]) if result[8] else None,
+                    submitted_at=datetime.fromisoformat(result[9]) if result[9] else None,
+                    created_at=datetime.fromisoformat(result[10]),
+                    updated_at=datetime.fromisoformat(result[11])
+                )
+        except Exception as e:
+            logger.error(f"获取试卷失败: {str(e)}")
+            return None
+
+    @synchronized(resource='exam_paper_update', lock_type=LockType.WRITE)
+    def start_exam(self, paper_id: str) -> bool:
+        """开始考试"""
+        try:
+            paper = self.get_exam_paper(paper_id)
+            if not paper:
+                return False
+
+            if paper.status != ExamPaperStatus.NOT_STARTED:
+                return False
+
+            paper.status = ExamPaperStatus.IN_PROGRESS
+            paper.start_time = datetime.now(timezone.utc)
+            paper.updated_at = datetime.now(timezone.utc)
+
+            query = """UPDATE exam_papers SET 
+                      status = ?, start_time = ?, updated_at = ?
+                      WHERE id = ?"""
+
+            db_manager.execute(query, (
+                paper.status.value,
+                paper.start_time.isoformat(),
+                paper.updated_at.isoformat(),
+                paper.id
+            ))
+
+            db_sync_manager.track_change('exam_papers', paper.id, ChangeType.UPDATE, new_data=paper.to_dict())
+            logger.info(f"开始考试: {paper_id}")
             return True
         except Exception as e:
-            print(f"保存考试性能数据失败: {str(e)}")
+            logger.error(f"开始考试失败: {str(e)}")
             return False
-        finally:
-            self.close()
 
-    def get_exam_performance(self, user_id, exam_id=None, limit=50, offset=0):
-        """获取考试性能数据"""
-        if not self.connect():
-            return []
+    @synchronized(resource='exam_paper_update', lock_type=LockType.WRITE)
+    def save_answer(self, paper_id: str, question_id: str, answer: Any, time_spent: int = 0) -> bool:
+        """保存答案"""
+        try:
+            paper = self.get_exam_paper(paper_id)
+            if not paper:
+                return False
 
+            if paper.status != ExamPaperStatus.IN_PROGRESS:
+                return False
+
+            paper.answers[question_id] = answer
+            paper.updated_at = datetime.now(timezone.utc)
+
+            query = """UPDATE exam_papers SET 
+                      answers = ?, updated_at = ?
+                      WHERE id = ?"""
+
+            db_manager.execute(query, (
+                json.dumps(paper.answers),
+                paper.updated_at.isoformat(),
+                paper.id
+            ))
+
+            db_sync_manager.track_change('exam_papers', paper.id, ChangeType.UPDATE, new_data=paper.to_dict())
+            return True
+        except Exception as e:
+            logger.error(f"保存答案失败: {str(e)}")
+            return False
+
+    @synchronized(resource='exam_paper_submit', lock_type=LockType.WRITE)
+    def submit_exam(self, paper_id: str) -> Optional[str]:
+        """提交考试"""
+        try:
+            paper = self.get_exam_paper(paper_id)
+            if not paper:
+                return None
+
+            if paper.status != ExamPaperStatus.IN_PROGRESS:
+                return None
+
+            exam = self.get_exam(paper.exam_id)
+            if not exam:
+                return None
+
+            # 计算成绩
+            total_score = 0.0
+            correct_count = 0
+            analyses = []
+
+            for question_id in paper.questions:
+                question = self.get_question(question_id)
+                if not question:
+                    continue
+
+                user_answer = paper.answers.get(question_id)
+                is_correct = self._check_answer(question, user_answer)
+
+                if is_correct:
+                    total_score += question.points
+                    correct_count += 1
+
+                analyses.append({
+                    'question_id': question_id,
+                    'is_correct': is_correct,
+                    'user_answer': user_answer,
+                    'correct_answer': question.correct_answer,
+                    'points': question.points,
+                    'difficulty': question.difficulty,
+                    'tags': question.tags
+                })
+
+            # 计算正确率
+            accuracy = correct_count / len(paper.questions) if paper.questions else 0.0
+            passed = total_score >= exam.passing_score
+
+            # 计算用时
+            time_taken = 0
+            if paper.start_time:
+                end_time = datetime.now(timezone.utc)
+                time_taken = int((end_time - paper.start_time).total_seconds())
+
+            # 更新试卷状态
+            paper.status = ExamPaperStatus.COMPLETED
+            paper.end_time = datetime.now(timezone.utc)
+            paper.submitted_at = datetime.now(timezone.utc)
+            paper.updated_at = datetime.now(timezone.utc)
+
+            query = """UPDATE exam_papers SET 
+                      status = ?, end_time = ?, submitted_at = ?, updated_at = ?
+                      WHERE id = ?"""
+
+            db_manager.execute(query, (
+                paper.status.value,
+                paper.end_time.isoformat(),
+                paper.submitted_at.isoformat(),
+                paper.updated_at.isoformat(),
+                paper.id
+            ))
+
+            # 创建考试结果
+            result = ExamResult(
+                id=str(uuid4()),
+                exam_paper_id=paper.id,
+                exam_id=exam.id,
+                user_id=paper.user_id,
+                total_score=total_score,
+                correct_count=correct_count,
+                total_count=len(paper.questions),
+                accuracy=accuracy,
+                time_taken=time_taken,
+                passed=passed,
+                analysis={
+                    'question_analyses': analyses,
+                    'difficulty_distribution': self._get_difficulty_distribution(analyses),
+                    'tag_analysis': self._get_tag_analysis(analyses)
+                },
+                created_at=datetime.now(timezone.utc)
+            )
+
+            query = """INSERT INTO exam_results 
+                      (id, exam_paper_id, exam_id, user_id, total_score, correct_count,
+                       total_count, accuracy, time_taken, passed, analysis, created_at)
+                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
+
+            db_manager.execute(query, (
+                result.id, result.exam_paper_id, result.exam_id, result.user_id,
+                result.total_score, result.correct_count, result.total_count,
+                result.accuracy, result.time_taken, 1 if result.passed else 0,
+                json.dumps(result.analysis),
+                result.created_at.isoformat()
+            ))
+
+            # 记录每道题的分析
+            for analysis in analyses:
+                question_analysis = QuestionAnalysis(
+                    id=str(uuid4()),
+                    question_id=analysis['question_id'],
+                    user_id=paper.user_id,
+                    exam_id=exam.id,
+                    is_correct=analysis['is_correct'],
+                    time_spent=0,
+                    attempts=1,
+                    selected_answer=analysis['user_answer'],
+                    correct_answer=analysis['correct_answer'],
+                    difficulty=analysis['difficulty'],
+                    tags=analysis['tags'],
+                    created_at=datetime.now(timezone.utc)
+                )
+
+                query = """INSERT INTO question_analysis 
+                          (id, question_id, user_id, exam_id, is_correct, time_spent,
+                           attempts, selected_answer, correct_answer, difficulty, tags, created_at)
+                          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
+
+                db_manager.execute(query, (
+                    question_analysis.id, question_analysis.question_id,
+                    question_analysis.user_id, question_analysis.exam_id,
+                    1 if question_analysis.is_correct else 0,
+                    question_analysis.time_spent, question_analysis.attempts,
+                    json.dumps(question_analysis.selected_answer) if isinstance(question_analysis.selected_answer, list) else str(question_analysis.selected_answer),
+                    json.dumps(question_analysis.correct_answer) if isinstance(question_analysis.correct_answer, list) else str(question_analysis.correct_answer),
+                    question_analysis.difficulty,
+                    json.dumps(question_analysis.tags),
+                    question_analysis.created_at.isoformat()
+                ))
+
+            db_sync_manager.track_change('exam_results', result.id, ChangeType.INSERT, new_data=result.to_dict())
+            logger.info(f"提交考试成功: {paper_id}, 得分: {total_score}")
+            return result.id
+        except Exception as e:
+            logger.error(f"提交考试失败: {str(e)}")
+            return None
+
+    def _check_answer(self, question: Question, user_answer: Any) -> bool:
+        """检查答案是否正确"""
+        if user_answer is None:
+            return False
+
+        correct = question.correct_answer
+
+        if isinstance(correct, list):
+            if isinstance(user_answer, list):
+                return sorted(correct) == sorted(user_answer)
+            else:
+                return user_answer in correct
+        else:
+            return str(user_answer) == str(correct)
+
+    def _get_difficulty_distribution(self, analyses: List[Dict]) -> Dict:
+        """获取难度分布"""
+        distribution = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
+        total_by_difficulty = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
+
+        for analysis in analyses:
+            difficulty = analysis['difficulty']
+            if difficulty in distribution:
+                total_by_difficulty[difficulty] += 1
+                if analysis['is_correct']:
+                    distribution[difficulty] += 1
+
+        result = {}
+        for diff in range(1, 6):
+            if total_by_difficulty[diff] > 0:
+                result[diff] = {
+                    'correct': distribution[diff],
+                    'total': total_by_difficulty[diff],
+                    'accuracy': distribution[diff] / total_by_difficulty[diff]
+                }
+            else:
+                result[diff] = {'correct': 0, 'total': 0, 'accuracy': 0}
+
+        return result
+
+    def _get_tag_analysis(self, analyses: List[Dict]) -> Dict:
+        """获取标签分析"""
+        tag_stats = {}
+
+        for analysis in analyses:
+            tags = analysis.get('tags', [])
+            for tag in tags:
+                if tag not in tag_stats:
+                    tag_stats[tag] = {'correct': 0, 'total': 0}
+                tag_stats[tag]['total'] += 1
+                if analysis['is_correct']:
+                    tag_stats[tag]['correct'] += 1
+
+        result = {}
+        for tag, stats in tag_stats.items():
+            result[tag] = {
+                'correct': stats['correct'],
+                'total': stats['total'],
+                'accuracy': stats['correct'] / stats['total'] if stats['total'] > 0 else 0
+            }
+
+        return result
+
+    def get_exam_result(self, result_id: str) -> Optional[ExamResult]:
+        """获取考试结果"""
+        try:
+            query = "SELECT * FROM exam_results WHERE id = ?"
+            result = db_manager.fetch_one(query, (result_id,))
+            if not result:
+                return None
+
+            if isinstance(result, dict):
+                return ExamResult(
+                    id=result['id'],
+                    exam_paper_id=result['exam_paper_id'],
+                    exam_id=result['exam_id'],
+                    user_id=result['user_id'],
+                    total_score=result.get('total_score', 0.0),
+                    correct_count=result.get('correct_count', 0),
+                    total_count=result.get('total_count', 0),
+                    accuracy=result.get('accuracy', 0.0),
+                    time_taken=result.get('time_taken', 0),
+                    passed=bool(result.get('passed', 0)),
+                    analysis=json.loads(result.get('analysis', '{}')),
+                    created_at=datetime.fromisoformat(result['created_at'])
+                )
+            else:
+                return ExamResult(
+                    id=result[0],
+                    exam_paper_id=result[1],
+                    exam_id=result[2],
+                    user_id=result[3],
+                    total_score=result[4] if result[4] else 0.0,
+                    correct_count=result[5] if result[5] else 0,
+                    total_count=result[6] if result[6] else 0,
+                    accuracy=result[7] if result[7] else 0.0,
+                    time_taken=result[8] if result[8] else 0,
+                    passed=bool(result[9] if result[9] else 0),
+                    analysis=json.loads(result[10] if result[10] else '{}'),
+                    created_at=datetime.fromisoformat(result[11])
+                )
+        except Exception as e:
+            logger.error(f"获取考试结果失败: {str(e)}")
+            return None
+
+    def get_user_exam_results(self, user_id: str, exam_id: Optional[str] = None, 
+                             page: int = 1, page_size: int = 20) -> Dict:
+        """获取用户考试结果"""
         try:
             conditions = ["user_id = ?"]
             params = [user_id]
@@ -208,604 +1062,185 @@ class ExamService:
             if exam_id:
                 conditions.append("exam_id = ?")
                 params.append(exam_id)
-            where_clause = " AND ".join(conditions)
-            SELECT id, exam_id, score, time_spent, correct_answers, total_questions,
-                   difficulty_level, strengths, weaknesses, created_at
-            WHERE {where_clause}
-            ORDER BY created_at DESC
-            LIMIT ? OFFSET ?
-            self.cursor.execute(sql, params)
 
-            for row in self.cursor.fetchall():
-                performance = {
-                    "id": row[0],
-                    "exam_id": row[1],
-                    "score": row[2],
-                    "time_spent": row[3],
-                    "correct_answers": row[4],
-                    "total_questions": row[5],
-                    "difficulty_level": row[6],
-                    "strengths": eval(row[7]) if row[7] else None,
-                    "created_at": row[9]
-                performances.append(performance)
-            return performances
-        except Exception as e:
-            return []
+            where_str = " AND ".join(conditions)
 
-        """设置考试设置"""
-        if not self.connect():
+            count_query = f"SELECT COUNT(*) FROM exam_results WHERE {where_str}"
+            total = db_manager.fetch_scalar(count_query, tuple(params)) or 0
 
-            sql = """
-            INSERT OR REPLACE INTO exam_settings
-            (user_id, setting_key, setting_value, category, updated_at)
-            VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
-            self.cursor.execute(sql, (user_id, setting_key, setting_value, category))
-            return True
-        except Exception as e:
-            print(f"设置考试设置失败: {str(e)}")
-        finally:
-            self.close()
+            offset = (page - 1) * page_size
+            query = f"SELECT * FROM exam_results WHERE {where_str} ORDER BY created_at DESC LIMIT ? OFFSET ?"
+            params.extend([page_size, offset])
 
-    def get_exam_settings(self, user_id, category=None):
-            return {}
+            rows = db_manager.fetch_all(query, tuple(params))
+            results = []
 
-        try:
-            # 构建查询
-
-            if category:
-
-            sql = f"""
-            FROM exam_settings
-            WHERE {where_clause}
-
-            self.cursor.execute(sql, params)
-
-            settings = {}
-            for row in self.cursor.fetchall():
-                    settings[cat] = {}
-                settings[cat][key] = value
-
-            return settings
-        except Exception as e:
-            print(f"获取考试设置失败: {str(e)}")
-        finally:
-            self.close()
-
-    def record_exam_behavior(self, user_id, exam_id, question_id, action_type, action_data=None, time_spent=None, attempt_count=1, difficulty_perceived=None, confidence_level=None):
-        """记录考试行为"""
-            return False
-
-        try:
-            sql = """
-            INSERT INTO exam_behavior (user_id, exam_id, question_id, action_type, action_data, time_spent, attempt_count, difficulty_perceived, confidence_level)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            self.cursor.execute(sql, (
-                user_id,
-                exam_id,
-                question_id,
-                action_type,
-                str(action_data) if action_data else None,
-                attempt_count,
-                confidence_level
-            self.conn.commit()
-            return True
-            print(f"记录考试行为失败: {str(e)}")
-            return False
-        finally:
-
-    def get_exam_behavior(self, user_id, exam_id, question_id=None, limit=100, offset=0):
-        """获取考试行为记录"""
-        if not self.connect():
-            return []
-
-        try:
-            params = [user_id, exam_id]
-            if question_id:
-                params.append(question_id)
-
-            where_clause = " AND ".join(conditions)
-            FROM exam_behavior
-            ORDER BY timestamp
-
-            params.extend([limit, offset])
-            self.cursor.execute(sql, params)
-
-            behaviors = []
-                behavior = {
-                    "id": row[0],
-                    "action_type": row[2],
-                    "action_data": eval(row[3]) if row[3] else None,
-                    "timestamp": row[4],
-                    "difficulty_perceived": row[7],
-                    "confidence_level": row[8]
-                }
-                behaviors.append(behavior)
-
-            return behaviors
-            print(f"获取考试行为记录失败: {str(e)}")
-            return []
-        finally:
-            self.close()
-
-        """分析考试性能"""
-
-        try:
-            # 获取考试性能数据
-            sql = """
-            SELECT score, time_spent, correct_answers, total_questions, difficulty_level, strengths, weaknesses
-            FROM exam_performance
-            WHERE user_id = ? AND exam_id = ?
-            ORDER BY created_at DESC
-            LIMIT 1
-            self.cursor.execute(sql, (user_id, exam_id))
-
-            if not row:
-                return None
-
-                "score": score,
-                "time_spent": time_spent,
-                "accuracy": correct_answers / total_questions if total_questions > 0 else 0,
-                "difficulty_level": difficulty_level,
-                "weaknesses": eval(weaknesses) if weaknesses else [],
-                "recommendations": []
-            }
-
-            if analysis["accuracy"] < 0.6:
-
-                analysis["recommendations"].append("建议在答题时更加仔细，不要过于匆忙")
-            if difficulty_level and difficulty_level < 3:
-                analysis["recommendations"].append("建议尝试更高级别的题目，挑战自己")
-            return analysis
-            print(f"分析考试性能失败: {str(e)}")
-            return None
-    def detect_cheating(self, user_id, exam_id):
-        """检测作弊行为"""
-        if not self.connect():
-            return None
-
-        try:
-
-            if not behaviors:
-                return None
-
-            # 分析行为
-            suspicious_activities = []
-            time_spent_list = []
-            action_counts = {}
-
-                # 记录时间花费
-                if behavior["time_spent"]:
-                    time_spent_list.append(behavior["time_spent"])
-
-                action_type = behavior["action_type"]
-                action_counts[action_type] = action_counts.get(action_type, 0) + 1
-                if behavior["time_spent"] and behavior["time_spent"] < 2:
-                    suspicious_activities.append({
-                        "type": "quick_answer",
-                        "question_id": behavior["question_id"],
-                        "time_spent": behavior["time_spent"]
-                    })
-
-            if time_spent_list:
-                avg_time = sum(time_spent_list) / len(time_spent_list)
-
-                if std_dev > avg_time * 0.5:
-                    suspicious_activities.append({
-                        "type": "time_anomaly",
-                        "message": "答题时间波动异常",
-                        "average_time": avg_time,
-                        "std_deviation": std_dev
-                    })
-
-            # 检测过多的修改
-            if action_counts.get("modify_answer", 0) > len(behaviors) * 0.5:
-                    "type": "frequent_modifications",
-                    "message": "频繁修改答案",
-                    "count": action_counts.get("modify_answer", 0)
-                })
+            for row in rows:
+                if isinstance(row, dict):
+                    results.append(ExamResult(
+                        id=row['id'],
+                        exam_paper_id=row['exam_paper_id'],
+                        exam_id=row['exam_id'],
+                        user_id=row['user_id'],
+                        total_score=row.get('total_score', 0.0),
+                        correct_count=row.get('correct_count', 0),
+                        total_count=row.get('total_count', 0),
+                        accuracy=row.get('accuracy', 0.0),
+                        time_taken=row.get('time_taken', 0),
+                        passed=bool(row.get('passed', 0)),
+                        analysis=json.loads(row.get('analysis', '{}')),
+                        created_at=datetime.fromisoformat(row['created_at'])
+                    ).to_dict())
+                else:
+                    results.append(ExamResult(
+                        id=row[0],
+                        exam_paper_id=row[1],
+                        exam_id=row[2],
+                        user_id=row[3],
+                        total_score=row[4] if row[4] else 0.0,
+                        correct_count=row[5] if row[5] else 0,
+                        total_count=row[6] if row[6] else 0,
+                        accuracy=row[7] if row[7] else 0.0,
+                        time_taken=row[8] if row[8] else 0,
+                        passed=bool(row[9] if row[9] else 0),
+                        analysis=json.loads(row[10] if row[10] else '{}'),
+                        created_at=datetime.fromisoformat(row[11])
+                    ).to_dict())
 
             return {
-                "suspicious_activities": suspicious_activities,
-                "risk_score": min(100, len(suspicious_activities) * 25),
-                "action_summary": action_counts
-        except Exception as e:
-            print(f"检测作弊行为失败: {str(e)}")
-            return None
-        finally:
-            self.close()
-    def analyze_answer_behavior(self, user_id, exam_id):
-        """分析用户答题行为模式"""
-            return None
-
-        try:
-            behaviors = self.get_exam_behavior(user_id, exam_id)
-
-            if not behaviors:
-                return None
-            # 分析行为
-            behavior_analysis = {
-                "total_actions": len(behaviors),
-                "action_distribution": {},
-                "time_distribution": {},
-                "modification_count": 0,
-                "confidence_levels": [],
-                "difficulty_perceptions": [],
-                "question_analysis": {}
+                'total': total,
+                'page': page,
+                'page_size': page_size,
+                'results': results
             }
-            # 按题目分组分析
-            questions = {}
-            for behavior in behaviors:
-                question_id = behavior["question_id"]
-                if question_id not in questions:
-                    questions[question_id] = []
-                questions[question_id].append(behavior)
-
-            # 统计动作分布
-            for behavior in behaviors:
-                action_type = behavior["action_type"]
-
-                # 统计修改次数
-                    behavior_analysis["modification_count"] += 1
-
-                # 收集信心水平
-                if behavior["confidence_level"]:
-                    behavior_analysis["confidence_levels"].append(behavior["confidence_level"])
-
-                # 收集难度感知
-                if behavior["difficulty_perceived"]:
-
-            # 分析每个题目的行为
-            total_time = 0
-            for question_id, question_behaviors in questions.items():
-                question_analysis = {
-                    "actions": len(question_behaviors),
-                    "attempts": 0,
-                    "confidence": None,
-                    "difficulty": None
-                }
-
-                for behavior in question_behaviors:
-                        question_analysis["time_spent"] += behavior["time_spent"]
-                        total_time += behavior["time_spent"]
-                    if behavior["action_type"] == "modify_answer":
-                        question_analysis["modifications"] += 1
-
-                    if behavior["attempt_count"]:
-                        question_analysis["attempts"] = max(question_analysis["attempts"], behavior["attempt_count"])
-
-                        question_analysis["confidence"] = behavior["confidence_level"]
-
-                    if behavior["difficulty_perceived"]:
-                        question_analysis["difficulty"] = behavior["difficulty_perceived"]
-                behavior_analysis["question_analysis"][question_id] = question_analysis
-
-            # 计算平均答题时间
-            if questions:
-                behavior_analysis["average_time_per_question"] = total_time / len(questions)
-
-            # 分析时间分布
-            if behaviors:
-                time_spent_list = [b["time_spent"] for b in behaviors if b["time_spent"]]
-                if time_spent_list:
-                    avg_time = sum(time_spent_list) / len(time_spent_list)
-                    behavior_analysis["time_distribution"] = {
-                        "min": min(time_spent_list),
-                        "max": max(time_spent_list),
-                        "total": sum(time_spent_list)
-                    }
-
-            return behavior_analysis
         except Exception as e:
-            return None
-        finally:
-            self.close()
-    def generate_question_with_ai(self, topic, question_type, difficulty, education_version):
-        """使用AI生成题目
+            logger.error(f"获取用户考试结果失败: {str(e)}")
+            return {'total': 0, 'page': page, 'page_size': page_size, 'results': []}
 
-        Args:
-            question_type: 题目类型
-            difficulty: 难度级别
-            education_version: 教育版本
-
-            生成的题目
+    def get_exam_statistics(self, exam_id: str) -> Dict:
+        """获取考试统计信息"""
         try:
-            question = exam_ai.generate_question(topic, question_type, difficulty, education_version)
-            return question
-        except Exception as e:
-            print(f"使用AI生成题目失败: {str(e)}")
-            return None
+            # 获取考试信息
+            exam = self.get_exam(exam_id)
+            if not exam:
+                return {'error': '考试不存在'}
 
-        """使用AI创建考试
+            # 获取考试结果统计
+            query = """SELECT COUNT(*), AVG(total_score), AVG(accuracy), AVG(time_taken),
+                          SUM(CASE WHEN passed THEN 1 ELSE 0 END)
+                       FROM exam_results WHERE exam_id = ?"""
+            result = db_manager.fetch_one(query, (exam_id,))
 
-        Args:
-            name: 考试名称
-            questions: 题目ID列表
-            education_version: 教育版本
-
-        Returns:
-            创建的考试
-        try:
-            exam = exam_ai.create_exam(name, questions, education_version, time_limit)
-            return exam
-            return None
-
-        """使用AI评分考试
-        Args:
-            exam_id: 考试ID
-            correct_answers: 正确答案
-
-        Returns:
-        try:
-            evaluation = exam_ai.score_exam(exam_id, answers, correct_answers)
-            return evaluation
-        except Exception as e:
-            print(f"使用AI评分考试失败: {str(e)}")
-            return None
-    def analyze_learning_patterns_with_ai(self, user_id, exam_results):
-        """使用AI分析学习模式
-
-        Args:
-            user_id: 用户ID
-
-        Returns:
-            学习模式分析
-            learning_patterns = exam_ai.analyze_learning_patterns(user_id, exam_results)
-            return learning_patterns
-        except Exception as e:
-            print(f"使用AI分析学习模式失败: {str(e)}")
-            return None
-
-        Args:
-            user_id: 用户ID
-            exam_behavior: 考试行为记录
-
-        Returns:
-            作弊检测结果
-        try:
-            cheating_detection = exam_ai.detect_cheating(user_id, exam_id, exam_behavior)
-            return cheating_detection
-        except Exception as e:
-            print(f"使用AI检测作弊行为失败: {str(e)}")
-            return None
-
-    def generate_adaptive_test_with_ai(self, user_id, topic, initial_difficulty, target_score):
-
-        Args:
-            user_id: 用户ID
-            topic: 测试主题
-            initial_difficulty: 初始难度
-            target_score: 目标分数
-
-        Returns:
-            自适应测试
-        try:
-            adaptive_test = exam_ai.generate_adaptive_test(user_id, topic, initial_difficulty, target_score)
-            return adaptive_test
-        except Exception as e:
-            print(f"使用AI生成自适应测试失败: {str(e)}")
-            return None
-    def provide_feedback_with_ai(self, user_id, exam_id, evaluation):
-
-        Args:
-            user_id: 用户ID
-            exam_id: 考试ID
-            evaluation: 考试评价
-
-        Returns:
-            反馈结果
-        try:
-            feedback = exam_ai.provide_feedback(user_id, exam_id, evaluation)
-            return feedback
-        except Exception as e:
-            return None
-
-    def check_question_generation_rules(self, question):
-
-            question: 题目
-
-        Returns:
-            检查结果
-            result = exam_rule_manager.check_question_generation(question)
-            return result
-        except Exception as e:
-            print(f"检查题目生成规则失败: {str(e)}")
-            return None
-    def check_exam_creation_rules(self, exam):
-
-        Args:
-            exam: 考试
-
-            检查结果
-        try:
-            result = exam_rule_manager.check_exam_creation(exam)
-            return result
-        except Exception as e:
-            print(f"检查考试创建规则失败: {str(e)}")
-            return None
-
-        """检查评分规则
-
-        Args:
-            score: 分数
-
-        Returns:
-        try:
-            result = exam_rule_manager.check_scoring(score)
-            return result
-        except Exception as e:
-            print(f"检查评分规则失败: {str(e)}")
-            return None
-
-    def check_user_access_rules(self, user_id, exam_count, last_exam_time=None):
-        """检查用户访问规则
-
-        Args:
-            user_id: 用户ID
-            last_exam_time: 上次考试时间
-
-            检查结果
-        try:
-            result = exam_rule_manager.check_user_access(user_id, exam_count, last_exam_time)
-            return result
-        except Exception as e:
-            print(f"检查用户访问规则失败: {str(e)}")
-            return None
-
-    def get_exam_rules(self, rule_type=None):
-        """获取考试规则
-        Args:
-            rule_type: 规则类型
-
-        Returns:
-            if rule_type:
-                return exam_rule_manager.get_rules(rule_type)
+            if result:
+                if isinstance(result, dict):
+                    total_takers = result[0] if result[0] else 0
+                    avg_score = result[1] if result[1] else 0.0
+                    avg_accuracy = result[2] if result[2] else 0.0
+                    avg_time = result[3] if result[3] else 0
+                    pass_count = result[4] if result[4] else 0
+                else:
+                    total_takers = result[0] if result[0] else 0
+                    avg_score = result[1] if result[1] else 0.0
+                    avg_accuracy = result[2] if result[2] else 0.0
+                    avg_time = result[3] if result[3] else 0
+                    pass_count = result[4] if result[4] else 0
             else:
-                return exam_rule_manager.get_all_rules()
+                total_takers = 0
+                avg_score = 0.0
+                avg_accuracy = 0.0
+                avg_time = 0
+                pass_count = 0
+
+            pass_rate = pass_count / total_takers if total_takers > 0 else 0.0
+
+            # 获取题目数量
+            question_count = self.list_questions(exam_id=exam_id).get('total', 0)
+
+            return {
+                'exam_id': exam_id,
+                'title': exam.title,
+                'total_takers': total_takers,
+                'avg_score': avg_score,
+                'avg_accuracy': avg_accuracy,
+                'avg_time_taken': avg_time,
+                'pass_count': pass_count,
+                'pass_rate': pass_rate,
+                'question_count': question_count,
+                'duration': exam.duration,
+                'passing_score': exam.passing_score
+            }
         except Exception as e:
-            print(f"获取考试规则失败: {str(e)}")
-            return {}
+            logger.error(f"获取考试统计失败: {str(e)}")
+            return {'error': str(e)}
 
-    def update_exam_rules(self, rule_type, rules):
-        """更新考试规则
-
-        Args:
-            rule_type: 规则类型
-            rules: 规则字典
-
-        Returns:
-            exam_rule_manager.update_rules(rule_type, rules)
-            return True
-        except Exception as e:
-            print(f"更新考试规则失败: {str(e)}")
-            return False
-
-    def check_exam_access(self, role, exam_id, action):
-        """检查用户对考试的访问权限
-
-        Args:
-            role: 角色名称
-            exam_id: 考试ID
-            action: 操作类型 (view, edit, delete, take)
-
-            是否有权限
+    def get_user_statistics(self, user_id: str) -> Dict:
+        """获取用户统计信息"""
         try:
-            result = exam_permission_manager.check_exam_access(role, exam_id, action)
+            # 获取用户考试次数
+            query = """SELECT COUNT(*), AVG(total_score), AVG(accuracy), 
+                          SUM(CASE WHEN passed THEN 1 ELSE 0 END)
+                       FROM exam_results WHERE user_id = ?"""
+            result = db_manager.fetch_one(query, (user_id,))
+
+            if result:
+                if isinstance(result, dict):
+                    total_exams = result[0] if result[0] else 0
+                    avg_score = result[1] if result[1] else 0.0
+                    avg_accuracy = result[2] if result[2] else 0.0
+                    pass_count = result[3] if result[3] else 0
+                else:
+                    total_exams = result[0] if result[0] else 0
+                    avg_score = result[1] if result[1] else 0.0
+                    avg_accuracy = result[2] if result[2] else 0.0
+                    pass_count = result[3] if result[3] else 0
+            else:
+                total_exams = 0
+                avg_score = 0.0
+                avg_accuracy = 0.0
+                pass_count = 0
+
+            pass_rate = pass_count / total_exams if total_exams > 0 else 0.0
+
+            # 获取用户的错题统计
+            query = """SELECT COUNT(*) FROM question_analysis WHERE user_id = ? AND is_correct = 0"""
+            wrong_count = db_manager.fetch_scalar(query, (user_id,)) or 0
+
+            # 获取用户已完成的题目数
+            query = """SELECT COUNT(*) FROM question_analysis WHERE user_id = ?"""
+            total_questions = db_manager.fetch_scalar(query, (user_id,)) or 0
+
+            # 获取薄弱知识点
+            query = """SELECT tags, COUNT(*) as count 
+                       FROM question_analysis 
+                       WHERE user_id = ? AND is_correct = 0
+                       GROUP BY tags
+                       ORDER BY count DESC LIMIT 5"""
+            weak_tags = db_manager.fetch_all(query, (user_id,))
+
+            weak_topics = []
+            for row in weak_tags:
+                if isinstance(row, dict):
+                    tags = json.loads(row.get('tags', '[]'))
+                    weak_topics.extend(tags)
+                else:
+                    tags = json.loads(row[0] if row[0] else '[]')
+                    weak_topics.extend(tags)
+
+            return {
+                'user_id': user_id,
+                'total_exams': total_exams,
+                'avg_score': avg_score,
+                'avg_accuracy': avg_accuracy,
+                'pass_count': pass_count,
+                'pass_rate': pass_rate,
+                'total_questions_answered': total_questions,
+                'wrong_questions': wrong_count,
+                'weak_topics': list(set(weak_topics))[:5]
+            }
         except Exception as e:
-            print(f"检查考试访问权限失败: {str(e)}")
-            return False
+            logger.error(f"获取用户统计失败: {str(e)}")
+            return {'error': str(e)}
 
-    def check_question_access(self, role, question_id, action):
-        """检查用户对题目的访问权限
 
-        Args:
-            role: 角色名称
-            question_id: 题目ID
-            action: 操作类型 (view, edit, delete, generate)
-
-        Returns:
-            是否有权限
-            result = exam_permission_manager.check_question_access(role, question_id, action)
-        except Exception as e:
-            print(f"检查题目访问权限失败: {str(e)}")
-
-    def get_user_permissions(self, role):
-        """获取用户权限
-
-        Args:
-            role: 角色名称
-
-        Returns:
-            权限列表
-        try:
-            permissions = exam_permission_manager.get_permissions(role)
-            return permissions
-            print(f"获取用户权限失败: {str(e)}")
-            return []
-
-        """检查角色是否有指定权限
-        Args:
-            role: 角色名称
-            permission: 权限名称
-
-            是否有权限
-        try:
-            result = exam_permission_manager.has_permission(role, permission)
-            return result
-            print(f"检查权限失败: {str(e)}")
-
-    def update_user_permissions(self, role, permissions):
-        """更新用户权限
-
-        Args:
-            role: 角色名称
-
-        Returns:
-        try:
-            exam_permission_manager.update_permissions(role, permissions)
-            return True
-        except Exception as e:
-            print(f"更新用户权限失败: {str(e)}")
-
-    def get_all_roles(self):
-        """获取所有角色
-
-        Returns:
-            角色列表
-        try:
-            return roles
-        except Exception as e:
-            print(f"获取角色列表失败: {str(e)}")
-            return []
-
-# 全局考试服务实例
-exam_service = None
-
-    """获取考试服务实例"""
-    global exam_service
-    if exam_service is None:
-        exam_service = ExamService()
-    return exam_service
-
-if __name__ == "__main__":
-    service = ExamService()
-
-    # 测试保存自动填充数据
-    user_id = 1
-    exam_id = 1
-    question_id = 1
-
-    print("保存自动填充数据...")
-        user_id, exam_id, question_id, "answer", "A",
-        context={"question_type": "multiple_choice", "difficulty": "easy"}
-    )
-    print(f"保存结果: {result}")
-
-    # 测试获取自动填充建议
-    print("\n获取自动填充建议...")
-    suggestions = service.get_auto_fill_suggestions(
-        user_id, exam_id, question_id, "answer",
-    )
-    print(f"建议: {str(suggestions, indent=2)}")
-    # 测试保存考试性能
-    print("\n保存考试性能...")
-    result = service.save_exam_performance(
-        user_id, exam_id, 85.5, 1200, 17, 20, 3.5,
-        strengths=["语法", "词汇"],
-        weaknesses=["听力", "写作"]
-    )
-    print(f"保存结果: {result}")
-
-    # 测试分析考试性能
-    print("\n分析考试性能...")
-    analysis = service.analyze_exam_performance(user_id, exam_id)
-    print(f"分析结果: {str(analysis, indent=2)}")
-
-    print("\n记录考试行为...")
-    result = service.record_exam_behavior(
-        user_id, exam_id, question_id, "answer",
-        action_data={"selected_option": "A"}, time_spent=5
-    )
-    # 测试检测作弊
-    print("\n检测作弊行为...")
-    cheating_detection = service.detect_cheating(user_id, exam_id)
-    print(f"检测结果: {str(cheating_detection, indent=2)}")
+# 创建全局实例
+exam_service = ExamService()

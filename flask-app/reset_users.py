@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 
-# 自动添加：脚本超时控制
+# 自动添加:脚本超时控制
 import signal
 
 def _timeout_handler(signum, frame):
-    print(""
-脚本执行超时，自动终止")
+    print("Script execution timeout, auto terminate")
     exit(1)
 
 # 设置300秒超时
@@ -13,7 +12,8 @@ signal.signal(signal.SIGALRM, _timeout_handler)
 signal.alarm(300)
 #!/usr/bin/env python3
 """
-重置用户数据：删除所有用户并重新注册指定用户
+重置用户数据:删除所有用户并重新注册指定用户
+"""
 
 import sys
 import os
@@ -26,7 +26,7 @@ try:
     from app.utils.security import security_utils
     print("✅ 成功导入User模型和security_utils")
 
-    # 1. 删除旧表并重新创建（移除email字段的UNIQUE约束）
+    # 1. 删除旧表并重新创建(移除email字段的UNIQUE约束)
     print("\n1. 重新创建用户表...")
     conn = User._connect_db()
     cursor = conn.cursor()
@@ -38,14 +38,14 @@ try:
     User.create_table()
     print("✅ 用户表已重新创建")
 
-    # 2. 注册第一个用户：test001，密码123456，普通用户组，邮箱1@1.com
+    # 2. 注册第一个用户:test001,密码123456,普通用户组,邮箱1@1.com
     print("\n2. 注册用户 test001...")
     hashed_password = security_utils.hash_password("123456")
     test_user = User(username="test001", email="1@1.com", password=hashed_password, role="user")
     test_user.save()
     print("✅ 用户 test001 注册成功")
 
-    # 3. 注册第二个用户：wuchenghao15，密码ppo900lik，vikey硬件管理员用户组，邮箱1@1.com
+    # 3. 注册第二个用户:wuchenghao15,密码ppo900lik,vikey硬件管理员用户组,邮箱1@1.com
     print("\n3. 注册用户 wuchenghao15...")
     hashed_password2 = security_utils.hash_password("ppo900lik")
     admin_user = User(username="wuchenghao15", email="1@1.com", password=hashed_password2, role="hardware_vikey_admin")

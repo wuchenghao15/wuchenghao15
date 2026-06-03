@@ -1,7 +1,11 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
-纯净的启动脚本，直接创建Flask应用并注册必要的蓝图，跳过所有复杂的初始化
+纯净的启动脚本, 直接创建Flask应用并注册必要的蓝图, 跳过所有复杂的初始化
+"""
 
+import logging
+logger = logging.getLogger(__name__)
 import sys
 import os
 from flask import Flask, request, render_template
@@ -9,7 +13,7 @@ from flask import Flask, request, render_template
 # 添加当前目录到Python路径
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-# 创建一个全新的Flask应用，不依赖于app/__init__.py中的复杂初始化
+# 创建一个全新的Flask应用,不依赖于app/__init__.py中的复杂初始化
 print("创建纯净的Flask应用...")
 app = Flask(__name__)
 app.template_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')

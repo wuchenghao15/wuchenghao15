@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
 # Views package
+import logging
+logger = logging.getLogger(__name__)
 import os
 import importlib
 from flask import Blueprint
 
 # 蓝图注册配置
 BLUEPRINT_CONFIG = {
-    'main_bp': {'url_prefix': None},  # 主蓝图，无前缀
+    'main_bp': {'url_prefix': None},  # 主蓝图,无前缀
     'auth_bp': {'url_prefix': '/auth'},
     'ai_bp': {'url_prefix': '/ai'},
     'monitoring_bp': {'url_prefix': '/monitoring'},
@@ -25,13 +27,13 @@ BLUEPRINT_CONFIG = {
 # Register blueprints function
 def register_blueprints(app):
     """
-    注册所有蓝图，支持自动发现和手动配置
+    注册所有蓝图,支持自动发现和手动配置
 
     Args:
         app: Flask应用实例
     print("开始注册蓝图...")
 
-    # 注册主蓝图和认证蓝图，这两个是系统运行的核心蓝图
+    # 注册主蓝图和认证蓝图,这两个是系统运行的核心蓝图
     try:
         from app.views.main import main_bp
         app.register_blueprint(main_bp, url_prefix=None)
@@ -58,7 +60,7 @@ def register_blueprints(app):
         print(f"✓ 成功注册蓝图: ai_bp 到 /ai")
     except Exception as e:
         print(f"✗ 注册蓝图 ai_bp 失败: {str(e)}")
-        print(f"  警告: AI相关模块可能不存在，将跳过该蓝图注册")
+        print(f"  警告: AI相关模块可能不存在,将跳过该蓝图注册")
 
     # 注册监控管理蓝图
     try:
@@ -86,6 +88,7 @@ def register_blueprints(app):
     except Exception as e:
         print(f"✗ 注册蓝图 integrated_design_bp 失败: {str(e)}")
         import traceback
+import sys
         traceback.print_exc()
 
     # 注册智能仪表盘蓝图
@@ -94,7 +97,7 @@ def register_blueprints(app):
         print(f"✓ 成功注册蓝图: smart_dashboard_bp 到 /smart-dashboard")
     except Exception as e:
         print(f"✗ 注册蓝图 smart_dashboard_bp 失败: {str(e)}")
-        print(f"  警告: 智能仪表盘依赖的AI模块可能不存在，将跳过该蓝图注册")
+        print(f"  警告: 智能仪表盘依赖的AI模块可能不存在,将跳过该蓝图注册")
 
     # 注册智能用户管理蓝图
     try:
@@ -156,7 +159,7 @@ def auto_discover_blueprints(app):
                 # 导入模块
                 module = importlib.import_module(full_module_name)
 
-                # 遍历模块中的所有属性，查找Blueprint实例
+                # 遍历模块中的所有属性,查找Blueprint实例
                     attr = getattr(module, attr_name)
                     if isinstance(attr, Blueprint):
                         # 检查是否已经在手动配置中注册过
@@ -169,4 +172,5 @@ def auto_discover_blueprints(app):
                 print(f"✗ 自动发现蓝图 {module_name} 失败: {str(e)}")
 
 
-"""
+def do_work(**kwargs):
+    """

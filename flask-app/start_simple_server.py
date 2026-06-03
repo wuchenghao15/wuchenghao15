@@ -1,6 +1,7 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
-简单启动服务器，只运行基本的Flask应用，不依赖AI组件
+简单启动服务器,只运行基本的Flask应用,不依赖AI组件
 
 import sys
 import os
@@ -51,6 +52,7 @@ def root():
     except Exception as e:
         logger.error(f"Server failed to start: {e}")
         import traceback
+import json
         traceback.print_exc()
         sys.exit(1)
 

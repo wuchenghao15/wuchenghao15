@@ -1,7 +1,8 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
-防火墙系统，用于保护系统安全
-提供IP过滤、速率限制、URL过滤等功能
+防火墙系统,用于保护系统安全
+提供IP过滤,速率限制,URL过滤等功能
 
 import time
 import threading
@@ -12,7 +13,7 @@ from typing import Dict, Any, List, Optional, Set
 from app.utils.logging import logger
 
 class FirewallSystem:
-    防火墙系统主类，负责管理和执行防火墙规则
+    防火墙系统主类,负责管理和执行防火墙规则
 
     def __init__(self):
         初始化防火墙系统
@@ -20,12 +21,12 @@ class FirewallSystem:
         self._ip_whitelist = set()  # IP白名单
         self._ip_blacklist = set()  # IP黑名单
         self._rate_limits = {}  # 速率限制配置
-        self._request_count = {}  # 请求计数，用于速率限制
+        self._request_count = {}  # 请求计数,用于速率限制
         self._config = {
             "firewall_id": f"firewall_{int(time.time())}_{random.randint(1000, 9999)}",
             "firewall_name": "MTSCOS Firewall System",
             "enabled": True,
-            "default_action": "allow",  # 默认动作：allow或block
+            "default_action": "allow",  # 默认动作:allow或block
             "log_enabled": True,  # 是否启用日志
             "rate_limit_enabled": True,  # 是否启用速率限制
             "ip_filter_enabled": True,  # 是否启用IP过滤
@@ -40,7 +41,7 @@ class FirewallSystem:
             "whitelist_count": 0,
             "blacklist_count": 0,
             "blocked_requests": 0,
-            "allowed_requests": 0
+            allowed_requests = 0
         }
         self._lock = threading.Lock()
         self._cleanup_thread = None
@@ -55,6 +56,7 @@ class FirewallSystem:
             config: 配置参数
 
         Returns:
+    pass
         with self._lock:
             if self._status["initialized"]:
                 logger.warning("防火墙系统已经初始化")
@@ -76,7 +78,7 @@ class FirewallSystem:
                 self._status["initialized"] = True
                 self._status["running"] = True
 
-                logger.info(f"防火墙系统初始化成功，防火墙ID: {self._config['firewall_id']}")
+                logger.info(f"防火墙系统初始化成功,防火墙ID: {self._config['firewall_id']}")
                 return True
             except Exception as e:
                 logger.error(f"防火墙系统初始化失败: {str(e)}")
@@ -96,14 +98,14 @@ class FirewallSystem:
             "enabled": True,
             "conditions": [],
             "created_at": time.time(),
-            "updated_at": time.time()
+            updated_at = time.time()
         }
         self._rules.append(default_rule)
         self._status["rule_count"] = len(self._rules)
 
         logger.info("默认防火墙规则加载完成")
 
-        启动清理线程，定期清理过期的请求计数
+        启动清理线程,定期清理过期的请求计数
         def cleanup_loop():
             while self._status["running"]:
                 time.sleep(60)  # 每分钟清理一次
@@ -125,7 +127,7 @@ class FirewallSystem:
                 for t in expired_entries:
                     counts.remove(t)
 
-                # 如果该key下没有计数了，移除该key
+                # 如果该key下没有计数了,移除该key
                 if not counts:
                     expired_keys.append(key)
 
@@ -156,7 +158,7 @@ class FirewallSystem:
                 "enabled": rule.get("enabled", True),
                 "conditions": rule.get("conditions", []),
                 "created_at": time.time(),
-                "updated_at": time.time()
+                updated_at = time.time()
             }
 
             # 添加规则
@@ -226,6 +228,7 @@ class FirewallSystem:
 
     def list_rules(self, filters: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
         Args:
+    pass
 
         Returns:
             List[Dict[str, Any]]: 规则列表
@@ -248,6 +251,7 @@ class FirewallSystem:
             ip: IP地址
 
         Returns:
+    pass
         with self._lock:
             if ip not in self._ip_whitelist:
                 self._ip_whitelist.add(ip)
@@ -314,15 +318,15 @@ class FirewallSystem:
         设置速率限制
 
         Args:
-            key: 限制键（如IP地址、URL路径等）
+            key: 限制键(如IP地址,URL路径等)
             limit: 限制数量
-            window: 时间窗口（秒）
+            window: 时间窗口(秒)
 
         Returns:
             bool: 是否设置成功
         with self._lock:
                 "limit": limit,
-                "window": window
+                window = window
             }
 
             self._notify_event("rate_limit_set", {"key": key, "limit": limit, "window": window})
@@ -332,7 +336,7 @@ class FirewallSystem:
         检查请求是否允许通过
 
         Args:
-            request_data: 请求数据，包含ip、port、method、url、headers等
+            request_data: 请求数据,包含ip,port,method,url,headers等
 
         Returns:
             bool: 是否允许通过
@@ -445,7 +449,7 @@ class FirewallSystem:
         匹配IP条件
         Args:
             ip: IP地址
-            operator: 操作符，如eq、ne、contains、regex等
+            operator: 操作符,如eq,ne,contains,regex等
             value: 比较值
 
         Returns:
@@ -473,6 +477,8 @@ class FirewallSystem:
             bool: 是否在范围内
         try:
             from ipaddress import ip_address, ip_network
+import logging
+import sys
             return ip_address(ip) in ip_network(cidr)
         except Exception as e:
             logger.error(f"CIDR检查失败: {str(e)}")
@@ -483,7 +489,7 @@ class FirewallSystem:
 
         Args:
             port: 端口
-            operator: 操作符，如eq、ne、gt、lt、in等
+            operator: 操作符,如eq,ne,gt,lt,in等
             value: 比较值
 
         Returns:
@@ -501,6 +507,7 @@ class FirewallSystem:
                 ports = [int(p) for p in value.split(",")]
                 return port in ports
         except Exception as e:
+    pass
         return False
 
     def _match_method(self, method: str, operator: str, value: str) -> bool:
@@ -508,7 +515,7 @@ class FirewallSystem:
 
         Args:
             method: 请求方法
-            operator: 操作符，如eq、ne、in等
+            operator: 操作符,如eq,ne,in等
             value: 比较值
 
         Returns:
@@ -525,7 +532,7 @@ class FirewallSystem:
     def _match_url(self, url: str, operator: str, value: str) -> bool:
         Args:
             url: URL路径
-            operator: 操作符，如eq、ne、contains、regex等
+            operator: 操作符,如eq,ne,contains,regex等
             value: 比较值
 
         Returns:
@@ -550,7 +557,7 @@ class FirewallSystem:
         Args:
             headers: 请求头
             header_name: 头名称
-            operator: 操作符，如eq、ne、contains等
+            operator: 操作符,如eq,ne,contains等
             value: 比较值
 
         Returns:
@@ -585,7 +592,7 @@ class FirewallSystem:
                 "rules": [rule["rule_id"] for rule in self._rules],
                 "ip_whitelist": list(self._ip_whitelist),
                 "ip_blacklist": list(self._ip_blacklist),
-                "rate_limits": self._rate_limits.copy()
+                rate_limits = self._rate_limits.copy()
             }
 
 
@@ -594,6 +601,7 @@ class FirewallSystem:
             handler: 事件处理函数
         with self._lock:
             if event_type not in self._event_handlers:
+    pass
             self._event_handlers[event_type].append(handler)
 
     def _notify_event(self, event_type: str, event_data: Dict[str, Any]):
@@ -613,6 +621,7 @@ class FirewallSystem:
             try:
                 handler(event)
             except Exception as e:
+    pass
 
     def shutdown(self) -> bool:
         关闭防火墙系统

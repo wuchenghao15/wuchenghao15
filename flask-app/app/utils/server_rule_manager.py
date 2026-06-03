@@ -1,8 +1,10 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """服务器规则管理器模块"""
 
 import logging
 from typing import Dict, Any, Optional
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -57,6 +59,6 @@ class ServerRuleManager:
 
     def initialize(self):
         """初始化规则管理器"""
-        self.logger.info("规则管理器初始化完成")
+        logger.info("规则管理器初始化完成")
 
 server_rule_manager = ServerRuleManager()

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """缓存工具模块"""
 
@@ -19,7 +20,7 @@ class CacheManager:
         """初始化缓存管理器
 
         Args:
-            default_ttl: 默认缓存过期时间（秒）
+            default_ttl: 默认缓存过期时间(秒)
         """
         self.cache: Dict[str, Dict[str, Any]] = {}
         self.default_ttl = default_ttl
@@ -52,7 +53,7 @@ class CacheManager:
             key: 缓存键
 
         Returns:
-            缓存值，如果不存在或过期返回None
+            缓存值,如果不存在或过期返回None
         """
         if key not in self.cache:
             return None
@@ -71,7 +72,7 @@ class CacheManager:
         Args:
             key: 缓存键
             value: 缓存值
-            ttl: 过期时间（秒）
+            ttl: 过期时间(秒)
         """
         ttl = ttl or self.default_ttl
         self.cache[key] = {
@@ -119,7 +120,7 @@ class CacheManager:
         """缓存装饰器
 
         Args:
-            ttl: 过期时间（秒）
+            ttl: 过期时间(秒)
 
         Returns:
             装饰器函数

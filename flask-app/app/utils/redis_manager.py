@@ -1,22 +1,27 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
-Redis管理器，负责Redis连接和操作
-支持单机、哨兵模式和集群模式
-强化版哨兵模式：支持主从分离、故障转移、健康监控
+Redis管理器,负责Redis连接和操作
+支持单机,哨兵模式和集群模式
+强化版:支持主从分离,故障转移,健康监控,缓存策略,分布式锁,限流
 """
 
 import os
-# import json removed - using database storage
 import logging
 import threading
 import time
+import json
+import hashlib
+from functools import wraps
+from datetime import datetime
 import redis
 from redis.sentinel import Sentinel
 from app.config import load_config
 from app.utils.logging import logger
+import sys
 
 class RedisManager:
-    """Redis管理器，负责Redis连接和操作"""
+    """Redis管理器,负责Redis连接和操作"""
 
     _instance = None
     _lock = threading.Lock()
@@ -59,11 +64,39 @@ class RedisManager:
             'failover_max_retries': self.redis_config.get('FAILOVER_MAX_RETRIES', 5)
         }
 
+        # 缓存策略配置
+        self.cache_config = {
+            'default_ttl': self.redis_config.get('DEFAULT_TTL', 3600),
+            'short_ttl': self.redis_config.get('SHORT_TTL', 60),
+            'medium_ttl': self.redis_config.get('MEDIUM_TTL', 1800),
+            'long_ttl': self.redis_config.get('LONG_TTL', 86400),
+            'max_memory_policy': self.redis_config.get('MAX_MEMORY_POLICY', 'allkeys-lru'),
+            'cache_prefix': self.redis_config.get('CACHE_PREFIX', 'mtscos:'),
+            'enable_cache': self.redis_config.get('ENABLE_CACHE', True)
+        }
+
+        # 限流配置
+        self.rate_limit_config = {
+            'enabled': self.redis_config.get('ENABLE_RATE_LIMIT', True),
+            'default_limit': self.redis_config.get('DEFAULT_RATE_LIMIT', 100),
+            'default_window': self.redis_config.get('DEFAULT_RATE_WINDOW', 60),
+            'burst_limit': self.redis_config.get('BURST_LIMIT', 500)
+        }
+
         self.connections = {}
         self.connection_lock = threading.RLock()
         self.last_failover_time = 0
         self.failover_in_progress = False
         self.slave_connections = []
+        self.metrics = {
+            'get_count': 0,
+            'set_count': 0,
+            'delete_count': 0,
+            'hits': 0,
+            'misses': 0,
+            'errors': 0,
+            'last_reset': datetime.now().isoformat()
+        }
 
         # 初始化连接
         self._init_connections()
@@ -72,12 +105,16 @@ class RedisManager:
         self._monitor_thread = threading.Thread(target=self._monitor_connections, daemon=True)
         self._monitor_thread.start()
         
-        # 启动哨兵信息刷新线程（哨兵模式专用）
+        # 启动哨兵信息刷新线程(哨兵模式专用)
         if self.connection_mode == 'sentinel':
             self._sentinel_refresh_thread = threading.Thread(target=self._refresh_sentinel_info, daemon=True)
             self._sentinel_refresh_thread.start()
         
-        logger.info("Redis管理器初始化完成，模式: {}".format(self.connection_mode))
+        # 启动指标收集线程
+        self._metrics_thread = threading.Thread(target=self._collect_metrics, daemon=True)
+        self._metrics_thread.start()
+        
+        logger.info("Redis管理器初始化完成,模式: {}".format(self.connection_mode))
 
     def _init_connections(self):
         """初始化Redis连接"""
@@ -106,14 +143,11 @@ class RedisManager:
                 db=db,
                 max_connections=self.pool_size,
                 socket_timeout=self.socket_timeout,
-                socket_connect_timeout=self.socket_connect_timeout
-            )
-            
-            self.connections['default'] = redis.Redis(
-                connection_pool=pool,
+                socket_connect_timeout=self.socket_connect_timeout,
                 decode_responses=True
             )
-
+            
+            self.connections['default'] = redis.Redis(connection_pool=pool)
             self.connections['default'].ping()
             logger.info(f"Redis单机连接成功: {host}:{port}")
         except Exception as e:
@@ -129,68 +163,42 @@ class RedisManager:
             socket_timeout = self.sentinel_config['socket_timeout']
             pool_size = self.sentinel_config['connection_pool_size']
 
-            # 创建哨兵实例
             self.sentinel = Sentinel(
                 sentinel_nodes,
                 socket_timeout=socket_timeout,
                 password=password,
-                db=db
-            )
-
-            # 创建主节点连接池
-            self.master_pool = redis.ConnectionPool(
-                connection_class=redis.connection.Connection,
-                max_connections=pool_size,
-                socket_timeout=socket_timeout,
-                socket_connect_timeout=self.socket_connect_timeout,
-                password=password,
                 db=db,
                 decode_responses=True
             )
 
-            # 创建从节点连接池
-            self.slave_pool = redis.ConnectionPool(
-                connection_class=redis.connection.Connection,
-                max_connections=pool_size,
-                socket_timeout=socket_timeout,
-                socket_connect_timeout=self.socket_connect_timeout,
-                password=password,
-                db=db,
-                decode_responses=True
-            )
-
-            # 获取主节点连接
             self.master = self.sentinel.master_for(
                 master_name,
                 socket_timeout=socket_timeout,
                 password=password,
                 db=db,
-                decode_responses=True,
-                max_connections=pool_size
+                max_connections=pool_size,
+                decode_responses=True
             )
 
-            # 获取从节点连接（支持读写分离）
             if self.sentinel_config['read_from_slave']:
                 self.slave = self.sentinel.slave_for(
                     master_name,
                     socket_timeout=socket_timeout,
                     password=password,
                     db=db,
-                    decode_responses=True,
-                    max_connections=pool_size
+                    max_connections=pool_size,
+                    decode_responses=True
                 )
             else:
                 self.slave = self.master
 
-            # 测试连接
-            master_pong = self.master.ping()
-            slave_pong = self.slave.ping()
+            self.master.ping()
+            self.slave.ping()
             
             self.connections['sentinel'] = self.sentinel
             self.connections['master'] = self.master
             self.connections['slave'] = self.slave
 
-            # 获取哨兵信息
             self._update_sentinel_info()
             
             logger.info(f"Redis哨兵模式连接成功")
@@ -207,15 +215,9 @@ class RedisManager:
         """更新哨兵信息"""
         try:
             if self.connection_mode == 'sentinel' and hasattr(self, 'sentinel'):
-                # 获取主节点信息
-                master_info = self.sentinel.discover_master(self.sentinel_config['master_name'])
-                self.master_address = master_info
+                self.master_address = self.sentinel.discover_master(self.sentinel_config['master_name'])
+                self.slave_addresses = self.sentinel.discover_slaves(self.sentinel_config['master_name'])
                 
-                # 获取从节点列表
-                slave_info = self.sentinel.discover_slaves(self.sentinel_config['master_name'])
-                self.slave_addresses = slave_info
-                
-                # 获取哨兵状态
                 self.sentinel_status = []
                 for sentinel_node in self.sentinel_config['nodes']:
                     try:
@@ -270,8 +272,7 @@ class RedisManager:
         """监控Redis连接状态"""
         while True:
             try:
-                time.sleep(10)  # 每10秒检查一次
-                
+                time.sleep(10)
                 with self.connection_lock:
                     if self.connection_mode == 'single':
                         self._monitor_single_connection()
@@ -279,7 +280,6 @@ class RedisManager:
                         self._monitor_sentinel_connection()
                     elif self.connection_mode == 'cluster':
                         self._monitor_cluster_connection()
-                        
             except Exception as e:
                 logger.error(f"监控Redis连接失败: {str(e)}")
 
@@ -294,23 +294,19 @@ class RedisManager:
                 self._reconnect()
 
     def _monitor_sentinel_connection(self):
-        """监控哨兵模式连接 - 强化版"""
+        """监控哨兵模式连接"""
         if not hasattr(self, 'master'):
             return
 
         try:
-            # 检查主节点
             self.master.ping()
             logger.debug("Redis哨兵主节点连接正常")
             
-            # 检查从节点（如果启用读写分离）
             if self.sentinel_config['read_from_slave'] and hasattr(self, 'slave'):
                 self.slave.ping()
                 logger.debug("Redis哨兵从节点连接正常")
             
-            # 检查哨兵节点状态
             self._check_sentinel_health()
-            
         except Exception as e:
             logger.error(f"Redis哨兵模式连接异常: {str(e)}")
             self._handle_sentinel_failover()
@@ -322,18 +318,16 @@ class RedisManager:
 
         offline_sentinels = [s for s in self.sentinel_status if s['status'] == 'offline']
         if offline_sentinels:
-            logger.warning(f"检测到 {len(offline_sentinels)} 个哨兵节点离线: {[s['node'] for s in offline_sentinels]}")
+            logger.warning(f"检测到 {len(offline_sentinels)} 个哨兵节点离线")
 
     def _handle_sentinel_failover(self):
         """处理哨兵故障转移"""
         current_time = time.time()
         
-        # 防止频繁故障转移
         if current_time - self.last_failover_time < 30:
-            logger.info("故障转移冷却中，跳过本次尝试")
+            logger.info("故障转移冷却中,跳过本次尝试")
             return
 
-        # 检查是否正在进行故障转移
         if self.failover_in_progress:
             logger.info("故障转移正在进行中")
             return
@@ -351,10 +345,8 @@ class RedisManager:
                 try:
                     logger.info(f"故障转移尝试 {attempt + 1}/{retries}")
                     
-                    # 刷新哨兵信息
                     self._update_sentinel_info()
                     
-                    # 重新获取主从连接
                     master_name = self.sentinel_config['master_name']
                     password = self.sentinel_config['password']
                     db = self.sentinel_config['db']
@@ -362,37 +354,29 @@ class RedisManager:
                     pool_size = self.sentinel_config['connection_pool_size']
                     
                     self.master = self.sentinel.master_for(
-                        master_name,
-                        socket_timeout=socket_timeout,
-                        password=password,
-                        db=db,
-                        decode_responses=True,
-                        max_connections=pool_size
+                        master_name, socket_timeout=socket_timeout,
+                        password=password, db=db, max_connections=pool_size,
+                        decode_responses=True
                     )
                     
                     if self.sentinel_config['read_from_slave']:
                         self.slave = self.sentinel.slave_for(
-                            master_name,
-                            socket_timeout=socket_timeout,
-                            password=password,
-                            db=db,
-                            decode_responses=True,
-                            max_connections=pool_size
+                            master_name, socket_timeout=socket_timeout,
+                            password=password, db=db, max_connections=pool_size,
+                            decode_responses=True
                         )
                     else:
                         self.slave = self.master
                     
-                    # 测试新连接
                     self.master.ping()
-                    logger.info("Redis哨兵故障转移成功")
-                    logger.info(f"  新主节点: {self.master_address}")
+                    logger.info(f"Redis哨兵故障转移成功,新主节点: {self.master_address}")
                     return
                     
                 except Exception as e:
                     logger.error(f"故障转移尝试 {attempt + 1} 失败: {str(e)}")
-                    time.sleep(delay * (attempt + 1))  # 指数退避
+                    time.sleep(delay * (attempt + 1))
             
-            logger.error("Redis哨兵故障转移失败，达到最大重试次数")
+            logger.error("Redis哨兵故障转移失败,达到最大重试次数")
             
         finally:
             self.failover_in_progress = False
@@ -413,11 +397,19 @@ class RedisManager:
             try:
                 if self.connection_mode == 'sentinel':
                     self._update_sentinel_info()
-                    logger.debug(f"哨兵信息已刷新 - 主节点: {self.master_address}, 从节点数: {len(self.slave_addresses)}")
+                    logger.debug(f"哨兵信息已刷新")
             except Exception as e:
                 logger.error(f"刷新哨兵信息失败: {str(e)}")
-            
-            time.sleep(60)  # 每分钟刷新一次
+            time.sleep(60)
+
+    def _collect_metrics(self):
+        """收集Redis操作指标"""
+        while True:
+            try:
+                time.sleep(60)
+                logger.debug(f"Redis指标: {self.metrics}")
+            except Exception as e:
+                logger.error(f"收集Redis指标失败: {str(e)}")
 
     def _reconnect(self):
         """重新连接Redis"""
@@ -434,19 +426,11 @@ class RedisManager:
                 attempts += 1
                 time.sleep(self.reconnect_interval)
         
-        logger.error("Redis重新连接失败，达到最大尝试次数")
+        logger.error("Redis重新连接失败,达到最大尝试次数")
 
     def get_connection(self, connection_type=None):
-        """获取Redis连接
-        
-        Args:
-            connection_type: 连接类型，default, master, slave, cluster, read, write
-        
-        Returns:
-            Redis连接对象
-        """
+        """获取Redis连接"""
         with self.connection_lock:
-            # 根据操作类型选择连接
             if connection_type == 'write' or connection_type == 'master':
                 if self.connection_mode == 'sentinel' and hasattr(self, 'master'):
                     return self.master
@@ -459,7 +443,6 @@ class RedisManager:
                 elif 'slave' in self.connections:
                     return self.connections['slave']
             
-            # 默认返回策略
             if connection_type in self.connections:
                 return self.connections[connection_type]
             elif 'default' in self.connections:
@@ -475,35 +458,46 @@ class RedisManager:
             return None
 
     def get_master_connection(self):
-        """获取主节点连接（用于写操作）"""
+        """获取主节点连接"""
         return self.get_connection('master')
 
     def get_slave_connection(self):
-        """获取从节点连接（用于读操作）"""
+        """获取从节点连接"""
         return self.get_connection('slave')
 
     # ========== 通用操作方法 ==========
 
+    def _get_full_key(self, key):
+        """获取带前缀的完整键名"""
+        return f"{self.cache_config['cache_prefix']}{key}"
+
     def set(self, key, value, expire=None):
-        """设置键值对（使用主节点）"""
+        """设置键值对"""
         try:
             conn = self.get_master_connection()
             if not conn:
                 return False
 
-            if isinstance(value, (dict, list)):
-                value = str(value)
+            full_key = self._get_full_key(key)
+            ttl = expire if expire else self.cache_config['default_ttl']
 
-            if expire:
-                return conn.setex(key, expire, value)
+            if isinstance(value, (dict, list)):
+                value = json.dumps(value)
+
+            if ttl:
+                result = conn.setex(full_key, ttl, value)
             else:
-                return conn.set(key, value)
+                result = conn.set(full_key, value)
+            
+            self.metrics['set_count'] += 1
+            return result
         except Exception as e:
+            self.metrics['errors'] += 1
             logger.error(f"Redis set操作失败: {str(e)}")
             return False
 
     def get(self, key, default=None, prefer_slave=True):
-        """获取键值（优先使用从节点）"""
+        """获取键值"""
         try:
             if prefer_slave and self.connection_mode == 'sentinel':
                 conn = self.get_slave_connection()
@@ -513,26 +507,38 @@ class RedisManager:
             if not conn:
                 return default
 
-            value = conn.get(key)
+            full_key = self._get_full_key(key)
+            value = conn.get(full_key)
+            
             if value is None:
+                self.metrics['misses'] += 1
                 return default
 
+            self.metrics['hits'] += 1
+            self.metrics['get_count'] += 1
+
             try:
-                return eval(value)
+                return json.loads(value)
             except (json.JSONDecodeError, TypeError):
                 return value
         except Exception as e:
+            self.metrics['errors'] += 1
             logger.error(f"Redis get操作失败: {str(e)}")
             return default
 
     def delete(self, key):
-        """删除键（使用主节点）"""
+        """删除键"""
         try:
             conn = self.get_master_connection()
             if not conn:
                 return False
-            return bool(conn.delete(key))
+            
+            full_key = self._get_full_key(key)
+            result = bool(conn.delete(full_key))
+            self.metrics['delete_count'] += 1
+            return result
         except Exception as e:
+            self.metrics['errors'] += 1
             logger.error(f"Redis delete操作失败: {str(e)}")
             return False
 
@@ -542,7 +548,9 @@ class RedisManager:
             conn = self.get_connection()
             if not conn:
                 return False
-            return bool(conn.exists(key))
+            
+            full_key = self._get_full_key(key)
+            return bool(conn.exists(full_key))
         except Exception as e:
             logger.error(f"Redis exists操作失败: {str(e)}")
             return False
@@ -553,7 +561,9 @@ class RedisManager:
             conn = self.get_master_connection()
             if not conn:
                 return False
-            return bool(conn.expire(key, seconds))
+            
+            full_key = self._get_full_key(key)
+            return bool(conn.expire(full_key, seconds))
         except Exception as e:
             logger.error(f"Redis expire操作失败: {str(e)}")
             return False
@@ -564,7 +574,9 @@ class RedisManager:
             conn = self.get_connection()
             if not conn:
                 return -2
-            return conn.ttl(key)
+            
+            full_key = self._get_full_key(key)
+            return conn.ttl(full_key)
         except Exception as e:
             logger.error(f"Redis ttl操作失败: {str(e)}")
             return -2
@@ -589,10 +601,12 @@ class RedisManager:
             if not conn:
                 return False
             
-            if isinstance(value, (dict, list)):
-                value = str(value)
+            full_name = self._get_full_key(name)
             
-            return bool(conn.hset(name, key, value))
+            if isinstance(value, (dict, list)):
+                value = json.dumps(value)
+            
+            return bool(conn.hset(full_name, key, value))
         except Exception as e:
             logger.error(f"Redis hset操作失败: {str(e)}")
             return False
@@ -604,12 +618,13 @@ class RedisManager:
             if not conn:
                 return default
             
-            value = conn.hget(name, key)
+            full_name = self._get_full_key(name)
+            value = conn.hget(full_name, key)
             if value is None:
                 return default
             
             try:
-                return eval(value)
+                return json.loads(value)
             except (json.JSONDecodeError, TypeError):
                 return value
         except Exception as e:
@@ -623,11 +638,12 @@ class RedisManager:
             if not conn:
                 return {}
             
-            data = conn.hgetall(name)
+            full_name = self._get_full_key(name)
+            data = conn.hgetall(full_name)
             result = {}
             for key, value in data.items():
                 try:
-                    result[key] = eval(value)
+                    result[key] = json.loads(value)
                 except (json.JSONDecodeError, TypeError):
                     result[key] = value
             return result
@@ -641,7 +657,9 @@ class RedisManager:
             conn = self.get_master_connection()
             if not conn:
                 return False
-            return bool(conn.hdel(name, key))
+            
+            full_name = self._get_full_key(name)
+            return bool(conn.hdel(full_name, key))
         except Exception as e:
             logger.error(f"Redis hdel操作失败: {str(e)}")
             return False
@@ -655,14 +673,15 @@ class RedisManager:
             if not conn:
                 return 0
             
+            full_name = self._get_full_key(name)
             serial_values = []
             for value in values:
                 if isinstance(value, (dict, list)):
-                    serial_values.append(str(value))
+                    serial_values.append(json.dumps(value))
                 else:
                     serial_values.append(value)
             
-            return conn.lpush(name, *serial_values)
+            return conn.lpush(full_name, *serial_values)
         except Exception as e:
             logger.error(f"Redis lpush操作失败: {str(e)}")
             return 0
@@ -674,14 +693,15 @@ class RedisManager:
             if not conn:
                 return 0
             
+            full_name = self._get_full_key(name)
             serial_values = []
             for value in values:
                 if isinstance(value, (dict, list)):
-                    serial_values.append(str(value))
+                    serial_values.append(json.dumps(value))
                 else:
                     serial_values.append(value)
             
-            return conn.rpush(name, *serial_values)
+            return conn.rpush(full_name, *serial_values)
         except Exception as e:
             logger.error(f"Redis rpush操作失败: {str(e)}")
             return 0
@@ -693,11 +713,12 @@ class RedisManager:
             if not conn:
                 return []
             
-            values = conn.lrange(name, start, end)
+            full_name = self._get_full_key(name)
+            values = conn.lrange(full_name, start, end)
             result = []
             for value in values:
                 try:
-                    result.append(eval(value))
+                    result.append(json.loads(value))
                 except (json.JSONDecodeError, TypeError):
                     result.append(value)
             return result
@@ -711,10 +732,225 @@ class RedisManager:
             conn = self.get_connection()
             if not conn:
                 return 0
-            return conn.llen(name)
+            
+            full_name = self._get_full_key(name)
+            return conn.llen(full_name)
         except Exception as e:
             logger.error(f"Redis llen操作失败: {str(e)}")
             return 0
+
+    # ========== 集合操作 ==========
+
+    def sadd(self, name, *values):
+        """添加元素到集合"""
+        try:
+            conn = self.get_master_connection()
+            if not conn:
+                return 0
+            
+            full_name = self._get_full_key(name)
+            return conn.sadd(full_name, *values)
+        except Exception as e:
+            logger.error(f"Redis sadd操作失败: {str(e)}")
+            return 0
+
+    def smembers(self, name):
+        """获取集合所有元素"""
+        try:
+            conn = self.get_connection()
+            if not conn:
+                return set()
+            
+            full_name = self._get_full_key(name)
+            return conn.smembers(full_name)
+        except Exception as e:
+            logger.error(f"Redis smembers操作失败: {str(e)}")
+            return set()
+
+    def sismember(self, name, value):
+        """检查元素是否在集合中"""
+        try:
+            conn = self.get_connection()
+            if not conn:
+                return False
+            
+            full_name = self._get_full_key(name)
+            return conn.sismember(full_name, value)
+        except Exception as e:
+            logger.error(f"Redis sismember操作失败: {str(e)}")
+            return False
+
+    def srem(self, name, *values):
+        """从集合中移除元素"""
+        try:
+            conn = self.get_master_connection()
+            if not conn:
+                return 0
+            
+            full_name = self._get_full_key(name)
+            return conn.srem(full_name, *values)
+        except Exception as e:
+            logger.error(f"Redis srem操作失败: {str(e)}")
+            return 0
+
+    # ========== 有序集合操作 ==========
+
+    def zadd(self, name, *args, **kwargs):
+        """添加元素到有序集合"""
+        try:
+            conn = self.get_master_connection()
+            if not conn:
+                return 0
+            
+            full_name = self._get_full_key(name)
+            return conn.zadd(full_name, *args, **kwargs)
+        except Exception as e:
+            logger.error(f"Redis zadd操作失败: {str(e)}")
+            return 0
+
+    def zrange(self, name, start, end, desc=False, withscores=False):
+        """获取有序集合指定范围的元素"""
+        try:
+            conn = self.get_connection()
+            if not conn:
+                return []
+            
+            full_name = self._get_full_key(name)
+            return conn.zrange(full_name, start, end, desc=desc, withscores=withscores)
+        except Exception as e:
+            logger.error(f"Redis zrange操作失败: {str(e)}")
+            return []
+
+    def zrank(self, name, value):
+        """获取元素在有序集合中的排名"""
+        try:
+            conn = self.get_connection()
+            if not conn:
+                return None
+            
+            full_name = self._get_full_key(name)
+            return conn.zrank(full_name, value)
+        except Exception as e:
+            logger.error(f"Redis zrank操作失败: {str(e)}")
+            return None
+
+    # ========== 缓存装饰器 ==========
+
+    def cached(self, ttl=None, key_prefix='cache'):
+        """缓存装饰器"""
+        def decorator(func):
+            @wraps(func)
+            def wrapper(*args, **kwargs):
+                if not self.cache_config['enable_cache']:
+                    return func(*args, **kwargs)
+                
+                key_args = str(args) + str(kwargs)
+                key_hash = hashlib.md5(key_args.encode()).hexdigest()
+                cache_key = f"{key_prefix}:{func.__name__}:{key_hash}"
+                
+                cached_value = self.get(cache_key)
+                if cached_value is not None:
+                    return cached_value
+                
+                result = func(*args, **kwargs)
+                self.set(cache_key, result, ttl)
+                return result
+            return wrapper
+        return decorator
+
+    # ========== 分布式锁 ==========
+
+    def acquire_lock(self, lock_name, acquire_timeout=10, lock_timeout=60):
+        """获取分布式锁"""
+        try:
+            conn = self.get_master_connection()
+            if not conn:
+                return None
+            
+            lock_key = f"lock:{lock_name}"
+            identifier = hashlib.uuid4().hex
+            end = time.time() + acquire_timeout
+            
+            while time.time() < end:
+                if conn.set(lock_key, identifier, ex=lock_timeout, nx=True):
+                    return identifier
+                
+                time.sleep(0.1)
+            
+            return None
+        except Exception as e:
+            logger.error(f"获取分布式锁失败: {str(e)}")
+            return None
+
+    def release_lock(self, lock_name, identifier):
+        """释放分布式锁"""
+        try:
+            conn = self.get_master_connection()
+            if not conn:
+                return False
+            
+            lock_key = f"lock:{lock_name}"
+            
+            while True:
+                conn.watch(lock_key)
+                if conn.get(lock_key) == identifier:
+                    pipe = conn.pipeline()
+                    pipe.delete(lock_key)
+                    pipe.execute()
+                    return True
+                
+                conn.unwatch()
+                break
+            
+            return False
+        except Exception as e:
+            logger.error(f"释放分布式锁失败: {str(e)}")
+            return False
+
+    # ========== 限流功能 ==========
+
+    def is_rate_limited(self, key, limit=None, window=None):
+        """检查是否限流"""
+        if not self.rate_limit_config['enabled']:
+            return False
+        
+        try:
+            conn = self.get_master_connection()
+            if not conn:
+                return False
+            
+            rate_key = f"rate_limit:{key}"
+            current_limit = limit if limit else self.rate_limit_config['default_limit']
+            current_window = window if window else self.rate_limit_config['default_window']
+            
+            current = conn.incr(rate_key)
+            if current == 1:
+                conn.expire(rate_key, current_window)
+            
+            return current > current_limit
+        except Exception as e:
+            logger.error(f"限流检查失败: {str(e)}")
+            return False
+
+    def get_rate_limit_info(self, key):
+        """获取限流信息"""
+        try:
+            conn = self.get_connection()
+            if not conn:
+                return None
+            
+            rate_key = f"rate_limit:{key}"
+            count = conn.get(rate_key)
+            ttl = conn.ttl(rate_key)
+            
+            return {
+                'count': int(count) if count else 0,
+                'ttl': ttl,
+                'limit': self.rate_limit_config['default_limit']
+            }
+        except Exception as e:
+            logger.error(f"获取限流信息失败: {str(e)}")
+            return None
 
     # ========== 哨兵模式专用方法 ==========
 
@@ -741,39 +977,46 @@ class RedisManager:
             return True
         return False
 
-    def promote_slave(self, slave_address):
-        """手动提升从节点为主节点（需要哨兵权限）"""
-        if self.connection_mode != 'sentinel':
-            return {'success': False, 'error': '当前不是哨兵模式'}
-        
+    # ========== 指标和状态 ==========
+
+    def get_metrics(self):
+        """获取Redis操作指标"""
+        return self.metrics.copy()
+
+    def reset_metrics(self):
+        """重置指标"""
+        self.metrics = {
+            'get_count': 0,
+            'set_count': 0,
+            'delete_count': 0,
+            'hits': 0,
+            'misses': 0,
+            'errors': 0,
+            'last_reset': datetime.now().isoformat()
+        }
+
+    def get_stats(self):
+        """获取Redis状态统计"""
         try:
-            logger.info(f"尝试提升从节点: {slave_address}")
+            conn = self.get_connection()
+            if not conn:
+                return None
             
-            # 通过哨兵执行故障转移
-            for sentinel_node in self.sentinel_config['nodes']:
-                try:
-                    sentinel_conn = redis.Redis(
-                        host=sentinel_node[0],
-                        port=sentinel_node[1],
-                        password=self.sentinel_config['password'],
-                        socket_timeout=2.0
-                    )
-                    
-                    # 发送故障转移命令
-                    result = sentinel_conn.sentinel('failover', self.sentinel_config['master_name'])
-                    sentinel_conn.close()
-                    
-                    logger.info(f"哨兵 {sentinel_node} 故障转移结果: {result}")
-                    return {'success': True, 'message': '故障转移已触发'}
-                    
-                except Exception as e:
-                    logger.error(f"哨兵 {sentinel_node} 故障转移失败: {str(e)}")
-            
-            return {'success': False, 'error': '所有哨兵节点都无法响应'}
-            
+            info = conn.info()
+            return {
+                'connected_clients': info.get('connected_clients', 0),
+                'used_memory': info.get('used_memory', 0),
+                'used_memory_human': info.get('used_memory_human', ''),
+                'used_cpu_sys': info.get('used_cpu_sys', 0),
+                'used_cpu_user': info.get('used_cpu_user', 0),
+                'keyspace_hits': info.get('keyspace_hits', 0),
+                'keyspace_misses': info.get('keyspace_misses', 0),
+                'total_commands_processed': info.get('total_commands_processed', 0),
+                'uptime_in_seconds': info.get('uptime_in_seconds', 0)
+            }
         except Exception as e:
-            logger.error(f"提升从节点失败: {str(e)}")
-            return {'success': False, 'error': str(e)}
+            logger.error(f"获取Redis状态失败: {str(e)}")
+            return None
 
 # 创建Redis管理器实例
 redis_manager = RedisManager()

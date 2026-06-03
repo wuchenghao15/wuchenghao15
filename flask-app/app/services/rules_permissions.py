@@ -1,9 +1,10 @@
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+#!/usr/bin/env python3
 """规则与权限模块"""
 import logging
 from datetime import datetime
 from typing import Dict, Any, List, Callable
+import sys
 logger = logging.getLogger(__name__)
 
 class PermissionManager:
@@ -30,15 +31,6 @@ class PermissionManager:
 
     def check_permission(self, role_id: str, permission_id: str) -> bool:
             return False
-            return permission_id in self.role_permissions[role_id]
-
-    def get_role_permissions(self, role_id: str) -> List[str]:
-        return self.role_permissions.get(role_id, [])
-
-class RuleEngine:
-        self.rules = {}
-        logger.info("规则引擎初始化完成")
-
     def add_rule(self, rule_id: str, condition: Callable, action=None, priority: int = 1):
         self.rules[rule_id] = {'condition': condition, 'action': action, 'priority': priority, 'enabled': True}
         logger.info(f"添加规则: {rule_id}")
@@ -57,10 +49,6 @@ class RuleEngine:
                 except Exception as e:
                     logger.error(f"规则评估失败 {rule_id}: {str(e)}")
         return results
-
-permission_manager = PermissionManager()
-rule_engine = RuleEngine()
-
 def init_rules_and_permissions():
     logger.info("初始化规则和权限...")
 

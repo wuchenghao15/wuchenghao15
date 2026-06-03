@@ -1,11 +1,15 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """独立的硬件管理应用"""
 
 import os
 import sqlite3
+from contextlib import contextmanager
 from datetime import datetime, timedelta
 from flask import Flask, render_template, request, jsonify, redirect
+import json
+import sys
 
 app = Flask(__name__)
 app.template_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
@@ -254,7 +258,7 @@ def update_settings():
     if not data:
         return jsonify({'success': False, 'message': '缺少设置数据'}), 400
     
-    # 获取当前用户信息（从请求头获取）
+    # 获取当前用户信息(从请求头获取)
     user_role = request.headers.get('X-User-Role', 'admin')
     user_id = int(request.headers.get('X-User-Id', '1'))
     
@@ -267,7 +271,7 @@ def update_settings():
         old_value = current_setting['value'] if current_setting else ''
         
         if user_role == 'hardware_vikey_admin':
-            # 硬件管理员：自动保存并立即生效
+            # 硬件管理员:自动保存并立即生效
             conn.execute('''
                 UPDATE system_settings 
                 SET value = ?, updated_at = ?, approval_status = 'active' 
@@ -276,7 +280,7 @@ def update_settings():
             result['message'] = '设置已自动保存并立即生效'
             
         elif user_role == 'super_admin':
-            # 超级管理员：创建审批记录，次日自动生效或可被硬件管理员立即审批
+            # 超级管理员:创建审批记录,次日自动生效或可被硬件管理员立即审批
             effective_date = (datetime.now() + timedelta(days=1)).strftime('%Y-%m-%d')
             conn.execute('''
                 INSERT INTO settings_approval 
@@ -288,12 +292,12 @@ def update_settings():
                 'new_value': value,
                 'effective_date': effective_date,
                 'status': 'pending',
-                'message': '设置将在次日自动生效，或可由硬件管理员审批立即生效'
+                'message': '设置将在次日自动生效,或可由硬件管理员审批立即生效'
             })
-            result['message'] = '设置已提交，将在次日自动生效'
+            result['message'] = '设置已提交,将在次日自动生效'
             
         else:
-            # 普通管理员：必须等待审批
+            # 普通管理员:必须等待审批
             conn.execute('''
                 INSERT INTO settings_approval 
                 (setting_key, new_value, old_value, requester_id, requester_role, status, created_at)
@@ -303,9 +307,9 @@ def update_settings():
                 'setting_key': key,
                 'new_value': value,
                 'status': 'pending',
-                'message': '设置等待审批中，需超级管理员或硬件管理员批准后生效'
+                'message': '设置等待审批中,需超级管理员或硬件管理员批准后生效'
             })
-            result['message'] = '设置已提交审批，等待超级管理员或硬件管理员批准'
+            result['message'] = '设置已提交审批,等待超级管理员或硬件管理员批准'
     
     conn.commit()
     conn.close()
@@ -340,7 +344,7 @@ def approve_approval(approval_id):
     approver_id = int(request.headers.get('X-User-Id', '1'))
     
     if approver_role not in ['hardware_vikey_admin', 'super_admin']:
-        return jsonify({'success': False, 'message': '无权审批，需要超级管理员或硬件管理员权限'}), 403
+        return jsonify({'success': False, 'message': '无权审批,需要超级管理员或硬件管理员权限'}), 403
     
     conn = get_db_connection()
     approval = conn.execute('SELECT * FROM settings_approval WHERE id = ?', (approval_id,)).fetchone()
@@ -377,7 +381,7 @@ def reject_approval(approval_id):
     approver_role = request.headers.get('X-User-Role', 'admin')
     
     if approver_role not in ['hardware_vikey_admin', 'super_admin']:
-        return jsonify({'success': False, 'message': '无权审批，需要超级管理员或硬件管理员权限'}), 403
+        return jsonify({'success': False, 'message': '无权审批,需要超级管理员或硬件管理员权限'}), 403
     
     conn = get_db_connection()
     approval = conn.execute('SELECT * FROM settings_approval WHERE id = ?', (approval_id,)).fetchone()
@@ -406,7 +410,7 @@ def execute_now(approval_id):
     approver_role = request.headers.get('X-User-Role', 'admin')
     
     if approver_role not in ['hardware_vikey_admin', 'super_admin']:
-        return jsonify({'success': False, 'message': '无权执行，需要超级管理员或硬件管理员权限'}), 403
+        return jsonify({'success': False, 'message': '无权执行,需要超级管理员或硬件管理员权限'}), 403
     
     conn = get_db_connection()
     approval = conn.execute('SELECT * FROM settings_approval WHERE id = ?', (approval_id,)).fetchone()
@@ -442,7 +446,7 @@ def execute_midnight(approval_id):
     approver_role = request.headers.get('X-User-Role', 'admin')
     
     if approver_role not in ['hardware_vikey_admin', 'super_admin']:
-        return jsonify({'success': False, 'message': '无权执行，需要超级管理员或硬件管理员权限'}), 403
+        return jsonify({'success': False, 'message': '无权执行,需要超级管理员或硬件管理员权限'}), 403
     
     conn = get_db_connection()
     approval = conn.execute('SELECT * FROM settings_approval WHERE id = ?', (approval_id,)).fetchone()
@@ -482,7 +486,7 @@ def revoke_approval(approval_id):
     approver_role = request.headers.get('X-User-Role', 'admin')
     
     if approver_role not in ['hardware_vikey_admin', 'super_admin']:
-        return jsonify({'success': False, 'message': '无权撤回，需要超级管理员或硬件管理员权限'}), 403
+        return jsonify({'success': False, 'message': '无权撤回,需要超级管理员或硬件管理员权限'}), 403
     
     conn = get_db_connection()
     approval = conn.execute('SELECT * FROM settings_approval WHERE id = ?', (approval_id,)).fetchone()
@@ -495,7 +499,7 @@ def revoke_approval(approval_id):
         conn.close()
         return jsonify({'success': False, 'message': '只能撤回已批准的记录'}), 400
     
-    # 撤回审批，恢复到待审批状态
+    # 撤回审批,恢复到待审批状态
     conn.execute('''
         UPDATE settings_approval 
         SET status = 'pending', revoked_at = ?, approver_id = NULL, approver_role = NULL, approved_at = NULL, executed_at = NULL 
@@ -508,7 +512,7 @@ def revoke_approval(approval_id):
     conn.commit()
     conn.close()
     
-    return jsonify({'success': True, 'message': '审批已撤回，恢复到待审批状态'})
+    return jsonify({'success': True, 'message': '审批已撤回,恢复到待审批状态'})
 
 @app.route('/api/hardware/approvals/all', methods=['GET'])
 def get_all_approvals():

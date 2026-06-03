@@ -1,6 +1,8 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
 检查服务器状态并保存配置到数据库
+"""
 
 import os
 import sys
@@ -45,10 +47,13 @@ def check_server_running():
     except requests.ConnectionError:
         logger.error(f"✗ 无法连接到服务器: {health_url}")
         return False
+    except requests.Timeout:
         logger.error(f"✗ 服务器连接超时: {health_url}")
         return False
+    except Exception as e:
         logger.error(f"✗ 检查服务器状态时发生错误: {str(e)}")
         return False
+
 def save_config_and_verify():
     """保存配置到数据库并验证"""
     logger.info("\n开始保存配置到数据库...")
@@ -78,7 +83,7 @@ def main():
     server_running = check_server_running()
 
     if not server_running:
-        logger.warning("服务器未运行，尝试启动服务器...")
+        logger.warning("服务器未运行,尝试启动服务器...")
         # 尝试启动服务器
         os.system("python3 start_server.py > server_start.log 2>&1 &")
 
@@ -91,13 +96,15 @@ def main():
         if server_running:
             logger.info("✓ 服务器已成功启动")
         else:
-            logger.error("✗ 服务器启动失败，请查看 server_start.log 了解详情")
+            logger.error("✗ 服务器启动失败,请查看 server_start.log 了解详情")
             with open("server_start.log", "r", encoding="utf-8") as f:
                 log_content = f.read()
             sys.exit(1)
 
     save_config_and_verify()
 
-    logger.info("\n=== 操作完成 ===")
+    logger.info("\n == 操作完成 ===")
+
 
 if __name__ == "__main__":
+    main()

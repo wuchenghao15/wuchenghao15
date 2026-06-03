@@ -1,9 +1,13 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-超简单的Flask应用，只返回index.html，使用端口8888
+超简单的Flask应用,只返回index.html,使用端口8888
+"""
 
 from flask import Flask, render_template
+import logging
+logger = logging.getLogger(__name__)
 import os
 
 # 创建Flask应用实例
@@ -17,7 +21,7 @@ app.static_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'st
 
 @app.route('/')
 def index():
-    """首页路由，返回index.html"""
+    """首页路由, 返回index.html"""
     return render_template('index.html')
 
 if __name__ == '__main__':
@@ -28,6 +32,6 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         print("Flask app stopped.")
     except Exception as e:
-        print(f"Error starting Flask app: {str(e)}")
+        logger.error(f"Error starting Flask app: {str(e)}")
         import traceback
         traceback.print_exc()

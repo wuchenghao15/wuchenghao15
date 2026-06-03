@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>摸底测试 - 答题中</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header h1 {
+            font-size: 20px;
+            font-weight: 600;
+        }
+        .timer {
+            background: rgba(255,255,255,0.2);
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .progress-bar {
+            height: 5px;
+            background: #e0e0e0;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s ease;
+        }
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+        .question-card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
+        }
+        .question-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .question-number {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            font-size: 16px;
+        }
+        .question-category {
+            background: #e8f5e9;
+            color: #2e7d32;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+        .question-text {
+            font-size: 18px;
+            line-height: 1.6;
+            color: #333;
+            margin-bottom: 25px;
+        }
+        .options {
+            display: grid;
+            gap: 15px;
+        }
+        .option {
+            background: #f8f9fa;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 15px 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+        }
+        .option:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+        .option.selected {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #e8eaf6 0%, #e1bee7 100%);
+        }
+        .option-letter {
+            background: #667eea;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-right: 15px;
+            font-weight: bold;
+        }
+        .option-text {
+            flex: 1;
+            font-size: 16px;
+            color: #333;
+        }
+        .navigation {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 30px;
+        }
+        .nav-btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .nav-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .btn-prev {
+            background: #f0f0f0;
+            color: #333;
+        }
+        .btn-prev:hover:not(:disabled) {
+            background: #e0e0e0;
+        }
+        .btn-next {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .btn-next:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        .btn-submit {
+            background: linear-gradient(135deg, #4caf50 0%, #388e3c 100%);
+            color: white;
+        }
+        .btn-submit:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(76, 175, 80, 0.4);
+        }
+        .question-nav {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 30px;
+        }
+        .nav-item {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            border: 2px solid #e0e0e0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .nav-item:hover {
+            border-color: #667eea;
+        }
+        .nav-item.current {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+        }
+        .nav-item.answered {
+            background: #c8e6c9;
+            border-color: #4caf50;
+        }
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            display: none;
+        }
+        .modal {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+        }
+        .modal-icon {
+            font-size: 60px;
+            margin-bottom: 20px;
+        }
+        .modal h2 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+        .modal p {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .modal-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+        .modal-btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .modal-btn.cancel {
+            background: #f0f0f0;
+            color: #333;
+        }
+        .modal-btn.confirm {
+            background: linear-gradient(135deg, #4caf50 0%, #388e3c 100%);
+            color: white;
+        }
+        .cheat-warning {
+            background: linear-gradient(135deg, #ff9800 0%, #f44336 100%);
+            color: white;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            display: none;
+            text-align: center;
+            font-weight: bold;
+        }
+        .proctor-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .proctor-btn {
+            padding: 10px 25px;
+            border: none;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .btn-pause {
+            background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+            color: white;
+        }
+        .btn-pause:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(255, 152, 0, 0.4);
+        }
+        .btn-resume {
+            background: linear-gradient(135deg, #4caf50 0%, #388e3c 100%);
+            color: white;
+            display: none;
+        }
+        .btn-resume:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
+        }
+        .proctor-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        /* 音频播放器样式 */
+        .audio-player-section {
+            background: #f0f4f8;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+        
+        .audio-player-title {
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .audio-player {
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        .audio-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .audio-option {
+            padding: 8px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: white;
+        }
+        
+        .audio-option:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+        
+        .audio-option.active {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .audio-transcript {
+            margin-top: 15px;
+            padding: 12px;
+            background: #fff9c4;
+            border-left: 4px solid #ffc107;
+            border-radius: 4px;
+            font-size: 14px;
+            color: #555;
+            line-height: 1.6;
+        }
+        
+        .audio-transcript-toggle {
+            color: #667eea;
+            cursor: pointer;
+            font-size: 13px;
+            text-decoration: underline;
+            margin-top: 10px;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📝 摸底测试</h1>
+        <div class="timer" id="timer">00:00</div>
+    </div>
+    
+    <div class="progress-bar">
+        <div class="progress-fill" id="progress"></div>
+    </div>
+    
+    <div class="cheat-warning" id="cheat-warning">
+        <span id="cheat-warning-text">⚠️ 检测到可疑活动</span>
+    </div>
+    
+    <div class="proctor-buttons">
+        <button class="proctor-btn btn-pause" id="btn-pause" onclick="requestPause()">⏸️ 申请暂停</button>
+        <button class="proctor-btn btn-resume" id="btn-resume" onclick="resumeExam()">▶️ 继续考试</button>
+    </div>
+    
+    <div class="container">
+        <div class="question-card" id="question-card">
+            <div class="question-header">
+                <div class="question-number" id="question-number">1</div>
+                <div class="question-category" id="question-category">数学</div>
+            </div>
+            
+            <!-- 音频播放器区域 -->
+            <div class="audio-player-section" id="audio-player-section" style="display: none;">
+                <div class="audio-player-title">🎧 听力音频</div>
+                <audio id="audio-player" class="audio-player" controls></audio>
+                
+                <div class="audio-options" id="audio-options">
+                    <!-- 音频选项会在这里动态加载 -->
+                </div>
+                
+                <div class="audio-transcript" id="audio-transcript" style="display: none;"></div>
+                <div class="audio-transcript-toggle" id="audio-transcript-toggle" onclick="toggleTranscript()" style="display: none;">📝 显示/隐藏原文</div>
+            </div>
+            
+            <div class="question-text" id="question-text">题目加载中...</div>
+            <div class="options" id="options">
+                <div class="option" data-option="A">
+                    <div class="option-letter">A</div>
+                    <div class="option-text">选项加载中...</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="navigation">
+            <button class="nav-btn btn-prev" id="btn-prev" onclick="prevQuestion()" disabled>上一题</button>
+            <div id="question-progress">第 1/30 题</div>
+            <button class="nav-btn btn-next" id="btn-next" onclick="nextQuestion()">下一题</button>
+        </div>
+        
+        <button class="nav-btn btn-submit" id="btn-submit" onclick="showSubmitModal()" style="display: none; margin: 20px auto; display: block;">提交测试</button>
+        
+        <div class="question-nav" id="question-nav"></div>
+    </div>
+    
+    <div class="modal-overlay" id="submit-modal">
+        <div class="modal">
+            <div class="modal-icon">📊</div>
+            <h2>确认提交测试</h2>
+            <p>请确认您已完成所有题目，提交后将无法修改答案。</p>
+            <div class="modal-buttons">
+                <button class="modal-btn cancel" onclick="hideSubmitModal()">取消</button>
+                <button class="modal-btn confirm" onclick="submitTest()">确认提交</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let testData = null;
+        let currentIndex = 0;
+        let answers = {};
+        let timerSeconds = 0;
+        let timerInterval = null;
+        let serverTimeOffset = 0;
+        let activityInterval = null;
+        let sessionId = null;
+        let pauseRequested = false;
+        let examStatus = 'in_progress';
+        
+        const testId = window.location.pathname.split('/').pop();
+        
+        function loadTest() {
+            fetch(`/api/placement/test/${testId}`)
+            .then(response => response.json())
+            .then(data => {
+                testData = data;
+                
+                // 获取服务器时间，用于检测时间篡改
+                fetch('/api/proctor/session', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ exam_id: testId })
+                })
+                .then(res => res.json())
+                .then(sessionData => {
+                    if (sessionData.success) {
+                        sessionId = sessionData.session_id;
+                        
+                        // 计算服务器时间偏移
+                        const serverTime = new Date().getTime();
+                        const clientTime = Date.now();
+                        serverTimeOffset = serverTime - clientTime;
+                        
+                        // 启动活动心跳
+                        startActivityMonitor();
+                        
+                        // 启动时间检测
+                        startAntiCheatDetection();
+                    }
+                });
+                
+                renderQuestion();
+                renderQuestionNav();
+                startTimer();
+            })
+            .catch(error => {
+                console.error('加载测试失败:', error);
+            });
+        }
+        
+        function startActivityMonitor() {
+            // 每30秒发送一次活动心跳
+            activityInterval = setInterval(() => {
+                if (sessionId && examStatus === 'in_progress') {
+                    fetch(`/api/proctor/session/${sessionId}/activity`, {
+                        method: 'POST'
+                    });
+                }
+            }, 30000);
+        }
+        
+        function startAntiCheatDetection() {
+            // 检测页面刷新
+            if (window.performance.navigation.type === 1) {
+                handleRefresh();
+            }
+            
+            // 检测时间篡改
+            setInterval(() => {
+                if (examStatus !== 'in_progress') return;
+                
+                const expectedTime = Date.now() + serverTimeOffset;
+                const actualTime = new Date().getTime();
+                const timeDiff = Math.abs(expectedTime - actualTime);
+                
+                // 如果时间差异超过5分钟，可能存在时间篡改
+                if (timeDiff > 300000) {
+                    reportCheating('time_manipulation', `时间差异: ${timeDiff}ms`);
+                }
+            }, 5000);
+        }
+        
+        function handleRefresh() {
+            if (sessionId) {
+                fetch(`/api/proctor/session/${sessionId}/refresh`, {
+                    method: 'POST'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.blocked) {
+                        alert(data.message);
+                        window.location.href = '/exam/placement_test';
+                    }
+                });
+            }
+        }
+        
+        function reportCheating(type, details) {
+            console.warn(`检测到可疑活动: ${type} - ${details}`);
+            
+            // 显示警告
+            document.getElementById('cheat-warning').style.display = 'block';
+            document.getElementById('cheat-warning-text').textContent = 
+                `检测到可疑活动: ${details}。请遵守考试规则。`;
+            
+            // 发送报告
+            fetch(`/api/proctor/session/${sessionId}/suspicious`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ type, details })
+            });
+        }
+        
+        function requestPause() {
+            if (pauseRequested || examStatus !== 'in_progress') {
+                alert('已有待处理的暂停申请，请等待监考教师审批');
+                return;
+            }
+            
+            const reason = prompt('请输入暂停原因：');
+            if (!reason) return;
+            
+            fetch(`/api/proctor/session/${sessionId}/pause/request`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ reason })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    pauseRequested = true;
+                    alert('暂停申请已提交，请等待监考教师审批...');
+                    document.getElementById('btn-pause').disabled = true;
+                    document.getElementById('btn-pause').textContent = '申请已提交';
+                    
+                    // 轮询审批状态
+                    checkPauseApproval();
+                } else {
+                    alert(data.message);
+                }
+            });
+        }
+        
+        function checkPauseApproval() {
+            const interval = setInterval(() => {
+                fetch(`/api/proctor/session/${sessionId}/info`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.data) {
+                        if (data.data.status === 'paused') {
+                            clearInterval(interval);
+                            examStatus = 'paused';
+                            pauseRequested = false;
+                            clearInterval(timerInterval);
+                            alert('暂停申请已批准，请点击"继续考试"按钮恢复考试');
+                            document.getElementById('btn-pause').style.display = 'none';
+                            document.getElementById('btn-resume').style.display = 'block';
+                        } else if (data.data.status === 'completed') {
+                            clearInterval(interval);
+                            window.location.href = '/exam/placement_test';
+                        }
+                    }
+                });
+            }, 3000);
+        }
+        
+        function resumeExam() {
+            fetch(`/api/proctor/session/${sessionId}/resume`, {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    examStatus = 'in_progress';
+                    startTimer();
+                    document.getElementById('btn-pause').style.display = 'block';
+                    document.getElementById('btn-resume').style.display = 'none';
+                    alert('考试已恢复，继续答题');
+                } else {
+                    alert(data.message);
+                }
+            });
+        }
+        
+        // 存储当前题目的音频信息
+        let currentAudioData = null;
+        let showTranscript = false;
+        
+        function renderQuestion() {
+            if (!testData || !testData.questions || testData.questions.length === 0) {
+                document.getElementById('question-text').textContent = '暂无题目';
+                return;
+            }
+            
+            const question = testData.questions[currentIndex];
+            document.getElementById('question-number').textContent = currentIndex + 1;
+            document.getElementById('question-category').textContent = question.category || '综合';
+            document.getElementById('question-text').textContent = question.question_text;
+            document.getElementById('question-progress').textContent = `第 ${currentIndex + 1}/${testData.questions.length} 题`;
+            
+            // 更新进度条
+            const progress = ((currentIndex + 1) / testData.questions.length) * 100;
+            document.getElementById('progress').style.width = `${progress}%`;
+            
+            // 检查是否是听力题
+            const isListening = question.question_type === 'listening' || 
+                              (question.tags && (question.tags.includes('听力') || question.tags.includes('listening')));
+            const audioSection = document.getElementById('audio-player-section');
+            const audioPlayer = document.getElementById('audio-player');
+            const audioOptionsDiv = document.getElementById('audio-options');
+            const transcriptDiv = document.getElementById('audio-transcript');
+            const transcriptToggle = document.getElementById('audio-transcript-toggle');
+            
+            if (isListening) {
+                audioSection.style.display = 'block';
+                
+                // 调试信息
+                console.log('处理听力题:', question.question_id);
+                console.log('题目内容:', question.content);
+                console.log('音频URL:', question.audio_url);
+                
+                // 直接使用题目中的audio_url
+                if (question.audio_url) {
+                    // 确保URL格式正确
+                    let audioSrc = question.audio_url;
+                    if (!audioSrc.startsWith('/')) {
+                        audioSrc = '/' + audioSrc;
+                    }
+                    
+                    console.log('加载音频:', audioSrc);
+                    audioPlayer.src = audioSrc;
+                    audioPlayer.style.display = 'block';
+                    transcriptToggle.style.display = 'none';
+                    transcriptDiv.style.display = 'none';
+                    
+                    // 生成音频选项UI（口音和音色选择）
+                    let optionsHtml = '<div style="margin-top: 10px; padding: 10px; background: #f5f5f5; border-radius: 8px;">';
+                    optionsHtml += '<div style="font-weight: bold; margin-bottom: 8px;">🎧 音频选项</div>';
+                    
+                    // 检查是否是日语还是英语
+                    const isJapanese = 'JL' in question.question_id;
+                    
+                    if (isJapanese) {
+                        optionsHtml += `
+                            <div style="margin-bottom: 8px;">
+                                <span style="margin-right: 10px;">口音:</span>
+                                <button onclick="changeAudio('japanese_kanto')" style="padding: 5px 10px; margin-right: 5px; border: 1px solid #ccc; border-radius: 4px; cursor: pointer;">关东腔</button>
+                                <button onclick="changeAudio('japanese_kansai')" style="padding: 5px 10px; border: 1px solid #ccc; border-radius: 4px; cursor: pointer;">关西腔</button>
+                            </div>
+                            <div>
+                                <span style="margin-right: 10px;">音色:</span>
+                                <button onclick="changeVoice('female_standard')" style="padding: 5px 10px; margin-right: 5px; border: 1px solid #ccc; border-radius: 4px; cursor: pointer;">标准女声</button>
+                                <button onclick="changeVoice('male_standard')" style="padding: 5px 10px; border: 1px solid #ccc; border-radius: 4px; cursor: pointer;">标准男声</button>
+                            </div>
+                        `;
+                    } else {
+                        optionsHtml += `
+                            <div style="margin-bottom: 8px;">
+                                <span style="margin-right: 10px;">口音:</span>
+                                <button onclick="changeAudio('english_uk')" style="padding: 5px 10px; margin-right: 5px; border: 1px solid #ccc; border-radius: 4px; cursor: pointer;">英式</button>
+                                <button onclick="changeAudio('english_us')" style="padding: 5px 10px; margin-right: 5px; border: 1px solid #ccc; border-radius: 4px; cursor: pointer;">美式</button>
+                                <button onclick="changeAudio('english_african')" style="padding: 5px 10px; margin-right: 5px; border: 1px solid #ccc; border-radius: 4px; cursor: pointer;">非洲</button>
+                                <button onclick="changeAudio('english_indian')" style="padding: 5px 10px; border: 1px solid #ccc; border-radius: 4px; cursor: pointer;">印度</button>
+                            </div>
+                            <div>
+                                <span style="margin-right: 10px;">音色:</span>
+                                <button onclick="changeVoice('female_standard')" style="padding: 5px 10px; margin-right: 5px; border: 1px solid #ccc; border-radius: 4px; cursor: pointer;">标准女声</button>
+                                <button onclick="changeVoice('male_standard')" style="padding: 5px 10px; border: 1px solid #ccc; border-radius: 4px; cursor: pointer;">标准男声</button>
+                            </div>
+                        `;
+                    }
+                    optionsHtml += '</div>';
+                    
+                    audioOptionsDiv.innerHTML = optionsHtml;
+                    
+                    // 添加音频事件监听器
+                    audioPlayer.onloadedmetadata = function() {
+                        console.log('音频加载成功，时长:', audioPlayer.duration);
+                    };
+                    
+                    audioPlayer.onerror = function(e) {
+                        console.error('音频加载失败:', audioSrc, e);
+                        audioOptionsDiv.innerHTML += '<div style="color: red; margin-top: 10px;">❌ 音频加载失败，请尝试刷新页面</div>';
+                    };
+                } else {
+                    // 如果没有audio_url，尝试使用我们新的音频系统
+                    loadQuestionAudio(question.question_id);
+                }
+            } else {
+                audioSection.style.display = 'none';
+                currentAudioData = null;
+            }
+            
+            // 渲染选项
+            const optionsContainer = document.getElementById('options');
+            optionsContainer.innerHTML = '';
+            
+            const letters = ['A', 'B', 'C', 'D'];
+            
+            // 处理选项格式 - 支持对象格式 {"A": "选项内容"} 和字符串格式
+            const processedOptions = question.options.map((option, index) => {
+                const letter = letters[index];
+                if (typeof option === 'object' && option !== null) {
+                    // 如果是对象格式 {"A": "内容"}
+                    return option[letter] || Object.values(option)[0] || '';
+                }
+                return option;
+            });
+            
+            processedOptions.forEach((option, index) => {
+                const optionDiv = document.createElement('div');
+                optionDiv.className = `option ${answers[question.question_id] === option ? 'selected' : ''}`;
+                optionDiv.dataset.option = letters[index];
+                optionDiv.innerHTML = `
+                    <div class="option-letter">${letters[index]}</div>
+                    <div class="option-text">${option}</div>
+                `;
+                optionDiv.addEventListener('click', () => selectOption(question.question_id, option));
+                optionsContainer.appendChild(optionDiv);
+            });
+            
+            // 更新导航按钮状态
+            document.getElementById('btn-prev').disabled = currentIndex === 0;
+            document.getElementById('btn-next').style.display = currentIndex === testData.questions.length - 1 ? 'none' : 'block';
+            document.getElementById('btn-submit').style.display = currentIndex === testData.questions.length - 1 ? 'block' : 'none';
+            
+            // 更新题目导航
+            renderQuestionNav();
+        }
+        
+        async function loadQuestionAudio(questionId) {
+            try {
+                const response = await fetch(`/api/audio/question/${questionId}/default`);
+                const data = await response.json();
+                
+                if (data.success && data.audio) {
+                    currentAudioData = data;
+                    setupAudioPlayer(data.audio);
+                    await loadAllAudioOptions(questionId);
+                }
+            } catch (error) {
+                console.error('加载音频失败:', error);
+            }
+        }
+        
+        async function loadAllAudioOptions(questionId) {
+            try {
+                const response = await fetch(`/api/audio/question/${questionId}`);
+                const data = await response.json();
+                
+                if (data.success && data.audio_options) {
+                    renderAudioOptions(data.audio_options);
+                }
+            } catch (error) {
+                console.error('加载音频选项失败:', error);
+            }
+        }
+        
+        function setupAudioPlayer(audio) {
+            const audioPlayer = document.getElementById('audio-player');
+            audioPlayer.src = '/' + audio.file_path;
+            
+            const transcriptDiv = document.getElementById('audio-transcript');
+            const transcriptToggle = document.getElementById('audio-transcript-toggle');
+            
+            if (audio.transcript) {
+                transcriptDiv.textContent = audio.transcript;
+                transcriptToggle.style.display = 'inline-block';
+            } else {
+                transcriptToggle.style.display = 'none';
+                transcriptDiv.style.display = 'none';
+            }
+            
+            showTranscript = false;
+            transcriptDiv.style.display = 'none';
+        }
+        
+        function renderAudioOptions(audioOptions) {
+            const optionsContainer = document.getElementById('audio-options');
+            optionsContainer.innerHTML = '';
+            
+            audioOptions.forEach((audio, index) => {
+                const optionDiv = document.createElement('div');
+                optionDiv.className = 'audio-option';
+                if (currentAudioData && currentAudioData.audio.id === audio.id) {
+                    optionDiv.classList.add('active');
+                }
+                optionDiv.textContent = `${audio.accent_name} - ${audio.voice_name}`;
+                optionDiv.addEventListener('click', () => selectAudio(audio));
+                optionsContainer.appendChild(optionDiv);
+            });
+        }
+        
+        function selectAudio(audio) {
+            // 更新active状态
+            document.querySelectorAll('.audio-option').forEach(opt => {
+                opt.classList.remove('active');
+            });
+            btn.classList.add('active');
+            
+            // 更新音频播放器
+            setupAudioPlayer(audio);
+            
+            // 自动播放
+            const audioPlayer = document.getElementById('audio-player');
+            audioPlayer.play();
+        }
+        
+        function toggleTranscript() {
+            const transcriptDiv = document.getElementById('audio-transcript');
+            showTranscript = !showTranscript;
+            transcriptDiv.style.display = showTranscript ? 'block' : 'none';
+        }
+        
+        // 当前选择的口音和音色
+        let currentAccent = null;
+        let currentVoice = null;
+        let currentQuestionId = null;
+        
+        function changeAudio(accent) {
+            currentAccent = accent;
+            updateCurrentAudio();
+        }
+        
+        function changeVoice(voice) {
+            currentVoice = voice;
+            updateCurrentAudio();
+        }
+        
+        function updateCurrentAudio() {
+            if (!testData || !testData.questions || currentIndex === undefined) return;
+            
+            const question = testData.questions[currentIndex];
+            if (!question || !question.audio_url) return;
+            
+            // 获取当前题目ID
+            const qId = question.question_id || question.id;
+            
+            // 如果是第一次，设置默认值
+            if (!currentAccent || !currentVoice) {
+                const isJapanese = 'JL' in qId;
+                if (isJapanese) {
+                    currentAccent = currentAccent || 'japanese_kanto';
+                    currentVoice = currentVoice || 'female_standard';
+                } else {
+                    currentAccent = currentAccent || 'english_us';
+                    currentVoice = currentVoice || 'female_standard';
+                }
+            }
+            
+            // 构建新的音频路径
+            let audioSrc = question.audio_url;
+            if (!audioSrc.startsWith('/')) {
+                audioSrc = '/' + audioSrc;
+            }
+            
+            // 如果不是默认值，需要找到对应的变体文件
+            const isJapanese = 'JL' in qId;
+            let isDefault = false;
+            if (isJapanese) {
+                isDefault = currentAccent === 'japanese_kanto' && currentVoice === 'female_standard';
+            } else {
+                isDefault = currentAccent === 'english_us' && currentVoice === 'female_standard';
+            }
+            
+            if (!isDefault) {
+                // 构建变体路径
+                const basePath = audioSrc.substring(0, audioSrc.lastIndexOf('.'));
+                const ext = audioSrc.substring(audioSrc.lastIndexOf('.'));
+                audioSrc = `${basePath}_${currentAccent}_${currentVoice}${ext}`;
+            }
+            
+            console.log('切换到音频:', audioSrc);
+            
+            // 更新音频播放器
+            const audioPlayer = document.getElementById('audio-player');
+            audioPlayer.src = audioSrc;
+            
+            // 尝试播放
+            audioPlayer.play().catch(e => {
+                console.log('需要用户交互才能播放');
+            });
+        }
+        
+        function selectOption(questionId, option) {
+            answers[questionId] = option;
+            
+            // 更新选中状态
+            document.querySelectorAll('.option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            document.querySelectorAll('.option').forEach(opt => {
+                if (opt.querySelector('.option-text').textContent === option) {
+                    opt.classList.add('selected');
+                }
+            });
+            
+            renderQuestionNav();
+        }
+        
+        function prevQuestion() {
+            if (currentIndex > 0) {
+                currentIndex--;
+                renderQuestion();
+            }
+        }
+        
+        function nextQuestion() {
+            if (currentIndex < testData.questions.length - 1) {
+                currentIndex++;
+                renderQuestion();
+            }
+        }
+        
+        function goToQuestion(index) {
+            currentIndex = index;
+            renderQuestion();
+        }
+        
+        function renderQuestionNav() {
+            const navContainer = document.getElementById('question-nav');
+            navContainer.innerHTML = '';
+            
+            testData.questions.forEach((q, index) => {
+                const navItem = document.createElement('div');
+                navItem.className = `nav-item ${index === currentIndex ? 'current' : ''} ${answers[q.question_id] ? 'answered' : ''}`;
+                navItem.textContent = index + 1;
+                navItem.addEventListener('click', () => goToQuestion(index));
+                navContainer.appendChild(navItem);
+            });
+        }
+        
+        function showSubmitModal() {
+            document.getElementById('submit-modal').style.display = 'flex';
+        }
+        
+        function hideSubmitModal() {
+            document.getElementById('submit-modal').style.display = 'none';
+        }
+        
+        function submitTest() {
+            hideSubmitModal();
+            
+            // 提交所有答案
+            const submitPromises = Object.entries(answers).map(([questionId, answer]) => {
+                return fetch(`/api/placement/test/${testId}/answer`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        question_id: parseInt(questionId),
+                        user_answer: answer
+                    })
+                });
+            });
+            
+            Promise.all(submitPromises)
+            .then(() => {
+                // 完成测试
+                return fetch(`/api/placement/test/${testId}/complete`, {
+                    method: 'POST'
+                });
+            })
+            .then(response => response.json())
+            .then(report => {
+                console.log('测试完成:', report);
+                window.location.href = '/exam/placement_test';
+            })
+            .catch(error => {
+                console.error('提交测试失败:', error);
+                alert('提交失败，请重试');
+            });
+        }
+        
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                timerSeconds++;
+                const minutes = Math.floor(timerSeconds / 60);
+                const seconds = timerSeconds % 60;
+                document.getElementById('timer').textContent = 
+                    `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }, 1000);
+        }
+        
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', loadTest);
+        
+        // 防止页面关闭时丢失数据
+        window.addEventListener('beforeunload', (e) => {
+            if (Object.keys(answers).length > 0) {
+                e.preventDefault();
+                e.returnValue = '您的答案可能会丢失，确定要离开吗？';
+            }
+        });
+    </script>
+</body>
+</html>

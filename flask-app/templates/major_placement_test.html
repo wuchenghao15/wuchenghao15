@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>专业摸底测试</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+        }
+        .icon {
+            font-size: 60px;
+            margin-bottom: 20px;
+        }
+        .title {
+            color: #333;
+            font-size: 24px;
+            margin-bottom: 15px;
+        }
+        .subtitle {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 30px;
+        }
+        .grade-tag {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 8px 20px;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        .major-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        .major-btn {
+            padding: 15px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 15px;
+            color: #333;
+        }
+        .major-btn:hover {
+            border-color: #11998e;
+            background: #f0fff5;
+        }
+        .major-btn.selected {
+            border-color: #11998e;
+            background: linear-gradient(135deg, rgba(17, 153, 142, 0.15) 0%, rgba(56, 239, 125, 0.15) 100%);
+            color: #11998e;
+        }
+        .submit-btn {
+            padding: 15px 40px;
+            border: none;
+            border-radius: 30px;
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .submit-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(17, 153, 142, 0.4);
+        }
+        .submit-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .info-box {
+            background: #f8f9fa;
+            border-left: 4px solid #11998e;
+            padding: 15px 20px;
+            margin-top: 20px;
+            text-align: left;
+            border-radius: 0 10px 10px 0;
+        }
+        .info-box h4 {
+            color: #11998e;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        .info-box ul {
+            list-style: none;
+            color: #666;
+            font-size: 13px;
+        }
+        .info-box li {
+            padding: 5px 0;
+            padding-left: 20px;
+            position: relative;
+        }
+        .info-box li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: #11998e;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">🎯</div>
+        <h1 class="title">专业摸底测试</h1>
+        <p class="subtitle">请选择您的专业方向，系统将为您生成针对性的摸底测试</p>
+        
+        {% if grade %}
+        <div class="grade-tag">{{ grade }}</div>
+        {% endif %}
+        
+        <form method="POST">
+            <div class="major-grid">
+                {% for major in majors %}
+                <button type="button" class="major-btn" onclick="selectMajor('{{ major }}')">{{ major }}</button>
+                {% endfor %}
+            </div>
+            
+            <input type="hidden" id="selected_major" name="major" value="">
+            <button type="submit" class="submit-btn" id="submit_btn" disabled>开始专业摸底测试</button>
+        </form>
+        
+        <div class="info-box">
+            <h4>📋 测试说明</h4>
+            <ul>
+                <li>专业摸底测试包含30-40道专业相关题目</li>
+                <li>测试时间约60分钟</li>
+                <li>完成后系统将评估您的专业知识水平</li>
+                <li>评估结果将用于推荐专业课程和考试</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        function selectMajor(major) {
+            document.querySelectorAll('.major-btn').forEach(btn => btn.classList.remove('selected'));
+            btn.classList.add('selected');
+            document.getElementById('selected_major').value = major;
+            document.getElementById('submit_btn').disabled = false;
+        }
+    </script>
+</body>
+</html>

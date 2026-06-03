@@ -1,7 +1,10 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
 Simple run script for MTSCOS AI Project
-
+"""
+import logging
+logger = logging.getLogger(__name__)
 import sys
 import os
 
@@ -28,9 +31,7 @@ if __name__ == '__main__':
         # Try running on port 8888 first
         app.run(host='127.0.0.1', port=8888, debug=True, use_reloader=False)
     except OSError as e:
-        print(f"Error running on port 8888: {e}")
+        logger.error(f"Error running on port 8888: {e}")
         print("Trying port 8080...")
         # Fallback to port 8080 if 8888 is in use
         app.run(host='127.0.0.1', port=8080, debug=True, use_reloader=False)
-
-"""

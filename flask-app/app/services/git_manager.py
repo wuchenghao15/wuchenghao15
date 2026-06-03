@@ -1,23 +1,24 @@
 # -*- coding: utf-8 -*-
-"""Git管理器模块，负责整合Git核心功能"""
+"""Git管理器模块,负责整合Git核心功能"""
 
 import os
 import subprocess
 import logging
 from datetime import datetime
 from typing import Dict, List, Any, Optional
+import sys
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 class GitManager:
-    """Git管理器，负责整合Git核心功能"""
+    """Git管理器,负责整合Git核心功能"""
 
     def __init__(self, repo_path: str = None):
         """初始化Git管理器
         
         Args:
-            repo_path: Git仓库路径，默认为当前工作目录
+            repo_path: Git仓库路径,默认为当前工作目录
         """
         self.instance_id = f"git_manager_{id(self)}"
         self.name = "Git管理器"
@@ -31,6 +32,10 @@ class GitManager:
             self.logger.warning(f"当前目录 {self.repo_path} 不是Git仓库")
         else:
             self.logger.info(f"当前目录 {self.repo_path} 是Git仓库")
+    
+    def initialize(self):
+        """初始化Git管理器(空方法,保持接口一致性)"""
+        self.logger.info(f"Git管理器已初始化: {self.instance_id}")
 
     def _is_git_repo(self) -> bool:
         """检查当前目录是否是Git仓库
@@ -54,7 +59,7 @@ class GitManager:
         """运行Git命令
         
         Args:
-            command: Git命令列表（不包含'git'前缀）
+            command: Git命令列表(不包含'git'前缀)
             
         Returns:
             Dict[str, Any]: 命令执行结果
@@ -121,7 +126,7 @@ class GitManager:
         """添加文件到暂存区
         
         Args:
-            paths: 文件路径列表，None表示添加所有文件
+            paths: 文件路径列表,None表示添加所有文件
             
         Returns:
             Dict[str, Any]: 命令执行结果
@@ -141,7 +146,7 @@ class GitManager:
         Args:
             message: 提交消息
             amend: 是否修改上一次提交
-            author: 指定作者（格式: "name <email>"）
+            author: 指定作者(格式: "name <email>")
             
         Returns:
             Dict[str, Any]: 命令执行结果
@@ -236,7 +241,7 @@ class GitManager:
         Returns:
             Dict[str, Any]: 提交日志信息
         """
-        self.logger.info(f"查看提交日志，限制 {limit} 条")
+        self.logger.info(f"查看提交日志,限制 {limit} 条")
         
         if full:
             result = self._run_git_command(['log', '-n', str(limit)])
@@ -260,7 +265,7 @@ class GitManager:
         """查看分支
         
         Args:
-            all: 是否显示所有分支（包括远程）
+            all: 是否显示所有分支(包括远程)
             
         Returns:
             Dict[str, Any]: 分支列表
@@ -428,7 +433,7 @@ class GitManager:
         """查看文件差异
         
         Args:
-            path: 文件路径，None表示所有文件
+            path: 文件路径,None表示所有文件
             cached: 是否查看暂存区差异
             
         Returns:
@@ -461,7 +466,7 @@ class GitManager:
         
         Args:
             name: 标签名称
-            message: 标签消息（用于附注标签）
+            message: 标签消息(用于附注标签)
             commit: 关联的提交
             
         Returns:
@@ -540,7 +545,7 @@ class GitManager:
         """恢复暂存的更改
         
         Args:
-            stash_id: 暂存记录ID（如stash@{0}）
+            stash_id: 暂存记录ID(如stash@{0})
             
         Returns:
             Dict[str, Any]: 命令执行结果
@@ -774,7 +779,7 @@ class GitManager:
         return result
 
     def cherry_pick(self, commit_hash: str, no_commit: bool = False) -> Dict[str, Any]:
-        """樱桃采摘（将指定提交应用到当前分支）
+        """樱桃采摘(将指定提交应用到当前分支)
         
         Args:
             commit_hash: 要应用的提交hash

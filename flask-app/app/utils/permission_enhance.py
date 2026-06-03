@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-#!/usr/bin/env python3
 """
 增强版权限管理系统
 
@@ -41,6 +40,8 @@ def get_user_permissions():
     # 从session或JWT中获取用户权限
     from flask import session
     import logging
+import json
+import sys
     logging.info(f"Session contents: {session}")
 
     if 'user_role' in session:
@@ -58,6 +59,7 @@ def get_user_permissions():
 def role_required(role):
     def decorator(f):
         def decorated_function(*args, **kwargs):
+    pass
 
                 return jsonify({
                     'required_role': role

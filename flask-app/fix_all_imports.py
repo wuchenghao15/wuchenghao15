@@ -1,7 +1,11 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
-修复ai_ensemble.py文件中的所有直接导入，将其替换为条件导入
+修复ai_ensemble.py文件中的所有直接导入,将其替换为条件导入
+import logging
+logger = logging.getLogger(__name__)
 import os
+import sys
 
 # 获取ai_ensemble.py文件的完整路径
 file_path = os.path.join(os.path.dirname(__file__), 'app', 'ai', 'ai_ensemble.py')
@@ -47,11 +51,11 @@ try:
 except Exception as e:
     print(f"文件写入失败: {e}")
 
-print("修复完成！")
+print("修复完成!")
 # 重启服务器
 print("正在重启服务器...")
 os.system("pkill -f 'python3 start_server.py'")
 os.system("nohup python3 start_server.py > server.log 2>&1 &")
-print("服务器已重启，请查看server.log获取更多信息")
+print("服务器已重启,请查看server.log获取更多信息")
 
 """

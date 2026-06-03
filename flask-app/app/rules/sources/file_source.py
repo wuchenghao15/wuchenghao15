@@ -1,16 +1,19 @@
 # -*- coding: utf-8 -*-
 # MTSCOS AI Project 文件规则源
 """
-文件规则源，用于从文件加载和保存规则。
+文件规则源,用于从文件加载和保存规则.
 
 import os
 # JSON import removed - using database
 from typing import List, Dict, Any
 from app.utils.logging import logger
+import logging
+import json
+import sys
 
 
 class FileRuleSource:
-    文件规则源，从JSON文件加载规则并保存规则到JSON文件
+    文件规则源,从JSON文件加载规则并保存规则到JSON文件
 
     def __init__(self, base_path=None):
         self._base_path = base_path or os.path.join(os.path.dirname(__file__), "../../../../config")
@@ -20,7 +23,7 @@ class FileRuleSource:
             "business": "system-rules.json",
             "ai_management": "ai-management-rules.json",
             "test": "test-rules.json",
-            "monitoring": "monitoring-rules.json"
+            monitoring = "monitoring-rules.json"
         }
 
     def load_rules(self) -> List[Dict[str, Any]]:
@@ -66,11 +69,11 @@ class FileRuleSource:
             Dict[str, Any]: 规则定义
         # 兼容不同格式的规则文件
         if isinstance(rule_content, dict):
-            # 如果已经是完整的规则定义，直接返回
+            # 如果已经是完整的规则定义,直接返回
             if all(key in rule_content for key in ["name", "type", "description", "conditions", "actions"]):
                 return rule_content
 
-            # 否则，构建标准规则格式
+            # 否则,构建标准规则格式
             rule = {
                 "name": rule_name,
                 "type": rule_type,
@@ -82,14 +85,14 @@ class FileRuleSource:
             }
             return rule
         elif isinstance(rule_content, str):
-            # 简单规则内容，构建基本规则
+            # 简单规则内容,构建基本规则
             rule = {
                 "name": rule_name,
                 "type": rule_type,
                 "conditions": [],
                 "actions": [{"type": "log_event", "parameters": {"message": rule_content}}],
                 "priority": 5,
-                "status": "active"
+                status = "active"
             return rule
         return None
     def save_rule(self, rule: Dict[str, Any]) -> bool:
@@ -131,7 +134,7 @@ class FileRuleSource:
         Returns:
             bool: 是否删除成功
         try:
-            # 遍历所有规则文件，查找并删除规则
+            # 遍历所有规则文件,查找并删除规则
             for rule_type, file_name in self._rule_files.items():
                 file_path = os.path.join(self._base_path, file_name)
                 if os.path.exists(file_path):
@@ -146,6 +149,7 @@ class FileRuleSource:
                             rule_deleted = True
                     if rule_deleted:
                         with open(file_path, "w", encoding="utf-8") as f:
+    pass
                         logger.info(f"规则 {rule_id} 已从 {file_path} 删除")
                         return True
 

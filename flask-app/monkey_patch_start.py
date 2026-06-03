@@ -1,7 +1,10 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
 使用Monkey Patching技术修复MODEL_PATH KeyError问题的启动脚本
 
+import logging
+logger = logging.getLogger(__name__)
 import os
 import sys
 import builtins
@@ -19,9 +22,9 @@ original_import = builtins.__import__
 
 # 定义Monkey Patch版本的__import__函数
 def patched_import(name, globals=None, locals=None, fromlist=(), level=0):
-    # 在导入app.ai.learning之前，确保Config类有MODEL_PATH属性
+    # 在导入app.ai.learning之前,确保Config类有MODEL_PATH属性
     if name == 'app.ai.learning' or 'ai.learning' in name:
-        print(f"拦截对 {name} 的导入，先修复Config.MODEL_PATH...")
+        print(f"拦截对 {name} 的导入,先修复Config.MODEL_PATH...")
         try:
             # 先导入config模块
             config_module = original_import('app.config', globals, locals, fromlist=('Config',), level=0)
@@ -42,7 +45,7 @@ builtins.__import__ = patched_import
 # 现在尝试导入app模块
 print("尝试导入app模块...")
 try:
-    print("app模块导入成功！")
+    print("app模块导入成功!")
 
     # 启动服务器
     print("启动服务器...")

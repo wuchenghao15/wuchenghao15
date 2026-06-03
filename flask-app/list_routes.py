@@ -1,7 +1,10 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
 列出应用中所有注册的路由
 
+import logging
+logger = logging.getLogger(__name__)
 import os
 import sys
 
@@ -11,13 +14,13 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 # 禁用dotenv加载
 os.environ['FLASK_SKIP_DOTENV'] = '1'
 
-# 创建一个简单的Flask应用，只用于测试
+# 创建一个简单的Flask应用,只用于测试
 from flask import Flask
 
 # 创建Flask应用实例
 test_app = Flask(__name__)
 
-# 导入app，触发路由注册
+# 导入app,触发路由注册
 with test_app.app_context():
     try:
         # 导入主应用

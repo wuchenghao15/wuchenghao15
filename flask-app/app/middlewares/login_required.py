@@ -1,13 +1,15 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
-登录检查中间件，确保用户必须登录才能访问系统
+登录检查中间件,确保用户必须登录才能访问系统
 
 from flask import session, redirect, url_for, request
 from app.utils.logging import logger
+import logging
 
 
 def login_required_middleware(app):
-    登录检查中间件，确保用户（包括游客）必须登录才能使用系统
+    登录检查中间件,确保用户(包括游客)必须登录才能使用系统
 
     Args:
         app: Flask应用实例
@@ -49,10 +51,10 @@ def login_required_middleware(app):
             return None
         # 检查会话中是否有登录状态
         if not session.get('logged_in'):
-            # 未登录，重定向到首页
+            # 未登录,重定向到首页
             return redirect(url_for('main.index'))
 
-        # 已登录，继续处理请求
+        # 已登录,继续处理请求
         return None
 
     return app

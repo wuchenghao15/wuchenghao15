@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MTSCOS - 智能仪表板</title>
+    <link rel="stylesheet" href="../assets/css/page_styles/dashboard.css">
+    <link rel="stylesheet" href="../assets/css/common_styles/main.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --cyber-black: #0a0a0f;
+            --cyber-deep: #0f172a;
+            --cyber-card: rgba(30, 27, 75, 0.85);
+            --neon-cyan: #00f0ff;
+            --neon-pink: #ff00ff;
+            --neon-purple: #8b5cf6;
+            --neon-green: #10b981;
+            --neon-yellow: #f59e0b;
+            --neon-red: #ef4444;
+            --text-primary: #ffffff;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --accent-gradient: linear-gradient(135deg, #00f0ff, #8b5cf6, #ff00ff);
+            --transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'PingFang SC', 'Microsoft YaHei', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(180deg, var(--cyber-black), var(--cyber-deep));
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .cyber-bg {
+    background-color: #0a0a0f;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: 
+                radial-gradient(ellipse at 20% 80%, rgba(0, 240, 255, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(255, 0, 255, 0.15) 0%, transparent 50%),
+                linear-gradient(180deg, var(--cyber-black) 0%, var(--cyber-deep) 100%);
+        }
+
+        #particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .cyber-particle {
+            position: fixed;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .cyber-particle.cyan { background: var(--neon-cyan); box-shadow: 0 0 20px var(--neon-cyan); }
+        .cyber-particle.pink { background: var(--neon-pink); box-shadow: 0 0 20px var(--neon-pink); }
+        .cyber-particle.purple { background: var(--neon-purple); box-shadow: 0 0 20px var(--neon-purple); }
+
+        @keyframes particleFloat {
+            0% { transform: translateY(0) translateX(0) scale(1); opacity: 0; }
+            10% { opacity: 0.8; }
+            90% { opacity: 0.8; }
+            100% { transform: translateY(-100vh) translateX(100px) scale(0.5); opacity: 0; }
+        }
+
+        .cyber-app {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .cyber-header {
+            backdrop-filter: blur(30px);
+            background: rgba(10, 10, 15, 0.9);
+            border-bottom: 1px solid var(--glass-border);
+            padding: 16px 32px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .cyber-header-content {
+            max-width: 1600px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .cyber-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .cyber-logo-icon {
+            width: 44px;
+            height: 44px;
+            background: var(--accent-gradient);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: 700;
+            box-shadow: 0 8px 24px rgba(0, 240, 255, 0.3);
+            animation: logoFloat 3s ease-in-out infinite;
+        }
+
+        @keyframes logoFloat {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-4px) rotate(2deg); }
+        }
+
+        .cyber-logo-text {
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header-nav {
+            display: flex;
+            gap: 8px;
+        }
+
+        .header-nav a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 14px;
+            padding: 10px 16px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .header-nav a:hover, .header-nav a.active {
+            color: var(--neon-cyan);
+            background: rgba(0, 240, 255, 0.1);
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .time-display {
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .cyber-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--accent-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 14px;
+            box-shadow: 0 4px 15px rgba(0, 240, 255, 0.3);
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .cyber-avatar:hover {
+            transform: scale(1.1);
+        }
+
+        .cyber-main {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 32px;
+            flex: 1;
+            width: 100%;
+        }
+
+        .dashboard-header {
+            margin-bottom: 32px;
+        }
+
+        .dashboard-title {
+            font-size: 2rem;
+            font-weight: 700;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+        }
+
+        .dashboard-subtitle {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        .stat-card {
+            background: var(--cyber-card);
+            backdrop-filter: blur(25px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 24px;
+            position: relative;
+            overflow: hidden;
+            transition: all var(--transition-normal);
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--accent-gradient);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            border-color: rgba(0, 240, 255, 0.3);
+        }
+
+        .stat-card.cyan::before { background: var(--neon-cyan); }
+        .stat-card.purple::before { background: var(--neon-purple); }
+        .stat-card.pink::before { background: var(--neon-pink); }
+        .stat-card.green::before { background: var(--neon-green); }
+
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .stat-icon.cyan { background: rgba(0, 240, 255, 0.2); color: var(--neon-cyan); }
+        .stat-icon.purple { background: rgba(139, 92, 246, 0.2); color: var(--neon-purple); }
+        .stat-icon.pink { background: rgba(255, 0, 255, 0.2); color: var(--neon-pink); }
+        .stat-icon.green { background: rgba(16, 185, 129, 0.2); color: var(--neon-green); }
+
+        .stat-trend {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 13px;
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+
+        .stat-trend.up {
+            color: var(--neon-green);
+            background: rgba(16, 185, 129, 0.1);
+        }
+
+        .stat-trend.down {
+            color: var(--neon-red);
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .dashboard-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        @media (max-width: 1200px) {
+            .dashboard-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .dashboard-section {
+            background: var(--cyber-card);
+            backdrop-filter: blur(25px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 24px;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-title i {
+            color: var(--neon-cyan);
+        }
+
+        .section-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-primary {
+            background: var(--accent-gradient);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 240, 255, 0.3);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--neon-cyan);
+            border: 1px solid var(--neon-cyan);
+        }
+
+        .btn-outline:hover {
+            background: rgba(0, 240, 255, 0.1);
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 13px;
+        }
+
+        .activity-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .activity-item {
+            display: flex;
+            gap: 16px;
+            padding: 16px 0;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+
+        .activity-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .activity-icon.success { background: rgba(16, 185, 129, 0.2); color: var(--neon-green); }
+        .activity-icon.warning { background: rgba(245, 158, 11, 0.2); color: var(--neon-yellow); }
+        .activity-icon.error { background: rgba(239, 68, 68, 0.2); color: var(--neon-red); }
+        .activity-icon.info { background: rgba(0, 240, 255, 0.2); color: var(--neon-cyan); }
+
+        .activity-content {
+            flex: 1;
+        }
+
+        .activity-text {
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .activity-meta {
+            display: flex;
+            gap: 16px;
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        .quick-actions-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+
+        @media (max-width: 600px) {
+            .quick-actions-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .action-card {
+            background: rgba(0, 240, 255, 0.05);
+            border: 1px solid rgba(0, 240, 255, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .action-card:hover {
+            background: rgba(0, 240, 255, 0.1);
+            border-color: var(--neon-cyan);
+            transform: translateY(-3px);
+        }
+
+        .action-card-icon {
+            width: 48px;
+            height: 48px;
+            background: var(--accent-gradient);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin: 0 auto 12px;
+        }
+
+        .action-card-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .action-card-desc {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .progress-item {
+            margin-bottom: 20px;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .progress-label {
+            font-weight: 500;
+        }
+
+        .progress-percent {
+            color: var(--neon-cyan);
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+
+        .progress-fill.cyan { background: var(--neon-cyan); }
+        .progress-fill.purple { background: var(--neon-purple); }
+        .progress-fill.green { background: var(--neon-green); }
+        .progress-fill.yellow { background: var(--neon-yellow); }
+
+        .dashboard-bottom {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 24px;
+        }
+
+        @media (max-width: 1200px) {
+            .dashboard-bottom {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .feature-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .feature-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            transform: translateX(5px);
+        }
+
+        .feature-check {
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--neon-green);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .feature-text {
+            flex: 1;
+        }
+
+        .feature-title {
+            font-weight: 500;
+            margin-bottom: 2px;
+        }
+
+        .feature-desc {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .cyber-footer {
+            text-align: center;
+            padding: 24px;
+            color: var(--text-muted);
+            font-size: 13px;
+            border-top: 1px solid var(--glass-border);
+            margin-top: 32px;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--neon-cyan);
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="cyber-bg"></div>
+    <div id="particles"></div>
+    
+    <div class="cyber-app">
+        <header class="cyber-header">
+            <div class="cyber-header-content">
+                <div class="cyber-logo" onclick="location.reload()">
+                    <div class="cyber-logo-icon">
+                        <i class="fas fa-tachometer-alt"></i>
+                    </div>
+                    <span class="cyber-logo-text">MTSCOS 仪表板</span>
+                </div>
+                
+                <nav class="header-nav">
+                    <a href="index.html" class="active">
+                        <i class="fas fa-home"></i>
+                        <span>首页</span>
+                    </a>
+                    <a href="dashboard.html">
+                        <i class="fas fa-chart-line"></i>
+                        <span>仪表板</span>
+                    </a>
+                    <a href="system_monitor.html">
+                        <i class="fas fa-desktop"></i>
+                        <span>系统监控</span>
+                    </a>
+                    <a href="settings-v3.html">
+                        <i class="fas fa-cog"></i>
+                        <span>设置</span>
+                    </a>
+                </nav>
+                
+                <div class="header-right">
+                    <div class="time-display" id="liveTime">--:--:--</div>
+                    <div class="cyber-avatar" id="userAvatar" onclick="goToSettings()">U</div>
+                </div>
+            </div>
+        </header>
+
+        <main class="cyber-main">
+            <div class="dashboard-header">
+                <h1 class="dashboard-title">欢迎回来！</h1>
+                <p class="dashboard-subtitle">这是您的 MTSCOS 智能管理系统概览</p>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card cyan">
+                    <div class="stat-header">
+                        <div class="stat-icon cyan">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-trend up">
+                            <i class="fas fa-arrow-up"></i>
+                            <span>12%</span>
+                        </div>
+                    </div>
+                    <div class="stat-value" id="userCount">1,234</div>
+                    <div class="stat-label">活跃用户</div>
+                </div>
+
+                <div class="stat-card purple">
+                    <div class="stat-header">
+                        <div class="stat-icon purple">
+                            <i class="fas fa-tasks"></i>
+                        </div>
+                        <div class="stat-trend up">
+                            <i class="fas fa-arrow-up"></i>
+                            <span>8%</span>
+                        </div>
+                    </div>
+                    <div class="stat-value" id="taskCount">567</div>
+                    <div class="stat-label">待办任务</div>
+                </div>
+
+                <div class="stat-card pink">
+                    <div class="stat-header">
+                        <div class="stat-icon pink">
+                            <i class="fas fa-robot"></i>
+                        </div>
+                        <div class="stat-trend up">
+                            <i class="fas fa-arrow-up"></i>
+                            <span>5%</span>
+                        </div>
+                    </div>
+                    <div class="stat-value" id="aiCount">23</div>
+                    <div class="stat-label">AI 实例</div>
+                </div>
+
+                <div class="stat-card green">
+                    <div class="stat-header">
+                        <div class="stat-icon green">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="stat-trend up">
+                            <i class="fas fa-arrow-up"></i>
+                            <span>3%</span>
+                        </div>
+                    </div>
+                    <div class="stat-value" id="uptimePercent">99.9%</div>
+                    <div class="stat-label">系统正常运行</div>
+                </div>
+            </div>
+
+            <div class="dashboard-content">
+                <div class="dashboard-section">
+                    <div class="section-header">
+                        <h3 class="section-title">
+                            <i class="fas fa-bell"></i>
+                            最近活动
+                        </h3>
+                        <button class="btn btn-outline btn-sm" onclick="refreshActivity()">
+                            <i class="fas fa-sync-alt"></i>
+                            刷新
+                        </button>
+                    </div>
+                    <div class="activity-list" id="activityList">
+                        <div class="activity-item">
+                            <div class="activity-icon success">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            <div class="activity-content">
+                                <div class="activity-text">系统备份完成</div>
+                                <div class="activity-meta">
+                                    <span><i class="fas fa-clock"></i> 2 分钟前</span>
+                                    <span><i class="fas fa-user"></i> 系统</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-icon info">
+                                <i class="fas fa-robot"></i>
+                            </div>
+                            <div class="activity-content">
+                                <div class="activity-text">AI 优化任务已启动</div>
+                                <div class="activity-meta">
+                                    <span><i class="fas fa-clock"></i> 15 分钟前</span>
+                                    <span><i class="fas fa-user"></i> 优化 AI</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-icon success">
+                                <i class="fas fa-sign-in-alt"></i>
+                            </div>
+                            <div class="activity-content">
+                                <div class="activity-text">用户登录成功</div>
+                                <div class="activity-meta">
+                                    <span><i class="fas fa-clock"></i> 1 小时前</span>
+                                    <span><i class="fas fa-user"></i> Admin</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-icon warning">
+                                <i class="fas fa-exclamation-triangle"></i>
+                            </div>
+                            <div class="activity-content">
+                                <div class="activity-text">数据库需要优化</div>
+                                <div class="activity-meta">
+                                    <span><i class="fas fa-clock"></i> 3 小时前</span>
+                                    <span><i class="fas fa-user"></i> 系统</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-section">
+                    <div class="section-header">
+                        <h3 class="section-title">
+                            <i class="fas fa-bolt"></i>
+                            快捷操作
+                        </h3>
+                    </div>
+                    <div class="quick-actions-grid">
+                        <div class="action-card" onclick="goToExam()">
+                            <div class="action-card-icon">
+                                <i class="fas fa-graduation-cap"></i>
+                            </div>
+                            <div class="action-card-title">考试系统</div>
+                            <div class="action-card-desc">进入考试模块</div>
+                        </div>
+                        <div class="action-card" onclick="goToLearning()">
+                            <div class="action-card-icon">
+                                <i class="fas fa-book"></i>
+                            </div>
+                            <div class="action-card-title">学习中心</div>
+                            <div class="action-card-desc">开始学习</div>
+                        </div>
+                        <div class="action-card" onclick="goToDesigner()">
+                            <div class="action-card-icon">
+                                <i class="fas fa-paint-brush"></i>
+                            </div>
+                            <div class="action-card-title">设计 AI</div>
+                            <div class="action-card-desc">UI 设计助手</div>
+                        </div>
+                        <div class="action-card" onclick="goToSystemMonitor()">
+                            <div class="action-card-icon">
+                                <i class="fas fa-desktop"></i>
+                            </div>
+                            <div class="action-card-title">系统监控</div>
+                            <div class="action-card-desc">监控系统状态</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dashboard-bottom">
+                <div class="dashboard-section">
+                    <div class="section-header">
+                        <h3 class="section-title">
+                            <i class="fas fa-chart-bar"></i>
+                            系统进度
+                        </h3>
+                    </div>
+                    <div class="progress-item">
+                        <div class="progress-header">
+                            <span class="progress-label">系统更新</span>
+                            <span class="progress-percent" id="updateProgress">75%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill cyan" id="updateProgressBar" style="width: 75%;"></div>
+                        </div>
+                    </div>
+                    <div class="progress-item">
+                        <div class="progress-header">
+                            <span class="progress-label">AI 训练</span>
+                            <span class="progress-percent" id="aiProgress">45%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill purple" id="aiProgressBar" style="width: 45%;"></div>
+                        </div>
+                    </div>
+                    <div class="progress-item">
+                        <div class="progress-header">
+                            <span class="progress-label">数据同步</span>
+                            <span class="progress-percent" id="syncProgress">90%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill green" id="syncProgressBar" style="width: 90%;"></div>
+                        </div>
+                    </div>
+                    <div class="progress-item">
+                        <div class="progress-header">
+                            <span class="progress-label">备份完成</span>
+                            <span class="progress-percent" id="backupProgress">100%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill yellow" id="backupProgressBar" style="width: 100%;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-section">
+                    <div class="section-header">
+                        <h3 class="section-title">
+                            <i class="fas fa-shield-alt"></i>
+                            系统功能
+                        </h3>
+                    </div>
+                    <div class="feature-list">
+                        <div class="feature-item">
+                            <div class="feature-check">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            <div class="feature-text">
+                                <div class="feature-title">多引擎数据库</div>
+                                <div class="feature-desc">主从架构，高可用性</div>
+                            </div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-check">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            <div class="feature-text">
+                                <div class="feature-title">AI 优化系统</div>
+                                <div class="feature-desc">自动化系统优化</div>
+                            </div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-check">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            <div class="feature-text">
+                                <div class="feature-title">安全防护</div>
+                                <div class="feature-desc">多层安全机制</div>
+                            </div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-check">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            <div class="feature-text">
+                                <div class="feature-title">智能监控</div>
+                                <div class="feature-desc">实时系统监控</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <footer class="cyber-footer">
+                © 2026 MTSCOS 智能管理系统 | 版本 3.2.0
+            </footer>
+        </main>
+    </div>
+    
+    <script>
+        function init() {
+            try {
+                createParticles();
+            updateTime();
+            loadUser();
+            setInterval(updateTime, 1000);
+            animateNumbers();
+        }
+
+        function createParticles() {
+            const container = document.getElementById('particles');
+            for (let i = 0; i < 30; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'cyber-particle ' + ['cyan', 'pink', 'purple'][Math.floor(Math.random() * 3)];
+                const size = 2 + Math.random() * 5;
+                particle.style.width = size + 'px';
+                particle.style.height = size + 'px';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.top = (Math.random() * 100 + 100) + '%';
+                particle.style.animation = 'particleFloat ' + (15 + Math.random() * 20) + 's linear infinite';
+                particle.style.animationDelay = (Math.random() * 10) + 's';
+                container.appendChild(particle);
+            }
+        }
+
+        function updateTime() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('zh-CN', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            });
+            const dateStr = now.toLocaleDateString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            });
+            document.getElementById('liveTime').textContent = dateStr + ' ' + timeStr;
+        }
+
+        function loadUser() {
+            const username = localStorage.getItem('mtcos_username') || 'User';
+            document.getElementById('userAvatar').textContent = username.charAt(0).toUpperCase();
+        }
+
+        function goToSettings() {
+            location.href = 'settings-v3.html';
+        }
+
+        function goToExam() {
+            location.href = 'exam.html';
+        }
+
+        function goToLearning() {
+            location.href = 'learning.html';
+        }
+
+        function goToDesigner() {
+            location.href = 'designer_ai.html';
+        }
+
+        function goToSystemMonitor() {
+            location.href = 'system_monitor.html';
+        }
+
+        function refreshActivity() {
+            const btn = event.target.closest('button');
+            const icon = btn.querySelector('i');
+            icon.classList.add('fa-spin');
+            setTimeout(() => {
+                icon.classList.remove('fa-spin');
+                addNewActivity();
+            }, 1000);
+        }
+
+        function addNewActivity() {
+            const activities = [
+                { icon: 'success', iconClass: 'fa-check', text: '新用户注册成功', user: '系统' },
+                { icon: 'info', iconClass: 'fa-robot', text: 'AI 分析任务完成', user: '分析 AI' },
+                { icon: 'success', iconClass: 'fa-save', text: '数据保存成功', user: '系统' }
+            ];
+            const activity = activities[Math.floor(Math.random() * activities.length)];
+            const activityList = document.getElementById('activityList');
+            const newItem = document.createElement('div');
+            newItem.className = 'activity-item';
+            newItem.style.opacity = '0';
+            newItem.style.transform = 'translateX(-20px)';
+            newItem.innerHTML = `
+                <div class="activity-icon ${activity.icon}">
+                    <i class="fas ${activity.iconClass}"></i>
+                </div>
+                <div class="activity-content">
+                    <div class="activity-text">${activity.text}</div>
+                    <div class="activity-meta">
+                        <span><i class="fas fa-clock"></i> 刚刚</span>
+                        <span><i class="fas fa-user"></i> ${activity.user}</span>
+                    </div>
+                </div>
+            `;
+            activityList.insertBefore(newItem, activityList.firstChild);
+            setTimeout(() => {
+                newItem.style.transition = 'all 0.3s ease';
+                newItem.style.opacity = '1';
+                newItem.style.transform = 'translateX(0)';
+            }, 50);
+            while (activityList.children.length > 10) {
+                activityList.removeChild(activityList.lastChild);
+            }
+        }
+
+        function animateNumbers() {
+            const userCountEl = document.getElementById('userCount');
+            const taskCountEl = document.getElementById('taskCount');
+            const aiCountEl = document.getElementById('aiCount');
+            animateNumber(userCountEl, 0, 1234, 2000);
+            animateNumber(taskCountEl, 0, 567, 2000);
+            animateNumber(aiCountEl, 0, 23, 2000);
+        }
+
+        function animateNumber(element, start, end, duration) {
+            const startTime = performance.now();
+            const update = (currentTime) => {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const current = Math.floor(start + (end - start) * easeOutQuart(progress));
+                element.textContent = current.toLocaleString();
+                if (progress < 1) {
+                    requestAnimationFrame(update);
+                }
+            };
+            requestAnimationFrame(update);
+        }
+
+        function easeOutQuart(x) {
+            return 1 - Math.pow(1 - x, 4);
+        }
+
+        init();
+    </script>
+</body>
+</html>

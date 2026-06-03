@@ -1,12 +1,15 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
 部署OpenCLAW模型脚本
+"""
 
+import logging
+logger = logging.getLogger(__name__)
 import sys
 import os
 import time
 
-# 添加当前目录到Python路径
 sys.path.append(os.path.dirname(__file__))
 
 def deploy_openclaw_model():
@@ -14,22 +17,18 @@ def deploy_openclaw_model():
     print("正在部署OpenCLAW模型...")
 
     try:
-        # 延迟导入，避免初始化问题
         print("正在加载AIHostManager...")
         time.sleep(1)
         from ai_host_manager import get_ai_host_manager
 
-        # 获取AI托管管理器实例
         print("正在获取AI托管管理器实例...")
         ai_host_manager = get_ai_host_manager()
 
-        # 检查系统状态
         print("正在检查系统状态...")
         system_status = ai_host_manager.get_system_status()
         print(f"系统状态: {system_status['system_status']}")
         print(f"运行中的服务: {system_status['running_services']}/{system_status['total_services']}")
 
-        # 创建OpenCLAW模型实例
         print("正在创建OpenCLAW模型实例...")
         opencwal_instance = ai_host_manager.create_ai_instance(
             ai_type="openclaw",
@@ -50,7 +49,6 @@ def deploy_openclaw_model():
         print(f"   实例名称: {opencwal_instance['name']}")
         print(f"   实例类型: {opencwal_instance['ai_type']}")
 
-        # 启动AI实例
         print("正在启动OpenCLAW模型实例...")
         if ai_host_manager.start_ai_instance(opencwal_instance['instance_id']):
             print(f"✅ OpenCLAW模型实例已启动")
@@ -58,14 +56,13 @@ def deploy_openclaw_model():
             print(f"❌ OpenCLAW模型实例启动失败")
             return False
 
-        # 检查实例健康状态
         print("正在检查实例健康状态...")
         health_status = ai_host_manager.check_ai_instance_health(opencwal_instance['instance_id'])
         if health_status["success"] and health_status["health_status"] == "healthy":
             print(f"✅ OpenCLAW模型实例健康状态: {health_status['health_status']}")
         else:
+            print(f"⚠️ OpenCLAW模型实例健康状态异常")
 
-        # 获取更新后的系统状态
         print("正在获取更新后的系统状态...")
         system_status = ai_host_manager.get_system_status()
         print(f"   系统状态: {system_status['system_status']}")
@@ -85,3 +82,4 @@ def deploy_openclaw_model():
         return False
 
 if __name__ == "__main__":
+    deploy_openclaw_model()

@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI员工管理系统 - MTSCOS</title>
+    <link rel="stylesheet" href="../assets/css/cybertech-theme.css">
+    <style>
+        body {
+    --cyber-card: #000000;
+    --text-primary: #000000;
+    --text-muted: #000000;
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a1a2e 100%);
+            min-height: 100vh;
+            padding: 24px;
+        }
+        
+        .page-container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+            padding: 24px;
+            background: var(--cyber-card);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+        }
+        
+        .page-title {
+            font-size: 28px;
+            font-weight: 700;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .add-btn {
+            padding: 12px 24px;
+            background: var(--accent-gradient);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .add-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 240, 255, 0.3);
+        }
+        
+        .page-header-buttons {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        
+        .nav-btn {
+            padding: 12px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+        
+        .nav-btn:hover {
+            color: var(--neon-cyan);
+            border-color: var(--neon-cyan);
+            background: rgba(0, 240, 255, 0.1);
+        }
+        
+        .nav-btn.logout {
+            background: rgba(255, 77, 77, 0.1);
+            border-color: rgba(255, 77, 77, 0.3);
+            color: #ff4d4d;
+        }
+        
+        .nav-btn.logout:hover {
+            background: rgba(255, 77, 77, 0.2);
+            border-color: #ff4d4d;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+        
+        .stat-card {
+            padding: 24px;
+            background: var(--cyber-card);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 48px;
+            font-weight: 700;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+        }
+        
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+        
+        .employee-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 24px;
+        }
+        
+        .employee-card {
+            padding: 24px;
+            background: var(--cyber-card);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        
+        .employee-card:hover {
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 30px rgba(0, 240, 255, 0.2);
+            transform: translateY(-4px);
+        }
+        
+        .employee-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+        
+        .employee-avatar {
+            width: 64px;
+            height: 64px;
+            border-radius: 16px;
+            background: var(--accent-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+        }
+        
+        .employee-info {
+            flex: 1;
+        }
+        
+        .employee-name {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+        
+        .employee-role {
+            font-size: 14px;
+            color: var(--neon-cyan);
+        }
+        
+        .employee-department {
+            padding: 4px 12px;
+            background: rgba(0, 240, 255, 0.1);
+            border-radius: 12px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        
+        .employee-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 16px;
+            padding: 16px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+        }
+        
+        .employee-stat {
+            text-align: center;
+        }
+        
+        .employee-stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--neon-cyan);
+        }
+        
+        .employee-stat-label {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+        
+        .capabilities-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        
+        .capability-tag {
+            padding: 6px 12px;
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 20px;
+            font-size: 12px;
+            color: #a78bfa;
+        }
+        
+        .employee-status {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 16px;
+            border-top: 1px solid var(--glass-border);
+        }
+        
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .status-badge.active {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+        }
+        
+        .status-badge.inactive {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+        
+        .employee-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .action-btn {
+            padding: 8px 16px;
+            background: rgba(0, 240, 255, 0.1);
+            border: 1px solid rgba(0, 240, 255, 0.3);
+            border-radius: 6px;
+            color: var(--neon-cyan);
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 12px;
+        }
+        
+        .action-btn:hover {
+            background: rgba(0, 240, 255, 0.2);
+        }
+        
+        .action-btn.delete {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: rgba(239, 68, 68, 0.3);
+            color: #ef4444;
+        }
+        
+        .action-btn.delete:hover {
+            background: rgba(239, 68, 68, 0.2);
+        }
+        
+        .search-bar {
+            padding: 16px 24px;
+            background: var(--cyber-card);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            margin-bottom: 24px;
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+        
+        .search-input {
+            flex: 1;
+            padding: 10px 16px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: var(--neon-cyan);
+        }
+        
+        .filter-select {
+            padding: 10px 16px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 14px;
+            cursor: pointer;
+        }
+        
+        .filter-select:focus {
+            outline: none;
+            border-color: var(--neon-cyan);
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            width: 90%;
+            max-width: 600px;
+            background: var(--cyber-card);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 32px;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+        
+        .modal-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        
+        .modal-close {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: rgba(239, 68, 68, 0.1);
+            border: none;
+            color: #ef4444;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+        
+        .modal-close:hover {
+            background: rgba(239, 68, 68, 0.2);
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: var(--neon-cyan);
+        }
+        
+        .form-textarea {
+            width: 100%;
+            min-height: 100px;
+            padding: 12px 16px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 14px;
+            resize: vertical;
+        }
+        
+        .form-textarea:focus {
+            outline: none;
+            border-color: var(--neon-cyan);
+        }
+        
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 24px;
+        }
+        
+        .btn-secondary {
+            padding: 12px 24px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .btn-primary {
+            padding: 12px 24px;
+            background: var(--accent-gradient);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 240, 255, 0.3);
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 48px;
+            color: var(--text-secondary);
+        }
+        
+        @media (max-width: 768px) {
+            .page-header {
+                flex-direction: column;
+                gap: 16px;
+            }
+            
+            .search-bar {
+                flex-direction: column;
+            }
+            
+            .employee-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="cyber-bg"></div>
+    <div class="cyber-grid-bg"></div>
+    <div id="particles"></div>
+    
+    <div class="page-container">
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">🤖 AI员工管理系统</h1>
+                <p style="color: var(--text-secondary); margin-top: 8px;">管理智能教学助手和学习支持团队</p>
+            </div>
+            <div class="page-header-buttons">
+                <button class="nav-btn" onclick="goBack()">← 返回考试系统</button>
+                <button class="nav-btn" onclick="pageLogout()">退出登录</button>
+                <button class="add-btn" onclick="openAddModal()">➕ 添加AI员工</button>
+            </div>
+        </div>
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="totalEmployees">0</div>
+                <div class="stat-label">AI员工总数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="activeEmployees">0</div>
+                <div class="stat-label">在线员工</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="totalTasks">0</div>
+                <div class="stat-label">完成任务数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="avgScore">0</div>
+                <div class="stat-label">平均绩效分</div>
+            </div>
+        </div>
+        
+        <div class="search-bar">
+            <input type="text" class="search-input" id="searchInput" 
+                   placeholder="🔍 搜索员工姓名或角色..." onkeyup="filterEmployees()">
+            <select class="filter-select" id="departmentFilter" onchange="filterEmployees()">
+                <option value="">全部部门</option>
+                <option value="考试中心">考试中心</option>
+                <option value="日语学院">日语学院</option>
+                <option value="计算机学院">计算机学院</option>
+                <option value="安全中心">安全中心</option>
+                <option value="语言学院">语言学院</option>
+                <option value="数学学院">数学学院</option>
+                <option value="学习中心">学习中心</option>
+                <option value="支持部门">支持部门</option>
+            </select>
+        </div>
+        
+        <div class="employee-grid" id="employeeGrid">
+            <div class="loading">加载中...</div>
+        </div>
+    </div>
+    
+    <div class="modal" id="addModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">添加新AI员工</h2>
+                <button class="modal-close" onclick="closeAddModal()">×</button>
+            </div>
+            <form id="addEmployeeForm">
+                <div class="form-group">
+                    <label class="form-label">员工名称 *</label>
+                    <input type="text" class="form-input" id="employeeName" required 
+                           placeholder="例如：小明">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">员工角色 *</label>
+                    <input type="text" class="form-input" id="employeeRole" required 
+                           placeholder="例如：数学导师">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">所属部门</label>
+                    <input type="text" class="form-input" id="employeeDepartment" 
+                           placeholder="例如：数学学院">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">员工头像</label>
+                    <input type="text" class="form-input" id="employeeAvatar" 
+                           placeholder="例如：🔢" value="🤖">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">能力标签（用逗号分隔）</label>
+                    <textarea class="form-textarea" id="employeeCapabilities" 
+                              placeholder="例如：数学教学,答疑解惑,作业批改"></textarea>
+                </div>
+            </form>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeAddModal()">取消</button>
+                <button class="btn-primary" onclick="addEmployee()">确认添加</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:5001';
+        let employees = [];
+        
+        function init() {
+            loadEmployees();
+            createParticles();
+        }
+        
+        function goBack() {
+            if (!confirm('确定要返回考试系统吗？')) {
+                return;
+            }
+            window.location.href = './exam.html';
+        }
+        
+        function pageLogout() {
+            if (!confirm('确定要退出登录吗？')) {
+                return;
+            }
+            
+            const allKeys = Object.keys(localStorage);
+            const keysToRemove = allKeys.filter(key => key.startsWith('mtcos_'));
+            
+            keysToRemove.forEach(key => {
+                localStorage.removeItem(key);
+            });
+            
+            sessionStorage.clear();
+            
+            alert('已成功退出登录！');
+            window.location.href = './index.html';
+        }
+        
+        async function loadEmployees() {
+            try {
+                const response = await fetch(API_BASE_URL + '/api/ai-employees');
+                const result = await response.json();
+                
+                if (result.success) {
+                    employees = result.data;
+                    renderEmployees(employees);
+                    updateStatistics();
+                } else {
+                    showError('加载失败: ' + result.error);
+                }
+            } catch (error) {
+                console.error('加载AI员工失败:', error);
+                showError('网络错误，请检查服务器连接');
+            }
+        }
+        
+        function renderEmployees(employeeList) {
+            const grid = document.getElementById('employeeGrid');
+            
+            if (employeeList.length === 0) {
+                grid.innerHTML = '<div class="loading">暂无AI员工</div>';
+                return;
+            }
+            
+            grid.innerHTML = employeeList.map(emp => `
+                <div class="employee-card" data-id="${emp.id}">
+                    <div class="employee-header">
+                        <div class="employee-avatar">${emp.avatar}</div>
+                        <div class="employee-info">
+                            <div class="employee-name">${emp.name}</div>
+                            <div class="employee-role">${emp.role}</div>
+                        </div>
+                        <div class="employee-department">${emp.department || '未分配'}</div>
+                    </div>
+                    
+                    <div class="employee-stats">
+                        <div class="employee-stat">
+                            <div class="employee-stat-value">${emp.tasks_completed}</div>
+                            <div class="employee-stat-label">完成任务</div>
+                        </div>
+                        <div class="employee-stat">
+                            <div class="employee-stat-value">${emp.performance_score.toFixed(1)}</div>
+                            <div class="employee-stat-label">绩效评分</div>
+                        </div>
+                        <div class="employee-stat">
+                            <div class="employee-stat-value">${emp.capabilities.length}</div>
+                            <div class="employee-stat-label">技能数</div>
+                        </div>
+                    </div>
+                    
+                    <div class="capabilities-list">
+                        ${emp.capabilities.map(cap => `<span class="capability-tag">${cap}</span>`).join('')}
+                    </div>
+                    
+                    <div class="employee-status">
+                        <span class="status-badge ${emp.status}">${emp.status === 'active' ? '在线' : '离线'}</span>
+                        <div class="employee-actions">
+                            <button class="action-btn" onclick="viewEmployee(${emp.id})">查看详情</button>
+                            <button class="action-btn delete" onclick="deleteEmployee(${emp.id})">删除</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function updateStatistics() {
+            document.getElementById('totalEmployees').textContent = employees.length;
+            document.getElementById('activeEmployees').textContent = 
+                employees.filter(e => e.status === 'active').length;
+            document.getElementById('totalTasks').textContent = 
+                employees.reduce((sum, e) => sum + e.tasks_completed, 0);
+            document.getElementById('avgScore').textContent = 
+                (employees.reduce((sum, e) => sum + e.performance_score, 0) / employees.length || 0).toFixed(1);
+        }
+        
+        function filterEmployees() {
+            const searchText = document.getElementById('searchInput').value.toLowerCase();
+            const department = document.getElementById('departmentFilter').value;
+            
+            const filtered = employees.filter(emp => {
+                const matchSearch = emp.name.toLowerCase().includes(searchText) ||
+                                   emp.role.toLowerCase().includes(searchText);
+                const matchDept = !department || emp.department === department;
+                return matchSearch && matchDept;
+            });
+            
+            renderEmployees(filtered);
+        }
+        
+        function openAddModal() {
+            document.getElementById('addModal').classList.add('active');
+            document.getElementById('addEmployeeForm').reset();
+        }
+        
+        function closeAddModal() {
+            document.getElementById('addModal').classList.remove('active');
+        }
+        
+        async function addEmployee() {
+            const name = document.getElementById('employeeName').value.trim();
+            const role = document.getElementById('employeeRole').value.trim();
+            const department = document.getElementById('employeeDepartment').value.trim();
+            const avatar = document.getElementById('employeeAvatar').value.trim() || '🤖';
+            const capabilitiesText = document.getElementById('employeeCapabilities').value.trim();
+            
+            if (!name || !role) {
+                alert('请填写必填项（姓名和角色）');
+                return;
+            }
+            
+            const capabilities = capabilitiesText ? 
+                capabilitiesText.split(',').map(c => c.trim()).filter(c => c) : [];
+            
+            try {
+                const response = await fetch(API_BASE_URL + '/api/ai-employees', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        name,
+                        role,
+                        department,
+                        avatar,
+                        capabilities
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert(result.message);
+                    closeAddModal();
+                    loadEmployees();
+                } else {
+                    alert('添加失败: ' + result.error);
+                }
+            } catch (error) {
+                console.error('添加AI员工失败:', error);
+                alert('网络错误，请检查服务器连接');
+            }
+        }
+        
+        async function deleteEmployee(id) {
+            if (!confirm('确定要删除这个AI员工吗？')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(API_BASE_URL + `/api/ai-employees/${id}`, {
+                    method: 'DELETE'
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('删除成功');
+                    loadEmployees();
+                } else {
+                    alert('删除失败: ' + result.error);
+                }
+            } catch (error) {
+                console.error('删除AI员工失败:', error);
+                alert('网络错误，请检查服务器连接');
+            }
+        }
+        
+        function viewEmployee(id) {
+            const emp = employees.find(e => e.id === id);
+            if (emp) {
+                alert(`${emp.name} - ${emp.role}\n\n所属部门: ${emp.department}\n完成任务: ${emp.tasks_completed}\n绩效评分: ${emp.performance_score}\n\n技能: ${emp.capabilities.join(', ')}`);
+            }
+        }
+        
+        function showError(message) {
+            document.getElementById('employeeGrid').innerHTML = 
+                `<div class="loading" style="color: #ef4444;">${message}</div>`;
+        }
+        
+        function createParticles() {
+            const container = document.getElementById('particles');
+            if (!container) return;
+            
+            for (let i = 0; i < 30; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'cyber-particle ' + ['cyan', 'pink', 'purple'][Math.floor(Math.random() * 3)];
+                const size = 2 + Math.random() * 4;
+                particle.style.width = size + 'px';
+                particle.style.height = size + 'px';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.top = Math.random() * 100 + '%';
+                particle.style.animation = 'particleFloat ' + (10 + Math.random() * 20) + 's linear infinite';
+                container.appendChild(particle);
+            }
+        }
+        
+        init();
+    </script>
+</body>
+</html>

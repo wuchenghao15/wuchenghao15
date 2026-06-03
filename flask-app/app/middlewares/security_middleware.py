@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
-# 安全中间件，用于增强系统安全性
+# 安全中间件,用于增强系统安全性
 from flask import request, response, g
 from app.utils.logging import logger
 from datetime import datetime
 
 # 安全头中间件
 def security_headers_middleware(app):
-    """设置安全头，增强系统安全性"""
+    """设置安全头,增强系统安全性"""
     @app.after_request
     def add_security_headers(response):
         # 防止点击劫持攻击
@@ -40,7 +40,7 @@ def security_headers_middleware(app):
 
 # 安全事件日志中间件
 def security_event_logger_middleware(app):
-    """记录安全事件，用于审计和监控"""
+    """记录安全事件,用于审计和监控"""
     @app.before_request
     def log_security_event():
         # 记录所有请求
@@ -55,7 +55,7 @@ def security_event_logger_middleware(app):
 
 # 速率限制中间件
 def rate_limiter_middleware(app):
-    """简单的速率限制中间件，防止API滥用"""
+    """简单的速率限制中间件,防止API滥用"""
     # 存储IP地址和请求计数
     rate_limit_store = {}
 
@@ -70,14 +70,14 @@ def rate_limiter_middleware(app):
                 'last_cleanup': current_time
             }
 
-        # 清理旧的请求记录（保留1小时内的请求）
+        # 清理旧的请求记录(保留1小时内的请求)
         cleanup_time = current_time - 3600
         rate_limit_store[ip]['requests'] = [r for r in rate_limit_store[ip]['requests'] if r > cleanup_time]
 
-        # 检查速率限制（每小时1000个请求）
+        # 检查速率限制(每小时1000个请求)
         if len(rate_limit_store[ip]['requests']) >= 1000:
             logger.warning(f"速率限制: IP {ip} 超过了请求限制")
-            return '请求过于频繁，请稍后再试', 429
+            return '请求过于频繁,请稍后再试', 429
 
         # 记录当前请求
         rate_limit_store[ip]['requests'].append(current_time)

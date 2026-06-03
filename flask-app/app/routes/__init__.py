@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 # MTSCOS AI Project 路由管理系统
+
 """
-集中管理所有路由注册，包括API路由和视图路由
+集中管理所有路由注册,包括API路由和视图路由
+"""
 
 from flask import Flask
 from typing import Dict, List, Any
@@ -9,7 +11,7 @@ from app.utils.logging import logger
 
 
 class RouteManager:
-    路由管理器，负责集中管理和注册所有路由
+    """路由管理器,负责集中管理和注册所有路由"""
 
     def __init__(self):
         self.api_routes: List[Dict[str, Any]] = []
@@ -17,12 +19,13 @@ class RouteManager:
         self.registered_routes: List[str] = []
 
     def register_api_blueprint(self, blueprint, url_prefix: str, description: str = ""):
-        注册API蓝图
+        """注册API蓝图
 
         Args:
             blueprint: Flask蓝图对象
             url_prefix: URL前缀
             description: 蓝图描述
+        """
         self.api_routes.append({
             'blueprint': blueprint,
             'url_prefix': url_prefix,
@@ -30,23 +33,33 @@ class RouteManager:
         })
 
     def register_view_blueprint(self, blueprint, url_prefix: str, description: str = ""):
-        注册视图蓝图
+        """注册视图蓝图
 
         Args:
             blueprint: Flask蓝图对象
             url_prefix: URL前缀
             description: 蓝图描述
+        """
         self.view_routes.append({
             'blueprint': blueprint,
+            'url_prefix': url_prefix,
             'description': description
+        })
 
-        注册所有路由到Flask应用
+    def register_all_routes(self, app: Flask):
+        """注册所有路由到Flask应用
+
         Args:
             app: Flask应用实例
+        """
         logger.info("开始注册所有路由...")
+        
         # 注册API路由
         for route in self.api_routes:
+            try:
+                app.register_blueprint(route['blueprint'], url_prefix=route['url_prefix'])
                 logger.info(f"✓ API路由注册成功: {route['blueprint'].name} -> {route['url_prefix']}")
+                self.registered_routes.append(f"API: {route['blueprint'].name} -> {route['url_prefix']}")
             except Exception as e:
                 logger.error(f"✗ API路由注册失败: {route['blueprint'].name} -> {route['url_prefix']}, 错误: {str(e)}")
 
@@ -60,26 +73,30 @@ class RouteManager:
             except Exception as e:
                 logger.error(f"✗ 视图路由注册失败: {route['blueprint'].name} -> {route['url_prefix']}, 错误: {str(e)}")
 
-        # 注册主路由（首页）
+        # 注册主路由(首页)
         self._register_main_route(app)
 
         logger.info("路由注册完成")
         logger.info(f"共注册 {len(self.registered_routes)} 个路由")
 
     def _register_main_route(self, app: Flask):
-        注册主路由（首页）- 现在由main_bp处理，这里只记录日志
+        """注册主路由(首页)- 现在由main_bp处理,这里只记录日志
 
         Args:
             app: Flask应用实例
-        logger.info("主路由已由main_bp处理，跳过重复注册")
+        """
+        logger.info("主路由已由main_bp处理,跳过重复注册")
+
     def get_registered_routes(self) -> List[str]:
-        获取已注册的路由列表
+        """获取已注册的路由列表
 
         Returns:
             已注册路由列表
+        """
         return self.registered_routes.copy()
+
     def print_routes(self):
-        打印已注册的路由
+        """打印已注册的路由"""
         logger.info("已注册路由列表:")
         for route in self.registered_routes:
             logger.info(f"  - {route}")
@@ -88,9 +105,76 @@ class RouteManager:
 # 创建全局路由管理器实例
 route_manager = RouteManager()
 
+
 def init_api_routes():
-    初始化API路由
+    """初始化API路由"""
     logger.info("初始化API路由...")
+
+    # 认证API
+    try:
+        from app.api.auth_api import auth_api
+        route_manager.register_api_blueprint(
+            auth_api,
+            url_prefix="",
+            description="认证API"
+        )
+    except Exception as e:
+        logger.error(f"初始化认证API路由失败: {str(e)}")
+
+    # 报关数据API
+    try:
+        from app.api.customs_api import customs_api
+        route_manager.register_api_blueprint(
+            customs_api,
+            url_prefix="",
+            description="报关数据API"
+        )
+    except Exception as e:
+        logger.error(f"初始化报关数据API路由失败: {str(e)}")
+
+    # AI自动学习升级API
+    try:
+        from app.api.auto_learning_api import auto_learning_api
+        route_manager.register_api_blueprint(
+            auto_learning_api,
+            url_prefix="",
+            description="AI自动学习升级API"
+        )
+    except Exception as e:
+        logger.error(f"初始化AI自动学习升级API路由失败: {str(e)}")
+
+    # AI脑库学习API
+    try:
+        from app.api.brain_learning_api import brain_learning_api
+        route_manager.register_api_blueprint(
+            brain_learning_api,
+            url_prefix="",
+            description="AI脑库学习API"
+        )
+    except Exception as e:
+        logger.error(f"初始化AI脑库学习API路由失败: {str(e)}")
+
+    # 自动计划调度API
+    try:
+        from app.api.scheduler_api import scheduler_api
+        route_manager.register_api_blueprint(
+            scheduler_api,
+            url_prefix="",
+            description="自动计划调度API"
+        )
+    except Exception as e:
+        logger.error(f"初始化自动计划调度API路由失败: {str(e)}")
+
+    # 路由优化API
+    try:
+        from app.api.route_optimization_api import route_optimization_api
+        route_manager.register_api_blueprint(
+            route_optimization_api,
+            url_prefix="",
+            description="路由优化API"
+        )
+    except Exception as e:
+        logger.error(f"初始化路由优化API路由失败: {str(e)}")
 
     # AI脑库API
     try:
@@ -135,6 +219,7 @@ def init_api_routes():
         )
     except Exception as e:
         logger.error(f"初始化文件系统API路由失败: {str(e)}")
+
     # AI学习API
     try:
         from app.services.ai_learning_api import ai_learning_bp
@@ -145,6 +230,7 @@ def init_api_routes():
         )
     except Exception as e:
         logger.error(f"初始化AI学习API路由失败: {str(e)}")
+
     # 服务器系统API
     try:
         from app.api.server_system_api import server_system_bp
@@ -155,6 +241,7 @@ def init_api_routes():
         )
     except Exception as e:
         logger.error(f"初始化服务器系统API路由失败: {str(e)}")
+
     # 防火墙系统API
     try:
         from app.api.firewall_api import firewall_api_bp
@@ -165,6 +252,7 @@ def init_api_routes():
         )
     except Exception as e:
         logger.error(f"初始化防火墙系统API路由失败: {str(e)}")
+
     # 集群管理API
     try:
         from app.api.cluster_api import cluster_api_bp
@@ -175,6 +263,7 @@ def init_api_routes():
         )
     except Exception as e:
         logger.error(f"初始化集群管理API路由失败: {str(e)}")
+
     # AI员工集群API
     try:
         from app.api.ai_cluster_api import ai_cluster_api_bp
@@ -185,6 +274,7 @@ def init_api_routes():
         )
     except Exception as e:
         logger.error(f"初始化AI员工集群API路由失败: {str(e)}")
+
     # 题库管理API
     try:
         from app.api.question_bank_api import question_bank_api
@@ -195,6 +285,7 @@ def init_api_routes():
         )
     except Exception as e:
         logger.error(f"初始化题库管理API路由失败: {str(e)}")
+
     # AI自学习系统API
     try:
         from app.api.self_learning_api import self_learning_api
@@ -205,6 +296,7 @@ def init_api_routes():
         )
     except Exception as e:
         logger.error(f"初始化AI自学习系统API路由失败: {str(e)}")
+
     # AI线程进程管理器API
     try:
         from app.api.thread_process_manager_api import thread_process_manager_api_bp
@@ -215,6 +307,7 @@ def init_api_routes():
         )
     except Exception as e:
         logger.error(f"初始化AI线程进程管理器API路由失败: {str(e)}")
+
     # AI自动更新管理器API
     try:
         from app.api.auto_update_api import auto_update_api_bp
@@ -225,6 +318,7 @@ def init_api_routes():
         )
     except Exception as e:
         logger.error(f"初始化AI自动更新管理器API路由失败: {str(e)}")
+
     # 考试测试系统API
     try:
         from app.api.exam_test_api import exam_test_api
@@ -235,16 +329,18 @@ def init_api_routes():
         )
     except Exception as e:
         logger.error(f"初始化考试测试系统API路由失败: {str(e)}")
+
     # 考试系统优化API
     try:
         from app.blueprints.exam_optimization_api import exam_optimization_api
         route_manager.register_api_blueprint(
             exam_optimization_api,
             url_prefix="/api/exam-optimization",
-            description="考试系统优化API（集成错题管理、老师AI和学习分析）"
+            description="考试系统优化API(集成错题管理,老师AI和学习分析)"
         )
     except Exception as e:
         logger.error(f"初始化考试系统优化API路由失败: {str(e)}")
+
     # 锁定系统API
     try:
         from app.views.lock import lock_bp
@@ -255,6 +351,7 @@ def init_api_routes():
         )
     except Exception as e:
         logger.error(f"初始化锁定系统API路由失败: {str(e)}")
+
     # 本地存储API
     try:
         from app.views.local_storage import local_storage_bp
@@ -265,16 +362,18 @@ def init_api_routes():
         )
     except Exception as e:
         logger.error(f"初始化本地存储API路由失败: {str(e)}")
+
     logger.info("API路由初始化完成")
 
 
 def init_view_routes():
-    初始化视图路由
+    """初始化视图路由"""
     logger.info("初始化视图路由...")
 
     # 主视图蓝图
     try:
         from app.views.main import main_bp
+        route_manager.register_view_blueprint(
             main_bp,
             url_prefix=None,
             description="主视图"
@@ -285,6 +384,7 @@ def init_view_routes():
     # 认证视图蓝图
     try:
         from app.views.auth import auth_bp
+        route_manager.register_view_blueprint(
             auth_bp,
             url_prefix="/auth",
             description="认证视图"
@@ -336,17 +436,6 @@ def init_view_routes():
     except Exception as e:
         logger.error(f"初始化安全监控视图路由失败: {str(e)}")
 
-    # 系统管理视图蓝图
-    try:
-        from app.views.system import system_bp
-        route_manager.register_view_blueprint(
-            system_bp,
-            url_prefix="/system",
-            description="系统管理视图"
-        )
-    except Exception as e:
-        logger.error(f"初始化系统管理视图路由失败: {str(e)}")
-
     # 用户管理视图蓝图
     try:
         from app.routes.user_manager import user_manager_bp
@@ -383,16 +472,17 @@ def init_view_routes():
     # 集成设置视图蓝图
     try:
         from app.blueprints.integrated_settings import integrated_settings_bp
-        app.register_blueprint(
+        route_manager.register_view_blueprint(
             integrated_settings_bp,
             url_prefix="",
+            description="集成设置视图"
         )
     except Exception as e:
         logger.error(f"初始化集成设置路由失败: {str(e)}")
 
 
 def init_routes():
-    初始化所有路由
+    """初始化所有路由"""
     logger.info("初始化所有路由...")
     init_api_routes()
     logger.info("API路由初始化完成")
@@ -400,5 +490,3 @@ def init_routes():
     init_view_routes()
     logger.info("视图路由初始化完成")
     logger.info("所有路由初始化完成")
-
-"""

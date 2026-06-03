@@ -1,7 +1,10 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
 修复app.py中的finally块问题
 
+import logging
+logger = logging.getLogger(__name__)
 import sys
 
 # 修复app.py中的问题

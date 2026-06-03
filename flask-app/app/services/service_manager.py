@@ -1,6 +1,6 @@
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""后台服务管理模块，用于管理系统中的各种服务"""
+#!/usr/bin/env python3
+"""后台服务管理模块,用于管理系统中的各种服务"""
 
 import os
 import sys
@@ -64,5 +64,22 @@ class ServiceManager:
     def start_all_services(self):
         """启动所有服务"""
         self.start()
+    
+    def get_ai_services(self) -> List[Dict]:
+        """获取AI服务列表"""
+        ai_services = [
+            {'name': '教师AI', 'service_id': 'teacher_ai', 'status': 'running'},
+            {'name': '考试专家AI', 'service_id': 'exam_expert_ai', 'status': 'running'},
+            {'name': '网管AI', 'service_id': 'network_admin_ai', 'status': 'running'},
+            {'name': '工程师AI', 'service_id': 'engineer_ai', 'status': 'running'},
+            {'name': '智体管家', 'service_id': 'intelligence_manager', 'status': 'running'},
+            {'name': '线程进程管理器', 'service_id': 'thread_process_manager', 'status': 'running'},
+        ]
+        return ai_services
 
 service_manager = ServiceManager()
+
+
+def get_service_manager() -> ServiceManager:
+    """获取服务管理器实例"""
+    return service_manager

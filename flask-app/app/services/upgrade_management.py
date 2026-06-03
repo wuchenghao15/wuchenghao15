@@ -1,7 +1,8 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
 系统升级管理服务
-负责系统升级的检查、下载、安装和回滚
+负责系统升级的检查,下载,安装和回滚
 
 import os
 # JSON import removed - using database
@@ -60,20 +61,20 @@ class UpgradeManager:
                 "latest_version": current_version,
                 "latest_build": current_build,
                 "release_notes": [],
-                "upgrade_url": ""
+                upgrade_url = ""
             }
 
             # 这里可以添加实际的升级检查逻辑
-            # 例如从GitHub Release获取最新版本，或从内部升级服务器获取
+            # 例如从GitHub Release获取最新版本,或从内部升级服务器获取
 
-            logger.info(f"[升级管理] 检查升级完成，当前版本: {current_version}, 最新版本: {upgrade_info['latest_version']}")
+            logger.info(f"[升级管理] 检查升级完成,当前版本: {current_version}, 最新版本: {upgrade_info['latest_version']}")
             return upgrade_info
 
         except Exception as e:
             logger.error(f"[升级管理] 检查升级失败: {str(e)}")
             return {
                 "has_update": False,
-                "error": str(e)
+                error = str(e)
             }
 
     def download_upgrade(self, upgrade_url: str) -> Optional[str]:
@@ -82,7 +83,7 @@ class UpgradeManager:
             upgrade_url: 升级包URL
 
         Returns:
-            下载的升级包路径，或None表示失败
+            下载的升级包路径,或None表示失败
         logger.info(f"[升级管理] 开始下载升级包: {upgrade_url}")
 
         try:
@@ -116,7 +117,7 @@ class UpgradeManager:
                 "upgrade_file": upgrade_file,
                 "backup_created": backup,
                 "status": "in_progress",
-                "steps": []
+                steps = []
             }
 
             backup_path = None
@@ -132,7 +133,7 @@ class UpgradeManager:
             upgrade_log["steps"].append({
                 "step": "extract",
                 "status": "completed",
-                "timestamp": datetime.now().isoformat()
+                timestamp = datetime.now().isoformat()
             })
 
             # 4. 执行升级脚本
@@ -148,7 +149,7 @@ class UpgradeManager:
                     "timestamp": datetime.now().isoformat(),
                     "output": result.stdout,
                     "error": result.stderr,
-                    "returncode": result.returncode
+                    returncode = result.returncode
                 })
 
                 if result.returncode != 0:
@@ -172,13 +173,13 @@ class UpgradeManager:
             # 9. 保存升级历史
             self._save_upgrade_history(upgrade_log)
 
-            logger.info(f"[升级管理] 升级安装完成，新版本: {new_version}, 新构建号: {new_build}")
+            logger.info(f"[升级管理] 升级安装完成,新版本: {new_version}, 新构建号: {new_build}")
             return {
                 "success": True,
                 "upgrade_id": upgrade_log["upgrade_id"],
                 "new_version": new_version,
                 "new_build": new_build,
-                "backup_path": backup_path
+                backup_path = backup_path
             }
 
         except Exception as e:
@@ -190,13 +191,13 @@ class UpgradeManager:
             upgrade_log["completed_at"] = datetime.now().isoformat()
             self._save_upgrade_history(upgrade_log)
 
-            # 如果创建了备份，尝试回滚
+            # 如果创建了备份,尝试回滚
             if backup and "backup_path" in upgrade_log and upgrade_log["backup_path"]:
                 self.rollback_upgrade(upgrade_log["backup_path"])
 
             return {
                 "success": False,
-                "error": str(e)
+                error = str(e)
             }
 
     def _create_backup(self, upgrade_log: Dict[str, Any]) -> str:
@@ -243,7 +244,7 @@ class UpgradeManager:
                 "step": "backup",
                 "status": "completed",
                 "timestamp": datetime.now().isoformat(),
-                "backup_path": backup_path
+                backup_path = backup_path
             })
 
             logger.info(f"[升级管理] 系统备份完成: {backup_path}")
@@ -260,7 +261,8 @@ class UpgradeManager:
             backup_path: 备份路径
 
         Returns:
-        logger.info(f"[升级管理] 开始回滚升级，使用备份: {backup_path}")
+    pass
+        logger.info(f"[升级管理] 开始回滚升级,使用备份: {backup_path}")
         try:
             # 1. 检查备份是否存在
                 raise Exception(f"备份不存在: {backup_path}")
@@ -270,6 +272,7 @@ class UpgradeManager:
             # 3. 恢复配置文件
             for root, _, files in os.walk(backup_path):
                 for file in files:
+    pass
 
             for backup_file in backup_files:
                 relative_path = os.path.relpath(backup_file, backup_path)
@@ -296,18 +299,18 @@ class UpgradeManager:
             # 5. 重启服务
             # 实际项目中应该重启相关服务
 
-            logger.info(f"[升级管理] 升级回滚完成，恢复到版本: {version_info['version']}")
+            logger.info(f"[升级管理] 升级回滚完成,恢复到版本: {version_info['version']}")
             return {
                 "success": True,
                 "restored_version": version_info["version"],
-                "backup_path": backup_path
+                backup_path = backup_path
             }
 
         except Exception as e:
             logger.error(f"[升级管理] 回滚升级失败: {str(e)}")
             return {
                 "success": False,
-                "error": str(e)
+                error = str(e)
             }
 
     def _update_system_version(self, version: str, build_number: int):
@@ -340,6 +343,7 @@ class UpgradeManager:
 
         # 写入更新后的配置
         with open(config_path, "w", encoding="utf-8") as f:
+    pass
 
     def _save_upgrade_history(self, upgrade_log: Dict[str, Any]):
         保存升级历史
@@ -355,7 +359,7 @@ class UpgradeManager:
             with open(self.upgrade_history_file, "w", encoding="utf-8") as f:
                 json.dump(history, f, ensure_ascii=False, indent=2)
 
-            logger.info(f"[升级管理] 保存升级历史完成，升级ID: {upgrade_log['upgrade_id']}")
+            logger.info(f"[升级管理] 保存升级历史完成,升级ID: {upgrade_log['upgrade_id']}")
 
         except Exception as e:
             logger.error(f"[升级管理] 保存升级历史失败: {str(e)}")
@@ -376,6 +380,8 @@ class UpgradeManager:
         Returns:
             包含系统信息的字典
         from app.config import load_config
+import json
+import sys
         config = load_config()
 
         return {

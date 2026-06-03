@@ -1,6 +1,7 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
-极简的索引服务器，只提供index.html的访问
+极简的索引服务器,只提供index.html的访问
 
 from flask import Flask, render_template
 import os
@@ -12,7 +13,7 @@ app = Flask(__name__)
 app.template_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
 app.static_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
 
-# 主路由，渲染index.html模板
+# 主路由,渲染index.html模板
 @app.route('/')
 def index():
     return render_template('index.html')

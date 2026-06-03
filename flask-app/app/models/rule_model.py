@@ -1,14 +1,18 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 规则模型 - 系统规则引擎和策略管理
 包含规则定义、策略引擎、动态规则更新等功能
+"""
 
 import logging
 from datetime import datetime
 from typing import Dict, Any, Optional, List, Callable
 
 logger = logging.getLogger(__name__)
+
+rule_model = None
 
 class RuleModel:
     """规则模型核心类"""
@@ -39,15 +43,19 @@ class RuleModel:
         """更新规则"""
         self.dynamic_rule_updater.update_rule(rule_id, new_rule)
 
+
 class RuleEngine:
     """规则引擎"""
 
     def __init__(self):
+        self.rules = {}
         logger.info("规则引擎初始化完成")
 
     def add_rule(self, rule):
         """添加规则"""
+        self.rules[rule.id] = rule
         logger.info(f"添加规则: {rule.id}")
+
     def remove_rule(self, rule_id: str):
         """移除规则"""
         if rule_id in self.rules:
@@ -72,9 +80,11 @@ class RuleEngine:
                     'rule_id': rule_id,
                     'matched': False,
                     'error': str(e)
+                })
                 logger.error(f"规则评估失败 {rule_id}: {str(e)}")
-        # 按优先级排序
+
         results.sort(key=lambda x: x.get('priority', 0), reverse=True)
+        return results
 
 
 class Rule:
@@ -93,16 +103,13 @@ class Rule:
         if not self.enabled:
             return False
         return self.condition(context)
-    def execute(self, context: Dict[str, Any]) -> Any:
-        """执行规则动作"""
-        if self.action:
-            return self.action(context)
-        return None
+
 
 class PolicyManager:
     """策略管理器"""
 
     def __init__(self):
+        self.policies = {}
         logger.info("策略管理器初始化完成")
 
     def add_policy(self, policy):
@@ -111,7 +118,9 @@ class PolicyManager:
         logger.info(f"添加策略: {policy.id}")
 
     def remove_policy(self, policy_id: str):
+        """移除策略"""
         if policy_id in self.policies:
+            del self.policies[policy_id]
             logger.info(f"移除策略: {policy_id}")
 
     def apply_policy(self, policy_id: str, context: Dict[str, Any]) -> Dict[str, Any]:
@@ -122,7 +131,10 @@ class PolicyManager:
         policy = self.policies[policy_id]
         return policy.apply(context)
 
+
+class Policy:
     """策略类"""
+
     def __init__(self, policy_id: str, rules: List[Rule], default_action=None):
         self.id = policy_id
         self.rules = rules
@@ -139,26 +151,27 @@ class PolicyManager:
                 if rule.evaluate(context):
                     matched_rules.append(rule.id)
                     if rule.action:
+                        result = rule.action(context)
                         results.append({'rule_id': rule.id, 'result': result})
+            except Exception as e:
+                logger.error(f"规则执行失败: {str(e)}")
 
-        # 如果有默认动作且没有匹配的规则
         if self.default_action and not matched_rules:
             results.append({'rule_id': 'default', 'result': self.default_action(context)})
-        return {
-            'policy_id': self.id,
-            'matched_rules': matched_rules,
-            'results': results,
-            'applied_at': datetime.now().isoformat()
-        }
+
+        return {'matched_rules': matched_rules, 'results': results}
+
 
 class DynamicRuleUpdater:
     """动态规则更新器"""
+
     def __init__(self):
+        self.update_history = []
         logger.info("动态规则更新器初始化完成")
 
     def update_rule(self, rule_id: str, new_rule):
         """更新规则"""
-        from flask_app.app.models.rule_model import rule_model
+        from app.models.rule_model import rule_model
 
         if rule_id in rule_model.rule_engine.rules:
             old_rule = rule_model.rule_engine.rules[rule_id]
@@ -169,6 +182,7 @@ class DynamicRuleUpdater:
                 'old_rule': {'id': old_rule.id, 'priority': old_rule.priority},
                 'new_rule': {'id': new_rule.id, 'priority': new_rule.priority},
             })
+
             logger.info(f"更新规则: {rule_id}")
         else:
             raise ValueError(f"规则 {rule_id} 不存在")
@@ -180,14 +194,14 @@ class DynamicRuleUpdater:
 
         update = self.update_history[update_index]
         rule_id = update['rule_id']
-        from flask_app.app.models.rule_model import rule_model
+        from app.models.rule_model import rule_model
 
-        # 恢复旧规则
         old_rule_data = update['old_rule']
         restored_rule = Rule(
             condition=lambda c: True,
             priority=old_rule_data['priority']
         )
+
         rule_model.rule_engine.rules[rule_id] = restored_rule
 
         logger.info(f"回滚规则更新: {rule_id}")
@@ -196,13 +210,14 @@ class DynamicRuleUpdater:
         """获取更新历史"""
         return self.update_history
 
-# 全局实例
-rule_model = RuleModel()
 
 def init_rule_model():
     """初始化规则模型"""
+    global rule_model
     logger.info("初始化规则模型...")
-    # 创建示例规则
+
+    rule_model = RuleModel()
+
     rules = [
         Rule(
             rule_id='access_control_rule',
@@ -233,15 +248,16 @@ def init_rule_model():
     for rule in rules:
         rule_model.add_rule(rule)
 
-    # 创建示例策略
     policy = Policy(
         policy_id='access_policy',
-        rules=rules[:2],  # access_control_rule 和 rate_limit_rule
+        rules=rules[:2],
         default_action=lambda c: {'access_granted': False, 'reason': '默认拒绝'}
     )
+
     rule_model.add_policy(policy)
 
     logger.info("规则模型初始化完成")
+
 
 if __name__ == "__main__":
     init_rule_model()

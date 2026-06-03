@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
 带详细日志的启动脚本
@@ -43,7 +44,7 @@ except Exception as e:
     logger.error(f"启动失败: {str(e)}")
     logger.error("完整堆栈跟踪:")
     traceback.print_exc()
-    logger.error("应用启动失败，详细日志已写入startup.log")
+    logger.error("应用启动失败,详细日志已写入startup.log")
     sys.exit(1)
 
 """

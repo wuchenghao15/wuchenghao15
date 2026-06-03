@@ -1,16 +1,16 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
-"""
-创建学习结果相关表的脚本
+"""创建学习结果相关表的脚本"""
 
 import sqlite3
+import os
 
 def create_learning_results_tables():
     """创建学习结果相关的数据库表"""
-    conn = sqlite3.connect('flask-app/app.db')
+    conn = sqlite3.connect('flask-app/app.db');
     cursor = conn.cursor()
 
     try:
-        # 创建AI学习结果表
         cursor.execute('''
         CREATE TABLE IF NOT EXISTS ai_learning_results (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -21,8 +21,8 @@ def create_learning_results_tables():
         )
         ''')
 
-        # 创建AI学习内容表
         cursor.execute('''
+        CREATE TABLE IF NOT EXISTS ai_learning_content (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             result_id INTEGER,
             content_type TEXT,
@@ -36,9 +36,11 @@ def create_learning_results_tables():
             average_score REAL,
             FOREIGN KEY (result_id) REFERENCES ai_learning_results (id)
         )
+        ''')
 
         conn.commit()
     except Exception as e:
+        conn.rollback()
     finally:
         cursor.close()
         conn.close()

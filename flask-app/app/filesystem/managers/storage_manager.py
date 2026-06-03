@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # MTSCOS AI Project 存储管理器
 """
-存储管理器，负责底层存储操作
+存储管理器,负责底层存储操作
 
 import os
 import stat
@@ -10,7 +10,7 @@ from app.utils.logging import logger
 
 
 class StorageManager:
-    存储管理器，负责底层存储操作
+    存储管理器,负责底层存储操作
 
         self._root_path = os.path.abspath(root_path)
 
@@ -51,18 +51,20 @@ class StorageManager:
         return os.path.exists(full_path)
 
     def get_path_type(self, path: str) -> str:
+    pass
 
         Args:
             path: 文件或目录路径
 
         Returns:
-            str: 文件类型，可能的值：'file', 'directory', 'symlink', 'unknown', 'not_exists'
+            str: 文件类型,可能的值:'file', 'directory', 'symlink', 'unknown', 'not_exists'
         full_path = self.get_full_path(path)
 
         if not os.path.exists(full_path):
             return 'not_exists'
 
         if os.path.isfile(full_path):
+    pass
         elif os.path.isdir(full_path):
             return 'directory'
             return 'symlink'
@@ -70,6 +72,7 @@ class StorageManager:
             return 'unknown'
 
     def get_metadata(self, path: str) -> Dict[str, Any]:
+    pass
 
         Args:
             path: 文件或目录路径
@@ -142,7 +145,7 @@ class StorageManager:
             }
 
     def resolve_path(self, path: str) -> str:
-        解析路径，处理相对路径和向上跳转
+        解析路径,处理相对路径和向上跳转
 
         Args:
             path: 文件或目录路径
@@ -157,7 +160,7 @@ class StorageManager:
             return self._root_path
 
     def normalize_path(self, path: str) -> str:
-        标准化路径，统一路径分隔符
+        标准化路径,统一路径分隔符
         Args:
             path: 文件或目录路径
 
@@ -167,8 +170,10 @@ class StorageManager:
         获取相对于存储根目录的路径
 
         Args:
+    pass
 
         Returns:
+    pass
         full_path = self.get_full_path(path)
         return os.path.relpath(full_path, self._root_path).replace('\\', '/')
 
@@ -195,6 +200,7 @@ class StorageManager:
             recursive: 是否递归删除目录
 
         Returns:
+    pass
         try:
             full_path = self.resolve_path(path)
 
@@ -235,7 +241,7 @@ class StorageManager:
                 return False
 
             if os.path.exists(dest_full_path) and not overwrite:
-                logger.warning(f"目标路径 {dest_path} 已存在，跳过复制")
+                logger.warning(f"目标路径 {dest_path} 已存在,跳过复制")
                 return False
 
             if os.path.isfile(src_full_path):
@@ -262,6 +268,7 @@ class StorageManager:
             bool: 是否移动成功
         try:
             import shutil
+import logging
 
             src_full_path = self.resolve_path(src_path)
             dest_full_path = self.resolve_path(dest_path)
@@ -271,7 +278,7 @@ class StorageManager:
                 return False
 
             if os.path.exists(dest_full_path) and not overwrite:
-                logger.warning(f"目标路径 {dest_path} 已存在，跳过移动")
+                logger.warning(f"目标路径 {dest_path} 已存在,跳过移动")
                 return False
 
             # 确保目标目录存在

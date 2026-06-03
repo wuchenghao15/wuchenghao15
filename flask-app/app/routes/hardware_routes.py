@@ -1,10 +1,14 @@
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+#!/usr/bin/env python3
 """硬件管理员路由 - 设备管理和系统设置"""
 
 from flask import Blueprint, render_template, request, jsonify, redirect, url_for
 import sqlite3
+from contextlib import contextmanager
 from datetime import datetime
+import json
+import sys
+import os
 
 hardware_bp = Blueprint('hardware', __name__)
 
@@ -13,6 +17,7 @@ def get_db_connection():
     conn = sqlite3.connect('flask-app/app.db')
     conn.row_factory = sqlite3.Row
     return conn
+
 
 @hardware_bp.route('/hardware_admin_dashboard')
 def hardware_admin_dashboard():
@@ -34,8 +39,6 @@ def hardware_admin_dashboard():
     avg_cpu = sum(d['cpu_usage'] for d in devices) / total_devices if total_devices > 0 else 0
     avg_memory = sum(d['memory_usage'] for d in devices) / total_devices if total_devices > 0 else 0
     avg_storage = sum(d['storage_usage'] for d in devices) / total_devices if total_devices > 0 else 0
-    
-    conn.close()
     
     return render_template('hardware_admin_dashboard.html',
                          devices=devices,

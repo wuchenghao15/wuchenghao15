@@ -1,7 +1,8 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
-服务器系统，用于管理和协调各个子系统
-提供服务器注册、发现、负载均衡、健康检查等功能
+服务器系统,用于管理和协调各个子系统
+提供服务器注册,发现,负载均衡,健康检查等功能
 
 import time
 import threading
@@ -13,7 +14,7 @@ from typing import Dict, Any, List, Optional, Set
 from app.utils.logging import logger
 
 class ServerSystem:
-    服务器系统主类，负责管理和协调各个服务器节点
+    服务器系统主类,负责管理和协调各个服务器节点
 
     def __init__(self):
         初始化服务器系统
@@ -27,12 +28,12 @@ class ServerSystem:
             "server_name": "MTSCOS Server System",
             "host": "0.0.0.0",
             "port": 8000,
-            "health_check_interval": 30,  # 健康检查间隔（秒）
+            "health_check_interval": 30,  # 健康检查间隔(秒)
             "max_servers_per_service": 10,  # 每个服务最多注册的服务器数量
-            "load_balancing_strategy": "round_robin",  # 负载均衡策略：round_robin, random, least_connections
-            "health_check_timeout": 5,  # 健康检查超时时间（秒）
+            "load_balancing_strategy": "round_robin",  # 负载均衡策略:round_robin, random, least_connections
+            "health_check_timeout": 5,  # 健康检查超时时间(秒)
             "persistence_enabled": True,  # 是否启用持久化存储
-            "persistence_interval": 60,  # 持久化存储间隔（秒）
+            "persistence_interval": 60,  # 持久化存储间隔(秒)
             "auth_enabled": False,  # 是否启用认证
             "secret_key": f"secret_{random.randint(100000, 999999)}"  # 认证密钥
         }
@@ -42,7 +43,7 @@ class ServerSystem:
             "server_count": 0,
             "service_count": 0,
             "last_health_check": 0,
-            "last_persistence": 0
+            last_persistence = 0
         }
         self._lock = threading.Lock()
         self._health_check_thread = None
@@ -58,6 +59,7 @@ class ServerSystem:
             config: 配置参数
 
         Returns:
+    pass
         with self._lock:
             if self._status["initialized"]:
                 logger.warning("服务器系统已经初始化")
@@ -84,11 +86,14 @@ class ServerSystem:
                 self._status["initialized"] = True
                 self._status["running"] = True
 
-                logger.info(f"服务器系统初始化成功，服务器ID: {self._config['server_id']}")
+                logger.info(f"服务器系统初始化成功,服务器ID: {self._config['server_id']}")
                 return True
             except Exception as e:
                 logger.error(f"服务器系统初始化失败: {str(e)}")
                 import traceback
+import logging
+import json
+import sys
                 traceback.print_exc()
                 return False
 
@@ -101,7 +106,7 @@ class ServerSystem:
 
         self._health_check_thread = threading.Thread(target=health_check_loop, daemon=True)
         self._health_check_thread.start()
-        logger.info(f"健康检查线程启动成功，检查间隔: {self._config['health_check_interval']}秒")
+        logger.info(f"健康检查线程启动成功,检查间隔: {self._config['health_check_interval']}秒")
 
     def _start_persistence_thread(self):
         启动持久化线程
@@ -112,12 +117,13 @@ class ServerSystem:
 
         self._persistence_thread = threading.Thread(target=persistence_loop, daemon=True)
         self._persistence_thread.start()
-        logger.info(f"持久化线程启动成功，存储间隔: {self._config['persistence_interval']}秒")
+        logger.info(f"持久化线程启动成功,存储间隔: {self._config['persistence_interval']}秒")
 
     def _perform_persistence(self):
         执行持久化存储
         with self._lock:
             if not self._config["persistence_enabled"]:
+    pass
 
             try:
                 logger.info("开始执行持久化存储...")
@@ -128,7 +134,7 @@ class ServerSystem:
                     "services": self._services,
                     "connections": self._connections,
                     "round_robin_counter": self._round_robin_counter,
-                    "timestamp": time.time()
+                    timestamp = time.time()
                 }
 
                 # 写入文件
@@ -136,7 +142,7 @@ class ServerSystem:
                     json.dump(data, f, indent=2)
 
                 self._status["last_persistence"] = time.time()
-                logger.info(f"持久化存储完成，文件: {self._persistence_file}")
+                logger.info(f"持久化存储完成,文件: {self._persistence_file}")
             except Exception as e:
                 logger.error(f"持久化存储失败: {str(e)}")
 
@@ -144,7 +150,7 @@ class ServerSystem:
         加载持久化数据
         try:
             if os.path.exists(self._persistence_file):
-                logger.info(f"加载持久化数据，文件: {self._persistence_file}")
+                logger.info(f"加载持久化数据,文件: {self._persistence_file}")
                 with open(self._persistence_file, "r") as f:
                     data = json.load(f)
 
@@ -173,81 +179,84 @@ class ServerSystem:
             # 触发健康检查开始事件
             self._notify_event("health_check_started", {"timestamp": time.time()})
 
-            # 遍历所有服务器节点，执行健康检查
+            # 遍历所有服务器节点,执行健康检查
             servers_to_remove = []
             for server_id, server_info in self._servers.items():
                 try:
                     previous_status = server_info["status"]
                     if self._check_server_health(server_id):
-                        # 健康检查通过，更新最后检查时间
+                        # 健康检查通过,更新最后检查时间
                         server_info["last_health_check"] = time.time()
                         server_info["status"] = "healthy"
                         server_info["failed_checks"] = 0
 
-                        # 如果状态发生变化，触发状态变化事件
+                        # 如果状态发生变化,触发状态变化事件
                         if previous_status != "healthy":
                             self._notify_event("server_status_changed", {
                                 "server_id": server_id,
                                 "previous_status": previous_status,
-                                "new_status": "healthy"
+                                new_status = "healthy"
                             })
 
                         # 触发健康检查成功事件
                         self._notify_event("health_check_success", {
                             "server_id": server_id,
-                            "server_info": server_info
+                            server_info = server_info
                         })
                     else:
-                        # 健康检查失败，标记为不健康
+                        # 健康检查失败,标记为不健康
                         server_info["status"] = "unhealthy"
                         server_info["failed_checks"] = server_info.get("failed_checks", 0) + 1
 
-                        # 如果状态发生变化，触发状态变化事件
+                        # 如果状态发生变化,触发状态变化事件
                         if previous_status != "unhealthy":
                             self._notify_event("server_status_changed", {
                                 "server_id": server_id,
                                 "previous_status": previous_status,
-                                "new_status": "unhealthy"
+                                new_status = "unhealthy"
                             })
 
                         # 触发健康检查失败事件
                         self._notify_event("health_check_failed", {
                             "server_id": server_id,
-                            "failed_checks": server_info["failed_checks"]
+                            failed_checks = server_info["failed_checks"]
                         })
-                        # 如果连续3次健康检查失败，标记为需要移除
+                        # 如果连续3次健康检查失败,标记为需要移除
                         if server_info.get("failed_checks", 0) >= 3:
                             servers_to_remove.append(server_id)
-                            logger.warning(f"服务器 {server_id} 连续3次健康检查失败，将被移除")
+                            logger.warning(f"服务器 {server_id} 连续3次健康检查失败,将被移除")
                     logger.error(f"健康检查服务器 {server_id} 失败: {str(e)}")
                     previous_status = server_info["status"]
 
                     if previous_status != "error":
                         self._notify_event("server_status_changed", {
                             "previous_status": previous_status,
-                            "new_status": "error"
+                            new_status = "error"
                     # 触发健康检查异常事件
                     self._notify_event("health_check_exception", {
                         "server_id": server_id,
-                        "error": str(e)
+                        error = str(e)
                     })
 
             for server_id in servers_to_remove:
+    pass
 
             # 触发健康检查完成事件
             self._notify_event("health_check_completed", {
                 "timestamp": time.time(),
                 "server_count": len(self._servers),
                 "healthy_servers": len([s for s in self._servers.values() if s["status"] == "healthy"]),
-                "error_servers": len([s for s in self._servers.values() if s["status"] == "error"])
+                error_servers = len([s for s in self._servers.values() if s["status"] == "error"])
             })
-            logger.info(f"健康检查完成，当前服务器数量: {len(self._servers)}")
+            logger.info(f"健康检查完成,当前服务器数量: {len(self._servers)}")
 
     def _check_server_health(self, server_id: str) -> bool:
         检查单个服务器的健康状态
         Args:
+    pass
 
         Returns:
+    pass
         server_info = self._servers.get(server_id)
         if not server_info:
             return False
@@ -268,7 +277,7 @@ class ServerSystem:
                     health_data = response.json()
                     return health_data.get("status", "unhealthy") == "healthy"
                 except json.JSONDecodeError:
-                    # 如果不是JSON响应，只检查状态码
+                    # 如果不是JSON响应,只检查状态码
                     return True
 
             return False
@@ -300,6 +309,7 @@ class ServerSystem:
             auth_key: 认证密钥
 
         Returns:
+    pass
         # 验证认证密钥
         if not self._verify_auth(auth_key):
             logger.error("注册服务器失败: 认证失败")
@@ -339,6 +349,7 @@ class ServerSystem:
             return server_id
 
     def _register_service_for_server(self, service_name: str, server_id: str):
+    pass
 
         Args:
             server_id: 服务器ID
@@ -346,7 +357,7 @@ class ServerSystem:
             self._services[service_name] = {
                 "servers": [],
                 "created_at": time.time(),
-                "last_updated": time.time()
+                last_updated = time.time()
             }
 
         # 检查是否已达到每个服务最多注册的服务器数量
@@ -389,7 +400,7 @@ class ServerSystem:
                         logger.info(f"从服务 {service_name} 中移除服务器 {server_id}")
 
                         self._status["service_count"] = len(self._services)
-                        logger.info(f"服务 {service_name} 已无服务器，移除该服务")
+                        logger.info(f"服务 {service_name} 已无服务器,移除该服务")
 
             # 移除服务器
             del self._servers[server_id]
@@ -439,6 +450,7 @@ class ServerSystem:
             return None
 
     def list_services(self) -> List[str]:
+    pass
 
         Returns:
             List[str]: 服务名称列表
@@ -446,11 +458,11 @@ class ServerSystem:
             return list(self._services.keys())
 
     def discover_service(self, service_name: str, strategy: Optional[str] = None) -> Optional[Dict[str, Any]]:
-        发现服务，根据负载均衡策略选择一个服务器
+        发现服务,根据负载均衡策略选择一个服务器
 
         Args:
             service_name: 服务名称
-            strategy: 负载均衡策略（round_robin, random, least_connections）
+            strategy: 负载均衡策略(round_robin, random, least_connections)
 
             Optional[Dict[str, Any]]: 选中的服务器信息
         with self._lock:
@@ -483,6 +495,7 @@ class ServerSystem:
             else:
                 # 轮询策略
                 if service_name not in self._round_robin_counter:
+    pass
 
                 # 获取当前索引并更新计数器
                 index = self._round_robin_counter[service_name] % len(servers)
@@ -525,7 +538,7 @@ class ServerSystem:
             # 更新服务器信息
             server_info.update(updates)
 
-            # 如果服务列表发生变化，更新服务注册
+            # 如果服务列表发生变化,更新服务注册
             if "services" in updates:
                 new_services = set(updates["services"])
 
@@ -579,7 +592,7 @@ class ServerSystem:
             "type": event_type,
             "data": event_data,
             "timestamp": time.time(),
-            "server_id": self._config["server_id"]
+            server_id = self._config["server_id"]
         }
             handlers = self._event_handlers.get(event_type, [])
 

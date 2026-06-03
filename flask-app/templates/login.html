@@ -8,7 +8,7 @@
     <title>登录/注册 - MTSCOS AI 系统</title>
     
     <!-- 图标库 -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
     <!-- 字体 -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
@@ -240,74 +240,50 @@
             </div>
             
             <!-- 登录表单 -->
-            <form class="auth-form" id="login-form" method="POST" action="/auth/login">
+            <form class="auth-form" id="login-form">
                 <div class="form-group">
                     <label for="username">用户名</label>
-                    <input type="text" id="username" name="username" required>
+                    <input type="text" id="username" name="username" required placeholder="请输入用户名">
                 </div>
                 
                 <div class="form-group">
                     <label for="password">密码</label>
-                    <input type="password" id="password" name="password" required>
-                </div>
-                
-                <!-- 多因素验证字段 -->
-                <div class="form-group">
-                    <label for="roll_code">滚码 (动态验证码)</label>
-                    <input type="text" id="roll_code" name="roll_code" placeholder="可选 - 6位数字">
+                    <input type="password" id="password" name="password" required placeholder="请输入密码">
                 </div>
                 
                 <div class="form-group">
-                    <label for="unique_code">唯一码 (一次性验证码)</label>
-                    <input type="text" id="unique_code" name="unique_code" placeholder="可选 - 8位字母数字">
+                    <label for="remember">
+                        <input type="checkbox" id="remember" name="remember">
+                        记住我
+                    </label>
                 </div>
                 
-                <div class="form-group">
-                    <label for="anti_fake_code">防伪码</label>
-                    <input type="text" id="anti_fake_code" name="anti_fake_code" placeholder="可选 - 16位字母数字">
-                </div>
-                
-                <div class="form-group">
-                    <label for="db_id">数据库ID</label>
-                    <input type="number" id="db_id" name="db_id" placeholder="可选 - 用户ID">
-                </div>
-                
-                <div class="form-group">
-                    <label for="vikey_hardware_id">Vikey硬件码</label>
-                    <input type="text" id="vikey_hardware_id" name="vikey_hardware_id" placeholder="可选 - Vikey硬件ID">
-                </div>
-                
-                <div class="form-group">
-                    <label for="whitelist_token">白名单Token (可选 - 可以直接登录)</label>
-                    <input type="text" id="whitelist_token" name="whitelist_token" placeholder="可选 - 白名单Token">
-                </div>
-                
-                <button type="submit" class="btn btn-primary w-full">登录</button>
+                <button type="button" class="btn btn-primary w-full" onclick="handleLogin()">登录</button>
             </form>
             
             <!-- 注册表单 -->
-            <form class="auth-form" id="register-form" method="POST" action="{{ url_for('register') }}" style="display: none;">
+            <form class="auth-form" id="register-form" style="display: none;">
                 <div class="form-group">
                     <label for="reg_username">用户名</label>
-                    <input type="text" id="reg_username" name="username" required>
+                    <input type="text" id="reg_username" name="username" required placeholder="请输入用户名">
                 </div>
                 
                 <div class="form-group">
                     <label for="reg_email">邮箱</label>
-                    <input type="email" id="reg_email" name="email" required>
+                    <input type="email" id="reg_email" name="email" required placeholder="请输入邮箱">
                 </div>
                 
                 <div class="form-group">
                     <label for="reg_password">密码</label>
-                    <input type="password" id="reg_password" name="password" required>
+                    <input type="password" id="reg_password" name="password" required placeholder="请输入密码">
                 </div>
                 
                 <div class="form-group">
                     <label for="reg_confirm_password">确认密码</label>
-                    <input type="password" id="reg_confirm_password" name="confirm_password" required>
+                    <input type="password" id="reg_confirm_password" name="confirm_password" required placeholder="请确认密码">
                 </div>
                 
-                <button type="submit" class="btn btn-primary w-full">注册</button>
+                <button type="button" class="btn btn-primary w-full" onclick="handleRegister()">注册</button>
             </form>
             
             <div class="auth-footer">
@@ -324,6 +300,99 @@
             // 切换表单显示
             document.getElementById('login-form').style.display = tabName === 'login' ? 'flex' : 'none';
             document.getElementById('register-form').style.display = tabName === 'register' ? 'flex' : 'none';
+            
+            // 清除消息
+            clearMessages();
+        }
+        
+        function clearMessages() {
+            const messages = document.querySelectorAll('.error-message, .success-message');
+            messages.forEach(msg => msg.remove());
+        }
+        
+        function showMessage(type, message) {
+            clearMessages();
+            const container = document.querySelector('.auth-ai-card');
+            const header = document.querySelector('.auth-header');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = type === 'error' ? 'error-message' : 'success-message';
+            messageDiv.textContent = message;
+            container.insertBefore(messageDiv, header.nextSibling);
+        }
+        
+        async function handleLogin() {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+            
+            if (!username || !password) {
+                showMessage('error', '用户名和密码不能为空');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showMessage('success', '登录成功！正在跳转...');
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 1500);
+                } else {
+                    showMessage('error', data.message || '登录失败');
+                }
+            } catch (error) {
+                showMessage('error', '网络错误，请稍后重试');
+                console.error('Login error:', error);
+            }
+        }
+        
+        async function handleRegister() {
+            const username = document.getElementById('reg_username').value.trim();
+            const email = document.getElementById('reg_email').value.trim();
+            const password = document.getElementById('reg_password').value;
+            const confirmPassword = document.getElementById('reg_confirm_password').value;
+            
+            if (!username || !email || !password) {
+                showMessage('error', '请填写完整信息');
+                return;
+            }
+            
+            if (password !== confirmPassword) {
+                showMessage('error', '两次输入的密码不一致');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username, email, password })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showMessage('success', '注册成功！请登录');
+                    setTimeout(() => {
+                        switchTab('login');
+                    }, 1500);
+                } else {
+                    showMessage('error', data.message || '注册失败');
+                }
+            } catch (error) {
+                showMessage('error', '网络错误，请稍后重试');
+                console.error('Register error:', error);
+            }
         }
         
         // 自动检测URL参数中的错误类型，切换到对应标签
@@ -333,6 +402,19 @@
             
             if (error === 'register') {
                 switchTab('register');
+            }
+        });
+        
+        // 键盘事件
+        document.getElementById('login-form').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                handleLogin();
+            }
+        });
+        
+        document.getElementById('register-form').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                handleRegister();
             }
         });
     </script>

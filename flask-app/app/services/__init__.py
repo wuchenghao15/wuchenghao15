@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Services package
-# 使用延迟导入，避免循环导入问题
+# 使用延迟导入,避免循环导入问题
 
 _rule_management_service = None
 _system_version_service = None
@@ -11,6 +11,9 @@ _login_route_service = None
 _enhanced_ai_service = None
 _data_upload_service = None
 _config_service = None
+_error_report_service = None
+_ai_auto_fix_service = None
+_backend_maintenance_ai = None
 
 
 def get_rule_management_service():
@@ -92,4 +95,31 @@ def get_config_service():
         from app.services.config_service import config_service
         _config_service = config_service
     return _config_service
+
+
+def get_error_report_service():
+    """获取错误上报服务实例"""
+    global _error_report_service
+    if _error_report_service is None:
+        from app.services.error_report_service import error_report_service
+        _error_report_service = error_report_service
+    return _error_report_service
+
+
+def get_ai_auto_fix_service():
+    """获取AI自动修复服务实例"""
+    global _ai_auto_fix_service
+    if _ai_auto_fix_service is None:
+        from app.services.ai_auto_fix_service import ai_auto_fix_service
+        _ai_auto_fix_service = ai_auto_fix_service
+    return _ai_auto_fix_service
+
+
+def get_backend_maintenance_ai():
+    """获取后台维护AI服务实例"""
+    global _backend_maintenance_ai
+    if _backend_maintenance_ai is None:
+        from app.services.backend_maintenance_ai import backend_maintenance_ai
+        _backend_maintenance_ai = backend_maintenance_ai
+    return _backend_maintenance_ai
 

@@ -1,300 +1,293 @@
 # -*- coding: utf-8 -*-
 # MTSCOS AI Project Application - Integrated System
+
 import os
 import logging
 import traceback
-from flask import Flask
+from flask import Flask, request
 
 # 配置日志
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-
-# 创建全局日志记录器
 logger = logging.getLogger(__name__)
 
-# 导入基本组件
-from app.config import load_config
+# 全局应用实例
+app = None
 
-# 应用工厂函数
-def create_app(config_type=None):
-    """
-    创建并配置Flask应用实例
-    只保留最基本的配置和初始化逻辑，确保应用能够成功启动
+def configure_logging():
+    """配置日志系统"""
+    log_level = os.environ.get('LOG_LEVEL', 'INFO').upper()
+    numeric_level = getattr(logging, log_level, logging.INFO)
+    logging.getLogger().setLevel(numeric_level)
+    logger.info(f"[系统配置] 日志级别设置为: {log_level}")
 
-    Args:
-        config_type: 配置类型，可选值：'production', 'development', 'test'
+def load_config_safe(config_type=None):
+    """安全加载配置"""
+    try:
+        from app.config import load_config
+        return load_config(config_type)
+    except Exception as e:
+        logger.error(f"[配置加载] 加载配置失败: {str(e)}")
+        return {}
 
-    Returns:
-        Flask应用实例
-    """
-    global logger
-    logger.info("[系统集成] 开始创建Flask应用实例...")
+def register_request_middlewares(app_instance):
+    """注册请求中间件"""
+    try:
+        from app.utils.logging import logging_manager
+        client_logger = logging_manager.get_logger('客户端交互日志')
 
-    # 创建Flask应用实例
-    app = Flask(__name__)
+        @app_instance.before_request
+        def log_request_info():
+            client_logger.info(f"[客户端请求] {request.remote_addr} - {request.method} {request.path}")
 
-    # 配置模板目录，确保能够正确找到模板文件
-    app.template_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../templates')
-    app.static_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../static')
+        @app_instance.after_request
+        def log_response_info(response):
+            client_logger.info(f"[客户端响应] {request.remote_addr} - {request.method} {request.path} - {response.status_code}")
+            return response
+        
+        logger.info("[中间件] 请求日志中间件注册成功")
+    except Exception as e:
+        logger.warning(f"[中间件] 注册请求日志中间件失败(非致命): {str(e)}")
 
-    # 明确设置编码配置，确保中文显示正常
-    app.config['JSON_AS_ASCII'] = False  # 确保JSON响应使用UTF-8编码
-    app.config['TEMPLATES_AUTO_RELOAD'] = True  # 确保模板自动重载
-    app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0  # 禁用静态文件缓存
-
-    # 1. 加载配置
-    logger.info("[系统集成] 加载系统配置...")
-    config = load_config(config_type)
-    app.config.update(config)
-    logger.info(f"[系统集成] 配置加载完成，环境: {config.get('ENV', 'development')}")
-
-    # 2. 配置HTTPS
-    if config.get('HTTPS_ENABLED', False):
-        ssl_cert_path = config.get('SSL_CERT_PATH', 'ssl/cert.pem')
-        ssl_key_path = config.get('SSL_KEY_PATH', 'ssl/key.pem')
-        # 检查证书文件是否存在
-        if os.path.exists(ssl_cert_path) and os.path.exists(ssl_key_path):
-            app.config['SSL_CERT_PATH'] = ssl_cert_path
-            app.config['SSL_KEY_PATH'] = ssl_key_path
-            logger.info("[系统集成] HTTPS 配置完成")
-        else:
-            logger.warning("[系统集成] HTTPS 证书文件不存在，将使用 HTTP")
-            app.config['HTTPS_ENABLED'] = False
-
-    # 导入请求处理相关模块，确保在蓝图注册之前
-    from flask import request
-    # 导入日志管理器
-    from app.utils.logging import logging_manager
-
-    # 获取中文日志记录器
-    client_logger = logging_manager.get_logger('客户端交互日志')
-
-    # 添加客户端请求日志中间件
-    @app.before_request
-    def log_request_info():
-        """记录请求信息"""
-        client_logger.info(f"[客户端请求] {request.remote_addr} - {request.method} {request.path}")
-        client_logger.info(f"[请求头] {dict(request.headers)}")
-        if request.method in ['POST', 'PUT', 'PATCH']:
-            client_logger.info(f"[请求体] {request.get_data(as_text=True)}")
-
-    # 添加响应日志中间件
-    @app.after_request
-    def log_response_info(response):
-        """记录响应信息"""
-        client_logger.info(f"[客户端响应] {request.remote_addr} - {request.method} {request.path} - 状态码: {response.status_code}")
-        client_logger.info(f"[响应头] {dict(response.headers)}")
-        return response
-
-    # 注册统一错误处理器
+def register_error_handlers(app_instance):
+    """注册统一错误处理器"""
     try:
         from app.utils.error_handler import register_error_handlers
-        register_error_handlers(app)
-        logger.info("[系统集成] 统一错误处理器注册完成")
+        register_error_handlers(app_instance)
+        logger.info("[错误处理] 统一错误处理器注册完成")
     except Exception as e:
-        logger.error(f"[系统集成] 注册统一错误处理器失败: {str(e)}")
+        logger.warning(f"[错误处理] 注册统一错误处理器失败(非致命): {str(e)}")
 
-    # 初始化并注册所有路由
+def register_routes(app_instance):
+    """注册路由"""
     try:
         from app.routes import init_routes, route_manager
         init_routes()
-        route_manager.register_all_routes(app)
-        logger.info("[系统集成] 路由管理器初始化完成")
+        route_manager.register_all_routes(app_instance)
+        logger.info("[路由] 路由管理器初始化完成")
     except Exception as e:
-        logger.error(f"[系统集成] 初始化路由管理器失败: {str(e)}")
+        logger.warning(f"[路由] 初始化路由管理器失败(非致命): {str(e)}")
 
-    # 注册API蓝图和中间件
+def register_api_blueprint(app_instance):
+    """注册API蓝图"""
     try:
         from app.api import api_bp
         from app.api.middleware import APIMiddleware
-
-        # 注册API蓝图
-        app.register_blueprint(api_bp)
-        logger.info("[系统集成] API蓝图注册完成")
-
-        # 初始化API中间件
-        APIMiddleware(app)
-        logger.info("[系统集成] API中间件初始化完成")
+        
+        app_instance.register_blueprint(api_bp)
+        APIMiddleware(app_instance)
+        logger.info("[API] API蓝图和中间件注册完成")
     except Exception as e:
-        logger.error(f"[系统集成] 注册API蓝图和中间件失败: {str(e)}")
+        logger.warning(f"[API] 注册API蓝图和中间件失败(非致命): {str(e)}")
 
-    logger.info("[系统集成] Flask应用实例创建完成！")
-    return app
+def register_protection_middlewares(app_instance):
+    """注册安全防护中间件"""
+    try:
+        from app.middlewares.sql_injection_protection import sql_injection_protection
+        sql_injection_protection.protect(app_instance)
+        logger.info("[安全] SQL注入防护中间件注册成功")
+    except Exception as e:
+        logger.warning(f"[安全] 注册SQL注入防护中间件失败(非致命): {str(e)}")
+
+def init_ai_components(app_instance):
+    """初始化AI组件(延迟加载)"""
+    ai_components = [
+        ('碎片化临时缓存系统', 'app.utils.cache', 'get_cache_manager'),
+        ('智体管家', 'app.ai.intelligence_manager', 'intelligence_manager.start'),
+        ('AI线程进程管理器', 'app.ai.thread_process_manager', 'ai_thread_process_manager.start'),
+        ('网管AI', 'app.ai.network_admin_ai', 'init_network_admin_ai'),
+        ('教师AI', 'app.ai.teacher_ai', 'init_teacher_ai'),
+        ('考试测试专家AI', 'app.ai.exam_expert_ai', 'init_exam_expert_ai'),
+        ('工程师AI', 'app.ai.engineer_ai', 'register_engineer_ai'),
+        ('AI托管管理器', 'app.ai.ai_hosting', 'ai_hosting_manager.initialize'),
+        ('子服务器系统AI', 'app.ai.server_ai', 'server_ai.initialize'),
+    ]
+
+    for name, module_path, func_path in ai_components:
+        try:
+            module = __import__(module_path, fromlist=[''])
+            parts = func_path.split('.')
+            obj = module
+            for part in parts:
+                obj = getattr(obj, part)
+            
+            if callable(obj):
+                result = obj()
+                if result is not None and result is not False:
+                    logger.info(f"[AI组件] {name}初始化成功")
+                elif result is False:
+                    logger.error(f"[AI组件] {name}初始化失败")
+                else:
+                    logger.info(f"[AI组件] {name}启动成功")
+        except Exception as e:
+            logger.warning(f"[AI组件] 初始化{name}失败(非致命): {str(e)}")
+
+def init_utils_managers(app_instance):
+    """初始化工具管理器"""
+    managers = [
+        ('子服务器规则管理器', 'app.utils.server_rule_manager', 'server_rule_manager.initialize'),
+        ('子服务器权限管理器', 'app.utils.server_permission_manager', 'server_permission_manager.initialize'),
+        ('子服务器路由管理器', 'app.utils.server_route_manager', 'server_route_manager.initialize'),
+    ]
+
+    for name, module_path, func_path in managers:
+        try:
+            module = __import__(module_path, fromlist=[''])
+            parts = func_path.split('.')
+            obj = module
+            for part in parts:
+                obj = getattr(obj, part)
+            
+            if callable(obj):
+                obj()
+                logger.info(f"[工具] {name}初始化成功")
+        except Exception as e:
+            logger.warning(f"[工具] 初始化{name}失败(非致命): {str(e)}")
+
+def init_services(app_instance):
+    """初始化后台服务"""
+    services = [
+        ('后台服务管理器', 'app.services.service_manager', 'service_manager.start'),
+        ('分布式服务器管理器', 'app.services.distributed_server', 'distributed_server_manager.start'),
+        ('Git管理器', 'app.services.git_manager', 'git_manager.initialize'),
+    ]
+
+    for name, module_path, func_path in services:
+        try:
+            module = __import__(module_path, fromlist=[''])
+            parts = func_path.split('.')
+            obj = module
+            for part in parts:
+                obj = getattr(obj, part)
+            
+            if callable(obj):
+                obj()
+                logger.info(f"[服务] {name}启动成功")
+                
+                if name == '后台服务管理器':
+                    service_manager = getattr(module, 'service_manager')
+                    service_manager.start_all_services()
+        except Exception as e:
+            logger.warning(f"[服务] 初始化{name}失败(非致命): {str(e)}")
+
+def init_ai_engine_config():
+    """初始化AI引擎配置"""
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location(
+            'engine_integrator', 
+            os.path.join(os.path.dirname(os.path.abspath(__file__)), 'ai/ai_engine_integrator.py')
+        )
+        
+        if spec:
+            engine_integrator_module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(engine_integrator_module)
+            ai_engine_integrator = engine_integrator_module.ai_engine_integrator
+
+            minimax_api_key = os.environ.get('MINIMAX_API_KEY')
+            if minimax_api_key:
+                ai_engine_integrator.configure_engine('minimax', {'api_key': minimax_api_key})
+                logger.info("[AI引擎] minimax API key配置成功")
+
+            gemini_api_key = os.environ.get('GEMINI_API_KEY')
+            if gemini_api_key:
+                ai_engine_integrator.configure_engine('gemini', {'api_key': gemini_api_key})
+                logger.info("[AI引擎] Gemini API key配置成功")
+
+            logger.info("[AI引擎] AI引擎API key配置完成")
+        else:
+            logger.warning("[AI引擎] 无法加载AI引擎集成器模块")
+    except Exception as e:
+        logger.warning(f"[AI引擎] 初始化AI引擎配置失败(非致命): {str(e)}")
+
+def create_app(config_type=None):
+    """
+    创建并配置Flask应用实例
+    采用模块化设计,各组件独立初始化,单个组件失败不影响整体启动
+    
+    Args:
+        config_type: 配置类型: 'production', 'development', 'test'
+    
+    Returns:
+        Flask应用实例
+    """
+    global app
+    logger.info("[系统集成] 开始创建Flask应用实例...")
+
+    # 创建Flask应用实例
+    app_instance = Flask(__name__)
+
+    # 配置模板和静态文件目录
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    app_instance.template_folder = os.path.join(base_dir, '../templates')
+    app_instance.static_folder = os.path.join(base_dir, '../static')
+
+    # 基础配置
+    app_instance.config['JSON_AS_ASCII'] = False
+    app_instance.config['TEMPLATES_AUTO_RELOAD'] = True
+    app_instance.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
+
+    # 加载配置
+    config = load_config_safe(config_type)
+    if config:
+        app_instance.config.update(config)
+        env = config.get('ENV', 'development')
+        logger.info(f"[系统集成] 配置加载完成,环境: {env}")
+
+    # 配置HTTPS
+    if config.get('HTTPS_ENABLED', False):
+        ssl_cert_path = config.get('SSL_CERT_PATH', 'ssl/cert.pem')
+        ssl_key_path = config.get('SSL_KEY_PATH', 'ssl/key.pem')
+        if os.path.exists(ssl_cert_path) and os.path.exists(ssl_key_path):
+            app_instance.config['SSL_CERT_PATH'] = ssl_cert_path
+            app_instance.config['SSL_KEY_PATH'] = ssl_key_path
+            logger.info("[系统集成] HTTPS配置完成")
+        else:
+            logger.warning("[系统集成] HTTPS证书文件不存在,将使用HTTP")
+            app_instance.config['HTTPS_ENABLED'] = False
+
+    # 注册中间件和处理器
+    register_request_middlewares(app_instance)
+    register_error_handlers(app_instance)
+    register_routes(app_instance)
+    register_api_blueprint(app_instance)
+    register_protection_middlewares(app_instance)
+
+    logger.info("[系统集成] Flask应用实例创建完成!")
+    
+    # 保存全局实例
+    app = app_instance
+    return app_instance
+
+def initialize_app(app_instance=None):
+    """
+    初始化应用的所有组件
+    采用延迟初始化策略,非核心组件失败不影响应用启动
+    
+    Args:
+        app_instance: Flask应用实例,如未提供则使用全局实例
+    """
+    if app_instance is None:
+        app_instance = app
+    
+    if app_instance is None:
+        logger.error("[初始化] 应用实例未创建,请先调用create_app()")
+        return
+
+    logger.info("[初始化] 开始初始化应用组件...")
+
+    # 初始化AI组件
+    init_ai_components(app_instance)
+
+    # 初始化工具管理器
+    init_utils_managers(app_instance)
+
+    # 初始化服务
+    init_services(app_instance)
+
+    # 初始化AI引擎配置
+    init_ai_engine_config()
+
+    logger.info("[初始化] 应用组件初始化完成!")
 
 # 创建默认应用实例
 app = create_app()
-
-# 初始化碎片化临时缓存系统
-try:
-    from app.utils.cache import get_cache_manager
-    app.cache_manager = get_cache_manager()
-    logger.info("碎片化临时缓存系统启动成功")
-except Exception as e:
-    logger.error(f"初始化碎片化临时缓存系统失败: {str(e)}")
-    traceback.print_exc()
-
-# 初始化智体管家
-try:
-    from app.ai.intelligence_manager import intelligence_manager
-    intelligence_manager.start()
-    logger.info("智体管家启动成功")
-except Exception as e:
-    logger.error(f"初始化智体管家失败: {str(e)}")
-    traceback.print_exc()
-
-# 初始化AI线程进程管理器
-try:
-    from app.ai.thread_process_manager import ai_thread_process_manager
-    ai_thread_process_manager.start()
-    logger.info("AI线程进程管理器启动成功")
-except Exception as e:
-    logger.error(f"初始化AI线程进程管理器失败: {str(e)}")
-    traceback.print_exc()
-
-# 初始化AI引擎配置，加载API key
-try:
-    from app.ai.engine_integrator import ai_engine_integrator
-
-    # 配置minimax API key
-    minimax_api_key = os.environ.get('MINIMAX_API_KEY')
-    if minimax_api_key:
-        ai_engine_integrator.configure_engine('minimax', {'api_key': minimax_api_key})
-        logger.info("minimax API key配置成功")
-
-    # 配置gemini API key（如果存在）
-    gemini_api_key = os.environ.get('GEMINI_API_KEY')
-    if gemini_api_key:
-        ai_engine_integrator.configure_engine('gemini', {'api_key': gemini_api_key})
-        logger.info("Gemini API key配置成功")
-
-    logger.info("AI引擎API key配置完成")
-except Exception as e:
-    logger.error(f"初始化AI引擎配置失败: {str(e)}")
-    traceback.print_exc()
-
-# 初始化网管AI
-try:
-    from app.ai.network_admin_ai import init_network_admin_ai, network_admin_instance
-    network_admin_instance = init_network_admin_ai()
-    if network_admin_instance:
-        logger.info("网管AI初始化成功")
-    else:
-        logger.error("网管AI初始化失败")
-except Exception as e:
-    logger.error(f"初始化网管AI失败: {str(e)}")
-    traceback.print_exc()
-
-# 初始化教师AI
-try:
-    from app.ai.teacher_ai import init_teacher_ai
-    teacher_instance = init_teacher_ai()
-    if teacher_instance:
-        logger.info("教师AI初始化成功")
-    else:
-        logger.error("教师AI初始化失败")
-except Exception as e:
-    logger.error(f"初始化教师AI失败: {str(e)}")
-    traceback.print_exc()
-
-# 初始化考试测试专家AI
-try:
-    from app.ai.exam_expert_ai import init_exam_expert_ai
-    exam_expert_instance = init_exam_expert_ai()
-    if exam_expert_instance:
-        logger.info("考试测试专家AI初始化成功")
-    else:
-        logger.error("考试测试专家AI初始化失败")
-except Exception as e:
-    logger.error(f"初始化考试测试专家AI失败: {str(e)}")
-    traceback.print_exc()
-
-# 初始化工程师AI
-try:
-    from app.ai.engineer_ai import register_engineer_ai
-    register_engineer_ai()
-    logger.info("工程师AI初始化成功")
-except Exception as e:
-    logger.error(f"初始化工程师AI失败: {str(e)}")
-    traceback.print_exc()
-
-# 初始化后台服务管理器
-try:
-    from app.services.service_manager import service_manager
-    service_manager.start()
-    logger.info("后台服务管理器启动成功")
-
-    service_manager.start_all_services()
-except Exception as e:
-    logger.error(f"初始化后台服务管理器失败: {str(e)}")
-    traceback.print_exc()
-
-# 初始化分布式服务器管理器
-try:
-    from app.services.distributed_server import distributed_server_manager
-    distributed_server_manager.start()
-    logger.info("分布式服务器管理器启动成功")
-except Exception as e:
-    logger.error(f"初始化分布式服务器管理器失败: {str(e)}")
-    traceback.print_exc()
-
-# 初始化子服务器系统AI
-try:
-    from app.ai.server_ai import server_ai
-    server_ai.initialize()
-    logger.info("子服务器系统AI初始化成功")
-except Exception as e:
-    logger.error(f"初始化子服务器系统AI失败: {str(e)}")
-    traceback.print_exc()
-
-# 初始化子服务器规则管理器
-try:
-    from app.utils.server_rule_manager import server_rule_manager
-    server_rule_manager.initialize()
-    logger.info("子服务器规则管理器初始化成功")
-except Exception as e:
-    logger.error(f"初始化子服务器规则管理器失败: {str(e)}")
-    traceback.print_exc()
-
-# 初始化子服务器权限管理器
-try:
-    from app.utils.server_permission_manager import server_permission_manager
-    server_permission_manager.initialize()
-    logger.info("子服务器权限管理器初始化成功")
-except Exception as e:
-    logger.error(f"初始化子服务器权限管理器失败: {str(e)}")
-    traceback.print_exc()
-
-# 初始化子服务器路由管理器
-try:
-    from app.utils.server_route_manager import server_route_manager
-    server_route_manager.initialize()
-    logger.info("子服务器路由管理器初始化成功")
-except Exception as e:
-    logger.error(f"初始化子服务器路由管理器失败: {str(e)}")
-    traceback.print_exc()
-
-# 初始化Git管理器
-try:
-    from app.services.git_manager import git_manager
-    git_manager.initialize()
-    logger.info("Git管理器初始化成功")
-except Exception as e:
-    logger.error(f"初始化Git管理器失败: {str(e)}")
-    traceback.print_exc()
-
-# 注册SQL注入防护中间件
-try:
-    from app.middlewares.sql_injection_protection import sql_injection_protection
-    sql_injection_protection.protect(app)
-    logger.info("SQL注入防护中间件注册成功")
-except Exception as e:
-    logger.error(f"注册SQL注入防护中间件失败: {str(e)}")
-    traceback.print_exc()
-
-# 初始化AI托管管理器
-try:
-    from app.ai.ai_hosting import ai_hosting_manager
-    ai_hosting_manager.initialize()
-    logger.info("AI托管管理器初始化成功")
-except Exception as e:
-    logger.error(f"初始化AI托管管理器失败: {str(e)}")
-    traceback.print_exc()

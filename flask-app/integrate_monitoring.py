@@ -1,8 +1,10 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 监控系统集成脚本
 将监控系统与现有的AI员工系统、分布式系统和影子系统集成
+"""
 
 import time
 import logging
@@ -40,11 +42,11 @@ class MonitoringIntegrator:
         """注册AI员工系统"""
         logger.info("注册AI员工系统...")
         # 这里假设AI员工系统有一个实例可以注册
-        # 实际情况下，可能需要通过API或其他方式连接
+        # 实际情况下,可能需要通过API或其他方式连接
         self.monitoring_system.register_system(
             "ai_employee_system",
             "ai_employee",
-            None  # 暂时没有实例，使用心跳机制监控
+            None  # 暂时没有实例,使用心跳机制监控
         )
         logger.info("AI员工系统已注册")
 
@@ -53,7 +55,8 @@ class MonitoringIntegrator:
         logger.info("注册分布式系统...")
         self.monitoring_system.register_system(
             "distributed_system",
-            None  # 暂时没有实例，使用心跳机制监控
+            "distributed",
+            None  # 暂时没有实例,使用心跳机制监控
         )
         logger.info("分布式系统已注册")
     def register_shadow_system(self):
@@ -62,6 +65,7 @@ class MonitoringIntegrator:
         self.monitoring_system.register_system(
             "shadow_system",
             "shadow",
+            None  # 暂时没有实例,使用心跳机制监控
         )
         logger.info("影子系统已注册")
 
@@ -70,7 +74,8 @@ class MonitoringIntegrator:
         self.monitoring_system.register_system(
             "ai_brain_system",
             "ai_brain",
-            None  # 暂时没有实例，使用心跳机制监控
+            None  # 暂时没有实例,使用心跳机制监控
+        )
         logger.info("AI脑图系统已注册")
 
     def add_alert_rules(self):
@@ -101,29 +106,33 @@ class MonitoringIntegrator:
             1,
             AlertLevel.CRITICAL,
             "系统心跳超时"
+        )
         # 请求错误率告警
         self.monitoring_system.add_alert_rule(
+            "rule_error_rate",
             "error_rate",
             ">",
+            5.0,
             AlertLevel.ERROR,
             "请求错误率过高"
         )
         logger.info("告警规则已添加")
 
     def simulate_metrics(self, duration=60):
-        """模拟指标数据（用于测试）"""
-        logger.info(f"模拟指标数据，持续 {duration} 秒...")
+        """模拟指标数据(用于测试)"""
+        logger.info(f"模拟指标数据,持续 {duration} 秒...")
 
+        start_time = time.time()
         while time.time() - start_time < duration:
             for system_id in self.integrated_systems:
-                # 模拟CPU使用率（40-70%）
+                # 模拟CPU使用率(40-70%)
                 cpu_usage = 40 + (time.time() % 30)
                 self.monitoring_system.add_metric(
                     "cpu_usage",
                     cpu_usage,
                     MetricType.GAUGE
                 )
-                # 模拟内存使用率（50-75%）
+                # 模拟内存使用率(50-75%)
                 memory_usage = 50 + (time.time() % 25)
                 self.monitoring_system.add_metric(
                     system_id,
@@ -227,8 +236,8 @@ class MonitoringIntegrator:
 
             logger.info("监控系统集成完成")
 
-            # 保持运行，持续监控
-            print("\n监控系统已启动并集成，按 Ctrl+C 停止...")
+            # 保持运行,持续监控
+            print("\n监控系统已启动并集成,按 Ctrl+C 停止...")
             while True:
                 time.sleep(10)
                 self.display_dashboard()

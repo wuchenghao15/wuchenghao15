@@ -1,0 +1,1816 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>权限管理系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f7fa;
+            min-height: 100vh;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header-actions {
+            display: flex;
+            gap: 12px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+        
+        .btn-primary:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        
+        .btn-success {
+            background: #48bb78;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #38a169;
+        }
+        
+        .btn-danger {
+            background: #fc8181;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #f56565;
+        }
+        
+        .btn-secondary {
+            background: white;
+            color: #667eea;
+        }
+        
+        .btn-secondary:hover {
+            background: #f0f0f0;
+        }
+        
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 14px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .tab {
+            padding: 12px 24px;
+            background: white;
+            border: none;
+            border-radius: 8px 8px 0 0;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .tab.active {
+            background: #667eea;
+            color: white;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .card h2 {
+            font-size: 18px;
+            margin-bottom: 16px;
+            color: #333;
+        }
+        
+        .role-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 16px;
+        }
+        
+        .role-card {
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.3s;
+            position: relative;
+        }
+        
+        .role-card:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102,126,234,0.2);
+        }
+        
+        .role-card.admin {
+            border-color: #48bb78;
+        }
+        
+        .role-card.admin:hover {
+            border-color: #48bb78;
+            box-shadow: 0 4px 12px rgba(72,187,120,0.2);
+        }
+        
+        .role-card.super-admin {
+            border-color: #f56565;
+        }
+        
+        .role-card.super-admin:hover {
+            border-color: #f56565;
+            box-shadow: 0 4px 12px rgba(245,101,101,0.2);
+        }
+        
+        .role-level {
+            display: inline-block;
+            padding: 4px 12px;
+            background: #667eea;
+            color: white;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .role-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            color: white;
+        }
+        
+        .role-badge.level-0 { background: #a0aec0; }
+        .role-badge.level-1 { background: #4299e1; }
+        .role-badge.level-2 { background: #48bb78; }
+        .role-badge.level-3 { background: #ed8936; }
+        .role-badge.level-4 { background: #9f7aea; }
+        .role-badge.level-5 { background: #667eea; }
+        .role-badge.level-6 { background: #f56565; }
+        .role-badge.level-7 { background: #1a1a2e; }
+        
+        .user-role-info {
+            margin-right: 20px;
+            text-align: right;
+        }
+        
+        .role-card.admin .role-level {
+            background: #48bb78;
+        }
+        
+        .role-card.super-admin .role-level {
+            background: #f56565;
+        }
+        
+        .role-actions {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            gap: 5px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .role-card:hover .role-actions {
+            opacity: 1;
+        }
+        
+        .permissions-list {
+            margin-top: 12px;
+        }
+        
+        .permission-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .permission-item:last-child {
+            border-bottom: none;
+        }
+        
+        .permission-icon {
+            margin-right: 10px;
+            color: #48bb78;
+        }
+        
+        .permission-icon.denied {
+            color: #fc8181;
+        }
+        
+        .test-section {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 24px;
+            margin-top: 24px;
+        }
+        
+        .test-form {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        
+        .form-group {
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 500;
+            color: #333;
+        }
+        
+        .form-group select, .form-group input {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
+        }
+        
+        .test-result {
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        
+        .test-result.success {
+            background: #c6f6d5;
+            border: 2px solid #48bb78;
+        }
+        
+        .test-result.denied {
+            background: #fed7d7;
+            border: 2px solid #fc8181;
+        }
+        
+        .hierarchy-visual {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            padding: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .hierarchy-level {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+        
+        .hierarchy-level:hover {
+            transform: scale(1.1);
+        }
+        
+        .hierarchy-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+            transition: box-shadow 0.3s;
+        }
+        
+        .hierarchy-level:hover .hierarchy-icon {
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        
+        .level-0 { background: #a0aec0; }
+        .level-1 { background: #4299e1; }
+        .level-2 { background: #48bb78; }
+        .level-3 { background: #ed8936; }
+        .level-4 { background: #9f7aea; }
+        .level-5 { background: #667eea; }
+        .level-6 { background: #f56565; }
+        .level-7 { background: #1a1a2e; }
+        
+        .hierarchy-arrow {
+            font-size: 24px;
+            color: #a0aec0;
+        }
+        
+        .hierarchy-info {
+            text-align: center;
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8fafc;
+            border-radius: 12px;
+        }
+        
+        .audit-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        .audit-table th, .audit-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .audit-table th {
+            background: #f8fafc;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .audit-table tr:hover {
+            background: #f8fafc;
+        }
+        
+        .audit-action {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .audit-action.create {
+            background: #c6f6d5;
+            color: #2f855a;
+        }
+        
+        .audit-action.update {
+            background: #feebc8;
+            color: #d69e2e;
+        }
+        
+        .audit-action.delete {
+            background: #fed7d7;
+            color: #c53030;
+        }
+        
+        .audit-action.login {
+            background: #e6fffa;
+            color: #319795;
+        }
+        
+        .audit-filter {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+        
+        .audit-filter input, .audit-filter select {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+        
+        .empty-state svg {
+            width: 64px;
+            height: 64px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+        
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-overlay.show {
+            display: flex;
+        }
+        
+        .modal {
+            background: white;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+        }
+        
+        .modal-body {
+            padding: 20px;
+        }
+        
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            padding: 20px;
+            border-top: 1px solid #e0e0e0;
+        }
+        
+        .permission-checkboxes {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .permission-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px;
+            background: #f8fafc;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .permission-checkbox:hover {
+            background: #edf2f7;
+        }
+        
+        .permission-checkbox input {
+            margin: 0;
+        }
+        
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 12px 24px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            opacity: 0;
+            transform: translateY(100%);
+            transition: all 0.3s;
+            z-index: 2000;
+        }
+        
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .toast.success {
+            background: #48bb78;
+        }
+        
+        .toast.error {
+            background: #fc8181;
+        }
+        
+        .toast.warning {
+            background: #ed8936;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        
+        .stat-info {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #333;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+        
+        .stat-icon.users {
+            background: #ebf8ff;
+            color: #3182ce;
+        }
+        
+        .stat-icon.roles {
+            background: #f0fff4;
+            color: #38a169;
+        }
+        
+        .stat-icon.permissions {
+            background: #fffaf0;
+            color: #d69e2e;
+        }
+        
+        .stat-icon.audit {
+            background: #faf5ff;
+            color: #805ad5;
+        }
+        
+        .search-box {
+            padding: 10px 14px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            width: 300px;
+        }
+        
+        .search-box:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
+        }
+        
+        .sort-select {
+            padding: 10px 14px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div>
+            <h1>🔐 权限管理系统</h1>
+            <p style="font-size: 14px; opacity: 0.8;">管理系统角色与权限配置</p>
+        </div>
+        <div class="header-actions">
+            <div class="user-role-info">
+                <div id="current-role-display" style="font-size: 14px; margin-bottom: 4px;">当前角色: 管理员</div>
+                <div style="display: flex; gap: 8px;">
+                    <span id="current-role-badge" class="role-badge level-5">管理员</span>
+                    <span id="current-role-level" style="font-size: 12px; color: rgba(255,255,255,0.8);">权限等级: 5</span>
+                </div>
+            </div>
+            <button class="btn btn-primary" onclick="openAddRoleModal()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+                新建角色
+            </button>
+            <button class="btn btn-success" onclick="exportPermissions()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                导出配置
+            </button>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-info">
+                    <div class="stat-value" id="stat-users">8</div>
+                    <div class="stat-label">用户总数</div>
+                </div>
+                <div class="stat-icon users">👥</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-info">
+                    <div class="stat-value" id="stat-roles">8</div>
+                    <div class="stat-label">角色数量</div>
+                </div>
+                <div class="stat-icon roles">🎭</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-info">
+                    <div class="stat-value" id="stat-permissions">42</div>
+                    <div class="stat-label">权限项</div>
+                </div>
+                <div class="stat-icon permissions">🔑</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-info">
+                    <div class="stat-value" id="stat-audit">156</div>
+                    <div class="stat-label">审计记录</div>
+                </div>
+                <div class="stat-icon audit">📋</div>
+            </div>
+        </div>
+        
+        <div class="tabs">
+            <button class="tab active" data-tab="roles">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+                角色权限
+            </button>
+            <button class="tab" data-tab="hierarchy">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/>
+                </svg>
+                权限等级
+            </button>
+            <button class="tab" data-tab="test">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="22 11.08 12 13.09 2 11.08"/><path d="M22 4L12 14.01l-3-3"/>
+                </svg>
+                权限测试
+            </button>
+            <button class="tab" data-tab="audit">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+                </svg>
+                权限审计
+            </button>
+            <button class="tab" data-tab="resources">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 11H5m14 0a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2m14 0V9a2 2 0 0 0-2-2M5 11V9a2 2 0 0 1 2-2m0 0V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2M7 7h10"/>
+                </svg>
+                资源管理
+            </button>
+        </div>
+        
+        <div id="roles" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h2>角色权限配置</h2>
+                    <div style="display: flex; gap: 12px;">
+                        <input type="text" class="search-box" placeholder="搜索角色..." id="role-search">
+                        <select class="sort-select" id="role-sort">
+                            <option value="level-asc">按等级升序</option>
+                            <option value="level-desc">按等级降序</option>
+                            <option value="name-asc">按名称升序</option>
+                            <option value="name-desc">按名称降序</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="role-grid" id="roleGrid">
+                    <!-- 动态生成 -->
+                </div>
+            </div>
+        </div>
+        
+        <div id="hierarchy" class="tab-content" style="display: none;">
+            <div class="card">
+                <h2>权限等级体系</h2>
+                <div class="hierarchy-visual" id="hierarchyVisual">
+                    <!-- 动态生成 -->
+                </div>
+                <div class="hierarchy-info" id="hierarchyInfo">
+                    <p style="font-weight: 600; color: #333; margin-bottom: 8px;">点击等级查看详情</p>
+                    <p style="color: #666; font-size: 14px;">当前选择：点击左侧等级图标查看详细信息</p>
+                </div>
+            </div>
+        </div>
+        
+        <div id="test" class="tab-content" style="display: none;">
+            <div class="card">
+                <h2>权限验证测试</h2>
+                <div class="test-section">
+                    <div class="test-form">
+                        <div class="form-group">
+                            <label>选择角色</label>
+                            <select id="testRole">
+                                <option value="guest">访客</option>
+                                <option value="student">学生</option>
+                                <option value="teacher">教师</option>
+                                <option value="professor">教授</option>
+                                <option value="researcher">教研员</option>
+                                <option value="admin">管理员</option>
+                                <option value="super_admin">超级管理员</option>
+                                <option value="hardware_admin">硬件管理员</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>资源类型</label>
+                            <select id="testResourceType">
+                                <option value="page">页面访问</option>
+                                <option value="feature">功能使用</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>资源路径/功能</label>
+                            <input type="text" id="testResource" placeholder="例如: /admin 或 can_create_exam">
+                        </div>
+                        <button class="btn btn-primary" onclick="testPermission()">测试权限</button>
+                    </div>
+                    
+                    <div id="testResult" style="display: none;"></div>
+                </div>
+                
+                <div class="test-section" style="margin-top: 24px;">
+                    <h3 style="margin-bottom: 16px;">批量权限测试</h3>
+                    <div style="display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 16px;">
+                        <div class="form-group" style="min-width: 250px;">
+                            <label>选择角色范围</label>
+                            <select id="batchRoles">
+                                <option value="all">所有角色</option>
+                                <option value="users">普通用户角色</option>
+                                <option value="admins">管理员角色</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="min-width: 250px;">
+                            <label>测试资源</label>
+                            <input type="text" id="batchResource" placeholder="例如: /admin/dashboard">
+                        </div>
+                        <button class="btn btn-success" onclick="batchTestPermissions()" style="align-self: flex-end;">批量测试</button>
+                    </div>
+                    <div id="batchResult" style="display: none;"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="audit" class="tab-content" style="display: none;">
+            <div class="card">
+                <div class="card-header">
+                    <h2>权限变更审计</h2>
+                    <div class="audit-filter">
+                        <select id="audit-action">
+                            <option value="all">所有操作</option>
+                            <option value="create">创建</option>
+                            <option value="update">修改</option>
+                            <option value="delete">删除</option>
+                            <option value="login">登录</option>
+                        </select>
+                        <input type="text" id="audit-user" placeholder="搜索用户...">
+                        <input type="date" id="audit-date">
+                        <button class="btn btn-secondary btn-sm" onclick="filterAuditLogs()">筛选</button>
+                    </div>
+                </div>
+                <div id="auditLogs">
+                    <table class="audit-table">
+                        <thead>
+                            <tr>
+                                <th>时间</th>
+                                <th>用户</th>
+                                <th>操作</th>
+                                <th>资源</th>
+                                <th>详情</th>
+                                <th>IP地址</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- 动态生成 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <div id="resources" class="tab-content" style="display: none;">
+            <div class="card">
+                <div class="card-header">
+                    <h2>资源权限管理</h2>
+                    <button class="btn btn-primary" onclick="openAddResourceModal()">添加资源</button>
+                </div>
+                <div class="role-grid" id="resourceGrid">
+                    <!-- 动态生成 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title" id="modal-title">新建角色</div>
+                <button class="modal-close" onclick="closeModal()">✕</button>
+            </div>
+            <div class="modal-body" id="modal-body">
+                <div class="form-group">
+                    <label>角色ID</label>
+                    <input type="text" id="role-id" placeholder="例如: custom_role">
+                </div>
+                <div class="form-group">
+                    <label>角色名称</label>
+                    <input type="text" id="role-name" placeholder="例如: 自定义角色">
+                </div>
+                <div class="form-group">
+                    <label>角色等级</label>
+                    <select id="role-level">
+                        <option value="0">0 - 访客</option>
+                        <option value="1">1 - 学生</option>
+                        <option value="2">2 - 教师</option>
+                        <option value="3">3 - 教授</option>
+                        <option value="4">4 - 教研员</option>
+                        <option value="5">5 - 管理员</option>
+                        <option value="6">6 - 超级管理员</option>
+                        <option value="7">7 - 硬件管理员</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>角色图标</label>
+                    <input type="text" id="role-icon" placeholder="例如: 🎯">
+                </div>
+                <div class="form-group">
+                    <label>可访问页面</label>
+                    <div class="permission-checkboxes" id="page-permissions">
+                        <!-- 动态生成 -->
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>可用功能</label>
+                    <div class="permission-checkboxes" id="feature-permissions">
+                        <!-- 动态生成 -->
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal()">取消</button>
+                <button class="btn btn-primary" onclick="saveRole()">保存角色</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="edit-modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title" id="edit-modal-title">编辑角色</div>
+                <button class="modal-close" onclick="closeEditModal()">✕</button>
+            </div>
+            <div class="modal-body" id="edit-modal-body">
+                <!-- 动态填充 -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-danger" onclick="deleteRole()">删除角色</button>
+                <button class="btn btn-secondary" onclick="closeEditModal()">取消</button>
+                <button class="btn btn-primary" onclick="updateRole()">保存修改</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="resource-modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">添加资源</div>
+                <button class="modal-close" onclick="closeResourceModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>资源名称</label>
+                    <input type="text" id="resource-name" placeholder="例如: 用户管理页面">
+                </div>
+                <div class="form-group">
+                    <label>资源路径</label>
+                    <input type="text" id="resource-path" placeholder="例如: /admin/users">
+                </div>
+                <div class="form-group">
+                    <label>资源类型</label>
+                    <select id="resource-type">
+                        <option value="page">页面</option>
+                        <option value="api">API接口</option>
+                        <option value="feature">功能</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>最小权限等级</label>
+                    <select id="resource-min-level">
+                        <option value="0">0 - 访客</option>
+                        <option value="1">1 - 学生</option>
+                        <option value="2">2 - 教师</option>
+                        <option value="3">3 - 教授</option>
+                        <option value="4">4 - 教研员</option>
+                        <option value="5">5 - 管理员</option>
+                        <option value="6">6 - 超级管理员</option>
+                        <option value="7">7 - 硬件管理员</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeResourceModal()">取消</button>
+                <button class="btn btn-primary" onclick="saveResource()">保存资源</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="20 6 9 17 4 12"/>
+        </svg>
+        <span id="toast-message">操作成功</span>
+    </div>
+
+    <script>
+        const rolePermissions = {
+            'guest': {
+                level: 0,
+                name: '访客',
+                icon: '👤',
+                pages: ['首页', '登录页'],
+                features: ['查看公告'],
+                description: '仅能访问公共页面'
+            },
+            'student': {
+                level: 1,
+                name: '学生',
+                icon: '🎓',
+                pages: ['首页', '考试', '成绩', '个人中心'],
+                features: ['参加考试', '查看成绩', '下载证书'],
+                description: '学生用户，可参加考试查看成绩'
+            },
+            'teacher': {
+                level: 2,
+                name: '教师',
+                icon: '👨‍🏫',
+                pages: ['首页', '考试管理', '成绩管理', '题库管理'],
+                features: ['创建考试', '编辑题目', '批改试卷', '生成报告'],
+                description: '教师用户，可管理考试和批改试卷'
+            },
+            'professor': {
+                level: 3,
+                name: '教授',
+                icon: '🎓',
+                pages: ['首页', '考试管理', '成绩管理', '题库管理', '数据分析'],
+                features: ['创建考试', '编辑题目', '批改试卷', '查看研究数据'],
+                description: '教授用户，拥有高级教学管理权限'
+            },
+            'researcher': {
+                level: 4,
+                name: '教研员',
+                icon: '🔬',
+                pages: ['首页', '考试管理', '数据分析', '题库分析'],
+                features: ['查看统计', '分析趋势', '优化题目'],
+                description: '教研人员，专注于数据分析和题库优化'
+            },
+            'admin': {
+                level: 5,
+                name: '管理员',
+                icon: '⚙️',
+                pages: ['全部页面'],
+                features: ['用户管理', '系统设置', '权限配置'],
+                description: '系统管理员，管理用户和系统配置'
+            },
+            'super_admin': {
+                level: 6,
+                name: '超级管理员',
+                icon: '🔐',
+                pages: ['全部页面'],
+                features: ['用户管理', '系统设置', '权限配置', '数据库管理'],
+                description: '超级管理员，拥有最高系统权限'
+            },
+            'hardware_admin': {
+                level: 7,
+                name: '硬件管理员',
+                icon: '💻',
+                pages: ['全部页面', '硬件管理'],
+                features: ['全部权限', '硬件控制', '系统监控'],
+                description: '硬件管理员，管理服务器和硬件设备'
+            }
+        };
+
+        const allPages = ['首页', '登录页', '考试', '成绩', '个人中心', '考试管理', '成绩管理', '题库管理', '数据分析', '题库分析', '硬件管理'];
+        const allFeatures = ['查看公告', '参加考试', '查看成绩', '下载证书', '创建考试', '编辑题目', '批改试卷', '生成报告', '查看研究数据', '查看统计', '分析趋势', '优化题目', '用户管理', '系统设置', '权限配置', '数据库管理', '硬件控制', '系统监控'];
+
+        const auditLogs = [
+            { id: 1, time: '2026-05-27 16:45:32', user: 'admin', action: 'update', resource: '角色: teacher', detail: '修改了教师角色的权限配置', ip: '192.168.1.100' },
+            { id: 2, time: '2026-05-27 16:32:18', user: 'super_admin', action: 'create', resource: '角色: researcher', detail: '创建了教研员角色', ip: '192.168.1.101' },
+            { id: 3, time: '2026-05-27 15:20:45', user: 'teacher01', action: 'login', resource: '系统登录', detail: '教师账号登录系统', ip: '192.168.1.102' },
+            { id: 4, time: '2026-05-27 14:15:00', user: 'admin', action: 'update', resource: '用户: student001', detail: '更新了学生账号信息', ip: '192.168.1.100' },
+            { id: 5, time: '2026-05-27 13:00:22', user: 'super_admin', action: 'delete', resource: '角色: temp_role', detail: '删除了临时角色', ip: '192.168.1.101' },
+            { id: 6, time: '2026-05-27 11:30:45', user: 'student001', action: 'login', resource: '系统登录', detail: '学生账号登录系统', ip: '192.168.1.105' },
+            { id: 7, time: '2026-05-27 10:15:33', user: 'admin', action: 'update', resource: '权限: create_exam', detail: '修改了创建考试权限', ip: '192.168.1.100' },
+            { id: 8, time: '2026-05-27 09:00:00', user: 'admin', action: 'login', resource: '系统登录', detail: '管理员账号登录系统', ip: '192.168.1.100' },
+        ];
+
+        const resources = [
+            { id: 1, name: '首页', path: '/', type: 'page', minLevel: 0, description: '系统首页' },
+            { id: 2, name: '登录页', path: '/login', type: 'page', minLevel: 0, description: '用户登录页面' },
+            { id: 3, name: '考试页面', path: '/exam', type: 'page', minLevel: 1, description: '在线考试页面' },
+            { id: 4, name: '成绩页面', path: '/scores', type: 'page', minLevel: 1, description: '成绩查询页面' },
+            { id: 5, name: '考试管理', path: '/admin/exams', type: 'page', minLevel: 2, description: '考试管理后台' },
+            { id: 6, name: '题库管理', path: '/admin/questions', type: 'page', minLevel: 2, description: '题库管理后台' },
+            { id: 7, name: '用户管理', path: '/admin/users', type: 'page', minLevel: 5, description: '用户管理后台' },
+            { id: 8, name: '权限管理', path: '/admin/permissions', type: 'page', minLevel: 5, description: '权限配置页面' },
+            { id: 9, name: '数据分析', path: '/admin/analytics', type: 'page', minLevel: 4, description: '数据分析页面' },
+            { id: 10, name: '硬件管理', path: '/admin/hardware', type: 'page', minLevel: 7, description: '硬件设备管理' },
+        ];
+
+        const currentUserRole = 'admin';
+        const currentRoleLevel = rolePermissions[currentUserRole]?.level || 0;
+
+        const permissionLevels = {
+            ADMIN: 5,
+            SUPER_ADMIN: 6,
+            HARDWARE_ADMIN: 7
+        };
+
+        function canAccess(requiredLevel) {
+            return currentRoleLevel >= requiredLevel;
+        }
+
+        function canManageRoles() {
+            return currentRoleLevel >= permissionLevels.ADMIN;
+        }
+
+        function canManageSuperAdmin() {
+            return currentRoleLevel >= permissionLevels.SUPER_ADMIN;
+        }
+
+        function canManageHardware() {
+            return currentRoleLevel >= permissionLevels.HARDWARE_ADMIN;
+        }
+
+        function getCurrentRoleName() {
+            return rolePermissions[currentUserRole]?.name || '未知用户';
+        }
+
+        function updateUserInfo() {
+            const roleDisplay = document.getElementById('current-role-display');
+            const roleBadge = document.getElementById('current-role-badge');
+            const roleLevel = document.getElementById('current-role-level');
+            
+            if (roleDisplay) {
+                roleDisplay.textContent = `当前角色: ${getCurrentRoleName()}`;
+            }
+            if (roleBadge) {
+                roleBadge.textContent = getCurrentRoleName();
+                roleBadge.className = `role-badge level-${currentRoleLevel}`;
+            }
+            if (roleLevel) {
+                roleLevel.textContent = `权限等级: ${currentRoleLevel}`;
+            }
+
+            const hardwareTab = document.querySelector('.tab[data-tab="resources"]');
+            const exportBtn = document.querySelector('.btn-success');
+            const deleteButtons = document.querySelectorAll('.role-card .btn-danger');
+            
+            if (!canManageHardware() && hardwareTab) {
+                hardwareTab.style.display = 'none';
+            }
+            if (!canManageSuperAdmin() && exportBtn) {
+                exportBtn.style.display = 'none';
+            }
+            
+            updateRoleActions();
+        }
+
+        function updateRoleActions() {
+            const roleCards = document.querySelectorAll('.role-card');
+            roleCards.forEach(card => {
+                const roleName = card.querySelector('strong').textContent;
+                const roleId = Object.keys(rolePermissions).find(key => rolePermissions[key].name === roleName);
+                const role = rolePermissions[roleId];
+                
+                const editBtn = card.querySelector('.btn-secondary');
+                const deleteBtn = card.querySelector('.btn-danger');
+                
+                if (role) {
+                    if (role.level === 6 && !canManageSuperAdmin()) {
+                        if (editBtn) editBtn.style.display = 'none';
+                        if (deleteBtn) deleteBtn.style.display = 'none';
+                    }
+                    if (role.level === 7 && !canManageHardware()) {
+                        if (editBtn) editBtn.style.display = 'none';
+                        if (deleteBtn) deleteBtn.style.display = 'none';
+                    }
+                }
+            });
+        }
+
+        function init() {
+            updateUserInfo();
+            renderRoleGrid();
+            renderHierarchy();
+            renderAuditLogs();
+            renderResourceGrid();
+            updateStats();
+            
+            document.getElementById('role-search').addEventListener('input', filterRoles);
+            document.getElementById('role-sort').addEventListener('change', sortRoles);
+        }
+
+        function updateStats() {
+            document.getElementById('stat-users').textContent = Object.keys(rolePermissions).length;
+            document.getElementById('stat-roles').textContent = Object.keys(rolePermissions).length;
+            document.getElementById('stat-permissions').textContent = allPages.length + allFeatures.length;
+            document.getElementById('stat-audit').textContent = auditLogs.length;
+        }
+
+        function renderRoleGrid() {
+            const grid = document.getElementById('roleGrid');
+            let html = '';
+            
+            for (const [role, config] of Object.entries(rolePermissions)) {
+                const isAdmin = config.level >= 5;
+                const isSuperAdmin = config.level >= 6;
+                
+                const canEdit = canEditRole(config.level);
+                const canDelete = canDeleteRole(config.level);
+                
+                html += `
+                    <div class="role-card ${isSuperAdmin ? 'super-admin' : isAdmin ? 'admin' : ''}">
+                        <div class="role-actions">
+                            ${canEdit ? `<button class="btn btn-secondary btn-sm" onclick="editRole('${role}')">编辑</button>` : ''}
+                            ${canDelete ? `<button class="btn btn-danger btn-sm" onclick="confirmDeleteRole('${role}')">删除</button>` : ''}
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <span style="font-size: 24px; margin-right: 10px;">${config.icon}</span>
+                                <strong>${config.name}</strong>
+                            </div>
+                            <span class="role-level">等级 ${config.level}</span>
+                        </div>
+                        
+                        <p style="color: #666; font-size: 13px; margin: 8px 0;">${config.description}</p>
+                        
+                        <div class="permissions-list">
+                            <div style="font-weight: 500; color: #667eea; margin-bottom: 8px;">
+                                可访问页面:
+                            </div>
+                            ${config.pages.map(p => `
+                                <div class="permission-item">
+                                    <span class="permission-icon">✓</span>
+                                    ${p}
+                                </div>
+                            `).join('')}
+                            
+                            <div style="font-weight: 500; color: #667eea; margin: 12px 0 8px;">
+                                可用功能:
+                            </div>
+                            ${config.features.map(f => `
+                                <div class="permission-item">
+                                    <span class="permission-icon">✓</span>
+                                    ${f}
+                                </div>
+                            `).join('')}
+                        </div>
+                        ${!canEdit && !canDelete && config.level >= 5 ? `<div style="margin-top: 12px; padding: 8px; background: #fff3cd; border-radius: 8px; font-size: 12px; color: #856404; text-align: center;">权限不足，无法编辑此角色</div>` : ''}
+                    </div>
+                `;
+            }
+            
+            grid.innerHTML = html;
+        }
+
+        function canEditRole(roleLevel) {
+            if (roleLevel === 0) return false;
+            if (roleLevel === 6) return canManageSuperAdmin();
+            if (roleLevel === 7) return canManageHardware();
+            return canManageRoles();
+        }
+
+        function canDeleteRole(roleLevel) {
+            if (roleLevel === 0) return false;
+            if (roleLevel === 6) return canManageSuperAdmin();
+            if (roleLevel === 7) return canManageHardware();
+            return canManageRoles();
+        }
+
+        function filterRoles() {
+            const searchTerm = document.getElementById('role-search').value.toLowerCase();
+            const cards = document.querySelectorAll('.role-card');
+            
+            cards.forEach(card => {
+                const roleName = card.querySelector('strong').textContent.toLowerCase();
+                card.style.display = roleName.includes(searchTerm) ? 'block' : 'none';
+            });
+        }
+
+        function sortRoles() {
+            const sortBy = document.getElementById('role-sort').value;
+            let sortedRoles = Object.entries(rolePermissions);
+            
+            if (sortBy === 'level-asc') sortedRoles.sort((a, b) => a[1].level - b[1].level);
+            else if (sortBy === 'level-desc') sortedRoles.sort((a, b) => b[1].level - a[1].level);
+            else if (sortBy === 'name-asc') sortedRoles.sort((a, b) => a[1].name.localeCompare(b[1].name));
+            else sortedRoles.sort((a, b) => b[1].name.localeCompare(a[1].name));
+            
+            const grid = document.getElementById('roleGrid');
+            let html = '';
+            for (const [role, config] of sortedRoles) {
+                const isAdmin = config.level >= 5;
+                const isSuperAdmin = config.level >= 6;
+                html += `
+                    <div class="role-card ${isSuperAdmin ? 'super-admin' : isAdmin ? 'admin' : ''}">
+                        <div class="role-actions">
+                            <button class="btn btn-secondary btn-sm" onclick="editRole('${role}')">编辑</button>
+                            ${config.level > 0 ? `<button class="btn btn-danger btn-sm" onclick="confirmDeleteRole('${role}')">删除</button>` : ''}
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <span style="font-size: 24px; margin-right: 10px;">${config.icon}</span>
+                                <strong>${config.name}</strong>
+                            </div>
+                            <span class="role-level">等级 ${config.level}</span>
+                        </div>
+                        <p style="color: #666; font-size: 13px; margin: 8px 0;">${config.description}</p>
+                        <div class="permissions-list">
+                            <div style="font-weight: 500; color: #667eea; margin-bottom: 8px;">可访问页面:</div>
+                            ${config.pages.map(p => `<div class="permission-item"><span class="permission-icon">✓</span>${p}</div>`).join('')}
+                            <div style="font-weight: 500; color: #667eea; margin: 12px 0 8px;">可用功能:</div>
+                            ${config.features.map(f => `<div class="permission-item"><span class="permission-icon">✓</span>${f}</div>`).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+            grid.innerHTML = html;
+        }
+
+        function renderHierarchy() {
+            const container = document.getElementById('hierarchyVisual');
+            const roles = Object.entries(rolePermissions).sort((a, b) => a[1].level - b[1].level);
+            
+            let html = '';
+            roles.forEach(([role, config], index) => {
+                if (index > 0) {
+                    html += '<span class="hierarchy-arrow">→</span>';
+                }
+                html += `
+                    <div class="hierarchy-level" onclick="showHierarchyInfo('${role}')">
+                        <div class="hierarchy-icon level-${config.level}">
+                            ${config.icon}
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-weight: 600;">${config.name}</div>
+                            <div style="font-size: 12px; color: #666;">等级 ${config.level}</div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+
+        function showHierarchyInfo(role) {
+            const config = rolePermissions[role];
+            const info = document.getElementById('hierarchyInfo');
+            info.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
+                    <div style="font-size: 48px;">${config.icon}</div>
+                    <div>
+                        <h3 style="font-size: 20px; font-weight: 600; margin-bottom: 4px;">${config.name}</h3>
+                        <p style="color: #666;">等级 ${config.level} · ${config.description}</p>
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div>
+                        <h4 style="font-weight: 600; margin-bottom: 8px; color: #667eea;">可访问页面</h4>
+                        <ul style="list-style: none; padding: 0;">
+                            ${config.pages.map(p => `<li style="padding: 4px 0; color: #333;">✓ ${p}</li>`).join('')}
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 style="font-weight: 600; margin-bottom: 8px; color: #667eea;">可用功能</h4>
+                        <ul style="list-style: none; padding: 0;">
+                            ${config.features.map(f => `<li style="padding: 4px 0; color: #333;">✓ ${f}</li>`).join('')}
+                        </ul>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderAuditLogs(filteredLogs = auditLogs) {
+            const tbody = document.querySelector('#auditLogs table tbody');
+            let html = '';
+            
+            if (filteredLogs.length === 0) {
+                html = `
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 40px; color: #999;">
+                            暂无审计记录
+                        </td>
+                    </tr>
+                `;
+            } else {
+                filteredLogs.forEach(log => {
+                    html += `
+                        <tr>
+                            <td>${log.time}</td>
+                            <td><strong>${log.user}</strong></td>
+                            <td><span class="audit-action ${log.action}">${getActionText(log.action)}</span></td>
+                            <td>${log.resource}</td>
+                            <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${log.detail}</td>
+                            <td>${log.ip}</td>
+                        </tr>
+                    `;
+                });
+            }
+            
+            tbody.innerHTML = html;
+        }
+
+        function getActionText(action) {
+            const texts = { create: '创建', update: '修改', delete: '删除', login: '登录' };
+            return texts[action] || action;
+        }
+
+        function filterAuditLogs() {
+            const action = document.getElementById('audit-action').value;
+            const user = document.getElementById('audit-user').value.toLowerCase();
+            const date = document.getElementById('audit-date').value;
+            
+            let filtered = auditLogs;
+            
+            if (action !== 'all') {
+                filtered = filtered.filter(log => log.action === action);
+            }
+            if (user) {
+                filtered = filtered.filter(log => log.user.toLowerCase().includes(user));
+            }
+            if (date) {
+                filtered = filtered.filter(log => log.time.startsWith(date));
+            }
+            
+            renderAuditLogs(filtered);
+        }
+
+        function renderResourceGrid() {
+            const grid = document.getElementById('resourceGrid');
+            let html = '';
+            
+            resources.forEach(resource => {
+                html += `
+                    <div class="role-card">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <div>
+                                <strong>${resource.name}</strong>
+                                <span style="margin-left: 8px; padding: 2px 8px; background: #f0f0f0; border-radius: 4px; font-size: 12px;">${getResourceTypeText(resource.type)}</span>
+                            </div>
+                            <span class="role-level">等级 ${resource.minLevel}</span>
+                        </div>
+                        <p style="color: #666; font-size: 13px; margin-bottom: 8px;">${resource.description}</p>
+                        <div style="background: #f8fafc; padding: 10px; border-radius: 8px;">
+                            <div style="font-size: 12px; color: #666; margin-bottom: 4px;">资源路径</div>
+                            <div style="font-family: monospace; font-size: 13px;">${resource.path}</div>
+                        </div>
+                        <div style="display: flex; gap: 8px; margin-top: 12px;">
+                            <button class="btn btn-secondary btn-sm" onclick="editResource(${resource.id})">编辑</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteResource(${resource.id})">删除</button>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            grid.innerHTML = html;
+        }
+
+        function getResourceTypeText(type) {
+            const texts = { page: '页面', api: 'API', feature: '功能' };
+            return texts[type] || type;
+        }
+
+        async function testPermission() {
+            const role = document.getElementById('testRole').value;
+            const resourceType = document.getElementById('testResourceType').value;
+            const resource = document.getElementById('testResource').value;
+            
+            if (!resource) {
+                showToast('请输入资源路径或功能名称', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/permission/check', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ role, resource, action: resourceType })
+                });
+                
+                const result = await response.json();
+                const resultDiv = document.getElementById('testResult');
+                resultDiv.style.display = 'block';
+                
+                if (result.success && result.allowed) {
+                    resultDiv.className = 'test-result success';
+                    resultDiv.innerHTML = `
+                        <h3>✅ 权限验证通过</h3>
+                        <p><strong>角色:</strong> ${role}</p>
+                        <p><strong>资源:</strong> ${resource}</p>
+                        <p><strong>类型:</strong> ${resourceType === 'page' ? '页面访问' : '功能使用'}</p>
+                    `;
+                } else {
+                    resultDiv.className = 'test-result denied';
+                    resultDiv.innerHTML = `
+                        <h3>❌ 权限验证失败</h3>
+                        <p><strong>角色:</strong> ${role}</p>
+                        <p><strong>资源:</strong> ${resource}</p>
+                        <p><strong>类型:</strong> ${resourceType === 'page' ? '页面访问' : '功能使用'}</p>
+                        <p style="margin-top: 10px; color: #c53030;">该角色没有权限访问此资源</p>
+                    `;
+                }
+            } catch (e) {
+                console.error('测试失败:', e);
+                showToast('测试失败，请检查网络连接', 'error');
+            }
+        }
+
+        function batchTestPermissions() {
+            const roleRange = document.getElementById('batchRoles').value;
+            const resource = document.getElementById('batchResource').value;
+            
+            if (!resource) {
+                showToast('请输入测试资源', 'error');
+                return;
+            }
+            
+            let rolesToTest = Object.keys(rolePermissions);
+            if (roleRange === 'users') rolesToTest = ['guest', 'student', 'teacher', 'professor', 'researcher'];
+            else if (roleRange === 'admins') rolesToTest = ['admin', 'super_admin', 'hardware_admin'];
+            
+            let results = [];
+            rolesToTest.forEach(role => {
+                const config = rolePermissions[role];
+                const hasAccess = resource.startsWith('/') 
+                    ? config.pages.includes('全部页面') || config.pages.some(p => resource.includes(p.replace('页', '').toLowerCase()))
+                    : config.features.includes(resource) || config.features.includes('全部权限');
+                results.push({ role, name: config.name, hasAccess });
+            });
+            
+            const resultDiv = document.getElementById('batchResult');
+            resultDiv.style.display = 'block';
+            
+            let html = `<h3>批量测试结果</h3><div style="margin-top: 16px; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px;">`;
+            results.forEach(r => {
+                html += `
+                    <div style="padding: 12px; border-radius: 8px; background: ${r.hasAccess ? '#c6f6d5' : '#fed7d7'};">
+                        <div style="font-weight: 600;">${r.name}</div>
+                        <div style="${r.hasAccess ? 'color: #2f855a' : 'color: #c53030'};">
+                            ${r.hasAccess ? '✅ 有权限' : '❌ 无权限'}
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            resultDiv.innerHTML = html;
+        }
+
+        function openAddRoleModal() {
+            document.getElementById('modal-title').textContent = '新建角色';
+            document.getElementById('role-id').value = '';
+            document.getElementById('role-name').value = '';
+            document.getElementById('role-level').value = '0';
+            document.getElementById('role-icon').value = '🎯';
+            
+            renderPermissionCheckboxes('page-permissions', allPages, []);
+            renderPermissionCheckboxes('feature-permissions', allFeatures, []);
+            
+            document.getElementById('modal-overlay').classList.add('show');
+        }
+
+        function renderPermissionCheckboxes(containerId, items, selected) {
+            const container = document.getElementById(containerId);
+            let html = '';
+            items.forEach(item => {
+                const checked = selected.includes(item) ? 'checked' : '';
+                html += `
+                    <label class="permission-checkbox">
+                        <input type="checkbox" value="${item}" ${checked}>
+                        <span>${item}</span>
+                    </label>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function closeModal() {
+            document.getElementById('modal-overlay').classList.remove('show');
+        }
+
+        function saveRole() {
+            const roleId = document.getElementById('role-id').value;
+            const roleName = document.getElementById('role-name').value;
+            const level = parseInt(document.getElementById('role-level').value);
+            const icon = document.getElementById('role-icon').value;
+            
+            if (!roleId || !roleName) {
+                showToast('请填写角色ID和名称', 'error');
+                return;
+            }
+            
+            if (roleId in rolePermissions) {
+                showToast('角色ID已存在', 'error');
+                return;
+            }
+            
+            const selectedPages = Array.from(document.querySelectorAll('#page-permissions input:checked')).map(i => i.value);
+            const selectedFeatures = Array.from(document.querySelectorAll('#feature-permissions input:checked')).map(i => i.value);
+            
+            rolePermissions[roleId] = {
+                level,
+                name: roleName,
+                icon,
+                pages: selectedPages,
+                features: selectedFeatures,
+                description: '自定义角色'
+            };
+            
+            closeModal();
+            renderRoleGrid();
+            renderHierarchy();
+            updateStats();
+            showToast('角色创建成功', 'success');
+        }
+
+        function editRole(role) {
+            const config = rolePermissions[role];
+            document.getElementById('edit-modal-title').textContent = `编辑角色: ${config.name}`;
+            document.getElementById('edit-modal-body').innerHTML = `
+                <input type="hidden" id="edit-role-id" value="${role}">
+                <div class="form-group">
+                    <label>角色名称</label>
+                    <input type="text" id="edit-role-name" value="${config.name}">
+                </div>
+                <div class="form-group">
+                    <label>角色等级</label>
+                    <select id="edit-role-level">
+                        ${[0,1,2,3,4,5,6,7].map(l => `<option value="${l}" ${l === config.level ? 'selected' : ''}>${l} - ${getLevelName(l)}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>角色图标</label>
+                    <input type="text" id="edit-role-icon" value="${config.icon}">
+                </div>
+                <div class="form-group">
+                    <label>角色描述</label>
+                    <input type="text" id="edit-role-desc" value="${config.description}">
+                </div>
+                <div class="form-group">
+                    <label>可访问页面</label>
+                    <div class="permission-checkboxes" id="edit-page-permissions">
+                        ${allPages.map(p => `<label class="permission-checkbox"><input type="checkbox" value="${p}" ${config.pages.includes(p) ? 'checked' : ''}><span>${p}</span></label>`).join('')}
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>可用功能</label>
+                    <div class="permission-checkboxes" id="edit-feature-permissions">
+                        ${allFeatures.map(f => `<label class="permission-checkbox"><input type="checkbox" value="${f}" ${config.features.includes(f) ? 'checked' : ''}><span>${f}</span></label>`).join('')}
+                    </div>
+                </div>
+            `;
+            document.getElementById('edit-modal-overlay').classList.add('show');
+        }
+
+        function getLevelName(level) {
+            const names = ['访客', '学生', '教师', '教授', '教研员', '管理员', '超级管理员', '硬件管理员'];
+            return names[level] || `等级${level}`;
+        }
+
+        function closeEditModal() {
+            document.getElementById('edit-modal-overlay').classList.remove('show');
+        }
+
+        function updateRole() {
+            const roleId = document.getElementById('edit-role-id').value;
+            const name = document.getElementById('edit-role-name').value;
+            const level = parseInt(document.getElementById('edit-role-level').value);
+            const icon = document.getElementById('edit-role-icon').value;
+            const desc = document.getElementById('edit-role-desc').value;
+            
+            const selectedPages = Array.from(document.querySelectorAll('#edit-page-permissions input:checked')).map(i => i.value);
+            const selectedFeatures = Array.from(document.querySelectorAll('#edit-feature-permissions input:checked')).map(i => i.value);
+            
+            rolePermissions[roleId] = {
+                level,
+                name,
+                icon,
+                pages: selectedPages,
+                features: selectedFeatures,
+                description: desc
+            };
+            
+            closeEditModal();
+            renderRoleGrid();
+            renderHierarchy();
+            showToast('角色更新成功', 'success');
+        }
+
+        function deleteRole() {
+            const roleId = document.getElementById('edit-role-id').value;
+            if (roleId === 'guest') {
+                showToast('不能删除访客角色', 'error');
+                return;
+            }
+            delete rolePermissions[roleId];
+            closeEditModal();
+            renderRoleGrid();
+            renderHierarchy();
+            updateStats();
+            showToast('角色删除成功', 'success');
+        }
+
+        function confirmDeleteRole(role) {
+            if (confirm(`确定要删除角色 ${rolePermissions[role].name} 吗？`)) {
+                editRole(role);
+            }
+        }
+
+        function openAddResourceModal() {
+            document.getElementById('resource-name').value = '';
+            document.getElementById('resource-path').value = '';
+            document.getElementById('resource-type').value = 'page';
+            document.getElementById('resource-min-level').value = '0';
+            document.getElementById('resource-modal-overlay').classList.add('show');
+        }
+
+        function closeResourceModal() {
+            document.getElementById('resource-modal-overlay').classList.remove('show');
+        }
+
+        function saveResource() {
+            const name = document.getElementById('resource-name').value;
+            const path = document.getElementById('resource-path').value;
+            const type = document.getElementById('resource-type').value;
+            const minLevel = parseInt(document.getElementById('resource-min-level').value);
+            
+            if (!name || !path) {
+                showToast('请填写资源名称和路径', 'error');
+                return;
+            }
+            
+            resources.push({
+                id: resources.length + 1,
+                name,
+                path,
+                type,
+                minLevel,
+                description: '自定义资源'
+            });
+            
+            closeResourceModal();
+            renderResourceGrid();
+            showToast('资源添加成功', 'success');
+        }
+
+        function editResource(id) {
+            const resource = resources.find(r => r.id === id);
+            if (!resource) return;
+            
+            document.getElementById('resource-name').value = resource.name;
+            document.getElementById('resource-path').value = resource.path;
+            document.getElementById('resource-type').value = resource.type;
+            document.getElementById('resource-min-level').value = resource.minLevel;
+            document.getElementById('resource-modal-overlay').classList.add('show');
+        }
+
+        function deleteResource(id) {
+            if (confirm('确定要删除此资源吗？')) {
+                const index = resources.findIndex(r => r.id === id);
+                if (index > -1) {
+                    resources.splice(index, 1);
+                    renderResourceGrid();
+                    showToast('资源删除成功', 'success');
+                }
+            }
+        }
+
+        function exportPermissions() {
+            const data = {
+                roles: rolePermissions,
+                resources: resources,
+                exportTime: new Date().toISOString()
+            };
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `permissions_export_${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('权限配置导出成功', 'success');
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const messageEl = document.getElementById('toast-message');
+            
+            toast.className = `toast ${type}`;
+            messageEl.textContent = message;
+            toast.classList.add('show');
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+                
+                this.classList.add('active');
+                document.getElementById(this.dataset.tab).style.display = 'block';
+            });
+        });
+
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

@@ -1,7 +1,8 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
 MTSCOS 根服务器
-使用完整的应用配置，包括所有路由和集群功能
+使用完整的应用配置,包括所有路由和集群功能
 
 import os
 import sys
@@ -25,7 +26,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 logger.info("[根服务器] 加载完整的应用实例...")
 try:
     from app import app
-    logger.info("[根服务器] 应用实例加载成功！")
+    logger.info("[根服务器] 应用实例加载成功!")
 except Exception as e:
     logger.error(f"[根服务器] 加载应用实例失败: {str(e)}")
     import traceback

@@ -2,6 +2,7 @@
 # User Management Server - 配置文件
 import secrets
 from datetime import timedelta
+import os
 
 class Config:
     # 基本配置
@@ -12,7 +13,7 @@ class Config:
     DEBUG = False  # 生产环境关闭调试模式
 
     # JWT配置
-    JWT_EXPIRATION = 3600  # JWT过期时间（秒）
+    JWT_EXPIRATION = 3600  # JWT过期时间(秒)
     JWT_ALGORITHM = 'HS256'  # JWT算法
 
     # 密码策略
@@ -25,7 +26,7 @@ class Config:
 
     # API安全配置
     API_KEY_HEADER = 'X-API-Key'  # API密钥头部
-    API_KEY_EXPIRATION_DAYS = 365  # API密钥有效期（天）
+    API_KEY_EXPIRATION_DAYS = 365  # API密钥有效期(天)
 
     # 速率限制配置
     RATE_LIMIT_ENABLED = True  # 启用速率限制

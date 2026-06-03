@@ -1,19 +1,20 @@
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+#!/usr/bin/env python3
 """
-系统监控模块，用于跟踪系统状态和性能指标
+系统监控模块,用于跟踪系统状态和性能指标
 
 import time
 import threading
 import psutil
 import sqlite3
+from contextlib import contextmanager
 from typing import Dict, List, Optional
 from app.config import Config
 from app.utils.logging import logger
 
 
 class SystemMonitor:
-    系统监控类，用于收集和报告系统状态
+    系统监控类,用于收集和报告系统状态
 
     def __init__(self):
         self._is_running = False
@@ -68,7 +69,7 @@ class SystemMonitor:
         }
 
         with self._lock:
-            # 更新指标数据，保持固定大小
+            # 更新指标数据,保持固定大小
             for key, value in metrics.items():
                 if key != 'timestamp':
                     self._metrics[key].append(value)
@@ -116,17 +117,19 @@ class SystemMonitor:
 
         获取数据库指标
         try:
-            conn = sqlite3.connect(Config.DATABASE_PATH)
-            cursor = conn.cursor()
-
-            # 获取数据库大小（简单实现）
-            import os
-            db_size = os.path.getsize(Config.DATABASE_PATH) if os.path.exists(Config.DATABASE_PATH) else 0
-
-            # 获取表数量
-            cursor.execute("SELECT COUNT(*) FROM sqlite_master WHERE type='table'")
-            table_count = cursor.fetchone()[0]
-            conn.close()
+            with sqlite3.connect(sqlite3.connect(Config.DATABASE_PATH)) as conn:
+                conn_cursor = conn.cursor()
+                cursor = conn.cursor()
+                
+                # 获取数据库大小(简单实现)
+                import os
+import logging
+import sys
+                db_size = os.path.getsize(Config.DATABASE_PATH) if os.path.exists(Config.DATABASE_PATH) else 0
+                
+                # 获取表数量
+                cursor.execute("SELECT COUNT(*) FROM sqlite_master WHERE type='table'")
+                table_count = cursor.fetchone()[0]
 
             return {
                 'size': db_size,
@@ -144,7 +147,7 @@ class SystemMonitor:
         获取系统指标
 
         Args:
-            metric_type: 指标类型（可选），如 'cpu', 'memory', 'disk', 'process', 'database'
+            metric_type: 指标类型(可选),如 'cpu', 'memory', 'disk', 'process', 'database'
             limit: 返回的最大指标数量
 
         Returns:
@@ -157,6 +160,7 @@ class SystemMonitor:
                 # 返回所有指标类型的最新数据
                 for key, values in self._metrics.items():
                     if values:
+    pass
                 return latest_metrics
 
     def get_system_status(self) -> Dict:

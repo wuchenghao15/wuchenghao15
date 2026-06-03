@@ -1,347 +1,470 @@
-#!/usr/bin/env python3
 """
-MTSCOS 数据库管理系统
-接管所有JSON功能，替代JSON文件存储
+MTSCOS AI 教育管理系统 - 数据库管理模块
+支持考试系统、AI员工、操作日志等数据存储
+"""
 
-import os
-import sys
 import sqlite3
-import logging
+import json
 from datetime import datetime
-from typing import Dict, List, Any, Optional
+import os
 
-# 配置日志
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('logs/database_manager.log'),
-        logging.StreamHandler()
-    ]
-)
-logger = logging.getLogger('DatabaseManager')
-
-class DatabaseManager:
-    """数据库管理器"""
-
-    def __init__(self, db_path='mtscos.db'):
+class MTSCOSDatabase:
+    def __init__(self, db_path='mtcos_system.db'):
         self.db_path = db_path
-        self.conn = None
-        self.cursor = None
-        self.initialize_database()
-        logger.info("数据库管理器初始化完成")
-
-    def initialize_database(self):
-        """初始化数据库"""
-        try:
-            self.conn = sqlite3.connect(self.db_path)
-            self.cursor = self.conn.cursor()
-            self.create_tables()
-            logger.info(f"数据库连接成功: {self.db_path}")
-        except Exception as e:
-            logger.error(f"数据库初始化失败: {e}")
-            raise
-
-    def create_tables(self):
-        """创建数据表"""
-        # 资源表
-        self.cursor.execute('''
-        CREATE TABLE IF NOT EXISTS resources (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            resource_type TEXT NOT NULL,
-            resource_name TEXT NOT NULL,
-            resource_data TEXT NOT NULL,
-            status TEXT DEFAULT 'active',
-            version TEXT DEFAULT '1.0.0',
-            created_at TEXT NOT NULL,
-            updated_at TEXT NOT NULL
-        )
-
-        # 配置表
-        self.cursor.execute('''
-        CREATE TABLE IF NOT EXISTS configs (
-            config_key TEXT NOT NULL UNIQUE,
-            config_value TEXT NOT NULL,
-            created_at TEXT NOT NULL,
-            updated_at TEXT NOT NULL
-        )
-
-        self.cursor.execute('''
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            log_message TEXT NOT NULL,
-            created_at TEXT NOT NULL
-
-        # 升级表
-        self.cursor.execute('''
-        CREATE TABLE IF NOT EXISTS upgrades (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            version TEXT NOT NULL,
-            status TEXT DEFAULT 'pending',
-            created_at TEXT NOT NULL,
-            completed_at TEXT
-        # 知识库表
-        self.cursor.execute('''
-        CREATE TABLE IF NOT EXISTS knowledge_base (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            category TEXT NOT NULL,
-            content TEXT NOT NULL,
-            updated_at TEXT NOT NULL
-        )
-        # 题库表
-        CREATE TABLE IF NOT EXISTS question_bank (
-            subject TEXT NOT NULL,
-            level TEXT NOT NULL,
-            question_type TEXT NOT NULL,
-            created_at TEXT NOT NULL,
-            updated_at TEXT NOT NULL
-
-        # 系统状态表
-        self.cursor.execute('''
-            component TEXT NOT NULL,
-            status TEXT NOT NULL,
-            value TEXT,
-
-        self.conn.commit()
-        logger.info("数据表创建完成")
-
-        """插入资源"""
-        now = datetime.now().isoformat()
-        INSERT INTO resources (resource_type, resource_name, resource_data, status, version, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-        self.conn.commit()
-        return self.cursor.lastrowid
-
-    def get_resource(self, resource_id: int) -> Optional[Dict[str, Any]]:
-        SELECT * FROM resources WHERE id = ?
-        ''', (resource_id,))
-        row = self.cursor.fetchone()
-        if row:
-            return {
-                'id': row[0],
-                'resource_type': row[1],
-                'resource_data': row[3],
-                'status': row[4],
-                'version': row[5],
-                'updated_at': row[7]
-            }
-        return None
-
-    def update_config(self, config_key: str, config_value: str, description: Optional[str] = None) -> bool:
-        """更新配置"""
-        now = datetime.now().isoformat()
-        # 检查配置是否存在
-        self.cursor.execute('''
-        SELECT id FROM configs WHERE config_key = ?
-        ''', (config_key,))
-        existing = self.cursor.fetchone()
-
-        if existing:
-            # 更新现有配置
-            self.cursor.execute('''
-            ''', (config_value, description, now, config_key))
+        self.init_database()
+    
+    def get_connection(self):
+        return sqlite3.connect(self.db_path)
+    
+    def init_database(self):
+        """初始化数据库表结构"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        # 考试记录表
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS exam_records (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id TEXT NOT NULL,
+                exam_name TEXT NOT NULL,
+                exam_type TEXT,
+                score INTEGER,
+                total_score INTEGER,
+                status TEXT DEFAULT 'completed',
+                start_time TEXT,
+                end_time TEXT,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        
+        # 练习记录表
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS exercise_records (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id TEXT NOT NULL,
+                exercise_name TEXT NOT NULL,
+                course_type TEXT,
+                questions_count INTEGER,
+                correct_count INTEGER,
+                duration INTEGER,
+                completed_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        
+        # AI员工表
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS ai_employees (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                role TEXT NOT NULL,
+                department TEXT,
+                avatar TEXT,
+                capabilities TEXT,
+                status TEXT DEFAULT 'active',
+                performance_score REAL DEFAULT 0.0,
+                tasks_completed INTEGER DEFAULT 0,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                last_active TEXT
+            )
+        ''')
+        
+        # 操作日志表
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS operation_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id TEXT,
+                operation_type TEXT NOT NULL,
+                operation_details TEXT,
+                module TEXT,
+                ip_address TEXT,
+                user_agent TEXT,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        
+        # 错题记录表
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS wrong_questions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id TEXT NOT NULL,
+                question_title TEXT NOT NULL,
+                course_type TEXT,
+                knowledge_point TEXT,
+                wrong_count INTEGER DEFAULT 1,
+                last_wrong_time TEXT,
+                status TEXT DEFAULT 'unreviewed',
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        
+        # 学习计划表
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS study_plans (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id TEXT NOT NULL,
+                plan_name TEXT NOT NULL,
+                plan_type TEXT,
+                tasks TEXT,
+                progress REAL DEFAULT 0.0,
+                status TEXT DEFAULT 'active',
+                start_date TEXT,
+                end_date TEXT,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        
+        # 用户表
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT UNIQUE NOT NULL,
+                user_group TEXT,
+                student_type TEXT,
+                total_exams INTEGER DEFAULT 0,
+                total_exercises INTEGER DEFAULT 0,
+                avg_score REAL DEFAULT 0.0,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                last_login TEXT
+            )
+        ''')
+        
+        conn.commit()
+        conn.close()
+        
+        self.init_default_ai_employees()
+    
+    def init_default_ai_employees(self):
+        """初始化默认AI员工"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('SELECT COUNT(*) FROM ai_employees')
+        if cursor.fetchone()[0] == 0:
+            default_employees = [
+                ('小智', '考试监督员', '考试中心', '👨‍🏫', 
+                 json.dumps(['考试监控', '成绩分析', '异常检测']), 95.5, 156),
+                ('小雅', '日语教学助手', '日语学院', '🗾',
+                 json.dumps(['日语教学', 'JLPT培训', '会话练习']), 92.8, 89),
+                ('小能', '算法导师', '计算机学院', '💻',
+                 json.dumps(['算法指导', '代码评审', '竞赛培训']), 94.2, 134),
+                ('小安', '安全顾问', '安全中心', '🔒',
+                 json.dumps(['安全培训', '漏洞分析', '加密指导']), 93.7, 78),
+                ('小英', '英语教师', '语言学院', '🌐',
+                 json.dumps(['英语教学', '翻译指导', '写作批改']), 91.5, 112),
+                ('小统', '统计分析师', '数学学院', '📊',
+                 json.dumps(['统计分析', '数据可视化', '建模指导']), 90.8, 67),
+                ('小蓝', 'AI学习教练', '学习中心', '🤖',
+                 json.dumps(['AI教学', '自适应学习', '进度追踪']), 96.3, 201),
+                ('小助', '学习助手', '支持部门', '📚',
+                 json.dumps(['答疑解惑', '资料推荐', '学习规划']), 89.4, 245)
+            ]
+            
+            cursor.executemany('''
+                INSERT INTO ai_employees 
+                (name, role, department, avatar, capabilities, performance_score, tasks_completed)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''', default_employees)
+            
+            conn.commit()
+        
+        conn.close()
+    
+    # ==================== 考试记录操作 ====================
+    def save_exam_record(self, user_id, exam_name, exam_type, score, total_score, start_time, end_time):
+        """保存考试记录"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            INSERT INTO exam_records 
+            (user_id, exam_name, exam_type, score, total_score, start_time, end_time)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', (user_id, exam_name, exam_type, score, total_score, start_time, end_time))
+        
+        record_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+        
+        self.log_operation(user_id, 'exam_completed', 
+                          f'完成考试: {exam_name}, 得分: {score}/{total_score}', 'exam')
+        
+        return record_id
+    
+    def get_user_exam_records(self, user_id, limit=10):
+        """获取用户的考试记录"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            SELECT * FROM exam_records 
+            WHERE user_id = ? 
+            ORDER BY created_at DESC 
+            LIMIT ?
+        ''', (user_id, limit))
+        
+        records = cursor.fetchall()
+        conn.close()
+        return records
+    
+    # ==================== 练习记录操作 ====================
+    def save_exercise_record(self, user_id, exercise_name, course_type, 
+                            questions_count, correct_count, duration):
+        """保存练习记录"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            INSERT INTO exercise_records 
+            (user_id, exercise_name, course_type, questions_count, correct_count, duration)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (user_id, exercise_name, course_type, questions_count, correct_count, duration))
+        
+        record_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+        
+        self.log_operation(user_id, 'exercise_completed',
+                          f'完成练习: {exercise_name}, 正确率: {correct_count}/{questions_count}', 'exercise')
+        
+        return record_id
+    
+    def get_user_exercise_records(self, user_id, limit=20):
+        """获取用户的练习记录"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            SELECT * FROM exercise_records 
+            WHERE user_id = ? 
+            ORDER BY completed_at DESC 
+            LIMIT ?
+        ''', (user_id, limit))
+        
+        records = cursor.fetchall()
+        conn.close()
+        return records
+    
+    # ==================== AI员工操作 ====================
+    def get_all_ai_employees(self):
+        """获取所有AI员工"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('SELECT * FROM ai_employees ORDER BY performance_score DESC')
+        employees = cursor.fetchall()
+        conn.close()
+        
+        return employees
+    
+    def get_ai_employee_by_role(self, role):
+        """根据角色获取AI员工"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('SELECT * FROM ai_employees WHERE role LIKE ?', (f'%{role}%',))
+        employee = cursor.fetchone()
+        conn.close()
+        
+        return employee
+    
+    def update_ai_employee_performance(self, employee_id, task_completed=True, score_delta=0.0):
+        """更新AI员工绩效"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        if task_completed:
+            cursor.execute('''
+                UPDATE ai_employees 
+                SET tasks_completed = tasks_completed + 1,
+                    performance_score = (performance_score * tasks_completed + ?) / (tasks_completed + 1),
+                    last_active = ?
+                WHERE id = ?
+            ''', (score_delta, datetime.now().isoformat(), employee_id))
         else:
-            self.cursor.execute('''
-            INSERT INTO configs (config_key, config_value, description, created_at, updated_at)
+            cursor.execute('''
+                UPDATE ai_employees 
+                SET last_active = ?
+                WHERE id = ?
+            ''', (datetime.now().isoformat(), employee_id))
+        
+        conn.commit()
+        conn.close()
+    
+    def add_ai_employee(self, name, role, department, avatar, capabilities):
+        """添加新的AI员工"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        capabilities_json = json.dumps(capabilities) if isinstance(capabilities, list) else capabilities
+        
+        cursor.execute('''
+            INSERT INTO ai_employees (name, role, department, avatar, capabilities)
             VALUES (?, ?, ?, ?, ?)
+        ''', (name, role, department, avatar, capabilities_json))
+        
+        employee_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+        
+        self.log_operation('system', 'ai_employee_added',
+                          f'新增AI员工: {name} ({role})', 'ai_employees')
+        
+        return employee_id
+    
+    # ==================== 错题记录操作 ====================
+    def add_wrong_question(self, user_id, question_title, course_type, knowledge_point):
+        """添加错题记录"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            SELECT id, wrong_count FROM wrong_questions 
+            WHERE user_id = ? AND question_title = ?
+        ''', (user_id, question_title))
+        
+        existing = cursor.fetchone()
+        
+        if existing:
+            cursor.execute('''
+                UPDATE wrong_questions 
+                SET wrong_count = wrong_count + 1,
+                    last_wrong_time = ?
+                WHERE id = ?
+            ''', (datetime.now().isoformat(), existing[0]))
+        else:
+            cursor.execute('''
+                INSERT INTO wrong_questions 
+                (user_id, question_title, course_type, knowledge_point, last_wrong_time)
+                VALUES (?, ?, ?, ?, ?)
+            ''', (user_id, question_title, course_type, knowledge_point, datetime.now().isoformat()))
+        
+        conn.commit()
+        conn.close()
+    
+    def get_user_wrong_questions(self, user_id, limit=50):
+        """获取用户的错题列表"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            SELECT * FROM wrong_questions 
+            WHERE user_id = ? 
+            ORDER BY wrong_count DESC, last_wrong_time DESC 
+            LIMIT ?
+        ''', (user_id, limit))
+        
+        questions = cursor.fetchall()
+        conn.close()
+        return questions
+    
+    # ==================== 学习计划操作 ====================
+    def save_study_plan(self, user_id, plan_name, plan_type, tasks, start_date, end_date):
+        """保存学习计划"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        tasks_json = json.dumps(tasks) if isinstance(tasks, list) else tasks
+        
+        cursor.execute('''
+            INSERT INTO study_plans 
+            (user_id, plan_name, plan_type, tasks, start_date, end_date)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (user_id, plan_name, plan_type, tasks_json, start_date, end_date))
+        
+        plan_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+        
+        self.log_operation(user_id, 'study_plan_created',
+                          f'创建学习计划: {plan_name}', 'study_plan')
+        
+        return plan_id
+    
+    def update_study_plan_progress(self, plan_id, progress):
+        """更新学习计划进度"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            UPDATE study_plans SET progress = ? WHERE id = ?
+        ''', (progress, plan_id))
+        
+        conn.commit()
+        conn.close()
+    
+    # ==================== 操作日志 ====================
+    def log_operation(self, user_id, operation_type, operation_details, module=''):
+        """记录操作日志"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        details_json = json.dumps(operation_details) if isinstance(operation_details, dict) else operation_details
+        
+        cursor.execute('''
+            INSERT INTO operation_logs 
+            (user_id, operation_type, operation_details, module)
+            VALUES (?, ?, ?, ?)
+        ''', (user_id, operation_type, details_json, module))
+        
+        conn.commit()
+        conn.close()
+    
+    def get_operation_logs(self, user_id=None, limit=100):
+        """获取操作日志"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        if user_id:
+            cursor.execute('''
+                SELECT * FROM operation_logs 
+                WHERE user_id = ? 
+                ORDER BY created_at DESC 
+                LIMIT ?
+            ''', (user_id, limit))
+        else:
+            cursor.execute('''
+                SELECT * FROM operation_logs 
+                ORDER BY created_at DESC 
+                LIMIT ?
+            ''', (limit,))
+        
+        logs = cursor.fetchall()
+        conn.close()
+        return logs
+    
+    # ==================== 用户统计 ====================
+    def get_user_statistics(self, user_id):
+        """获取用户学习统计"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            SELECT COUNT(*), AVG(score * 1.0 / total_score * 100) 
+            FROM exam_records WHERE user_id = ?
+        ''', (user_id,))
+        exam_stats = cursor.fetchone()
+        
+        cursor.execute('SELECT COUNT(*) FROM exercise_records WHERE user_id = ?', (user_id,))
+        exercise_count = cursor.fetchone()[0]
+        
+        cursor.execute('SELECT COUNT(*) FROM wrong_questions WHERE user_id = ? AND status = ?', 
+                      (user_id, 'unreviewed'))
+        wrong_count = cursor.fetchone()[0]
+        
+        conn.close()
+        
+        return {
+            'total_exams': exam_stats[0] or 0,
+            'avg_score': round(exam_stats[1] or 0, 1),
+            'total_exercises': exercise_count,
+            'wrong_questions': wrong_count
+        }
 
-        self.conn.commit()
-        return True
-
-        """获取配置"""
-        self.cursor.execute('''
-        SELECT config_value FROM configs WHERE config_key = ?
-        ''', (config_key,))
-        row = self.cursor.fetchone()
-        return row[0] if row else None
-
-    def insert_log(self, log_level: str, log_message: str, log_source: Optional[str] = None):
-        """插入日志"""
-        self.cursor.execute('''
-        INSERT INTO logs (log_level, log_message, log_source, created_at)
-        VALUES (?, ?, ?, ?)
-        ''', (log_level, log_message, log_source, now))
-        self.conn.commit()
-
-    def insert_knowledge(self, category: str, content: str, tags: Optional[str] = None) -> int:
-        """插入知识库内容"""
-        INSERT INTO knowledge_base (category, content, tags, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?)
-        ''', (category, content, tags, now, now))
-        self.conn.commit()
-        return self.cursor.lastrowid
-
-    def insert_question(self, subject: str, level: str, question_type: str, question_data: str) -> int:
-        now = datetime.now().isoformat()
-        self.cursor.execute('''
-        INSERT INTO question_bank (subject, level, question_type, question_data, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?)
-        ''', (subject, level, question_type, question_data, now, now))
-        self.conn.commit()
-        return self.cursor.lastrowid
-
-    def update_system_status(self, component: str, status: str, value: Optional[str] = None):
-        now = datetime.now().isoformat()
-        INSERT INTO system_status (component, status, value, timestamp)
-        VALUES (?, ?, ?, ?)
-        ''', (component, status, value, now))
-        self.conn.commit()
-
-    def get_system_status(self, component: str, limit: int = 10) -> List[Dict[str, Any]]:
-        """获取系统状态"""
-        SELECT * FROM system_status WHERE component = ? ORDER BY timestamp DESC LIMIT ?
-        ''', (component, limit))
-            'id': row[0],
-            'component': row[1],
-            'status': row[2],
-        } for row in rows]
-
-        """关闭数据库连接"""
-        if self.conn:
-            self.conn.close()
-            logger.info("数据库连接已关闭")
-
-class JSONReplacement:
-
-        self.db_manager = db_manager
-        self.json_files_removed = 0
-        logger.info("JSON替换系统初始化")
-
-    def remove_json_files(self, directory: str):
-        """移除JSON文件"""
-
-            for file in files:
-                if file.endswith('.json'):
-                    file_path = os.path.join(root, file)
-                    try:
-                        os.remove(file_path)
-                        self.json_files_removed += 1
-                        logger.info(f"已删除JSON文件: {file_path}")
-                    except Exception as e:
-        # 基本配置
-        configs = [
-            ('system.version', '1.0.0', '系统版本'),
-            ('system.name', 'MTSCOS', '系统名称'),
-            ('server.port', '8888', '服务器端口'),
-            ('database.path', 'mtscos.db', '数据库路径')
-        ]
-        for key, value, description in configs:
-            self.db_manager.update_config(key, value, description)
-
-        logger.info("配置迁移完成")
-    def migrate_resources(self):
-        """迁移资源到数据库"""
-        # 迁移基本资源
-        resources = [
-            ('knowledge_base', '通用知识库', '基础系统知识'),
-            ('model', '自适应模型', '系统自适应模型'),
-            ('dataset', '训练数据集', '系统训练数据'),
-            ('rule', '安全规则', '系统安全规则')
-        for resource_type, resource_name, resource_data in resources:
-            self.db_manager.insert_resource(resource_type, resource_name, resource_data)
-
-        logger.info("资源迁移完成")
-
-class SystemIntegration:
-    """系统集成"""
-
-    def __init__(self, db_manager: DatabaseManager):
-        self.db_manager = db_manager
-        logger.info("系统集成初始化")
-
-    def integrate_with_ai_systems(self):
-        """与AI系统集成"""
-        # 集成AI系统配置
-        ai_configs = [
-            ('ai.enabled', 'true', 'AI系统启用状态'),
-            ('ai.model', 'adaptive_ai', 'AI模型类型'),
-            ('ai.threshold', '0.9', 'AI决策阈值')
-        ]
-        for key, value, description in ai_configs:
-            self.db_manager.update_config(key, value, description)
-
-        logger.info("AI系统集成完成")
-
-    def integrate_with_monitoring(self):
-        """与监控系统集成"""
-        # 集成监控系统配置
-        monitoring_configs = [
-            ('monitoring.enabled', 'true', '监控系统启用状态'),
-            ('monitoring.interval', '60', '监控间隔(秒)'),
-            ('monitoring.alert_threshold', '80', '告警阈值(%)')
-        ]
-        for key, value, description in monitoring_configs:
-            self.db_manager.update_config(key, value, description)
-
-        logger.info("监控系统集成完成")
-
-    def integrate_with_security(self):
-        """与安全系统集成"""
-        # 集成安全系统配置
-        security_configs = [
-            ('security.enabled', 'true', '安全系统启用状态'),
-            ('security.firewall', 'enabled', '防火墙状态'),
-            ('security.encryption', 'enabled', '加密状态')
-        ]
-        for key, value, description in security_configs:
-            self.db_manager.update_config(key, value, description)
-
-        logger.info("安全系统集成完成")
-
-def main():
-    """主函数"""
-    logger.info("=" * 80)
-    logger.info("MTSCOS 数据库管理系统启动")
-    logger.info("=" * 80)
-
-    # 创建数据库管理器
-    db_manager = DatabaseManager()
-
-    # 创建JSON替换系统
-    json_replacement = JSONReplacement(db_manager)
-
-    # 移除JSON文件
-    logger.info("开始移除JSON文件...")
-    json_replacement.remove_json_files('.')
-    logger.info(f"已移除 {json_replacement.json_files_removed} 个JSON文件")
-
-    # 迁移配置
-    logger.info("开始迁移配置...")
-    json_replacement.migrate_configs()
-
-    # 迁移资源
-    logger.info("开始迁移资源...")
-    json_replacement.migrate_resources()
-    # 创建系统集成
-
-    # 集成各系统
-    logger.info("开始系统集成...")
-    system_integration.integrate_with_ai_systems()
-    system_integration.integrate_with_monitoring()
-    system_integration.integrate_with_security()
-
-    # 测试数据库功能
-    logger.info("测试数据库功能...")
-
-    # 测试配置
-    db_manager.update_config('test.config', 'test.value', '测试配置')
-    test_config = db_manager.get_config('test.config')
-    logger.info(f"测试配置: {test_config}")
-
-    # 测试日志
-    db_manager.insert_log('INFO', '测试日志消息', 'test')
-    logger.info("测试日志插入成功")
-
-    # 测试系统状态
-    db_manager.update_system_status('test', 'ok', 'test value')
-    status = db_manager.get_system_status('test')
-    logger.info(f"测试系统状态: {status}")
-
-    # 关闭数据库连接
-    db_manager.close()
-
-    logger.info("=" * 80)
-    logger.info("MTSCOS 数据库管理系统运行完成")
-    logger.info("=" * 80)
-
-if __name__ == "__main__":
-    main()
+if __name__ == '__main__':
+    db = MTSCOSDatabase()
+    print("数据库初始化完成！")
+    
+    employees = db.get_all_ai_employees()
+    print(f"\n当前AI员工数量: {len(employees)}")
+    for emp in employees:
+        print(f"  - {emp[4]}: {emp[2]} ({emp[3]})")

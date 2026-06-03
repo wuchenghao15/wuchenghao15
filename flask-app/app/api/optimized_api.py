@@ -1,14 +1,17 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
 优化的前后端交互API - 包含缓存机制
+"""
 
 from flask import Blueprint, request, jsonify
 import time
+import json
 
 # 创建蓝图
 optimized_api = Blueprint('optimized_api', __name__)
 
-# 内存缓存装饰器，用于降低服务器运算
+# 内存缓存装饰器,用于降低服务器运算
 def cache_with_expiry(seconds):
     """带过期时间的缓存装饰器"""
     def decorator(func):
@@ -25,12 +28,13 @@ def cache_with_expiry(seconds):
                 if now - timestamp < seconds:
                     return result
 
-            # 缓存不存在或已过期，重新计算
+            # 缓存不存在或已过期,重新计算
             result = func(*args, **kwargs)
             cache[key] = (result, now)
             return result
         return wrapper
     return decorator
+
 
 @optimized_api.route('/api/optimized/data', methods=['GET'])
 @cache_with_expiry(30)  # 缓存30秒
@@ -51,6 +55,7 @@ def get_optimized_data():
         }
     })
 
+
 @optimized_api.route('/api/optimized/calculation', methods=['POST'])
 @cache_with_expiry(60)  # 缓存60秒
 def optimized_calculation():
@@ -63,6 +68,7 @@ def optimized_calculation():
         if not data or 'numbers' not in data:
             return jsonify({
                 'status': 'error',
+                'message': '缺少numbers参数'
             }), 400
 
         numbers = data['numbers']
@@ -71,6 +77,7 @@ def optimized_calculation():
         if not isinstance(numbers, list):
             return jsonify({
                 'status': 'error',
+                'message': 'numbers必须是列表'
             }), 400
 
         time.sleep(1)
@@ -87,22 +94,29 @@ def optimized_calculation():
             'status': 'success',
             'result': result
         })
-        # 统一错误处理
+    except Exception as e:
         return jsonify({
+            'status': 'error',
+            'message': f'计算失败: {str(e)}'
         }), 500
+
 
 @optimized_api.route('/api/optimized/health', methods=['GET'])
 def health_check():
-    """健康检查API - 轻量级，无耗时操作"""
+    """健康检查API - 轻量级,无耗时操作"""
     return jsonify({
         'status': 'success',
         'version': '2.0.0'
     })
 
+
 @optimized_api.route('/api/optimized/version', methods=['GET'])
-    """获取版本信息 - 静态数据，快速响应"""
+def get_version():
+    """获取版本信息 - 静态数据,快速响应"""
     return jsonify({
         'status': 'success',
+        'version': '2.0.0',
+        'features': [
             '前后端交互优化',
             '缓存机制',
             '降低服务器运算',

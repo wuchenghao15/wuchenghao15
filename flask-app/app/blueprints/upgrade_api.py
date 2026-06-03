@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
 系统升级API
@@ -6,6 +7,9 @@
 from flask import Blueprint, request, jsonify
 from app.services.upgrade_management import upgrade_manager
 from app.utils.logging import logger
+import logging
+import json
+import sys
 
 # 创建升级API蓝图
 upgrade_api = Blueprint('upgrade_api', __name__, url_prefix='/api/upgrade')

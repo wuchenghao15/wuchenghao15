@@ -1,7 +1,10 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
 调试蓝图注册问题
 
+import logging
+logger = logging.getLogger(__name__)
 import sys
 import os
 

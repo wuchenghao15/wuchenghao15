@@ -1,22 +1,26 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
 启动服务器 - 集成所有组件的统一入口
+"""
 
 import os
 import sys
 import logging
+import socket
+import ssl
 
-# 设置默认的MODEL_PATH环境变量，避免AI模块导入时出现KeyError
+# 设置默认的MODEL_PATH环境变量,避免AI模块导入时出现KeyError
 if 'MODEL_PATH' not in os.environ:
     os.environ['MODEL_PATH'] = './models'
 
-# 也设置到DEFAULT_CONFIG中，确保配置系统能获取到
+# 也设置到DEFAULT_CONFIG中,确保配置系统能获取到
 os.environ['DEFAULT_CONFIG_MODEL_PATH'] = './models'
 
 # 添加项目根目录到Python路径
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-# 禁用dotenv加载，避免超时问题
+# 禁用dotenv加载,避免超时问题
 os.environ['FLASK_SKIP_DOTENV'] = '1'
 
 # 配置日志
@@ -27,11 +31,11 @@ logger = logging.getLogger(__name__)
 logger.info(f"Current working directory: {os.getcwd()}")
 logger.info(f"Python path: {sys.path}")
 
-# 直接导入app.py中的应用实例，使用其中的AI智能路由系统
+# 直接导入app.py中的应用实例,使用其中的AI智能路由系统
 try:
     logger.info("[系统集成] 尝试导入app.py中的应用实例...")
     from app import app
-    logger.info("[系统集成] 成功导入app.py中的应用实例！")
+    logger.info("[系统集成] 成功导入app.py中的应用实例!")
 
     # 直接在start_server.py中添加健康检查路由
     logger.info("[系统集成] 直接添加健康检查路由 /health")
@@ -54,29 +58,28 @@ try:
         """直接测试AI自动更新管理器状态的路由"""
         from app.ai.auto_update_manager import ai_auto_update_manager
         status = ai_auto_update_manager.get_status()
-        # JSON import removed - using database
-return str(status), 200, {'Content-Type': 'application/json'}
+        return str(status), 200, {'Content-Type': 'application/json'}
 
-    # 直接添加测试系统日语测试路由，修复模板链接
+    # 直接添加测试系统日语测试路由,修复模板链接
     logger.info("[系统集成] 直接添加测试系统日语测试路由 /test-system/japanese")
     @app.route('/test-system/japanese')
     def test_system_japanese():
         """测试系统日语测试入口"""
         from flask import render_template, session, redirect, url_for
-        # 检查用户名是否为None，如果是则清除会话并重定向到登录页面
+        # 检查用户名是否为None,如果是则清除会话并重定向到登录页面
         username = session.get('username')
         if username is None:
             # 清除会话
             session.clear()
             return redirect(url_for('auth.login'))
 
-        # 构建user对象，包含username属性
+        # 构建user对象,包含username属性
         user = {
             'username': username
         }
         return render_template('japanese_test.html', user=user)
 
-    # 直接添加/index.html路由，确保主入口可访问
+    # 直接添加/index.html路由,确保主入口可访问
     logger.info("[系统集成] 直接添加/index.html路由")
     @app.route('/index.html')
     def index_html():
@@ -85,20 +88,19 @@ return str(status), 200, {'Content-Type': 'application/json'}
         return render_template('index.html',
                            user={'username': session.get('username'), 'role': session.get('user_level', 'guest')})
 
-    # 直接添加/debug/routes路由，方便调试
+    # 直接添加/debug/routes路由,方便调试
     logger.info("[系统集成] 直接添加/debug/routes路由")
     @app.route('/debug/routes')
     def debug_routes():
-        """调试路由，查看所有注册的路由"""
-        from flask # JSON import removed - using database
-ify
+        """调试路由,查看所有注册的路由"""
+        from flask import jsonify
         routes = []
         for rule in app.url_map.iter_rules():
-            route = {
+            routes.append({
                 'rule': str(rule),
                 'endpoint': rule.endpoint,
                 'methods': list(rule.methods)
-            }
+            })
         return jsonify(routes)
 
     # 直接注册AI自动更新管理器API蓝图
@@ -175,14 +177,31 @@ if __name__ == '__main__':
 
         # 根服务器特殊设置
         if node_role == 'master':
-            logger.info("[根服务器配置] 检测到根服务器配置，应用特殊设置...")
+            logger.info("[根服务器配置] 检测到根服务器配置,应用特殊设置...")
             debug = False  # 根服务器建议关闭调试模式
             logger.info("[根服务器配置] 根服务器特殊设置已应用")
 
-        # 获取HTTPS设置
-        HTTPS_ENABLED = app.config.get('HTTPS_ENABLED', False)
-        SSL_CERT_PATH = app.config.get('SSL_CERT_PATH', 'ssl/cert.pem')
-        SSL_KEY_PATH = app.config.get('SSL_KEY_PATH', 'ssl/key.pem')
+        # 初始化SSL管理器
+        try:
+            from app.services.ssl_manager import get_ssl_manager
+            ssl_manager = get_ssl_manager()
+            
+            # 确保证书存在
+            ssl_manager.ensure_certificate()
+            
+            # 检查证书有效性
+            cert_validity = ssl_manager.check_certificate_validity()
+            logger.info(f"[SSL配置] 证书状态: {cert_validity['message']}")
+            logger.info(f"[SSL配置] 证书有效期剩余: {cert_validity['days_remaining']} 天")
+            
+            # 获取SSL上下文
+            ssl_context = ssl_manager.get_ssl_context()
+            HTTPS_ENABLED = ssl_context is not None
+        except Exception as e:
+            logger.warning(f"[SSL配置] SSL管理器初始化失败: {e}")
+            HTTPS_ENABLED = False
+            ssl_context = None
+
         protocol = 'https' if HTTPS_ENABLED else 'http'
 
         logger.info(f"Starting MTSCOS Root Server...")
@@ -192,7 +211,7 @@ if __name__ == '__main__':
         logger.info(f"Debug mode: {debug}")
         logger.info(f"HTTPS enabled: {HTTPS_ENABLED}")
 
-        # 直接运行Flask服务器，不依赖复杂配置
+        # 直接运行Flask服务器,不依赖复杂配置
         logger.info("[服务器启动] 开始运行Flask服务器...")
         logger.info(f"[服务器启动] 服务器配置: host={host}, port={port}, debug={debug}")
         logger.info(f"[服务器启动] 当前工作目录: {os.getcwd()}")
@@ -210,13 +229,21 @@ if __name__ == '__main__':
             sys.exit(1)
 
         try:
-            if HTTPS_ENABLED and os.path.exists(SSL_CERT_PATH) and os.path.exists(SSL_KEY_PATH):
+            if HTTPS_ENABLED and ssl_context:
+                # 添加HTTP到HTTPS重定向
+                logger.info("[SSL配置] 启用HTTP到HTTPS重定向")
+                @app.before_request
+                def redirect_to_https():
+                    if not request.is_secure:
+                        url = request.url.replace('http://', 'https://', 1)
+                        return redirect(url, code=301)
+                
                 app.run(
                     host=host,
                     port=port,
                     debug=debug,
                     use_reloader=False,
-                    ssl_context=(SSL_CERT_PATH, SSL_KEY_PATH)
+                    ssl_context=ssl_context
                 )
             else:
                 app.run(host=host, port=port, debug=debug, use_reloader=False)

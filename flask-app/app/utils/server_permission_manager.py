@@ -9,7 +9,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(level
 logger = logging.getLogger(__name__)
 
 class ServerPermissionManager:
-    """子服务器权限管理器，负责管理和应用子服务器系统的权限"""
+    """子服务器权限管理器,负责管理和应用子服务器系统的权限"""
 
     def __init__(self, config_file: str = None):
         self.instance_id = f"server_permission_manager_{id(self)}"

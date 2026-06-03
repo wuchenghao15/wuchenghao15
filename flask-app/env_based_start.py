@@ -1,6 +1,9 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
-基于环境变量的启动脚本，用于修复MODEL_PATH KeyError问题
+基于环境变量的启动脚本,用于修复MODEL_PATH KeyError问题
+import logging
+logger = logging.getLogger(__name__)
 import os
 import sys
 
@@ -22,14 +25,14 @@ os.environ['AI_CONFIG'] = '''{
     "SELF_OPTIMIZATION": true
 }'''
 
-# 2. 重写app.config模块的导入，使其首先检查环境变量
+# 2. 重写app.config模块的导入,使其首先检查环境变量
 print("[环境变量启动] 重写配置导入机制...")
 
 # 创建一个新的app.config模块
 import types
 new_config = types.ModuleType('app.config')
 
-# 从原始配置模块导入所有内容，然后用环境变量覆盖
+# 从原始配置模块导入所有内容,然后用环境变量覆盖
 print("[环境变量启动] 加载原始配置...")
 try:
     # 保存原始的sys.modules['app.config']
@@ -37,12 +40,12 @@ try:
     if 'app.config' in sys.modules:
         original_config = sys.modules['app.config']
 
-    # 删除原始的app.config模块，以便重新导入
+    # 删除原始的app.config模块,以便重新导入
     if 'app.config' in sys.modules:
 
     # 导入原始配置
 
-    # 创建一个新的Config类，继承自原始的Config类
+    # 创建一个新的Config类,继承自原始的Config类
     class PatchedConfig(original_app_config.Config):
         # 从环境变量获取配置
         MODEL_PATH = os.environ.get('MODEL_PATH', 'models/')
@@ -82,14 +85,14 @@ try:
     print("[环境变量启动] 配置补丁应用成功")
 except Exception as e:
     print(f"[环境变量启动] 配置补丁应用失败: {e}")
-    # 如果原始配置存在，恢复它
+    # 如果原始配置存在,恢复它
     if original_config:
         sys.modules['app.config'] = original_config
 
 # 3. 尝试启动服务器
 print("[环境变量启动] 正在启动服务器...")
 try:
-    print("[环境变量启动] 服务器启动成功！")
+    print("[环境变量启动] 服务器启动成功!")
 except Exception as e:
     print(f"[环境变量启动] 服务器启动失败: {e}")
     import traceback

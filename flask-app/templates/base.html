@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}MTSCOS AI 系统{% endblock %}</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     {% if request.path.startswith('/test-system') or request.path.startswith('/level-assessment') or request.path.startswith('/ai-generated-test') or request.path.startswith('/bilingual-test') or request.path.startswith('/english-test') or request.path.startswith('/japanese-test') %}
     <!-- 预加载动画样式 -->
@@ -275,28 +275,104 @@
             right: 20px;
             z-index: 10000;
             background: rgba(255, 255, 255, 0.95);
-            padding: 8px 16px;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            padding: 12px 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
             font-size: 14px;
             color: #333;
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 8px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
         }
-        
-
         
         .time-display {
             display: flex;
             flex-direction: column;
             align-items: flex-start;
+            gap: 8px;
+        }
+        
+        /* 用户信息样式 */
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 4px 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+            width: 100%;
+        }
+        
+        .user-avatar {
+            font-size: 32px;
+            color: #667eea;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .user-details {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        
+        .user-name {
+            font-weight: 600;
+            font-size: 14px;
+            color: #333;
+        }
+        
+        .user-role {
+            font-size: 12px;
+            color: #666;
+            background: #e3f2fd;
+            padding: 2px 8px;
+            border-radius: 12px;
+            display: inline-block;
+            width: fit-content;
+        }
+        
+        /* 登录提示样式 */
+        .login-prompt {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+            width: 100%;
+            color: #dc3545;
+            font-size: 13px;
+        }
+        
+        .login-prompt i {
+            font-size: 14px;
+        }
+        
+        .login-link {
+            color: #667eea;
+            text-decoration: underline;
+            font-weight: 500;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+        
+        .login-link:hover {
+            color: #5a6fd8;
+        }
+        
+        /* 时间信息样式 */
+        .time-info {
+            display: flex;
+            flex-direction: column;
             gap: 2px;
         }
         
         .current-time {
             font-weight: 600;
             color: #1976d2;
+            font-size: 18px;
         }
         
         .lunar-time {
@@ -333,11 +409,31 @@
         {% endif %}
     {% endwith %}
     
-    <!-- 时间显示组件 -->
+    <!-- 用户信息和时间显示组件 -->
     <div class="time-display-container">
         <div class="time-display" id="time-display">
-            <span class="current-time"></span>
-            <span class="lunar-time"></span>
+            <!-- 用户信息 -->
+            {% if session.get('user_id') %}
+                <div class="user-info">
+                    <span class="user-avatar">
+                        <i class="fas fa-user-circle"></i>
+                    </span>
+                    <div class="user-details">
+                        <span class="user-name">{{ session.get('username', '用户') }}</span>
+                        <span class="user-role">{{ session.get('role', '访客') }}</span>
+                    </div>
+                </div>
+            {% else %}
+                <div class="login-prompt">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span>请先 <a href="{{ url_for('auth.login') }}" class="login-link">登录</a></span>
+                </div>
+            {% endif %}
+            <!-- 时间显示 -->
+            <div class="time-info">
+                <span class="current-time" id="server-time"></span>
+                <span class="lunar-time" id="server-date"></span>
+            </div>
         </div>
     </div>
     
@@ -351,41 +447,81 @@
     <!-- <script src="#"></script> -->
     
     <script>
-        // 时间显示功能
-        function updateTimeDisplay() {
+        // 服务器时间相关变量
+        let serverTimestamp = null;
+        let lastFetchTime = null;
+        
+        // 获取服务器时间
+        async function fetchServerTime() {
+            try {
+                const response = await fetch('/api/server-time');
+                const data = await response.json();
+                if (data.success) {
+                    serverTimestamp = data.timestamp;
+                    lastFetchTime = Date.now();
+                    updateTimeDisplay(data.time, data.date, data.weekday);
+                }
+            } catch (error) {
+                console.error('获取服务器时间失败:', error);
+                // 如果获取失败，使用客户端时间作为后备
+                useClientTimeAsFallback();
+            }
+        }
+        
+        // 使用客户端时间作为后备
+        function useClientTimeAsFallback() {
             const now = new Date();
+            const timeStr = now.getHours().toString().padStart(2, '0') + ':' +
+                           now.getMinutes().toString().padStart(2, '0') + ':' +
+                           now.getSeconds().toString().padStart(2, '0');
+            const dateStr = now.getFullYear() + '年' + 
+                           (now.getMonth() + 1) + '月' + 
+                           now.getDate() + '日';
+            updateTimeDisplay(timeStr, dateStr, '');
+        }
+        
+        // 更新时间显示
+        function updateTimeDisplay(timeStr, dateStr, weekdayStr) {
+            const timeElement = document.getElementById('server-time');
+            const dateElement = document.getElementById('server-date');
             
-            // 格式化24小时制时间
-            const hours = now.getHours().toString().padStart(2, '0');
-            const minutes = now.getMinutes().toString().padStart(2, '0');
-            const seconds = now.getSeconds().toString().padStart(2, '0');
-            const currentTimeStr = `${hours}:${minutes}:${seconds}`;
-            
-            // 获取农历日期
-            const lunar = {
-                year: now.getFullYear(),
-                month: now.getMonth() + 1,
-                day: now.getDate()
-            };
-            
-            const lunarTimeStr = `${lunar.year}年${lunar.month}月${lunar.day}日`;
-            
-            // 更新DOM
-            const currentTimeElement = document.querySelector('.current-time');
-            const lunarTimeElement = document.querySelector('.lunar-time');
-            
-            if (currentTimeElement && lunarTimeElement) {
-                currentTimeElement.textContent = currentTimeStr;
-                lunarTimeElement.textContent = lunarTimeStr;
+            if (timeElement) {
+                timeElement.textContent = timeStr;
+            }
+            if (dateElement) {
+                const fullDateStr = weekdayStr ? `${dateStr} ${weekdayStr}` : dateStr;
+                dateElement.textContent = fullDateStr;
+            }
+        }
+        
+        // 本地时间自动递增（基于服务器时间）
+        function incrementLocalTime() {
+            if (serverTimestamp && lastFetchTime) {
+                const elapsed = Date.now() - lastFetchTime;
+                const newTimestamp = serverTimestamp + elapsed;
+                const now = new Date(newTimestamp);
+                
+                const timeStr = now.getHours().toString().padStart(2, '0') + ':' +
+                               now.getMinutes().toString().padStart(2, '0') + ':' +
+                               now.getSeconds().toString().padStart(2, '0');
+                
+                const timeElement = document.getElementById('server-time');
+                if (timeElement) {
+                    timeElement.textContent = timeStr;
+                }
             }
         }
         
         // 初始化时间显示
         document.addEventListener('DOMContentLoaded', function() {
-            // 立即更新一次
-            updateTimeDisplay();
-            // 每秒更新一次
-            setInterval(updateTimeDisplay, 1000);
+            // 立即获取服务器时间
+            fetchServerTime();
+            
+            // 每秒本地更新时间
+            setInterval(incrementLocalTime, 1000);
+            
+            // 每30秒重新从服务器获取一次，保持同步
+            setInterval(fetchServerTime, 30000);
         });
     </script>
     <script src="{{ url_for('static', filename='js/mobile-interactions.js') }}"></script>

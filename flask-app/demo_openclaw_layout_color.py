@@ -1,8 +1,12 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
 OpenCLAW布局配色优化演示脚本
-非交互式版本，自动演示布局和配色优化功能
+非交互式版本,自动演示布局和配色优化功能
+"""
 
+import logging
+logger = logging.getLogger(__name__)
 import sys
 import os
 import time
@@ -25,11 +29,11 @@ class OpenCLAWWrapper:
             "web": [
                 {
                     "name": "响应式网格布局",
-                    "description": "使用CSS Grid和Flexbox创建响应式布局，适应不同屏幕尺寸",
+                    "description": "使用CSS Grid和Flexbox创建响应式布局,适应不同屏幕尺寸",
                     "structure": [
                         "顶部导航栏",
                         "Hero区域",
-                        "主要内容区（3列网格）",
+                        "主要内容区(3列网格)",
                         "特色功能区",
                         "页脚"
                     ],
@@ -38,15 +42,16 @@ class OpenCLAWWrapper:
                     "performance": "优"
                 },
                 {
-                    "description": "使用卡片组件展示内容，提高可读性和视觉吸引力",
+                    "description": "使用卡片组件展示内容,提高可读性和视觉吸引力",
                     "structure": [
                         "固定顶部导航",
-                        "卡片网格（响应式）",
+                        "卡片网格(响应式)",
                         "分页控件",
                         "页脚"
                     ],
                     "css_techniques": ["CSS Grid", "Card Components", "Hover Effects"],
                     "performance": "优"
+                }
             ]
         }
 
@@ -83,6 +88,7 @@ class OpenCLAWWrapper:
     def generate_css_code(self, layout_suggestion, color_scheme):
         print("\n💻 正在生成优化后的CSS代码...")
         time.sleep(1)
+        css_code = f"""
 :root {{
   --accent-color: {color_scheme['accent']};
   --background-color: {color_scheme['background']};
@@ -146,9 +152,10 @@ body {{
 
   box-shadow: 0 10px 20px rgba(0,0,0,0.15);
 }}
-
+"""
         return css_code
 
+def demo():
     """演示OpenCLAW布局配色优化功能"""
     print("🎨 OpenCLAW布局配色优化演示")
     print("=" * 50)
@@ -228,29 +235,30 @@ body {{
 
     <!-- 主要内容区 -->
     <div class="container">
-        <p>此页面展示了使用OpenCLAW模型生成的优化布局和配色方案。</p>
+        <p>此页面展示了使用OpenCLAW模型生成的优化布局和配色方案.</p>
 
         <!-- 卡片网格 -->
         <div class="grid-container">
             <div class="card">
                 <h3>响应式设计</h3>
-                <p>使用CSS Grid和Flexbox创建的响应式布局，适应不同屏幕尺寸。</p>
+                <p>使用CSS Grid和Flexbox创建的响应式布局,适应不同屏幕尺寸.</p>
                 <button class="btn">了解更多</button>
             </div>
             <div class="card">
                 <h3>现代配色</h3>
-                <p>基于{selected_color['name']}配色方案，提供良好的视觉体验和可访问性。</p>
+                <p>基于{selected_color['name']}配色方案,提供良好的视觉体验和可访问性.</p>
                 <button class="btn">了解更多</button>
             </div>
             <div class="card">
                 <h3>优化性能</h3>
-                <p>优化的CSS代码，确保页面加载速度和渲染性能。</p>
+                <p>优化的CSS代码,确保页面加载速度和渲染性能.</p>
                 <button class="btn">了解更多</button>
             </div>
         </div>
     </div>
 </body>
 </html>
+"""
 
     example_html_path = "openclaw_example.html"
     with open(example_html_path, "w") as f:
@@ -268,7 +276,7 @@ body {{
     print(f"\n您可以查看生成的示例文件:")
     print(f"   - HTML示例: {example_html_path}")
     print(f"   - CSS样式: {example_css_path}")
-    print(f"\n在浏览器中打开 {example_html_path} 查看效果。")
+    print(f"\n在浏览器中打开 {example_html_path} 查看效果.")
 
 if __name__ == "__main__":
     demo_openclaw_layout_color()

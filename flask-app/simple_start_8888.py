@@ -1,8 +1,11 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-简单启动脚本，使用固定端口8888
+简单启动脚本,使用固定端口8888
 
+import logging
+logger = logging.getLogger(__name__)
 import os
 import sys
 
@@ -22,7 +25,7 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         print("Flask app stopped.")
     except Exception as e:
-        print(f"Error starting Flask app: {str(e)}")
+        logger.error(f"Error starting Flask app: {str(e)}")
         import traceback
         traceback.print_exc()
 

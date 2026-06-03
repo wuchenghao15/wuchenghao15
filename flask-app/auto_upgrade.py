@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
 自动升级脚本
@@ -18,7 +19,7 @@ def auto_upgrade():
         logger.info(f"更新检查结果: {update_info}")
 
         if not update_info['update_available']:
-            logger.info("当前已是最新版本，无需升级")
+            logger.info("当前已是最新版本,无需升级")
             return
 
         # 准备升级
@@ -28,11 +29,11 @@ def auto_upgrade():
         logger.info(f"准备升级版本: {current_version} -> {new_version}")
 
         # 生成版本描述
-        version_description = f"系统自动升级到版本 {new_version}，包含以下改进："
-        version_description += "\n- 性能优化：数据库索引优化和缓存机制"
-        version_description += "\n- 功能增强：AI引擎和考试系统"
-        version_description += "\n- 逻辑完善：业务流程和操作闭环"
-        version_description += "\n- 版本管理：自动升级功能"
+        version_description = f"系统自动升级到版本 {new_version},包含以下改进:"
+        version_description += "\n- 性能优化:数据库索引优化和缓存机制"
+        version_description += "\n- 功能增强:AI引擎和考试系统"
+        version_description += "\n- 逻辑完善:业务流程和操作闭环"
+        version_description += "\n- 版本管理:自动升级功能"
 
         # 执行升级
         upgrade_result = version_manager.upgrade_version(new_version, version_description)
@@ -42,7 +43,7 @@ def auto_upgrade():
             logger.info(f"升级描述: {version_description}")
 
             # 输出升级成功信息
-            print(f"🎉 系统升级成功！")
+            print(f"🎉 系统升级成功!")
             print(f"当前版本: {new_version}")
             print(f"升级描述: {version_description}")
         else:

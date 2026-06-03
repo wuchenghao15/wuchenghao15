@@ -1,10 +1,14 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 自动修复工具 - 根据AI建议修复异常和错误
 """
+import logging
+logger = logging.getLogger(__name__)
 import os
 import sqlite3
+from contextlib import contextmanager
 import json
 from datetime import datetime
 import shutil
@@ -25,22 +29,27 @@ class AutoFixer:
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         
-        cursor.execute('''
+        try:
+            cursor.execute('''
             SELECT id, type, description, action, priority, file_path, details, status
             FROM file_organization_log
             WHERE status = 'pending' AND priority = 'high'
             ORDER BY id ASC
             LIMIT 100
-        ''')
-        
-        rows = cursor.fetchall()
-        conn.close()
+            ''')
+            
+            rows = cursor.fetchall()
+        except Exception as e:
+            logger.error(f"获取建议失败: {str(e)}")
+            return []
+        finally:
+            conn.close()
         
         recommendations = []
         for row in rows:
             try:
                 details = json.loads(row['details']) if row['details'] else {}
-            except:
+            except Exception:
                 details = {'raw': row['details']}
             
             recommendations.append({
@@ -78,6 +87,7 @@ class AutoFixer:
             try:
                 os.remove(file_path)
                 success_count += 1
+                print(f"  删除: {os.path.basename(file_path)}")
             except Exception as e:
                 print(f"  删除失败: {file_path} - {e}")
         
@@ -135,14 +145,18 @@ class AutoFixer:
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         
-        cursor.execute('''
+        try:
+            cursor.execute('''
             UPDATE file_organization_log 
             SET status = ?, details = ?
             WHERE id = ?
-        ''', (status, json.dumps({'fix_result': result}, ensure_ascii=False), rec_id))
-        
-        conn.commit()
-        conn.close()
+            ''', (status, json.dumps({'fix_result': result}, ensure_ascii=False), rec_id))
+            
+            conn.commit()
+        except Exception as e:
+            logger.error(f"更新状态失败: {str(e)}")
+        finally:
+            conn.close()
     
     def add_fix_log(self, rec, success, message):
         """添加修复日志"""
@@ -160,34 +174,38 @@ class AutoFixer:
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS fix_execution_log (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                recommendation_id INTEGER,
-                type TEXT,
-                description TEXT,
-                success INTEGER,
-                message TEXT,
-                timestamp TEXT
-            )
-        ''')
-        
-        for log in self.fix_log:
+        try:
             cursor.execute('''
+            CREATE TABLE IF NOT EXISTS fix_execution_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            recommendation_id INTEGER,
+            type TEXT,
+            description TEXT,
+            success INTEGER,
+            message TEXT,
+            timestamp TEXT
+            )
+            ''')
+            
+            for log in self.fix_log:
+                cursor.execute('''
                 INSERT INTO fix_execution_log 
                 (recommendation_id, type, description, success, message, timestamp)
                 VALUES (?, ?, ?, ?, ?, ?)
-            ''', (
+                ''', (
                 log['recommendation_id'],
                 log['type'],
                 log['description'],
                 1 if log['success'] else 0,
                 log['message'],
                 log['timestamp']
-            ))
-        
-        conn.commit()
-        conn.close()
+                ))
+            
+            conn.commit()
+        except Exception as e:
+            logger.error(f"保存日志失败: {str(e)}")
+        finally:
+            conn.close()
     
     def run(self):
         """运行自动修复"""
@@ -214,11 +232,11 @@ class AutoFixer:
                 if success:
                     self.fixed_count += 1
                     self.update_status(rec['id'], 'completed', message)
-                    print(f"  ✅ 修复成功: {message}")
+                    print(f"  修复成功: {message}")
                 else:
                     self.skipped_count += 1
                     self.update_status(rec['id'], 'skipped', message)
-                    print(f"  ⚠️ 跳过: {message}")
+                    print(f"  跳过: {message}")
                 
                 self.add_fix_log(rec, success, message)
                 
@@ -226,16 +244,16 @@ class AutoFixer:
                 self.failed_count += 1
                 self.update_status(rec['id'], 'failed', str(e))
                 self.add_fix_log(rec, False, str(e))
-                print(f"  ❌ 失败: {e}")
+                print(f"  失败: {e}")
         
         self.save_fix_logs()
         
         print("\n" + "=" * 60)
-        print("修复完成！")
+        print("修复完成!")
         print("=" * 60)
-        print(f"✅ 修复成功: {self.fixed_count}")
-        print(f"⚠️ 跳过: {self.skipped_count}")
-        print(f"❌ 失败: {self.failed_count}")
+        print(f"修复成功: {self.fixed_count}")
+        print(f"跳过: {self.skipped_count}")
+        print(f"失败: {self.failed_count}")
         
         return {
             'total': len(recommendations),

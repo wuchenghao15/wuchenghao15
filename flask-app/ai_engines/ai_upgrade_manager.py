@@ -1,0 +1,233 @@
+# -*- coding: utf-8 -*-
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+AI系统升级管理器,用于协调各组件的升级过程
+"""
+
+import os
+import sys
+import json
+import time
+from datetime import datetime
+
+sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
+
+from app.utils.logging import logger
+from app.ai.ai_engine_integrator import ai_engine_integrator
+from app.models.ai_brain import AIBrainKnowledge
+from app.utils.db import db_manager
+import logging
+
+class AIUpgradeManager:
+    """AI系统升级管理器"""
+
+    def __init__(self):
+        self.upgrade_history = []
+        self.feature_library_path = "feature_library.json"
+
+    def start_upgrade(self):
+        """开始升级流程"""
+        logger.info("=== AI系统升级开始 ===")
+
+        try:
+            self.upgrade_ai_engine_integrator()
+            self.upgrade_ai_brain()
+            self.upgrade_feature_library()
+
+            logger.info("=== AI系统升级完成 ===")
+            return {
+                "success": True,
+                "message": "AI系统升级完成",
+                "upgrade_history": self.upgrade_history
+            }
+        except Exception as e:
+            logger.error(f"AI系统升级失败: {str(e)}")
+            self.upgrade_history.append({
+                "component": "system",
+                "status": "failed",
+                "message": f"系统升级失败: {str(e)}",
+                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            })
+            return {
+                "success": False,
+                "message": f"AI系统升级失败: {str(e)}",
+                "upgrade_history": self.upgrade_history
+            }
+
+    def upgrade_ai_engine_integrator(self):
+        """升级AI引擎集成器"""
+        logger.info("开始升级AI引擎集成器...")
+
+        try:
+            if hasattr(ai_engine_integrator, '_health_check_loop'):
+                logger.info("✓ AI引擎集成器健康检查功能已实现")
+
+            if hasattr(ai_engine_integrator, 'get_best_engine'):
+                logger.info("✓ AI引擎集成器自动切换功能已实现")
+
+            if not ai_engine_integrator.health_check_thread or not ai_engine_integrator.health_check_thread.is_alive():
+                ai_engine_integrator._start_health_check()
+                logger.info("✓ AI引擎健康检查线程已启动")
+
+            self.upgrade_history.append({
+                "component": "ai_engine_integrator",
+                "status": "success",
+                "message": "AI引擎集成器升级完成",
+                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            })
+            logger.info("✓ AI引擎集成器升级完成")
+        except Exception as e:
+            logger.error(f"AI引擎集成器升级失败: {str(e)}")
+            self.upgrade_history.append({
+                "component": "ai_engine_integrator",
+                "status": "failed",
+                "message": f"AI引擎集成器升级失败: {str(e)}",
+                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            })
+
+    def upgrade_ai_brain(self):
+        """升级AI脑库"""
+        logger.info("开始升级AI脑库...")
+
+        try:
+            if hasattr(AIBrainKnowledge, 'get_version') and callable(getattr(AIBrainKnowledge, 'get_version')):
+                logger.info("✓ AI脑库版本管理功能已实现")
+
+            if hasattr(AIBrainKnowledge, 'auto_categorize') and callable(getattr(AIBrainKnowledge, 'auto_categorize')):
+                logger.info("✓ AI脑库自动分类功能已实现")
+
+            if hasattr(AIBrainKnowledge, 'evaluate_quality') and callable(getattr(AIBrainKnowledge, 'evaluate_quality')):
+                logger.info("✓ AI脑库质量评估功能已实现")
+
+            self.upgrade_history.append({
+                "component": "ai_brain",
+                "status": "success",
+                "message": "AI脑库升级完成",
+                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            })
+            logger.info("✓ AI脑库升级完成")
+        except Exception as e:
+            logger.error(f"AI脑库升级失败: {str(e)}")
+            self.upgrade_history.append({
+                "component": "ai_brain",
+                "status": "failed",
+                "message": f"AI脑库升级失败: {str(e)}",
+                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            })
+
+    def upgrade_feature_library(self):
+        """升级特征库"""
+        logger.info("开始升级特征库...")
+
+        try:
+            if os.path.exists(self.feature_library_path):
+                self._migrate_feature_library()
+            self.upgrade_history.append({
+                "component": "feature_library",
+                "status": "success",
+                "message": "特征库升级完成",
+                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            })
+        except Exception as e:
+            logger.error(f"特征库升级失败: {str(e)}")
+            self.upgrade_history.append({
+                "component": "feature_library",
+                "status": "failed",
+                "message": f"特征库升级失败: {str(e)}",
+                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            })
+
+    def _add_ai_brain_columns(self):
+        """为AI脑库表添加新字段"""
+        columns_to_add = [
+            ("knowledge_category", "TEXT DEFAULT 'uncategorized'"),
+            ("version", "INTEGER DEFAULT 1"),
+            ("parent_id", "TEXT"),
+            ("quality_score", "REAL DEFAULT 0.5"),
+            ("relevance_score", "REAL DEFAULT 0.5"),
+            ("last_used_at", "DATETIME"),
+            ("usage_count", "INTEGER DEFAULT 0")
+        ]
+        for column_name, column_def in columns_to_add:
+            try:
+                db_manager.execute(f"ALTER TABLE ai_brain_knowledge ADD COLUMN {column_name} {column_def}")
+                logger.info(f"✓ 添加字段 {column_name} 成功")
+            except Exception as e:
+                if "duplicate column name" in str(e).lower():
+                    logger.info(f"✓ 字段 {column_name} 已存在")
+                else:
+                    raise
+
+    def _create_feature_library_table(self):
+        """创建特征库表"""
+        logger.info("创建特征库表...")
+        create_table_sql = """
+        CREATE TABLE IF NOT EXISTS ai_feature_library (
+            feature_id TEXT PRIMARY KEY,
+            title TEXT NOT NULL,
+            description TEXT,
+            feature_type TEXT NOT NULL,
+            status TEXT DEFAULT 'active',
+            priority INTEGER DEFAULT 0,
+            tags TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            resolved_at DATETIME,
+            resolved_by TEXT,
+            resolution TEXT,
+            confidence_score REAL DEFAULT 0.5
+        )
+        """
+        db_manager.execute(create_table_sql)
+        logger.info("✓ 特征库表创建成功")
+
+    def _migrate_feature_library(self):
+        """从JSON文件迁移特征库数据到数据库"""
+        logger.info("从JSON文件迁移特征库数据...")
+
+        with open(self.feature_library_path, 'r', encoding='utf-8') as f:
+            feature_library = json.load(f)
+
+        for feature in feature_library.get("features", []):
+            try:
+                feature_id = feature.get("id", f"feature-{int(time.time())}")
+                tags = str(feature.get("tags", [])) if feature.get("tags") else None
+                resolution = str(feature.get("resolution", {})) if feature.get("resolution") else None
+
+                insert_sql = """
+                INSERT INTO ai_feature_library (
+                    feature_id, title, description, feature_type, status, priority, tags,
+                    created_at, resolved_at, resolved_by, resolution, confidence_score
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """
+
+                resolved_at = feature.get("resolved_at") if feature.get("resolved_at") else None
+
+                db_manager.execute(insert_sql, (
+                    feature_id, feature.get("title"), feature.get("description"), feature.get("type", "general"),
+                    feature.get("status", "active"), feature.get("priority", 0), tags,
+                    feature.get("created_at"), resolved_at, feature.get("resolved_by"), resolution, feature.get("confidence_score", 0.5)
+                ))
+
+                logger.info(f"✓ 迁移特征: {feature.get('title')}")
+            except Exception as e:
+                logger.error(f"迁移特征失败 {feature.get('title')}: {str(e)}")
+
+    def get_upgrade_status(self):
+        """获取升级状态"""
+        return {
+            "upgrade_history": self.upgrade_history,
+            "last_upgrade": self.upgrade_history[-1] if self.upgrade_history else None
+        }
+
+if __name__ == "__main__":
+    upgrade_manager = AIUpgradeManager()
+    result = upgrade_manager.start_upgrade()
+
+    if result["success"]:
+        logger.info("✅ AI系统升级成功")
+    else:
+        logger.error(f"AI系统升级失败: {result['message']}")
+
+    sys.exit(0 if result["success"] else 1)

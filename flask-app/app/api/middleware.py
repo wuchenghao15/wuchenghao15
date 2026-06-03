@@ -1,12 +1,58 @@
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+#!/usr/bin/env python3
 """
-API中间件模块，实现API性能优化、安全措施和错误处理
+API中间件模块,实现API性能优化,安全措施和错误处理
+"""
 
 from flask import Flask, request, g, jsonify
 import time
 import uuid
 from app.utils.logging import logger
+import logging
+import json
+
+
+class RateLimiter:
+    """简单的速率限制器"""
+
+    def __init__(self, max_requests=100, window_seconds=60):
+        """初始化速率限制器
+
+        Args:
+            max_requests: 时间窗口内的最大请求数
+            window_seconds: 时间窗口大小(秒)
+        """
+        self.max_requests = max_requests
+        self.window_seconds = window_seconds
+        self.requests = {}
+
+    def allow_request(self, client_ip):
+        """检查是否允许请求
+
+        Args:
+            client_ip: 客户端IP地址
+
+        Returns:
+            bool: 是否允许请求
+        """
+        current_time = time.time()
+
+        # 清理过期的请求记录
+        if client_ip in self.requests:
+            # 过滤出时间窗口内的请求
+            self.requests[client_ip] = [t for t in self.requests[client_ip]
+                                      if current_time - t < self.window_seconds]
+        else:
+            self.requests[client_ip] = []
+
+        # 检查请求数是否超过限制
+        if len(self.requests[client_ip]) < self.max_requests:
+            # 添加当前请求时间
+            self.requests[client_ip].append(current_time)
+            return True
+        else:
+            return False
+
 
 class APIMiddleware:
     """API中间件类"""
@@ -16,9 +62,10 @@ class APIMiddleware:
 
         Args:
             app: Flask应用实例
+        """
         self.app = app
-        self.setup_middleware()
         self.rate_limiter = RateLimiter(max_requests=100, window_seconds=60)
+        self.setup_middleware()
 
     def setup_middleware(self):
         """设置中间件"""
@@ -60,12 +107,15 @@ class APIMiddleware:
             except Exception as e:
                 return jsonify({
                     'success': False,
+                    'error': '无效的JSON数据'
                 }), 400
+
         # 速率限制
         client_ip = request.remote_addr
         if not self.rate_limiter.allow_request(client_ip):
             return jsonify({
                 'success': False,
+                'error': '请求过于频繁,请稍后重试'
             }), 429
 
         self._security_checks()
@@ -116,57 +166,30 @@ class APIMiddleware:
         """处理404错误"""
         return jsonify({
             'success': False,
+            'error': '请求的资源不存在'
+        }), 404
 
     def handle_403(self, error):
+        """处理403错误"""
         return jsonify({
             'success': False,
+            'error': '无权访问该资源'
         }), 403
 
     def handle_429(self, error):
         """处理429错误"""
+        return jsonify({
             'success': False,
+            'error': '请求过于频繁,请稍后重试'
         }), 429
 
     def handle_exception(self, error):
         """处理所有异常"""
         # 记录错误信息
+        logger.error(f"[API] 未处理的异常: {str(error)}")
 
         # 返回统一的错误响应
         return jsonify({
             'success': False,
+            'error': '服务器内部错误'
         }), 500
-# 速率限制器类
-    """简单的速率限制器"""
-
-        """初始化速率限制器
-
-        Args:
-            max_requests: 时间窗口内的最大请求数
-        self.max_requests = max_requests
-        self.window_seconds = window_seconds
-        self.requests = {}
-
-    def allow_request(self, client_ip):
-        """检查是否允许请求
-
-        Args:
-            client_ip: 客户端IP地址
-
-            bool: 是否允许请求
-        current_time = time.time()
-
-        # 清理过期的请求记录
-        if client_ip in self.requests:
-            # 过滤出时间窗口内的请求
-            self.requests[client_ip] = [t for t in self.requests[client_ip]
-                                      if current_time - t < self.window_seconds]
-        else:
-            self.requests[client_ip] = []
-
-        # 检查请求数是否超过限制
-        if len(self.requests[client_ip]) < self.max_requests:
-            # 添加当前请求时间
-            self.requests[client_ip].append(current_time)
-            return True
-        else:
-            return False

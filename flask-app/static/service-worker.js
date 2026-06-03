@@ -6,7 +6,7 @@ const urlsToCache = [
   '/static/css/style.css',
   '/static/js/script.js',
   '/static/manifest.json',
-  'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css'
+  'https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css'
 ];
 
 // Install event - cache resources

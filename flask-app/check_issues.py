@@ -1,12 +1,16 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
 查看系统检测到的具体问题
+"""
 
+import logging
+logger = logging.getLogger(__name__)
 import sys
 import os
 import time
+import traceback
 
-# 添加项目根目录到Python路径
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from app.ai.instances import ai_instance_manager
@@ -18,7 +22,6 @@ def check_detailed_issues():
 
     try:
         if hasattr(ai_instance_manager, 'self_healing_system'):
-            # 获取系统健康状况
             health = ai_instance_manager.self_healing_system.get_system_health()
 
             print(f"系统健康分数: {health['health_score']}")
@@ -27,7 +30,6 @@ def check_detailed_issues():
             print(f"总实例数: {health['instance_stats']['total_instances']}")
             print(f"最后检查时间: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(health['last_check_time']))}")
 
-            # 输出检测到的具体问题
             if health['detected_issues']:
                 print("\n详细问题列表:")
                 for i, issue in enumerate(health['detected_issues'], 1):
@@ -39,9 +41,8 @@ def check_detailed_issues():
                     if 'details' in issue:
                         print(f"   详细信息: {issue['details']}")
             else:
-                print("\n✓ 未检测到问题")
+                print("\n未检测到问题")
 
-            # 输出修复历史
             history = ai_instance_manager.self_healing_system.get_fix_history(limit=10)
             if history:
                 print("\n最近10条修复记录:")
@@ -57,14 +58,14 @@ def check_detailed_issues():
             return False
     except Exception as e:
         print(f"检查系统问题失败: {str(e)}")
-        import traceback
         traceback.print_exc()
         return False
 
 def run_auto_upgrade():
     """运行自动升级"""
-    print("\n=== 运行自动升级 ===")
+    print("\n == 运行自动升级 ===")
     try:
+        result = ai_instance_manager.run_auto_upgrade()
         print(f"升级结果: {result}")
         print(f"成功升级了 {result['upgraded_instances']} 个AI实例")
         print(f"成功升级了 {result['upgraded_collections']} 个AI集")

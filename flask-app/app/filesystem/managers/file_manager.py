@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # MTSCOS AI Project 文件管理器
 """
-文件管理器，负责具体的文件操作
+文件管理器,负责具体的文件操作
 
 import os
 # JSON import removed - using database
@@ -12,7 +12,7 @@ from app.filesystem import FILE_SYSTEM_CONSTANTS
 
 
 class FileManager:
-    文件管理器，负责具体的文件操作
+    文件管理器,负责具体的文件操作
 
         self._storage_manager = storage_manager
 
@@ -29,7 +29,7 @@ class FileManager:
         try:
             # 检查文件是否已存在
             if self._storage_manager.exists(path) and not overwrite:
-                logger.warning(f"文件 {path} 已存在，跳过创建")
+                logger.warning(f"文件 {path} 已存在,跳过创建")
                 return False
 
             # 检查文件类型是否允许
@@ -92,6 +92,7 @@ class FileManager:
                     content = f.read()
             # 根据文件类型解析内容
             if not as_bytes:
+    pass
 
             return content
         except Exception as e:
@@ -109,12 +110,13 @@ class FileManager:
 
         删除文件
         Args:
+    pass
         Returns:
             bool: 是否删除成功
         try:
             # 检查文件是否存在
             if not self._storage_manager.exists(path):
-                logger.warning(f"文件 {path} 不存在，跳过删除")
+                logger.warning(f"文件 {path} 不存在,跳过删除")
                 return False
 
             # 检查是否为文件
@@ -231,6 +233,7 @@ class FileManager:
             new_path: 新文件路径
 
         Returns:
+    pass
         return self.move_file(old_path, new_path, overwrite=True)
 
     def _process_content(self, content: Any, extension: str) -> Any:
@@ -245,6 +248,7 @@ class FileManager:
 
         # 根据文件类型处理内容
         if extension in ['.json'] and isinstance(content, dict):
+    pass
         elif extension in ['.yaml', '.yml'] and isinstance(content, dict):
             return yaml.dump(content, allow_unicode=True)
         elif extension in ['.csv'] and isinstance(content, list):
@@ -263,18 +267,24 @@ class FileManager:
         Args:
             extension: 文件扩展名
         Returns:
+    pass
         try:
             # 根据文件类型解析内容
             if extension in ['.json']:
+    pass
             elif extension in ['.yaml', '.yml']:
+    pass
             elif extension in ['.csv']:
                 import io
+import logging
+import json
+import sys
                 reader = csv.DictReader(io.StringIO(content))
                 return list(reader)
             else:
                 return content
         except Exception:
-            # 解析失败，返回原始内容
+            # 解析失败,返回原始内容
             return content
 
 """

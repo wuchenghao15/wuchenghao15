@@ -1,15 +1,16 @@
 # -*- coding: utf-8 -*-
-# JSON import removed - using database
+import json
 import logging
 from datetime import datetime
 from typing import Dict, List, Any, Optional
+import sys
 
-# 配置日志
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+
 class ExamPermissionManager:
-    """考试权限管理器，负责管理和应用考试系统的权限"""
+    """考试权限管理器: 负责管理和应用考试系统的权限"""
 
     def __init__(self, config_file: str = None):
         self.instance_id = f"exam_permission_manager_{id(self)}"
@@ -18,7 +19,6 @@ class ExamPermissionManager:
         self.logger = logger
         self.logger.info(f"初始化考试权限管理器: {self.instance_id}")
 
-        # 权限存储
         self.permissions = {
             "admin": [
                 "manage_system",
@@ -38,12 +38,14 @@ class ExamPermissionManager:
                 "manage_exams",
                 "generate_questions",
                 "score_exams",
-                "provide_feedback"
-            "student": [
-                "view_results",
-            ],
+                "provide_feedback",
                 "view_reports",
                 "create_exams"
+            ],
+            "student": [
+                "view_results"
+            ],
+            "assistant": []
         }
 
         self.permission_history = {
@@ -52,7 +54,6 @@ class ExamPermissionManager:
             "assistant": []
         }
 
-        # 加载配置文件
         if config_file:
             self.load_config(config_file)
 
@@ -63,6 +64,7 @@ class ExamPermissionManager:
             config_file: 配置文件路径
         """
         try:
+            with open(config_file, 'r', encoding='utf-8') as f:
                 config = json.load(f)
                 if "exam_permissions" in config:
                     self.permissions.update(config["exam_permissions"])
@@ -87,9 +89,13 @@ class ExamPermissionManager:
             self.logger.error(f"保存考试权限配置文件失败: {str(e)}")
 
     def get_permissions(self, role: str) -> List[str]:
+        """获取角色的权限列表
 
+        Args:
             role: 角色名称
 
+        Returns:
+            权限列表
         """
         if role in self.permissions:
             return self.permissions[role]
@@ -97,13 +103,14 @@ class ExamPermissionManager:
 
     def add_permission(self, role: str, permission: str):
         """添加权限
+
         Args:
             role: 角色名称
+            permission: 权限名称
         """
         if role not in self.permissions:
             self.permissions[role] = []
 
-        # 记录权限历史
         if role not in self.permission_history:
             self.permission_history[role] = []
 
@@ -111,8 +118,8 @@ class ExamPermissionManager:
             self.permission_history[role].append({
                 "action": "add",
                 "permission": permission,
+                "timestamp": datetime.now().isoformat()
             })
-
             self.permissions[role].append(permission)
             self.logger.info(f"添加权限: {role} -> {permission}")
 
@@ -124,7 +131,6 @@ class ExamPermissionManager:
             permission: 权限名称
         """
         if role in self.permissions and permission in self.permissions[role]:
-            # 记录权限历史
             if role not in self.permission_history:
                 self.permission_history[role] = []
 
@@ -133,7 +139,7 @@ class ExamPermissionManager:
                 "permission": permission,
                 "timestamp": datetime.now().isoformat()
             })
-
+            self.permissions[role].remove(permission)
             self.logger.info(f"移除权限: {role} -> {permission}")
 
     def has_permission(self, role: str, permission: str) -> bool:
@@ -142,42 +148,13 @@ class ExamPermissionManager:
         Args:
             role: 角色名称
             permission: 权限名称
+
         Returns:
             是否有权限
         """
+        if role in self.permissions:
             return permission in self.permissions[role]
-
-        """更新角色的权限
-
-            permissions: 权限列表
-        """
-        if role not in self.permission_history:
-
-        old_permissions = self.permissions.get(role, [])
-
-        for permission in permissions:
-            if permission not in old_permissions:
-                self.permission_history[role].append({
-                    "permission": permission,
-                })
-
-        # 记录移除的权限
-        for permission in old_permissions:
-            if permission not in permissions:
-                self.permission_history[role].append({
-                    "action": "remove",
-                    "permission": permission,
-                    "timestamp": datetime.now().isoformat()
-                })
-
-        # 更新权限
-        self.permissions[role] = permissions
-
-    def get_roles(self) -> List[str]:
-
-        Returns:
-        """
-        return list(self.permissions.keys())
+        return False
 
     def add_role(self, role: str, permissions: List[str] = None):
         """添加角色
@@ -185,77 +162,37 @@ class ExamPermissionManager:
         Args:
             role: 角色名称
             permissions: 权限列表
+        """
         if role not in self.permissions:
             self.permissions[role] = permissions or []
 
+    def remove_role(self, role: str):
         """移除角色
 
+        Args:
+            role: 角色名称
         """
         if role in self.permissions:
+            del self.permissions[role]
+            if role in self.permission_history:
                 del self.permission_history[role]
             self.logger.info(f"移除角色: {role}")
+
     def get_permission_history(self, role: str) -> List[Dict[str, Any]]:
         """获取权限历史记录
 
+        Args:
             role: 角色名称
 
+        Returns:
+            权限历史记录列表
+        """
         if role in self.permission_history:
             return self.permission_history[role]
         return []
-
-        """获取所有权限
-
-        Returns:
-            权限字典
-        return self.permissions
-
-        """检查用户对考试的访问权限
-
-        Args:
-            role: 角色名称
-            exam_id: 考试ID
-            action: 操作类型 (view, edit, delete, take)
-
-        Returns:
-            是否有权限
-        """
-        # 根据操作类型检查权限
-        permission_map = {
-            "edit": "manage_exams",
-            "delete": "manage_exams",
-            "take": "take_exams"
-        }
-        required_permission = permission_map.get(action)
-            return self.has_permission(role, required_permission)
-
-        return False
-
-    def check_question_access(self, role: str, question_id: str, action: str) -> bool:
-        """检查用户对题目的访问权限
-
-        Args:
-            role: 角色名称
-            action: 操作类型 (view, edit, delete, generate)
-
-        Returns:
-            是否有权限
-        """
-        # 根据操作类型检查权限
-        permission_map = {
-            "view": "manage_questions",
-            "edit": "manage_questions",
-            "delete": "manage_questions",
-            "generate": "generate_questions"
-        }
-
-            return self.has_permission(role, required_permission)
-
-        return False
 
     def __str__(self):
         return f"ExamPermissionManager(instance_id={self.instance_id}, name={self.name})"
 
     def __repr__(self):
         return self.__str__()
-# 创建全局考试权限管理器实例
-exam_permission_manager = ExamPermissionManager()

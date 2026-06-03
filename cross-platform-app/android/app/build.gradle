@@ -1,0 +1,92 @@
+apply plugin: "com.android.application"
+apply plugin: "com.facebook.react"
+
+def enableHermes = project.ext.react.get("enableHermes", true);
+def enableProguardInReleaseBuilds = false
+
+android {
+    ndkVersion rootProject.ext.ndkVersion
+
+    compileSdkVersion rootProject.ext.compileSdkVersion
+
+    namespace "com.mtscos.app"
+    defaultConfig {
+        applicationId "com.mtscos.app"
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        versionCode 200
+        versionName "2.0.0"
+        multiDexEnabled true
+    }
+
+    signingConfigs {
+        release {
+            if (project.hasProperty('MYAPP_RELEASE_STORE_FILE')) {
+                storeFile file(MYAPP_RELEASE_STORE_FILE)
+                storePassword MYAPP_RELEASE_STORE_PASSWORD
+                keyAlias MYAPP_RELEASE_KEY_ALIAS
+                keyPassword MYAPP_RELEASE_KEY_PASSWORD
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled enableProguardInReleaseBuilds
+            proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
+            signingConfig signingConfigs.release
+        }
+        debug {
+            applicationIdSuffix ".debug"
+            debuggable true
+        }
+    }
+
+    flavorDimensions "platform"
+    productFlavors {
+        hyperos {
+            dimension "platform"
+            applicationIdSuffix ".hyperos"
+            resValue "string", "app_name", "MTSCOS HyperOS"
+        }
+        harmonyos {
+            dimension "platform"
+            applicationIdSuffix ".harmonyos"
+            resValue "string", "app_name", "MTSCOS HarmonyOS"
+        }
+        android {
+            dimension "platform"
+            resValue "string", "app_name", "MTSCOS"
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+
+    kotlinOptions {
+        jvmTarget = "11"
+    }
+
+    buildFeatures {
+        prefab true
+    }
+}
+
+dependencies {
+    implementation fileTree(dir: "libs", include: ["*.jar"])
+    implementation "com.facebook.react:react-native:+"
+    implementation "androidx.swiperefreshlayout:swiperefreshlayout:1.0.0"
+    implementation "com.facebook.react:hermes-android:+"
+    implementation "com.android.support:multidex:1.0.3"
+    
+    if (project(":react-native-device-info")) implementation project(":react-native-device-info")
+    if (project(":react-native-gesture-handler")) implementation project(":react-native-gesture-handler")
+    if (project(":react-native-reanimated")) implementation project(":react-native-reanimated")
+    if (project(":react-native-safe-area-context")) implementation project(":react-native-safe-area-context")
+    if (project(":react-native-screens")) implementation project(":react-native-screens")
+}
+
+apply from: file("../../node_modules/@react-native-community/cli-platform-android/native_modules.gradle");
+applyNativeModulesAppBuildGradle(project)

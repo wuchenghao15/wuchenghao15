@@ -1,8 +1,12 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
 检查登录失败问题的脚本
 
+import logging
+logger = logging.getLogger(__name__)
 import sqlite3
+from contextlib import contextmanager
 import os
 import sys
 from app.utils.security import security_utils
@@ -37,7 +41,7 @@ def check_user_login(username, password):
         column_names = [col[1] for col in columns]
         print(f"用户表列: {column_names}")
 
-        # 构建查询语句，只查询存在的列
+        # 构建查询语句,只查询存在的列
         available_columns = ['id', 'username', 'email', 'password', 'role', 'is_active']
         selected_columns = [col for col in available_columns if col in column_names]
         select_sql = ', '.join(selected_columns)
@@ -47,11 +51,11 @@ def check_user_login(username, password):
         cursor.execute(f'SELECT {select_sql} FROM users WHERE username = ?', (username,))
         user_data = cursor.fetchone()
 
-        # 如果用户名不存在，尝试通过其他可能的字段查询
+        # 如果用户名不存在,尝试通过其他可能的字段查询
         if not user_data:
             # 检查是否有phone列
             if 'phone' in column_names:
-                print(f"用户名不存在，尝试通过手机号查询: {username}")
+                print(f"用户名不存在,尝试通过手机号查询: {username}")
                 cursor.execute(f'SELECT {select_sql} FROM users WHERE phone = ?', (username,))
                 user_data = cursor.fetchone()
             # 检查是否有email列

@@ -1,7 +1,10 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
 生成密码哈希的简单脚本
 
+import logging
+logger = logging.getLogger(__name__)
 import sys
 import os
 

@@ -1,6 +1,8 @@
+# -*- coding: utf-8 -*-
+from contextlib import contextmanager
 #!/usr/bin/env python3
 """
-简化的索引服务器，只启动基本的Flask应用，用于诊断index页面访问问题
+简化的索引服务器,只启动基本的Flask应用,用于诊断index页面访问问题
 
 import sys
 import os
@@ -16,7 +18,7 @@ logger = logging.getLogger(__name__)
 # 添加项目根目录到Python路径
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-# 直接启动服务器，跳过所有修复
+# 直接启动服务器,跳过所有修复
 try:
     from flask import Flask, render_template
     import os
@@ -67,7 +69,7 @@ try:
                 version = row[0]
                 print(f"从数据库获取到的版本号: {version}")
             else:
-                # 如果没有版本号配置，创建一个
+                # 如果没有版本号配置,创建一个
                 cursor.execute('''
                     INSERT INTO system_config
                     (config_key, config_value, config_type, description, is_active)
@@ -79,7 +81,7 @@ try:
             # 关闭连接
             conn.close()
             print("数据库连接关闭")
-            # 如果出错，使用默认版本号
+            # 如果出错,使用默认版本号
             print(f"获取版本号失败: {e}")
         # 传递版本号给模板
         print(f"传递给模板的版本号: {version}")
@@ -87,7 +89,7 @@ try:
 
     # 启动服务器
     port = 8888
-    logger.info(f"简化索引服务器启动成功，访问地址: http://localhost:{port}")
+    logger.info(f"简化索引服务器启动成功,访问地址: http://localhost:{port}")
     app.run(host='0.0.0.0', port=port, debug=True)
 
 except Exception as e:

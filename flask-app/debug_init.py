@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
 调试应用初始化过程的脚本
@@ -28,13 +29,13 @@ try:
     logger.info("  - 加载配置")
     from app.config import load_config
     config = load_config()
-    logger.info(f"  ✓ 配置加载完成，环境: {config.get('ENV', 'development')}")
+    logger.info(f"  ✓ 配置加载完成,环境: {config.get('ENV', 'development')}")
 
     # 初始化路由管理器
     logger.info("\n测试3: 初始化路由管理器")
     from app.routes import init_routes, route_manager
     init_routes()
-    logger.info(f"  ✓ 路由初始化完成，视图路由数量: {len(route_manager.view_routes)}")
+    logger.info(f"  ✓ 路由初始化完成,视图路由数量: {len(route_manager.view_routes)}")
 
     # 创建Flask应用实例
     logger.info("\n测试4: 创建Flask应用实例")
@@ -63,8 +64,8 @@ try:
         logger.info("  ✓ 测试系统路由已注册")
     else:
 
-    logger.info("\n✓ 应用初始化调试完成，未发现致命错误")
-    logger.info("\n应用已准备好启动，您可以运行 'python3 start_server.py' 来启动服务器")
+    logger.info("\n✓ 应用初始化调试完成,未发现致命错误")
+    logger.info("\n应用已准备好启动,您可以运行 'python3 start_server.py' 来启动服务器")
 
 except Exception as e:
     logger.error(f"✗ 应用初始化调试失败: {str(e)}")

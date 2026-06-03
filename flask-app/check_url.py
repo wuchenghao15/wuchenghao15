@@ -1,7 +1,10 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
 检查登录表单URL是否正确
 
+import logging
+logger = logging.getLogger(__name__)
 import sys
 import os
 
@@ -35,14 +38,14 @@ except Exception as e:
     traceback.print_exc()
 
 # 检查硬编码的/auth/login是否正确
-print("\n=== 硬编码URL检查 ===")
+print("\n == 硬编码URL检查 ===")
 if login_url == '/auth/login':
     print("✓ 硬编码的/auth/login与auth.login端点匹配")
 else:
-    print(f"✗ 硬编码的/auth/login与auth.login端点不匹配，应该是: {login_url}")
+    print(f"✗ 硬编码的/auth/login与auth.login端点不匹配,应该是: {login_url}")
 
 # 检查所有注册的路由
-print("\n=== 所有注册路由 ===")
+print("\n == 所有注册路由 ===")
 for rule in app.url_map.iter_rules():
     if 'static' not in str(rule):
         print(f"{rule} -> {rule.endpoint}")

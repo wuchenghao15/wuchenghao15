@@ -1,6 +1,7 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
-最简单的HTTP服务器，用于测试服务器启动
+最简单的HTTP服务器,用于测试服务器启动
 
 import socketserver
 import logging

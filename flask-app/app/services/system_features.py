@@ -3,10 +3,11 @@
 """
 系统功能服务 - 提供系统级功能支持
 包含配置管理、监控告警、日志管理、备份恢复等核心功能
-
+"""
 import logging
 import os
-# JSON import removed - using database
+import json
+import shutil
 from datetime import datetime
 from typing import Dict, Any, Optional, List
 
@@ -44,6 +45,7 @@ class ConfigurationManager:
 
     def __init__(self):
         self.config_file = 'system_config.json'
+        self.config = {}
         self._load_config()
         logger.info("配置管理器初始化完成")
 
@@ -56,15 +58,18 @@ class ConfigurationManager:
                 logger.info("配置文件加载成功")
             except Exception as e:
                 logger.error(f"配置文件加载失败: {str(e)}")
+                self.config = self._get_default_config()
 
     def _save_config(self):
         """保存配置"""
         try:
             with open(self.config_file, 'w', encoding='utf-8') as f:
+                json.dump(self.config, f, ensure_ascii=False, indent=2)
             logger.info("配置文件保存成功")
         except Exception as e:
             logger.error(f"配置文件保存失败: {str(e)}")
 
+    def get(self, key: str, default: Any = None) -> Any:
         """获取配置"""
         keys = key.split('.')
         value = self.config
@@ -74,7 +79,6 @@ class ConfigurationManager:
                 value = value[k]
             else:
                 return default
-
         return value
 
     def update_config(self, config: Dict[str, Any]):
@@ -90,25 +94,12 @@ class ConfigurationManager:
         logger.info("配置已重置为默认值")
 
     def _get_default_config(self) -> Dict[str, Any]:
+        """获取默认配置"""
         return {
-            'system': {
-                'name': 'MTSCOS AI Project',
-                'version': '4.5.5',
-                'environment': 'development',
-                'debug': True
-            },
-            'security': {
-                'enabled': True,
-                'rate_limit': 100,
-                'session_timeout': 3600
-            },
-            'ai': {
-                'enabled': True,
-                'auto_upgrade': True,
-                'learning_enabled': True
-            'database': {
-                'type': 'sqlite',
-                'backup_interval': 86400
+            'debug': False,
+            'log_level': 'INFO',
+            'backup_enabled': True,
+            'backup_interval': 86400
         }
 
 class MonitorService:
@@ -116,48 +107,58 @@ class MonitorService:
 
     def __init__(self):
         self.alerts = []
+        self.log_dir = 'logs'
         logger.info("监控服务初始化完成")
+
     def get_system_status(self) -> Dict[str, Any]:
         """获取系统状态"""
-        import psutil
+        try:
+            import psutil
+            cpu_usage = psutil.cpu_percent(interval=1)
+            memory_usage = psutil.virtual_memory().percent
+            disk_usage = psutil.disk_usage('/').percent
 
-        memory_usage = psutil.virtual_memory().percent
-        disk_usage = psutil.disk_usage('/').percent
+            status = {
+                'timestamp': datetime.now().isoformat(),
+                'cpu': {
+                    'usage': cpu_usage,
+                    'status': self._get_status_level(cpu_usage)
+                },
+                'memory': {
+                    'usage': memory_usage,
+                    'status': self._get_status_level(memory_usage)
+                },
+                'disk': {
+                    'usage': disk_usage,
+                    'status': self._get_status_level(disk_usage)
+                },
+                'services': self._check_services(),
+                'alerts': self.alerts[:5]
+            }
+            return status
+        except Exception as e:
+            logger.error(f"获取系统状态失败: {str(e)}")
+            return {'error': str(e)}
 
-        status = {
-            'timestamp': datetime.now().isoformat(),
-            'cpu': {
-                'usage': cpu_usage,
-                'status': self._get_status_level(cpu_usage)
-            },
-            'memory': {
-                'usage': memory_usage,
-                'status': self._get_status_level(memory_usage)
-            },
-            'disk': {
-                'usage': disk_usage,
-            },
-            'services': self._check_services(),
-            'alerts': self.alerts[:5]  # 最近5条告警
-
-        return status
-
+    def _get_status_level(self, usage: float) -> str:
         """获取状态级别"""
-        if usage < 60:
-            return 'healthy'
+        if usage < 50:
+            return 'normal'
         elif usage < 80:
             return 'warning'
         else:
             return 'critical'
 
+    def _check_services(self) -> List[Dict[str, Any]]:
         """检查服务状态"""
-        return {
-            'ai_engine': 'running',
-            'database': 'running',
-            'redis': 'running'
-        }
+        return [
+            {'name': 'web_server', 'status': 'running'},
+            {'name': 'database', 'status': 'running'},
+            {'name': 'cache', 'status': 'running'}
+        ]
 
     def create_alert(self, level: str, message: str):
+        """创建告警"""
         alert = {
             'level': level,
             'message': message,
@@ -174,8 +175,10 @@ class LogManagementService:
     """日志管理服务"""
 
     def __init__(self):
+        self.log_dir = 'logs'
         os.makedirs(self.log_dir, exist_ok=True)
         logger.info("日志管理服务初始化完成")
+
     def get_logs(self, log_type: str = 'all', limit: int = 100) -> List[Dict[str, Any]]:
         """获取日志"""
         logs = []
@@ -185,6 +188,7 @@ class LogManagementService:
                 continue
 
             filepath = os.path.join(self.log_dir, filename)
+            if os.path.isfile(filepath):
                 try:
                     with open(filepath, 'r', encoding='utf-8') as f:
                         lines = f.readlines()[-limit:]
@@ -200,7 +204,6 @@ class LogManagementService:
 
     def archive_logs(self, days_to_keep: int = 7):
         """归档日志"""
-
         archive_dir = os.path.join(self.log_dir, 'archive')
         os.makedirs(archive_dir, exist_ok=True)
 
@@ -226,25 +229,29 @@ class BackupRecoveryService:
     """备份恢复服务"""
 
     def __init__(self):
+        self.backup_dir = 'backups'
         os.makedirs(self.backup_dir, exist_ok=True)
         logger.info("备份恢复服务初始化完成")
 
+    def create_backup(self, backup_name: str):
         """创建备份"""
-
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         backup_name_with_time = f"{backup_name}_{timestamp}"
         backup_path = os.path.join(self.backup_dir, backup_name_with_time)
         os.makedirs(backup_path, exist_ok=True)
 
-        # 备份数据库
         db_files = ['app.db', 'mtscos.db']
+        for db_file in db_files:
             if os.path.exists(db_file):
                 shutil.copy(db_file, backup_path)
-        # 备份配置
+
         config_files = ['system_config.json', 'VERSION']
+        for config_file in config_files:
             if os.path.exists(config_file):
                 shutil.copy(config_file, backup_path)
 
         logger.info(f"备份创建成功: {backup_name_with_time}")
+        return backup_path
 
     def list_backups(self) -> List[Dict[str, Any]]:
         """列出备份"""
@@ -256,19 +263,17 @@ class BackupRecoveryService:
                 backups.append({
                     'name': item,
                     'path': item_path,
+                    'created_at': datetime.fromtimestamp(os.path.getmtime(item_path)).isoformat()
                 })
 
         return sorted(backups, key=lambda x: x['created_at'], reverse=True)
 
     def restore_backup(self, backup_name: str):
         """恢复备份"""
-        import shutil
-
         backup_path = os.path.join(self.backup_dir, backup_name)
         if not os.path.exists(backup_path):
             raise ValueError(f"备份不存在: {backup_name}")
 
-        # 恢复数据库
         for filename in os.listdir(backup_path):
             src = os.path.join(backup_path, filename)
             dst = filename
@@ -281,19 +286,23 @@ class NotificationService:
     """通知服务"""
 
     def __init__(self):
+        self.channels = {}
         logger.info("通知服务初始化完成")
 
     def register_channel(self, channel_id: str, sender):
         """注册通知渠道"""
         self.channels[channel_id] = sender
         logger.info(f"注册通知渠道: {channel_id}")
+
     def send(self, recipients: List[str], message: Dict[str, Any]):
         """发送通知"""
         for channel_id, sender in self.channels.items():
             try:
                 sender(recipients, message)
                 logger.info(f"通知已发送到 {channel_id}")
+            except Exception as e:
                 logger.error(f"通知发送失败 {channel_id}: {str(e)}")
+
     def send_email(self, recipients: List[str], subject: str, body: str):
         """发送邮件通知"""
         logger.info(f"发送邮件到 {recipients}: {subject}")
@@ -301,14 +310,13 @@ class NotificationService:
     def send_system_notification(self, message: str):
         """发送系统通知"""
         logger.info(f"系统通知: {message}")
-# 全局实例
+
 system_features = SystemFeatures()
 
 def init_system_features():
     """初始化系统功能"""
     logger.info("初始化系统功能...")
 
-    # 注册通知渠道
     system_features.notification_service.register_channel(
         'email',
         lambda recipients, msg: system_features.notification_service.send_email(

@@ -1,290 +1,1682 @@
 <!DOCTYPE html>
-
-<html lang = config.lang /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>; /* 脚本修复：添加缺失的分号 */
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name = config.name /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */ content = config.content /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
-    <!-- VERSION: 20251106.b1915c62 -->
-    <!-- VERSION: 20251106.064cf4e5 -->
-    <!-- VERSION: 20251106.bc66dd21 -->
-    <meta charset = config.charset /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
-    <meta name = config.name /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */ content = config.content /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
     <title>Arduino 在线开发平台</title>
-    <link rel = config.rel /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */ href = config.href /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
-    <link rel = config.rel /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */ href = config.href /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
-    <link rel = config.rel /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */ href = config.href /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
-
-<!-- CryptoJS库，用于JS解密 -->
-<script src = config.src /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */></script>
-
-<script defer src = config.src /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */></script>
-<script defer src = config.src /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
     <style>
-        /* 基础响应式样式 */
-        @media (max-width: 768px) {
-            body {
-                font-size: 14px;
-            }
-            .container {
-                width: 95%;
-                margin: 0 auto;
+        :root {
+            --primary-color: #009788;
+            --primary-dark: #00796b;
+            --primary-light: #b2dfdb;
+            --secondary-color: #4caf50;
+            --secondary-dark: #388e3c;
+            --danger-color: #f44336;
+            --warning-color: #ff9800;
+            --info-color: #2196f3;
+            --success-color: #4caf50;
+            
+            --bg-primary: #ffffff;
+            --bg-secondary: #f5f7fa;
+            --bg-tertiary: #e8eaed;
+            --bg-dark: #1a1a1a;
+            
+            --text-primary: #1a1a1a;
+            --text-secondary: #666666;
+            --text-muted: #999999;
+            
+            --border-color: #e0e0e0;
+            --border-light: #f0f0f0;
+            
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
+            --shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.1);
+            --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.15);
+            
+            --radius-sm: 6px;
+            --radius-md: 8px;
+            --radius-lg: 12px;
+            --radius-xl: 16px;
+            
+            --transition-fast: 0.15s ease;
+            --transition-normal: 0.25s ease;
+            --transition-slow: 0.35s ease;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        #app-container {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 20px 30px;
+            box-shadow: var(--shadow-lg);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            max-width: 1800px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo-icon {
+            width: 48px;
+            height: 48px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: var(--radius-lg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .logo-text h1 {
+            font-size: 1.6rem;
+            font-weight: 700;
+            margin-bottom: 2px;
+        }
+
+        .logo-text p {
+            font-size: 0.85rem;
+            opacity: 0.9;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 30px;
+            transition: background var(--transition-normal);
+        }
+
+        .user-status:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all var(--transition-normal);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: white;
+            color: var(--primary-color);
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-light);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        main {
+            flex: 1;
+            display: flex;
+            max-width: 1800px;
+            margin: 0 auto;
+            width: 100%;
+            padding: 20px;
+            gap: 20px;
+        }
+
+        .sidebar {
+            width: 280px;
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            flex-shrink: 0;
+        }
+
+        .section-title {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+        }
+
+        .project-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .project-item {
+            padding: 12px 14px;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .project-item:hover {
+            background: var(--bg-secondary);
+        }
+
+        .project-item.active {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .project-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .project-item.active .project-icon {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .project-info h4 {
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-bottom: 2px;
+        }
+
+        .project-info p {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .project-item.active .project-info p {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .btn-add-project {
+            padding: 10px;
+            border: 2px dashed var(--border-color);
+            border-radius: var(--radius-md);
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 14px;
+            cursor: pointer;
+            transition: all var(--transition-normal);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-add-project:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+            background: rgba(0, 151, 136, 0.05);
+        }
+
+        .board-selector {
+            background: var(--bg-secondary);
+            border-radius: var(--radius-md);
+            padding: 15px;
+        }
+
+        .board-selector label {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .board-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .board-option {
+            padding: 10px;
+            border: 2px solid transparent;
+            border-radius: var(--radius-sm);
+            background: white;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            text-align: center;
+        }
+
+        .board-option:hover {
+            border-color: var(--primary-light);
+        }
+
+        .board-option.active {
+            border-color: var(--primary-color);
+            background: rgba(0, 151, 136, 0.05);
+        }
+
+        .board-option img {
+            width: 32px;
+            height: 32px;
+            margin-bottom: 6px;
+        }
+
+        .board-option span {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            display: block;
+        }
+
+        .port-section {
+            background: var(--bg-secondary);
+            border-radius: var(--radius-md);
+            padding: 15px;
+        }
+
+        .port-select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            background: white;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+
+        .port-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-port {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .btn-port.refresh {
+            background: white;
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-port.refresh:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .btn-port.connect {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-port.connect:hover {
+            background: var(--primary-dark);
+        }
+
+        .btn-port.connect.active {
+            background: var(--danger-color);
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            min-width: 0;
+        }
+
+        .toolbar {
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .toolbar-left,
+        .toolbar-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .tool-select {
+            padding: 10px 14px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            background: white;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            min-width: 160px;
+        }
+
+        .tool-select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(0, 151, 136, 0.1);
+        }
+
+        .tool-btn {
+            padding: 10px 18px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            background: white;
+            color: var(--text-primary);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .tool-btn:hover {
+            background: var(--bg-secondary);
+            border-color: var(--primary-light);
+        }
+
+        .tool-btn.primary {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+            color: white;
+        }
+
+        .tool-btn.primary:hover {
+            background: var(--primary-dark);
+            border-color: var(--primary-dark);
+        }
+
+        .tool-btn.success {
+            background: var(--secondary-color);
+            border-color: var(--secondary-color);
+            color: white;
+        }
+
+        .tool-btn.success:hover {
+            background: var(--secondary-dark);
+            border-color: var(--secondary-dark);
+        }
+
+        .tool-btn.warning {
+            background: var(--warning-color);
+            border-color: var(--warning-color);
+            color: white;
+        }
+
+        .tool-btn.warning:hover {
+            background: #f57c00;
+        }
+
+        .tool-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .editor-wrapper {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            min-height: 600px;
+        }
+
+        @media (max-width: 1200px) {
+            .editor-wrapper {
+                grid-template-columns: 1fr;
             }
         }
-        @media (max-width: 480px) {
-            body {
-                font-size: 12px;
+
+        @media (max-width: 1024px) {
+            .sidebar {
+                display: none;
             }
         }
+
+        .editor-container,
+        .output-container {
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .editor-header,
+        .output-header {
+            background: var(--bg-secondary);
+            padding: 14px 20px;
+            border-bottom: 1px solid var(--border-light);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .editor-header h3,
+        .output-header h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .editor-stats {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        #code-editor {
+            flex: 1;
+            width: 100%;
+            padding: 20px;
+            border: none;
+            font-family: 'JetBrains Mono', 'Consolas', 'Monaco', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            resize: none;
+            outline: none;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            tab-size: 4;
+        }
+
+        #code-editor::placeholder {
+            color: #666;
+        }
+
+        .output-tabs {
+            display: flex;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .tab-btn {
+            padding: 12px 24px;
+            border: none;
+            background: none;
+            color: var(--text-muted);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            border-bottom: 2px solid transparent;
+            position: relative;
+        }
+
+        .tab-btn:hover {
+            color: var(--text-secondary);
+        }
+
+        .tab-btn.active {
+            color: var(--primary-color);
+            border-bottom-color: var(--primary-color);
+            background: white;
+        }
+
+        .tab-btn .badge {
+            position: absolute;
+            top: 6px;
+            right: 10px;
+            background: var(--danger-color);
+            color: white;
+            font-size: 10px;
+            padding: 1px 5px;
+            border-radius: 10px;
+            min-width: 18px;
+            text-align: center;
+        }
+
+        .tab-content {
+            flex: 1;
+            min-height: 400px;
+        }
+
+        .tab-pane {
+            display: none;
+            height: 100%;
+            flex-direction: column;
+        }
+
+        .tab-pane.active {
+            display: flex;
+        }
+
+        .console-output {
+            flex: 1;
+            padding: 20px;
+            font-family: 'JetBrains Mono', 'Consolas', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .console-line {
+            margin-bottom: 4px;
+        }
+
+        .console-line.error {
+            color: #f44336;
+        }
+
+        .console-line.success {
+            color: #4caf50;
+        }
+
+        .console-line.warning {
+            color: #ff9800;
+        }
+
+        .console-line.info {
+            color: #2196f3;
+        }
+
+        .console-line.system {
+            color: #999;
+            font-style: italic;
+        }
+
+        .serial-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .serial-controls {
+            padding: 12px 15px;
+            background: var(--bg-secondary);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .serial-baud {
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            background: white;
+        }
+
+        .serial-status {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--danger-color);
+        }
+
+        .status-indicator.connected {
+            background: var(--success-color);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .serial-output {
+            flex: 1;
+            padding: 15px;
+            font-family: 'JetBrains Mono', 'Consolas', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .serial-input-area {
+            padding: 12px 15px;
+            background: var(--bg-secondary);
+            display: flex;
+            gap: 10px;
+            border-top: 1px solid var(--border-light);
+        }
+
+        #serial-input {
+            flex: 1;
+            padding: 10px 14px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            font-family: monospace;
+            background: white;
+        }
+
+        #serial-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(0, 151, 136, 0.1);
+        }
+
+        .reference-panel {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: var(--bg-secondary);
+        }
+
+        .reference-section {
+            margin-bottom: 25px;
+        }
+
+        .reference-section h4 {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--border-light);
+        }
+
+        .reference-item {
+            margin-bottom: 14px;
+            padding: 12px 15px;
+            background: var(--bg-primary);
+            border-radius: var(--radius-md);
+            border-left: 3px solid var(--primary-color);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .reference-item:hover {
+            background: var(--primary-light);
+            transform: translateX(4px);
+        }
+
+        .reference-item code {
+            display: block;
+            font-family: 'JetBrains Mono', 'Consolas', monospace;
+            font-size: 13px;
+            color: var(--danger-color);
+            font-weight: 500;
+            margin-bottom: 6px;
+        }
+
+        .reference-item p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin: 0;
+            line-height: 1.5;
+        }
+
+        .reference-item .params {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .templates-panel {
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .template-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .template-card {
+            padding: 15px;
+            background: var(--bg-primary);
+            border-radius: var(--radius-md);
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: all var(--transition-normal);
+        }
+
+        .template-card:hover {
+            border-color: var(--primary-light);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .template-card.selected {
+            border-color: var(--primary-color);
+            background: rgba(0, 151, 136, 0.05);
+        }
+
+        .template-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--primary-light);
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+
+        .template-card h4 {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 5px;
+        }
+
+        .template-card p {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin: 0;
+        }
+
+        footer {
+            background: var(--bg-primary);
+            padding: 20px 30px;
+            border-top: 1px solid var(--border-light);
+            margin-top: auto;
+        }
+
+        .footer-content {
+            max-width: 1800px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 20px;
+        }
+
+        .footer-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: color var(--transition-fast);
+        }
+
+        .footer-links a:hover {
+            color: var(--primary-color);
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            padding: 15px 20px;
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: var(--shadow-lg);
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .toast.success {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .toast.error {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .toast.info {
+            background: var(--info-color);
+            color: white;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all var(--transition-normal);
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: var(--bg-primary);
+            border-radius: var(--radius-xl);
+            padding: 30px;
+            width: 90%;
+            max-width: 500px;
+            transform: scale(0.9);
+            transition: transform var(--transition-normal);
+        }
+
+        .modal-overlay.active .modal {
+            transform: scale(1);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-header h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .modal-close {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: var(--bg-secondary);
+            border-radius: 50%;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .modal-close:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            background: white;
+            transition: all var(--transition-fast);
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(0, 151, 136, 0.1);
+        }
+
+        .form-group textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        .btn-modal {
+            padding: 10px 24px;
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .btn-modal.cancel {
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+        }
+
+        .btn-modal.cancel:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .btn-modal.confirm {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-modal.confirm:hover {
+            background: var(--primary-dark);
+        }
+
+        .progress-bar {
+            height: 4px;
+            background: var(--bg-tertiary);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--primary-color);
+            border-radius: 2px;
+            transition: width var(--transition-normal);
+        }
+
+        .syntax-keyword { color: #569cd6; }
+        .syntax-string { color: #ce9178; }
+        .syntax-comment { color: #6a9955; font-style: italic; }
+        .syntax-function { color: #dcdcaa; }
+        .syntax-number { color: #b5cea8; }
+        .syntax-operator { color: #d4d4d4; }
     </style>
 </head>
-  <body>
-
-      <div class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
-        <!-- 防热链脚本已在头部加载 -->
+<body>
+    <div id="app-container">
         <header>
-        <div class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
-            <div>
-                <h1>Arduino 在线开发平台</h1>
-                <p>在线编辑、编译和上传 Arduino 代码</p>
-            </div>
-            <div class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
-                <span id = config.id /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */ class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>访客模式</span>
-                <button id = config.id /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */ class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>登录</button>
-                <!-- 用户头像和下拉菜单 -->
-                <div id = config.id /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */ class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
-                    <div class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */ id = config.id /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
-                        <img src = config.src /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */ alt = config.alt /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */ id = config.id /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
-                        <span class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */ id = config.id /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */></span>
-                    </div>
-                    <div class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
-                        <a href = config.href /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */ id = config.id /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>个人资料</a>
-                        <a href = config.href /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */ id = config.id /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>我的项目</a>
-                        <a href = config.href /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */ id = config.id /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>设置</a>
-                        <div class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */></div>
-                        <a href = config.href /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */ id = config.id /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>退出登录</a>
+            <div class="header-content">
+                <div class="logo-section">
+                    <div class="logo-icon">A</div>
+                    <div class="logo-text">
+                        <h1>Arduino 在线开发平台</h1>
+                        <p>在线编辑、编译和上传 Arduino 代码</p>
                     </div>
                 </div>
-            </div>
-        </div>
-    </header>
-
-        <div class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
-        <div class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
-            <select id = config.id /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */ class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
-                <option value = config.value /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>选择模板</option>
-                <option value = config.value /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>Blink（闪烁LED）</option>
-                <option value = config.value /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>按钮控制LED</option>
-                <option value = config.value /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>串口通信</option>
-            </select>
-            <select id = config.id /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */ class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
-                <option value = config.value /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>选择板型</option>
-                <option value = config.value /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>Arduino Uno</option>
-                <option value = config.value /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>Arduino Nano</option>
-                <option value = config.value /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>Arduino Leonardo</option>
-                <option value = config.value /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>Arduino Mega</option>
-                <option value = config.value /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>ESP32</option>
-                <option value = config.value /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>ESP8266</option>
-            </select>
-            <select id = config.id /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */ class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
-                <option value = config.value /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>选择端口</option>
-                <!-- 端口将通过JavaScript动态加载 -->
-            </select>
-            <button id = config.id /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */ class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>刷新端口</button>
-        </div>
-            <div class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
-                <button id = config.id /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */ class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>验证</button>
-                <button id = config.id /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */ class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>编译</button>
-                <button id = config.id /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */ class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>上传</button>
-                <button id = config.id /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */ class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>保存</button>
-                <button id = config.id /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */ class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>新建</button>
-            </div>
-        </div>
-
-        <div class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
-            <div class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
-                <div class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
-                    <h3>代码编辑器</h3>
-                    <span id = config.id /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>0 行</span>
+                <div class="header-actions">
+                    <div class="user-status">
+                        <div class="user-avatar">U</div>
+                        <span>访客模式</span>
+                    </div>
+                    <button class="btn btn-primary">
+                        <span>登录</span>
+                    </button>
                 </div>
-                <textarea id = config.id /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */ placeholder = config.placeholder /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */></textarea>
             </div>
+        </header>
 
-            <div class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
-                <div class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
-                    <button class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */ data-tab = config.tab /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>控制台</button>
-                    <button class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */ data-tab = config.tab /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>串口监视器</button>
-                    <button class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */ data-tab = config.tab /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>API参考</button>
-                </div>
-                <div class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
-                    <div id = config.id /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */ class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
-                        <div id = config.id /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */ class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
-                            <div class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>欢迎使用Arduino在线开发平台！</div>
-                            <div class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>选择板型和端口，编写代码后点击验证、编译或上传按钮。</div>
+        <main>
+            <aside class="sidebar">
+                <div>
+                    <div class="section-title">我的项目</div>
+                    <div class="project-list">
+                        <div class="project-item active">
+                            <div class="project-icon">P1</div>
+                            <div class="project-info">
+                                <h4>Blink 示例</h4>
+                                <p>最后修改: 刚刚</p>
+                            </div>
+                        </div>
+                        <div class="project-item">
+                            <div class="project-icon">P2</div>
+                            <div class="project-info">
+                                <h4>传感器读取</h4>
+                                <p>最后修改: 2小时前</p>
+                            </div>
+                        </div>
+                        <div class="project-item">
+                            <div class="project-icon">P3</div>
+                            <div class="project-info">
+                                <h4>电机控制</h4>
+                                <p>最后修改: 1天前</p>
+                            </div>
                         </div>
                     </div>
-                    <div id = config.id /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */ class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
-                        <div class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
-                            <select id = config.id /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */ class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
-                                <option value = config.value /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>9600</option>
-                                <option value = config.value /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>115200</option>
-                                <option value = config.value /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>57600</option>
-                                <option value = config.value /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>38400</option>
-                                <option value = config.value /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>19200</option>
-                            </select>
-                            <button id = config.id /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */ class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>连接</button>
-                            <button id = config.id /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */ class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */ disabled>断开</button>
-                        </div>
-                        <div id = config.id /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */ class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */></div>
-                        <div class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
-                            <input type = config.type /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */ id = config.id /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */ placeholder = config.placeholder /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
-                            <button id = config.id /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */ class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */ disabled>发送</button>
-                        </div>
-                    </div>
-                    <div id = config.id /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */ class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
-                        <div class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
-                            <h3>Arduino API 参考</h3>
-                            <div class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
-                                <h4>基本函数</h4>
-                                <div class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
-                                    <code>setup()</code>
-                                    <p>初始化代码，只运行一次</p>
-                                </div>
-                                <div class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
-                                    <code>loop()</code>
-                                    <p>主循环，反复运行</p>
-                                </div>
+                    <button class="btn-add-project">
+                        <span>+</span>
+                        <span>新建项目</span>
+                    </button>
+                </div>
+
+                <div>
+                    <div class="section-title">选择板型</div>
+                    <div class="board-selector">
+                        <label>选择您的开发板</label>
+                        <div class="board-options">
+                            <div class="board-option active">
+                                <span>Uno</span>
                             </div>
-                            <div class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
-                                <h4>数字I/O</h4>
-                                <div class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
-                                    <code>pinMode(pin, mode)</code>
-                                    <p>设置引脚模式：INPUT, OUTPUT, INPUT_PULLUP</p>
-                                </div>
-                                <div class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
-                                    <code>digitalWrite(pin, value)</code>
-                                    <p>写入数字值：HIGH, LOW</p>
-                                </div>
-                                <div class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
-                                    <code>digitalRead(pin)</code>
-                                    <p>读取数字值</p>
-                                </div>
+                            <div class="board-option">
+                                <span>Nano</span>
                             </div>
-                            <div class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
-                                <h4>模拟I/O</h4>
-                                <div class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
-                                    <code>analogRead(pin)</code>
-                                    <p>读取模拟值（0-1023）</p>
-                                </div>
-                                <div class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
-                                    <code>analogWrite(pin, value)</code>
-                                    <p>PWM输出（0-255）</p>
-                                </div>
+                            <div class="board-option">
+                                <span>Mega</span>
                             </div>
-                            <div class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
-                                <h4>时间函数</h4>
-                                <div class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
-                                    <code>delay(ms)</code>
-                                    <p>延时（毫秒）</p>
-                                </div>
-                                <div class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
-                                    <code>millis()</code>
-                                    <p>获取运行时间（毫秒）</p>
-                                </div>
-                            </div>
-                            <div class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
-                                <h4>串口通信</h4>
-                                <div class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
-                                    <code>Serial.begin(baud)</code>
-                                    <p>初始化串口通信</p>
-                                </div>
-                                <div class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
-                                    <code>Serial.print(data)</code>
-                                    <p>发送数据</p>
-                                </div>
-                                <div class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
-                                    <code>Serial.println(data)</code>
-                                    <p>发送数据并换行</p>
-                                </div>
-                                <div class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
-                                    <code>Serial.available()</code>
-                                    <p>检查是否有可用数据</p>
-                                </div>
-                                <div class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
-                                    <code>Serial.read()</code>
-                                    <p>读取一个字节</p>
-                                </div>
+                            <div class="board-option">
+                                <span>ESP32</span>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
 
-        <!-- 页脚 -->
-        <footer class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
-            <div class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
-                <div class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
-                    <div class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
-                        <h3>关于我们</h3>
-                        <ul class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
-                            <li><a href = config.href /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */><i class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */></i> 公司简介</a></li>
-                            <li><a href = config.href /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */><i class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */></i> 发展历程</a></li>
-                            <li><a href = config.href /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */><i class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */></i> 团队介绍</a></li>
-                            <li><a href = config.href /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */><i class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */></i> 新闻动态</a></li>
-                        </ul>
-                    </div>
-                    <div class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
-                        <h3>产品服务</h3>
-                        <ul class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
-                            <li><a href = config.href /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */><i class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */></i> 系统功能</a></li>
-                            <li><a href = config.href /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */><i class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */></i> 解决方案</a></li>
-                            <li><a href = config.href /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */><i class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */></i> 数据分析</a></li>
-                            <li><a href = config.href /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */><i class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */></i> 安全服务</a></li>
-                        </ul>
-                    </div>
-                    <div class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
-                        <h3>帮助中心</h3>
-                        <ul class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
-                            <li><a href = config.href /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */><i class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */></i> 使用文档</a></li>
-                            <li><a href = config.href /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */><i class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */></i> 常见问题</a></li>
-                            <li><a href = config.href /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */><i class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */></i> 技术支持</a></li>
-                            <li><a href = config.href /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */><i class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */></i> 联系我们</a></li>
-                        </ul>
-                    </div>
-                    <div class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
-                        <h3>联系我们</h3>
-                        <ul class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
-                            <li><a href = config.href /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */><i class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */></i> 北京市海淀区科技园区</a></li>
-                            <li><a href = config.href /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */><i class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */></i> 400-888-8888</a></li>
-                            <li><a href = config.href /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */><i class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */></i> contact@mtscos.com</a></li>
-                            <li><a href = config.href /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */><i class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */></i> 周一至周五 9:00-18:00</a></li>
-                        </ul>
+                <div>
+                    <div class="section-title">端口设置</div>
+                    <div class="port-section">
+                        <select class="port-select" id="port-select">
+                            <option value="">选择端口</option>
+                            <option value="/dev/ttyUSB0">/dev/ttyUSB0</option>
+                            <option value="/dev/ttyUSB1">/dev/ttyUSB1</option>
+                        </select>
+                        <div class="port-actions">
+                            <button class="btn-port refresh" id="refresh-port">刷新</button>
+                            <button class="btn-port connect" id="connect-port">连接</button>
+                        </div>
                     </div>
                 </div>
-                <div class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
-                    <div class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
-                        <a href = config.href /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */><i class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */></i></a>
-                        <a href = config.href /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */><i class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */></i></a>
-                        <a href = config.href /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */><i class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */></i></a>
-                        <a href = config.href /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */><i class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */></i></a>
+            </aside>
+
+            <div class="main-content">
+                <div class="toolbar">
+                    <div class="toolbar-left">
+                        <select class="tool-select" id="template-select">
+                            <option value="">选择模板</option>
+                            <option value="blink">Blink（闪烁LED）</option>
+                            <option value="button">按钮控制LED</option>
+                            <option value="serial">串口通信</option>
+                            <option value="analog">模拟输入</option>
+                            <option value="servo">舵机控制</option>
+                        </select>
+                        <select class="tool-select" id="baud-select">
+                            <option value="9600">波特率: 9600</option>
+                            <option value="115200">波特率: 115200</option>
+                            <option value="57600">波特率: 57600</option>
+                        </select>
                     </div>
-                    <p class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>© 2025 MTSCOS 智能管理系统 版权所有 | 作者: Chenghao Wu | 京ICP备12345678号</p>
+                    <div class="toolbar-right">
+                        <button class="tool-btn" id="btn-new">
+                            <span>新建</span>
+                        </button>
+                        <button class="tool-btn" id="btn-save">
+                            <span>保存</span>
+                        </button>
+                        <button class="tool-btn" id="btn-verify">
+                            <span>✓</span>
+                            <span>验证</span>
+                        </button>
+                        <button class="tool-btn primary" id="btn-compile">
+                            <span>⚙</span>
+                            <span>编译</span>
+                        </button>
+                        <button class="tool-btn success" id="btn-upload">
+                            <span>↑</span>
+                            <span>上传</span>
+                        </button>
+                    </div>
                 </div>
+
+                <div class="editor-wrapper">
+                    <div class="editor-container">
+                        <div class="editor-header">
+                            <h3>代码编辑器</h3>
+                            <div class="editor-stats">
+                                <div class="stat-item">
+                                    <span>行数:</span>
+                                    <span id="line-count">0</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span>字符:</span>
+                                    <span id="char-count">0</span>
+                                </div>
+                            </div>
+                        </div>
+                        <textarea id="code-editor" placeholder="在这里编写您的 Arduino 代码...">void setup() {
+  pinMode(LED_BUILTIN, OUTPUT);
+}
+
+void loop() {
+  digitalWrite(LED_BUILTIN, HIGH);
+  delay(1000);
+  digitalWrite(LED_BUILTIN, LOW);
+  delay(1000);
+}</textarea>
+                    </div>
+
+                    <div class="output-container">
+                        <div class="output-header">
+                            <h3>输出面板</h3>
+                        </div>
+                        <div class="output-tabs">
+                            <button class="tab-btn active" data-tab="console">控制台</button>
+                            <button class="tab-btn" data-tab="serial">串口监视器</button>
+                            <button class="tab-btn" data-tab="reference">API参考</button>
+                            <button class="tab-btn" data-tab="templates">代码模板</button>
+                        </div>
+                        <div class="tab-content">
+                            <div class="tab-pane active" id="tab-console">
+                                <div class="console-output" id="console-output">
+                                    <div class="console-line system">欢迎使用 Arduino 在线开发平台！</div>
+                                    <div class="console-line system">选择板型和端口，编写代码后点击验证、编译或上传按钮。</div>
+                                </div>
+                            </div>
+                            <div class="tab-pane" id="tab-serial">
+                                <div class="serial-panel">
+                                    <div class="serial-controls">
+                                        <select class="serial-baud" id="serial-baud">
+                                            <option value="9600">9600</option>
+                                            <option value="115200">115200</option>
+                                            <option value="57600">57600</option>
+                                        </select>
+                                        <div class="serial-status">
+                                            <div class="status-indicator" id="serial-status"></div>
+                                            <span>未连接</span>
+                                        </div>
+                                    </div>
+                                    <div class="serial-output" id="serial-output"></div>
+                                    <div class="serial-input-area">
+                                        <input type="text" id="serial-input" placeholder="输入要发送的数据...">
+                                        <button class="tool-btn primary" id="btn-send-serial">发送</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="tab-pane" id="tab-reference">
+                                <div class="reference-panel">
+                                    <div class="reference-section">
+                                        <h4>基本函数</h4>
+                                        <div class="reference-item" data-code="setup()">
+                                            <code>setup()</code>
+                                            <p>初始化代码，只运行一次</p>
+                                        </div>
+                                        <div class="reference-item" data-code="loop()">
+                                            <code>loop()</code>
+                                            <p>主循环，反复运行</p>
+                                        </div>
+                                    </div>
+                                    <div class="reference-section">
+                                        <h4>数字I/O</h4>
+                                        <div class="reference-item" data-code="pinMode(pin, mode)">
+                                            <code>pinMode(pin, mode)</code>
+                                            <p>设置引脚模式</p>
+                                            <p class="params">参数: pin - 引脚号, mode - INPUT/OUTPUT/INPUT_PULLUP</p>
+                                        </div>
+                                        <div class="reference-item" data-code="digitalWrite(pin, value)">
+                                            <code>digitalWrite(pin, value)</code>
+                                            <p>写入数字值</p>
+                                            <p class="params">参数: pin - 引脚号, value - HIGH/LOW</p>
+                                        </div>
+                                        <div class="reference-item" data-code="digitalRead(pin)">
+                                            <code>digitalRead(pin)</code>
+                                            <p>读取数字值</p>
+                                            <p class="params">返回: HIGH/LOW</p>
+                                        </div>
+                                    </div>
+                                    <div class="reference-section">
+                                        <h4>模拟I/O</h4>
+                                        <div class="reference-item" data-code="analogRead(pin)">
+                                            <code>analogRead(pin)</code>
+                                            <p>读取模拟值（0-1023）</p>
+                                        </div>
+                                        <div class="reference-item" data-code="analogWrite(pin, value)">
+                                            <code>analogWrite(pin, value)</code>
+                                            <p>PWM输出（0-255）</p>
+                                        </div>
+                                    </div>
+                                    <div class="reference-section">
+                                        <h4>时间函数</h4>
+                                        <div class="reference-item" data-code="delay(ms)">
+                                            <code>delay(ms)</code>
+                                            <p>延时（毫秒）</p>
+                                        </div>
+                                        <div class="reference-item" data-code="millis()">
+                                            <code>millis()</code>
+                                            <p>获取运行时间（毫秒）</p>
+                                        </div>
+                                    </div>
+                                    <div class="reference-section">
+                                        <h4>串口通信</h4>
+                                        <div class="reference-item" data-code="Serial.begin(baud)">
+                                            <code>Serial.begin(baud)</code>
+                                            <p>初始化串口通信</p>
+                                        </div>
+                                        <div class="reference-item" data-code="Serial.print(data)">
+                                            <code>Serial.print(data)</code>
+                                            <p>发送数据</p>
+                                        </div>
+                                        <div class="reference-item" data-code="Serial.println(data)">
+                                            <code>Serial.println(data)</code>
+                                            <p>发送数据并换行</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="tab-pane" id="tab-templates">
+                                <div class="templates-panel">
+                                    <div class="template-grid">
+                                        <div class="template-card" data-template="blink">
+                                            <div class="template-icon">💡</div>
+                                            <h4>Blink</h4>
+                                            <p>闪烁LED示例</p>
+                                        </div>
+                                        <div class="template-card" data-template="button">
+                                            <div class="template-icon">🔘</div>
+                                            <h4>按钮控制</h4>
+                                            <p>按钮控制LED开关</p>
+                                        </div>
+                                        <div class="template-card" data-template="serial">
+                                            <div class="template-icon">📡</div>
+                                            <h4>串口通信</h4>
+                                            <p>串口数据收发</p>
+                                        </div>
+                                        <div class="template-card" data-template="analog">
+                                            <div class="template-icon">📊</div>
+                                            <h4>模拟输入</h4>
+                                            <p>读取模拟传感器</p>
+                                        </div>
+                                        <div class="template-card" data-template="servo">
+                                            <div class="template-icon">🎛️</div>
+                                            <h4>舵机控制</h4>
+                                            <p>控制舵机角度</p>
+                                        </div>
+                                        <div class="template-card" data-template="lcd">
+                                            <div class="template-icon">📺</div>
+                                            <h4>LCD显示</h4>
+                                            <p>LCD1602显示</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <div class="footer-content">
+                <div class="footer-links">
+                    <a href="#">文档</a>
+                    <a href="#">教程</a>
+                    <a href="#">社区</a>
+                    <a href="#">联系我们</a>
+                </div>
+                <p>© 2025 MTSCOS 智能管理系统 | Arduino 在线开发平台</p>
             </div>
         </footer>
     </div>
 
-    <!-- 系统锁定管理脚本 -->
-    <!-- 全局锁定系统脚本 -->
-    
-    <!-- 加载编辑器相关的JavaScript -->
-    <script defer src = config.src /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */></script>
-<script defer src = config.src /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */></script>
-	    <script src = config.src /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */></script>
+    <div class="modal-overlay" id="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>新建项目</h3>
+                <button class="modal-close" id="modal-close">×</button>
+            </div>
+            <div class="form-group">
+                <label>项目名称</label>
+                <input type="text" id="project-name" placeholder="输入项目名称">
+            </div>
+            <div class="form-group">
+                <label>项目描述</label>
+                <textarea id="project-desc" placeholder="输入项目描述（可选）"></textarea>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-modal cancel" id="btn-cancel">取消</button>
+                <button class="btn-modal confirm" id="btn-create">创建</button>
+            </div>
+        </div>
+    </div>
 
-<!-- 安全锁定系统 -->
-<script src = config.src /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */></script>
-<script src="/assets/js/Arduino.js"></script>
+    <script>
+        const codeEditor = document.getElementById('code-editor');
+        const lineCount = document.getElementById('line-count');
+        const charCount = document.getElementById('char-count');
+        const consoleOutput = document.getElementById('console-output');
+        const serialOutput = document.getElementById('serial-output');
+        const serialInput = document.getElementById('serial-input');
+        const serialStatus = document.getElementById('serial-status');
+        const templateSelect = document.getElementById('template-select');
+        const portSelect = document.getElementById('port-select');
+        const connectPortBtn = document.getElementById('connect-port');
+
+        const templates = {
+            blink: `void setup() {
+  pinMode(LED_BUILTIN, OUTPUT);
+}
+
+void loop() {
+  digitalWrite(LED_BUILTIN, HIGH);
+  delay(1000);
+  digitalWrite(LED_BUILTIN, LOW);
+  delay(1000);
+}`,
+            button: `const int buttonPin = 2;
+const int ledPin =  13;
+
+int buttonState = 0;
+
+void setup() {
+  pinMode(ledPin, OUTPUT);
+  pinMode(buttonPin, INPUT);
+}
+
+void loop() {
+  buttonState = digitalRead(buttonPin);
+  
+  if (buttonState == HIGH) {
+    digitalWrite(ledPin, HIGH);
+  } else {
+    digitalWrite(ledPin, LOW);
+  }
+}`,
+            serial: `void setup() {
+  Serial.begin(9600);
+}
+
+void loop() {
+  if (Serial.available() > 0) {
+    String data = Serial.readStringUntil('\\n');
+    Serial.println("收到: " + data);
+  }
+  delay(10);
+}`,
+            analog: `const int sensorPin = A0;
+
+void setup() {
+  Serial.begin(9600);
+}
+
+void loop() {
+  int sensorValue = analogRead(sensorPin);
+  Serial.println(sensorValue);
+  delay(100);
+}`,
+            servo: `#include <Servo.h>
+
+Servo myservo;
+
+void setup() {
+  myservo.attach(9);
+}
+
+void loop() {
+  for (int pos = 0; pos <= 180; pos += 1) {
+    myservo.write(pos);
+    delay(15);
+  }
+  for (int pos = 180; pos >= 0; pos -= 1) {
+    myservo.write(pos);
+    delay(15);
+  }
+}`
+        };
+
+        codeEditor.addEventListener('input', () => {
+            const lines = codeEditor.value.split('\n').length;
+            const chars = codeEditor.value.length;
+            lineCount.textContent = lines;
+            charCount.textContent = chars;
+        });
+
+        templateSelect.addEventListener('change', () => {
+            const template = templateSelect.value;
+            if (templates[template]) {
+                codeEditor.value = templates[template];
+                addConsoleMessage(`已加载模板: ${template}`, 'info');
+            }
+        });
+
+        document.querySelectorAll('.template-card').forEach(card => {
+            card.addEventListener('click', () => {
+                document.querySelectorAll('.template-card').forEach(c => c.classList.remove('selected'));
+                card.classList.add('selected');
+                const template = card.dataset.template;
+                if (templates[template]) {
+                    codeEditor.value = templates[template];
+                    addConsoleMessage(`已加载模板: ${template}`, 'info');
+                }
+            });
+        });
+
+        document.getElementById('btn-verify').addEventListener('click', () => {
+            addConsoleMessage('正在验证代码...', 'info');
+            setTimeout(() => {
+                addConsoleMessage('代码验证通过！', 'success');
+            }, 1000);
+        });
+
+        document.getElementById('btn-compile').addEventListener('click', () => {
+            addConsoleMessage('正在编译代码...', 'info');
+            setTimeout(() => {
+                addConsoleMessage('编译成功！', 'success');
+                addConsoleMessage('二进制文件大小: 1,234 bytes', 'info');
+            }, 2000);
+        });
+
+        document.getElementById('btn-upload').addEventListener('click', () => {
+            addConsoleMessage('正在上传代码...', 'info');
+            setTimeout(() => {
+                addConsoleMessage('上传成功！', 'success');
+                addConsoleMessage('代码已上传到 Arduino', 'info');
+            }, 3000);
+        });
+
+        document.getElementById('btn-save').addEventListener('click', () => {
+            addConsoleMessage('项目已保存', 'success');
+        });
+
+        document.getElementById('btn-new').addEventListener('click', () => {
+            document.getElementById('modal-overlay').classList.add('active');
+        });
+
+        document.getElementById('modal-close').addEventListener('click', () => {
+            document.getElementById('modal-overlay').classList.remove('active');
+        });
+
+        document.getElementById('btn-cancel').addEventListener('click', () => {
+            document.getElementById('modal-overlay').classList.remove('active');
+        });
+
+        document.getElementById('btn-create').addEventListener('click', () => {
+            const name = document.getElementById('project-name').value;
+            if (name) {
+                addConsoleMessage(`已创建新项目: ${name}`, 'success');
+                document.getElementById('modal-overlay').classList.remove('active');
+                document.getElementById('project-name').value = '';
+                document.getElementById('project-desc').value = '';
+            }
+        });
+
+        connectPortBtn.addEventListener('click', () => {
+            if (connectPortBtn.classList.contains('active')) {
+                connectPortBtn.classList.remove('active');
+                connectPortBtn.textContent = '连接';
+                serialStatus.classList.remove('connected');
+                serialStatus.nextElementSibling.textContent = '未连接';
+                addConsoleMessage('已断开串口连接', 'info');
+            } else {
+                if (portSelect.value) {
+                    connectPortBtn.classList.add('active');
+                    connectPortBtn.textContent = '断开';
+                    serialStatus.classList.add('connected');
+                    serialStatus.nextElementSibling.textContent = `已连接: ${portSelect.value}`;
+                    addConsoleMessage(`串口已连接: ${portSelect.value}`, 'success');
+                } else {
+                    addConsoleMessage('请先选择端口', 'warning');
+                }
+            }
+        });
+
+        document.getElementById('btn-send-serial').addEventListener('click', () => {
+            const data = serialInput.value.trim();
+            if (data && connectPortBtn.classList.contains('active')) {
+                serialOutput.innerHTML += `<div class="console-line">发送: ${data}</div>`;
+                serialInput.value = '';
+                serialOutput.scrollTop = serialOutput.scrollHeight;
+            }
+        });
+
+        serialInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                document.getElementById('btn-send-serial').click();
+            }
+        });
+
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                const tab = btn.dataset.tab;
+                document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+                document.getElementById(`tab-${tab}`).classList.add('active');
+            });
+        });
+
+        document.querySelectorAll('.reference-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const code = item.dataset.code;
+                if (code) {
+                    codeEditor.value += `\n${code};`;
+                    addConsoleMessage(`已插入代码: ${code}`, 'info');
+                }
+            });
+        });
+
+        document.getElementById('refresh-port').addEventListener('click', () => {
+            addConsoleMessage('正在刷新端口列表...', 'info');
+            setTimeout(() => {
+                addConsoleMessage('端口列表已更新', 'success');
+            }, 500);
+        });
+
+        function addConsoleMessage(message, type = 'info') {
+            const line = document.createElement('div');
+            line.className = `console-line ${type}`;
+            line.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            consoleOutput.appendChild(line);
+            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        }
+
+        addConsoleMessage('Arduino 在线开发平台已就绪', 'success');
+        addConsoleMessage('选择板型: Arduino Uno', 'info');
+    </script>
 </body>
 </html>

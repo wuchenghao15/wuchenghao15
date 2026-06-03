@@ -1,15 +1,18 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
 考试系统管理器
 整合考试生成、题库管理、考试统计和学习系统整合功能
+"""
 
 import os
 import sys
-# JSON import removed - using database
+import json
 import random
 import uuid
 from datetime import datetime, UTC
 import logging
+from typing import Dict, List, Any, Optional
 
 # 添加项目根目录到Python路径
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -27,10 +30,10 @@ logger = logging.getLogger('exam_system_manager')
 
 
 class ExamSystemManager:
-    考试系统管理器
+    """考试系统管理器"""
 
-        初始化考试系统管理器
-        # 初始化依赖组件
+    def __init__(self):
+        """初始化考试系统管理器"""
         self.exam_generator = None
         self.question_manager = None
         self.learning_system = None
@@ -41,10 +44,13 @@ class ExamSystemManager:
         # 初始化组件
         self._initialize_components()
 
+        # 初始化缓存
+        self._init_cache()
+
         logger.info("考试系统管理器初始化完成")
 
-    def _load_config(self):
-        加载配置
+    def _load_config(self) -> Dict[str, Any]:
+        """加载配置"""
         config = {
             "default_question_count": 20,
             "default_test_duration": 60,
@@ -81,9 +87,8 @@ class ExamSystemManager:
         return config
 
     def _initialize_components(self):
-        初始化依赖组件
+        """初始化依赖组件"""
         try:
-            # 初始化考试生成器
             from exam_generator import ExamGenerator
             self.exam_generator = ExamGenerator()
             logger.info("✓ 考试生成器初始化成功")
@@ -91,46 +96,40 @@ class ExamSystemManager:
             logger.error(f"✗ 考试生成器初始化失败: {str(e)}")
 
         try:
-            # 初始化题库管理器
-            self.question_manager = question_manager
+            from app.data.dao.exam_dao import ExamDAO
+            self.question_manager = ExamDAO()
             logger.info("✓ 题库管理器初始化成功")
         except Exception as e:
             logger.error(f"✗ 题库管理器初始化失败: {str(e)}")
 
         try:
-            # 初始化学习系统
-            self.learning_system = LearningSystem
+            from app.models.learning_system import LearningSystem
+            self.learning_system = LearningSystem()
             logger.info("✓ 学习系统初始化成功")
         except Exception as e:
             logger.error(f"✗ 学习系统初始化失败: {str(e)}")
 
-    def __init__(self):
-        初始化考试系统管理器
-        self.exam_generator = None
-        self.question_manager = None
-        self.learning_system = None
-
-        # 加载配置
-        self.config = self._load_config()
-
-        self._initialize_components()
-
-        self._init_cache()
-
-
-        初始化缓存
+    def _init_cache(self):
+        """初始化缓存"""
         self.question_cache = {}
         self.user_learning_cache = {}
-        # 缓存过期时间（秒）
+        self.cache_expire_time = 3600  # 缓存过期时间(秒)
 
+    def generate_personalized_exam(self, user_id: str, subject: str, question_count: int = None, 
+                                   difficulty: str = None, **kwargs) -> Dict[str, Any]:
+        """
         生成个性化试卷
 
+        Args:
             user_id: 用户ID
+            subject: 科目
             question_count: 题目数量
             difficulty: 难度
             **kwargs: 其他参数
 
         Returns:
+            生成的试卷数据
+        """
         logger.info(f"为用户 {user_id} 生成 {subject} 个性化试卷")
 
         start_time = datetime.now(UTC)
@@ -138,7 +137,7 @@ class ExamSystemManager:
         # 使用默认值
         question_count = question_count or self.config["default_question_count"]
 
-        # 获取用户学习数据，用于个性化生成（带缓存）
+        # 获取用户学习数据,用于个性化生成(带缓存)
         user_learning_data = self._get_user_learning_data(user_id, subject)
 
         # 基于用户学习数据调整难度
@@ -161,8 +160,8 @@ class ExamSystemManager:
                 "allow_backtracking": self.config["allow_backtracking"],
                 "auto_submit_on_timeout": self.config["auto_submit_on_timeout"],
                 "show_feedback": self.config["show_feedback"],
-                "enable_progress_save": True,  # 新增：启用进度保存
-                "save_interval": 30  # 新增：自动保存间隔（秒）
+                "enable_progress_save": True,
+                "save_interval": 30
             }
         }
 
@@ -181,16 +180,15 @@ class ExamSystemManager:
         end_time = datetime.now(UTC)
         generation_time = (end_time - start_time).total_seconds()
 
-        logger.info(f"成功为用户 {user_id} 生成 {subject} 个性化试卷，包含 {len(questions)} 道题目，生成时间：{generation_time:.2f}秒")
+        logger.info(f"成功为用户 {user_id} 生成 {subject} 个性化试卷,包含 {len(questions)} 道题目,生成时间:{generation_time:.2f}秒")
 
         # 添加生成时间到试卷信息
         exam["generation_time"] = generation_time
 
         return exam
 
-    def _get_user_learning_data(self, user_id, subject):
-        获取用户学习数据
-        # 初始化学习数据
+    def _get_user_learning_data(self, user_id: str, subject: str) -> Dict[str, Any]:
+        """获取用户学习数据"""
         learning_data = {
             "completed_courses": 0,
             "completed_lessons": 0,
@@ -202,7 +200,6 @@ class ExamSystemManager:
         }
 
         try:
-            # 从学习系统获取用户学习摘要
             if self.learning_system:
                 learning_summary = self.learning_system.get_user_learning_summary(user_id)
                 learning_data["completed_courses"] = learning_summary.get("completed_courses", 0)
@@ -212,7 +209,6 @@ class ExamSystemManager:
             logger.error(f"获取用户学习摘要失败: {str(e)}")
 
         try:
-            # 获取用户错题
             if self.exam_generator:
                 wrong_questions = self.exam_generator.get_user_wrong_questions(user_id, subject, 20)
                 learning_data["wrong_questions"] = wrong_questions
@@ -228,29 +224,20 @@ class ExamSystemManager:
             learning_data["learning_level"] = "beginner"
 
         return learning_data
-    def _adjust_difficulty_by_learning_data(self, learning_data, base_difficulty=None):
-        根据用户学习数据调整难度
+
+    def _adjust_difficulty_by_learning_data(self, learning_data: Dict, base_difficulty: str = None) -> str:
+        """根据用户学习数据调整难度"""
         if base_difficulty:
             return base_difficulty
-        # 基于用户学习水平确定难度
         return learning_data["learning_level"]
 
-    def _generate_questions_for_exam(self, subject, count, difficulty, user_learning_data, **kwargs):
-        为试卷生成题目
-
-        Args:
-            subject: 科目
-            count: 题目数量
-            user_learning_data: 用户学习数据
-            **kwargs: 其他参数，包括：
-                - question_type_ratios: 题型比例配置
-                - knowledge_points: 要覆盖的知识点
-                - difficulty_gradient: 难度梯度配置（easy_to_hard, mixed, hard_to_easy）
-        logger.info(f"为试卷生成 {count} 道 {subject} 题目，难度: {difficulty}")
+    def _generate_questions_for_exam(self, subject: str, count: int, difficulty: str, 
+                                     user_learning_data: Dict, **kwargs) -> List[Dict]:
+        """为试卷生成题目"""
+        logger.info(f"为试卷生成 {count} 道 {subject} 题目,难度: {difficulty}")
 
         questions = []
 
-        # 获取配置
         question_type_ratios = kwargs.get("question_type_ratios", {
             "single_choice": 40,
             "multiple_choice": 30,
@@ -262,10 +249,9 @@ class ExamSystemManager:
         knowledge_points = kwargs.get("knowledge_points", [])
         difficulty_gradient = kwargs.get("difficulty_gradient", "mixed")
 
-        # 1. 首先添加错题（如果有）
+        # 1. 添加错题
         wrong_questions = user_learning_data.get("wrong_questions", [])
         if wrong_questions:
-            # 选择最近的错题
             num_wrong_questions = min(len(wrong_questions), count // 4)
             selected_wrong_questions = wrong_questions[:num_wrong_questions]
             questions.extend(selected_wrong_questions)
@@ -274,28 +260,24 @@ class ExamSystemManager:
         # 2. 根据题型比例生成题目
         remaining_count = count - len(questions)
         if remaining_count > 0:
-            # 计算各题型的题目数量
             total_ratio = sum(question_type_ratios.values())
             questions_by_type = {}
             for q_type, ratio in question_type_ratios.items():
                 q_count = int(remaining_count * ratio / total_ratio)
                 if q_count > 0:
+                    questions_by_type[q_type] = q_count
 
-            # 处理余数，确保总数正确
             total_calculated = sum(questions_by_type.values())
             if total_calculated < remaining_count:
-                # 按比例分配余数
                 for q_type in questions_by_type:
                     if total_calculated >= remaining_count:
                         break
                     questions_by_type[q_type] += 1
                     total_calculated += 1
 
-            # 生成各题型的题目
             for q_type, q_count in questions_by_type.items():
                 try:
-                    # 从数据库获取题目
-                    db_questions = self.question_manager.get_questions(
+                    db_questions = self._get_questions_from_db(
                         subject=subject,
                         difficulty=difficulty,
                         question_type=q_type,
@@ -303,14 +285,12 @@ class ExamSystemManager:
                         knowledge_points=knowledge_points,
                         **kwargs
                     )
-
                     questions.extend(db_questions)
                     logger.info(f"从数据库获取了 {len(db_questions)} 道 {q_type} 题目")
 
-                    # 如果数据库题目不足，使用AI生成
                     if len(db_questions) < q_count and self.config["enable_ai_question_generation"]:
                         remaining_q_count = q_count - len(db_questions)
-                        ai_questions = self.exam_generator.generate_questions_with_ai(
+                        ai_questions = self._generate_ai_questions(
                             subject=subject,
                             difficulty=difficulty,
                             question_type=q_type,
@@ -321,67 +301,90 @@ class ExamSystemManager:
                 except Exception as e:
                     logger.error(f"生成 {q_type} 题目失败: {str(e)}")
 
-        # 3. 如果题目数量仍不足，补充普通题目
+        # 3. 补充普通题目
         remaining_count = count - len(questions)
-        if remaining_count > 0:
-            if self.config["enable_ai_question_generation"]:
-                # 随机选择题型生成
-                available_types = ["single_choice", "multiple_choice", "true_false", "fill_blank", "short_answer"]
-                ai_questions = self.exam_generator.generate_questions_with_ai(
-                    subject=subject,
-                    question_type=random.choice(available_types),
-                    count=remaining_count
-                )
-                questions.extend(ai_questions)
-                logger.info(f"使用AI生成了 {len(ai_questions)} 道补充题目")
+        if remaining_count > 0 and self.config["enable_ai_question_generation"]:
+            available_types = ["single_choice", "multiple_choice", "true_false", "fill_blank", "short_answer"]
+            ai_questions = self._generate_ai_questions(
+                subject=subject,
+                question_type=random.choice(available_types),
+                count=remaining_count
+            )
+            questions.extend(ai_questions)
+            logger.info(f"使用AI生成了 {len(ai_questions)} 道补充题目")
 
         # 4. 确保题目数量正确
         if len(questions) > count:
             questions = questions[:count]
 
-        # 5. 根据难度梯度调整题目顺序
-            # 按难度从易到难排序
+        # 5. 根据难度梯度调整顺序
+        if difficulty_gradient == "easy_to_hard":
             questions.sort(key=lambda x: {
                 "beginner": 0,
                 "intermediate": 1,
                 "advanced": 2,
             }.get(x.get("difficulty", "beginner"), 0))
         elif difficulty_gradient == "hard_to_easy":
-            # 按难度从难到易排序
             questions.sort(key=lambda x: {
-                "beginner": 0,
-                "intermediate": 1,
-                "advanced": 2,
-                "expert": 3
+                "beginner": 3,
+                "intermediate": 2,
+                "advanced": 1,
+                "expert": 0
+            }.get(x.get("difficulty", "beginner"), 3))
         else:
-            # 混合难度，随机打乱
             random.shuffle(questions)
-        # 6. 智能难度调整：根据用户学习数据调整题目难度
 
-        logger.info(f"成功生成 {len(questions)} 道题目，包含多种题型")
+        # 6. 智能难度调整
+        questions = self._intelligently_adjust_difficulty(questions, user_learning_data)
+
+        logger.info(f"成功生成 {len(questions)} 道题目")
         return questions
 
-    def _intelligently_adjust_difficulty(self, questions, user_learning_data):
-        智能调整题目难度
+    def _get_questions_from_db(self, subject: str, difficulty: str, question_type: str, 
+                               count: int, knowledge_points: List[str] = None, **kwargs) -> List[Dict]:
+        """从数据库获取题目"""
+        try:
+            if self.question_manager and hasattr(self.question_manager, 'get_questions'):
+                return self.question_manager.get_questions(
+                    subject=subject,
+                    difficulty=difficulty,
+                    question_type=question_type,
+                    count=count,
+                    knowledge_points=knowledge_points or [],
+                    **kwargs
+                )
+        except Exception as e:
+            logger.error(f"从数据库获取题目失败: {str(e)}")
+        return []
 
-            questions: 题目列表
-        Returns:
-            调整后的题目列表
+    def _generate_ai_questions(self, subject: str, difficulty: str, question_type: str, count: int) -> List[Dict]:
+        """使用AI生成题目"""
+        try:
+            if self.exam_generator and hasattr(self.exam_generator, 'generate_questions_with_ai'):
+                return self.exam_generator.generate_questions_with_ai(
+                    subject=subject,
+                    difficulty=difficulty,
+                    question_type=question_type,
+                    count=count
+                )
+        except Exception as e:
+            logger.error(f"AI生成题目失败: {str(e)}")
+        return []
+
+    def _intelligently_adjust_difficulty(self, questions: List[Dict], user_learning_data: Dict) -> List[Dict]:
+        """智能调整题目难度"""
         logger.info("智能调整题目难度")
 
-        # 获取用户学习水平
         learning_level = user_learning_data.get("learning_level", "beginner")
 
-        # 难度调整策略
         difficulty_adjustment = {
             "beginner": {"easy": 60, "medium": 30, "hard": 10},
             "intermediate": {"easy": 30, "medium": 50, "hard": 20},
             "advanced": {"easy": 10, "medium": 30, "hard": 60}
+        }
 
-        # 根据用户学习水平获取目标难度分布
         target_distribution = difficulty_adjustment.get(learning_level, difficulty_adjustment["beginner"])
 
-        # 统计当前难度分布
         current_distribution = {"easy": 0, "medium": 0, "hard": 0}
         for q in questions:
             q_diff = q.get("difficulty", "beginner")
@@ -395,19 +398,13 @@ class ExamSystemManager:
         total = len(questions)
         if total == 0:
             return questions
-        # 计算需要调整的题目
-        # 目前简单实现，保持原有题目
-        logger.info(f"题目难度调整完成，当前分布: {current_distribution}")
-    def save_exam_result(self, user_id, exam_id, result_data):
 
-        Args:
-            user_id: 用户ID
-            exam_id: 考试ID
+        logger.info(f"题目难度调整完成,当前分布: {current_distribution}")
+        return questions
 
-            是否保存成功
-
+    def save_exam_result(self, user_id: int, exam_id: str, result_data: Dict) -> bool:
+        """保存考试结果"""
         try:
-            # 构建考试结果
             exam_result = {
                 "result_id": f"result-{uuid.uuid4().hex[:8]}",
                 "exam_id": exam_id,
@@ -420,19 +417,16 @@ class ExamSystemManager:
                 "completion_time": result_data.get("completion_time", 0),
                 "started_at": result_data.get("started_at", datetime.now(UTC).isoformat()),
                 "submitted_at": datetime.now(UTC).isoformat(),
-                "answers": result_data.get("answers", []),
-                "wrong_question_ids": result_data.get("wrong_question_ids", []),
-                "performance_analysis": result_data.get("performance_analysis", {})
+                "answers": json.dumps(result_data.get("answers", [])),
+                "wrong_question_ids": json.dumps(result_data.get("wrong_question_ids", [])),
+                "performance_analysis": json.dumps(result_data.get("performance_analysis", {}))
             }
 
-            # 保存到数据库
             from app.models.learning_system import LearningAnalytics
 
-            # 保存考试结果
             conn = LearningAnalytics._connect_db()
             cursor = conn.cursor()
 
-            # 检查exam_results表是否存在，如果不存在则创建
             cursor.execute("PRAGMA table_info(exam_results)")
             columns = [col[1] for col in cursor.fetchall()]
             if not columns:
@@ -443,24 +437,30 @@ class ExamSystemManager:
                         exam_id TEXT NOT NULL,
                         user_id INTEGER NOT NULL,
                         score REAL NOT NULL,
+                        total_questions INTEGER NOT NULL,
                         correct_answers INTEGER NOT NULL,
                         wrong_answers INTEGER NOT NULL,
                         skipped_questions INTEGER NOT NULL,
+                        completion_time INTEGER NOT NULL,
+                        started_at TEXT NOT NULL,
                         submitted_at TEXT NOT NULL,
                         answers TEXT NOT NULL,
                         wrong_question_ids TEXT NOT NULL,
                         performance_analysis TEXT NOT NULL,
                         FOREIGN KEY (user_id) REFERENCES users(id)
                     )
+                ''')
 
-            # 插入考试结果
             cursor.execute('''
+                INSERT INTO exam_results (
                     result_id, exam_id, user_id, score, total_questions,
                     correct_answers, wrong_answers, skipped_questions,
                     completion_time, started_at, submitted_at, answers,
+                    wrong_question_ids, performance_analysis
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
                 exam_result["result_id"],
+                exam_result["exam_id"],
                 exam_result["user_id"],
                 exam_result["score"],
                 exam_result["total_questions"],
@@ -470,15 +470,14 @@ class ExamSystemManager:
                 exam_result["completion_time"],
                 exam_result["started_at"],
                 exam_result["submitted_at"],
-                str(exam_result["answers"]),
-                str(exam_result["wrong_question_ids"]),
-                str(exam_result["performance_analysis"])
+                exam_result["answers"],
+                exam_result["wrong_question_ids"],
+                exam_result["performance_analysis"]
             ))
 
             conn.commit()
             conn.close()
 
-            # 保存学习分析数据
             analytics = LearningAnalytics(
                 user_id=user_id,
                 metric_name="exam_score",
@@ -494,17 +493,9 @@ class ExamSystemManager:
             logger.error(f"保存考试结果失败: {str(e)}")
             return False
 
-    def get_user_exam_history(self, user_id, limit=10, offset=0):
-        获取用户考试历史
-
-        Args:
-            user_id: 用户ID
-            limit: 限制数量
-            offset: 偏移量
-
-        Returns:
-            用户考试历史列表
-        logger.info(f"获取用户 {user_id} 的考试历史，限制: {limit}，偏移: {offset}")
+    def get_user_exam_history(self, user_id: int, limit: int = 10, offset: int = 0) -> List[Dict]:
+        """获取用户考试历史"""
+        logger.info(f"获取用户 {user_id} 的考试历史,限制: {limit},偏移: {offset}")
 
         try:
             from app.models.learning_system import LearningAnalytics
@@ -533,25 +524,20 @@ class ExamSystemManager:
                     "completion_time": row[9],
                     "started_at": row[10],
                     "submitted_at": row[11],
-                    "answers": eval(row[12]),
-                    "wrong_question_ids": eval(row[13]),
-                    "performance_analysis": eval(row[14])
+                    "answers": json.loads(row[12]),
+                    "wrong_question_ids": json.loads(row[13]),
+                    "performance_analysis": json.loads(row[14])
                 })
 
-            logger.info(f"成功获取用户 {user_id} 的考试历史，共 {len(exam_history)} 条记录")
+            logger.info(f"成功获取用户 {user_id} 的考试历史,共 {len(exam_history)} 条记录")
             return exam_history
         except Exception as e:
             logger.error(f"获取用户考试历史失败: {str(e)}")
             return []
 
-    def get_exam_statistics(self, user_id, subject=None, time_range="30d"):
-        获取考试统计数据
-
-            user_id: 用户ID
-            subject: 科目
-
-        Returns:
-        logger.info(f"获取用户 {user_id} 的考试统计数据，科目: {subject}，时间范围: {time_range}")
+    def get_exam_statistics(self, user_id: int, subject: str = None, time_range: str = "30d") -> Dict[str, Any]:
+        """获取考试统计数据"""
+        logger.info(f"获取用户 {user_id} 的考试统计数据,科目: {subject},时间范围: {time_range}")
         try:
             from app.models.learning_system import LearningAnalytics
             conn = LearningAnalytics._connect_db()
@@ -560,7 +546,6 @@ class ExamSystemManager:
             query = 'SELECT * FROM exam_results WHERE user_id=?'
             params = [user_id]
 
-            # 添加时间范围条件
             if time_range == "7d":
                 query += ' AND submitted_at >= datetime("now", "-7 days")'
             elif time_range == "30d":
@@ -573,9 +558,9 @@ class ExamSystemManager:
             cursor.execute(query, params)
             rows = cursor.fetchall()
 
-            # 计算统计数据
             total_exams = len(rows)
             if total_exams == 0:
+                conn.close()
                 return {
                     "total_exams": 0,
                     "average_score": 0,
@@ -595,40 +580,34 @@ class ExamSystemManager:
                     "monthly_trend": {},
                     "performance_comparison": {}
                 }
-            # 基础统计数据
+
+            scores = [row[4] for row in rows]
+            completion_times = [row[9] for row in rows]
             total_questions = sum([row[5] for row in rows])
             correct_answers = sum([row[6] for row in rows])
             wrong_answers = sum([row[7] for row in rows])
             skipped_questions = sum([row[8] for row in rows])
-            # 计算通过率（假设60分为及格）
             pass_count = len([score for score in scores if score >= 60])
+            pass_rate = pass_count / total_exams if total_exams > 0 else 0
 
-            # 构建分数趋势
             score_trend = []
             for row in rows:
+                analysis = json.loads(row[14])
                 score_trend.append({
                     "score": row[4],
                     "exam_id": row[2],
                     "total_questions": row[5],
                     "correct_answers": row[6],
-                    "wrong_answers": row[7]
+                    "wrong_answers": row[7],
+                    "date": row[11]
                 })
 
-            # 按提交时间排序
             score_trend.sort(key=lambda x: x["date"])
 
-            # 知识点分析
             knowledge_point_analysis = self._analyze_knowledge_points(rows, conn)
-
-            # 题型分析
             question_type_analysis = self._analyze_question_types(rows, conn)
-
-            # 难度分析
             difficulty_analysis = self._analyze_difficulty(rows, conn)
-
-            # 月度趋势分析
             monthly_trend = self._analyze_monthly_trend(rows)
-
             performance_comparison = self._analyze_performance_comparison(rows, user_id)
 
             conn.close()
@@ -657,13 +636,13 @@ class ExamSystemManager:
             return statistics
         except Exception as e:
             logger.error(f"获取考试统计数据失败: {str(e)}")
+            return {}
 
-    def _analyze_subject_breakdown(self, rows):
-        分析科目分布
+    def _analyze_subject_breakdown(self, rows: List) -> Dict[str, Dict]:
+        """分析科目分布"""
         subject_stats = {}
         for row in rows:
-            # 从performance_analysis中获取科目
-            performance = eval(row[14])
+            performance = json.loads(row[14])
             subj = performance.get("subject", "general")
 
             if subj not in subject_stats:
@@ -679,53 +658,56 @@ class ExamSystemManager:
             subject_stats[subj]["total_questions"] += row[5]
             subject_stats[subj]["correct_answers"] += row[6]
 
-        # 计算平均分数
         for subj in subject_stats:
             subject_stats[subj]["average_score"] /= subject_stats[subj]["exam_count"]
             subject_stats[subj]["accuracy"] = subject_stats[subj]["correct_answers"] / subject_stats[subj]["total_questions"]
 
         return subject_stats
 
-    def _analyze_knowledge_points(self, rows, conn):
+    def _analyze_knowledge_points(self, rows: List, conn) -> Dict[str, Dict]:
+        """分析知识点掌握情况"""
         knowledge_points = {}
         cursor = conn.cursor()
 
-            wrong_question_ids = eval(row[13])
+        for row in rows:
+            wrong_question_ids = json.loads(row[13])
 
             for q_id in wrong_question_ids:
-                # 获取题目详情
                 cursor.execute('''
                     SELECT content, question_type, options, answer, explanation, knowledge_points FROM questions WHERE id=?
+                ''', (q_id,))
                 question = cursor.fetchone()
 
                 if question and question[5]:
+                    kps = json.loads(question[5]) if question[5] else []
                     for kp in kps:
                         if kp not in knowledge_points:
+                            knowledge_points[kp] = {
                                 "wrong_count": 0,
-                                "correct_count": 0
+                                "correct_count": 0,
+                                "total_count": 0
                             }
                         knowledge_points[kp]["wrong_count"] += 1
 
-            # 同样分析正确的题目
-            performance = eval(row[14])
-                for q_id in performance["correct_question_ids"]:
-                    cursor.execute('''
-                        SELECT knowledge_points FROM questions WHERE id=?
-                    ''', (q_id,))
-                    question = cursor.fetchone()
+            performance = json.loads(row[14])
+            correct_question_ids = performance.get("correct_question_ids", [])
+            for q_id in correct_question_ids:
+                cursor.execute('''
+                    SELECT knowledge_points FROM questions WHERE id=?
+                ''', (q_id,))
+                question = cursor.fetchone()
 
-                    if question and question[0]:
-                        kps = eval(question[0]) if question[0] else []
-                        for kp in kps:
-                            if kp not in knowledge_points:
-                                knowledge_points[kp] = {
-                                    "wrong_count": 0,
-                                    "total_count": 0,
-                                    "correct_count": 0
-                                }
-                            knowledge_points[kp]["correct_count"] += 1
+                if question and question[0]:
+                    kps = json.loads(question[0]) if question[0] else []
+                    for kp in kps:
+                        if kp not in knowledge_points:
+                            knowledge_points[kp] = {
+                                "wrong_count": 0,
+                                "total_count": 0,
+                                "correct_count": 0
+                            }
+                        knowledge_points[kp]["correct_count"] += 1
 
-        # 计算总次数和正确率
         for kp in knowledge_points:
             kp_data = knowledge_points[kp]
             kp_data["total_count"] = kp_data["correct_count"] + kp_data["wrong_count"]
@@ -736,8 +718,8 @@ class ExamSystemManager:
 
         return knowledge_points
 
-    def _analyze_question_types(self, rows, conn):
-        分析题型掌握情况
+    def _analyze_question_types(self, rows: List, conn) -> Dict[str, Dict]:
+        """分析题型掌握情况"""
         question_types = {
             "single_choice": {"correct": 0, "total": 0},
             "multiple_choice": {"correct": 0, "total": 0},
@@ -747,14 +729,13 @@ class ExamSystemManager:
 
         cursor = conn.cursor()
         for row in rows:
-            # 从performance_analysis中获取题型统计
-            performance = eval(row[14])
+            performance = json.loads(row[14])
             if "question_type_stats" in performance:
                 for q_type, stats in performance["question_type_stats"].items():
                     if q_type in question_types:
                         question_types[q_type]["correct"] += stats.get("correct", 0)
+                        question_types[q_type]["total"] += stats.get("total", 0)
             else:
-                # 从题目中分析题型
                 all_question_ids = []
                 if "wrong_question_ids" in performance:
                     all_question_ids.extend(performance["wrong_question_ids"])
@@ -764,6 +745,7 @@ class ExamSystemManager:
                 for q_id in all_question_ids:
                     cursor.execute('''
                         SELECT question_type FROM questions WHERE id=?
+                    ''', (q_id,))
                     question = cursor.fetchone()
 
                     if question:
@@ -771,7 +753,6 @@ class ExamSystemManager:
                         if q_type in question_types:
                             question_types[q_type]["total"] += 1
 
-        # 计算正确率
         for q_type in question_types:
             stats = question_types[q_type]
             if stats["total"] > 0:
@@ -781,24 +762,22 @@ class ExamSystemManager:
 
         return question_types
 
-    def _analyze_difficulty(self, rows, conn):
-        分析不同难度级别的表现
+    def _analyze_difficulty(self, rows: List, conn) -> Dict[str, Dict]:
+        """分析不同难度级别的表现"""
         difficulty_stats = {
+            "easy": {"correct": 0, "total": 0},
             "medium": {"correct": 0, "total": 0},
             "hard": {"correct": 0, "total": 0}
-
-        cursor = conn.cursor()
+        }
 
         for row in rows:
-            # 从performance_analysis中获取难度统计
-            performance = eval(row[14])
+            performance = json.loads(row[14])
             if "difficulty_stats" in performance:
                 for diff, stats in performance["difficulty_stats"].items():
                     if diff in difficulty_stats:
                         difficulty_stats[diff]["correct"] += stats.get("correct", 0)
                         difficulty_stats[diff]["total"] += stats.get("total", 0)
 
-        # 计算正确率
         for diff in difficulty_stats:
             stats = difficulty_stats[diff]
             if stats["total"] > 0:
@@ -808,8 +787,8 @@ class ExamSystemManager:
 
         return difficulty_stats
 
-    def _analyze_monthly_trend(self, rows):
-        分析月度趋势
+    def _analyze_monthly_trend(self, rows: List) -> Dict[str, Dict]:
+        """分析月度趋势"""
         monthly_trend = {}
 
         for row in rows:
@@ -818,50 +797,51 @@ class ExamSystemManager:
 
             if month_key not in monthly_trend:
                 monthly_trend[month_key] = {
+                    "exam_count": 0,
                     "average_score": 0,
+                    "total_questions": 0,
                     "correct_answers": 0
                 }
 
             monthly_trend[month_key]["exam_count"] += 1
+            monthly_trend[month_key]["average_score"] += row[4]
             monthly_trend[month_key]["total_questions"] += row[5]
+            monthly_trend[month_key]["correct_answers"] += row[6]
 
-        for month in monthly_trend:
-            month_data["average_score"] /= month_data["exam_count"]
-        # 按月份排序
-        for month in sorted(monthly_trend.keys()):
-            sorted_trend[month] = monthly_trend[month]
+        for month, month_data in monthly_trend.items():
+            if month_data["exam_count"] > 0:
+                month_data["average_score"] /= month_data["exam_count"]
+                month_data["accuracy"] = month_data["correct_answers"] / month_data["total_questions"] if month_data["total_questions"] > 0 else 0
 
-        return sorted_trend
+        return dict(sorted(monthly_trend.items()))
 
-    def _analyze_performance_comparison(self, rows, user_id):
-        分析性能对比（与自身历史对比）
+    def _analyze_performance_comparison(self, rows: List, user_id: int) -> Dict[str, Any]:
+        """分析性能对比(与自身历史对比)"""
         if len(rows) < 2:
             return {
                 "improvement_trend": "insufficient_data",
                 "score_improvement": 0,
                 "accuracy_improvement": 0,
                 "completion_time_improvement": 0
+            }
 
-        # 按时间排序
         sorted_rows = sorted(rows, key=lambda x: x[11])
 
-        # 比较最早和最近的考试
         first_exam = sorted_rows[0]
         latest_exam = sorted_rows[-1]
 
-        # 计算分数提升
-
-        # 计算正确率提升
+        score_improvement = latest_exam[4] - first_exam[4]
         first_accuracy = first_exam[6] / first_exam[5] if first_exam[5] > 0 else 0
         latest_accuracy = latest_exam[6] / latest_exam[5] if latest_exam[5] > 0 else 0
         accuracy_improvement = latest_accuracy - first_accuracy
-
-        # 计算完成时间变化（负数表示变快）
         completion_time_improvement = first_exam[9] - latest_exam[9]
 
-        # 确定提升趋势
-        improvement_trend = "improving" if score_improvement > 5 else "stable"
-        if score_improvement < -5:
+        if score_improvement > 5:
+            improvement_trend = "improving"
+        elif score_improvement < -5:
+            improvement_trend = "declining"
+        else:
+            improvement_trend = "stable"
 
         return {
             "improvement_trend": improvement_trend,
@@ -870,36 +850,23 @@ class ExamSystemManager:
             "completion_time_improvement": completion_time_improvement,
             "latest_exam_date": latest_exam[11]
         }
-        生成错题练习试卷
 
-        Args:
-            user_id: 用户ID
-            subject: 科目
-            count: 题目数量
+    def generate_wrong_question_practice(self, user_id: int, subject: str, count: int = 20) -> Dict[str, Any]:
+        """生成错题练习试卷"""
+        logger.info(f"为用户 {user_id} 生成 {subject} 错题练习试卷,数量: {count}")
 
-        Returns:
-            错题练习试卷
-        logger.info(f"为用户 {user_id} 生成 {subject} 错题练习试卷，数量: {count}")
-
+        if self.exam_generator and hasattr(self.exam_generator, 'generate_wrong_question_practice'):
             return self.exam_generator.generate_wrong_question_practice(user_id, subject, count)
 
-        # 如果没有考试生成器，使用备用方法
+        return self._generate_wrong_question_practice_backup(user_id, subject, count)
 
-    def save_exam_progress(self, user_id, exam_id, progress_data):
-
-        Args:
-            user_id: 用户ID
-            exam_id: 考试ID
-            progress_data: 进度数据，包含当前题目、答案、剩余时间等
-
-        Returns:
-            是否保存成功
+    def save_exam_progress(self, user_id: int, exam_id: str, progress_data: Dict) -> bool:
+        """保存考试进度"""
         try:
             from app.models.learning_system import LearningAnalytics
             conn = LearningAnalytics._connect_db()
             cursor = conn.cursor()
 
-            # 检查exam_progress表是否存在，如果不存在则创建
             cursor.execute("PRAGMA table_info(exam_progress)")
             columns = [col[1] for col in cursor.fetchall()]
             if not columns:
@@ -907,6 +874,7 @@ class ExamSystemManager:
                     CREATE TABLE IF NOT EXISTS exam_progress (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                         user_id INTEGER NOT NULL,
+                        exam_id TEXT NOT NULL,
                         current_question_index INTEGER NOT NULL,
                         answers TEXT NOT NULL,
                         remaining_time INTEGER NOT NULL,
@@ -914,68 +882,74 @@ class ExamSystemManager:
                         last_saved_at TEXT DEFAULT CURRENT_TIMESTAMP,
                         is_completed INTEGER DEFAULT 0,
                         FOREIGN KEY (user_id) REFERENCES users(id)
+                    )
                 ''')
 
-            # 检查是否已存在进度记录
             cursor.execute('''
+                SELECT id FROM exam_progress WHERE user_id=? AND exam_id=?
             ''', (user_id, exam_id))
+            existing = cursor.fetchone()
 
             if existing:
                 cursor.execute('''
+                    UPDATE exam_progress SET
                         current_question_index=?,
                         answers=?,
                         remaining_time=?,
+                        last_saved_at=CURRENT_TIMESTAMP
                     WHERE id=?
                 ''', (
                     progress_data.get("current_question_index", 0),
-                    str(progress_data.get("answers", [])),
+                    json.dumps(progress_data.get("answers", [])),
                     progress_data.get("remaining_time", 0),
                     existing[0]
                 ))
                 logger.info(f"更新考试进度成功: {exam_id}")
-                # 创建新进度记录
+            else:
                 cursor.execute('''
                     INSERT INTO exam_progress (
-                    ) VALUES (?, ?, ?, ?, ?, ?)
+                        user_id, exam_id, current_question_index, answers, 
+                        remaining_time, started_at, last_saved_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
                 ''', (
                     user_id,
                     exam_id,
                     progress_data.get("current_question_index", 0),
-                    str(progress_data.get("answers", [])),
+                    json.dumps(progress_data.get("answers", [])),
+                    progress_data.get("remaining_time", 0),
                     progress_data.get("started_at", datetime.now(UTC).isoformat())
                 ))
                 logger.info(f"创建考试进度成功: {exam_id}")
 
+            conn.commit()
             conn.close()
             return True
         except Exception as e:
             logger.error(f"保存考试进度失败: {str(e)}")
             return False
 
-        Args:
-            user_id: 用户ID
-            exam_id: 考试ID
-
-        Returns:
-            保存的进度数据，如果不存在则返回None
+    def restore_exam_progress(self, user_id: int, exam_id: str) -> Optional[Dict]:
+        """恢复考试进度"""
         logger.info(f"恢复用户 {user_id} 的考试 {exam_id} 进度")
         try:
             from app.models.learning_system import LearningAnalytics
             conn = LearningAnalytics._connect_db()
+            cursor = conn.cursor()
 
             cursor.execute('''
                 SELECT * FROM exam_progress WHERE user_id=? AND exam_id=?
             ''', (user_id, exam_id))
 
             row = cursor.fetchone()
+            conn.close()
 
-                # 解析进度数据
+            if row:
                 progress_data = {
                     "id": row[0],
                     "user_id": row[1],
                     "exam_id": row[2],
                     "current_question_index": row[3],
-                    "answers": eval(row[4]),
+                    "answers": json.loads(row[4]),
                     "remaining_time": row[5],
                     "started_at": row[6],
                     "last_saved_at": row[7],
@@ -990,18 +964,12 @@ class ExamSystemManager:
             logger.error(f"恢复考试进度失败: {str(e)}")
             return None
 
-    def get_user_saved_progress(self, user_id):
-        获取用户所有保存的考试进度
-
-        Args:
-            user_id: 用户ID
-
-        Returns:
-            保存的进度列表
-
+    def get_user_saved_progress(self, user_id: int) -> List[Dict]:
+        """获取用户所有保存的考试进度"""
         try:
             from app.models.learning_system import LearningAnalytics
             conn = LearningAnalytics._connect_db()
+            cursor = conn.cursor()
 
             cursor.execute('''
                 SELECT * FROM exam_progress WHERE user_id=? AND is_completed=0
@@ -1014,21 +982,23 @@ class ExamSystemManager:
             for row in rows:
                 progress_list.append({
                     "user_id": row[1],
+                    "exam_id": row[2],
                     "current_question_index": row[3],
-                    "answers": eval(row[4]),
+                    "answers": json.loads(row[4]),
                     "remaining_time": row[5],
-                    "last_saved_at": row[7],
+                    "last_saved_at": row[7]
+                })
 
             logger.info(f"成功获取 {len(progress_list)} 条保存的考试进度")
             return progress_list
+        except Exception as e:
             logger.error(f"获取保存的考试进度失败: {str(e)}")
-        标记考试进度为已完成
+            return []
 
-        Args:
-            user_id: 用户ID
-
-            是否标记成功
+    def mark_exam_completed(self, user_id: int, exam_id: str) -> bool:
+        """标记考试进度为已完成"""
         logger.info(f"标记用户 {user_id} 的考试 {exam_id} 进度为已完成")
+        try:
             from app.models.learning_system import LearningAnalytics
             conn = LearningAnalytics._connect_db()
             cursor = conn.cursor()
@@ -1045,42 +1015,39 @@ class ExamSystemManager:
             logger.error(f"标记考试进度为已完成失败: {str(e)}")
             return False
 
-    def get_user_wrong_question_book(self, user_id, subject=None, limit=20, offset=0):
-        获取用户错题本
-        Args:
-            user_id: 用户ID
-            subject: 科目（可选）
-            limit: 限制数量
-            offset: 偏移量
-        Returns:
-            错题列表，包含题目详情和错误次数
-        logger.info(f"获取用户 {user_id} 的错题本，科目: {subject}，限制: {limit}，偏移: {offset}")
+    def get_user_wrong_question_book(self, user_id: int, subject: str = None, 
+                                      limit: int = 20, offset: int = 0) -> List[Dict]:
+        """获取用户错题本"""
+        logger.info(f"获取用户 {user_id} 的错题本,科目: {subject},限制: {limit},偏移: {offset}")
 
         try:
             from app.models.learning_system import LearningAnalytics
+            from collections import Counter
 
-            # 构建查询，获取所有错题ID
+            conn = LearningAnalytics._connect_db()
+            cursor = conn.cursor()
+
             query = '''
+                SELECT wrong_question_ids FROM exam_results WHERE user_id=?
+                ORDER BY submitted_at DESC
             '''
             params = [user_id]
 
-            if subject:
-                params.append(subject)
+            cursor.execute(query, params)
             rows = cursor.fetchall()
-            # 收集所有错题ID
+
             all_wrong_question_ids = []
             for row in rows:
-                wrong_question_ids = eval(row[0])
+                wrong_question_ids = json.loads(row[0])
                 all_wrong_question_ids.extend(wrong_question_ids)
+
             if not all_wrong_question_ids:
+                conn.close()
                 return []
 
-            from collections import Counter
             wrong_question_counts = Counter(all_wrong_question_ids)
-            # 获取出现次数最多的错题ID
             top_wrong_questions = wrong_question_counts.most_common(limit + offset)[offset:]
 
-            # 获取错题详情
             wrong_question_book = []
             for q_id, count in top_wrong_questions:
                 cursor.execute('''
@@ -1094,43 +1061,59 @@ class ExamSystemManager:
                         "question_id": question[0],
                         "content": question[1],
                         "question_type": question[2],
+                        "options": json.loads(question[3]) if question[3] else [],
                         "correct_answer": question[4],
                         "explanation": question[5],
+                        "knowledge_points": json.loads(question[6]) if question[6] else [],
+                        "wrong_count": count
                     })
+
             conn.close()
-            logger.info(f"成功获取用户 {user_id} 的错题本，共 {len(wrong_question_book)} 道错题")
+            logger.info(f"成功获取用户 {user_id} 的错题本,共 {len(wrong_question_book)} 道错题")
             return wrong_question_book
         except Exception as e:
             logger.error(f"获取错题本失败: {str(e)}")
             return []
 
-        从错题本中移除特定题目
-
-        Args:
-            user_id: 用户ID
-            question_id: 题目ID
-
-        Returns:
+    def remove_from_wrong_question_book(self, user_id: int, question_id: str) -> bool:
+        """从错题本中移除特定题目"""
         logger.info(f"从用户 {user_id} 的错题本中移除题目 {question_id}")
 
         try:
             from app.models.learning_system import LearningAnalytics
             conn = LearningAnalytics._connect_db()
             cursor = conn.cursor()
-            # 这里简化处理，实际实现应该更复杂
-            # 例如，维护一个单独的错题表，记录每个用户的错题
+
+            cursor.execute('''
+                SELECT id, wrong_question_ids FROM exam_results WHERE user_id=?
+            ''', (user_id,))
+            rows = cursor.fetchall()
+
+            for row in rows:
+                result_id = row[0]
+                wrong_ids = json.loads(row[1])
+                if question_id in wrong_ids:
+                    wrong_ids.remove(question_id)
+                    cursor.execute('''
+                        UPDATE exam_results SET wrong_question_ids=? WHERE id=?
+                    ''', (json.dumps(wrong_ids), result_id))
+
+            conn.commit()
             conn.close()
+            return True
+        except Exception as e:
             logger.error(f"从错题本中移除题目失败: {str(e)}")
             return False
 
-    def _generate_wrong_question_practice_backup(self, user_id, subject, count):
-        备用的错题练习生成方法
+    def _generate_wrong_question_practice_backup(self, user_id: int, subject: str, count: int) -> Dict[str, Any]:
+        """备用的错题练习生成方法"""
         logger.info(f"使用备用方法为用户 {user_id} 生成 {subject} 错题练习试卷")
 
         exam = {
             "exam_id": f"exam-{uuid.uuid4().hex[:8]}",
             "user_id": user_id,
             "subject": subject,
+            "title": f"{subject}错题练习",
             "total_questions": count,
             "time_limit": 60,
             "generated_at": datetime.now(UTC).isoformat(),
@@ -1138,121 +1121,136 @@ class ExamSystemManager:
             "exam_type": "wrong_question_practice"
         }
 
-        # 尝试获取用户错题
         wrong_questions = []
-            from app.models.learning_system import LearningAnalytics
-            conn = LearningAnalytics._connect_db()
-            cursor = conn.cursor()
-
-            # 查询用户错题
-                ORDER BY submitted_at DESC LIMIT 5
-            ''', (user_id,))
-            rows = cursor.fetchall()
-            conn.close()
-
-            # 收集所有错题ID
-            all_wrong_question_ids = []
-            for row in rows:
-                wrong_question_ids = eval(row[0])
-                all_wrong_question_ids.extend(wrong_question_ids)
-            # 去重
-            unique_wrong_question_ids = list(set(all_wrong_question_ids))
-
-            # 获取错题详情
-            for question_id in unique_wrong_question_ids[:count]:
-                question = self.question_manager.get_question(question_id)
-                if question:
-                    wrong_questions.append(question.to_dict())
-        except Exception as e:
-            logger.error(f"获取用户错题失败: {str(e)}")
-
-        # 如果错题数量不足，补充普通题目
-        if len(wrong_questions) < count:
-            remaining_count = count - len(wrong_questions)
-            additional_questions = self.question_manager.get_questions(
-                subject=subject,
-                count=remaining_count
-            )
-        exam["questions"] = wrong_questions
-
-        return exam
-
-    def get_practice_suggestions(self, user_id, subject):
-        获取练习建议
-
-        Args:
-            user_id: 用户ID
-            subject: 科目
-            练习建议列表
-
-        # 如果没有考试生成器，返回默认建议
-        return [
-                "type": "practice_more",
-                "reason": "建议多进行练习，提高知识掌握程度",
-        ]
-    def export_exam_result(self, result_id, format="json"):
-            format: 导出格式
-        Returns:
-            导出的考试结果数据
-        logger.info(f"导出考试结果 {result_id}，格式: {format}")
-
         try:
             from app.models.learning_system import LearningAnalytics
             conn = LearningAnalytics._connect_db()
             cursor = conn.cursor()
 
+            cursor.execute('''
+                SELECT wrong_question_ids FROM exam_results WHERE user_id=?
+                ORDER BY submitted_at DESC LIMIT 5
+            ''', (user_id,))
+            rows = cursor.fetchall()
+            conn.close()
+
+            all_wrong_question_ids = []
+            for row in rows:
+                wrong_question_ids = json.loads(row[0])
+                all_wrong_question_ids.extend(wrong_question_ids)
+
+            unique_wrong_question_ids = list(set(all_wrong_question_ids))
+
+            for question_id in unique_wrong_question_ids[:count]:
+                question = self._get_question_by_id(question_id)
+                if question:
+                    wrong_questions.append(question)
+
+        except Exception as e:
+            logger.error(f"获取用户错题失败: {str(e)}")
+
+        if len(wrong_questions) < count:
+            remaining_count = count - len(wrong_questions)
+            additional_questions = self._get_questions_from_db(
+                subject=subject,
+                difficulty="medium",
+                question_type="single_choice",
+                count=remaining_count
+            )
+            wrong_questions.extend(additional_questions)
+
+        exam["questions"] = wrong_questions[:count]
+        return exam
+
+    def _get_question_by_id(self, question_id: str) -> Optional[Dict]:
+        """根据ID获取题目"""
+        try:
+            if self.question_manager and hasattr(self.question_manager, 'get_question'):
+                question = self.question_manager.get_question(question_id)
+                return question.to_dict() if hasattr(question, 'to_dict') else dict(question)
+        except Exception as e:
+            logger.error(f"获取题目失败: {str(e)}")
+        return None
+
+    def get_practice_suggestions(self, user_id: int, subject: str) -> List[Dict]:
+        """获取练习建议"""
+        if self.exam_generator and hasattr(self.exam_generator, 'get_practice_suggestions'):
+            return self.exam_generator.get_practice_suggestions(user_id, subject)
+
+        return [
+            {
+                "type": "practice_more",
+                "reason": "建议多进行练习,提高知识掌握程度",
+                "subject": subject
+            }
+        ]
+
+    def export_exam_result(self, result_id: str, export_format: str = "json") -> Optional[Any]:
+        """导出考试结果"""
+        logger.info(f"导出考试结果 {result_id},格式: {export_format}")
+
+        try:
+            from app.models.learning_system import LearningAnalytics
+            import csv
+            from io import StringIO
+
+            conn = LearningAnalytics._connect_db()
+            cursor = conn.cursor()
+
             cursor.execute('SELECT * FROM exam_results WHERE result_id=?', (result_id,))
             row = cursor.fetchone()
+            conn.close()
 
+            if not row:
                 logger.error(f"考试结果 {result_id} 不存在")
                 return None
 
+            exam_result = {
                 "result_id": row[1],
                 "exam_id": row[2],
                 "user_id": row[3],
+                "score": row[4],
                 "total_questions": row[5],
                 "correct_answers": row[6],
+                "wrong_answers": row[7],
                 "skipped_questions": row[8],
                 "completion_time": row[9],
                 "started_at": row[10],
                 "submitted_at": row[11],
-                "answers": eval(row[12]),
-                "wrong_question_ids": eval(row[13]),
+                "answers": json.loads(row[12]),
+                "wrong_question_ids": json.loads(row[13]),
+                "performance_analysis": json.loads(row[14])
             }
 
-            if format == "json":
-            elif format == "csv":
-                # 生成CSV格式
-                import csv
-                from io import StringIO
-
+            if export_format == "json":
+                return json.dumps(exam_result, ensure_ascii=False, indent=2)
+            elif export_format == "csv":
                 csv_output = StringIO()
+                writer = csv.writer(csv_output)
 
-                # 写入标题
                 writer.writerow(["字段", "值"])
-
-                # 写入基本信息
                 writer.writerow(["结果ID", exam_result["result_id"]])
                 writer.writerow(["考试ID", exam_result["exam_id"]])
+                writer.writerow(["用户ID", exam_result["user_id"]])
+                writer.writerow(["得分", exam_result["score"]])
+                writer.writerow(["总题数", exam_result["total_questions"]])
+                writer.writerow(["正确答案数", exam_result["correct_answers"]])
                 writer.writerow(["错误答案数", exam_result["wrong_answers"]])
+                writer.writerow(["跳过题数", exam_result["skipped_questions"]])
                 writer.writerow(["完成时间(秒)", exam_result["completion_time"]])
                 writer.writerow(["开始时间", exam_result["started_at"]])
                 writer.writerow(["提交时间", exam_result["submitted_at"]])
-                return csv_output.getvalue()
 
+                return csv_output.getvalue()
         except Exception as e:
             logger.error(f"导出考试结果失败: {str(e)}")
+            return None
 
-    def batch_import_questions(self, questions_data):
-        批量导入题目
-
-        Args:
-            questions_data: 题目数据列表
-
-        Returns:
-            导入结果
+    def batch_import_questions(self, questions_data: List[Dict]) -> Dict[str, Any]:
+        """批量导入题目"""
         logger.info(f"批量导入 {len(questions_data)} 道题目")
 
+        success_count = 0
         error_count = 0
         errors = []
 
@@ -1261,27 +1259,35 @@ class ExamSystemManager:
                 if not self._validate_question_data(question_data):
                     error_count += 1
                     errors.append(f"题目数据验证失败: {str(question_data)[:100]}...")
+                    continue
 
-                # 创建题目
-                question = self.question_manager.create_question(
-                    answer=question_data["answer"],
-                    explanation=question_data.get("explanation"),
-                    category_id=question_data.get("category_id"),
-                    options=question_data.get("options", [])
-                )
-
-                success_count += 1
+                if self.question_manager and hasattr(self.question_manager, 'create_question'):
+                    self.question_manager.create_question(
+                        content=question_data["content"],
+                        answer=question_data["answer"],
+                        explanation=question_data.get("explanation"),
+                        category_id=question_data.get("category_id"),
+                        options=question_data.get("options", []),
+                        question_type=question_data.get("question_type", "single_choice")
+                    )
+                    success_count += 1
             except Exception as e:
+                error_count += 1
+                errors.append(f"导入题目失败: {str(e)}")
+
         return {
+            "success_count": success_count,
             "error_count": error_count,
             "errors": errors
         }
 
+    def _validate_question_data(self, question_data: Dict) -> bool:
+        """验证题目数据"""
         required_fields = ["content", "answer"]
         for field in required_fields:
+            if field not in question_data:
                 return False
 
-        # 验证题目类型
         valid_question_types = ["single_choice", "multiple_choice", "true_false", "fill_blank", "short_answer"]
         question_type = question_data.get("question_type", "single_choice")
         if question_type not in valid_question_types:
@@ -1292,28 +1298,24 @@ class ExamSystemManager:
 
         return True
 
-    def generate_question_bank_report(self):
-        生成题库报告
-
-        Returns:
-            题库报告数据
+    def generate_question_bank_report(self) -> Dict[str, Any]:
+        """生成题库报告"""
         logger.info("生成题库报告")
 
+        try:
             from app.models.learning_system import LearningAnalytics
             conn = LearningAnalytics._connect_db()
             cursor = conn.cursor()
 
-            # 获取题目总数
+            cursor.execute('SELECT COUNT(*) FROM questions')
             total_questions = cursor.fetchone()[0]
 
-            # 按类型统计
             cursor.execute('SELECT question_type, COUNT(*) FROM questions GROUP BY question_type')
             type_distribution = {row[0]: row[1] for row in cursor.fetchall()}
-            # 按难度统计
-            cursor.execute('SELECT level_id, COUNT(*) FROM questions GROUP BY level_id')
+
+            cursor.execute('SELECT difficulty, COUNT(*) FROM questions GROUP BY difficulty')
             level_distribution = {row[0]: row[1] for row in cursor.fetchall()}
 
-            # 按分类统计
             cursor.execute('SELECT category_id, COUNT(*) FROM questions GROUP BY category_id')
             category_distribution = {row[0]: row[1] for row in cursor.fetchall()}
 
@@ -1322,162 +1324,38 @@ class ExamSystemManager:
 
             conn.close()
 
-            # 获取分类、难度、语种名称
-            categories = self.question_manager.get_all_categories()
-            category_names = {cat.id: cat.name for cat in categories}
+            category_names = {}
+            level_names = {}
+            language_names = {}
 
-            levels = self.question_manager.get_all_levels()
-            level_names = {level.id: level.name for level in levels}
+            try:
+                if self.question_manager:
+                    categories = getattr(self.question_manager, 'get_all_categories', lambda: [])()
+                    category_names = {cat.id: cat.name for cat in categories if hasattr(cat, 'id') and hasattr(cat, 'name')}
 
-            languages = self.question_manager.get_all_languages()
-            language_names = {lang.id: lang.name for lang in languages}
+                    levels = getattr(self.question_manager, 'get_all_levels', lambda: [])()
+                    level_names = {level.id: level.name for level in levels if hasattr(level, 'id') and hasattr(level, 'name')}
 
-            formatted_type_distribution = type_distribution
-            formatted_level_distribution = {level_names.get(k, str(k)): v for k, v in level_distribution.items()}
-            formatted_category_distribution = {category_names.get(k, str(k)): v for k, v in category_distribution.items()}
-            formatted_language_distribution = {language_names.get(k, str(k)): v for k, v in language_distribution.items()}
-            report = {
-                "generated_at": datetime.now(UTC).isoformat(),
+                    languages = getattr(self.question_manager, 'get_all_languages', lambda: [])()
+                    language_names = {lang.id: lang.name for lang in languages if hasattr(lang, 'id') and hasattr(lang, 'name')}
+            except Exception as e:
+                logger.warning(f"获取分类信息失败: {str(e)}")
+
+            return {
                 "total_questions": total_questions,
-                "type_distribution": formatted_type_distribution,
-                "category_distribution": formatted_category_distribution,
-                "language_distribution": formatted_language_distribution,
-                "summary": {
-                    "total_types": len(formatted_type_distribution),
-                    "total_levels": len(formatted_level_distribution),
-                    "total_categories": len(formatted_category_distribution),
-                    "total_languages": len(formatted_language_distribution)
-                }
+                "type_distribution": type_distribution,
+                "level_distribution": level_distribution,
+                "category_distribution": category_distribution,
+                "language_distribution": language_distribution,
+                "category_names": category_names,
+                "level_names": level_names,
+                "language_names": language_names,
+                "generated_at": datetime.now(UTC).isoformat()
             }
-
-            logger.info("题库报告生成成功")
-            return report
         except Exception as e:
             logger.error(f"生成题库报告失败: {str(e)}")
             return {}
 
-    def optimize_question_bank(self):
-        优化题库
 
-        Returns:
-            优化结果
-        logger.info("开始优化题库")
-
-        optimization_result = {
-            "total_questions": 0,
-            "optimization_suggestions": []
-            from app.models.learning_system import LearningAnalytics
-            conn = LearningAnalytics._connect_db()
-            cursor = conn.cursor()
-
-            # 获取题目总数
-            cursor.execute('SELECT COUNT(*) FROM questions')
-
-            cursor.execute('''
-                SELECT content, COUNT(*) as count FROM questions
-            ''')
-            optimization_result["duplicate_questions"] = len(duplicate_questions)
-
-            # 生成优化建议
-            if len(duplicate_questions) > 0:
-                optimization_result["optimization_suggestions"].append(
-
-            # 检查题目完整性
-            cursor.execute('''
-                SELECT COUNT(*) FROM questions
-                WHERE content IS NULL OR content = '' OR answer IS NULL OR answer = ''
-            ''')
-            incomplete_questions = cursor.fetchone()[0]
-            if incomplete_questions > 0:
-                optimization_result["optimization_suggestions"].append(
-                    f"发现 {incomplete_questions} 道不完整题目，建议补充完整内容"
-                )
-
-            # 检查选择题选项完整性
-            cursor.execute('''
-                SELECT COUNT(*) FROM questions
-                WHERE (question_type = 'single_choice' OR question_type = 'multiple_choice')
-                AND (options IS NULL OR options = '[]' OR JSON_LENGTH(options) < 2)
-            invalid_choice_questions = cursor.fetchone()[0]
-                optimization_result["optimization_suggestions"].append(
-                    f"发现 {invalid_choice_questions} 道选择题选项不完整，建议补充选项"
-                )
-
-
-            return optimization_result
-        except Exception as e:
-            return optimization_result
-
-# 命令行使用示例
-if __name__ == "__main__":
-    parser.add_argument('--generate-exam', action='store_true', help='生成考试')
-    parser.add_argument('--subject', type=str, default='english', help='科目')
-    parser.add_argument('--difficulty', type=str, choices=['beginner', 'intermediate', 'advanced', 'expert'], help='难度')
-    parser.add_argument('--get-exam-history', action='store_true', help='获取考试历史')
-    parser.add_argument('--optimize-qb', action='store_true', help='优化题库')
-    args = parser.parse_args()
-    exam_manager = ExamSystemManager()
-    if args.generate_exam:
-        if not args.user_id:
-            print("错误：生成考试需要提供用户ID")
-            parser.print_help()
-        else:
-                user_id=args.user_id,
-                subject=args.subject,
-                count=args.question_count,
-                difficulty=args.difficulty
-            )
-            print(f"成功生成考试: {exam['exam_id']}")
-            print(f"题目数量: {len(exam['questions'])}")
-
-    elif args.generate_wrong_practice:
-        if not args.user_id:
-            parser.print_help()
-        else:
-            exam = exam_manager.generate_wrong_question_practice(
-                user_id=args.user_id,
-                subject=args.subject,
-                count=args.question_count
-            )
-            print(f"成功生成错题练习: {exam['exam_id']}")
-            print(f"题目数量: {len(exam['questions'])}")
-
-    elif args.get_exam_history:
-        if not args.user_id:
-            print("错误：获取考试历史需要提供用户ID")
-        else:
-            history = exam_manager.get_user_exam_history(args.user_id)
-            print(f"用户 {args.user_id} 的考试历史:")
-            for exam in history:
-                print(f"- 考试ID: {exam['exam_id']}, 分数: {exam['score']}, 提交时间: {exam['submitted_at']}")
-
-    elif args.get_exam_stats:
-        if not args.user_id:
-            print("错误：获取考试统计需要提供用户ID")
-            parser.print_help()
-        else:
-            stats = exam_manager.get_exam_statistics(args.user_id, args.subject)
-            print(f"用户 {args.user_id} 的 {args.subject} 考试统计:")
-            print(f"总考试数: {stats['total_exams']}")
-            print(f"平均分数: {stats['average_score']:.2f}")
-            print(f"最高分数: {stats['highest_score']}")
-            print(f"最低分数: {stats['lowest_score']}")
-            print(f"通过率: {stats['pass_rate']:.2%}")
-
-    elif args.generate_qb_report:
-        report = exam_manager.generate_question_bank_report()
-        print("题库报告:")
-        print(f"总题目数: {report['total_questions']}")
-        print(f"题目类型分布: {report['type_distribution']}")
-        print(f"分类分布: {report['category_distribution']}")
-        print(f"语种分布: {report['language_distribution']}")
-
-    elif args.optimize_qb:
-        result = exam_manager.optimize_question_bank()
-        print(f"总题目数: {result['total_questions']}")
-        print(f"重复题目数: {result['duplicate_questions']}")
-        for suggestion in result['optimization_suggestions']:
-
-    else:
-
-"""
+# 全局实例
+exam_system_manager = ExamSystemManager()

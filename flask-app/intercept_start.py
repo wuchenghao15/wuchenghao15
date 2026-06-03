@@ -1,6 +1,9 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
-使用sys.meta_path拦截模块导入的启动脚本，用于修复MODEL_PATH KeyError问题
+使用sys.meta_path拦截模块导入的启动脚本,用于修复MODEL_PATH KeyError问题
+import logging
+logger = logging.getLogger(__name__)
 import sys
 import os
 import types
@@ -10,7 +13,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 print("[拦截启动] 正在初始化...")
 
-# 1. 创建一个拦截器，用于拦截app.ai.learning模块的导入
+# 1. 创建一个拦截器,用于拦截app.ai.learning模块的导入
 class LearningModuleInterceptor:
     def find_spec(self, fullname, path, target=None):
         if fullname == 'app.ai.learning':
@@ -22,15 +25,15 @@ class LearningModuleInterceptor:
         # 创建一个假的learning模块
         fake_learning = types.ModuleType('app.ai.learning')
 
-        # 添加必要的类和方法，避免ImportError
+        # 添加必要的类和方法,避免ImportError
         class FakeLearningAI:
             def __init__(self, config=None):
-                # 忽略config参数，避免KeyError
+                # 忽略config参数,避免KeyError
                 print("[拦截启动] 创建了FakeLearningAI实例")
                 self.model_path = 'models/'
 
             def learn(self, data):
-                print(f"[拦截启动] FakeLearningAI.learn() 被调用，数据: {data}")
+                print(f"[拦截启动] FakeLearningAI.learn() 被调用,数据: {data}")
                 return {}
 
         # 将FakeLearningAI添加到模块中
@@ -52,7 +55,7 @@ print("[拦截启动] 正在启动服务器...")
 try:
     # 直接执行start_server.py的内容
     exec(open('start_server.py').read())
-    print("[拦截启动] 服务器启动成功！")
+    print("[拦截启动] 服务器启动成功!")
 except Exception as e:
     print(f"[拦截启动] 服务器启动失败: {e}")
     import traceback

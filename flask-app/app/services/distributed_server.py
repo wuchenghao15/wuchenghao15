@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""分布式服务器管理模块，用于管理客户端的子服务器，减轻主服务器负载"""
+"""分布式服务器管理模块,用于管理客户端的子服务器,减轻主服务器负载"""
 
 import time
 import threading
@@ -89,7 +89,7 @@ class DistributedServerManager:
         logger.info("分布式服务器管理器已停止")
 
     def _monitor_loop(self):
-        """监控循环，定期检查服务器健康状态"""
+        """监控循环,定期检查服务器健康状态"""
         while self.is_running:
             try:
                 self._check_server_health()
@@ -99,7 +99,7 @@ class DistributedServerManager:
                 logger.error(f"分布式服务器监控循环异常: {str(e)}")
 
     def _load_balancer_loop(self):
-        """负载均衡循环，定期更新服务器负载信息"""
+        """负载均衡循环,定期更新服务器负载信息"""
         while self.is_running:
             try:
                 self._update_server_load()
@@ -119,7 +119,7 @@ class DistributedServerManager:
                     if health != 'healthy':
                         server_info['health_fail_count'] = server_info.get('health_fail_count', 0) + 1
                         if server_info['health_fail_count'] >= self.config['failover_threshold']:
-                            logger.warning(f"服务器 {server_id} 健康检查失败次数超过阈值，标记为不可用")
+                            logger.warning(f"服务器 {server_id} 健康检查失败次数超过阈值,标记为不可用")
                             server_info['status'] = 'unavailable'
                             server_info['failover_time'] = time.time()
                 elif server_info['status'] == 'unavailable':
@@ -160,7 +160,7 @@ class DistributedServerManager:
                     timeout_servers.append(server_id)
             
             for server_id in timeout_servers:
-                logger.warning(f"服务器 {server_id} 心跳超时，自动注销")
+                logger.warning(f"服务器 {server_id} 心跳超时,自动注销")
                 self.unregister_server(server_id)
 
     def _update_server_load(self):
@@ -195,7 +195,7 @@ class DistributedServerManager:
         
         health = self._perform_health_check(server_id)
         if health == 'healthy':
-            logger.info(f"服务器 {server_id} 恢复健康，重新激活")
+            logger.info(f"服务器 {server_id} 恢复健康,重新激活")
             server_info['status'] = 'active'
             server_info['health_fail_count'] = 0
             server_info['last_heartbeat'] = time.time()
@@ -321,7 +321,7 @@ class DistributedServerManager:
         return self._select_round_robin(servers)
 
     def _get_client_ip(self) -> Optional[str]:
-        """获取客户端IP（需要在Web请求上下文中使用）"""
+        """获取客户端IP(需要在Web请求上下文中使用)"""
         return None
 
     def distribute_request(self, request_data: Dict[str, Any]) -> Dict[str, Any]:
@@ -461,12 +461,12 @@ class DistributedServerManager:
         }
 
     def scale_up(self, count: int = 1):
-        """增加服务器数量（预留接口）"""
+        """增加服务器数量(预留接口)"""
         logger.info(f"请求扩展 {count} 台服务器")
         return {'success': True, 'message': f"已请求扩展 {count} 台服务器"}
 
     def scale_down(self, count: int = 1):
-        """减少服务器数量（预留接口）"""
+        """减少服务器数量(预留接口)"""
         logger.info(f"请求缩减 {count} 台服务器")
         return {'success': True, 'message': f"已请求缩减 {count} 台服务器"}
 

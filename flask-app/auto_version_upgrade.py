@@ -4,6 +4,7 @@
 自动版本升级系统
 自动更新系统中的所有版本号和说明文档
 
+"""
 import os
 import sys
 import logging
@@ -64,6 +65,7 @@ class AutoVersionUpgrader:
                 'auto_upgrade_enabled': True,
                 'version_history': []
             }
+            with open(self.version_config_file, 'w') as f:
                 json.dump(default_config, f, indent=2)
             logger.info(f"已创建默认版本配置文件: {self.version_config_file}")
 
@@ -88,22 +90,29 @@ class AutoVersionUpgrader:
                 'current_version': '1.0.0',
                 'last_upgraded': datetime.now().isoformat(),
                 'upgrade_check_interval': 86400,
+                'version_files': [
                     'version_config.json',
                     'app.py',
                     'README.md',
                 ],
                 'version_history': []
+            }
+
     def save_config(self, config):
         try:
+            with open(self.version_config_file, 'w') as f:
                 json.dump(config, f, indent=2)
         except Exception as e:
+            logger.error(f"保存版本配置失败: {str(e)}")
 
+    def detect_current_version(self):
         """检测当前版本"""
         logger.info("检测当前版本...")
 
         # 检查app.py中的版本
         app_file = '/Users/wuchenghao/Library/CloudStorage/OneDrive-个人/文档/MTSCOS_AI_Project/flask-app/app.py'
         if os.path.exists(app_file):
+            with open(app_file, 'r') as f:
                 content = f.read()
 
             # 查找版本号
@@ -112,7 +121,7 @@ class AutoVersionUpgrader:
                 return version_match.group(1)
 
         # 默认版本
-        logger.info("未检测到版本，使用默认版本: 1.0.0")
+        logger.info("未检测到版本,使用默认版本: 1.0.0")
         return '1.0.0'
 
     def start_version_monitor(self, interval=86400):
@@ -126,7 +135,7 @@ class AutoVersionUpgrader:
                     logger.info("开始自动版本升级...")
                     self.run_version_upgrade()
                 else:
-                    logger.info("版本已是最新，无需升级")
+                    logger.info("版本已是最新,无需升级")
 
                 # 等待指定时间
                 time.sleep(interval)
@@ -155,7 +164,7 @@ class AutoVersionUpgrader:
         interval = config.get('upgrade_check_interval', 86400)
 
         if (datetime.now() - last_upgraded).total_seconds() < interval:
-            logger.debug(f"距离上次升级时间不足 {interval} 秒，跳过升级检查")
+            logger.debug(f"距离上次升级时间不足 {interval} 秒,跳过升级检查")
             return False
 
         # 这里可以添加检查远程版本的逻辑
@@ -197,11 +206,11 @@ class AutoVersionUpgrader:
 
         self.save_config(config)
 
-        logger.info(f"版本升级成功，已从版本 {current_version} 升级到 {new_version}")
+        logger.info(f"版本升级成功,已从版本 {current_version} 升级到 {new_version}")
 
     def generate_new_version(self, current_version):
         """生成新版本号"""
-        logger.info(f"生成新版本号，当前版本: {current_version}")
+        logger.info(f"生成新版本号,当前版本: {current_version}")
 
         # 解析当前版本
         major, minor, patch = map(int, current_version.split('.'))
@@ -209,12 +218,12 @@ class AutoVersionUpgrader:
         # 递增补丁版本号
         patch += 1
 
-        # 如果补丁版本号达到10，递增次版本号
+        # 如果补丁版本号达到10,递增次版本号
         if patch >= 10:
             patch = 0
             minor += 1
 
-        # 如果次版本号达到10，递增主版本号
+        # 如果次版本号达到10,递增主版本号
         if minor >= 10:
             minor = 0
             major += 1
@@ -226,7 +235,7 @@ class AutoVersionUpgrader:
 
     def update_all_version_files(self, current_version, new_version):
         """更新所有版本文件"""
-        logger.info(f"更新所有版本文件，从 {current_version} 到 {new_version}")
+        logger.info(f"更新所有版本文件,从 {current_version} 到 {new_version}")
 
         config = self.load_config()
         version_files = config.get('version_files', [])
@@ -240,6 +249,7 @@ class AutoVersionUpgrader:
         html_files = [
             '/Users/wuchenghao/Library/CloudStorage/OneDrive-个人/文档/MTSCOS_AI_Project/flask-app/templates/index.html'
         ]
+        for html_file in html_files:
             if os.path.exists(html_file):
                 self.update_html_version(html_file, current_version, new_version)
 
@@ -247,7 +257,9 @@ class AutoVersionUpgrader:
         config_files = [
             '/Users/wuchenghao/Library/CloudStorage/OneDrive-个人/文档/MTSCOS_AI_Project/flask-app/config.py'
         ]
+        for config_file in config_files:
             if os.path.exists(config_file):
+                self.update_config_version(config_file, current_version, new_version)
 
         python_files = []
         for root, dirs, files in os.walk('/Users/wuchenghao/Library/CloudStorage/OneDrive-个人/文档/MTSCOS_AI_Project/flask-app'):
@@ -276,6 +288,7 @@ class AutoVersionUpgrader:
             )
 
             if new_content != content:
+                with open(file_path, 'w') as f:
                     f.write(new_content)
                 logger.info(f"已更新文件 {file_path} 中的版本号")
         except Exception as e:
@@ -287,6 +300,7 @@ class AutoVersionUpgrader:
 
         try:
             with open(html_file, 'r') as f:
+                content = f.read()
 
             # 替换版本号
             new_content = re.sub(
@@ -295,12 +309,14 @@ class AutoVersionUpgrader:
                 content
             )
 
+            new_content = re.sub(
                 rf'<meta name="version" content="{current_version}">',
                 f'<meta name="version" content="{new_version}">',
                 new_content
             )
 
             if new_content != content:
+                with open(html_file, 'w') as f:
                     f.write(new_content)
                 logger.info(f"已更新HTML文件 {html_file} 中的版本号")
         except Exception as e:
@@ -340,8 +356,10 @@ class AutoVersionUpgrader:
             )
 
             if new_content != content:
+                with open(python_file, 'w') as f:
                     f.write(new_content)
                 logger.info(f"已更新Python文件 {python_file} 中的版本注释")
+        except Exception as e:
             logger.error(f"更新Python文件 {python_file} 版本注释失败: {str(e)}")
 
     def backup_version_files(self):
@@ -364,7 +382,7 @@ class AutoVersionUpgrader:
         return backup_dir
     def generate_version_changelog(self, current_version, new_version):
         """生成版本更新日志"""
-        logger.info(f"生成版本更新日志，从 {current_version} 到 {new_version}")
+        logger.info(f"生成版本更新日志,从 {current_version} 到 {new_version}")
 
         changelog_file = os.path.join(self.versions_dir, f"changelog_{new_version}.md")
         changelog_content = f"# 版本更新日志 - {new_version}\n\n"
@@ -429,6 +447,7 @@ class AutoVersionUpgrader:
 
             if new_content != content:
                 with open(readme_file, 'w') as f:
+                    f.write(new_content)
                 logger.info(f"已更新README文件: {readme_file}")
 
     def manual_upgrade(self):
@@ -444,7 +463,7 @@ def main():
     monitor_thread.daemon = True
     monitor_thread.start()
 
-    logger.info("自动版本升级系统已启动，按Ctrl+C停止")
+    logger.info("自动版本升级系统已启动,按Ctrl+C停止")
 
     try:
         while True:

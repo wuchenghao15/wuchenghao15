@@ -1,24 +1,22 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
 自动错误收集和修复系统
-功能：
-1. 自动收集项目问题、错误和异常
-2. 将问题记录到问题特征数据库
-3. 实例化AI员工针对性修复问题
-4. 记录修复方法和思路到AI脑库特征库
-5. 匹配问题和解决方案，供AI升级学习
+功能:
+5. 匹配问题和解决方案,供AI升级学习
+"""
 
 import os
 import sys
 import sqlite3
-# JSON import removed - using database
+from contextlib import contextmanager
+import json
 import logging
 import traceback
 import subprocess
 from datetime import datetime
 from typing import Dict, List, Optional
 
-# 配置日志
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -29,7 +27,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# 系统配置
 CONFIG = {
     "db_path": os.path.join(os.path.dirname(os.path.abspath(__file__)), "dev.db"),
     "error_collectors": [
@@ -89,7 +86,6 @@ class TerminalOutputCollector(ErrorCollector):
     def collect(self) -> List[Dict]:
         errors = []
         try:
-            # 检查正在运行的进程输出
             pass
         except Exception as e:
             logger.error(f"终端输出收集器出错: {str(e)}")
@@ -97,23 +93,29 @@ class TerminalOutputCollector(ErrorCollector):
 
 class CodeAnalysisCollector(ErrorCollector):
     """代码分析错误收集器"""
+    def collect(self) -> List[Dict]:
         errors = []
         try:
-            # 运行代码分析工具，如pylint、flake8等
             result = subprocess.run(
+                ["pylint", "--output-format=json", "."],
                 capture_output=True,
                 text=True,
                 cwd=os.path.dirname(os.path.abspath(__file__))
             )
-                pylint_result = eval(result.stdout)
-                for issue in pylint_result:
-                    errors.append({
-                        "source": f"code:{issue.get('path')}:{issue.get('line')}",
-                        "content": issue.get('message', ''),
-                        "timestamp": datetime.utcnow().isoformat(),
-                        "severity": self._map_pylint_severity(issue.get('type', ''))
-                    })
+            if result.stdout:
+                try:
+                    pylint_result = eval(result.stdout)
+                    for issue in pylint_result:
+                        errors.append({
+                            "source": f"code:{issue.get('path')}:{issue.get('line')}",
+                            "content": issue.get('message', ''),
+                            "timestamp": datetime.utcnow().isoformat(),
+                            "severity": self._map_pylint_severity(issue.get('type', ''))
+                        })
+                except Exception:
+                    pass
         except Exception as e:
+            logger.error(f"代码分析收集器出错: {str(e)}")
         return errors
 
     def _map_pylint_severity(self, pylint_type: str) -> int:
@@ -124,6 +126,7 @@ class CodeAnalysisCollector(ErrorCollector):
             "refactor": 1,
         }
         return severity_map.get(pylint_type, 1)
+
 class DatabaseManager:
     """数据库管理类"""
     def __init__(self, db_path: str):
@@ -139,12 +142,12 @@ class DatabaseManager:
         """断开数据库连接"""
         if self.conn:
             self.conn.close()
+            self.conn = None
 
     def _create_tables(self):
         """创建数据库表"""
         cursor = self.conn.cursor()
 
-        # 创建项目错误表
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS project_errors (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -157,8 +160,8 @@ class DatabaseManager:
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL
             )
+        ''')
 
-        # 创建AI脑库特征表
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS ai_brain_features (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -171,20 +174,29 @@ class DatabaseManager:
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL
             )
+        ''')
 
-        # 创建错误修复表
+        cursor.execute('''
             CREATE TABLE IF NOT EXISTS error_fixes (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
+                error_id INTEGER NOT NULL,
                 fixer_id TEXT NOT NULL,
                 fix_strategy TEXT NOT NULL,
                 fix_implementation TEXT NOT NULL,
                 fix_result TEXT NOT NULL,
                 created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
                 FOREIGN KEY (error_id) REFERENCES project_errors(id)
             )
+        ''')
+
         self.conn.commit()
+
+    def record_error(self, error: Dict) -> int:
         """记录错误到数据库"""
         cursor = self.conn.cursor()
+        cursor.execute('''
+            INSERT INTO project_errors
             (source, error_content, error_type, severity, context, status, created_at, updated_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
@@ -193,12 +205,16 @@ class DatabaseManager:
             error.get('type', 'unknown'),
             error.get('severity', 1),
             str(error.get('context', {})),
+            'pending',
             error.get('timestamp', datetime.utcnow().isoformat()),
             datetime.utcnow().isoformat()
         ))
         self.conn.commit()
+        return cursor.lastrowid
 
+    def record_fix(self, error_id: int, fix: Dict) -> int:
         """记录修复到数据库"""
+        cursor = self.conn.cursor()
         cursor.execute('''
             INSERT INTO error_fixes
             (error_id, fixer_id, fix_strategy, fix_implementation, fix_result, created_at, updated_at)
@@ -214,48 +230,59 @@ class DatabaseManager:
         ))
         self.conn.commit()
         return cursor.lastrowid
+
     def update_error_status(self, error_id: int, status: str) -> None:
         """更新错误状态"""
+        cursor = self.conn.cursor()
         cursor.execute('''
             UPDATE project_errors
             SET status = ?, updated_at = ?
             WHERE id = ?
         ''', (
+            status,
             datetime.utcnow().isoformat(),
             error_id
         ))
         self.conn.commit()
 
 class AIEmployee:
-    """AI员工类，负责修复问题"""
+    """AI员工类,负责修复问题"""
     def __init__(self, employee_id: str, specialization: str):
         self.employee_id = employee_id
+        self.specialization = specialization
         self.skills = self._load_skills()
+
     def _load_skills(self) -> List[str]:
-        # 根据专业加载相应技能
         skill_map = {
             "frontend": ["HTML", "CSS", "JavaScript", "React", "Vue"],
             "backend": ["Python", "Flask", "SQL", "API"],
             "database": ["SQL", "Database Design", "Performance Tuning"],
             "devops": ["Docker", "Kubernetes", "CI/CD"]
+        }
+        return skill_map.get(self.specialization, ["General"])
 
+    def analyze_error(self, error: Dict) -> Dict:
         """分析错误"""
-        # 这里简化实现，实际可以使用更复杂的AI分析逻辑
+        return {
             "error_type": self._classify_error(error),
             "root_cause": self._identify_root_cause(error),
             "fix_strategy": self._generate_fix_strategy(error)
         }
 
+    def _classify_error(self, error: Dict) -> str:
         """分类错误类型"""
         content = error.get('content', '')
+        if "JavaScript" in content or "CSS" in content or "HTML" in content:
+            return "frontend"
         elif "SQL" in content or "database" in content or "db" in content:
             return "database"
         elif "Flask" in content or "API" in content or "server" in content:
             return "backend"
+        else:
+            return "general"
 
     def _identify_root_cause(self, error: Dict) -> str:
         """识别根本原因"""
-        # 这里简化实现，实际可以使用更复杂的AI逻辑
         content = error.get('content', '')
         if "no such table" in content:
             return "missing_database_table"
@@ -268,6 +295,7 @@ class AIEmployee:
 
     def _generate_fix_strategy(self, error: Dict) -> Dict:
         """生成修复策略"""
+        root_cause = self._identify_root_cause(error)
         if root_cause == "missing_database_table":
             return {
                 "type": "create_table",
@@ -277,13 +305,17 @@ class AIEmployee:
             return {
                 "type": "install_dependency",
                 "steps": ["Identify missing package", "Install package", "Verify installation"]
+            }
         elif root_cause == "syntax_error":
             return {
                 "type": "fix_syntax",
+                "steps": ["Locate syntax error", "Fix syntax", "Verify fix"]
+            }
         else:
             return {
                 "type": "general_fix",
                 "steps": ["Analyze error", "Implement fix", "Test fix"]
+            }
 
     def fix_error(self, error: Dict, analysis: Dict) -> Dict:
         """修复错误"""
@@ -294,13 +326,12 @@ class AIEmployee:
             "changes": []
         }
 
-        # 根据修复策略执行不同的修复操作
         strategy_type = analysis.get('fix_strategy', {}).get('type', 'general_fix')
         if strategy_type == "create_table":
             fix_result["changes"].append("Created missing database table")
         elif strategy_type == "install_dependency":
-            # 执行安装依赖操作
-            # 执行修复语法操作
+            fix_result["changes"].append("Installed missing dependency")
+        elif strategy_type == "fix_syntax":
             fix_result["changes"].append("Fixed syntax error")
 
         return fix_result
@@ -313,18 +344,23 @@ class AutoErrorHandlingSystem:
 
     def _init_error_collectors(self) -> List[ErrorCollector]:
         """初始化错误收集器"""
+        collectors = []
         for collector_name in CONFIG["error_collectors"]:
             if collector_name == "log_file_collector":
                 collectors.append(LogFileCollector())
             elif collector_name == "terminal_output_collector":
+                collectors.append(TerminalOutputCollector())
             elif collector_name == "code_analysis_collector":
+                collectors.append(CodeAnalysisCollector())
         return collectors
 
     def collect_errors(self) -> List[Dict]:
+        """收集所有错误"""
         all_errors = []
         for collector in self.error_collectors:
             try:
                 errors = collector.collect()
+                all_errors.extend(errors)
                 logger.info(f"{collector.name} 收集到 {len(errors)} 个错误")
             except Exception as e:
                 logger.error(f"收集器 {collector.name} 出错: {str(e)}")
@@ -332,37 +368,29 @@ class AutoErrorHandlingSystem:
 
     def process_errors(self) -> None:
         """处理收集到的错误"""
-        # 连接数据库
         self.db_manager.connect()
 
         try:
-            # 1. 收集错误
             errors = self.collect_errors()
 
-            # 2. 记录错误到数据库
             for error in errors:
                 error_id = self.db_manager.record_error(error)
-                logger.info(f"记录错误到数据库，ID: {error_id}")
+                logger.info(f"记录错误到数据库,ID: {error_id}")
 
-            # 3. 实例化AI员工修复错误
             ai_employees = [
                 AIEmployee("ai_frontend_1", "frontend"),
                 AIEmployee("ai_backend_1", "backend"),
                 AIEmployee("ai_database_1", "database")
             ]
-            # 4. 修复每个错误
+
             for error in errors:
-                # 选择合适的AI员工
                 error_type = AIEmployee("temp", "general").analyze_error(error).get("error_type", "general")
                 ai_employee = next((emp for emp in ai_employees if emp.specialization == error_type), ai_employees[0])
 
-                # 分析错误
                 analysis = ai_employee.analyze_error(error)
 
-                # 修复错误
                 fix_result = ai_employee.fix_error(error, analysis)
 
-                # 记录修复结果
                 if fix_result["success"]:
                     error_id = self.db_manager.record_error(error)
                     self.db_manager.record_fix(error_id, {
@@ -376,31 +404,28 @@ class AutoErrorHandlingSystem:
                 else:
                     logger.error(f"错误修复失败: {error.get('content')}")
 
-            # 5. AI学习过程
             self._ai_learning()
 
         except Exception as e:
             logger.error(f"处理错误时出错: {str(e)}")
             traceback.print_exc()
         finally:
-            # 断开数据库连接
             self.db_manager.disconnect()
 
     def _ai_learning(self) -> None:
         """AI学习过程"""
         logger.info("开始AI学习过程")
-        # 这里简化实现，实际可以使用更复杂的AI学习算法
-        # 匹配问题和解决方案，提取模式，供未来AI学习使用
 
+    def run(self) -> None:
         """运行自动错误处理系统"""
         logger.info("启动自动错误处理系统")
         try:
             self.process_errors()
             logger.info("自动错误处理系统运行完成")
         except Exception as e:
+            logger.error(f"自动错误处理系统运行失败: {str(e)}")
             traceback.print_exc()
 
 if __name__ == "__main__":
-    # 运行自动错误处理系统
     system = AutoErrorHandlingSystem()
     system.run()

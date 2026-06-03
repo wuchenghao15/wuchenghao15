@@ -1,7 +1,10 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
 检查应用的路由映射
 
+import logging
+logger = logging.getLogger(__name__)
 import os
 import sys
 

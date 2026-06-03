@@ -1,6 +1,7 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
-简化的调试启动脚本，用于诊断服务器启动问题
+简化的调试启动脚本,用于诊断服务器启动问题
 
 import sys
 import os

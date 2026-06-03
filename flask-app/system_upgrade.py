@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """系统全面升级脚本 - 功能完善、备份快照、版本更新、文档更新、UI优化"""
 
@@ -8,6 +9,7 @@ import uuid
 import sqlite3
 import subprocess
 from datetime import datetime
+import logging
 
 DATABASE_PATH = '/Users/wuchenghao/Library/CloudStorage/OneDrive-个人/文档/MTSCOS_AI_Project/flask-app/app.db'
 
@@ -20,12 +22,8 @@ def execute_git_backup():
         subprocess.run(['git', 'add', '.'], check=True, capture_output=True)
         commit_msg = f"Auto backup - System upgrade {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
         subprocess.run(['git', 'commit', '-m', commit_msg], check=True, capture_output=True)
-        print("✅ Git提交完成")
-        try:
-            subprocess.run(['git', 'push'], check=True, capture_output=True)
-            print("✅ Git推送完成")
-        except:
-            print("⚠️ Git推送失败（可能需要配置远程仓库）")
+        subprocess.run(['git', 'push'], check=True, capture_output=True)
+        print("✅ Git备份完成")
         return True
     except Exception as e:
         print(f"❌ Git备份失败: {e}")
@@ -34,7 +32,7 @@ def execute_git_backup():
 def create_system_snapshot():
     """创建系统快照"""
     print("📸 创建系统快照...")
-    snapshot_dir = '/Users/wuchenghao/Library/CloudStorage/OneDrive-个人/文档/MTSCOS_AI_Project/snapshots'
+    snapshot_dir = '/opt/mtscos/snapshots'
     os.makedirs(snapshot_dir, exist_ok=True)
     
     snapshot_name = f"snapshot_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
@@ -49,17 +47,6 @@ def create_system_snapshot():
         
         conn = sqlite3.connect(DATABASE_PATH)
         cursor = conn.cursor()
-        
-        cursor.execute('''CREATE TABLE IF NOT EXISTS system_snapshots (
-            snapshot_id TEXT PRIMARY KEY,
-            snapshot_name TEXT,
-            snapshot_type TEXT,
-            timestamp TEXT,
-            version TEXT,
-            status TEXT,
-            details TEXT
-        )''')
-        
         cursor.execute('''
             INSERT INTO system_snapshots 
             (snapshot_id, snapshot_name, snapshot_type, timestamp, version, status, details)
@@ -80,21 +67,22 @@ def update_system_version():
     conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
     
-    cursor.execute('SELECT version, major, minor, patch, build FROM version_control ORDER BY id DESC LIMIT 1')
+    cursor.execute('SELECT version FROM version_control ORDER BY created_at DESC LIMIT 1')
     result = cursor.fetchone()
     
     if result:
-        current_version, major, minor, patch, build = result
+        current_version = result[0]
+        parts = current_version.split('.')
+        major, minor, patch = int(parts[0]), int(parts[1]), int(parts[2])
         patch += 1
         new_version = f"{major}.{minor}.{patch}"
     else:
-        major, minor, patch, build = 1, 0, 1, 0
         new_version = "1.0.1"
     
     cursor.execute('''
-        INSERT INTO version_control (version, major, minor, patch, build, description, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    ''', (new_version, major, minor, patch, build, f"Auto upgrade - {datetime.now().strftime('%Y-%m-%d')}", datetime.now().isoformat()))
+        INSERT INTO version_control (version, description, created_at)
+        VALUES (?, ?, ?)
+    ''', (new_version, f"Auto upgrade - {datetime.now().strftime('%Y-%m-%d')}", datetime.now().isoformat()))
     conn.commit()
     conn.close()
     
@@ -107,13 +95,6 @@ def update_system_chronicles(new_version):
     
     conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
-    
-    cursor.execute('''CREATE TABLE IF NOT EXISTS system_chronicles (
-        record_id TEXT PRIMARY KEY,
-        timestamp TEXT,
-        version TEXT,
-        events TEXT
-    )''')
     
     chronicle = {
         'version': new_version,
@@ -149,29 +130,29 @@ def update_documentation():
 
 ## 系统概述
 
-MTSCOS AI系统是一个综合性的智能考试和学习管理平台，包含以下核心功能：
+MTSCOS AI系统是一个综合性的智能考试和学习管理平台,包含以下核心功能:
 
 ### 核心模块
 
 1. **用户管理系统**
    - 用户注册、登录、权限管理
-   - 支持多种角色：管理员、教师、学生、访客
-   - 密码加密存储，安全认证
+   - 支持多种角色:管理员、教师、学生、访客
+   - 密码加密存储,安全认证
 
 2. **考试系统**
-   - 支持多语言考试（中文、英语、日语）
+   - 支持多语言考试(中文、英语、日语)
    - 覆盖小学到重点大学的完整学科体系
    - 智能出题和AI评分
 
 3. **题库管理**
    - 超过5000道题目
-   - 支持多种题型：单选、多选、判断、填空等
-   - 难度分级：入门、初级、中级、高级、专家
+   - 支持多种题型:单选、多选、判断、填空等
+   - 难度分级:入门、初级、中级、高级、专家
 
 4. **AI系统**
-   - AI优化器：实时监控和自动优化
-   - AI整合器：模块统一管理
-   - AI自学习：从经验中学习和优化
+   - AI优化器:实时监控和自动优化
+   - AI整合器:模块统一管理
+   - AI自学习:从经验中学习和优化
 
 5. **系统维护**
    - 自动备份和快照
@@ -180,11 +161,11 @@ MTSCOS AI系统是一个综合性的智能考试和学习管理平台，包含�
 
 ## 技术架构
 
-- 前端：HTML5 + CSS3 + JavaScript
-- 后端：Python Flask
-- 数据库：SQLite（加密）
-- 缓存：Redis（哨兵模式）
-- 安全：Fernet加密算法
+- 前端:HTML5 + CSS3 + JavaScript
+- 后端:Python Flask
+- 数据库:SQLite(加密)
+- 缓存:Redis(哨兵模式)
+- 安全:Fernet加密算法
 
 ## API接口
 
@@ -199,11 +180,7 @@ POST /auth/login
 
 ## 维护说明
 
-系统自动进行以下维护操作：
-- 定期Git备份
-- 自动创建系统快照
-- 版本升级记录
-- 性能监控和优化
+系统自动进行以下维护操作:
 
 ---
 MTSCOS AI System - 智能学习平台
@@ -294,15 +271,6 @@ def add_additional_features():
     conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
     
-    cursor.execute('''CREATE TABLE IF NOT EXISTS system_features (
-        id TEXT PRIMARY KEY,
-        name TEXT,
-        description TEXT,
-        category TEXT,
-        enabled INTEGER,
-        created_at TEXT
-    )''')
-    
     features = [
         {'name': '学习进度追踪', 'description': '追踪用户学习进度和成绩变化', 'category': '学习', 'enabled': True},
         {'name': '智能推荐系统', 'description': '根据学习情况推荐合适的题目', 'category': 'AI', 'enabled': True},
@@ -321,7 +289,7 @@ def add_additional_features():
                 INSERT INTO system_features (id, name, description, category, enabled, created_at)
                 VALUES (?, ?, ?, ?, ?, ?)
             ''', (str(uuid.uuid4())[:16], feature['name'], feature['description'], 
-                  feature['category'], 1 if feature['enabled'] else 0, datetime.now().isoformat()))
+                  feature['category'], feature['enabled'], datetime.now().isoformat()))
     
     conn.commit()
     conn.close()
@@ -333,17 +301,32 @@ def main():
     print("🚀 开始系统全面升级...")
     print("=" * 60)
     
+    # 1. Git备份
     execute_git_backup()
+    
+    # 2. 创建快照
     create_system_snapshot()
+    
+    # 3. 更新版本
     new_version = update_system_version()
+    
+    # 4. 更新编年史
     update_system_chronicles(new_version)
+    
+    # 5. 更新文档
     update_documentation()
+    
+    # 6. 优化UI主题
     optimize_ui_theme()
+    
+    # 7. 优化路由
     optimize_routes()
+    
+    # 8. 添加附加功能
     add_additional_features()
     
     print("=" * 60)
-    print("🎉 系统全面升级完成！")
+    print("🎉 系统全面升级完成!")
     print(f"📌 新版本号: {new_version}")
     print(f"📌 更新时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 

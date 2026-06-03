@@ -2,8 +2,11 @@
 # -*- coding: utf-8 -*-
 """
 实时服务器监控系统
-实时监控服务器状态，一旦检测到异常，及时实例化针对性AI进行修复，并上报数据库和日志
+实时监控服务器状态,一旦检测到异常,及时实例化针对性AI进行修复,并上报数据库和日志
+"""
 
+import logging
+logger = logging.getLogger(__name__)
 import os
 import sys
 # JSON import removed - using database
@@ -29,7 +32,7 @@ class RealTimeServerMonitor:
         self.is_running = False
         self.thread_lock = threading.RLock()
         self.monitor_thread = None
-        self.check_interval = 5  # 检查间隔（秒）
+        self.check_interval = 5  # 检查间隔(秒)
 
         # 服务器状态指标
         self.server_status = {
@@ -49,17 +52,17 @@ class RealTimeServerMonitor:
 
         # 异常阈值配置
         self.thresholds = {
-            "cpu_usage": 80.0,  # CPU使用率阈值（%）
-            "memory_usage": 85.0,  # 内存使用率阈值（%）
-            "disk_usage": 90.0,  # 磁盘使用率阈值（%）
+            "cpu_usage": 80.0,  # CPU使用率阈值(%)
+            "memory_usage": 85.0,  # 内存使用率阈值(%)
+            "disk_usage": 90.0,  # 磁盘使用率阈值(%)
             "load_average": 5.0,  # 1分钟负载平均值阈值
             "connections": 1000,  # 并发连接数阈值
-            "temperature": 80.0  # 系统温度阈值（°C）
+            "temperature": 80.0  # 系统温度阈值(°C)
         }
         # 异常历史记录
         self.exception_history = []
 
-        # 暂时注释掉AI员工管理器初始化，避免启动问题
+        # 暂时注释掉AI员工管理器初始化,避免启动问题
         # self.ai_employee_manager = AIEmployeeManager()
         self.ai_employee_manager = None
 
@@ -74,7 +77,7 @@ class RealTimeServerMonitor:
 
             self.is_running = True
 
-            # 暂时注释掉AI监控服务器启动，避免启动问题
+            # 暂时注释掉AI监控服务器启动,避免启动问题
             # ai_monitor_server.start()
 
             # 启动监控线程
@@ -104,13 +107,14 @@ class RealTimeServerMonitor:
     def _monitor_loop(self):
         """监控循环"""
         while self.is_running:
+            try:
                 # 收集服务器状态
                 server_stats = self._collect_server_stats()
 
                 # 检查异常
                 exceptions = self._detect_exceptions(server_stats)
 
-                # 如果有异常，处理异常（暂时简化，不使用AI员工管理器）
+                # 如果有异常,处理异常(暂时简化,不使用AI员工管理器)
                 if exceptions:
                     for exception in exceptions:
                         logger.warning(f"检测到异常: {exception['description']}")
@@ -172,7 +176,7 @@ class RealTimeServerMonitor:
         # 网络连接数量
         stats["connections"] = len(psutil.net_connections())
 
-        # 运行中的服务（简化版，只检查关键服务）
+        # 运行中的服务(简化版,只检查关键服务)
         running_services = []
         critical_processes = ["python", "nginx", "mysql", "redis"]
         for p in psutil.process_iter(['name']):
@@ -187,8 +191,11 @@ class RealTimeServerMonitor:
         try:
             if hasattr(psutil, 'sensors_temperatures'):
                 temps = psutil.sensors_temperatures()
+                for name, entries in temps.items():
                     for entry in entries:
+                        system_temperature[name] = entry.current
         except:
+            pass
         stats["system_temperature"] = system_temperature
 
         return stats
@@ -254,6 +261,7 @@ class RealTimeServerMonitor:
         critical_services = ["python"]  # 根据实际情况调整
         for service in critical_services:
             if service not in stats["running_services"]:
+                exceptions.append({
                     "type": "service_down",
                     "level": "critical",
                     "details": {"service": service}
@@ -270,18 +278,21 @@ class RealTimeServerMonitor:
                 exception["timestamp"] = datetime.now().isoformat()
 
                 # 记录异常到历史
+                self.exception_history.append(exception)
 
                 # 根据异常类型调用相应的AI进行修复
+                repair_result = self._repair_exception(exception)
 
                 # 上报到数据库和日志
                 self._report_exception(exception, repair_result)
 
             except Exception as e:
+                logger.error(f"处理异常失败: {str(e)}")
 
     def _repair_exception(self, exception):
         repair_result = {
             "success": False,
-            "message": "AI员工管理器未初始化，无法执行修复",
+            "message": "AI员工管理器未初始化,无法执行修复",
             "action": "none",
             "details": {}
         }
@@ -293,7 +304,7 @@ class RealTimeServerMonitor:
         """动态创建专门的AI员工进行修复"""
         repair_result = {
             "success": False,
-            "message": "AI员工管理器未初始化，无法创建专门AI员工",
+            "message": "AI员工管理器未初始化,无法创建专门AI员工",
             "action": "create_specialized_ai",
             "details": {}
         }
@@ -301,7 +312,7 @@ class RealTimeServerMonitor:
     def _report_exception(self, exception, repair_result):
         """上报异常和修复结果"""
         try:
-            # 只记录到日志，不进行数据库操作
+            # 只记录到日志,不进行数据库操作
             logger.warning(f"检测到异常: {exception['description']}")
             logger.info(f"异常类型: {exception['type']}, 级别: {exception['level']}")
         except Exception as e:
@@ -316,7 +327,8 @@ class RealTimeServerMonitor:
         ai_monitor_status = {"is_running": False, "message": "AI监控服务器未初始化"}
         try:
             ai_monitor_status = ai_monitor_server.get_status()
-            pass
+        except Exception as e:
+            logger.warning(f"获取AI监控状态失败: {str(e)}")
 
         return {
             "check_interval": self.check_interval,
@@ -340,7 +352,8 @@ if __name__ == "__main__":
     real_time_server_monitor.start()
 
     # 保持运行
-        print("实时服务器监控系统已启动，按Ctrl+C停止...")
+    try:
+        print("实时服务器监控系统已启动,按Ctrl+C停止...")
         while True:
             # 每分钟打印一次状态
             time.sleep(60)

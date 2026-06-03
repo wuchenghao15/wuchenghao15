@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
 手动升级系统版本
@@ -10,7 +11,7 @@ if __name__ == "__main__":
 
     # 升级到 1.1.1 版本
     new_version = "1.1.1"
-    description = "系统例行维护升级，包含以下改进：\n- 数据库优化和缓存清理\n- 系统性能优化\n- 修复已知问题\n- 提升系统稳定性"
+    description = "系统例行维护升级,包含以下改进:\n- 数据库优化和缓存清理\n- 系统性能优化\n- 修复已知问题\n- 提升系统稳定性"
 
     print(f"准备升级到版本: {new_version}")
     print(f"版本描述: {description}")
@@ -21,9 +22,9 @@ if __name__ == "__main__":
     print(f"消息: {result['message']}")
 
     if result['status'] == 'success':
-        print(f"\n升级成功！新版本: {result['version']}")
+        print(f"\n升级成功!新版本: {result['version']}")
         print(f"版本描述: {result['description']}")
     else:
-        print("\n升级失败，请检查日志。")
+        print("\n升级失败,请检查日志.")
 
 """

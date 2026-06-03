@@ -1,0 +1,1436 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系统设置 - MTSCOS AI v3.2</title>
+    <link rel="stylesheet" href="../assets/css/cybertech-theme.css">
+    <style>
+        :root {
+            --bg-deep: #0a0e17;
+            --bg-main: #0f1520;
+            --bg-card: #161d2a;
+            --bg-elevated: #1c2536;
+            --bg-hover: #222d3f;
+            --border-subtle: rgba(255,255,255,0.06);
+            --border-accent: rgba(0,240,255,0.3);
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent-primary: #00f0ff;
+            --accent-secondary: #ff64c8;
+            --accent-tertiary: #ec4899;
+            --accent-success: #10b981;
+            --accent-warning: #f59e0b;
+            --accent-danger: #ef4444;
+            --glow-primary: rgba(0,240,255,0.4);
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'PingFang SC', 'Microsoft YaHei', -apple-system, sans-serif;
+            background: var(--bg-deep);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            font-size: 0.875rem;
+        }
+
+        .bg-pattern {
+            position: fixed; inset: 0; z-index: 0; pointer-events: none;
+            background: radial-gradient(ellipse 80% 50% at 20% 40%, rgba(0,240,255,0.08) 0%, transparent 50%),
+                        radial-gradient(ellipse 60% 40% at 80% 60%, rgba(255,100,200,0.06) 0%, transparent 50%);
+        }
+
+        .grid-overlay {
+            position: fixed; inset: 0; z-index: 0; pointer-events: none;
+            background-image: linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+                            linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+            background-size: 60px 60px;
+        }
+
+        .app-container { position: relative; z-index: 1; display: flex; min-height: 100vh; }
+
+        .sidebar {
+            width: 280px; background: var(--bg-main); border-right: 1px solid var(--border-subtle);
+            padding: 1.5rem; display: flex; flex-direction: column; position: sticky;
+            top: 0; height: 100vh; overflow-y: auto;
+        }
+
+        .logo {
+            display: flex; align-items: center; gap: 0.75rem; padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border-subtle); margin-bottom: 1.5rem;
+        }
+
+        .logo-icon {
+            width: 40px; height: 40px; background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 1.1rem; box-shadow: 0 4px 20px var(--glow-primary);
+        }
+
+        .logo-text { font-weight: 600; font-size: 1.25rem; letter-spacing: -0.02em; }
+        .logo-version { font-size: 0.7rem; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; margin-top: 0.15rem; }
+
+        .nav-section { margin-bottom: 1.5rem; }
+
+        .nav-section-title {
+            font-size: 0.65rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase;
+            letter-spacing: 0.12em; margin-bottom: 0.75rem; padding-left: 0.5rem;
+        }
+
+        .nav-item {
+            display: flex; align-items: center; gap: 0.75rem; padding: 0.65rem 0.85rem;
+            border-radius: var(--radius-sm); color: var(--text-secondary); text-decoration: none;
+            font-weight: 500; font-size: 0.875rem; transition: all 0.15s ease;
+            margin-bottom: 0.15rem; cursor: pointer; border: 1px solid transparent;
+        }
+
+        .nav-item:hover { background: var(--bg-hover); color: var(--text-primary); }
+        .nav-item.active {
+            background: linear-gradient(135deg, rgba(0,240,255,0.15), rgba(255,100,200,0.1));
+            color: var(--accent-primary); border-color: var(--border-accent);
+        }
+
+        .nav-item svg { width: 17px; height: 17px; opacity: 0.7; flex-shrink: 0; }
+        .nav-item.active svg { opacity: 1; }
+
+        .nav-item.has-badge { justify-content: space-between; }
+
+        .nav-badge {
+            font-size: 0.65rem; padding: 0.15rem 0.4rem; background: rgba(239,68,68,0.15);
+            color: var(--accent-danger); border-radius: 10px; font-weight: 600;
+        }
+
+        .main-content { flex: 1; padding: 2rem 3rem; overflow-y: auto; padding-bottom: 4rem; }
+
+        .page-header { margin-bottom: 2rem; }
+        .page-title { font-size: 1.8rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; }
+        .page-subtitle { color: var(--text-muted); font-size: 0.95rem; }
+
+        .settings-card {
+            background: var(--bg-card); border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg); padding: 1.5rem; margin-bottom: 1.25rem;
+            transition: all 0.2s ease;
+        }
+
+        .settings-card:hover { border-color: var(--border-accent); }
+
+        .card-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 1.25rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .card-title { display: flex; align-items: center; gap: 0.75rem; font-weight: 600; font-size: 1rem; }
+
+        .card-icon {
+            width: 32px; height: 32px; border-radius: var(--radius-sm);
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+        }
+
+        .card-icon.blue { background: rgba(0,240,255,0.15); color: var(--accent-primary); }
+        .card-icon.purple { background: rgba(255,100,200,0.15); color: var(--accent-secondary); }
+        .card-icon.pink { background: rgba(236,72,153,0.15); color: var(--accent-tertiary); }
+        .card-icon.green { background: rgba(16,185,129,0.15); color: var(--accent-success); }
+        .card-icon.orange { background: rgba(245,158,11,0.15); color: var(--accent-warning); }
+        .card-icon.red { background: rgba(239,68,68,0.15); color: var(--accent-danger); }
+        .card-icon.gray { background: rgba(148,163,184,0.15); color: var(--text-secondary); }
+
+        .card-icon svg { width: 16px; height: 16px; }
+
+        .form-group { margin-bottom: 1.1rem; }
+
+        .form-label {
+            display: block; font-weight: 500; font-size: 0.825rem;
+            color: var(--text-secondary); margin-bottom: 0.45rem;
+        }
+
+        .form-label.required::after { content: '*'; color: var(--accent-danger); margin-left: 0.25rem; }
+
+        .form-input {
+            width: 100%; padding: 0.7rem 0.9rem; background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle); border-radius: var(--radius-sm);
+            color: var(--text-primary); font-family: inherit; font-size: 0.875rem;
+            transition: all 0.15s ease;
+        }
+
+        .form-input:focus {
+            outline: none; border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px rgba(0,240,255,0.15);
+        }
+
+        .form-input::placeholder { color: var(--text-muted); }
+
+        select.form-input {
+            cursor: pointer; appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+            background-repeat: no-repeat; background-position: right 0.9rem center;
+            padding-right: 2.5rem;
+        }
+
+        .form-textarea { min-height: 100px; resize: vertical; }
+
+        .form-hint { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.35rem; }
+
+        .toggle-row {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0.9rem 0; border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .toggle-row:last-child { border-bottom: none; }
+
+        .toggle-info { flex: 1; }
+
+        .toggle-label { font-weight: 500; font-size: 0.9rem; margin-bottom: 0.2rem; }
+        .toggle-desc { font-size: 0.75rem; color: var(--text-muted); line-height: 1.4; }
+
+        .toggle-switch { position: relative; width: 46px; height: 25px; flex-shrink: 0; }
+
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+
+        .toggle-slider {
+            position: absolute; cursor: pointer; inset: 0;
+            background: var(--bg-elevated); border: 1px solid var(--border-subtle);
+            border-radius: 25px; transition: all 0.25s ease;
+        }
+
+        .toggle-slider:before {
+            position: absolute; content: ""; height: 19px; width: 19px;
+            left: 2px; bottom: 2px; background: var(--text-muted);
+            border-radius: 50%; transition: all 0.25s ease;
+        }
+
+        .toggle-switch input:checked + .toggle-slider {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border-color: transparent;
+        }
+
+        .toggle-switch input:checked + .toggle-slider:before {
+            transform: translateX(21px); background: white;
+        }
+
+        .btn {
+            display: inline-flex; align-items: center; gap: 0.45rem;
+            padding: 0.65rem 1.25rem; border-radius: var(--radius-sm);
+            font-weight: 500; font-size: 0.85rem; cursor: pointer;
+            transition: all 0.15s ease; border: none; font-family: inherit;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: white; box-shadow: 0 4px 15px var(--glow-primary);
+        }
+
+        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px var(--glow-primary); }
+
+        .btn-secondary {
+            background: var(--bg-elevated); color: var(--text-primary);
+            border: 1px solid var(--border-subtle);
+        }
+
+        .btn-secondary:hover { border-color: var(--border-accent); background: var(--bg-hover); }
+
+        .btn-danger {
+            background: rgba(239,68,68,0.15); color: var(--accent-danger);
+            border: 1px solid rgba(239,68,68,0.3);
+        }
+
+        .btn-danger:hover { background: rgba(239,68,68,0.25); }
+
+        .btn-sm { padding: 0.45rem 0.9rem; font-size: 0.775rem; }
+        .btn-icon svg { width: 14px; height: 14px; }
+
+        .profile-card {
+            display: flex; align-items: center; gap: 1rem; padding: 1.25rem;
+            background: var(--bg-elevated); border-radius: var(--radius-md);
+            margin-bottom: 1.5rem;
+        }
+
+        .profile-avatar {
+            width: 52px; height: 52px; border-radius: var(--radius-md);
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-tertiary));
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.4rem; font-weight: 700; flex-shrink: 0;
+        }
+
+        .profile-info { flex: 1; min-width: 0; }
+        .profile-name { font-weight: 600; font-size: 1rem; margin-bottom: 0.15rem; }
+        .profile-role { font-size: 0.775rem; color: var(--text-muted); }
+
+        .profile-badge {
+            padding: 0.3rem 0.65rem; background: rgba(16,185,129,0.15);
+            color: var(--accent-success); border-radius: 16px; font-size: 0.7rem;
+            font-weight: 500; flex-shrink: 0;
+        }
+
+        .role-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1rem;
+        }
+
+        .role-card {
+            padding: 1.25rem; background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle); border-radius: var(--radius-md);
+            transition: all 0.2s;
+        }
+
+        .role-card:hover {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 15px rgba(0,240,255,0.2);
+        }
+
+        .role-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .role-name {
+            font-size: 1rem; font-weight: 600;
+        }
+
+        .role-badge {
+            padding: 0.2rem 0.6rem; border-radius: 12px;
+            font-size: 0.7rem; font-weight: 600;
+        }
+
+        .role-badge.student { background: rgba(255,200,0,0.2); color: #ffc800; }
+        .role-badge.user { background: rgba(0,240,255,0.2); color: var(--accent-primary); }
+        .role-badge.designer { background: rgba(255,100,200,0.2); color: var(--accent-secondary); }
+        .role-badge.architect { background: rgba(160,100,255,0.2); color: #a064ff; }
+        .role-badge.admin { background: rgba(255,80,80,0.2); color: #ff5050; }
+
+        .role-description {
+            color: var(--text-muted); font-size: 0.8rem;
+            line-height: 1.5; margin-bottom: 0.75rem;
+        }
+
+        .permissions-list {
+            display: flex; flex-wrap: wrap; gap: 0.35rem;
+        }
+
+        .permission-pill {
+            padding: 0.25rem 0.6rem; background: rgba(0,240,255,0.1);
+            border: 1px solid rgba(0,240,255,0.3);
+            border-radius: 12px; font-size: 0.7rem; color: var(--accent-primary);
+        }
+
+        .stats-grid {
+            display: grid; grid-template-columns: repeat(4, 1fr);
+            gap: 0.9rem; margin-bottom: 1.5rem;
+        }
+
+        .stat-card {
+            background: var(--bg-elevated); border-radius: var(--radius-md);
+            padding: 1.1rem; text-align: center; border: 1px solid var(--border-subtle);
+            transition: all 0.15s ease;
+        }
+
+        .stat-card:hover { border-color: var(--border-accent); }
+
+        .stat-value {
+            font-size: 1.5rem; font-weight: 700;
+            margin-bottom: 0.2rem;
+        }
+
+        .stat-label {
+            font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .stat-card.blue .stat-value { color: var(--accent-primary); }
+        .stat-card.purple .stat-value { color: var(--accent-secondary); }
+        .stat-card.pink .stat-value { color: var(--accent-tertiary); }
+        .stat-card.green .stat-value { color: var(--accent-success); }
+
+        .audit-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+
+        .audit-table th, .audit-table td {
+            padding: 0.8rem 0.6rem; text-align: left;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .audit-table th {
+            font-weight: 600; color: var(--accent-primary); font-size: 0.75rem;
+            text-transform: uppercase; letter-spacing: 0.05em;
+        }
+
+        .audit-table tr:hover { background: var(--bg-hover); }
+
+        .audit-action {
+            display: inline-block; padding: 0.2rem 0.6rem;
+            border-radius: 12px; font-size: 0.7rem; font-weight: 600;
+        }
+
+        .audit-action.granted { background: rgba(80,255,80,0.2); color: #50ff50; }
+        .audit-action.denied { background: rgba(255,80,80,0.2); color: #ff5050; }
+        .audit-action.role_assign { background: rgba(0,240,255,0.2); color: var(--accent-primary); }
+        .audit-action.policy_change { background: rgba(160,100,255,0.2); color: #a064ff; }
+
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 100; opacity: 0; visibility: hidden;
+            transition: all 0.25s ease;
+        }
+
+        .modal-overlay.show { opacity: 1; visibility: visible; }
+
+        .modal {
+            background: var(--bg-card); border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg); padding: 1.5rem; width: 90%;
+            max-width: 480px; transform: scale(0.95) translateY(20px);
+            transition: all 0.25s ease;
+        }
+
+        .modal-overlay.show .modal { transform: scale(1) translateY(0); }
+
+        .modal-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 1.25rem; padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .modal-title { font-weight: 600; font-size: 1.1rem; }
+
+        .modal-close {
+            width: 28px; height: 28px; border-radius: var(--radius-sm);
+            border: none; background: var(--bg-elevated); color: var(--text-secondary);
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+        }
+
+        .modal-close:hover { background: var(--bg-hover); color: var(--text-primary); }
+
+        .modal-footer {
+            display: flex; justify-content: flex-end; gap: 0.75rem;
+            margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-subtle);
+        }
+
+        .toast {
+            position: fixed; bottom: 2rem; right: 2rem;
+            background: var(--bg-card); border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md); padding: 1rem 1.25rem;
+            display: flex; align-items: center; gap: 0.75rem;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+            opacity: 0; transform: translateY(20px);
+            transition: all 0.25s ease; z-index: 200;
+        }
+
+        .toast.show { opacity: 1; transform: translateY(0); }
+
+        .toast-icon {
+            width: 24px; height: 24px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        .toast.success .toast-icon { background: rgba(16,185,129,0.15); color: var(--accent-success); }
+        .toast.error .toast-icon { background: rgba(239,68,68,0.15); color: var(--accent-danger); }
+        .toast.warning .toast-icon { background: rgba(245,158,11,0.15); color: var(--accent-warning); }
+
+        .toast-message { font-size: 0.875rem; }
+
+        @media (max-width: 1024px) {
+            .sidebar { width: 240px; }
+            .main-content { padding: 1.5rem 2rem; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar { display: none; }
+            .main-content { padding: 1rem; }
+            .stats-grid { grid-template-columns: 1fr; }
+        }
+
+        .user-group-selector {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: var(--bg-elevated);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-subtle);
+        }
+
+        .group-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .group-tab {
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--border-subtle);
+            background: var(--bg-card);
+            color: var(--text-secondary);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+
+        .group-tab:hover { border-color: var(--accent-primary); color: var(--accent-primary); }
+        .group-tab.active {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: white; border-color: transparent;
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-pattern"></div>
+    <div class="grid-overlay"></div>
+
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="logo">
+                <div class="logo-icon">M</div>
+                <div><div class="logo-text">MTSCOS AI</div><div class="logo-version">v3.2.0</div></div>
+            </div>
+
+            <nav class="nav-section">
+                <div class="nav-section-title">账户</div>
+                <div class="nav-item active" data-section="profile">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    个人资料
+                </div>
+                <div class="nav-item" data-section="password">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    修改密码
+                </div>
+                <div class="nav-item" data-section="security">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    安全设置
+                </div>
+            </nav>
+
+            <nav class="nav-section" id="nav-preferences">
+                <div class="nav-section-title">偏好</div>
+                <div class="nav-item" data-section="notifications">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                    通知设置
+                </div>
+                <div class="nav-item" data-section="appearance">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/></svg>
+                    外观主题
+                </div>
+            </nav>
+
+            <nav class="nav-section" id="nav-permissions">
+                <div class="nav-section-title">权限管理</div>
+                <div class="nav-item" data-section="permission-roles">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    角色管理
+                </div>
+                <div class="nav-item" data-section="permission-assign">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                    角色分配
+                </div>
+                <div class="nav-item" data-section="permission-audit">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                    审计日志
+                </div>
+            </nav>
+
+            <nav class="nav-section" id="nav-education" style="display: none;">
+                <div class="nav-section-title">教育</div>
+                <div class="nav-item" data-section="education">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/></svg>
+                    教育设置
+                </div>
+            </nav>
+
+            <nav class="nav-section">
+                <div class="nav-section-title">系统</div>
+                <div class="nav-item" data-section="data">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></svg>
+                    数据管理
+                </div>
+                <div class="nav-item" data-section="about">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
+                    关于系统
+                </div>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <header class="page-header">
+                <div style="display: flex; align-items: center; gap: 16px;">
+                    <button class="btn btn-secondary" id="back-button" style="padding: 8px 16px;">
+                        ← 返回
+                    </button>
+                    <div>
+                        <h1 class="page-title">系统设置</h1>
+                        <p class="page-subtitle">管理您的账户、偏好和系统配置</p>
+                    </div>
+                </div>
+            </header>
+
+            <div class="profile-card">
+                <div class="profile-avatar" id="profile-avatar">U</div>
+                <div class="profile-info">
+                    <div class="profile-name" id="profile-name">未登录用户</div>
+                    <div class="profile-role" id="profile-role">游客</div>
+                </div>
+                <span class="profile-badge" id="profile-badge">离线</span>
+            </div>
+
+            <div class="stats-grid" id="stats-grid" style="display: none;">
+                <div class="stat-card blue"><div class="stat-value" id="stat-roles">7</div><div class="stat-label">角色数</div></div>
+                <div class="stat-card purple"><div class="stat-value" id="stat-users">0</div><div class="stat-label">已分配</div></div>
+                <div class="stat-card pink"><div class="stat-value" id="stat-perms">42</div><div class="stat-label">权限项</div></div>
+                <div class="stat-card green"><div class="stat-value" id="stat-audits">0</div><div class="stat-label">审计记录</div></div>
+            </div>
+
+            <section class="settings-card" id="profile-section">
+                <div class="card-header">
+                    <div class="card-title">
+                        <span class="card-icon blue">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/></svg>
+                        </span>
+                        个人资料
+                    </div>
+                    <button class="btn btn-sm btn-primary" id="save-profile">保存修改</button>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label required">用户名</label>
+                    <input type="text" class="form-input" id="profile-username" placeholder="输入用户名">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">邮箱地址</label>
+                    <input type="email" class="form-input" id="profile-email" placeholder="输入邮箱">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">用户组别</label>
+                    <select class="form-input" id="current-user-group" disabled>
+                        <option value="student">学生</option>
+                        <option value="designer">设计师</option>
+                        <option value="architect">架构师</option>
+                        <option value="teacher">教师</option>
+                        <option value="group_leader">组长</option>
+                        <option value="professor">教授</option>
+                        <option value="expert">专家</option>
+                        <option value="admin">管理员</option>
+                        <option value="super_admin">超级管理员</option>
+                        <option value="hardware_admin">硬件管理员</option>
+                    </select>
+                    <div class="form-hint">用户组别由管理员分配，无法自行修改</div>
+                </div>
+            </section>
+
+            <section class="settings-card" id="permission-roles-section" style="display: none;">
+                <div class="card-header">
+                    <div class="card-title">
+                        <span class="card-icon purple">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                        </span>
+                        角色管理
+                    </div>
+                </div>
+
+                <div class="role-grid">
+                    <div class="role-card">
+                        <div class="role-header">
+                            <span class="role-name">👨‍🎓 学生</span>
+                            <span class="role-badge" style="background: rgba(148,163,184,0.2); color: #94a3b8;">level 10</span>
+                        </div>
+                        <p class="role-description">最低权限，只能参加考试和做习题，访问设置页面。</p>
+                        <div class="permissions-list">
+                            <span class="permission-pill">参加考试</span>
+                            <span class="permission-pill">做习题</span>
+                            <span class="permission-pill">访问设置</span>
+                        </div>
+                    </div>
+
+                    <div class="role-card">
+                        <div class="role-header">
+                            <span class="role-name">🎨 设计师</span>
+                            <span class="role-badge" style="background: rgba(255,100,200,0.2); color: #ff64c8;">level 40</span>
+                        </div>
+                        <p class="role-description">设计页面访问和方案提交（在组长之下）。</p>
+                        <div class="permissions-list">
+                            <span class="permission-pill">访问设计页面</span>
+                            <span class="permission-pill">编辑设计</span>
+                            <span class="permission-pill">提交方案</span>
+                        </div>
+                    </div>
+
+                    <div class="role-card">
+                        <div class="role-header">
+                            <span class="role-name">🏗️ 架构师</span>
+                            <span class="role-badge" style="background: rgba(160,100,255,0.2); color: #a064ff;">level 40</span>
+                        </div>
+                        <p class="role-description">架构方案提交（在组长之下）。</p>
+                        <div class="permissions-list">
+                            <span class="permission-pill">访问设计页面</span>
+                            <span class="permission-pill">编辑架构</span>
+                            <span class="permission-pill">提交方案</span>
+                        </div>
+                    </div>
+
+                    <div class="role-card">
+                        <div class="role-header">
+                            <span class="role-name">👨‍🏫 教师</span>
+                            <span class="role-badge" style="background: rgba(16,185,129,0.2); color: #10b981;">level 50</span>
+                        </div>
+                        <p class="role-description">管理学生信息，接受教授的学科更换申请。</p>
+                        <div class="permissions-list">
+                            <span class="permission-pill">管理学生</span>
+                            <span class="permission-pill">删除学生</span>
+                            <span class="permission-pill">班级更换</span>
+                        </div>
+                    </div>
+
+                    <div class="role-card">
+                        <div class="role-header">
+                            <span class="role-name">👔 组长</span>
+                            <span class="role-badge" style="background: rgba(245,158,11,0.2); color: #f59e0b;">level 60</span>
+                        </div>
+                        <p class="role-description">审批设计师和架构师方案，任命设计师和架构师。</p>
+                        <div class="permissions-list">
+                            <span class="permission-pill">审批设计方案</span>
+                            <span class="permission-pill">任命设计师</span>
+                            <span class="permission-pill">任命架构师</span>
+                        </div>
+                    </div>
+
+                    <div class="role-card">
+                        <div class="role-header">
+                            <span class="role-name">🎓 教授</span>
+                            <span class="role-badge" style="background: rgba(0,240,255,0.2); color: #00f0ff;">level 70</span>
+                        </div>
+                        <p class="role-description">教学管理权限，学科分配和教师管理。</p>
+                        <div class="permissions-list">
+                            <span class="permission-pill">管理学生</span>
+                            <span class="permission-pill">分配科目</span>
+                            <span class="permission-pill">管理教师</span>
+                        </div>
+                    </div>
+
+                    <div class="role-card">
+                        <div class="role-header">
+                            <span class="role-name">�️ 专家</span>
+                            <span class="role-badge" style="background: rgba(0,240,255,0.2); color: #00f0ff;">level 70</span>
+                        </div>
+                        <p class="role-description">专家权限（与教授同级）。</p>
+                        <div class="permissions-list">
+                            <span class="permission-pill">管理学生</span>
+                            <span class="permission-pill">分配科目</span>
+                            <span class="permission-pill">管理教师</span>
+                        </div>
+                    </div>
+
+                    <div class="role-card">
+                        <div class="role-header">
+                            <span class="role-name">👮 管理员</span>
+                            <span class="role-badge" style="background: rgba(255,80,80,0.2); color: #ff5050;">level 80</span>
+                        </div>
+                        <p class="role-description">系统配置和低权限审批。</p>
+                        <div class="permissions-list">
+                            <span class="permission-pill">系统配置</span>
+                            <span class="permission-pill">审批申请</span>
+                            <span class="permission-pill">审计日志</span>
+                        </div>
+                    </div>
+
+                    <div class="role-card">
+                        <div class="role-header">
+                            <span class="role-name">� 超级管理员</span>
+                            <span class="role-badge" style="background: rgba(255,215,0,0.2); color: #ffd700;">level 90</span>
+                        </div>
+                        <p class="role-description">系统管理权限，审批和配置管理。</p>
+                        <div class="permissions-list">
+                            <span class="permission-pill">所有审批</span>
+                            <span class="permission-pill">系统配置</span>
+                            <span class="permission-pill">任命权限</span>
+                        </div>
+                    </div>
+
+                    <div class="role-card">
+                        <div class="role-header">
+                            <span class="role-name">💻 硬件管理员</span>
+                            <span class="role-badge" style="background: rgba(255,0,0,0.2); color: #ff0000;">level 100</span>
+                        </div>
+                        <p class="role-description">系统最高权限，管理所有硬件和系统资源。</p>
+                        <div class="permissions-list">
+                            <span class="permission-pill">所有权限</span>
+                            <span class="permission-pill">系统最高</span>
+                            <span class="permission-pill">完全控制</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="settings-card" id="permission-assign-section" style="display: none;">
+                <div class="card-header">
+                    <div class="card-title">
+                        <span class="card-icon green">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/></svg>
+                        </span>
+                        角色分配
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label required">用户ID</label>
+                    <input type="text" class="form-input" id="assign-user-id" placeholder="输入用户ID">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label required">选择角色</label>
+                    <select class="form-input" id="assign-role">
+                        <option value="">请选择角色</option>
+                        <option value="student">👨‍🎓 学生</option>
+                        <option value="designer">🎨 设计师</option>
+                        <option value="architect">🏗️ 架构师</option>
+                        <option value="teacher">�‍🏫 教师</option>
+                        <option value="group_leader">👔 组长</option>
+                        <option value="professor">🎓 教授</option>
+                        <option value="expert">�️ 专家</option>
+                        <option value="admin">👮 管理员</option>
+                        <option value="super_admin">👑 超级管理员</option>
+                        <option value="hardware_admin">💻 硬件管理员</option>
+                    </select>
+                </div>
+
+                <button class="btn btn-primary" id="btn-assign-role">分配角色</button>
+            </section>
+
+            <section class="settings-card" id="permission-audit-section" style="display: none;">
+                <div class="card-header">
+                    <div class="card-title">
+                        <span class="card-icon gray">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>
+                        </span>
+                        审计日志
+                    </div>
+                </div>
+
+                <table class="audit-table">
+                    <thead>
+                        <tr>
+                            <th>时间</th>
+                            <th>用户</th>
+                            <th>操作</th>
+                            <th>资源类型</th>
+                            <th>详情</th>
+                        </tr>
+                    </thead>
+                    <tbody id="audit-log-body">
+                        <tr>
+                            <td id="current-time">加载中...</td>
+                            <td>system</td>
+                            <td><span class="audit-action policy_change">policy_change</span></td>
+                            <td>system</td>
+                            <td>权限系统初始化</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <section class="settings-card" id="password-section" style="display: none;">
+                <div class="card-header">
+                    <div class="card-title">
+                        <span class="card-icon red">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/></svg>
+                        </span>
+                        修改密码
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label required">当前密码</label>
+                    <input type="password" class="form-input" id="current-password" placeholder="输入当前密码">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label required">新密码</label>
+                    <input type="password" class="form-input" id="new-password" placeholder="输入新密码">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label required">确认新密码</label>
+                    <input type="password" class="form-input" id="confirm-password" placeholder="再次输入新密码">
+                </div>
+
+                <button class="btn btn-primary" id="change-password">修改密码</button>
+            </section>
+
+            <section class="settings-card" id="security-section" style="display: none;">
+                <div class="card-header">
+                    <div class="card-title">
+                        <span class="card-icon orange">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                        </span>
+                        安全设置
+                    </div>
+                </div>
+
+                <div class="toggle-row">
+                    <div class="toggle-info">
+                        <div class="toggle-label">双因素认证</div>
+                        <div class="toggle-desc">使用手机验证码或认证器应用增强账户安全</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="2fa-toggle">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <div class="toggle-row">
+                    <div class="toggle-info">
+                        <div class="toggle-label">登录提醒</div>
+                        <div class="toggle-desc">新设备登录时发送邮件提醒</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="login-alert-toggle" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </section>
+
+            <section class="settings-card" id="notifications-section" style="display: none;">
+                <div class="card-header">
+                    <div class="card-title">
+                        <span class="card-icon purple">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg>
+                        </span>
+                        通知设置
+                    </div>
+                </div>
+
+                <div class="toggle-row">
+                    <div class="toggle-info">
+                        <div class="toggle-label">邮件通知</div>
+                        <div class="toggle-desc">接收重要更新和公告邮件</div>
+                    </div>
+                    <label class="toggle-switch"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+                </div>
+
+                <div class="toggle-row">
+                    <div class="toggle-info">
+                        <div class="toggle-label">推送通知</div>
+                        <div class="toggle-desc">接收浏览器推送通知</div>
+                    </div>
+                    <label class="toggle-switch"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+                </div>
+            </section>
+
+            <section class="settings-card" id="appearance-section" style="display: none;">
+                <div class="card-header">
+                    <div class="card-title">
+                        <span class="card-icon pink">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/></svg>
+                        </span>
+                        外观主题
+                    </div>
+                </div>
+
+                <div class="toggle-row">
+                    <div class="toggle-info">
+                        <div class="toggle-label">深色模式</div>
+                        <div class="toggle-desc">使用深色主题减少眼睛疲劳</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" checked id="dark-mode-toggle">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </section>
+
+            <section class="settings-card" id="education-section" style="display: none;">
+                <div class="card-header">
+                    <div class="card-title">
+                        <span class="card-icon green">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/></svg>
+                        </span>
+                        教育设置
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">教授年级</label>
+                    <select class="form-input" id="education-grade">
+                        <!-- 根据权限动态加载年级选项 -->
+                    </select>
+                </div>
+
+                <div class="toggle-row">
+                    <div class="toggle-info">
+                        <div class="toggle-label">AI自动批改</div>
+                        <div class="toggle-desc">AI自动批改客观题，节省批改时间</div>
+                    </div>
+                    <label class="toggle-switch"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+                </div>
+            </section>
+
+            <section class="settings-card" id="data-section" style="display: none;">
+                <div class="card-header">
+                    <div class="card-title">
+                        <span class="card-icon gray">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></svg>
+                        </span>
+                        数据管理
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">导出数据</label>
+                    <button class="btn btn-secondary" id="export-data">导出我的数据</button>
+                </div>
+            </section>
+
+            <section class="settings-card" id="about-section" style="display: none;">
+                <div class="card-header">
+                    <div class="card-title">
+                        <span class="card-icon gray">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
+                        </span>
+                        关于系统
+                    </div>
+                </div>
+
+                <div style="background: var(--bg-elevated); border-radius: var(--radius-md); padding: 1rem; margin-bottom: 1rem;">
+                    <div style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem;">MTSCOS AI Project</div>
+                    <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; color: var(--text-muted);">版本 v3.2.0</div>
+                </div>
+
+                <div class="form-hint">
+                    <div style="margin-bottom: 0.5rem;"><strong>系统信息：</strong></div>
+                    <div>最后更新：2026-05-30</div>
+                    <div>构建版本：20260530-a1b2c3d</div>
+                    <div>数据库版本：3.2</div>
+                </div>
+
+                <button class="btn btn-secondary btn-sm" style="margin-top: 1rem;" id="check-update">检查更新</button>
+            </section>
+
+            <div class="user-group-selector" id="group-selector">
+                <div class="form-hint" style="margin-bottom: 0.75rem;">
+                    <strong>测试模式：</strong>选择不同的用户组别，查看对应的权限设置界面
+                </div>
+                <div class="group-tabs">
+                    <button class="group-tab" data-group="student">👨‍🎓 学生</button>
+                    <button class="group-tab" data-group="designer">🎨 设计师</button>
+                    <button class="group-tab" data-group="architect">🏗️ 架构师</button>
+                    <button class="group-tab" data-group="teacher">👨‍🏫 教师</button>
+                    <button class="group-tab" data-group="group_leader">👔 组长</button>
+                    <button class="group-tab" data-group="professor">� 教授</button>
+                    <button class="group-tab active" data-group="admin">👮 管理员</button>
+                    <button class="group-tab" data-group="super_admin">👑 超级管理员</button>
+                    <button class="group-tab" data-group="hardware_admin">💻 硬件管理员</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div class="toast" id="toast">
+        <div class="toast-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <div class="toast-message" id="toast-message">操作成功</div>
+    </div>
+
+    <script>
+        const userGroupSettings = {
+            student: {
+                profile: true,
+                password: true,
+                security: true,
+                notifications: true,
+                appearance: true,
+                permissions: false,
+                education: true,
+                data: false,
+                about: true
+            },
+            designer: {
+                profile: true,
+                password: true,
+                security: true,
+                notifications: true,
+                appearance: true,
+                permissions: false,
+                education: false,
+                data: false,
+                about: true
+            },
+            architect: {
+                profile: true,
+                password: true,
+                security: true,
+                notifications: true,
+                appearance: true,
+                permissions: false,
+                education: false,
+                data: false,
+                about: true
+            },
+            teacher: {
+                profile: true,
+                password: true,
+                security: true,
+                notifications: true,
+                appearance: true,
+                permissions: false,
+                education: true,
+                data: false,
+                about: true
+            },
+            group_leader: {
+                profile: true,
+                password: true,
+                security: true,
+                notifications: true,
+                appearance: true,
+                permissions: true,
+                education: false,
+                data: false,
+                about: true
+            },
+            professor: {
+                profile: true,
+                password: true,
+                security: true,
+                notifications: true,
+                appearance: true,
+                permissions: false,
+                education: true,
+                data: false,
+                about: true
+            },
+            expert: {
+                profile: true,
+                password: true,
+                security: true,
+                notifications: true,
+                appearance: true,
+                permissions: false,
+                education: true,
+                data: false,
+                about: true
+            },
+            admin: {
+                profile: true,
+                password: true,
+                security: true,
+                notifications: true,
+                appearance: true,
+                permissions: false,
+                education: false,
+                data: true,
+                about: true
+            },
+            super_admin: {
+                profile: true,
+                password: true,
+                security: true,
+                notifications: true,
+                appearance: true,
+                permissions: true,
+                education: false,
+                data: true,
+                about: true
+            },
+            hardware_admin: {
+                profile: true,
+                password: true,
+                security: true,
+                notifications: true,
+                appearance: true,
+                permissions: true,
+                education: true,
+                data: true,
+                about: true
+            }
+        };
+
+        const groupNames = {
+            student: '学生',
+            designer: '设计师',
+            architect: '架构师',
+            teacher: '教师',
+            group_leader: '组长',
+            professor: '教授',
+            expert: '专家',
+            admin: '管理员',
+            super_admin: '超级管理员',
+            hardware_admin: '硬件管理员'
+        };
+
+        // 年级选项配置 - 根据用户组权限显示不同年级
+        const gradeOptions = {
+            // 普通权限：仅显示1-3年级
+            default: ['一年级', '二年级', '三年级'],
+            // 教师权限：显示1-6年级
+            teacher: ['一年级', '二年级', '三年级', '四年级', '五年级', '六年级'],
+            // 教授/专家权限：显示1-9年级
+            professor: ['一年级', '二年级', '三年级', '四年级', '五年级', '六年级', '七年级', '八年级', '九年级'],
+            // 超级管理员/硬件管理员：显示全部年级，包括成人年级
+            super_admin: ['一年级', '二年级', '三年级', '四年级', '五年级', '六年级', '七年级', '八年级', '九年级', '成人初级', '成人中级', '成人高级', '雅思预备', '托福预备', '商务英语初级', '商务英语中级', '商务英语高级', '日语N5', '日语N4', '日语N3', '日语N2', '日语N1', '新概念第一册', '新概念第二册', '新概念第三册', '新概念第四册', 'AMC8预备', 'AMC8进阶', '华罗庚竞赛初级', '华罗庚竞赛中级', '华罗庚竞赛高级']
+        };
+        gradeOptions.hardware_admin = gradeOptions.super_admin;
+        gradeOptions.expert = gradeOptions.professor;
+
+        // 用户组权限级别定义（数字越大，权限越高）
+        const permissionLevel = {
+            student: 1,
+            designer: 2,
+            architect: 3,
+            teacher: 4,
+            group_leader: 5,
+            professor: 6,
+            expert: 7,
+            admin: 8,
+            super_admin: 9,
+            hardware_admin: 10
+        };
+
+        // 记录实际登录用户的权限（用于权限校验）
+        let actualUserGroup = localStorage.getItem('mtcos_userGroup') || 'admin';
+        let currentGroup = actualUserGroup;
+
+        function initProfile() {
+            const username = localStorage.getItem('mtcos_username') || 'Guest';
+            const email = localStorage.getItem('mtcos_email') || '';
+            const userGroup = localStorage.getItem('mtcos_userGroup') || 'admin';
+            const loggedIn = localStorage.getItem('mtcos_loggedIn') === 'true';
+
+            document.getElementById('profile-name').textContent = username;
+            document.getElementById('profile-avatar').textContent = username.charAt(0).toUpperCase();
+            document.getElementById('profile-role').textContent = groupNames[userGroup] || '管理员';
+            document.getElementById('profile-badge').textContent = loggedIn ? '在线' : '离线';
+            document.getElementById('profile-badge').style.background = loggedIn ? 'rgba(16,185,129,0.15)' : 'rgba(148,163,184,0.15)';
+            document.getElementById('profile-badge').style.color = loggedIn ? '#10b981' : '#94a3b8';
+            document.getElementById('current-user-group').value = userGroup;
+            
+            // 设置输入框的值
+            document.getElementById('profile-username').value = username === 'Guest' ? '' : username;
+            document.getElementById('profile-email').value = email;
+
+            if (loggedIn) {
+                currentGroup = userGroup;
+            }
+        }
+
+        function updateGradeOptions() {
+            const gradeSelect = document.getElementById('education-grade');
+            if (!gradeSelect) return;
+
+            // 根据当前用户组选择年级选项
+            let options = gradeOptions[currentGroup] || gradeOptions.default;
+
+            // 清空现有选项
+            gradeSelect.innerHTML = '';
+
+            // 添加新选项
+            options.forEach(grade => {
+                const option = document.createElement('option');
+                option.value = grade;
+                option.textContent = grade;
+                gradeSelect.appendChild(option);
+            });
+
+            console.log(`已为 ${groupNames[currentGroup]} 加载 ${options.length} 个年级选项`);
+        }
+
+        function updateVisibleSections() {
+            const settings = userGroupSettings[currentGroup] || userGroupSettings.admin;
+
+            document.getElementById('nav-permissions').style.display = settings.permissions ? 'block' : 'none';
+            document.getElementById('nav-education').style.display = settings.education ? 'block' : 'none';
+            document.getElementById('stats-grid').style.display = settings.permissions ? 'grid' : 'none';
+            
+            // 同时更新年级选项
+            updateGradeOptions();
+        }
+
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', function(e) {
+                e.preventDefault();
+                document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+                this.classList.add('active');
+                
+                const section = this.dataset.section;
+                const sections = document.querySelectorAll('.settings-card');
+                sections.forEach(s => {
+                    s.style.display = s.id === section + '-section' ? 'block' : 'none';
+                });
+            });
+        });
+
+        document.querySelectorAll('.group-tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                const targetGroup = this.dataset.group;
+                
+                // 权限校验：检查是否有权限切换到目标用户组
+                const actualLevel = permissionLevel[actualUserGroup] || 0;
+                const targetLevel = permissionLevel[targetGroup] || 0;
+                
+                // 只能切换到权限级别不超过自己的用户组
+                if (targetLevel > actualLevel) {
+                    showToast(`您没有权限切换到${groupNames[targetGroup]}！`, 'error');
+                    return;
+                }
+                
+                // 权限校验通过，执行切换
+                document.querySelectorAll('.group-tab').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+                currentGroup = targetGroup;
+                updateVisibleSections();
+                updateTabVisibility(); // 更新标签可见性
+                showToast(`已切换到${groupNames[currentGroup]}视图`, 'success');
+            });
+        });
+
+        // 更新标签可见性：禁用或隐藏权限不够的用户组标签
+        function updateTabVisibility() {
+            const actualLevel = permissionLevel[actualUserGroup] || 0;
+            
+            document.querySelectorAll('.group-tab').forEach(tab => {
+                const targetGroup = tab.dataset.group;
+                const targetLevel = permissionLevel[targetGroup] || 0;
+                
+                if (targetLevel > actualLevel) {
+                    tab.disabled = true;
+                    tab.style.opacity = '0.4';
+                    tab.style.cursor = 'not-allowed';
+                    tab.title = `您没有权限切换到${groupNames[targetGroup]}`;
+                } else {
+                    tab.disabled = false;
+                    tab.style.opacity = '';
+                    tab.style.cursor = '';
+                    tab.title = '';
+                }
+            });
+        }
+
+        function updateTime() {
+            const now = new Date();
+            const timeStr = now.toLocaleString('zh-CN');
+            const timeElements = document.querySelectorAll('#current-time');
+            timeElements.forEach(el => {
+                if (el) el.textContent = timeStr;
+            });
+        }
+        setInterval(updateTime, 1000);
+        updateTime();
+
+        // 返回按钮功能
+        document.getElementById('back-button').addEventListener('click', () => {
+            // 如果有历史记录就返回，否则跳转到主页
+            if (window.history.length > 1) {
+                window.history.back();
+            } else {
+                window.location.href = 'index.html';
+            }
+        });
+
+        // 增强的个人资料保存功能
+        document.getElementById('save-profile').addEventListener('click', () => {
+            const username = document.getElementById('profile-username').value;
+            const email = document.getElementById('profile-email').value;
+            
+            // 验证输入
+            if (!username) {
+                showToast('请输入用户名', 'error');
+                return;
+            }
+            
+            // 保存到 localStorage
+            if (username) {
+                localStorage.setItem('mtcos_username', username);
+            }
+            if (email) {
+                localStorage.setItem('mtcos_email', email);
+            }
+            
+            // 更新界面
+            initProfile();
+            
+            // 调用 API 记录操作
+            fetch('/api/operation/log', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    operation: 'save_profile',
+                    category: 'user_settings',
+                    data: { username: username, email: email }
+                })
+            }).catch(err => console.log('记录操作日志失败:', err));
+            
+            showToast('个人资料已成功保存', 'success');
+        });
+
+        document.getElementById('change-password').addEventListener('click', function() {
+            const current = document.getElementById('current-password').value;
+            const newPass = document.getElementById('new-password').value;
+            const confirm = document.getElementById('confirm-password').value;
+            
+            if (!current || !newPass || !confirm) { showToast('请填写所有字段', 'error'); return; }
+            if (newPass !== confirm) { showToast('两次输入的密码不一致', 'error'); return; }
+            if (newPass.length < 8) { showToast('密码长度至少8位', 'error'); return; }
+            showToast('密码修改成功', 'success');
+        });
+
+        document.getElementById('btn-assign-role').addEventListener('click', function() {
+            const userId = document.getElementById('assign-user-id').value;
+            const roleId = document.getElementById('assign-role').value;
+            
+            if (!userId || !roleId) {
+                showToast('请填写用户ID和选择角色', 'error');
+                return;
+            }
+            
+            showToast(`已为用户 ${userId} 分配角色`, 'success');
+            addAuditLog('role_assign', userId, 'role', roleId);
+        });
+
+        function addAuditLog(action, userId, resourceType, details) {
+            const tbody = document.getElementById('audit-log-body');
+            const now = new Date().toLocaleString('zh-CN');
+            
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${now}</td>
+                <td>${userId}</td>
+                <td><span class="audit-action ${action}">${action}</span></td>
+                <td>${resourceType}</td>
+                <td>${details}</td>
+            `;
+            
+            tbody.insertBefore(row, tbody.firstChild);
+        }
+
+        document.getElementById('check-update').addEventListener('click', function() {
+            showToast('正在检查更新...', 'success');
+            setTimeout(() => showToast('当前已是最新版本', 'success'), 1500);
+        });
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const messageEl = document.getElementById('toast-message');
+            
+            toast.className = `toast ${type}`;
+            messageEl.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        document.getElementById('2fa-toggle').addEventListener('change', function() {
+            if (this.checked) {
+                showToast('双因素认证已开启', 'success');
+            } else {
+                showToast('双因素认证已关闭', 'success');
+            }
+        });
+
+        initProfile();
+        updateVisibleSections();
+        updateTabVisibility(); // 初始化时更新标签可见性
+    </script>
+</body>
+</html>

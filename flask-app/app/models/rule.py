@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-系统规则模型，用于存储和管理系统规则
+系统规则模型 - 用于存储和管理系统规则
+"""
 
 from app.models.base_model import BaseModel
 
@@ -22,39 +23,42 @@ class Rule(BaseModel):
         'version': 'INTEGER DEFAULT 1',
         'status': 'TEXT DEFAULT "active"',
         'author': 'TEXT DEFAULT "system"',
-        'conditions': 'TEXT DEFAULT "[]"',  # 存储为JSON字符串
-        'actions': 'TEXT DEFAULT "[]"',      # 存储为JSON字符串
-        'tags': 'TEXT DEFAULT "[]"',        # 存储为JSON字符串
-        'effective_from': 'TEXT',            # 生效时间
-        'effective_to': 'TEXT',              # 失效时间
-        'last_executed_at': 'TEXT',         # 最后执行时间
-        'execution_count': 'INTEGER DEFAULT 0',  # 执行次数
-        'last_verified_at': 'TEXT',         # 最后验证时间
-        'verified_by': 'TEXT'               # 验证人
+        'conditions': 'TEXT DEFAULT "[]"',
+        'actions': 'TEXT DEFAULT "[]"',
+        'tags': 'TEXT DEFAULT "[]"',
+        'effective_from': 'TEXT',
+        'effective_to': 'TEXT',
+        'last_executed_at': 'TEXT',
+        'execution_count': 'INTEGER DEFAULT 0',
+        'last_verified_at': 'TEXT',
+        'verified_by': 'TEXT'
     }
 
     @classmethod
     def get_rules_by_type(cls, rule_type):
         """根据类型获取规则"""
-        return cls.filter(
-            where_clause="rule_type = ? AND enabled = 1",
-            where_params=(rule_type,),
-            order_by="priority DESC"
-        )
+        return cls.filter(rule_type=rule_type)
 
     @classmethod
+    def get_enabled_rules(cls):
         """获取所有启用的规则"""
-        return cls.filter(
-            where_clause="enabled = 1",
-        )
+        return cls.filter(enabled=1)
 
     @classmethod
-        rule = cls.get_by_id(rule_id)
-        if rule:
-            rule.rule_content = new_content
-            rule.version += 1
-            return rule.save()
-        return False
+    def update_rule_content(cls, rule_id, new_content):
+        """更新规则内容"""
+        return cls.update(rule_id, rule_content=new_content)
+
+    @classmethod
+    def add_new_rule(cls, rule_type, rule_name, rule_content, description="", priority=1):
+        """添加新规则"""
+        return cls.create(
+            rule_type=rule_type,
+            rule_name=rule_name,
+            rule_content=rule_content,
+            description=description,
+            priority=priority
+        )
 
     def enable(self):
         """启用规则"""
@@ -75,31 +79,27 @@ class Rule(BaseModel):
 
     def get_conditions(self):
         """获取规则条件列表"""
+        return eval(self.conditions or "[]")
 
     def set_conditions(self, conditions):
         """设置规则条件列表"""
-        # JSON import removed - using database
-self.conditions = str(conditions or [])
+        self.conditions = str(conditions or [])
 
     def get_actions(self):
         """获取规则动作列表"""
-        # JSON import removed - using database
-return eval(self.actions or "[]")
+        return eval(self.actions or "[]")
 
     def set_actions(self, actions):
         """设置规则动作列表"""
-        # JSON import removed - using database
-self.actions = str(actions or [])
+        self.actions = str(actions or [])
 
     def get_tags(self):
         """获取规则标签列表"""
-        # JSON import removed - using database
-return eval(self.tags or "[]")
+        return eval(self.tags or "[]")
 
     def set_tags(self, tags):
         """设置规则标签列表"""
-        # JSON import removed - using database
-self.tags = str(tags or [])
+        self.tags = str(tags or [])
 
     def verify(self, verified_by):
         """验证规则"""
@@ -112,19 +112,11 @@ self.tags = str(tags or [])
         """增加执行次数"""
         from datetime import datetime
         self.last_executed_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        self.execution_count = (self.execution_count or 0) + 1
         return self.save()
 
-    @classmethod
-        """根据状态获取规则"""
-        return cls.filter(
-            where_params=(status,),
-
-    @classmethod
-        """根据标签获取规则"""
-        # JSON import removed - using database
-        return [rule for rule in rules if tag in rule.get_tags()]
     def to_dict(self):
-        """转换为字典，包含解析后的条件和动作"""
+        """转换为字典: 包含解析后的条件和动作"""
         result = super().to_dict()
         result['conditions'] = self.get_conditions()
         result['actions'] = self.get_actions()

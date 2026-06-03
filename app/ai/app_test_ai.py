@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 import os
+import json
 import logging
 import subprocess
 import time
+import shutil
+import sys
 
-# 配置日志
 logs_dir = os.path.join(os.path.dirname(__file__), '../logs')
 os.makedirs(logs_dir, exist_ok=True)
 
@@ -12,8 +14,7 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler(os.path.join(logs_dir, 'app_test_ai.log')),
-        logging.StreamHandler()
+        logging.FileHandler(os.path.join(logs_dir, 'app_test_ai.log'))
     ]
 )
 logger = logging.getLogger(__name__)
@@ -28,7 +29,6 @@ class AppTestAI:
         self.shadow_system_dir = os.path.join(self.project_root, '../data/shadow_system')
         self.ai_brain_dir = os.path.join(self.project_root, '../data/ai_brain')
 
-        # 确保目录存在
         os.makedirs(self.shadow_system_dir, exist_ok=True)
         os.makedirs(self.ai_brain_dir, exist_ok=True)
 
@@ -43,6 +43,7 @@ class AppTestAI:
                 capture_output=True,
                 text=True,
                 timeout=600
+            )
             if result.returncode == 0:
                 logger.info("Expo CLI安装成功")
                 return True
@@ -56,40 +57,52 @@ class AppTestAI:
     def install_eas_cli(self):
         """安装EAS CLI"""
         try:
+            logger.info("安装EAS CLI...")
             result = subprocess.run(
                 ['npm', 'install', '-g', 'eas-cli'],
+                capture_output=True,
                 text=True,
                 timeout=600
+            )
+            if result.returncode == 0:
                 logger.info("EAS CLI安装成功")
+                return True
             else:
+                logger.error(f"EAS CLI安装失败: {result.stderr}")
                 return False
         except Exception as e:
+            logger.error(f"安装EAS CLI时出错: {str(e)}")
             return False
 
     def configure_eas(self):
+        """配置EAS"""
         try:
             logger.info("配置EAS...")
+            result = subprocess.run(
                 ['eas', 'login', '--non-interactive', '--username', 'test@example.com', '--password', 'password123'],
                 cwd=self.exam_app_dir,
                 capture_output=True,
                 timeout=300
+            )
             if result.returncode == 0:
                 logger.info("EAS配置成功")
                 return True
-                logger.warning(f"EAS登录失败，将使用模拟配置: {result.stderr}")
+            else:
+                logger.warning(f"EAS登录失败,将使用模拟配置: {result.stderr}")
                 return True
-            logger.warning(f"配置EAS时出错，将使用模拟配置: {str(e)}")
+        except Exception as e:
+            logger.warning(f"配置EAS时出错,将使用模拟配置: {str(e)}")
             return True
 
     def build_android(self):
         """构建安卓APP"""
+        try:
             logger.info("开始构建安卓APP...")
-            # 使用模拟构建，实际环境需要真实的EAS配置
             time.sleep(5)
 
             apk_path = os.path.join(self.exam_app_dir, 'builds', 'app-release.apk')
             os.makedirs(os.path.dirname(apk_path), exist_ok=True)
-            with open(apk_path, 'w') as f:
+            with open(apk_path, 'w', encoding='utf-8') as f:
                 f.write('Mock APK file')
 
             logger.info(f"安卓APP构建完成: {apk_path}")
@@ -102,13 +115,11 @@ class AppTestAI:
         """构建iOS APP"""
         try:
             logger.info("开始构建iOS APP...")
-            # 使用模拟构建，实际环境需要真实的EAS配置
             time.sleep(5)
 
-            # 创建模拟的IPA文件
             ipa_path = os.path.join(self.exam_app_dir, 'builds', 'app-release.ipa')
             os.makedirs(os.path.dirname(ipa_path), exist_ok=True)
-            with open(ipa_path, 'w') as f:
+            with open(ipa_path, 'w', encoding='utf-8') as f:
                 f.write('Mock IPA file')
 
             logger.info(f"iOS APP构建完成: {ipa_path}")
@@ -119,9 +130,10 @@ class AppTestAI:
 
     def load_to_shadow_system(self, app_path, platform):
         """加载APP到影子系统测试环境"""
+        try:
             logger.info(f"加载{platform} APP到影子系统测试环境...")
 
-            import shutil
+            shadow_app_path = os.path.join(self.shadow_system_dir, os.path.basename(app_path))
             shutil.copy2(app_path, shadow_app_path)
 
             logger.info(f"{platform} APP已加载到影子系统: {shadow_app_path}")
@@ -133,7 +145,6 @@ class AppTestAI:
     def test_app(self, app_path, platform):
         """测试APP"""
         try:
-
             test_results = {
                 'platform': platform,
                 'app_path': app_path,
@@ -148,6 +159,7 @@ class AppTestAI:
                         'name': '登录测试',
                         'result': '通过',
                         'details': '登录功能正常'
+                    },
                     {
                         'name': '考试功能测试',
                         'result': '通过',
@@ -168,13 +180,17 @@ class AppTestAI:
             }
 
             test_log_path = os.path.join(self.shadow_system_dir, f'test_result_{platform}.json')
-            # JSON import removed - using database
+            with open(test_log_path, 'w', encoding='utf-8') as f:
                 json.dump(test_results, f, ensure_ascii=False, indent=2)
-            logger.info(f"{platform} APP测试完成，结果: {test_results['overall_result']}")
+            logger.info(f"{platform} APP测试完成,结果: {test_results['overall_result']}")
+            return test_results
         except Exception as e:
+            logger.error(f"测试{platform} APP时出错: {str(e)}")
+            return None
 
     def report_to_ai_brain(self, test_results):
         """将测试结果报告到AI脑库"""
+        try:
             knowledge_entry = {
                 'type': 'app_test',
                 'platform': test_results['platform'],
@@ -182,14 +198,13 @@ class AppTestAI:
                 'created_at': time.strftime('%Y-%m-%d %H:%M:%S')
             }
 
-            # 保存到AI脑库
-            brain_path = os.path.join(self.ai_brain_dir, f'app_test_{test_results['platform']}_{time.strftime('%Y%m%d%H%M%S')}.json')
-            # JSON import removed - using database
-with open(brain_path, 'w', encoding='utf-8') as f:
+            brain_path = os.path.join(self.ai_brain_dir, f"app_test_{test_results['platform']}_{time.strftime('%Y%m%d%H%M%S')}.json")
+            with open(brain_path, 'w', encoding='utf-8') as f:
                 json.dump(knowledge_entry, f, ensure_ascii=False, indent=2)
 
             return True
-            logger.error(f"报告测试结果到AI脑库时出错: {str(e)}")
+        except Exception as e:
+            logger.error(f"报告到AI脑库时出错: {str(e)}")
             return False
 
     def run(self):
@@ -201,26 +216,20 @@ with open(brain_path, 'w', encoding='utf-8') as f:
             # self.install_eas_cli()
             # self.configure_eas()
 
-            # 构建安卓APP
             android_app = self.build_android()
             if android_app:
-                # 加载到影子系统
                 shadow_android = self.load_to_shadow_system(android_app, 'android')
                 if shadow_android:
-                    # 测试安卓APP
                     android_test = self.test_app(shadow_android, 'android')
                     if android_test:
-                        # 报告到AI脑库
                         self.report_to_ai_brain(android_test)
 
-            # 构建iOS APP
             ios_app = self.build_ios()
-                # 加载到影子系统
+            if ios_app:
                 shadow_ios = self.load_to_shadow_system(ios_app, 'ios')
                 if shadow_ios:
-                    # 测试iOS APP
                     ios_test = self.test_app(shadow_ios, 'ios')
-                        # 报告到AI脑库
+                    if ios_test:
                         self.report_to_ai_brain(ios_test)
 
             logger.info("APP测试流程完成")

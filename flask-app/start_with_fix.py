@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
-# 修改版启动脚本，用于修复learning.py中的MODEL_PATH KeyError问题
+# 修改版启动脚本,用于修复learning.py中的MODEL_PATH KeyError问题
+import logging
+logger = logging.getLogger(__name__)
 import sys
 import os
 import types
@@ -7,7 +9,7 @@ import types
 # 添加项目根目录到Python路径
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-# 1. 首先应用猴子补丁，修复app.config模块
+# 1. 首先应用猴子补丁,修复app.config模块
 print("[启动修复] 应用配置猴子补丁...")
 
 # 创建一个假的配置模块
@@ -45,6 +47,7 @@ fake_config.Config = type('Config', (), {
         'RETRY_COUNT': 3,
         'CACHE_SIZE': 1000,
         'CACHE_TTL': 3600
+    },
     # 信道配置
     'CHANNEL_CONFIG': {
         'MAX_CHANNELS': 50,
@@ -58,11 +61,14 @@ fake_config.DEFAULT_CONFIG = {
         'AI_ENHANCEMENT': True,
         'AUTO_CLOSURE': True,
     }
+}
 
 sys.modules['app.config'] = fake_config
-# 2. 现在尝试导入app.ai.learning模块，验证修复是否有效
+# 2. 现在尝试导入app.ai.learning模块,验证修复是否有效
 try:
     print("[启动修复] learning模块修复成功!")
+except Exception as e:
+    print(f"[启动修复] learning模块修复失败: {e}")
     import traceback
     traceback.print_exc()
     sys.exit(1)

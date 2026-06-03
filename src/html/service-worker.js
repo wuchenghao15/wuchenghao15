@@ -114,7 +114,7 @@ const STATIC_CACHE_URLS = [
   '/assets/css/common_styles/theme-system.css',
   '/assets/css/page_styles/login-styles.css',
   '/assets/css/component_styles/footer.css',
-  'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
+  'https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css',
   'https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js'
 ];
 

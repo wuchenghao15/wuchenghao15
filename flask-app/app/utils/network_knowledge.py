@@ -1,8 +1,10 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 网络知识获取模块
-负责从网络获取专业知识，整合到知识库
+负责从网络获取专业知识并整合到知识库
+"""
 
 import os
 import re
@@ -11,8 +13,8 @@ import requests
 from bs4 import BeautifulSoup
 from typing import Dict, Any, Optional
 
-# 配置日志
 logger = logging.getLogger('network_knowledge')
+
 
 class NetworkKnowledge:
     """网络知识获取类"""
@@ -28,207 +30,58 @@ class NetworkKnowledge:
     def fetch_knowledge(self, url: str) -> Optional[Dict[str, Any]]:
         """从指定URL获取知识"""
         try:
-            # 发送请求
             response = requests.get(url, headers=self.headers, timeout=self.timeout)
             response.raise_for_status()
 
-            # 解析内容
             soup = BeautifulSoup(response.content, 'html.parser')
 
-            # 根据URL类型提取知识
             if 'python.org' in url:
                 return self._extract_python_knowledge(soup)
-            elif 'flask.palletsprojects.com' in url:
-                return self._extract_flask_knowledge(soup)
-            elif 'sqlite.org' in url:
-                return self._extract_sqlite_knowledge(soup)
-            elif 'owasp.org' in url:
-                return self._extract_owasp_knowledge(soup)
             else:
-                return self._extract_generic_knowledge(soup)
-        except Exception as e:
-            logger.error(f"从 {url} 获取知识失败: {str(e)}")
+                return self._extract_general_knowledge(soup)
+
+        except requests.RequestException as e:
+            logger.error(f"获取知识失败: {str(e)}")
             return None
 
-    def _extract_python_knowledge(self, soup: BeautifulSoup) -> Dict[str, Any]:
-        """提取Python相关知识"""
+    def _extract_python_knowledge(self, soup) -> Dict[str, Any]:
+        """从Python官网提取知识"""
         knowledge = {
-            'python': {}
+            'source': 'python.org',
+            'title': '',
+            'content': '',
+            'code_examples': []
         }
-        try:
-            # 提取标题
-            knowledge['python']['title'] = title
 
-            # 提取内容
-            content = soup.find('div', class_='document')
-            if content:
-                # 提取章节
-                sections = content.find_all('section')
-                for section in sections:
-                    section_title = section.find('h2').text if section.find('h2') else 'Unknown Section'
-                    section_content = section.get_text(separator='\n', strip=True)
-                    knowledge['python'][section_title] = section_content[:500]  # 限制内容长度
-        except Exception as e:
-            logger.error(f"提取Python知识失败: {str(e)}")
+        title_elem = soup.find('h1')
+        if title_elem:
+            knowledge['title'] = title_elem.get_text(strip=True)
 
+        content_elem = soup.find('div', class_='body')
+        if content_elem:
+            knowledge['content'] = content_elem.get_text(strip=True)
 
-    def _extract_flask_knowledge(self, soup: BeautifulSoup) -> Dict[str, Any]:
-        """提取Flask相关知识"""
-        knowledge = {
-            'flask': {}
-        }
-        try:
-            title = soup.find('h1').text if soup.find('h1') else 'Flask Documentation'
-
-            # 提取内容
-            content = soup.find('div', class_='document')
-            if content:
-                sections = content.find_all('section')
-                for section in sections:
-                    section_title = section.find('h2').text if section.find('h2') else 'Unknown Section'
-                    section_content = section.get_text(separator='\n', strip=True)
-        except Exception as e:
-
-
-        knowledge = {
-        }
-            # 提取标题
-            knowledge['database']['title'] = title
-            if content:
-                # 提取章节
-                sections = content.find_all('div', class_='section')
-                for section in sections:
-                    section_title = section.find('h2').text if section.find('h2') else 'Unknown Section'
-        except Exception as e:
-            logger.error(f"提取SQLite知识失败: {str(e)}")
+        code_blocks = soup.find_all('pre')
+        for code in code_blocks:
+            knowledge['code_examples'].append(code.get_text(strip=True))
 
         return knowledge
-    def _extract_owasp_knowledge(self, soup: BeautifulSoup) -> Dict[str, Any]:
-        """提取OWASP相关知识"""
-            'security': {}
-        }
-            # 提取标题
-            title = soup.find('h1').text if soup.find('h1') else 'OWASP Documentation'
 
-            content = soup.find('div', class_='wiki-content')
-            if content:
-                sections = content.find_all('div', class_='section')
-                    section_title = section.find('h2').text if section.find('h2') else 'Unknown Section'
-                    section_content = section.get_text(separator='\n', strip=True)
-        except Exception as e:
-            logger.error(f"提取OWASP知识失败: {str(e)}")
-
-    def _extract_generic_knowledge(self, soup: BeautifulSoup) -> Dict[str, Any]:
-        """提取通用知识"""
+    def _extract_general_knowledge(self, soup) -> Dict[str, Any]:
+        """从一般网页提取知识"""
         knowledge = {
-            'general': {}
-            # 提取标题
-            knowledge['general']['title'] = title
+            'source': 'general',
+            'title': '',
+            'content': '',
+            'code_examples': []
+        }
 
-            # 提取内容
-                page_content = content.get_text(separator='\n', strip=True)
-                knowledge['general']['content'] = page_content[:1000]  # 限制内容长度
-        except Exception as e:
+        title_elem = soup.find('title')
+        if title_elem:
+            knowledge['title'] = title_elem.get_text(strip=True)
+
+        content_elem = soup.find('article') or soup.find('main') or soup.find('body')
+        if content_elem:
+            knowledge['content'] = content_elem.get_text(strip=True)
+
         return knowledge
-
-    def search_knowledge(self, query: str) -> Optional[Dict[str, Any]]:
-        """搜索知识"""
-        try:
-            # 这里使用一个简单的模拟实现
-            response.raise_for_status()
-            # 解析搜索结果
-            search_results = []
-
-            # 提取搜索结果
-                title = result.find('h3').text if result.find('h3') else 'No Title'
-                snippet = result.find('div', class_='s').text if result.find('div', class_='s') else ''
-                search_results.append({
-                    'title': title,
-                    'link': link,
-
-                'query': query,
-                'results': search_results
-            }
-            logger.error(f"搜索知识失败: {str(e)}")
-            return None
-
-    def fetch_stack_overflow_answers(self, query: str) -> Optional[Dict[str, Any]]:
-        """从Stack Overflow获取答案"""
-        try:
-            # 构建Stack Overflow搜索URL
-            stack_url = f"https://stackoverflow.com/search?q={query}"
-            response = requests.get(stack_url, headers=self.headers, timeout=self.timeout)
-            response.raise_for_status()
-
-            # 解析搜索结果
-            answers = []
-            question_divs = soup.find_all('div', class_='question-summary')
-            for i, question in enumerate(question_divs[:3]):  # 只取前3个问题
-                title = question.find('a', class_='question-hyperlink').text if question.find('a', class_='question-hyperlink') else 'No Title'
-                votes = question.find('span', class_='vote-count-post').text if question.find('span', class_='vote-count-post') else '0'
-                answers_count = question.find('div', class_='status').find('strong').text if question.find('div', class_='status') else '0'
-
-                    'link': f"https://stackoverflow.com{link}",
-                    'votes': votes,
-                    'answers_count': answers_count
-
-            return {
-                'query': query,
-                'answers': answers
-            }
-            logger.error(f"获取Stack Overflow答案失败: {str(e)}")
-            return None
-
-    def update_knowledge_base(self, knowledge_base: Dict[str, Any]) -> Dict[str, Any]:
-        """更新知识库"""
-        try:
-            # 从多个来源获取知识
-            sources = [
-                'https://docs.python.org/3/tutorial/',
-                'https://flask.palletsprojects.com/en/2.0.x/',
-                'https://www.sqlite.org/docs.html',
-                'https://owasp.org/www-project-top-ten/'
-            ]
-            for source in sources:
-                knowledge = self.fetch_knowledge(source)
-                if knowledge:
-                    # 整合知识
-                    for category, items in knowledge.items():
-                            knowledge_base[category] = {}
-                        knowledge_base[category].update(items)
-
-            logger.info("知识库更新成功")
-            return knowledge_base
-        except Exception as e:
-            logger.error(f"更新知识库失败: {str(e)}")
-            return knowledge_base
-if __name__ == '__main__':
-    # 测试网络知识获取
-    knowledge_fetcher = NetworkKnowledge()
-
-    # 测试从Python官网获取知识
-    print("从Python官网获取知识:")
-    python_knowledge = knowledge_fetcher.fetch_knowledge('https://docs.python.org/3/tutorial/')
-    if python_knowledge:
-        print(f"获取到 {len(python_knowledge.get('python', {}))} 条Python知识")
-
-    # 测试从Flask官网获取知识
-    print("\n从Flask官网获取知识:")
-    if flask_knowledge:
-        print(f"获取到 {len(flask_knowledge.get('flask', {}))} 条Flask知识")
-
-    print("\n搜索Python异常处理知识:")
-    search_result = knowledge_fetcher.search_knowledge('python exception handling best practices')
-    if search_result:
-        print(f"找到 {len(search_result.get('results', []))} 个搜索结果")
-        for result in search_result.get('results', [])[:2]:
-            print(f"- {result['title']}")
-            print(f"  {result['link']}")
-
-    # 测试从Stack Overflow获取答案
-    print("\n从Stack Overflow获取Python问题答案:")
-    if stack_result:
-        print(f"找到 {len(stack_result.get('answers', []))} 个答案")
-        for answer in stack_result.get('answers', [])[:2]:
-            print(f"- {answer['title']}")
-            print(f"  {answer['link']}")

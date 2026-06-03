@@ -1,327 +1,616 @@
 # -*- coding: utf-8 -*-
-# JSON import removed - using database
-import logging
-from datetime import datetime, timedelta
-from typing import Dict, List, Any, Callable
+#!/usr/bin/env python3
+"""
+Rule Manager for MTSCOS AI System
+系统规则数据库模块
+"""
 
-# 配置日志
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+import logging
 logger = logging.getLogger(__name__)
+import sqlite3
+from contextlib import contextmanager
+import json
+import hashlib
+from datetime import datetime, timedelta
+from typing import Dict, List, Optional, Any
+from flask import session
+import sys
+import os
+
 
 class RuleManager:
-    """规则管理器，负责管理和应用不同的登录规则"""
-
-    def __init__(self, config_file: str = None):
-        self.instance_id = f"rule_manager_{id(self)}"
-        self.name = "规则管理器"
-        self.description = "负责管理和应用不同的登录规则"
-        self.logger = logger
-        self.logger.info(f"初始化规则管理器: {self.instance_id}")
-
-        # 规则存储
-        self.rules = {
-            "login": {
-                "max_attempts": 5,
-                "lockout_duration": 300,  # 5分钟
-                "min_password_length": 8,
-                "require_strong_password": True,
-                "enable_2fa": False,
-                "enable_ip_restriction": False,
-                "allowed_ips": [],
-                "blocked_ips": [],
-                "enable_rate_limiting": True,
-                "rate_limit_window": 60,  # 1分钟
-                "rate_limit_max_requests": 10
+    """规则管理器 - 深度绑定系统规则数据库"""
+    
+    def __init__(self, db_path: str):
+        self.db_path = db_path
+        self._init_db()
+        self._load_rules_cache()
+    
+    def _init_db(self):
+        """初始化规则数据库表"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        # 创建系统规则表
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS system_rules (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                rule_code TEXT UNIQUE NOT NULL,
+                rule_name TEXT NOT NULL,
+                rule_description TEXT,
+                rule_type TEXT NOT NULL,
+                rule_value TEXT NOT NULL,
+                is_active INTEGER DEFAULT 1,
+                priority INTEGER DEFAULT 100,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                last_used_at TIMESTAMP
+            )
+        ''')
+        
+        # 创建规则分组表
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS rule_groups (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                group_name TEXT UNIQUE NOT NULL,
+                group_description TEXT,
+                is_active INTEGER DEFAULT 1,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        
+        # 创建规则分组关联表
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS rule_group_members (
+                group_id INTEGER,
+                rule_code TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (group_id, rule_code)
+            )
+        ''')
+        
+        # 创建规则应用日志表
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS rule_application_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                rule_code TEXT,
+                rule_type TEXT,
+                user_id INTEGER,
+                username TEXT,
+                ip_address TEXT,
+                application_result TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        
+        conn.commit()
+        conn.close()
+        
+        # 初始化默认规则
+        self._init_default_rules()
+    
+    def _init_default_rules(self):
+        """初始化默认系统规则"""
+        default_rules = [
+            # 权限等级规则 - 核心规则
+            {
+                'rule_code': 'ROLE_HIERARCHY',
+                'rule_name': '权限等级体系',
+                'rule_description': '硬件管理员>超级管理员>管理员>游客=学生=设计师',
+                'rule_type': 'permission',
+                'rule_value': '["guest", "student", "designer", "admin", "super_admin", "hardware_admin"]',
+                'priority': 1
             },
-            "registration": {
-                "allow_registration": True,
-                "require_email_verification": False,
-                "max_registrations_per_ip": 5,
-                "registration_cooldown": 3600,  # 1小时
-                "enable_captcha": False
-            "session": {
-                "session_timeout": 3600,  # 1小时
-                "max_sessions_per_user": 5,
-                "enable_session_management": True,
-                "enable_session_revocation": True
-            "security": {
-                "enable_brute_force_protection": True,
-                "enable_account_lockout": True,
-                "enable_ip_ban": True,
-                "enable_logging": True,
-                "enable_audit_trail": True
-            }
-        }
-
-        self.rule_executors = {
-                "max_attempts": self._check_login_attempts,
-                "ip_restriction": self._check_ip_restriction,
-                "rate_limiting": self._check_rate_limiting
+            # 安全规则
+            {
+                'rule_code': 'SEC_LOGIN_MAX_ATTEMPTS',
+                'rule_name': '最大登录尝试次数',
+                'rule_description': '用户登录失败最大尝试次数',
+                'rule_type': 'security',
+                'rule_value': '5',
+                'priority': 10
             },
-                "max_registrations_per_ip": self._check_registration_limit,
-                "captcha": self._check_captcha
+            {
+                'rule_code': 'SEC_LOCK_DURATION',
+                'rule_name': '账户锁定时长',
+                'rule_description': '登录失败后账户锁定分钟数',
+                'rule_type': 'security',
+                'rule_value': '5',
+                'priority': 10
+            },
+            {
+                'rule_code': 'SEC_SESSION_TIMEOUT',
+                'rule_name': '会话超时时间',
+                'rule_description': '用户会话超时分钟数',
+                'rule_type': 'security',
+                'rule_value': '30',
+                'priority': 10
+            },
+            {
+                'rule_code': 'SEC_PASSWORD_EXPIRY',
+                'rule_name': '密码过期天数',
+                'rule_description': '密码有效期天数',
+                'rule_type': 'security',
+                'rule_value': '90',
+                'priority': 10
+            },
+            # 硬件认证规则
+            {
+                'rule_code': 'HW_AUTH_REQUIRED',
+                'rule_name': '硬件认证必需',
+                'rule_description': '硬件管理员是否需要硬件加密狗',
+                'rule_type': 'security',
+                'rule_value': 'true',
+                'priority': 2
+            },
+            {
+                'rule_code': 'HW_SESSION_TIMEOUT',
+                'rule_name': '硬件会话超时',
+                'rule_description': '硬件认证会话超时时间(小时)',
+                'rule_type': 'security',
+                'rule_value': '8',
+                'priority': 10
+            },
+            # 权限规则 - 新等级体系
+            {
+                'rule_code': 'PERM_VIEW_DASHBOARD',
+                'rule_name': '查看仪表盘权限',
+                'rule_description': '允许访问仪表盘的角色',
+                'rule_type': 'permission',
+                'rule_value': '["student", "designer", "admin", "super_admin", "hardware_admin"]',
+                'priority': 20
+            },
+            {
+                'rule_code': 'PERM_VIEW_SETTINGS',
+                'rule_name': '查看设置权限',
+                'rule_description': '允许访问设置页面的角色',
+                'rule_type': 'permission',
+                'rule_value': '["admin", "super_admin", "hardware_admin"]',
+                'priority': 20
+            },
+            {
+                'rule_code': 'PERM_MANAGE_USERS',
+                'rule_name': '管理用户权限',
+                'rule_description': '允许管理用户的角色',
+                'rule_type': 'permission',
+                'rule_value': '["admin", "super_admin", "hardware_admin"]',
+                'priority': 20
+            },
+            {
+                'rule_code': 'PERM_DELETE_USER',
+                'rule_name': '删除用户权限',
+                'rule_description': '允许删除用户的角色',
+                'rule_type': 'permission',
+                'rule_value': '["super_admin", "hardware_admin"]',
+                'priority': 20
+            },
+            {
+                'rule_code': 'PERM_MANAGE_DATABASE',
+                'rule_name': '管理数据库权限',
+                'rule_description': '允许管理数据库的角色',
+                'rule_type': 'permission',
+                'rule_value': '["super_admin", "hardware_admin"]',
+                'priority': 20
+            },
+            {
+                'rule_code': 'PERM_VIEW_LOGS',
+                'rule_name': '查看日志权限',
+                'rule_description': '允许查看系统日志的角色',
+                'rule_type': 'permission',
+                'rule_value': '["admin", "super_admin", "hardware_admin"]',
+                'priority': 20
+            },
+            # 访问规则
+            {
+                'rule_code': 'ACCESS_DASHBOARD',
+                'rule_name': '仪表盘访问规则',
+                'rule_description': '仪表盘页面访问规则',
+                'rule_type': 'access',
+                'rule_value': 'require_login',
+                'priority': 30
+            },
+            {
+                'rule_code': 'ACCESS_SETTINGS',
+                'rule_name': '设置页面访问规则',
+                'rule_description': '设置页面访问规则',
+                'rule_type': 'access',
+                'rule_value': 'require_admin',
+                'priority': 30
+            },
+            {
+                'rule_code': 'ACCESS_ADMIN_CENTER',
+                'rule_name': '管理员中心访问规则',
+                'rule_description': '管理员中心访问规则',
+                'rule_type': 'access',
+                'rule_value': 'require_admin',
+                'priority': 30
+            },
+            {
+                'rule_code': 'ACCESS_SUPER_ADMIN',
+                'rule_name': '超级管理员访问规则',
+                'rule_description': '超级管理员专属页面访问规则',
+                'rule_type': 'access',
+                'rule_value': 'super_admin_or_hardware_admin',
+                'priority': 25
+            },
+            {
+                'rule_code': 'ACCESS_HARDWARE_ADMIN',
+                'rule_name': '硬件管理员访问规则',
+                'rule_description': '硬件管理员专属功能访问规则',
+                'rule_type': 'access',
+                'rule_value': 'hardware_admin_with_hardware',
+                'priority': 24
+            },
+            # 系统规则
+            {
+                'rule_code': 'SYS_MAINTENANCE_MODE',
+                'rule_name': '维护模式',
+                'rule_description': '系统维护模式开关',
+                'rule_type': 'system',
+                'rule_value': 'false',
+                'priority': 5
+            },
+            {
+                'rule_code': 'SYS_ALLOW_REGISTRATION',
+                'rule_name': '允许注册',
+                'rule_description': '是否允许新用户注册',
+                'rule_type': 'system',
+                'rule_value': 'true',
+                'priority': 5
+            },
+            {
+                'rule_code': 'SYS_MAX_USERS',
+                'rule_name': '最大用户数',
+                'rule_description': '系统允许的最大用户数',
+                'rule_type': 'system',
+                'rule_value': '1000',
+                'priority': 5
+            },
+            # 监控规则
+            {
+                'rule_code': 'MONITOR_ENABLED',
+                'rule_name': '监控启用',
+                'rule_description': '是否启用系统监控',
+                'rule_type': 'monitor',
+                'rule_value': 'true',
+                'priority': 40
+            },
+            {
+                'rule_code': 'MONITOR_THRESHOLD_CPU',
+                'rule_name': 'CPU监控阈值',
+                'rule_description': 'CPU使用率告警阈值(%)',
+                'rule_type': 'monitor',
+                'rule_value': '90',
+                'priority': 40
+            },
+            {
+                'rule_code': 'MONITOR_THRESHOLD_MEMORY',
+                'rule_name': '内存监控阈值',
+                'rule_description': '内存使用率告警阈值(%)',
+                'rule_type': 'monitor',
+                'rule_value': '80',
+                'priority': 40
+            },
+            {
+                'rule_code': 'MONITOR_ALERT_ENABLED',
+                'rule_name': '告警启用',
+                'rule_description': '是否启用告警通知',
+                'rule_type': 'monitor',
+                'rule_value': 'true',
+                'priority': 40
             }
-
-        # 规则状态
-        self.rule_state = {
-            "rate_limits": {}
-        }
-
-        # 加载配置文件
-        if config_file:
-            self.load_config(config_file)
-    def load_config(self, config_file: str):
-        """加载规则配置文件
-
-        Args:
-            config_file: 配置文件路径
-        """
-        try:
-            with open(config_file, 'r', encoding='utf-8') as f:
-                config = json.load(f)
-                if "rules" in config:
-                    self.rules.update(config["rules"])
-                    self.logger.info(f"加载规则配置文件成功: {config_file}")
-        except Exception as e:
-            self.logger.error(f"加载规则配置文件失败: {str(e)}")
-
-    def save_config(self, config_file: str):
-        """保存规则配置到文件
-
-        Args:
-            config_file: 配置文件路径
-        """
-        try:
-            config = {"rules": self.rules}
-            with open(config_file, 'w', encoding='utf-8') as f:
-                json.dump(config, f, indent=2, ensure_ascii=False)
-                self.logger.info(f"保存规则配置文件成功: {config_file}")
-        except Exception as e:
-            self.logger.error(f"保存规则配置文件失败: {str(e)}")
-    def get_rule(self, rule_type: str, rule_name: str) -> Any:
-        """获取规则值
-        Args:
-            rule_type: 规则类型
-            rule_name: 规则名称
-
-        Returns:
-        """
-        if rule_type in self.rules and rule_name in self.rules[rule_type]:
-            return self.rules[rule_type][rule_name]
-        return None
-
-    def set_rule(self, rule_type: str, rule_name: str, value: Any):
-        """设置规则值
-
-        Args:
-            rule_type: 规则类型
-            rule_name: 规则名称
-            value: 规则值
-        """
-        if rule_type not in self.rules:
-            self.rules[rule_type] = {}
-        self.rules[rule_type][rule_name] = value
-        self.logger.info(f"设置规则: {rule_type}.{rule_name} = {value}")
-
-    def check_rule(self, rule_type: str, rule_name: str, **kwargs) -> Dict[str, Any]:
-        """检查规则
-
-            rule_type: 规则类型
-            **kwargs: 规则检查需要的参数
-
-        Returns:
-            检查结果
-        """
-        if rule_type in self.rule_executors and rule_name in self.rule_executors[rule_type]:
-            executor = self.rule_executors[rule_type][rule_name]
-            return executor(**kwargs)
-        return {"success": True, "message": "规则检查通过"}
-
-        """检查登录尝试次数
-
-            username: 用户名
-
-        Returns:
-            检查结果
-        max_attempts = self.rules["login"]["max_attempts"]
-        lockout_duration = self.rules["login"]["lockout_duration"]
-
-        if username not in self.rule_state["login_attempts"]:
-            self.rule_state["login_attempts"][username] = {
-                "attempts": 0,
-                "last_attempt": None,
-                "locked_until": None
-            }
-
-        user_attempts = self.rule_state["login_attempts"][username]
-
-        # 检查是否被锁定
-            if datetime.now() < locked_until:
-                remaining_time = int((locked_until - datetime.now()).total_seconds())
-                    "success": False,
-                    "message": f"账户已被锁定，请 {remaining_time} 秒后再试"
-                }
-            else:
-                # 锁定时间已过，重置尝试次数
-                user_attempts["attempts"] = 0
-                user_attempts["locked_until"] = None
-        # 增加尝试次数
-        user_attempts["attempts"] += 1
-        user_attempts["last_attempt"] = datetime.now().isoformat()
-
-        # 检查是否达到最大尝试次数
-        if user_attempts["attempts"] > max_attempts:
-            locked_until = (datetime.now() + timedelta(seconds=lockout_duration)).isoformat()
-            user_attempts["locked_until"] = locked_until
-            return {
-                "success": False,
-                "message": f"登录失败次数过多，账户已被锁定 {lockout_duration} 秒"
-            }
-
-        return {"success": True, "message": "登录尝试次数检查通过"}
-
-    def _check_ip_restriction(self, ip_address: str, **kwargs) -> Dict[str, Any]:
-
-        Args:
-            ip_address: IP地址
-
-        Returns:
-            检查结果
-        """
-        enable_ip_restriction = self.rules["login"]["enable_ip_restriction"]
-        allowed_ips = self.rules["login"]["allowed_ips"]
-        blocked_ips = self.rules["login"]["blocked_ips"]
-
-        if not enable_ip_restriction:
-            return {"success": True, "message": "IP地址限制未启用"}
-
-        # 检查是否在黑名单中
-        if ip_address in blocked_ips:
-            return {
-                "success": False,
-                "message": "IP地址已被禁止访问"
-            }
-
-        # 检查是否在白名单中
-        if allowed_ips and ip_address not in allowed_ips:
-                "message": "IP地址不在允许列表中"
-            }
-
-
-    def _check_rate_limiting(self, ip_address: str, **kwargs) -> Dict[str, Any]:
-
-        Args:
-            ip_address: IP地址
-
-        Returns:
-            检查结果
-        """
-        enable_rate_limiting = self.rules["login"]["enable_rate_limiting"]
-        rate_limit_window = self.rules["login"]["rate_limit_window"]
-        rate_limit_max_requests = self.rules["login"]["rate_limit_max_requests"]
-
-        if not enable_rate_limiting:
-            return {"success": True, "message": "速率限制未启用"}
-
-        if ip_address not in self.rule_state["rate_limits"]:
-            self.rule_state["rate_limits"][ip_address] = {
-                "requests": [],
-                "last_cleanup": datetime.now().isoformat()
-            }
-
-        rate_limit = self.rule_state["rate_limits"][ip_address]
-
-        # 清理过期的请求记录
-        rate_limit["requests"] = [
-            req for req in rate_limit["requests"]
         ]
+        
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            
+            for rule in default_rules:
+                cursor.execute('SELECT COUNT(*) FROM system_rules WHERE rule_code = ?', (rule['rule_code'],))
+                if cursor.fetchone()[0] == 0:
+                    cursor.execute('''
+                    INSERT INTO system_rules (rule_code, rule_name, rule_description, rule_type, rule_value, priority)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                    ''', (rule['rule_code'], rule['rule_name'], rule['rule_description'], 
+                          rule['rule_type'], rule['rule_value'], rule['priority']))
+            
+            conn.commit()
+    
+    def _load_rules_cache(self):
+        """加载规则到内存缓存"""
+        self.rules_cache = {}
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            
+            cursor.execute('SELECT rule_code, rule_value, is_active FROM system_rules WHERE is_active = 1')
+            for row in cursor.fetchall():
+                rule_code = row[0]
+                rule_value = row[1]
+                try:
+                    self.rules_cache[rule_code] = json.loads(rule_value)
+                except Exception:
+                    self.rules_cache[rule_code] = rule_value
+            
+    
+    def get_rule(self, rule_code: str) -> Any:
+        """获取规则值"""
+        # 先从缓存获取
+        if rule_code in self.rules_cache:
+            return self.rules_cache[rule_code]
+        
+        # 从数据库获取
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            
+            cursor.execute('SELECT rule_value, is_active FROM system_rules WHERE rule_code = ?', (rule_code,))
+            row = cursor.fetchone()
+        
+        if row and row[1] == 1:
+            try:
+                value = json.loads(row[0])
+            except Exception:
+                value = row[0]
+            self.rules_cache[rule_code] = value
+            return value
+        
+        return None
+    
+    def set_rule(self, rule_code: str, rule_value: Any) -> bool:
+        """设置规则值"""
+        try:
+            value_str = json.dumps(rule_value) if isinstance(rule_value, (dict, list)) else str(rule_value)
+            
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                
+                cursor.execute('''
+                INSERT OR REPLACE INTO system_rules (rule_code, rule_value, updated_at)
+                VALUES (?, ?, ?)
+                ''', (rule_code, value_str, datetime.now()))
+                
+                conn.commit()
+            
+            # 更新缓存
+            try:
+                self.rules_cache[rule_code] = json.loads(value_str)
+            except Exception:
+                self.rules_cache[rule_code] = value_str
+            
+            return True
+        except Exception as e:
+            logger.error(f"Failed to set rule {rule_code}: {e}")
+            return False
+    
+    def get_rules_by_type(self, rule_type: str) -> List[Dict]:
+        """按类型获取规则"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            
+            cursor.execute('SELECT * FROM system_rules WHERE rule_type = ? AND is_active = 1 ORDER BY priority', (rule_type,))
+            columns = ['id', 'rule_code', 'rule_name', 'rule_description', 'rule_type', 
+                       'rule_value', 'is_active', 'priority', 'created_at', 'updated_at', 'last_used_at']
+            rules = []
+            for row in cursor.fetchall():
+                rule = dict(zip(columns, row))
+                try:
+                    rule['rule_value'] = json.loads(rule['rule_value'])
+                except Exception:
+                    pass
+                rules.append(rule)
+            
+        return rules
+    
+    def get_all_rules(self) -> List[Dict]:
+        """获取所有规则"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            
+            cursor.execute('SELECT * FROM system_rules ORDER BY rule_type, priority')
+            columns = ['id', 'rule_code', 'rule_name', 'rule_description', 'rule_type', 
+                       'rule_value', 'is_active', 'priority', 'created_at', 'updated_at', 'last_used_at']
+            rules = []
+            for row in cursor.fetchall():
+                rule = dict(zip(columns, row))
+                try:
+                    rule['rule_value'] = json.loads(rule['rule_value'])
+                except Exception:
+                    pass
+                rules.append(rule)
+            
+        return rules
+    
+    def toggle_rule(self, rule_code: str, is_active: bool) -> bool:
+        """启用/禁用规则"""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                
+                cursor.execute('UPDATE system_rules SET is_active = ?, updated_at = ? WHERE rule_code = ?',
+                              (1 if is_active else 0, datetime.now(), rule_code))
+                
+                conn.commit()
+            
+            # 更新缓存
+            if is_active:
+                value = self.get_rule(rule_code)
+                self.rules_cache[rule_code] = value
+            else:
+                self.rules_cache.pop(rule_code, None)
+            
+            return True
+        except Exception as e:
+            logger.error(f"Failed to toggle rule {rule_code}: {e}")
+            return False
+    
+    def apply_rule(self, rule_code: str, user_id: int = None, username: str = None, ip_address: str = None) -> bool:
+        """应用规则并记录日志"""
+        rule_value = self.get_rule(rule_code)
+        if rule_value is None:
+            return False
+        
+        # 记录应用日志
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                
+                cursor.execute('''
+                INSERT INTO rule_application_logs (rule_code, rule_type, user_id, username, ip_address, application_result)
+                VALUES (?, ?, ?, ?, ?, ?)
+                ''', (rule_code, self._get_rule_type(rule_code), user_id, username, ip_address, 'applied'))
+                
+                cursor.execute('UPDATE system_rules SET last_used_at = ? WHERE rule_code = ?',
+                              (datetime.now(), rule_code))
+                
+                conn.commit()
+            
+            return True
+        except Exception as e:
+            logger.error(f"Failed to log rule application {rule_code}: {e}")
+            return False
+    
+    def _get_rule_type(self, rule_code: str) -> str:
+        """获取规则类型"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            
+            cursor.execute('SELECT rule_type FROM system_rules WHERE rule_code = ?', (rule_code,))
+            result = cursor.fetchone()
+        
+        return result[0] if result else 'unknown'
+    
+    def get_rule_application_logs(self, limit: int = 100) -> List[Dict]:
+        """获取规则应用日志"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            
+            cursor.execute('SELECT * FROM rule_application_logs ORDER BY created_at DESC LIMIT ?', (limit,))
+            columns = ['id', 'rule_code', 'rule_type', 'user_id', 'username', 'ip_address', 'application_result', 'created_at']
+            logs = []
+            for row in cursor.fetchall():
+                logs.append(dict(zip(columns, row)))
+            
+        return logs
+    
+    def validate_access(self, path: str, user_role: str) -> bool:
+        """验证用户对路径的访问权限"""
+        # 获取路径对应的权限规则
+        path_rule_map = {
+            '/dashboard': 'PERM_VIEW_DASHBOARD',
+            '/settings': 'PERM_VIEW_SETTINGS',
+            '/admin_center': 'PERM_MANAGE_USERS',
+            '/super_admin_dashboard': 'PERM_DELETE_USER'
+        }
+        
+        if path not in path_rule_map:
+            return True  # 默认允许
+        
+        rule_code = path_rule_map[path]
+        allowed_roles = self.get_rule(rule_code)
+        
+        if isinstance(allowed_roles, list):
+            return user_role in allowed_roles
+        
+        return True
+    
+    def check_security_rules(self, username: str, ip_address: str) -> Dict:
+        """检查安全规则"""
+        max_attempts = int(self.get_rule('SEC_LOGIN_MAX_ATTEMPTS') or 5)
+        lock_duration = int(self.get_rule('SEC_LOCK_DURATION') or 5)
+        session_timeout = int(self.get_rule('SEC_SESSION_TIMEOUT') or 30)
+        
+        # 检查登录尝试次数
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            
+            # 检查用户是否被锁定
+            cursor.execute('SELECT locked_until FROM user_locks WHERE username = ?', (username,))
+            lock_result = cursor.fetchone()
+            
+            if lock_result and lock_result[0]:
+                if datetime.now() < datetime.fromisoformat(lock_result[0]):
+                    return {'allowed': False, 'reason': 'user_locked', 'detail': '账户已被锁定'}
+            
+            # 统计失败尝试次数
+            time_threshold = datetime.now() - timedelta(hours=1)
+            cursor.execute('''
+                SELECT COUNT(*) FROM login_attempts 
+                WHERE username = ? AND success = 0 AND attempt_time > ?
+            ''', (username, time_threshold))
+            
+            fail_count = cursor.fetchone()[0]
+        
+        if fail_count >= max_attempts:
+            return {'allowed': False, 'reason': 'too_many_attempts', 'detail': f'登录失败{max_attempts}次'}
+        
+        return {'allowed': True, 'max_attempts': max_attempts, 'remaining_attempts': max_attempts - fail_count}
+    
+    def validate_rule(self, rule: Dict) -> bool:
+        """验证规则的有效性"""
+        required_fields = ['rule_code', 'rule_name', 'rule_type', 'rule_value']
+        
+        # 检查必需字段
+        for field in required_fields:
+            if field not in rule:
+                return False
+        
+        # 检查规则代码格式
+        if not rule['rule_code'] or not rule['rule_code'].isupper():
+            return False
+        
+        # 检查规则类型
+        valid_types = ['permission', 'security', 'access', 'system', 'monitor']
+        if rule['rule_type'] not in valid_types:
+            return False
+        
+        # 检查规则值
+        if rule['rule_value'] is None:
+            return False
+        
+        # 检查优先级
+        if 'priority' in rule:
+            try:
+                priority = int(rule['priority'])
+                if priority < 1 or priority > 1000:
+                    return False
+            except ValueError:
+                return False
+        
+        return True
 
-        # 检查是否达到速率限制
-                "success": False,
-                "message": f"请求过于频繁，请 {rate_limit_window} 秒后再试"
-            }
 
-        # 添加当前请求
-        rate_limit["requests"].append(current_time.isoformat())
+# 全局规则管理器实例
+rule_manager: Optional[RuleManager] = None
 
 
-    def _check_registration_limit(self, ip_address: str, **kwargs) -> Dict[str, Any]:
-        """检查注册限制
-
-        Args:
-            ip_address: IP地址
-
-        Returns:
-            检查结果
-        """
-        max_registrations = self.rules["registration"]["max_registrations_per_ip"]
-        registration_cooldown = self.rules["registration"]["registration_cooldown"]
-
-        if ip_address not in self.rule_state["registrations"]:
-            self.rule_state["registrations"][ip_address] = {
-                "count": 0,
-                "last_registration": None
-            }
-
-        registration = self.rule_state["registrations"][ip_address]
-
-        # 检查冷却时间
-            last_reg = datetime.fromisoformat(registration["last_registration"])
-            if (datetime.now() - last_reg).total_seconds() < registration_cooldown:
-                remaining_time = int((last_reg + timedelta(seconds=registration_cooldown) - datetime.now()).total_seconds())
-                return {
-                    "success": False,
-                    "message": f"注册过于频繁，请 {remaining_time} 秒后再试"
-                }
-
-        if registration["count"] >= max_registrations:
-            return {
-                "message": "该IP地址注册次数已达上限"
-            }
-
-        registration["last_registration"] = datetime.now().isoformat()
-        return {"success": True, "message": "注册限制检查通过"}
-
-    def _check_captcha(self, captcha_response: str = None, **kwargs) -> Dict[str, Any]:
-        """检查验证码
-
-        Args:
-            captcha_response: 验证码响应
-
-        Returns:
-            检查结果
-        """
-        enable_captcha = self.rules["registration"]["enable_captcha"]
-
-        if not enable_captcha:
-            return {"success": True, "message": "验证码未启用"}
-
-        if not captcha_response:
-            return {
-                "success": False,
-                "message": "请输入验证码"
-            }
-
-        # 这里可以添加验证码验证逻辑
-        # 例如，使用Google reCAPTCHA或其他验证码服务
+def init_rule_manager(db_path: str):
+    """初始化规则管理器"""
+    global rule_manager
+    rule_manager = RuleManager(db_path)
+    return rule_manager
 
 
-    def reset_login_attempts(self, username: str):
-        """重置登录尝试次数
+def get_rule_manager() -> RuleManager:
+    """获取规则管理器实例"""
+    global rule_manager
+    if rule_manager is None:
+        rule_manager = RuleManager('/Users/wuchenghao/Library/CloudStorage/OneDrive-个人/文档/MTSCOS_AI_Project/flask-app/app.db')
+    return rule_manager
 
-        Args:
-            username: 用户名
-        """
-        if username in self.rule_state["login_attempts"]:
-            self.rule_state["login_attempts"][username] = {
-                "last_attempt": None,
-                "locked_until": None
-            }
-            self.logger.info(f"重置登录尝试次数: {username}")
 
-    def __str__(self):
-    def __repr__(self):
-        return self.__str__()
+def get_rule(rule_code: str) -> Any:
+    """获取规则值"""
+    return get_rule_manager().get_rule(rule_code)
 
-# 创建全局规则管理器实例
-rule_manager = RuleManager()
+
+def set_rule(rule_code: str, rule_value: Any) -> bool:
+    """设置规则值"""
+    return get_rule_manager().set_rule(rule_code, rule_value)
+
+
+def validate_access(path: str, user_role: str) -> bool:
+    """验证访问权限"""
+    return get_rule_manager().validate_access(path, user_role)
+
+
+def check_security_rules(username: str, ip_address: str) -> Dict:
+    """检查安全规则"""
+    return get_rule_manager().check_security_rules(username, ip_address)
