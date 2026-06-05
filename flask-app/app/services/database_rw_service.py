@@ -302,7 +302,7 @@ class DatabaseRWService:
                         sqlite_conn = sqlite3.connect(':memory:')
                         sqlite_conn.close()
                         conn.status = DBStatus.HEALTHY
-                    except:
+                    except Exception:
                         conn.status = DBStatus.DOWN
             else:
                 conn.status = DBStatus.HEALTHY

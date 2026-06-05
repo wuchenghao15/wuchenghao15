@@ -76,6 +76,14 @@ def register_api_blueprint(app_instance):
         app_instance.register_blueprint(api_bp)
         APIMiddleware(app_instance)
         logger.info("[API] API蓝图和中间件注册完成")
+        
+        # 注册AI员工API蓝图
+        try:
+            from app.routes.ai_employee_api import ai_employee_bp
+            app_instance.register_blueprint(ai_employee_bp)
+            logger.info("[API] AI员工API蓝图注册完成")
+        except Exception as e:
+            logger.warning(f"[API] 注册AI员工API蓝图失败(非致命): {str(e)}")
     except Exception as e:
         logger.warning(f"[API] 注册API蓝图和中间件失败(非致命): {str(e)}")
 
@@ -143,6 +151,20 @@ def init_utils_managers(app_instance):
         except Exception as e:
             logger.warning(f"[工具] 初始化{name}失败(非致命): {str(e)}")
 
+def init_protocols(app_instance):
+    """初始化通讯协议"""
+    try:
+        from app.protocols import protocol_manager, HTTPProtocol, WebSocketProtocol, MQTTProtocol, gRPCProtocol
+        
+        protocol_manager.register_protocol('http', HTTPProtocol())
+        protocol_manager.register_protocol('websocket', WebSocketProtocol())
+        protocol_manager.register_protocol('mqtt', MQTTProtocol())
+        protocol_manager.register_protocol('grpc', gRPCProtocol())
+        
+        logger.info("[协议] 通讯协议模块初始化成功")
+    except Exception as e:
+        logger.warning(f"[协议] 初始化通讯协议失败(非致命): {str(e)}")
+
 def init_services(app_instance):
     """初始化后台服务"""
     services = [
@@ -198,6 +220,18 @@ def init_ai_engine_config():
             logger.warning("[AI引擎] 无法加载AI引擎集成器模块")
     except Exception as e:
         logger.warning(f"[AI引擎] 初始化AI引擎配置失败(非致命): {str(e)}")
+
+def init_ai_employee_system(app_instance):
+    """初始化AI员工系统"""
+    try:
+        from app.models.ai_employee import init_ai_employee_tables
+        from app import db
+        
+        # 初始化数据库表
+        init_ai_employee_tables(db)
+        logger.info("[AI员工] AI员工系统数据库表初始化成功")
+    except Exception as e:
+        logger.warning(f"[AI员工] 初始化AI员工系统失败(非致命): {str(e)}")
 
 def create_app(config_type=None):
     """
@@ -278,8 +312,14 @@ def initialize_app(app_instance=None):
     # 初始化AI组件
     init_ai_components(app_instance)
 
+    # 初始化AI员工系统
+    init_ai_employee_system(app_instance)
+
     # 初始化工具管理器
     init_utils_managers(app_instance)
+
+    # 初始化通讯协议
+    init_protocols(app_instance)
 
     # 初始化服务
     init_services(app_instance)

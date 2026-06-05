@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能仪表盘 - MTSCOS AI Project</title>
+    <!-- 引入Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入Font Awesome -->
+    <!-- FontAwesome CDN removed -->
+    <!-- 引入Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* 自定义样式 */
+        body {
+            background-color: #f5f5f5;
+        }
+        .dashboard-card {
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+        .dashboard-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        .status-online {
+            background-color: #10b981;
+        }
+        .status-offline {
+            background-color: #ef4444;
+        }
+        .status-warning {
+            background-color: #f59e0b;
+        }
+        .progress-ring {
+            transform: rotate(-90deg);
+        }
+        .progress-ring-circle {
+            transition: stroke-dashoffset 0.3s ease;
+        }
+        .ai-suggestion-card {
+            background-color: #f0f9ff;
+            border-left: 4px solid #3b82f6;
+        }
+    </style>
+
+<style>
+.svg-icon {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    vertical-align: -0.125em;
+    fill: currentColor;
+}
+</style>
+</head>
+<body class="bg-gray-50">
+    <!-- 顶部导航栏 -->
+    <header class="bg-white shadow-md">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center">
+                <svg class="svg-icon" viewBox="0 0 640 512" width="16" height="16"><path d="M320 0c-17.67 0-32 14.33-32 32v32h-64c-70.69 0-128 57.31-128 128v16c0 8.82 7.18 16 16 16h16v256c0 17.67 14.33 32 32 32h320c17.67 0 32-14.33 32-32V224h16c8.82 0 16-7.18 16-16v-16c0-70.69-57.31-128-128-128h-64V32c0-17.67-14.33-32-32-32zm-128 128h256c35.29 0 64 28.71 64 64v16H128v-16c0-35.29 28.71-64 64-64zm96 64c-26.51 0-48 21.49-48 48s21.49 48 48 48 48-21.49 48-48-21.49-48-48-48zm160 256H192v-96h256v96z"/></svg>
+                <h1 class="text-xl font-bold text-gray-800">MTSCOS AI Project</h1>
+            </div>
+            <div class="flex items-center space-x-4">
+                <span class="text-gray-600"><svg class="svg-icon" viewBox="0 0 448 512" width="16" height="16"><path d="M224 256c70.7 0 128-57.3 128-128S294.7 0 224 0 96 57.3 96 128s57.3 128 128 128zm89.6 32h-17.2c-11.2 0-21.8 3.4-30.8 9.4-17.1 11.5-36.4 17.6-56.4 17.6s-39.3-6.1-56.4-17.6c-9-6-19.6-9.4-30.8-9.4H22.4C10.1 288 0 298.1 0 310.4V464c0 26.5 21.5 48 48 48h352c26.5 0 48-21.5 48-48V310.4c0-12.3-10.1-22.4-22.4-22.4z"/></svg> {{ user.username }}</span>
+                <span class="bg-gray-200 px-3 py-1 rounded-full text-sm">{{ user.role }}</span>
+                <a href="/logout" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md transition-colors">
+                    <!-- Icon fa-sign-out not found --> 退出登录
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- 侧边导航栏 -->
+    <div class="container mx-auto px-4 py-6">
+        <div class="flex flex-col md:flex-row gap-6">
+            <!-- 左侧导航 -->
+            <aside class="md:w-1/4">
+                <div class="bg-white rounded-lg shadow-md p-4">
+                    <nav>
+                        <ul class="space-y-2">
+                            <li>
+                                <a href="/dashboard" class="flex items-center p-3 text-gray-700 hover:bg-gray-100 rounded-md transition-colors">
+                                    <!-- Icon fa-tachometer not found -->
+                                    <span>传统仪表盘</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="/smart-dashboard" class="flex items-center p-3 bg-blue-50 text-blue-700 rounded-md font-medium">
+                                    <svg class="svg-icon" viewBox="0 0 576 512" width="16" height="16"><path d="M528.1 171.2l-46.3-27.7c-1.3-4.2-3.5-8.1-6.4-11.5l33.8-39.8c7.6-8.9 6.6-22.1-2.4-30l-43.3-37.1c-9-7.7-22.7-6.8-30.6 2.1l-30.4 34.7c-11.5-6.1-24.5-9.7-38.2-9.7h-19.4c-2.6-11.8-9.9-22.1-20.1-29.3l-33.4-23.4c-13.1-9.2-30.9-6.1-40.1 7s-6.1 30.9 7 40.1l24.5 17.2c1.5 1 2.7 2.3 3.6 3.7h-20.2c-13.7 0-26.8 3.6-38.3 9.8l-30.3-34.8c-7.9-9.1-21.7-9.9-30.7-2l-43.3 37.1c-8.9 7.9-9.9 21.1-2.4 30l33.8 39.8c-2.9 3.4-5.1 7.3-6.4 11.5l-46.3 27.7C32.7 185.2 0 227.4 0 275.2V320c0 52.9 43 96 96 96h28.7c-2.6 15.9-4.7 32-4.7 48 0 39.8 18.6 75.1 47.5 97.9 10.5 8.2 26.4 6.4 34.6-4.1s6.4-26.4-4.1-34.6c-14.5-11.4-23.3-29.1-23.3-49.1 0-3.4.3-6.8.8-10.1h142.8c.5 3.3.8 6.7.8 10.1 0 20-8.8 37.7-23.3 49.1-10.5 8.2-12.3 24-4.1 34.6s24 12.3 34.6 4.1c28.9-22.9 47.5-58.1 47.5-97.9 0-16-2.1-32.1-4.7-48H480c53 0 96-43.1 96-96v-44.8c0-47.8-32.7-90-79.9-104zm-108.8 140.8h-160c-8.8 0-16-7.2-16-16s7.2-16 16-16h160c8.8 0 16 7.2 16 16s-7.2 16-16 16zm0-64h-160c-8.8 0-16-7.2-16-16s7.2-16 16-16h160c8.8 0 16 7.2 16 16s-7.2 16-16 16z"/></svg>
+                                    <span>智能仪表盘</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="/ai" class="flex items-center p-3 text-gray-700 hover:bg-gray-100 rounded-md transition-colors">
+                                    <svg class="svg-icon" viewBox="0 0 512 512" width="16" height="16"><path d="M487.4 315.7l-43.4-7.5c-1.3-3.2-2.8-6.3-4.5-9.3l19.9-39.8c3.6-7.2 2-16.1-3.8-21.6l-50-47.6c-5.8-5.5-14.9-6.5-21.9-2.4l-41.9 24.5c-11.4-8.8-23.9-16.2-37.2-21.8l-8.4-47.4C292.1 35 283.7 32 274.7 32h-37.5c-9 0-17.4 3-24.3 8.3l-8.4 47.4c-13.3 5.6-25.8 13-37.2 21.8l-41.9-24.5c-7-4.1-16.1-3.1-21.9 2.4l-50 47.6c-5.8 5.5-7.4 14.4-3.8 21.6l19.9 39.8c-1.7 3-3.2 6.1-4.5 9.3l-43.4 7.5C10.1 320.6 0 331.8 0 344.9v34.3c0 13.1 10.1 24.3 22.6 29.2l43.4 7.5c1.3 3.2 2.8 6.3 4.5 9.3l-19.9 39.8c-3.6 7.2-2 16.1 3.8 21.6l50 47.6c5.8 5.5 14.9 6.5 21.9 2.4l41.9-24.5c11.4 8.8 23.9 16.2 37.2 21.8l8.4 47.4c6.9 5.3 15.3 8.3 24.3 8.3h37.5c9 0 17.4-3 24.3-8.3l8.4-47.4c13.3-5.6 25.8-13 37.2-21.8l41.9 24.5c7 4.1 16.1 3.1 21.9-2.4l50-47.6c5.8-5.5 7.4-14.4 3.8-21.6l-19.9-39.8c1.7-3 3.2-6.1 4.5-9.3l43.4-7.5c12.5-4.9 22.6-16 22.6-29.2v-34.3c0-13.1-10.1-24.3-22.6-29.2zM256 384c-70.7 0-128-57.3-128-128s57.3-128 128-128 128 57.3 128 128-57.3 128-128 128z"/></svg>
+                                    <span>AI管理</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="/system" class="flex items-center p-3 text-gray-700 hover:bg-gray-100 rounded-md transition-colors">
+                                    <svg class="svg-icon" viewBox="0 0 640 512" width="16" height="16"><path d="M480 160c0-26.5-21.5-48-48-48H64c-26.5 0-48 21.5-48 48v64h576v-64zm-208 80c-13.3 0-24-10.7-24-24s10.7-24 24-24 24 10.7 24 24-10.7 24-24 24zm128 0c-13.3 0-24-10.7-24-24s10.7-24 24-24 24 10.7 24 24-10.7 24-24 24zm192-64H16v160c0 26.5 21.5 48 48 48h352c26.5 0 48-21.5 48-48V256h128v-80zm-336 192c-13.3 0-24-10.7-24-24s10.7-24 24-24 24 10.7 24 24-10.7 24-24 24zm128 0c-13.3 0-24-10.7-24-24s10.7-24 24-24 24 10.7 24 24-10.7 24-24 24z"/></svg>
+                                    <span>系统管理</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="/permissions" class="flex items-center p-3 text-gray-700 hover:bg-gray-100 rounded-md transition-colors">
+                                    <!-- Icon fa-shield not found -->
+                                    <span>权限管理</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="/system-monitoring" class="flex items-center p-3 text-gray-700 hover:bg-gray-100 rounded-md transition-colors">
+                                    <!-- Icon fa-line-chart not found -->
+                                    <span>系统监控</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            </aside>
+
+            <!-- 主内容区 -->
+            <main class="md:w-3/4">
+                <!-- 页面标题 -->
+                <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h2 class="text-2xl font-bold text-gray-800">智能仪表盘</h2>
+                            <p class="text-gray-600 mt-1">利用AI自学习系统分析系统数据，提供智能洞察和优化建议</p>
+                        </div>
+                        <button id="refresh-btn" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md transition-colors flex items-center">
+                            <!-- Icon fa-refresh not found --> 刷新数据
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 系统概览卡片 -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                    <div class="bg-white rounded-lg shadow-md p-6 dashboard-card">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-gray-500 text-sm">系统状态</p>
+                                <h3 class="text-2xl font-bold text-gray-800 mt-1">
+                                    <span class="status-dot status-online"></span>
+                                    <span id="system-status">正常</span>
+                                </h3>
+                                <p class="text-gray-500 text-xs mt-2">最后检查: <span id="last-check">{{ current_time }}</span></p>
+                            </div>
+                            <div class="bg-blue-100 rounded-full p-3">
+                                <!-- Icon fa-heartbeat not found -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-lg shadow-md p-6 dashboard-card">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-gray-500 text-sm">AI实例数量</p>
+                                <h3 class="text-2xl font-bold text-gray-800 mt-1" id="ai-instance-count">0</h3>
+                                <p class="text-gray-500 text-xs mt-2">运行中 / 总数</p>
+                            </div>
+                            <div class="bg-purple-100 rounded-full p-3">
+                                <svg class="svg-icon" viewBox="0 0 512 512" width="16" height="16"><path d="M416 48v416c0 17.69-14.33 32-32 32H128c-17.67 0-32-14.31-32-32V48c0-17.69 14.33-32 32-32h256c17.67 0 32 14.31 32 32zm-32 32H128v416h256V80zm64 64h32c17.67 0 32 14.33 32 32v16c0 17.67-14.33 32-32 32h-32v32h32c17.67 0 32 14.33 32 32v16c0 17.67-14.33 32-32 32h-32v32h32c17.67 0 32 14.33 32 32v16c0 17.67-14.33 32-32 32h-32v32h32c17.67 0 32 14.33 32 32v16c0 17.67-14.33 32-32 32h-32v32h32c17.67 0 32 14.33 32 32v16c0 17.67-14.33 32-32 32h-32V480h32c17.67 0 32 14.33 32 32v16c0 17.67-14.33 32-32 32h-32v32h32c17.67 0 32 14.33 32 32v16c0 17.67-14.33 32-32 32h-32v32h32c17.67 0 32 14.33 32 32v16c0 17.67-14.33 32-32 32h-32v32h32c17.67 0 32 14.33 32 32v16c0 17.67-14.33 32-32 32h-32V80zm-416 0v32h-32c-17.67 0-32-14.33-32-32V80c0-17.67 14.33-32 32-32h32v32h-32c-17.67 0-32 14.33-32 32v16c0 17.67 14.33 32 32 32h32v32h-32c-17.67 0-32 14.33-32 32v16c0 17.67 14.33 32 32 32h32v32h-32c-17.67 0-32 14.33-32 32v16c0 17.67 14.33 32 32 32h32v32h-32c-17.67 0-32 14.33-32 32v16c0 17.67 14.33 32 32 32h32v32h-32c-17.67 0-32 14.33-32 32v16c0 17.67 14.33 32 32 32h32v32h-32c-17.67 0-32 14.33-32 32v16c0 17.67 14.33 32 32 32h32V80z"/></svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-lg shadow-md p-6 dashboard-card">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-gray-500 text-sm">活跃用户</p>
+                                <h3 class="text-2xl font-bold text-gray-800 mt-1" id="active-users">0</h3>
+                                <p class="text-gray-500 text-xs mt-2">过去30分钟</p>
+                            </div>
+                            <div class="bg-green-100 rounded-full p-3">
+                                <svg class="svg-icon" viewBox="0 0 448 512" width="16" height="16"><path d="M224 256c70.7 0 128-57.3 128-128S294.7 0 224 0 96 57.3 96 128s57.3 128 128 128zm89.6 32h-17.2c-11.2 0-21.8 3.4-30.8 9.4-17.1 11.5-36.4 17.6-56.4 17.6s-39.3-6.1-56.4-17.6c-9-6-19.6-9.4-30.8-9.4H22.4C10.1 288 0 298.1 0 310.4V464c0 26.5 21.5 48 48 48h352c26.5 0 48-21.5 48-48V310.4c0-12.3-10.1-22.4-22.4-22.4z"/></svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-lg shadow-md p-6 dashboard-card">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-gray-500 text-sm">运行沙盒</p>
+                                <h3 class="text-2xl font-bold text-gray-800 mt-1" id="running-sandboxes">0</h3>
+                                <p class="text-gray-500 text-xs mt-2">当前运行</p>
+                            </div>
+                            <div class="bg-orange-100 rounded-full p-3">
+                                <!-- Icon fa-cubes not found -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 数据可视化区域 -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                    <!-- 系统性能预测 -->
+                    <div class="bg-white rounded-lg shadow-md p-6 dashboard-card">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">系统性能预测</h3>
+                        <canvas id="performance-chart" height="200"></canvas>
+                    </div>
+
+                    <!-- AI学习状态 -->
+                    <div class="bg-white rounded-lg shadow-md p-6 dashboard-card">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">AI学习状态</h3>
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-600">学习状态</span>
+                                <span id="ai-learning-status" class="font-medium">
+                                    <span class="status-dot status-offline"></span> 未启用
+                                </span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-600">学习间隔</span>
+                                <span id="learning-interval">3600秒</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-600">学习会话数</span>
+                                <span id="total-learning-sessions">0</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-600">学习准确率</span>
+                                <span id="learning-accuracy">0%</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-600">上次学习时间</span>
+                                <span id="last-learning-time">-</span>
+                            </div>
+                            <button id="start-learning-btn" class="w-full bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md transition-colors mt-2">
+                                <svg class="svg-icon" viewBox="0 0 448 512" width="16" height="16"><path d="M424.4 214.7L72.4 6.6C43.8-10.3 0 10.1 0 47.9V464c0 37.9 43.8 58.2 72.4 41.3l352-208c31.4-18.5 31.4-64.1 0-82.6z"/></svg> 手动启动学习
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 系统健康状态 -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                    <div class="bg-white rounded-lg shadow-md p-6 dashboard-card">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">CPU使用率</h3>
+                        <div class="flex justify-center items-center">
+                            <svg class="progress-ring w-40 h-40" viewBox="0 0 100 100">
+                                <circle class="progress-ring-circle" stroke="#e5e7eb" stroke-width="10" fill="transparent" r="40" cx="50" cy="50" />
+                                <circle id="cpu-progress" class="progress-ring-circle" stroke="#3b82f6" stroke-width="10" fill="transparent" r="40" cx="50" cy="50" stroke-dasharray="251.2" stroke-dashoffset="188.4" />
+                                <text x="50" y="50" text-anchor="middle" dy=".3em" class="text-2xl font-bold text-gray-800">
+                                    <tspan id="cpu-usage">25</tspan>
+                                    <tspan font-size="14" fill="#6b7280">%</tspan>
+                                </text>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-lg shadow-md p-6 dashboard-card">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">内存使用率</h3>
+                        <div class="flex justify-center items-center">
+                            <svg class="progress-ring w-40 h-40" viewBox="0 0 100 100">
+                                <circle class="progress-ring-circle" stroke="#e5e7eb" stroke-width="10" fill="transparent" r="40" cx="50" cy="50" />
+                                <circle id="memory-progress" class="progress-ring-circle" stroke="#10b981" stroke-width="10" fill="transparent" r="40" cx="50" cy="50" stroke-dasharray="251.2" stroke-dashoffset="125.6" />
+                                <text x="50" y="50" text-anchor="middle" dy=".3em" class="text-2xl font-bold text-gray-800">
+                                    <tspan id="memory-usage">50</tspan>
+                                    <tspan font-size="14" fill="#6b7280">%</tspan>
+                                </text>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-lg shadow-md p-6 dashboard-card">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">磁盘使用率</h3>
+                        <div class="flex justify-center items-center">
+                            <svg class="progress-ring w-40 h-40" viewBox="0 0 100 100">
+                                <circle class="progress-ring-circle" stroke="#e5e7eb" stroke-width="10" fill="transparent" r="40" cx="50" cy="50" />
+                                <circle id="disk-progress" class="progress-ring-circle" stroke="#f59e0b" stroke-width="10" fill="transparent" r="40" cx="50" cy="50" stroke-dasharray="251.2" stroke-dashoffset="75.36" />
+                                <text x="50" y="50" text-anchor="middle" dy=".3em" class="text-2xl font-bold text-gray-800">
+                                    <tspan id="disk-usage">70</tspan>
+                                    <tspan font-size="14" fill="#6b7280">%</tspan>
+                                </text>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AI洞察和优化建议 -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                    <!-- AI洞察 -->
+                    <div class="lg:col-span-2 bg-white rounded-lg shadow-md p-6 dashboard-card">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">AI洞察</h3>
+                        <div id="ai-insights" class="space-y-4">
+                            <p class="text-gray-500 text-center py-8">加载中...</p>
+                        </div>
+                    </div>
+
+                    <!-- 优化建议 -->
+                    <div class="bg-white rounded-lg shadow-md p-6 dashboard-card">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">AI优化建议</h3>
+                        <div id="ai-suggestions" class="space-y-4 max-h-[400px] overflow-y-auto">
+                            <p class="text-gray-500 text-center py-8">加载中...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AI实例健康状态 -->
+                <div class="bg-white rounded-lg shadow-md p-6 dashboard-card">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">AI实例健康状态</h3>
+                    <div id="ai-instances-health" class="overflow-x-auto">
+                        <table class="w-full border-collapse">
+                            <thead>
+                                <tr class="bg-gray-50">
+                                    <th class="text-left py-3 px-4 font-medium text-gray-500 border-b">实例ID</th>
+                                    <th class="text-left py-3 px-4 font-medium text-gray-500 border-b">状态</th>
+                                    <th class="text-left py-3 px-4 font-medium text-gray-500 border-b">最后健康检查</th>
+                                    <th class="text-left py-3 px-4 font-medium text-gray-500 border-b">响应时间</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ai-instances-table-body">
+                                <tr>
+                                    <td colspan="4" class="text-center py-8 text-gray-500">加载中...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- 页脚 -->
+    <footer class="bg-white shadow-inner mt-12 py-6">
+        <div class="container mx-auto px-4 text-center text-gray-500 text-sm">
+            <p>© 2026 MTSCOS AI Project. All rights reserved.</p>
+            <p class="mt-1">利用AI自升级学习能力和Python技术增强后台管理系统</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script>
+        // 设置当前时间
+        document.getElementById('last-check').textContent = new Date().toLocaleString('zh-CN');
+
+        // 获取智能仪表盘数据
+        async function fetchSmartDashboardData() {
+            try {
+                const response = await fetch('/api/smart-dashboard/data');
+                const data = await response.json();
+                
+                if (data.success) {
+                    updateDashboardData(data);
+                    return data;
+                }
+            } catch (error) {
+                console.error('获取智能仪表盘数据失败:', error);
+            }
+        }
+
+        // 获取AI洞察数据
+        async function fetchAIInsights() {
+            try {
+                const response = await fetch('/api/smart-dashboard/ai-insights');
+                const data = await response.json();
+                
+                if (data.success) {
+                    updateAIInsights(data);
+                }
+            } catch (error) {
+                console.error('获取AI洞察数据失败:', error);
+            }
+        }
+
+        // 获取系统健康数据
+        async function fetchSystemHealth() {
+            try {
+                const response = await fetch('/api/smart-dashboard/system-health');
+                const data = await response.json();
+                
+                if (data.success) {
+                    updateSystemHealth(data);
+                }
+            } catch (error) {
+                console.error('获取系统健康数据失败:', error);
+            }
+        }
+
+        // 更新仪表盘数据
+        function updateDashboardData(data) {
+            // 更新系统概览
+            document.getElementById('system-status').textContent = data.system_overview.system_status;
+            document.getElementById('ai-instance-count').textContent = data.system_overview.ai_instance_count;
+            document.getElementById('running-sandboxes').textContent = data.system_overview.running_sandboxes;
+            document.getElementById('active-users').textContent = data.system_overview.active_users;
+            
+            // 更新AI学习状态
+            const learningStatus = data.ai_learning_status;
+            document.getElementById('ai-learning-status').innerHTML = `
+                <span class="status-dot ${learningStatus.is_learning_enabled ? 'status-online' : 'status-offline'}"></span>
+                <span>${learningStatus.is_learning_enabled ? '已启用' : '未启用'}</span>
+            `;
+            document.getElementById('learning-interval').textContent = `${learningStatus.learning_interval}秒`;
+            document.getElementById('total-learning-sessions').textContent = learningStatus.total_learning_sessions;
+            document.getElementById('learning-accuracy').textContent = `${learningStatus.learning_accuracy}%`;
+            document.getElementById('last-learning-time').textContent = learningStatus.last_learning_time ? new Date(learningStatus.last_learning_time * 1000).toLocaleString('zh-CN') : '-';
+            
+            // 更新性能预测图表
+            updatePerformanceChart(data.performance_prediction);
+        }
+
+        // 更新AI洞察
+        function updateAIInsights(data) {
+            const insightsContainer = document.getElementById('ai-insights');
+            const suggestionsContainer = document.getElementById('ai-suggestions');
+            
+            // 更新AI洞察
+            if (data.ai_insights && data.ai_insights.length > 0) {
+                insightsContainer.innerHTML = data.ai_insights.map(insight => `
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <div class="flex items-center mb-2">
+                            <!-- Icon fa-lightbulb-o not found -->
+                            <h4 class="font-medium text-gray-800">${insight.title}</h4>
+                        </div>
+                        <p class="text-gray-600 text-sm">${insight.description}</p>
+                        <div class="mt-2 text-xs text-gray-500">
+                            置信度: ${insight.confidence}% | 影响级别: ${insight.impact_level}
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                insightsContainer.innerHTML = '<p class="text-gray-500 text-center py-4">暂无AI洞察数据</p>';
+            }
+            
+            // 更新AI建议
+            if (data.enhanced_suggestions && data.enhanced_suggestions.length > 0) {
+                suggestionsContainer.innerHTML = data.enhanced_suggestions.map(suggestion => `
+                    <div class="ai-suggestion-card p-4 rounded-lg mb-2">
+                        <div class="flex justify-between items-start">
+                            <h4 class="font-medium text-gray-800">${suggestion.description}</h4>
+                            <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">${suggestion.priority}</span>
+                        </div>
+                        <p class="text-gray-600 text-sm mt-2">类型: ${suggestion.type}</p>
+                        <button class="mt-3 bg-blue-500 hover:bg-blue-600 text-white text-xs px-3 py-1 rounded transition-colors apply-suggestion-btn" data-suggestion='${JSON.stringify(suggestion)}'>
+                            <!-- Icon fa-check not found --> 应用建议
+                        </button>
+                    </div>
+                `).join('');
+                
+                // 添加应用建议按钮事件监听
+                document.querySelectorAll('.apply-suggestion-btn').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const suggestion = JSON.parse(this.dataset.suggestion);
+                        applySuggestion(suggestion);
+                    });
+                });
+            } else {
+                suggestionsContainer.innerHTML = '<p class="text-gray-500 text-center py-4">暂无优化建议</p>';
+            }
+        }
+
+        // 更新系统健康数据
+        function updateSystemHealth(data) {
+            const healthStatus = data.health_status;
+            
+            // 更新CPU使用率
+            updateProgressRing('cpu-progress', healthStatus.cpu_usage);
+            document.getElementById('cpu-usage').textContent = healthStatus.cpu_usage.toFixed(1);
+            
+            // 更新内存使用率
+            updateProgressRing('memory-progress', healthStatus.memory_usage);
+            document.getElementById('memory-usage').textContent = healthStatus.memory_usage.toFixed(1);
+            
+            // 更新磁盘使用率
+            updateProgressRing('disk-progress', healthStatus.disk_usage);
+            document.getElementById('disk-usage').textContent = healthStatus.disk_usage.toFixed(1);
+            
+            // 更新AI实例健康状态
+            updateAIInstancesHealth(healthStatus.ai_instances_health);
+        }
+
+        // 更新进度环
+        function updateProgressRing(ringId, percentage) {
+            const ring = document.getElementById(ringId);
+            const radius = ring.r.baseVal.value;
+            const circumference = 2 * Math.PI * radius;
+            const offset = circumference - (percentage / 100) * circumference;
+            ring.style.strokeDashoffset = offset;
+        }
+
+        // 更新性能预测图表
+        function updatePerformanceChart(prediction) {
+            const ctx = document.getElementById('performance-chart').getContext('2d');
+            
+            // 销毁现有图表
+            if (window.performanceChart) {
+                window.performanceChart.destroy();
+            }
+            
+            // 创建新图表
+            window.performanceChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: prediction.labels || ['1h', '2h', '3h', '4h', '5h', '6h'],
+                    datasets: [{
+                        label: 'CPU使用率 (%)',
+                        data: prediction.cpu_usage || [25, 30, 35, 40, 45, 50],
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }, {
+                        label: '内存使用率 (%)',
+                        data: prediction.memory_usage || [50, 55, 60, 65, 70, 75],
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 更新AI实例健康状态
+        function updateAIInstancesHealth(instances) {
+            const tableBody = document.getElementById('ai-instances-table-body');
+            
+            if (Object.keys(instances).length > 0) {
+                tableBody.innerHTML = Object.entries(instances).map(([instanceId, health]) => `
+                    <tr>
+                        <td class="py-3 px-4 border-b">${instanceId}</td>
+                        <td class="py-3 px-4 border-b">
+                            <span class="status-dot ${health.status === 'running' ? 'status-online' : 'status-offline'}"></span>
+                            <span>${health.status}</span>
+                        </td>
+                        <td class="py-3 px-4 border-b">${health.last_health_check ? new Date(health.last_health_check * 1000).toLocaleString('zh-CN') : '-'}</td>
+                        <td class="py-3 px-4 border-b">${health.response_time}ms</td>
+                    </tr>
+                `).join('');
+            } else {
+                tableBody.innerHTML = '<tr><td colspan="4" class="text-center py-8 text-gray-500">暂无AI实例数据</td></tr>';
+            }
+        }
+
+        // 应用AI建议
+        async function applySuggestion(suggestion) {
+            try {
+                const response = await fetch('/api/smart-dashboard/apply-suggestion', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ suggestion })
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    alert('AI建议应用成功！');
+                    // 刷新数据
+                    fetchAllData();
+                } else {
+                    alert(`AI建议应用失败: ${result.error}`);
+                }
+            } catch (error) {
+                console.error('应用AI建议失败:', error);
+                alert('应用AI建议失败，请检查控制台日志');
+            }
+        }
+
+        // 启动AI学习
+        document.getElementById('start-learning-btn').addEventListener('click', async function() {
+            try {
+                const response = await fetch('/api/smart-dashboard/start-learning');
+                const result = await response.json();
+                if (result.success) {
+                    alert('AI学习已启动！');
+                    // 刷新数据
+                    setTimeout(() => {
+                        fetchAllData();
+                    }, 2000);
+                } else {
+                    alert(`启动AI学习失败: ${result.error}`);
+                }
+            } catch (error) {
+                console.error('启动AI学习失败:', error);
+                alert('启动AI学习失败，请检查控制台日志');
+            }
+        });
+
+        // 刷新数据按钮
+        document.getElementById('refresh-btn').addEventListener('click', fetchAllData);
+
+        // 定时刷新数据（每30秒）
+        setInterval(fetchAllData, 30000);
+
+        // 获取所有数据
+        function fetchAllData() {
+            fetchSmartDashboardData();
+            fetchAIInsights();
+            fetchSystemHealth();
+            // 更新最后检查时间
+            document.getElementById('last-check').textContent = new Date().toLocaleString('zh-CN');
+        }
+
+        // 初始化页面数据
+        fetchAllData();
+    </script>
+</body>
+</html>

@@ -1,0 +1,2872 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}硬件管理系统{% endblock %}</title>
+    <!-- 不再依赖外部 Font Awesome CDN，完全使用内联 SVG 图标 -->
+    <style>
+        :root {
+            --primary-color: #667eea;
+            --secondary-color: #10b981;
+            --accent-color: #8b5cf6;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --bg-card-hover: #334155;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --border-color: #334155;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        /* 确保Font Awesome图标正确显示 */
+        i.fas,
+        i.far,
+        i.fab {
+            display: inline-block;
+            font-style: normal;
+            font-variant: normal;
+            text-rendering: auto;
+            line-height: 1;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+        }
+
+        /* 侧边栏 */
+        .sidebar {
+            width: 260px;
+            background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+            border-right: 1px solid var(--border-color);
+            position: fixed;
+            left: 0;
+            top: 0;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 100;
+            transition: width 0.3s ease;
+        }
+
+        .sidebar.collapsed {
+            width: 70px;
+        }
+
+        .sidebar-header {
+            padding: 25px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: opacity 0.3s ease;
+        }
+
+        .sidebar.collapsed .logo-text {
+            display: none;
+        }
+
+        .logo-icon {
+            width: 45px;
+            height: 45px;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .sidebar.collapsed .logo-icon {
+            width: 40px;
+            height: 40px;
+            font-size: 1.3rem;
+        }
+
+        .logo-text h1 {
+            font-size: 1.3rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .logo-text p {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .collapse-btn {
+            width: 35px;
+            height: 35px;
+            border-radius: 10px;
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+        
+        /* 确保折叠按钮中的图标正确显示 */
+        .collapse-btn i {
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .collapse-btn:hover {
+            background-color: var(--bg-card-hover);
+            color: var(--text-primary);
+        }
+
+        /* 系统状态指示器 */
+        .system-status {
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .status-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .status-dots {
+            display: flex;
+            gap: 6px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .status-dot:hover {
+            transform: scale(1.2);
+        }
+
+        .status-dot.online { background-color: #22c55e; box-shadow: 0 0 10px rgba(34, 197, 94, 0.5); }
+        .status-dot.warning { background-color: #f59e0b; box-shadow: 0 0 10px rgba(245, 158, 11, 0.5); }
+        .status-dot.offline { background-color: #ef4444; box-shadow: 0 0 10px rgba(239, 68, 68, 0.5); }
+
+        .sidebar.collapsed .system-status {
+            display: none;
+        }
+
+        /* 导航菜单 */
+        .nav-menu {
+            padding: 15px 0;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 20px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: all 0.2s ease;
+            border-left: 3px solid transparent;
+            position: relative;
+        }
+
+        .nav-item:hover {
+            background-color: var(--bg-card-hover);
+            color: var(--text-primary);
+        }
+
+        .nav-item.active {
+            background-color: rgba(102, 126, 234, 0.15);
+            color: var(--text-primary);
+            border-left-color: var(--primary-color);
+        }
+
+        .nav-item.has-submenu::after {
+            content: '\f078';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            font-size: 0.7rem;
+            position: absolute;
+            right: 15px;
+            transition: transform 0.3s ease;
+        }
+
+        .nav-item.has-submenu.open::after {
+            transform: rotate(180deg);
+        }
+
+        .sidebar.collapsed .nav-item span {
+            display: none;
+        }
+
+        .sidebar.collapsed .nav-item.has-submenu::after {
+            display: none;
+        }
+
+        .nav-item.logout {
+            margin-top: auto;
+            color: var(--danger-color);
+        }
+
+        .nav-item.logout:hover {
+            background-color: rgba(239, 68, 68, 0.1);
+        }
+
+        /* 子菜单 */
+        .submenu {
+            display: none;
+            padding-left: 20px;
+            background-color: rgba(0, 0, 0, 0.2);
+        }
+
+        .submenu.open {
+            display: block;
+        }
+
+        .submenu-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 25px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+
+        .submenu-item:hover {
+            background-color: var(--bg-card-hover);
+            color: var(--text-primary);
+            padding-left: 30px;
+        }
+
+        .submenu-item.active {
+            color: var(--primary-color);
+            padding-left: 30px;
+        }
+
+        .sidebar.collapsed .submenu {
+            display: none !important;
+        }
+
+        /* 快捷操作面板 */
+        .quick-actions {
+            padding: 15px;
+            border-top: 1px solid var(--border-color);
+            margin-top: auto;
+        }
+
+        .quick-actions-header {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .quick-actions-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+
+        .quick-action-btn {
+            aspect-ratio: 1;
+            border-radius: 10px;
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            transition: all 0.2s ease;
+            font-size: 0.75rem;
+        }
+
+        .quick-action-btn:hover {
+            background-color: rgba(102, 126, 234, 0.2);
+            border-color: var(--primary-color);
+            color: var(--text-primary);
+            transform: translateY(-2px);
+        }
+
+        .quick-action-btn i {
+            font-size: 1.1rem;
+        }
+
+        .sidebar.collapsed .quick-actions {
+            display: none;
+        }
+
+        /* 主内容区 */
+        .main-content {
+            margin-left: 260px;
+            flex: 1;
+            min-height: 100vh;
+            transition: margin-left 0.3s ease;
+        }
+
+        .sidebar.collapsed + .main-content {
+            margin-left: 70px;
+        }
+
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 30px;
+            background-color: var(--bg-card);
+            border-bottom: 1px solid var(--border-color);
+            position: relative;
+        }
+
+        .page-title h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .page-title p {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .top-right {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        /* 全局搜索增强 */
+        .search-box {
+            position: relative;
+        }
+
+        .search-box input {
+            width: 280px;
+            padding: 11px 45px 11px 15px;
+            background-color: var(--bg-dark);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            width: 350px;
+        }
+
+        .search-box i {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+            transition: color 0.2s ease;
+        }
+
+        .search-box input:focus + i {
+            color: var(--primary-color);
+        }
+
+        /* 搜索结果下拉 */
+        .search-results {
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 0;
+            width: 100%;
+            max-width: 400px;
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            display: none;
+            z-index: 1000;
+            overflow: hidden;
+        }
+
+        .search-results.show {
+            display: block;
+        }
+
+        .search-results-header {
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .search-result-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 15px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .search-result-item:hover {
+            background-color: var(--bg-card-hover);
+        }
+
+        .search-result-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+        }
+
+        .search-result-icon.device { background-color: rgba(34, 197, 94, 0.2); color: #4ade80; }
+        .search-result-icon.log { background-color: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+        .search-result-icon.setting { background-color: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+
+        .search-result-info {
+            flex: 1;
+        }
+
+        .search-result-title {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .search-result-subtitle {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        /* 通知按钮 */
+        .notification-btn {
+            position: relative;
+            width: 45px;
+            height: 45px;
+            background-color: var(--bg-dark);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        /* 确保通知按钮中的图标正确显示 */
+        .notification-btn i {
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+        }
+
+        .notification-btn:hover {
+            background-color: var(--bg-card-hover);
+        }
+
+        .notification-btn.active {
+            border-color: var(--danger-color);
+            background-color: rgba(239, 68, 68, 0.1);
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background-color: var(--danger-color);
+            color: white;
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 10px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        /* 通知下拉面板 */
+        .notification-panel {
+            position: absolute;
+            top: calc(100% + 10px);
+            right: 200px;
+            width: 400px;
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            display: none;
+            z-index: 1000;
+            overflow: hidden;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .notification-panel.show {
+            display: block;
+        }
+
+        .notification-panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .notification-panel-header h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .notification-panel-header a {
+            font-size: 0.85rem;
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        .notification-panel-body {
+            padding: 10px;
+        }
+
+        .notification-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            margin-bottom: 8px;
+        }
+
+        .notification-item:hover {
+            background-color: var(--bg-card-hover);
+        }
+
+        .notification-item.unread {
+            background-color: rgba(102, 126, 234, 0.08);
+            border-left: 3px solid var(--primary-color);
+        }
+
+        .notification-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+
+        .notification-icon.warning { background-color: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+        .notification-icon.info { background-color: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+        .notification-icon.success { background-color: rgba(34, 197, 94, 0.2); color: #4ade80; }
+        .notification-icon.error { background-color: rgba(239, 68, 68, 0.2); color: #fca5a5; }
+
+        .notification-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .notification-title {
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 4px;
+        }
+
+        .notification-message {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .notification-time {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            opacity: 0.7;
+        }
+
+        /* 通知面板头部操作 */
+        .notification-header-actions {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .notification-header-actions a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: color 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .notification-header-actions a:hover {
+            color: var(--primary-color);
+        }
+
+        /* 通知筛选栏 */
+        .notification-filter-bar {
+            padding: 10px 15px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .filter-tabs {
+            display: flex;
+            gap: 5px;
+        }
+
+        .filter-tab {
+            padding: 6px 12px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+
+        .filter-tab:hover {
+            background: rgba(102, 126, 234, 0.1);
+            color: var(--text-primary);
+        }
+
+        .filter-tab.active {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        /* 通知搜索框 */
+        .notification-search-box {
+            position: relative;
+        }
+
+        .notification-search-box input {
+            width: 100%;
+            padding: 8px 30px 8px 12px;
+            background: var(--bg-dark);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.85rem;
+        }
+
+        .notification-search-box input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .notification-search-box svg {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+        }
+
+        /* 通知面板底部 */
+        .notification-panel-footer {
+            padding: 12px 15px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .notification-count {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        /* 通知项操作按钮 */
+        .notification-item {
+            position: relative;
+        }
+
+        .notification-item:hover {
+            background: var(--bg-card-hover);
+        }
+
+        .notification-actions {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: none;
+            gap: 5px;
+        }
+
+        .notification-item:hover .notification-actions {
+            display: flex;
+        }
+
+        .notification-action-btn {
+            padding: 5px 8px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .notification-action-btn:hover {
+            background: rgba(102, 126, 234, 0.1);
+            color: var(--primary-color);
+        }
+
+        .notification-action-btn.delete:hover {
+            color: var(--danger-color);
+            background: rgba(220, 53, 69, 0.1);
+        }
+
+        /* 通知设置弹窗 */
+        .notification-settings-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .notification-settings-modal.show {
+            display: flex;
+        }
+
+        .notification-settings-content {
+            background: var(--bg-card);
+            border-radius: 16px;
+            width: 90%;
+            max-width: 450px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        /* 用户信息 */
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            padding: 8px 12px;
+            border-radius: 12px;
+            transition: background-color 0.2s ease;
+        }
+
+        .user-info:hover {
+            background-color: var(--bg-card-hover);
+        }
+
+        .user-avatar {
+            width: 45px;
+            height: 45px;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            position: relative;
+        }
+        
+        /* 确保用户头像中的图标正确显示 */
+        .user-avatar i {
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .user-status {
+            position: absolute;
+            bottom: 2px;
+            right: 2px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: #22c55e;
+            border: 2px solid var(--bg-card);
+        }
+
+        .user-details {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .user-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .user-role {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        /* 用户菜单下拉 */
+        .user-menu {
+            position: absolute;
+            top: calc(100% + 10px);
+            right: 30px;
+            width: 200px;
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            display: none;
+            z-index: 1000;
+            overflow: hidden;
+        }
+
+        .user-menu.show {
+            display: block;
+        }
+
+        .user-menu-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 15px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: background-color 0.2s ease;
+        }
+
+        .user-menu-item:hover {
+            background-color: var(--bg-card-hover);
+            color: var(--text-primary);
+        }
+
+        .user-menu-item.logout {
+            color: var(--danger-color);
+        }
+
+        .user-menu-item.logout:hover {
+            background-color: rgba(239, 68, 68, 0.1);
+        }
+
+        /* 快捷操作按钮 */
+        .quick-actions-bar {
+            display: flex;
+            gap: 10px;
+        }
+
+        .quick-action-bar-btn {
+            padding: 10px 18px;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-dark);
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .quick-action-bar-btn:hover {
+            background-color: var(--bg-card-hover);
+            border-color: var(--primary-color);
+        }
+
+        .quick-action-bar-btn.primary {
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            border-color: transparent;
+        }
+
+        .quick-action-bar-btn.primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        /* 内容区域 */
+        .content-area {
+            padding: 30px;
+        }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            gap: 25px;
+        }
+
+        .content-full {
+            grid-column: 1 / -1;
+        }
+
+        /* 卡片 */
+        .card {
+            background-color: var(--bg-card);
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 25px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .card-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-title h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        /* 按钮 */
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background-color: var(--bg-dark);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--bg-card-hover);
+        }
+
+        .btn-danger {
+            background-color: rgba(239, 68, 68, 0.15);
+            color: var(--danger-color);
+        }
+
+        .btn-danger:hover {
+            background-color: rgba(239, 68, 68, 0.25);
+        }
+
+        .btn-sm {
+            padding: 6px 14px;
+            font-size: 0.85rem;
+        }
+
+        .btn-xs {
+            padding: 4px 10px;
+            font-size: 0.75rem;
+        }
+
+        /* 表格 */
+        .table-container {
+            overflow-x: auto;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 14px 20px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .data-table th {
+            background-color: var(--bg-dark);
+            font-weight: 600;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .data-table tr:hover {
+            background-color: var(--bg-card-hover);
+        }
+
+        /* 徽章 */
+        .badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .badge.server { background-color: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+        .badge.desktop { background-color: rgba(34, 197, 94, 0.2); color: #4ade80; }
+        .badge.network { background-color: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+        .badge.storage { background-color: rgba(168, 85, 247, 0.2); color: #c084fc; }
+        .badge.other { background-color: rgba(148, 163, 184, 0.2); color: #cbd5e1; }
+        .badge.api { background-color: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+        .badge.device { background-color: rgba(34, 197, 94, 0.2); color: #4ade80; }
+        .badge.service { background-color: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+
+        /* 状态徽章 */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .status-badge.online { background-color: rgba(34, 197, 94, 0.2); color: #4ade80; }
+        .status-badge.offline { background-color: rgba(239, 68, 68, 0.2); color: #fca5a5; }
+        .status-badge.warning { background-color: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: currentColor;
+        }
+
+        /* 迷你进度条 */
+        .mini-progress {
+            width: 80px;
+            height: 6px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 4px;
+        }
+
+        .mini-progress-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+
+        .mini-progress-fill.cpu { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
+        .mini-progress-fill.memory { background: linear-gradient(90deg, #22c55e, #4ade80); }
+        .mini-progress-fill.storage { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+
+        /* 操作按钮组 */
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        /* 统计面板 */
+        .stats-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .stat-card {
+            background-color: var(--bg-card);
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            border: 1px solid var(--border-color);
+        }
+
+        .stat-icon {
+            width: 45px;
+            height: 45px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+        }
+        
+        /* 确保stat-icon中的图标正确显示 */
+        .stat-icon i {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+        }
+
+        .stat-icon.blue { background-color: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+        .stat-icon.green { background-color: rgba(34, 197, 94, 0.2); color: #4ade80; }
+        .stat-icon.red { background-color: rgba(239, 68, 68, 0.2); color: #fca5a5; }
+        .stat-icon.purple { background-color: rgba(168, 85, 247, 0.2); color: #c084fc; }
+        .stat-icon.orange { background-color: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+
+        .stat-info {
+            flex: 1;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 2px;
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        /* 表单 */
+        .form-control {
+            width: 100%;
+            padding: 12px 15px;
+            background-color: var(--bg-dark);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            transition: border-color 0.2s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        /* 弹窗 */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background-color: var(--bg-card);
+            border-radius: 16px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 25px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .modal-header h3 {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-secondary);
+            background: none;
+            border: none;
+        }
+
+        .modal-body {
+            padding: 25px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 15px;
+            padding: 20px 25px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            z-index: 2000;
+            opacity: 1;
+            transition: all 0.3s ease;
+        }
+
+        .toast.error {
+            background-color: var(--danger-color);
+        }
+
+        /* 设置面板 */
+        .settings-panel {
+            padding: 20px;
+        }
+
+        .settings-section {
+            margin-bottom: 25px;
+        }
+
+        .settings-section h4 {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .setting-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background-color: var(--bg-dark);
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+
+        /* 子功能版本列表 */
+        .component-version-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .component-version-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background-color: var(--bg-dark);
+            border-radius: 10px;
+            transition: background-color 0.2s ease;
+        }
+
+        .component-version-item:hover {
+            background-color: var(--bg-card-hover);
+        }
+
+        .component-info {
+            flex: 1;
+        }
+
+        .component-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+            margin-bottom: 4px;
+            color: var(--text-primary);
+        }
+
+        .component-desc {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .component-version {
+            flex-shrink: 0;
+            margin-left: 15px;
+        }
+
+        .version-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            font-family: 'Courier New', monospace;
+        }
+
+        .version-badge.version-stable {
+            background-color: rgba(34, 197, 94, 0.15);
+            color: #4ade80;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+
+        .version-badge.version-beta {
+            background-color: rgba(245, 158, 11, 0.15);
+            color: #fbbf24;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .version-badge.version-dev {
+            background-color: rgba(59, 130, 246, 0.15);
+            color: #60a5fa;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+
+        .setting-row.danger-bg {
+            background-color: rgba(239, 68, 68, 0.1);
+        }
+
+        .setting-info p {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .setting-info span {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .setting-info.danger-text p {
+            color: var(--danger-color);
+        }
+
+        /* 开关 */
+        .toggle-switch {
+            position: relative;
+            width: 48px;
+            height: 26px;
+            background-color: var(--border-color);
+            border-radius: 13px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .toggle-switch input {
+            display: none;
+        }
+
+        .toggle-track {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .toggle-thumb {
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 20px;
+            height: 20px;
+            background-color: white;
+            border-radius: 50%;
+            transition: left 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .toggle-switch input:checked + .toggle-track {
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+        }
+
+        .toggle-switch input:checked + .toggle-track .toggle-thumb {
+            left: 25px;
+        }
+
+        /* 监控面板 */
+        .monitoring-section {
+            padding: 20px;
+        }
+
+        .monitoring-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .metric-card {
+            background-color: var(--bg-dark);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .metric-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .metric-label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .metric-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .metric-chart {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            height: 100px;
+            gap: 6px;
+        }
+
+        .chart-bar {
+            flex: 1;
+            border-radius: 4px;
+            transition: height 0.3s ease;
+        }
+
+        .chart-bar.cpu { background: linear-gradient(180deg, #3b82f6, #1d4ed8); }
+        .chart-bar.memory { background: linear-gradient(180deg, #22c55e, #16a34a); }
+        .chart-bar.network { background: linear-gradient(180deg, #667eea, #5b21b6); }
+        .chart-bar.storage { background: linear-gradient(180deg, #f59e0b, #d97706); }
+
+        .metric-footer {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid var(--border-color);
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        /* 告警列表 */
+        .alerts-list {
+            padding: 10px;
+        }
+
+        .alert-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+
+        .alert-item.warning { background-color: rgba(245, 158, 11, 0.1); }
+        .alert-item.info { background-color: rgba(59, 130, 246, 0.1); }
+        .alert-item.danger { background-color: rgba(239, 68, 68, 0.1); }
+
+        .alert-icon {
+            font-size: 1.3rem;
+            margin-top: 2px;
+        }
+
+        .alert-item.warning .alert-icon { color: #f59e0b; }
+        .alert-item.info .alert-icon { color: #3b82f6; }
+        .alert-item.danger .alert-icon { color: #ef4444; }
+
+        .alert-content {
+            flex: 1;
+        }
+
+        .alert-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .alert-message {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+        }
+
+        .alert-time {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            opacity: 0.7;
+        }
+
+        .alert-action {
+            padding: 8px 15px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+
+        .alert-action:hover {
+            background-color: rgba(255, 255, 255, 0.15);
+        }
+
+        /* 日志容器 */
+        .logs-container {
+            padding: 15px;
+        }
+
+        .log-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            padding: 15px;
+            background-color: var(--bg-dark);
+            border-radius: 10px;
+            margin-bottom: 10px;
+            border-left: 4px solid transparent;
+        }
+
+        .log-item.info { border-left-color: #3b82f6; }
+        .log-item.warning { border-left-color: #f59e0b; }
+        .log-item.error { border-left-color: #ef4444; }
+        .log-item.debug { border-left-color: #8b5cf6; }
+
+        .log-level {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            min-width: 60px;
+        }
+
+        .level-icon {
+            font-size: 1.2rem;
+        }
+
+        .log-item.info .level-icon,
+        .log-item.info .level-text { color: #60a5fa; }
+        .log-item.warning .level-icon,
+        .log-item.warning .level-text { color: #f59e0b; }
+        .log-item.error .level-icon,
+        .log-item.error .level-text { color: #fca5a5; }
+        .log-item.debug .level-icon,
+        .log-item.debug .level-text { color: #c084fc; }
+
+        .level-text {
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .log-content {
+            flex: 1;
+        }
+
+        .log-message {
+            font-size: 0.95rem;
+            margin-bottom: 6px;
+        }
+
+        .log-meta {
+            display: flex;
+            gap: 15px;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .log-action {
+            padding: 6px 10px;
+            background-color: rgba(239, 68, 68, 0.1);
+            border: none;
+            border-radius: 8px;
+            color: var(--danger-color);
+            cursor: pointer;
+        }
+
+        .log-action:hover {
+            background-color: rgba(239, 68, 68, 0.2);
+        }
+
+        /* 密钥值 */
+        .key-value {
+            font-family: monospace;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            background-color: rgba(0, 0, 0, 0.3);
+            padding: 4px 10px;
+            border-radius: 6px;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 1200px) {
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar.collapsed + .main-content {
+                margin-left: 70px;
+            }
+        }
+
+        @media (max-width: 992px) {
+            .sidebar {
+                width: 240px;
+            }
+            
+            .main-content {
+                margin-left: 240px;
+            }
+            
+            .sidebar.collapsed + .main-content {
+                margin-left: 60px;
+            }
+            
+            .sidebar.collapsed {
+                width: 60px;
+            }
+            
+            .top-right {
+                gap: 10px;
+            }
+            
+            .search-box input {
+                width: 220px;
+            }
+            
+            .search-box input:focus {
+                width: 280px;
+            }
+            
+            .quick-actions-bar {
+                display: none;
+            }
+        }
+
+        @media (max-width: 768px) {
+            /* 移动端侧边栏 */
+            .sidebar {
+                width: 100%;
+                max-width: 280px;
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+                z-index: 1000;
+                box-shadow: 10px 0 40px rgba(0, 0, 0, 0.3);
+            }
+
+            .sidebar.active {
+                transform: translateX(0);
+            }
+
+            .sidebar.collapsed {
+                width: 100%;
+                max-width: 280px;
+            }
+
+            .sidebar.collapsed .logo-text {
+                display: block;
+            }
+
+            .main-content {
+                margin-left: 0 !important;
+                position: relative;
+            }
+
+            /* 移动端顶部栏 */
+            .top-bar {
+                flex-wrap: wrap;
+                gap: 12px;
+                padding: 12px 15px;
+                position: relative;
+            }
+
+            .page-title h2 {
+                font-size: 1.25rem;
+            }
+
+            .page-title p {
+                font-size: 0.85rem;
+            }
+
+            .top-right {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .search-box {
+                flex: 1;
+                max-width: 200px;
+            }
+
+            .search-box input {
+                width: 100%;
+            }
+
+            .search-box input:focus {
+                width: 100%;
+            }
+
+            /* 移动端菜单按钮 */
+            .mobile-menu-btn {
+                display: flex !important;
+                width: 40px;
+                height: 40px;
+                border-radius: 10px;
+                background-color: var(--bg-dark);
+                border: 1px solid var(--border-color);
+                color: var(--text-secondary);
+                cursor: pointer;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .notification-panel {
+                right: 15px !important;
+                width: calc(100% - 30px) !important;
+                max-width: 400px;
+            }
+
+            .user-menu {
+                right: 15px !important;
+            }
+
+            .notification-btn {
+                width: 40px;
+                height: 40px;
+            }
+
+            .user-avatar {
+                width: 40px;
+                height: 40px;
+            }
+
+            /* 移动端内容区域 */
+            .content-area {
+                padding: 15px;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 12px;
+            }
+
+            .stat-card {
+                padding: 15px;
+            }
+
+            .stat-value {
+                font-size: 1.3rem;
+            }
+
+            /* 表格响应式 */
+            .table-container {
+                overflow-x: auto;
+            }
+
+            .data-table {
+                min-width: 600px;
+            }
+
+            .data-table th,
+            .data-table td {
+                padding: 10px 12px;
+                font-size: 0.85rem;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+                gap: 4px;
+            }
+
+            /* 移动端图表 */
+            .chart-bar-container {
+                gap: 3px;
+            }
+
+            .chart-bar {
+                min-width: 8px;
+            }
+
+            /* 热力图响应式 */
+            .heatmap-grid {
+                grid-template-columns: repeat(4, 1fr) !important;
+            }
+
+            /* AI面板响应式 */
+            .ai-panel {
+                padding: 20px;
+            }
+
+            .ai-stats {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 10px;
+            }
+
+            .ai-stat .stat-num {
+                font-size: 1.3rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stats-grid {
+                grid-template-columns: 1fr !important;
+            }
+
+            .top-right {
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+
+            .search-box {
+                order: 3;
+                width: 100%;
+                max-width: 100%;
+            }
+
+            .notification-btn {
+                order: 1;
+            }
+
+            .user-info {
+                order: 2;
+            }
+
+            .mobile-menu-btn {
+                order: 0;
+            }
+
+            .page-title {
+                width: 100%;
+            }
+
+            .heatmap-grid {
+                grid-template-columns: repeat(3, 1fr) !important;
+            }
+
+            .ai-stats {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+    </style>
+
+<style>
+.svg-icon {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    vertical-align: -0.125em;
+    fill: currentColor;
+}
+</style>
+</head>
+<body>
+    <!-- 侧边栏 -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <div class="logo-icon">
+                    <svg class="svg-icon" viewBox="0 0 512 512" width="16" height="16"><path d="M416 48v416c0 17.69-14.33 32-32 32H128c-17.67 0-32-14.31-32-32V48c0-17.69 14.33-32 32-32h256c17.67 0 32 14.31 32 32zm-32 32H128v416h256V80zm64 64h32c17.67 0 32 14.33 32 32v16c0 17.67-14.33 32-32 32h-32v32h32c17.67 0 32 14.33 32 32v16c0 17.67-14.33 32-32 32h-32v32h32c17.67 0 32 14.33 32 32v16c0 17.67-14.33 32-32 32h-32v32h32c17.67 0 32 14.33 32 32v16c0 17.67-14.33 32-32 32h-32v32h32c17.67 0 32 14.33 32 32v16c0 17.67-14.33 32-32 32h-32V480h32c17.67 0 32 14.33 32 32v16c0 17.67-14.33 32-32 32h-32v32h32c17.67 0 32 14.33 32 32v16c0 17.67-14.33 32-32 32h-32v32h32c17.67 0 32 14.33 32 32v16c0 17.67-14.33 32-32 32h-32v32h32c17.67 0 32 14.33 32 32v16c0 17.67-14.33 32-32 32h-32V80zm-416 0v32h-32c-17.67 0-32-14.33-32-32V80c0-17.67 14.33-32 32-32h32v32h-32c-17.67 0-32 14.33-32 32v16c0 17.67 14.33 32 32 32h32v32h-32c-17.67 0-32 14.33-32 32v16c0 17.67 14.33 32 32 32h32v32h-32c-17.67 0-32 14.33-32 32v16c0 17.67 14.33 32 32 32h32v32h-32c-17.67 0-32 14.33-32 32v16c0 17.67 14.33 32 32 32h32v32h-32c-17.67 0-32 14.33-32 32v16c0 17.67 14.33 32 32 32h32v32h-32c-17.67 0-32 14.33-32 32v16c0 17.67 14.33 32 32 32h32V80z"/></svg>
+                </div>
+                <div class="logo-text">
+                    <h1>MTSCOS AI</h1>
+                    <p>硬件管理系统</p>
+                </div>
+            </div>
+            <button class="collapse-btn" id="collapseBtn" onclick="toggleSidebar()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+            </button>
+        </div>
+        
+        <!-- 系统状态指示器 -->
+        <div class="system-status">
+            <div class="status-header">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--secondary-color)" stroke="var(--secondary-color)" stroke-width="0">
+                    <circle cx="12" cy="12" r="10"></circle>
+                </svg>
+                <span>设备状态</span>
+            </div>
+            <div class="status-dots">
+                {% for i in range(5) %}
+                    <div class="status-dot online" title="设备 {{ i + 1 }} - 在线"></div>
+                {% endfor %}
+                <div class="status-dot warning" title="设备 6 - 警告"></div>
+                <div class="status-dot offline" title="设备 7 - 离线"></div>
+            </div>
+        </div>
+        
+        <nav class="nav-menu">
+            <a href="/hardware/dashboard" class="nav-item {% if request.path == '/hardware/dashboard' %}active{% endif %}">
+                <svg class="svg-icon" viewBox="0 0 576 512" width="16" height="16"><path d="M575.8 255.3c0-1.1-.3-2.1-.7-3l-96-160c-5.2-8.7-14.6-14.3-25.1-14.3H416V48c0-26.5-21.5-48-48-48H208c-26.5 0-48 21.5-48 48v32H128c-10.5 0-19.9 5.6-25.1 14.3l-96 160c-.4.9-.7 1.9-.7 3 0 16.5 13.5 30 30 30h34V464c0 26.5 21.5 48 48 48H448c26.5 0 48-21.5 48-48V285.3h34c16.5 0 30-13.5 30-30zM160 464V288H96l96-160h32v112c0 8.8 7.2 16 16 16h32c8.8 0 16-7.2 16-16V128h192l96 160h-64v176H160z"/></svg>
+                <span>仪表盘</span>
+            </a>
+            
+            <div class="nav-item has-submenu" id="devicesMenu" onclick="toggleSubmenu('devicesMenu')">
+                <svg class="svg-icon" viewBox="0 0 640 512" width="16" height="16"><path d="M480 160c0-26.5-21.5-48-48-48H64c-26.5 0-48 21.5-48 48v64h576v-64zm-208 80c-13.3 0-24-10.7-24-24s10.7-24 24-24 24 10.7 24 24-10.7 24-24 24zm128 0c-13.3 0-24-10.7-24-24s10.7-24 24-24 24 10.7 24 24-10.7 24-24 24zm192-64H16v160c0 26.5 21.5 48 48 48h352c26.5 0 48-21.5 48-48V256h128v-80zm-336 192c-13.3 0-24-10.7-24-24s10.7-24 24-24 24 10.7 24 24-10.7 24-24 24zm128 0c-13.3 0-24-10.7-24-24s10.7-24 24-24 24 10.7 24 24-10.7 24-24 24z"/></svg>
+                <span>设备管理</span>
+            </div>
+            <div class="submenu" id="devicesSubmenu">
+                <a href="/hardware/devices" class="submenu-item {% if request.path == '/hardware/devices' %}active{% endif %}">
+                    <!-- Icon fa-desktop not found -->
+                    <span>设备列表</span>
+                </a>
+                <a href="#" class="submenu-item" onclick="showAddDeviceModal()">
+                    <!-- Icon fa-plus not found -->
+                    <span>添加设备</span>
+                </a>
+                <a href="#" class="submenu-item" onclick="scanDevices()">
+                    <svg class="svg-icon" viewBox="0 0 512 512" width="16" height="16"><path d="M505 442.7L405.3 343c-4.5-4.5-10.6-7-17-7H372c27.6-35.3 44-79.7 44-128C416 93.1 322.9 0 208 0S0 93.1 0 208s93.1 208 208 208c48.3 0 92.7-16.4 128-44v16.3c0 6.4 2.5 12.5 7 17l99.7 99.7c9.4 9.4 24.6 9.4 33.9 0l28.3-28.3c9.4-9.4 9.4-24.6.1-34zM208 336c-70.7 0-128-57.3-128-128s57.3-128 128-128 128 57.3 128 128-57.3 128-128 128z"/></svg>
+                    <span>扫描设备</span>
+                </a>
+            </div>
+            
+            <div class="nav-item has-submenu" id="monitoringMenu" onclick="toggleSubmenu('monitoringMenu')">
+                <svg class="svg-icon" viewBox="0 0 640 512" width="16" height="16"><path d="M608 400c0 17.67-14.33 32-32 32H32c-17.67 0-32-14.33-32-32V80c0-17.67 14.33-32 32-32s32 14.33 32 32v288h512v32zm0-352H64c-17.67 0-32 14.33-32 32v320c0 17.67 14.33 32 32 32h544c17.67 0 32-14.33 32-32V80c0-17.67-14.33-32-32-32zM128 384c-8.84 0-16-7.16-16-16s7.16-16 16-16 16 7.16 16 16-7.16 16-16 16zm128 0c-8.84 0-16-7.16-16-16s7.16-16 16-16 16 7.16 16 16-7.16 16-16 16zm128 0c-8.84 0-16-7.16-16-16s7.16-16 16-16 16 7.16 16 16-7.16 16-16 16zm128 0c-8.84 0-16-7.16-16-16s7.16-16 16-16 16 7.16 16 16-7.16 16-16 16zM128 288c-8.84 0-16-7.16-16-16s7.16-16 16-16 16 7.16 16 16-7.16 16-16 16zm128 0c-8.84 0-16-7.16-16-16s7.16-16 16-16 16 7.16 16 16-7.16 16-16 16zm128 0c-8.84 0-16-7.16-16-16s7.16-16 16-16 16 7.16 16 16-7.16 16-16 16zm128 0c-8.84 0-16-7.16-16-16s7.16-16 16-16 16 7.16 16 16-7.16 16-16 16zM128 192c-8.84 0-16-7.16-16-16s7.16-16 16-16 16 7.16 16 16-7.16 16-16 16zm128 0c-8.84 0-16-7.16-16-16s7.16-16 16-16 16 7.16 16 16-7.16 16-16 16zm128 0c-8.84 0-16-7.16-16-16s7.16-16 16-16 16 7.16 16 16-7.16 16-16 16zm128 0c-8.84 0-16-7.16-16-16s7.16-16 16-16 16 7.16 16 16-7.16 16-16 16z"/></svg>
+                <span>性能监控</span>
+            </div>
+            <div class="submenu" id="monitoringSubmenu">
+                <a href="/hardware/monitoring" class="submenu-item {% if request.path == '/hardware/monitoring' %}active{% endif %}">
+                    <!-- Icon fa-chart-bar not found -->
+                    <span>实时监控</span>
+                </a>
+                <a href="#" class="submenu-item" onclick="aiAction('health')">
+                    <!-- Icon fa-heartbeat not found -->
+                    <span>健康报告</span>
+                </a>
+                <a href="#" class="submenu-item" onclick="aiAction('predict')">
+                    <!-- Icon fa-trending-up not found -->
+                    <span>性能预测</span>
+                </a>
+            </div>
+            
+            <a href="/hardware/logs" class="nav-item {% if request.path == '/hardware/logs' %}active{% endif %}">
+                <!-- Icon fa-file-text not found -->
+                <span>系统日志</span>
+            </a>
+            
+            <a href="/hardware/keys" class="nav-item {% if request.path == '/hardware/keys' %}active{% endif %}">
+                <svg class="svg-icon" viewBox="0 0 512 512" width="16" height="16"><path d="M336 144c0-26.5 21.5-48 48-48s48 21.5 48 48-21.5 48-48 48-48-21.5-48-48zm176 48c0-79.5-64.5-144-144-144s-144 64.5-144 144c0 19.3 3.8 37.7 10.7 54.6L144 352 48 256 0 304l96 96 48 48 48-48 16.4-16.4c15.5 5.6 32.1 8.8 49.6 8.8 79.5 0 144-64.5 144-144z"/></svg>
+                <span>硬件密钥</span>
+            </a>
+            
+            <a href="/hardware/settings" class="nav-item {% if request.path == '/hardware/settings' %}active{% endif %}">
+                <svg class="svg-icon" viewBox="0 0 512 512" width="16" height="16"><path d="M487.4 315.7l-43.4-7.5c-1.3-3.2-2.8-6.3-4.5-9.3l19.9-39.8c3.6-7.2 2-16.1-3.8-21.6l-50-47.6c-5.8-5.5-14.9-6.5-21.9-2.4l-41.9 24.5c-11.4-8.8-23.9-16.2-37.2-21.8l-8.4-47.4C292.1 35 283.7 32 274.7 32h-37.5c-9 0-17.4 3-24.3 8.3l-8.4 47.4c-13.3 5.6-25.8 13-37.2 21.8l-41.9-24.5c-7-4.1-16.1-3.1-21.9 2.4l-50 47.6c-5.8 5.5-7.4 14.4-3.8 21.6l19.9 39.8c-1.7 3-3.2 6.1-4.5 9.3l-43.4 7.5C10.1 320.6 0 331.8 0 344.9v34.3c0 13.1 10.1 24.3 22.6 29.2l43.4 7.5c1.3 3.2 2.8 6.3 4.5 9.3l-19.9 39.8c-3.6 7.2-2 16.1 3.8 21.6l50 47.6c5.8 5.5 14.9 6.5 21.9 2.4l41.9-24.5c11.4 8.8 23.9 16.2 37.2 21.8l8.4 47.4c6.9 5.3 15.3 8.3 24.3 8.3h37.5c9 0 17.4-3 24.3-8.3l8.4-47.4c13.3-5.6 25.8-13 37.2-21.8l41.9 24.5c7 4.1 16.1 3.1 21.9-2.4l50-47.6c5.8-5.5 7.4-14.4 3.8-21.6l-19.9-39.8c1.7-3 3.2-6.1 4.5-9.3l43.4-7.5c12.5-4.9 22.6-16 22.6-29.2v-34.3c0-13.1-10.1-24.3-22.6-29.2zM256 384c-70.7 0-128-57.3-128-128s57.3-128 128-128 128 57.3 128 128-57.3 128-128 128z"/></svg>
+                <span>系统设置</span>
+            </a>
+            
+            <a href="/auth/logout" class="nav-item logout">
+                <svg class="svg-icon" viewBox="0 0 512 512" width="16" height="16"><path d="M497 273L329 441c-15 15-41 4.5-41-17v-96H152c-13.3 0-24-10.7-24-24v-96c0-13.3 10.7-24 24-24h136V88c0-21.4 25.9-32 41-17l168 168c9.3 9.4 9.3 24.6 0 34zM192 436v-40c0-6.6-5.4-12-12-12H96c-17.7 0-32-14.3-32-32V160c0-17.7 14.3-32 32-32h84c6.6 0 12-5.4 12-12V76c0-6.6-5.4-12-12-12H96c-53 0-96 43-96 96v192c0 53 43 96 96 96h84c6.6 0 12-5.4 12-12z"/></svg>
+                <span>退出登录</span>
+            </a>
+        </nav>
+        
+        <!-- 快捷操作面板 -->
+        <div class="quick-actions">
+            <div class="quick-actions-header">
+                <!-- Icon fa-rocket not found -->
+                <span>快捷操作</span>
+            </div>
+            <div class="quick-actions-grid">
+                <button class="quick-action-btn" onclick="aiAction('optimize')" title="优化系统">
+                    <!-- Icon fa-zap not found -->
+                    <span>优化</span>
+                </button>
+                <button class="quick-action-btn" onclick="scanDevices()" title="扫描设备">
+                    <svg class="svg-icon" viewBox="0 0 512 512" width="16" height="16"><path d="M505 442.7L405.3 343c-4.5-4.5-10.6-7-17-7H372c27.6-35.3 44-79.7 44-128C416 93.1 322.9 0 208 0S0 93.1 0 208s93.1 208 208 208c48.3 0 92.7-16.4 128-44v16.3c0 6.4 2.5 12.5 7 17l99.7 99.7c9.4 9.4 24.6 9.4 33.9 0l28.3-28.3c9.4-9.4 9.4-24.6.1-34zM208 336c-70.7 0-128-57.3-128-128s57.3-128 128-128 128 57.3 128 128-57.3 128-128 128z"/></svg>
+                    <span>扫描</span>
+                </button>
+                <button class="quick-action-btn" onclick="refreshStats()" title="刷新数据">
+                    <!-- Icon fa-refresh not found -->
+                    <span>刷新</span>
+                </button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- 主内容区 -->
+    <main class="main-content">
+        <!-- 顶部栏 -->
+        <div class="top-bar">
+            <button class="mobile-menu-btn" style="display: none;" onclick="toggleMobileMenu()">
+                <!-- Icon fa-bars not found -->
+            </button>
+            <div class="page-title">
+                <h2>{% block page_title %}硬件管理{% endblock %}</h2>
+                <p>{% block page_subtitle %}管理系统硬件设备和资源配置{% endblock %}</p>
+            </div>
+            <div class="top-right">
+                <div class="search-box">
+                    <input type="text" placeholder="搜索设备、日志、设置..." id="global-search" onkeyup="handleSearch()">
+                    <svg class="svg-icon" viewBox="0 0 512 512" width="16" height="16"><path d="M505 442.7L405.3 343c-4.5-4.5-10.6-7-17-7H372c27.6-35.3 44-79.7 44-128C416 93.1 322.9 0 208 0S0 93.1 0 208s93.1 208 208 208c48.3 0 92.7-16.4 128-44v16.3c0 6.4 2.5 12.5 7 17l99.7 99.7c9.4 9.4 24.6 9.4 33.9 0l28.3-28.3c9.4-9.4 9.4-24.6.1-34zM208 336c-70.7 0-128-57.3-128-128s57.3-128 128-128 128 57.3 128 128-57.3 128-128 128z"/></svg>
+                    <div id="searchResults" class="search-results">
+                        <div class="search-results-header">搜索结果</div>
+                        <div class="search-result-item" onclick="location.href='/hardware/devices'">
+                            <div class="search-result-icon device"><svg class="svg-icon" viewBox="0 0 640 512" width="16" height="16"><path d="M480 160c0-26.5-21.5-48-48-48H64c-26.5 0-48 21.5-48 48v64h576v-64zm-208 80c-13.3 0-24-10.7-24-24s10.7-24 24-24 24 10.7 24 24-10.7 24-24 24zm128 0c-13.3 0-24-10.7-24-24s10.7-24 24-24 24 10.7 24 24-10.7 24-24 24zm192-64H16v160c0 26.5 21.5 48 48 48h352c26.5 0 48-21.5 48-48V256h128v-80zm-336 192c-13.3 0-24-10.7-24-24s10.7-24 24-24 24 10.7 24 24-10.7 24-24 24zm128 0c-13.3 0-24-10.7-24-24s10.7-24 24-24 24 10.7 24 24-10.7 24-24 24z"/></svg></div>
+                            <div class="search-result-info">
+                                <div class="search-result-title">设备管理</div>
+                                <div class="search-result-subtitle">查看所有硬件设备</div>
+                            </div>
+                        </div>
+                        <div class="search-result-item" onclick="location.href='/hardware/logs'">
+                            <div class="search-result-icon log"><!-- Icon fa-file-text not found --></div>
+                            <div class="search-result-info">
+                                <div class="search-result-title">系统日志</div>
+                                <div class="search-result-subtitle">查看系统操作日志</div>
+                            </div>
+                        </div>
+                        <div class="search-result-item" onclick="location.href='/hardware/settings'">
+                            <div class="search-result-icon setting"><svg class="svg-icon" viewBox="0 0 512 512" width="16" height="16"><path d="M487.4 315.7l-43.4-7.5c-1.3-3.2-2.8-6.3-4.5-9.3l19.9-39.8c3.6-7.2 2-16.1-3.8-21.6l-50-47.6c-5.8-5.5-14.9-6.5-21.9-2.4l-41.9 24.5c-11.4-8.8-23.9-16.2-37.2-21.8l-8.4-47.4C292.1 35 283.7 32 274.7 32h-37.5c-9 0-17.4 3-24.3 8.3l-8.4 47.4c-13.3 5.6-25.8 13-37.2 21.8l-41.9-24.5c-7-4.1-16.1-3.1-21.9 2.4l-50 47.6c-5.8 5.5-7.4 14.4-3.8 21.6l19.9 39.8c-1.7 3-3.2 6.1-4.5 9.3l-43.4 7.5C10.1 320.6 0 331.8 0 344.9v34.3c0 13.1 10.1 24.3 22.6 29.2l43.4 7.5c1.3 3.2 2.8 6.3 4.5 9.3l-19.9 39.8c-3.6 7.2-2 16.1 3.8 21.6l50 47.6c5.8 5.5 14.9 6.5 21.9 2.4l41.9-24.5c11.4 8.8 23.9 16.2 37.2 21.8l8.4 47.4c6.9 5.3 15.3 8.3 24.3 8.3h37.5c9 0 17.4-3 24.3-8.3l8.4-47.4c13.3-5.6 25.8-13 37.2-21.8l41.9 24.5c7 4.1 16.1 3.1 21.9-2.4l50-47.6c5.8-5.5 7.4-14.4 3.8-21.6l-19.9-39.8c1.7-3 3.2-6.1 4.5-9.3l43.4-7.5c12.5-4.9 22.6-16 22.6-29.2v-34.3c0-13.1-10.1-24.3-22.6-29.2zM256 384c-70.7 0-128-57.3-128-128s57.3-128 128-128 128 57.3 128 128-57.3 128-128 128z"/></svg></div>
+                            <div class="search-result-info">
+                                <div class="search-result-title">系统设置</div>
+                                <div class="search-result-subtitle">配置系统参数</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="quick-actions-bar">
+                    <button class="quick-action-bar-btn primary" onclick="showAddDeviceModal()">
+                        <!-- Icon fa-plus not found -->添加设备
+                    </button>
+                    <button class="quick-action-bar-btn" onclick="aiAction('optimize')">
+                        <!-- Icon fa-zap not found -->AI优化
+                    </button>
+                </div>
+                
+                <button class="notification-btn" id="notificationBtn" onclick="toggleNotificationPanel()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                        <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                    </svg>
+                    <span class="notification-badge">3</span>
+                </button>
+                
+                <div class="user-info" id="userInfo" onclick="toggleUserMenu()">
+                    <div class="user-avatar">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="white" stroke="white" stroke-width="0">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                        <span class="user-status"></span>
+                    </div>
+                    <div class="user-details">
+                        <span class="user-name">{{ user.username if user else '硬件管理员' }}</span>
+                        <span class="user-role">{{ user.role if user else 'hardware_admin' }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 通知面板 -->
+        <div id="notificationPanel" class="notification-panel">
+            <div class="notification-panel-header">
+                <h3>通知中心</h3>
+                <div class="notification-header-actions">
+                    <a href="#" onclick="showNotificationSettings(); return false;" title="通知设置">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                    </a>
+                    <a href="#" onclick="markAllNotificationsRead(); return false;">全部已读</a>
+                </div>
+            </div>
+            
+            <!-- 筛选和搜索栏 -->
+            <div class="notification-filter-bar">
+                <div class="filter-tabs">
+                    <button class="filter-tab active" onclick="filterNotifications('all')">全部</button>
+                    <button class="filter-tab" onclick="filterNotifications('unread')">未读</button>
+                    <button class="filter-tab" onclick="filterNotifications('warning')">警告</button>
+                    <button class="filter-tab" onclick="filterNotifications('info')">信息</button>
+                </div>
+                <div class="notification-search-box">
+                    <input type="text" id="notificationSearch" placeholder="搜索通知..." oninput="searchNotifications()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                </div>
+            </div>
+            
+            <div class="notification-panel-body" id="notificationPanelBody">
+                <div class="notification-loading" style="text-align: center; padding: 20px; color: #94a3b8;">
+                    加载中...
+                </div>
+            </div>
+            
+            <!-- 通知面板底部 -->
+            <div class="notification-panel-footer">
+                <button class="btn btn-secondary btn-sm" onclick="clearAllNotifications()">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                    清空全部
+                </button>
+                <span class="notification-count" id="notificationCount">0条通知</span>
+            </div>
+        </div>
+        
+        <!-- 用户菜单 -->
+        <div id="userMenu" class="user-menu">
+            <a href="#" class="user-menu-item">
+                <svg class="svg-icon" viewBox="0 0 448 512" width="16" height="16"><path d="M224 256c70.7 0 128-57.3 128-128S294.7 0 224 0 96 57.3 96 128s57.3 128 128 128zm89.6 32h-17.2c-11.2 0-21.8 3.4-30.8 9.4-17.1 11.5-36.4 17.6-56.4 17.6s-39.3-6.1-56.4-17.6c-9-6-19.6-9.4-30.8-9.4H22.4C10.1 288 0 298.1 0 310.4V464c0 26.5 21.5 48 48 48h352c26.5 0 48-21.5 48-48V310.4c0-12.3-10.1-22.4-22.4-22.4z"/></svg>个人资料
+            </a>
+            <a href="/hardware/settings" class="user-menu-item">
+                <svg class="svg-icon" viewBox="0 0 512 512" width="16" height="16"><path d="M487.4 315.7l-43.4-7.5c-1.3-3.2-2.8-6.3-4.5-9.3l19.9-39.8c3.6-7.2 2-16.1-3.8-21.6l-50-47.6c-5.8-5.5-14.9-6.5-21.9-2.4l-41.9 24.5c-11.4-8.8-23.9-16.2-37.2-21.8l-8.4-47.4C292.1 35 283.7 32 274.7 32h-37.5c-9 0-17.4 3-24.3 8.3l-8.4 47.4c-13.3 5.6-25.8 13-37.2 21.8l-41.9-24.5c-7-4.1-16.1-3.1-21.9 2.4l-50 47.6c-5.8 5.5-7.4 14.4-3.8 21.6l19.9 39.8c-1.7 3-3.2 6.1-4.5 9.3l-43.4 7.5C10.1 320.6 0 331.8 0 344.9v34.3c0 13.1 10.1 24.3 22.6 29.2l43.4 7.5c1.3 3.2 2.8 6.3 4.5 9.3l-19.9 39.8c-3.6 7.2-2 16.1 3.8 21.6l50 47.6c5.8 5.5 14.9 6.5 21.9 2.4l41.9-24.5c11.4 8.8 23.9 16.2 37.2 21.8l8.4 47.4c6.9 5.3 15.3 8.3 24.3 8.3h37.5c9 0 17.4-3 24.3-8.3l8.4-47.4c13.3-5.6 25.8-13 37.2-21.8l41.9 24.5c7 4.1 16.1 3.1 21.9-2.4l50-47.6c5.8-5.5 7.4-14.4 3.8-21.6l-19.9-39.8c1.7-3 3.2-6.1 4.5-9.3l43.4-7.5c12.5-4.9 22.6-16 22.6-29.2v-34.3c0-13.1-10.1-24.3-22.6-29.2zM256 384c-70.7 0-128-57.3-128-128s57.3-128 128-128 128 57.3 128 128-57.3 128-128 128z"/></svg>系统设置
+            </a>
+            <a href="#" class="user-menu-item">
+                <!-- Icon fa-question-circle not found -->帮助中心
+            </a>
+            <a href="/auth/logout" class="user-menu-item logout">
+                <svg class="svg-icon" viewBox="0 0 512 512" width="16" height="16"><path d="M497 273L329 441c-15 15-41 4.5-41-17v-96H152c-13.3 0-24-10.7-24-24v-96c0-13.3 10.7-24 24-24h136V88c0-21.4 25.9-32 41-17l168 168c9.3 9.4 9.3 24.6 0 34zM192 436v-40c0-6.6-5.4-12-12-12H96c-17.7 0-32-14.3-32-32V160c0-17.7 14.3-32 32-32h84c6.6 0 12-5.4 12-12V76c0-6.6-5.4-12-12-12H96c-53 0-96 43-96 96v192c0 53 43 96 96 96h84c6.6 0 12-5.4 12-12z"/></svg>退出登录
+            </a>
+        </div>
+
+        <!-- 内容区域 -->
+        <div class="content-area">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <!-- 通知弹窗 -->
+    <div id="notificationModal" class="modal-overlay">
+        <div class="modal-content" style="width: 400px;">
+            <div class="modal-header">
+                <h3>通知</h3>
+                <button class="modal-close" onclick="closeNotificationModal()">×</button>
+            </div>
+            <div class="modal-body" style="padding: 15px;">
+                <div class="alert-item warning">
+                    <div class="alert-icon"><svg class="svg-icon" viewBox="0 0 512 512" width="16" height="16"><path d="M256 8C119 8 8 119 8 256s111 248 248 248 248-111 248-248S393 8 256 8zm0 400c-17.7 0-32-14.3-32-32s14.3-32 32-32 32 14.3 32 32-14.3 32-32 32zm32-160h-64c-17.7 0-32-14.3-32-32V176c0-17.7 14.3-32 32-32h64c17.7 0 32 14.3 32 32v40c0 17.7-14.3 32-32 32z"/></svg></div>
+                    <div class="alert-content">
+                        <div class="alert-title">设备离线警告</div>
+                        <div class="alert-message">检测到服务器-A 离线</div>
+                        <div class="alert-time">2分钟前</div>
+                    </div>
+                </div>
+                <div class="alert-item info">
+                    <div class="alert-icon"><svg class="svg-icon" viewBox="0 0 512 512" fill="#17a2b8" width="16" height="16"><path d="M256 8C119 8 8 119 8 256s111 248 248 248 248-111 248-248S393 8 256 8zm0 112c-22.1 0-40 17.9-40 40s17.9 40 40 40 40-17.9 40-40-17.9-40-40-40zm64 256H192c-13.3 0-24-10.7-24-24v-16c0-13.3 10.7-24 24-24h24v-64h-24c-13.3 0-24-10.7-24-24v-16c0-13.3 10.7-24 24-24h64c13.3 0 24 10.7 24 24v104h24c13.3 0 24 10.7 24 24v16c0 13.3-10.7 24-24 24z"/></svg></div>
+                    <div class="alert-content">
+                        <div class="alert-title">系统更新</div>
+                        <div class="alert-message">系统将于今晚22:00进行维护</div>
+                        <div class="alert-time">5分钟前</div>
+                    </div>
+                </div>
+                <div class="alert-item success">
+                    <div class="alert-icon"><svg class="svg-icon" viewBox="0 0 512 512" fill="#28a745" width="16" height="16"><path d="M256 8C119 8 8 119 8 256s111 248 248 248 248-111 248-248S393 8 256 8zm-24 336l-112-112 17-17 95 95 207-207 17 17z"/></svg></div>
+                    <div class="alert-content">
+                        <div class="alert-title">备份完成</div>
+                        <div class="alert-message">数据库备份已成功完成</div>
+                        <div class="alert-time">10分钟前</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 全局通知数据缓存
+        let allNotifications = [];
+        let currentFilter = 'all';
+        let currentSearch = '';
+
+        // 移动端菜单切换
+        function toggleMobileMenu() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('active');
+        }
+
+        // 侧边栏折叠功能
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const collapseBtn = document.getElementById('collapseBtn');
+            const icon = collapseBtn.querySelector('i');
+            
+            sidebar.classList.toggle('collapsed');
+            
+            if (sidebar.classList.contains('collapsed')) {
+                icon.classList.remove('fa-chevron-left');
+                icon.classList.add('fa-chevron-right');
+            } else {
+                icon.classList.remove('fa-chevron-right');
+                icon.classList.add('fa-chevron-left');
+            }
+        }
+
+        // 子菜单切换
+        function toggleSubmenu(menuId) {
+            const menu = document.getElementById(menuId);
+            const submenuId = menuId.replace('Menu', 'Submenu');
+            const submenu = document.getElementById(submenuId);
+            
+            menu.classList.toggle('open');
+            submenu.classList.toggle('open');
+        }
+
+        // 搜索功能增强
+        function handleSearch() {
+            const searchInput = document.getElementById('global-search');
+            const searchResults = document.getElementById('searchResults');
+            const query = searchInput.value.trim();
+            
+            if (query.length > 0) {
+                searchResults.classList.add('show');
+                
+                fetch(`/api/hardware/search?q=${query}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success && data.data.length > 0) {
+                            // 动态更新搜索结果
+                            searchResults.innerHTML = '<div class="search-results-header">找到 ' + data.data.length + ' 个结果</div>';
+                            data.data.forEach(device => {
+                                const item = document.createElement('div');
+                                item.className = 'search-result-item';
+                                item.innerHTML = `
+                                    <div class="search-result-icon device"><svg class="svg-icon" viewBox="0 0 640 512" width="16" height="16"><path d="M480 160c0-26.5-21.5-48-48-48H64c-26.5 0-48 21.5-48 48v64h576v-64zm-208 80c-13.3 0-24-10.7-24-24s10.7-24 24-24 24 10.7 24 24-10.7 24-24 24zm128 0c-13.3 0-24-10.7-24-24s10.7-24 24-24 24 10.7 24 24-10.7 24-24 24zm192-64H16v160c0 26.5 21.5 48 48 48h352c26.5 0 48-21.5 48-48V256h128v-80zm-336 192c-13.3 0-24-10.7-24-24s10.7-24 24-24 24 10.7 24 24-10.7 24-24 24zm128 0c-13.3 0-24-10.7-24-24s10.7-24 24-24 24 10.7 24 24-10.7 24-24 24z"/></svg></div>
+                                    <div class="search-result-info">
+                                        <div class="search-result-title">${device.device_name}</div>
+                                        <div class="search-result-subtitle">${device.ip_address || '暂无IP'} - ${device.status}</div>
+                                    </div>
+                                `;
+                                item.onclick = () => {
+                                    location.href = '/hardware/devices';
+                                };
+                                searchResults.appendChild(item);
+                            });
+                        }
+                    });
+            } else {
+                searchResults.classList.remove('show');
+            }
+        }
+
+        // 点击外部关闭搜索结果
+        document.addEventListener('click', function(e) {
+            const searchBox = document.querySelector('.search-box');
+            const searchResults = document.getElementById('searchResults');
+            
+            if (!searchBox.contains(e.target)) {
+                searchResults.classList.remove('show');
+            }
+        });
+
+        // 通知面板切换
+        function toggleNotificationPanel(event) {
+            // 阻止事件冒泡
+            if (event) {
+                event.stopPropagation();
+            }
+            
+            const panel = document.getElementById('notificationPanel');
+            const btn = document.getElementById('notificationBtn');
+            
+            if (!panel || !btn) {
+                console.error('通知面板元素未找到');
+                return;
+            }
+            
+            // 切换显示状态
+            const isVisible = panel.classList.contains('show');
+            
+            if (isVisible) {
+                // 隐藏面板
+                panel.classList.remove('show');
+                btn.classList.remove('active');
+            } else {
+                // 显示面板
+                panel.classList.add('show');
+                btn.classList.add('active');
+                
+                // 加载通知列表
+                loadNotifications();
+            }
+        }
+        
+        // 加载通知列表
+        async function loadNotifications() {
+            try {
+                const response = await fetch('/api/hardware/notifications');
+                const data = await response.json();
+                
+                if (data.success) {
+                    allNotifications = data.notifications;
+                    renderNotifications();
+                    updateNotificationBadge(data.unread_count);
+                }
+            } catch (error) {
+                console.error('加载通知失败:', error);
+            }
+        }
+        
+        // 渲染通知（带筛选和搜索）
+        function renderNotifications() {
+            const panelBody = document.getElementById('notificationPanelBody');
+            const countElement = document.getElementById('notificationCount');
+            if (!panelBody) return;
+            
+            // 筛选通知
+            let filtered = [...allNotifications];
+            
+            if (currentFilter === 'unread') {
+                filtered = filtered.filter(n => !n.is_read);
+            } else if (currentFilter !== 'all') {
+                filtered = filtered.filter(n => n.type === currentFilter);
+            }
+            
+            // 搜索
+            if (currentSearch.trim()) {
+                const search = currentSearch.toLowerCase();
+                filtered = filtered.filter(n => 
+                    n.title.toLowerCase().includes(search) || 
+                    n.message.toLowerCase().includes(search)
+                );
+            }
+            
+            if (!filtered || filtered.length === 0) {
+                panelBody.innerHTML = '<div class="notification-empty" style="text-align: center; padding: 30px; color: #94a3b8;">暂无通知</div>';
+                if (countElement) countElement.textContent = '0条通知';
+                return;
+            }
+            
+            const html = filtered.map(notification => `
+                <div class="notification-item ${notification.is_read ? '' : 'unread'}" data-id="${notification.id}">
+                    <div class="notification-icon ${notification.type}">
+                        ${getNotificationIcon(notification.type)}
+                    </div>
+                    <div class="notification-content">
+                        <div class="notification-title">${notification.title}</div>
+                        <div class="notification-message">${notification.message}</div>
+                        <div class="notification-time">${formatTime(notification.created_at)}</div>
+                    </div>
+                    <div class="notification-actions">
+                        <button class="notification-action-btn" onclick="event.stopPropagation(); markNotificationRead(${notification.id})" title="标记已读">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                        </button>
+                        <button class="notification-action-btn delete" onclick="event.stopPropagation(); deleteNotification(${notification.id})" title="删除">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+            
+            panelBody.innerHTML = html;
+            
+            // 更新计数
+            if (countElement) {
+                countElement.textContent = `${filtered.length}条通知`;
+            }
+            
+            // 添加点击事件
+            panelBody.querySelectorAll('.notification-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    markNotificationRead(this.dataset.id);
+                });
+            });
+        }
+        
+        // 筛选通知
+        function filterNotifications(filterType) {
+            currentFilter = filterType;
+            
+            // 更新标签样式
+            document.querySelectorAll('.filter-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            renderNotifications();
+        }
+        
+        // 搜索通知
+        function searchNotifications() {
+            const input = document.getElementById('notificationSearch');
+            currentSearch = input.value;
+            renderNotifications();
+        }
+        
+        // 删除通知
+        async function deleteNotification(notificationId) {
+            if (!confirm('确定要删除这条通知吗？')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/hardware/notifications/${notificationId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    // 从缓存中移除
+                    allNotifications = allNotifications.filter(n => n.id !== notificationId);
+                    renderNotifications();
+                    showToast('通知已删除', 'success');
+                }
+            } catch (error) {
+                console.error('删除通知失败:', error);
+                showToast('删除失败', 'error');
+            }
+        }
+        
+        // 清空全部通知
+        function clearAllNotifications() {
+            if (!confirm('确定要清空所有通知吗？此操作不可恢复。')) {
+                return;
+            }
+            
+            fetch('/api/hardware/notifications/clear', { 
+                method: 'DELETE'
+            }).then(() => {
+                allNotifications = [];
+                renderNotifications();
+                updateNotificationBadge(0);
+                showToast('所有通知已清空', 'success');
+            }).catch(error => {
+                console.error('清空通知失败:', error);
+                showToast('清空失败', 'error');
+            });
+        }
+        
+        // 显示通知设置
+        function showNotificationSettings() {
+            // 创建设置弹窗
+            let modal = document.getElementById('notificationSettingsModal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'notificationSettingsModal';
+                modal.className = 'notification-settings-modal';
+                modal.innerHTML = `
+                    <div class="notification-settings-content">
+                        <div class="modal-header">
+                            <h3>通知设置</h3>
+                            <button class="modal-close" onclick="closeNotificationSettings()">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="setting-row">
+                                <div class="setting-info">
+                                    <p>启用通知</p>
+                                    <span>接收系统通知</span>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" checked id="notificationEnabled">
+                                    <span class="toggle-track"></span>
+                                </label>
+                            </div>
+                            <div class="setting-row">
+                                <div class="setting-info">
+                                    <p>声音提醒</p>
+                                    <span>新通知时播放提示音</span>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="notificationSound">
+                                    <span class="toggle-track"></span>
+                                </label>
+                            </div>
+                            <div class="setting-row">
+                                <div class="setting-info">
+                                    <p>桌面通知</p>
+                                    <span>显示浏览器桌面通知</span>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="notificationDesktop">
+                                    <span class="toggle-track"></span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn btn-secondary" onclick="closeNotificationSettings()">关闭</button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+                
+                // 添加样式
+                const style = document.createElement('style');
+                style.textContent = `
+                    .setting-row {
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        padding: 15px 0;
+                        border-bottom: 1px solid var(--border-color);
+                    }
+                    .setting-row:last-child {
+                        border-bottom: none;
+                    }
+                    .setting-info p {
+                        margin: 0 0 4px 0;
+                        font-weight: 500;
+                    }
+                    .setting-info span {
+                        color: var(--text-secondary);
+                        font-size: 0.85rem;
+                    }
+                    .toggle-switch {
+                        position: relative;
+                        display: inline-block;
+                        width: 50px;
+                        height: 26px;
+                    }
+                    .toggle-switch input {
+                        opacity: 0;
+                        width: 0;
+                        height: 0;
+                    }
+                    .toggle-track {
+                        position: absolute;
+                        cursor: pointer;
+                        top: 0;
+                        left: 0;
+                        right: 0;
+                        bottom: 0;
+                        background-color: var(--border-color);
+                        transition: 0.3s;
+                        border-radius: 13px;
+                    }
+                    .toggle-track:before {
+                        position: absolute;
+                        content: "";
+                        height: 20px;
+                        width: 20px;
+                        left: 3px;
+                        bottom: 3px;
+                        background-color: white;
+                        transition: 0.3s;
+                        border-radius: 50%;
+                    }
+                    .toggle-switch input:checked + .toggle-track {
+                        background-color: var(--primary-color);
+                    }
+                    .toggle-switch input:checked + .toggle-track:before {
+                        transform: translateX(24px);
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+            
+            modal.classList.add('show');
+        }
+        
+        function closeNotificationSettings() {
+            const modal = document.getElementById('notificationSettingsModal');
+            if (modal) {
+                modal.classList.remove('show');
+            }
+        }
+        
+        // 获取通知图标
+        function getNotificationIcon(type) {
+            const icons = {
+                warning: '<svg class="svg-icon" viewBox="0 0 24 24" fill="#ffc107" width="16" height="16"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>',
+                info: '<svg class="svg-icon" viewBox="0 0 24 24" fill="#17a2b8" width="16" height="16"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>',
+                success: '<svg class="svg-icon" viewBox="0 0 24 24" fill="#28a745" width="16" height="16"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>',
+                error: '<svg class="svg-icon" viewBox="0 0 24 24" fill="#dc3545" width="16" height="16"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>'
+            };
+            return icons[type] || icons.info;
+        }
+        
+        // 格式化时间
+        function formatTime(timestamp) {
+            const date = new Date(timestamp);
+            const now = new Date();
+            const diff = Math.floor((now - date) / 1000);
+            
+            if (diff < 60) return '刚刚';
+            if (diff < 3600) return `${Math.floor(diff / 60)}分钟前`;
+            if (diff < 86400) return `${Math.floor(diff / 3600)}小时前`;
+            if (diff < 604800) return `${Math.floor(diff / 86400)}天前`;
+            return date.toLocaleDateString();
+        }
+        
+        // 更新通知角标
+        function updateNotificationBadge(count) {
+            const badge = document.querySelector('.notification-badge');
+            if (!badge) return;
+            
+            if (count > 0) {
+                badge.textContent = count > 99 ? '99+' : count;
+                badge.style.display = 'inline-block';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+        
+        // 标记单个通知为已读
+        async function markNotificationRead(notificationId) {
+            try {
+                await fetch(`/api/hardware/notifications/${notificationId}/read`, {
+                    method: 'POST'
+                });
+                
+                // 更新缓存
+                const notification = allNotifications.find(n => n.id === notificationId);
+                if (notification) {
+                    notification.is_read = true;
+                }
+                
+                const item = document.querySelector(`.notification-item[data-id="${notificationId}"]`);
+                if (item) {
+                    item.classList.remove('unread');
+                }
+                
+                // 更新角标数量
+                const unreadCount = allNotifications.filter(n => !n.is_read).length;
+                updateNotificationBadge(unreadCount);
+                
+                renderNotifications();
+            } catch (error) {
+                console.error('标记已读失败:', error);
+            }
+        }
+        
+        // 标记所有通知为已读
+        function markAllNotificationsRead() {
+            allNotifications.forEach(n => n.is_read = true);
+            
+            updateNotificationBadge(0);
+            renderNotifications();
+            
+            fetch('/api/hardware/notifications/read-all', { 
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'}
+            }).then(() => {
+                showToast('所有通知已标记为已读', 'success');
+            }).catch(error => {
+                console.error('标记已读失败:', error);
+            });
+        }
+
+        // 用户菜单切换
+        function toggleUserMenu() {
+            const menu = document.getElementById('userMenu');
+            menu.classList.toggle('show');
+        }
+
+        // 点击外部关闭下拉面板
+        document.addEventListener('click', function(e) {
+            const notificationPanel = document.getElementById('notificationPanel');
+            const notificationBtn = document.getElementById('notificationBtn');
+            const userMenu = document.getElementById('userMenu');
+            const userInfo = document.getElementById('userInfo');
+            
+            if (!notificationBtn.contains(e.target) && !notificationPanel.contains(e.target)) {
+                notificationPanel.classList.remove('show');
+                notificationBtn.classList.remove('active');
+            }
+            
+            if (!userInfo.contains(e.target) && !userMenu.contains(e.target)) {
+                userMenu.classList.remove('show');
+            }
+        });
+
+        // 刷新统计数据
+        function refreshStats() {
+            showToast('正在刷新数据...');
+            fetch('/api/hardware/stats')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        showToast('数据刷新成功');
+                        location.reload();
+                    } else {
+                        showToast('刷新失败', 'error');
+                    }
+                });
+        }
+
+        // 扫描设备
+        function scanDevices() {
+            fetch('/api/hardware/scan', { method: 'POST' })
+                .then(res => res.json())
+                .then(result => {
+                    if (result.success) {
+                        showToast(`扫描完成，发现 ${result.data.scan_count} 台设备`);
+                    } else {
+                        showToast('扫描失败', 'error');
+                    }
+                });
+        }
+
+        // AI操作
+        async function aiAction(action) {
+            const actions = {
+                'optimize': '正在优化系统性能...',
+                'health': '正在生成健康检查报告...',
+                'predict': '正在分析性能趋势...'
+            };
+            
+            showToast(actions[action]);
+            
+            let endpoint = '';
+            if (action === 'optimize') endpoint = '/api/hardware/ai/optimize';
+            else if (action === 'health') endpoint = '/api/hardware/ai/health-report';
+            else if (action === 'predict') endpoint = '/api/hardware/ai/predict';
+            
+            try {
+                const response = await fetch(endpoint, {
+                    method: action === 'optimize' ? 'POST' : 'GET'
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    let message = '';
+                    if (action === 'optimize') {
+                        message = result.message + ' ' + result.actions.join(', ');
+                    } else if (action === 'health') {
+                        message = `健康检查完成！共检测${result.data.device_summary.total}台设备`;
+                    } else if (action === 'predict') {
+                        message = result.data.forecast;
+                    }
+                    showToast(message);
+                    
+                    if (action === 'optimize') location.reload();
+                } else {
+                    showToast('操作失败: ' + result.message, 'error');
+                }
+            } catch (error) {
+                showToast('请求失败', 'error');
+            }
+        }
+
+        // 添加设备弹窗
+        function showAddDeviceModal() {
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.id = 'addDeviceModal';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>添加设备</h3>
+                        <button class="modal-close" onclick="closeModal()">×</button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="deviceForm">
+                            <div class="form-group">
+                                <label>设备名称</label>
+                                <input type="text" id="deviceName" class="form-control" placeholder="输入设备名称" required>
+                            </div>
+                            <div class="form-group">
+                                <label>设备类型</label>
+                                <select id="deviceType" class="form-control">
+                                    <option value="server">服务器</option>
+                                    <option value="desktop">工作站</option>
+                                    <option value="network">网络设备</option>
+                                    <option value="storage">存储设备</option>
+                                    <option value="other">其他</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>IP地址</label>
+                                <input type="text" id="deviceIp" class="form-control" placeholder="输入IP地址">
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" onclick="closeModal()">取消</button>
+                        <button class="btn btn-primary" onclick="submitDevice()">添加设备</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            modal.style.display = 'flex';
+        }
+
+        // 关闭弹窗
+        function closeModal() {
+            const modal = document.getElementById('addDeviceModal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+
+        // 提交设备
+        function submitDevice() {
+            const data = {
+                device_name: document.getElementById('deviceName').value,
+                device_type: document.getElementById('deviceType').value,
+                ip_address: document.getElementById('deviceIp').value
+            };
+            
+            fetch('/api/hardware/devices', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            })
+            .then(res => res.json())
+            .then(result => {
+                if (result.success) {
+                    showToast('设备添加成功');
+                    closeModal();
+                    location.reload();
+                } else {
+                    showToast(result.message, 'error');
+                }
+            });
+        }
+
+        // Toast通知
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+    </script>
+    <!-- 按钮功能扩展 -->
+    <script src="/static/js/button-feature-extension.js"></script>
+</body>
+</html>

@@ -1,0 +1,703 @@
+{% extends "hardware_base.html" %}
+
+{% block title %}硬件密钥管理 - MTSCOS AI{% endblock %}
+
+{% block page_title %}硬件密钥管理{% endblock %}
+{% block page_subtitle %}管理硬件设备密钥和API密钥{% endblock %}
+
+{% block content %}
+<div class="hardware-keys-container">
+    <!-- 页面内容 -->
+    <div class="page-content">
+        <!-- 硬件密钥列表 -->
+        <div class="section">
+            <div class="section-header">
+                <h3>
+                    <svg class="svg-icon" viewBox="0 0 16 16" width="20" height="20">
+                        <path d="M0 12.5A2.5 2.5 0 0 0 2.5 15h15a2.5 2.5 0 0 0 2.5-2.5v-5a2.5 2.5 0 0 0-2.5-2.5h-15A2.5 2.5 0 0 0 0 7.5v5z" fill="currentColor"/>
+                    </svg>
+                    硬件密钥列表
+                </h3>
+                <button class="btn btn-primary" onclick="generateNewKey()">
+                    <svg class="svg-icon" viewBox="0 0 16 16" width="16" height="16">
+                        <path d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2z" fill="currentColor"/>
+                    </svg>
+                    生成新密钥
+                </button>
+            </div>
+            
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>密钥ID</th>
+                            <th>密钥类型</th>
+                            <th>设备ID</th>
+                            <th>状态</th>
+                            <th>创建时间</th>
+                            <th>到期时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for key in keys %}
+                        <tr>
+                            <td><code>{{ key.key_id }}</code></td>
+                            <td>{{ key.key_type }}</td>
+                            <td>{{ key.device_id }}</td>
+                            <td>
+                                {% if key.is_active %}
+                                <span class="badge badge-success">活跃</span>
+                                {% else %}
+                                <span class="badge badge-danger">已失效</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ key.created_at }}</td>
+                            <td>{{ key.expiration_date }}</td>
+                            <td>
+                                <div class="btn-group">
+                                    <button class="btn btn-sm btn-secondary" onclick="regenerateKey('{{ key.key_id }}')">重新生成</button>
+                                    <button class="btn btn-sm btn-primary" onclick="viewKeyDetails('{{ key.key_id }}')">详情</button>
+                                    {% if key.is_active %}
+                                    <button class="btn btn-sm btn-warning" onclick="revokeKey('{{ key.key_id }}')">撤销</button>
+                                    {% endif %}
+                                    <button class="btn btn-sm btn-danger" onclick="deleteKey('{{ key.key_id }}')">删除</button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="7" class="text-center">
+                                <div class="empty-state">
+                                    <svg class="svg-icon" viewBox="0 0 16 16" width="48" height="48">
+                                        <path d="M0 12.5A2.5 2.5 0 0 0 2.5 15h15a2.5 2.5 0 0 0 2.5-2.5v-5a2.5 2.5 0 0 0-2.5-2.5h-15A2.5 2.5 0 0 0 0 7.5v5z" fill="currentColor"/>
+                                    </svg>
+                                    <p>暂无密钥记录</p>
+                                    <button class="btn btn-primary" onclick="generateNewKey()">生成第一个密钥</button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- 密钥统计 -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon green">
+                    <svg class="svg-icon" viewBox="0 0 16 16" width="24" height="24">
+                        <path d="M0 12.5A2.5 2.5 0 0 0 2.5 15h15a2.5 2.5 0 0 0 2.5-2.5v-5a2.5 2.5 0 0 0-2.5-2.5h-15A2.5 2.5 0 0 0 0 7.5v5z" fill="currentColor"/>
+                    </svg>
+                </div>
+                <div class="stat-info">
+                    <div class="stat-value">{{ keys|selectattr('is_active', 'equalto', True)|list|length }}</div>
+                    <div class="stat-label">活跃密钥</div>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon orange">
+                    <svg class="svg-icon" viewBox="0 0 16 16" width="24" height="24">
+                        <path d="M0 12.5A2.5 2.5 0 0 0 2.5 15h15a2.5 2.5 0 0 0 2.5-2.5v-5a2.5 2.5 0 0 0-2.5-2.5h-15A2.5 2.5 0 0 0 0 7.5v5z" fill="currentColor"/>
+                    </svg>
+                </div>
+                <div class="stat-info">
+                    <div class="stat-value">{{ keys|length }}</div>
+                    <div class="stat-label">总密钥数</div>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon red">
+                    <svg class="svg-icon" viewBox="0 0 16 16" width="24" height="24">
+                        <path d="M0 12.5A2.5 2.5 0 0 0 2.5 15h15a2.5 2.5 0 0 0 2.5-2.5v-5a2.5 2.5 0 0 0-2.5-2.5h-15A2.5 2.5 0 0 0 0 7.5v5z" fill="currentColor"/>
+                    </svg>
+                </div>
+                <div class="stat-info">
+                    <div class="stat-value">{{ keys|selectattr('is_active', 'equalto', False)|list|length }}</div>
+                    <div class="stat-label">已失效</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 密钥详情模态框 -->
+<div class="modal" id="keyDetailsModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>密钥详情</h3>
+            <button class="close-btn" onclick="closeModal('keyDetailsModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div id="keyDetailsContent">
+                <!-- 动态内容 -->
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('keyDetailsModal')">关闭</button>
+            <button class="btn btn-primary" onclick="copyKey()">复制密钥</button>
+        </div>
+    </div>
+</div>
+
+<!-- 确认对话框 -->
+<div class="modal" id="confirmModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="confirmTitle">确认操作</h3>
+            <button class="close-btn" onclick="closeModal('confirmModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p id="confirmMessage"></p>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('confirmModal')">取消</button>
+            <button class="btn btn-danger" id="confirmActionBtn">确认</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentKeyId = '';
+
+// 生成新密钥
+function generateNewKey() {
+    showConfirm(
+        '生成新密钥',
+        '确定要生成新的硬件密钥吗？',
+        async function() {
+            try {
+                const response = await fetch('/api/hardware/keys/generate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showTip('新密钥生成成功！', 'success');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                } else {
+                    showTip(data.message || '生成失败', 'error');
+                }
+            } catch (error) {
+                showTip('生成失败: ' + error.message, 'error');
+            }
+        }
+    );
+}
+
+// 重新生成密钥
+function regenerateKey(keyId) {
+    showConfirm(
+        '重新生成密钥',
+        `确定要重新生成密钥 ${keyId} 吗？此操作将使旧密钥立即失效。`,
+        async function() {
+            try {
+                const response = await fetch(`/api/hardware/keys/${keyId}/regenerate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showTip('密钥重新生成成功！', 'success');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                } else {
+                    showTip(data.message || '重新生成失败', 'error');
+                }
+            } catch (error) {
+                showTip('重新生成失败: ' + error.message, 'error');
+            }
+        }
+    );
+}
+
+// 查看密钥详情
+function viewKeyDetails(keyId) {
+    currentKeyId = keyId;
+    
+    // 模拟获取密钥详情
+    const key = {{ keys|tojson }}.find(k => k.key_id === keyId);
+    
+    if (key) {
+        const content = `
+            <div class="detail-item">
+                <label>密钥ID:</label>
+                <code>${key.key_id}</code>
+            </div>
+            <div class="detail-item">
+                <label>密钥类型:</label>
+                <span>${key.key_type}</span>
+            </div>
+            <div class="detail-item">
+                <label>设备ID:</label>
+                <span>${key.device_id}</span>
+            </div>
+            <div class="detail-item">
+                <label>状态:</label>
+                <span class="${key.is_active ? 'text-success' : 'text-danger'}">${key.is_active ? '活跃' : '已失效'}</span>
+            </div>
+            <div class="detail-item">
+                <label>创建时间:</label>
+                <span>${key.created_at}</span>
+            </div>
+            <div class="detail-item">
+                <label>到期时间:</label>
+                <span>${key.expiration_date}</span>
+            </div>
+        `;
+        
+        document.getElementById('keyDetailsContent').innerHTML = content;
+        showModal('keyDetailsModal');
+    }
+}
+
+// 撤销密钥
+function revokeKey(keyId) {
+    showConfirm(
+        '撤销密钥',
+        `确定要撤销密钥 ${keyId} 吗？撤销后密钥将立即失效。`,
+        async function() {
+            try {
+                const response = await fetch(`/api/hardware/keys/${keyId}/revoke`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showTip('密钥撤销成功！', 'success');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                } else {
+                    showTip(data.message || '撤销失败', 'error');
+                }
+            } catch (error) {
+                showTip('撤销失败: ' + error.message, 'error');
+            }
+        }
+    );
+}
+
+// 删除密钥
+function deleteKey(keyId) {
+    showConfirm(
+        '删除密钥',
+        `确定要删除密钥 ${keyId} 吗？此操作不可恢复！`,
+        async function() {
+            try {
+                const response = await fetch(`/api/hardware/keys/${keyId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showTip('密钥删除成功！', 'success');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                } else {
+                    showTip(data.message || '删除失败', 'error');
+                }
+            } catch (error) {
+                showTip('删除失败: ' + error.message, 'error');
+            }
+        }
+    );
+}
+
+// 复制密钥
+function copyKey() {
+    if (currentKeyId) {
+        navigator.clipboard.writeText(currentKeyId).then(() => {
+            showTip('密钥已复制到剪贴板！', 'success');
+            closeModal('keyDetailsModal');
+        }).catch(err => {
+            showTip('复制失败', 'error');
+        });
+    }
+}
+
+// 显示模态框
+function showModal(modalId) {
+    document.getElementById(modalId).classList.add('show');
+}
+
+// 关闭模态框
+function closeModal(modalId) {
+    document.getElementById(modalId).classList.remove('show');
+}
+
+// 显示确认对话框
+function showConfirm(title, message, action) {
+    document.getElementById('confirmTitle').textContent = title;
+    document.getElementById('confirmMessage').textContent = message;
+    document.getElementById('confirmActionBtn').onclick = function() {
+        action();
+        closeModal('confirmModal');
+    };
+    showModal('confirmModal');
+}
+
+// 显示提示消息
+function showTip(message, type) {
+    // 简单的提示实现
+    const tip = document.createElement('div');
+    tip.className = `tip tip-${type}`;
+    tip.textContent = message;
+    document.body.appendChild(tip);
+    
+    setTimeout(() => {
+        tip.classList.add('show');
+    }, 100);
+    
+    setTimeout(() => {
+        tip.classList.remove('show');
+        setTimeout(() => {
+            tip.remove();
+        }, 300);
+    }, 3000);
+}
+
+// 页面加载完成后初始化
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('硬件密钥管理页面加载完成');
+});
+</script>
+
+<style>
+.hardware-keys-container {
+    padding: 20px;
+}
+
+.page-content {
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.section {
+    background: rgba(30, 41, 59, 0.8);
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 24px;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.section-header h3 {
+    color: #f8fafc;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.data-table th,
+.data-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #334155;
+}
+
+.data-table th {
+    background: rgba(15, 23, 42, 0.8);
+    color: #94a3b8;
+    font-weight: 600;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.data-table td {
+    color: #f8fafc;
+    font-size: 14px;
+}
+
+.data-table tr:hover {
+    background: rgba(79, 70, 229, 0.1);
+}
+
+.data-table code {
+    background: rgba(79, 70, 229, 0.2);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+    color: #a5b4fc;
+}
+
+.badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.badge-success {
+    background: rgba(34, 197, 94, 0.2);
+    color: #22c55e;
+}
+
+.badge-danger {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+}
+
+.badge-warning {
+    background: rgba(245, 158, 11, 0.2);
+    color: #fbbf24;
+}
+
+.btn-group {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 12px;
+}
+
+.btn-warning {
+    background: rgba(245, 158, 11, 0.2);
+    border: 1px solid #f59e0b;
+    color: #fbbf24;
+}
+
+.btn-warning:hover {
+    background: rgba(245, 158, 11, 0.3);
+}
+
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #94a3b8;
+}
+
+.empty-state svg {
+    opacity: 0.5;
+    margin-bottom: 16px;
+}
+
+.empty-state p {
+    margin-bottom: 20px;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+.stat-card {
+    background: rgba(30, 41, 59, 0.8);
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.stat-icon.green {
+    background: rgba(34, 197, 94, 0.2);
+    color: #22c55e;
+}
+
+.stat-icon.orange {
+    background: rgba(245, 158, 11, 0.2);
+    color: #fbbf24;
+}
+
+.stat-icon.red {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+}
+
+.stat-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: #f8fafc;
+}
+
+.stat-label {
+    font-size: 13px;
+    color: #94a3b8;
+}
+
+.detail-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid #334155;
+}
+
+.detail-item:last-child {
+    border-bottom: none;
+}
+
+.detail-item label {
+    color: #94a3b8;
+    font-size: 14px;
+}
+
+.detail-item span,
+.detail-item code {
+    color: #f8fafc;
+    font-size: 14px;
+}
+
+.text-success {
+    color: #22c55e !important;
+}
+
+.text-danger {
+    color: #ef4444 !important;
+}
+
+/* Modal样式 */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal.show {
+    display: flex;
+}
+
+.modal-content {
+    background: #1e293b;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.modal-header {
+    padding: 20px;
+    border-bottom: 1px solid #334155;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h3 {
+    color: #f8fafc;
+    font-size: 18px;
+}
+
+.close-btn {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    font-size: 24px;
+    cursor: pointer;
+}
+
+.modal-body {
+    padding: 20px;
+    color: #f8fafc;
+}
+
+.modal-footer {
+    padding: 20px;
+    border-top: 1px solid #334155;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+/* Tip样式 */
+.tip {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    z-index: 9999;
+    transform: translateY(100px);
+    opacity: 0;
+    transition: all 0.3s;
+}
+
+.tip.show {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+.tip-success {
+    background: rgba(34, 197, 94, 0.9);
+    color: white;
+}
+
+.tip-error {
+    background: rgba(239, 68, 68, 0.9);
+    color: white;
+}
+
+.tip-info {
+    background: rgba(59, 130, 246, 0.9);
+    color: white;
+}
+
+.table-container {
+    overflow-x: auto;
+}
+
+.text-center {
+    text-align: center;
+}
+</style>
+{% endblock %}

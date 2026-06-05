@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>设置年级</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            max-width: 900px;
+            width: 100%;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .icon {
+            font-size: 60px;
+            margin-bottom: 20px;
+        }
+        .title {
+            color: #333;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #666;
+            font-size: 14px;
+        }
+        .error {
+            color: #e74c3c;
+            margin-bottom: 20px;
+            font-size: 14px;
+            text-align: center;
+        }
+        .grade-section {
+            margin-bottom: 30px;
+            background: #fafafa;
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .grade-section h3 {
+            color: #667eea;
+            font-size: 16px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .grade-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+        }
+        .grade-btn {
+            padding: 14px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 13px;
+            color: #333;
+            position: relative;
+        }
+        .grade-btn:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+            transform: translateY(-2px);
+        }
+        .grade-btn.selected {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        .grade-btn .bank-count {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 12px;
+            min-width: 24px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
+        }
+        .grade-btn.selected .bank-count {
+            background: linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%);
+            box-shadow: 0 2px 8px rgba(251, 191, 36, 0.4);
+        }
+        .submit-area {
+            text-align: center;
+            margin-top: 40px;
+        }
+        .submit-btn {
+            padding: 16px 50px;
+            border: none;
+            border-radius: 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .submit-btn:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+        .submit-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .note {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-top: 20px;
+            text-align: left;
+            font-size: 14px;
+            color: #666;
+            border-radius: 0 10px 10px 0;
+        }
+        
+        /* 题库预览面板 */
+        .bank-preview-panel {
+            display: none;
+            background: #f0f4ff;
+            border: 1px solid #e0e7ff;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 30px;
+        }
+        .bank-preview-panel.show {
+            display: block;
+        }
+        .bank-preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .bank-preview-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .bank-preview-close {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: #999;
+        }
+        .bank-preview-close:hover {
+            color: #666;
+        }
+        .bank-summary {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        .summary-item {
+            background: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .summary-item .value {
+            font-size: 18px;
+            font-weight: 600;
+            color: #667eea;
+        }
+        .summary-item .label {
+            font-size: 12px;
+            color: #999;
+        }
+        .bank-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .bank-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+        .bank-item:last-child {
+            margin-bottom: 0;
+        }
+        .bank-item .bank-name {
+            font-weight: 500;
+            color: #333;
+        }
+        .bank-item .bank-info {
+            display: flex;
+            gap: 15px;
+            font-size: 12px;
+            color: #999;
+        }
+        .bank-item .questions-count {
+            background: #E0F2FE;
+            padding: 4px 10px;
+            border-radius: 10px;
+            color: #0284C7;
+        }
+        .bank-item .subject-tag {
+            background: #FEF3C7;
+            padding: 4px 10px;
+            border-radius: 10px;
+            color: #D97706;
+        }
+        
+        /* 科目标签颜色 */
+        .subject-math { background: #DBEAFE; color: #2563EB; }
+        .subject-chinese { background: #DCFCE7; color: #16A34A; }
+        .subject-english { background: #FCE7F3; color: #DB2777; }
+        .subject-physics { background: #F3E8FF; color: #8B5CF6; }
+        .subject-chemistry { background: #FEF3C7; color: #D97706; }
+        .subject-biology { background: #D1FAE5; color: #059669; }
+        .subject-history { background: #FEF9C3; color: #CA8A04; }
+        .subject-geography { background: #CFFAFE; color: #0891B2; }
+        .subject-politics { background: #E0E7FF; color: #6366F1; }
+        .subject-adult { background: #FEE2E2; color: #DC2626; }
+        .subject-japanese { background: #FCE7F3; color: #EC4899; }
+        .subject-ielts { background: #D1FAE5; color: #10B981; }
+        .subject-toefl { background: #DBEAFE; color: #3B82F6; }
+        .subject-math_competition { background: #FDE68A; color: #B45309; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="icon">📚</div>
+            <h1 class="title">请选择您的年级</h1>
+            <p class="subtitle">选择正确的年级，系统将为您推荐合适的考试和题库</p>
+        </div>
+        
+        {% if error %}
+        <div class="error">{{ error }}</div>
+        {% endif %}
+        
+        <form method="POST">
+            <div class="grade-section">
+                <h3>🏫 小学</h3>
+                <div class="grade-grid">
+                    {% for grade in ['小学1年级', '小学2年级', '小学3年级', '小学4年级', '小学5年级', '小学6年级'] %}
+                    <button type="button" class="grade-btn" onclick="selectGrade('{{ grade }}')">
+                        {{ grade | replace('年级', '') }}
+                        {% if grade_bank_info.get(grade) %}
+                        <span class="bank-count">{{ grade_bank_info[grade].total_banks }}</span>
+                        {% endif %}
+                    </button>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <div class="grade-section">
+                <h3>🏢 初中</h3>
+                <div class="grade-grid">
+                    {% for grade in ['初中1年级', '初中2年级', '初中3年级'] %}
+                    <button type="button" class="grade-btn" onclick="selectGrade('{{ grade }}')">
+                        {{ grade | replace('年级', '') }}
+                        {% if grade_bank_info.get(grade) %}
+                        <span class="bank-count">{{ grade_bank_info[grade].total_banks }}</span>
+                        {% endif %}
+                    </button>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <div class="grade-section">
+                <h3>🏛️ 高中</h3>
+                <div class="grade-grid">
+                    {% for grade in ['高中1年级', '高中2年级', '高中3年级'] %}
+                    <button type="button" class="grade-btn" onclick="selectGrade('{{ grade }}')">
+                        {{ grade | replace('年级', '') }}
+                        {% if grade_bank_info.get(grade) %}
+                        <span class="bank-count">{{ grade_bank_info[grade].total_banks }}</span>
+                        {% endif %}
+                    </button>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <div class="grade-section">
+                <h3>🎓 大学及以上</h3>
+                <div class="grade-grid">
+                    {% for grade in ['大学1年级', '大学2年级', '大学3年级', '大学4年级', '研究生', '博士生'] %}
+                    <button type="button" class="grade-btn" onclick="selectGrade('{{ grade }}')">
+                        {{ grade | replace('年级', '') }}
+                        {% if grade_bank_info.get(grade) %}
+                        <span class="bank-count">{{ grade_bank_info[grade].total_banks }}</span>
+                        {% endif %}
+                    </button>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <div class="grade-section">
+                <h3>🎯 成人教育</h3>
+                <div class="grade-grid">
+                    {% for grade in ['成人大学', '成人日语N5', '成人日语N4', '成人日语N3', '成人日语N2', '成人日语N1'] %}
+                    <button type="button" class="grade-btn" onclick="selectGrade('{{ grade }}')">
+                        {{ grade }}
+                        {% if grade_bank_info.get(grade) %}
+                        <span class="bank-count">{{ grade_bank_info[grade].total_banks }}</span>
+                        {% endif %}
+                    </button>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <div class="grade-section">
+                <h3>🌍 雅思考试</h3>
+                <div class="grade-grid">
+                    {% for grade in ['雅思4.0', '雅思5.0', '雅思5.5', '雅思6.0', '雅思6.5', '雅思7.0+'] %}
+                    <button type="button" class="grade-btn" onclick="selectGrade('{{ grade }}')">
+                        {{ grade }}
+                        {% if grade_bank_info.get(grade) %}
+                        <span class="bank-count">{{ grade_bank_info[grade].total_banks }}</span>
+                        {% endif %}
+                    </button>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <div class="grade-section">
+                <h3>🌎 托福考试</h3>
+                <div class="grade-grid">
+                    {% for grade in ['托福60分', '托福70分', '托福80分', '托福90分', '托福100分', '托福110+'] %}
+                    <button type="button" class="grade-btn" onclick="selectGrade('{{ grade }}')">
+                        {{ grade }}
+                        {% if grade_bank_info.get(grade) %}
+                        <span class="bank-count">{{ grade_bank_info[grade].total_banks }}</span>
+                        {% endif %}
+                    </button>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <div class="grade-section">
+                <h3>🏆 数学竞赛</h3>
+                <div class="grade-grid">
+                    {% for grade in ['AMC8入门', 'AMC8进阶', 'AMC8冲刺', '华罗庚小学组', '华罗庚初中组', '华罗庚高中组'] %}
+                    <button type="button" class="grade-btn" onclick="selectGrade('{{ grade }}')">
+                        {{ grade }}
+                        {% if grade_bank_info.get(grade) %}
+                        <span class="bank-count">{{ grade_bank_info[grade].total_banks }}</span>
+                        {% endif %}
+                    </button>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <input type="hidden" id="selected_grade" name="grade" value="">
+            
+            <div class="submit-area">
+                <button type="submit" class="submit-btn" id="submit_btn" disabled>确认选择</button>
+            </div>
+        </form>
+        
+        <!-- 题库预览面板 -->
+        <div class="bank-preview-panel" id="bankPreview">
+            <div class="bank-preview-header">
+                <div class="bank-preview-title">📋 年级题库概览</div>
+                <button class="bank-preview-close" onclick="closeBankPreview()">×</button>
+            </div>
+            <div class="bank-summary" id="bankSummary">
+                <div class="summary-item">
+                    <span class="value" id="summaryBanks">0</span>
+                    <span class="label">题库数量</span>
+                </div>
+                <div class="summary-item">
+                    <span class="value" id="summaryQuestions">0</span>
+                    <span class="label">题目总数</span>
+                </div>
+            </div>
+            <div class="bank-list" id="bankList">
+            </div>
+        </div>
+        
+        <div class="note">
+            <strong>📌 注意：</strong><br>
+            - 每年9月系统会自动为所有学生升级年级<br>
+            - 考试题目会根据您的年级向下兼容<br>
+            - 选择年级后将显示绑定的题库信息<br>
+            - 题库数据实时同步自数据库
+        </div>
+        
+        <!-- 成人教育摸底测试快捷入口 -->
+        <div style="text-align: center; margin-top: 24px; padding-top: 24px; border-top: 2px dashed #f0f0f0;">
+            <p style="color: #666; font-size: 14px; margin-bottom: 16px;">成人教育用户需先完成科目摸底测试</p>
+            <a href="/exam/adult_placement_test" style="display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; border-radius: 25px; text-decoration: none; font-weight: 600; font-size: 15px; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);" onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 8px 25px rgba(239, 68, 68, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(239, 68, 68, 0.3)'">
+                🎯 进入成人教育摸底测试
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // 题库信息数据（从后端传入）
+        var gradeBankData = JSON.parse('{{ grade_bank_data | default({}) | tojson | safe }}');
+        
+        function selectGrade(grade) {
+            // 移除所有选中状态
+            document.querySelectorAll('.grade-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            
+            // 为当前按钮添加选中状态
+            const buttons = document.querySelectorAll('.grade-btn');
+            buttons.forEach(btn => {
+                if (btn.textContent.includes(grade.replace('年级', '')) || btn.textContent.includes(grade)) {
+                    btn.classList.add('selected');
+                }
+            });
+            
+            // 设置隐藏字段值
+            document.getElementById('selected_grade').value = grade;
+            document.getElementById('submit_btn').disabled = false;
+            
+            // 显示题库预览
+            showBankPreview(grade);
+        }
+        
+        function showBankPreview(grade) {
+            var previewPanel = document.getElementById('bankPreview');
+            var bankList = document.getElementById('bankList');
+            var summaryBanks = document.getElementById('summaryBanks');
+            var summaryQuestions = document.getElementById('summaryQuestions');
+            
+            if (gradeBankData[grade]) {
+                var data = gradeBankData[grade];
+                
+                summaryBanks.textContent = data.total_banks;
+                summaryQuestions.textContent = data.total_questions.toLocaleString();
+                
+                bankList.innerHTML = '';
+                data.banks.forEach(function(bank) {
+                    var bankItem = document.createElement('div');
+                    bankItem.className = 'bank-item';
+                    bankItem.innerHTML = '<div class="bank-name">' + escapeHtml(bank.bank_name) + '</div><div class="bank-info"><span class="subject-tag subject-' + escapeHtml(bank.subject) + '">' + escapeHtml(getSubjectName(bank.subject)) + '</span><span class="questions-count">' + bank.total_questions.toLocaleString() + '题</span></div>';
+                    bankList.appendChild(bankItem);
+                });
+                
+                previewPanel.classList.add('show');
+            } else {
+                previewPanel.classList.remove('show');
+            }
+        }
+        
+        function closeBankPreview() {
+            document.getElementById('bankPreview').classList.remove('show');
+        }
+        
+        function escapeHtml(text) {
+            if (!text) return '';
+            var div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        function getSubjectName(subject) {
+            var subjectNames = {
+                'math': '数学',
+                'chinese': '语文',
+                'english': '英语',
+                'physics': '物理',
+                'chemistry': '化学',
+                'biology': '生物',
+                'history': '历史',
+                'geography': '地理',
+                'politics': '政治',
+                'adult': '成人教育',
+                'japanese': '日语',
+                'ielts': '雅思',
+                'toefl': '托福',
+                'math_competition': '数学竞赛'
+            };
+            return subjectNames[subject] || subject;
+        }
+    </script>
+</body>
+</html>

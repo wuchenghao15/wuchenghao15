@@ -1,0 +1,1608 @@
+{% extends "base.html" %}
+
+{% block title %}权限管理 - MTSCOS教育系统{% endblock %}
+
+{% block content %}
+<style>
+    .permission-management {
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+    
+    .management-header {
+        text-align: center;
+        margin-bottom: 40px;
+        padding: 30px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 20px;
+        color: white;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .management-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -20%;
+        width: 300px;
+        height: 300px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
+    }
+    
+    .management-title {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 15px;
+        position: relative;
+        z-index: 1;
+    }
+    
+    .management-description {
+        font-size: 1.1rem;
+        opacity: 0.9;
+        position: relative;
+        z-index: 1;
+    }
+    
+    .tabs-container {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 30px;
+        padding: 15px;
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        flex-wrap: wrap;
+    }
+    
+    .tab-btn {
+        padding: 12px 22px;
+        border: none;
+        border-radius: 50px;
+        background: #f8f9fa;
+        color: #666;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .tab-btn.active {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    .tab-btn:hover:not(.active) {
+        background: #e9ecef;
+    }
+    
+    .tab-content {
+        display: none;
+    }
+    
+    .tab-content.active {
+        display: block;
+    }
+    
+    .action-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+        padding: 20px;
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+    
+    .search-box {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex: 1;
+        max-width: 400px;
+    }
+    
+    .search-input {
+        padding: 12px 18px;
+        border: 2px solid #e0e0e0;
+        border-radius: 50px;
+        font-size: 1rem;
+        width: 100%;
+        transition: all 0.3s ease;
+    }
+    
+    .search-input:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+    }
+    
+    .action-btn {
+        padding: 12px 20px;
+        border: none;
+        border-radius: 50px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+        font-size: 14px;
+    }
+    
+    .primary-btn {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    .primary-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+    
+    .secondary-btn {
+        background: #f8f9fa;
+        color: #333;
+        border: 1px solid #e0e0e0;
+    }
+    
+    .secondary-btn:hover {
+        background: #e9ecef;
+    }
+    
+    .main-content {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+    }
+    
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    th, td {
+        padding: 15px;
+        text-align: left;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    
+    th {
+        background: #f8f9fa;
+        font-weight: 600;
+        color: #495057;
+        position: sticky;
+        top: 60px;
+        z-index: 10;
+    }
+    
+    tr:hover {
+        background: #f8f9fa;
+    }
+    
+    .role-color-swatch {
+        width: 12px;
+        height: 12px;
+        border-radius: 3px;
+        display: inline-block;
+        margin-right: 8px;
+    }
+    
+    .role-description {
+        font-size: 13px;
+        color: #666;
+        margin-top: 4px;
+    }
+    
+    .permission-count {
+        padding: 4px 10px;
+        background: #ecfdf5;
+        color: #059669;
+        border-radius: 15px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+    
+    .user-count {
+        padding: 4px 10px;
+        background: #eff6ff;
+        color: #3b82f6;
+        border-radius: 15px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+    
+    .action-btns {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+    
+    .mini-btn {
+        padding: 6px 12px;
+        border: none;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+    
+    .edit-btn {
+        background: #667eea;
+        color: white;
+    }
+    
+    .edit-btn:hover {
+        background: #5a6fd8;
+    }
+    
+    .delete-btn {
+        background: #ff6b6b;
+        color: white;
+    }
+    
+    .delete-btn:hover {
+        background: #ee5a52;
+    }
+    
+    .view-btn {
+        background: #f8f9fa;
+        color: #333;
+        border: 1px solid #e0e0e0;
+    }
+    
+    .view-btn:hover {
+        background: #e9ecef;
+    }
+    
+    .assign-btn {
+        background: #10b981;
+        color: white;
+    }
+    
+    .assign-btn:hover {
+        background: #059669;
+    }
+    
+    .stats-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 15px;
+        margin-bottom: 30px;
+    }
+    
+    .stat-card {
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        text-align: center;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-3px);
+    }
+    
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #667eea;
+    }
+    
+    .stat-label {
+        font-size: 0.9rem;
+        color: #666;
+        margin-top: 5px;
+    }
+    
+    .pagination {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+        padding: 20px;
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        margin-top: 20px;
+    }
+    
+    .page-btn {
+        padding: 10px 15px;
+        border: 2px solid #e0e0e0;
+        border-radius: 10px;
+        background: white;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        color: #333;
+    }
+    
+    .page-btn:hover {
+        border-color: #667eea;
+        color: #667eea;
+    }
+    
+    .page-btn.active {
+        background: #667eea;
+        color: white;
+        border-color: #667eea;
+    }
+    
+    .page-info {
+        padding: 0 15px;
+        color: #666;
+    }
+    
+    .permission-tree {
+        max-height: 500px;
+        overflow-y: auto;
+    }
+    
+    .permission-group {
+        margin-bottom: 20px;
+    }
+    
+    .permission-group-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 10px;
+        cursor: pointer;
+        margin-bottom: 10px;
+    }
+    
+    .permission-group-header:hover {
+        background: #f0f0f0;
+    }
+    
+    .permission-group-title {
+        font-weight: 600;
+        color: #333;
+        flex: 1;
+    }
+    
+    .permission-group-count {
+        font-size: 12px;
+        color: #666;
+    }
+    
+    .permission-items {
+        padding-left: 20px;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 10px;
+    }
+    
+    .permission-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px;
+        background: #fff;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        transition: all 0.2s;
+    }
+    
+    .permission-item:hover {
+        border-color: #667eea;
+        background: #f8faff;
+    }
+    
+    .permission-item input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        accent-color: #667eea;
+    }
+    
+    .permission-item-label {
+        font-size: 13px;
+        color: #333;
+    }
+    
+    .permission-item-desc {
+        font-size: 11px;
+        color: #999;
+        margin-top: 2px;
+    }
+    
+    .modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+    }
+    
+    .modal-overlay.active {
+        display: flex;
+    }
+    
+    .modal {
+        background: white;
+        border-radius: 20px;
+        padding: 30px;
+        width: 90%;
+        max-width: 800px;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+    }
+    
+    .modal-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-bottom: 25px;
+        color: #333;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .form-label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: #333;
+        font-size: 14px;
+    }
+    
+    .form-input {
+        width: 100%;
+        padding: 12px 15px;
+        border: 2px solid #e0e0e0;
+        border-radius: 10px;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+    }
+    
+    .form-input:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+    }
+    
+    .form-textarea {
+        width: 100%;
+        padding: 12px 15px;
+        border: 2px solid #e0e0e0;
+        border-radius: 10px;
+        font-size: 1rem;
+        min-height: 100px;
+        resize: vertical;
+        transition: all 0.3s ease;
+    }
+    
+    .form-textarea:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+    }
+    
+    .color-picker {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+    
+    .color-preview {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        border: 2px solid #e0e0e0;
+    }
+    
+    .form-color {
+        width: 60px;
+        height: 40px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+    }
+    
+    .modal-actions {
+        display: flex;
+        gap: 15px;
+        justify-content: flex-end;
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 1px solid #f0f0f0;
+    }
+    
+    .cancel-btn {
+        padding: 10px 25px;
+        background: #f8f9fa;
+        color: #333;
+        border: 1px solid #e0e0e0;
+        border-radius: 10px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .cancel-btn:hover {
+        background: #e9ecef;
+    }
+    
+    .confirm-btn {
+        padding: 10px 25px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .confirm-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+    
+    .danger-btn {
+        background: #ff6b6b;
+    }
+    
+    .danger-btn:hover {
+        background: #ee5a52;
+        box-shadow: 0 5px 15px rgba(238, 90, 82, 0.4);
+    }
+    
+    .role-detail-header {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        padding-bottom: 20px;
+        border-bottom: 2px solid #f0f0f0;
+        margin-bottom: 20px;
+    }
+    
+    .role-detail-color {
+        width: 50px;
+        height: 50px;
+        border-radius: 12px;
+    }
+    
+    .role-detail-info {
+        flex: 1;
+    }
+    
+    .role-detail-name {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-bottom: 5px;
+    }
+    
+    .role-detail-desc {
+        color: #666;
+        font-size: 14px;
+    }
+    
+    .detail-section {
+        margin-bottom: 25px;
+    }
+    
+    .detail-section-title {
+        font-weight: 600;
+        margin-bottom: 15px;
+        color: #333;
+        font-size: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .detail-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+    }
+    
+    .detail-item {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 10px;
+    }
+    
+    .detail-item-label {
+        font-size: 12px;
+        color: #666;
+        margin-bottom: 5px;
+    }
+    
+    .detail-item-value {
+        font-weight: 500;
+        color: #333;
+    }
+    
+    .no-permission-message {
+        text-align: center;
+        padding: 40px;
+        color: #999;
+    }
+    
+    .no-permission-message i {
+        font-size: 3rem;
+        margin-bottom: 15px;
+        display: block;
+        opacity: 0.5;
+    }
+    
+    @media (max-width: 768px) {
+        .permission-management {
+            padding: 0 20px;
+        }
+        
+        .action-bar {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        
+        .search-box {
+            max-width: 100%;
+        }
+        
+        th, td {
+            padding: 10px 8px;
+            font-size: 12px;
+        }
+        
+        .action-btns {
+            flex-direction: column;
+        }
+        
+        .detail-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .permission-items {
+            grid-template-columns: 1fr;
+        }
+        
+        .tabs-container {
+            flex-wrap: wrap;
+        }
+        
+        .tab-btn {
+            flex: 1;
+            justify-content: center;
+        }
+    }
+</style>
+
+<div class="permission-management">
+    <div class="management-header">
+        <h1 class="management-title">
+            <svg class="svg-icon" viewBox="0 0 512 512" width="16" height="16"><path d="M466.5 83.68l-192-80a48 48 0 0 0-37 0l-192 80C27.72 91.69 16 108.62 16 127.1V240c0 119.1 85.41 221.2 199.4 252.9l18.24 51.66A16 16 0 0 0 248 544h16a16 16 0 0 0 14.35-8.44l18.24-51.66C410.6 461.2 496 359.1 496 240V127.1C496 108.6 484.3 91.69 466.5 83.68zM240 204.7L178.6 163.4l-37.21 24.81L202.8 230l-61.42 41.81 37.21 24.81L240 254.9l61.42 41.74 37.21-24.81L277.2 230l61.42-41.81-37.21-24.81z"/></svg>
+            权限管理
+        </h1>
+        <p class="management-description">
+            管理系统角色和权限，配置用户访问控制策略。
+        </p>
+    </div>
+    
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-value">6</div>
+            <div class="stat-label">角色数量</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">12</div>
+            <div class="stat-label">权限项</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">5</div>
+            <div class="stat-label">活跃用户</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">40</div>
+            <div class="stat-label">权限分配</div>
+        </div>
+    </div>
+    
+    <div class="tabs-container">
+        <button class="tab-btn active" onclick="showTab('roles')">
+            <svg class="svg-icon" viewBox="0 0 448 512" width="16" height="16"><path d="M224 256c70.7 0 128-57.3 128-128S294.7 0 224 0 96 57.3 96 128s57.3 128 128 128zm89.6 32h-17.2c-11.2 0-21.8 3.4-30.8 9.4-17.1 11.5-36.4 17.6-56.4 17.6s-39.3-6.1-56.4-17.6c-9-6-19.6-9.4-30.8-9.4H22.4C10.1 288 0 298.1 0 310.4V464c0 26.5 21.5 48 48 48h352c26.5 0 48-21.5 48-48V310.4c0-12.3-10.1-22.4-22.4-22.4z"/></svg>角色管理
+        </button>
+        <button class="tab-btn" onclick="showTab('permissions')">
+            <svg class="svg-icon" viewBox="0 0 512 512" width="16" height="16"><path d="M336 144c0-26.5 21.5-48 48-48s48 21.5 48 48-21.5 48-48 48-48-21.5-48-48zm176 48c0-79.5-64.5-144-144-144s-144 64.5-144 144c0 19.3 3.8 37.7 10.7 54.6L144 352 48 256 0 304l96 96 48 48 48-48 16.4-16.4c15.5 5.6 32.1 8.8 49.6 8.8 79.5 0 144-64.5 144-144z"/></svg>权限列表
+        </button>
+        <button class="tab-btn" onclick="showTab('assign')">
+            <svg class="svg-icon" viewBox="0 0 448 512" width="16" height="16"><path d="M224 256c70.7 0 128-57.3 128-128S294.7 0 224 0 96 57.3 96 128s57.3 128 128 128zm89.6 32h-17.2c-11.2 0-21.8 3.4-30.8 9.4-17.1 11.5-36.4 17.6-56.4 17.6s-39.3-6.1-56.4-17.6c-9-6-19.6-9.4-30.8-9.4H22.4C10.1 288 0 298.1 0 310.4V464c0 26.5 21.5 48 48 48h352c26.5 0 48-21.5 48-48V310.4c0-12.3-10.1-22.4-22.4-22.4z"/></svg>权限分配
+        </button>
+    </div>
+    
+    <div id="tab-roles" class="tab-content active">
+        <div class="action-bar">
+            <div class="search-box">
+                <input type="text" class="search-input" placeholder="搜索角色名称...">
+                <button class="action-btn secondary-btn">
+                    <svg class="svg-icon" viewBox="0 0 512 512" width="16" height="16"><path d="M505 442.7L405.3 343c-4.5-4.5-10.6-7-17-7H372c27.6-35.3 44-79.7 44-128C416 93.1 322.9 0 208 0S0 93.1 0 208s93.1 208 208 208c48.3 0 92.7-16.4 128-44v16.3c0 6.4 2.5 12.5 7 17l99.7 99.7c9.4 9.4 24.6 9.4 33.9 0l28.3-28.3c9.4-9.4 9.4-24.6.1-34zM208 336c-70.7 0-128-57.3-128-128s57.3-128 128-128 128 57.3 128 128-57.3 128-128 128z"/></svg>搜索
+                </button>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button class="action-btn secondary-btn">
+                    <!-- Icon fa-download not found -->导出
+                </button>
+                <button class="action-btn primary-btn" onclick="showAddRoleModal()">
+                    <!-- Icon fa-plus not found -->添加角色
+                </button>
+            </div>
+        </div>
+        
+        <div class="main-content">
+            <table>
+                <thead>
+                    <tr>
+                        <th>角色</th>
+                        <th>描述</th>
+                        <th>权限数</th>
+                        <th>用户数</th>
+                        <th>状态</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>
+                            <div style="display: flex; align-items: center;">
+                                <span class="role-color-swatch" style="background: linear-gradient(135deg, #ff6b6b, #ee5a52);"></span>
+                                <div>
+                                    <div style="font-weight: 600;">超级管理员</div>
+                                    <div class="role-description">super_admin</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>拥有系统所有权限</td>
+                        <td><span class="permission-count">12</span></td>
+                        <td><span class="user-count">1</span></td>
+                        <td><span style="color: #10b981; font-weight: 500;">启用</span></td>
+                        <td>
+                            <div class="action-btns">
+                                <button class="mini-btn view-btn" onclick="showRoleDetail('super_admin')">查看</button>
+                                <button class="mini-btn edit-btn" onclick="showEditRoleModal('super_admin')">编辑</button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div style="display: flex; align-items: center;">
+                                <span class="role-color-swatch" style="background: linear-gradient(135deg, #4ecdc4, #44bd60);"></span>
+                                <div>
+                                    <div style="font-weight: 600;">管理员</div>
+                                    <div class="role-description">admin</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>管理系统基本功能</td>
+                        <td><span class="permission-count">8</span></td>
+                        <td><span class="user-count">1</span></td>
+                        <td><span style="color: #10b981; font-weight: 500;">启用</span></td>
+                        <td>
+                            <div class="action-btns">
+                                <button class="mini-btn view-btn" onclick="showRoleDetail('admin')">查看</button>
+                                <button class="mini-btn edit-btn" onclick="showEditRoleModal('admin')">编辑</button>
+                                <button class="mini-btn delete-btn" onclick="confirmDeleteRole('admin')">删除</button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div style="display: flex; align-items: center;">
+                                <span class="role-color-swatch" style="background: linear-gradient(135deg, #45b7d1, #2980b9);"></span>
+                                <div>
+                                    <div style="font-weight: 600;">硬件管理员</div>
+                                    <div class="role-description">hardware_admin</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>管理硬件设备</td>
+                        <td><span class="permission-count">4</span></td>
+                        <td><span class="user-count">1</span></td>
+                        <td><span style="color: #10b981; font-weight: 500;">启用</span></td>
+                        <td>
+                            <div class="action-btns">
+                                <button class="mini-btn view-btn" onclick="showRoleDetail('hardware_admin')">查看</button>
+                                <button class="mini-btn edit-btn" onclick="showEditRoleModal('hardware_admin')">编辑</button>
+                                <button class="mini-btn delete-btn" onclick="confirmDeleteRole('hardware_admin')">删除</button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div style="display: flex; align-items: center;">
+                                <span class="role-color-swatch" style="background: linear-gradient(135deg, #96ceb4, #7cb342);"></span>
+                                <div>
+                                    <div style="font-weight: 600;">设计师</div>
+                                    <div class="role-description">designer</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>设计工具使用</td>
+                        <td><span class="permission-count">3</span></td>
+                        <td><span class="user-count">1</span></td>
+                        <td><span style="color: #10b981; font-weight: 500;">启用</span></td>
+                        <td>
+                            <div class="action-btns">
+                                <button class="mini-btn view-btn" onclick="showRoleDetail('designer')">查看</button>
+                                <button class="mini-btn edit-btn" onclick="showEditRoleModal('designer')">编辑</button>
+                                <button class="mini-btn delete-btn" onclick="confirmDeleteRole('designer')">删除</button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div style="display: flex; align-items: center;">
+                                <span class="role-color-swatch" style="background: linear-gradient(135deg, #ffeaa7, #f39c12);"></span>
+                                <div>
+                                    <div style="font-weight: 600;">教师</div>
+                                    <div class="role-description">teacher</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>教学管理功能</td>
+                        <td><span class="permission-count">5</span></td>
+                        <td><span class="user-count">0</span></td>
+                        <td><span style="color: #10b981; font-weight: 500;">启用</span></td>
+                        <td>
+                            <div class="action-btns">
+                                <button class="mini-btn view-btn" onclick="showRoleDetail('teacher')">查看</button>
+                                <button class="mini-btn edit-btn" onclick="showEditRoleModal('teacher')">编辑</button>
+                                <button class="mini-btn delete-btn" onclick="confirmDeleteRole('teacher')">删除</button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div style="display: flex; align-items: center;">
+                                <span class="role-color-swatch" style="background: linear-gradient(135deg, #74b9ff, #0984e3);"></span>
+                                <div>
+                                    <div style="font-weight: 600;">学生</div>
+                                    <div class="role-description">student</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>学习相关功能</td>
+                        <td><span class="permission-count">3</span></td>
+                        <td><span class="user-count">1</span></td>
+                        <td><span style="color: #10b981; font-weight: 500;">启用</span></td>
+                        <td>
+                            <div class="action-btns">
+                                <button class="mini-btn view-btn" onclick="showRoleDetail('student')">查看</button>
+                                <button class="mini-btn edit-btn" onclick="showEditRoleModal('student')">编辑</button>
+                                <button class="mini-btn delete-btn" onclick="confirmDeleteRole('student')">删除</button>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="pagination">
+            <a href="#" class="page-btn">&laquo;</a>
+            <a href="#" class="page-btn active">1</a>
+            <a href="#" class="page-btn">2</a>
+            <span class="page-info">... 共 2 页</span>
+            <a href="#" class="page-btn">&raquo;</a>
+        </div>
+    </div>
+    
+    <div id="tab-permissions" class="tab-content">
+        <div class="action-bar">
+            <div class="search-box">
+                <input type="text" class="search-input" placeholder="搜索权限名称...">
+                <button class="action-btn secondary-btn">
+                    <svg class="svg-icon" viewBox="0 0 512 512" width="16" height="16"><path d="M505 442.7L405.3 343c-4.5-4.5-10.6-7-17-7H372c27.6-35.3 44-79.7 44-128C416 93.1 322.9 0 208 0S0 93.1 0 208s93.1 208 208 208c48.3 0 92.7-16.4 128-44v16.3c0 6.4 2.5 12.5 7 17l99.7 99.7c9.4 9.4 24.6 9.4 33.9 0l28.3-28.3c9.4-9.4 9.4-24.6.1-34zM208 336c-70.7 0-128-57.3-128-128s57.3-128 128-128 128 57.3 128 128-57.3 128-128 128z"/></svg>搜索
+                </button>
+            </div>
+            <button class="action-btn primary-btn" onclick="showAddPermissionModal()">
+                <!-- Icon fa-plus not found -->添加权限
+            </button>
+        </div>
+        
+        <div class="main-content" style="padding: 25px;">
+            <div class="permission-tree">
+                <div class="permission-group">
+                    <div class="permission-group-header" onclick="togglePermissionGroup('system')">
+                        <svg class="svg-icon" viewBox="0 0 320 512" width="16" height="16"><path d="M285.5 239L97.9 51.4c-4.7-4.7-4.7-12.3 0-17l19.8-19.8c4.7-4.7 12.3-4.7 17 0l178.1 218c4.7 4.7 4.7 12.3 0 17l-178.1 218c-4.7 4.7-12.3 4.7-17 0l-19.8-19.8c-4.7-4.7-4.7-12.3 0-17l187.6-187.6c4.8-4.7 4.8-12.3.1-17z"/></svg>
+                        <div class="permission-group-title">系统管理</div>
+                        <div class="permission-group-count">4项权限</div>
+                    </div>
+                    <div class="permission-items" id="group-system">
+                        <div class="permission-item">
+                            <input type="checkbox" checked>
+                            <div>
+                                <div class="permission-item-label">系统设置</div>
+                                <div class="permission-item-desc">system.settings</div>
+                            </div>
+                        </div>
+                        <div class="permission-item">
+                            <input type="checkbox" checked>
+                            <div>
+                                <div class="permission-item-label">用户管理</div>
+                                <div class="permission-item-desc">system.users</div>
+                            </div>
+                        </div>
+                        <div class="permission-item">
+                            <input type="checkbox" checked>
+                            <div>
+                                <div class="permission-item-label">权限管理</div>
+                                <div class="permission-item-desc">system.permissions</div>
+                            </div>
+                        </div>
+                        <div class="permission-item">
+                            <input type="checkbox" checked>
+                            <div>
+                                <div class="permission-item-label">系统日志</div>
+                                <div class="permission-item-desc">system.logs</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="permission-group">
+                    <div class="permission-group-header" onclick="togglePermissionGroup('test')">
+                        <svg class="svg-icon" viewBox="0 0 320 512" width="16" height="16"><path d="M285.5 239L97.9 51.4c-4.7-4.7-4.7-12.3 0-17l19.8-19.8c4.7-4.7 12.3-4.7 17 0l178.1 218c4.7 4.7 4.7 12.3 0 17l-178.1 218c-4.7 4.7-12.3 4.7-17 0l-19.8-19.8c-4.7-4.7-4.7-12.3 0-17l187.6-187.6c4.8-4.7 4.8-12.3.1-17z"/></svg>
+                        <div class="permission-group-title">测试管理</div>
+                        <div class="permission-group-count">3项权限</div>
+                    </div>
+                    <div class="permission-items" id="group-test">
+                        <div class="permission-item">
+                            <input type="checkbox">
+                            <div>
+                                <div class="permission-item-label">题库管理</div>
+                                <div class="permission-item-desc">test.question_bank</div>
+                            </div>
+                        </div>
+                        <div class="permission-item">
+                            <input type="checkbox">
+                            <div>
+                                <div class="permission-item-label">考试管理</div>
+                                <div class="permission-item-desc">test.exam</div>
+                            </div>
+                        </div>
+                        <div class="permission-item">
+                            <input type="checkbox">
+                            <div>
+                                <div class="permission-item-label">成绩管理</div>
+                                <div class="permission-item-desc">test.grades</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="permission-group">
+                    <div class="permission-group-header" onclick="togglePermissionGroup('ai')">
+                        <svg class="svg-icon" viewBox="0 0 320 512" width="16" height="16"><path d="M285.5 239L97.9 51.4c-4.7-4.7-4.7-12.3 0-17l19.8-19.8c4.7-4.7 12.3-4.7 17 0l178.1 218c4.7 4.7 4.7 12.3 0 17l-178.1 218c-4.7 4.7-12.3 4.7-17 0l-19.8-19.8c-4.7-4.7-4.7-12.3 0-17l187.6-187.6c4.8-4.7 4.8-12.3.1-17z"/></svg>
+                        <div class="permission-group-title">AI功能</div>
+                        <div class="permission-group-count">2项权限</div>
+                    </div>
+                    <div class="permission-items" id="group-ai">
+                        <div class="permission-item">
+                            <input type="checkbox">
+                            <div>
+                                <div class="permission-item-label">AI题库优化</div>
+                                <div class="permission-item-desc">ai.optimize</div>
+                            </div>
+                        </div>
+                        <div class="permission-item">
+                            <input type="checkbox">
+                            <div>
+                                <div class="permission-item-label">智能分析</div>
+                                <div class="permission-item-desc">ai.analysis</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="permission-group">
+                    <div class="permission-group-header" onclick="togglePermissionGroup('hardware')">
+                        <svg class="svg-icon" viewBox="0 0 320 512" width="16" height="16"><path d="M285.5 239L97.9 51.4c-4.7-4.7-4.7-12.3 0-17l19.8-19.8c4.7-4.7 12.3-4.7 17 0l178.1 218c4.7 4.7 4.7 12.3 0 17l-178.1 218c-4.7 4.7-12.3 4.7-17 0l-19.8-19.8c-4.7-4.7-4.7-12.3 0-17l187.6-187.6c4.8-4.7 4.8-12.3.1-17z"/></svg>
+                        <div class="permission-group-title">硬件管理</div>
+                        <div class="permission-group-count">3项权限</div>
+                    </div>
+                    <div class="permission-items" id="group-hardware">
+                        <div class="permission-item">
+                            <input type="checkbox">
+                            <div>
+                                <div class="permission-item-label">硬件管理</div>
+                                <div class="permission-item-desc">hardware.manage</div>
+                            </div>
+                        </div>
+                        <div class="permission-item">
+                            <input type="checkbox">
+                            <div>
+                                <div class="permission-item-label">系统监控</div>
+                                <div class="permission-item-desc">hardware.monitor</div>
+                            </div>
+                        </div>
+                        <div class="permission-item">
+                            <input type="checkbox">
+                            <div>
+                                <div class="permission-item-label">设备配置</div>
+                                <div class="permission-item-desc">hardware.config</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="tab-assign" class="tab-content">
+        <div class="action-bar">
+            <select class="filter-select" style="padding: 10px 15px; border: 2px solid #e0e0e0; border-radius: 10px;">
+                <option value="all">所有用户</option>
+                <option value="super_admin">超级管理员</option>
+                <option value="admin">管理员</option>
+                <option value="student">学生</option>
+            </select>
+            <button class="action-btn secondary-btn">
+                <!-- Icon fa-download not found -->导出权限报告
+            </button>
+        </div>
+        
+        <div class="main-content">
+            <table>
+                <thead>
+                    <tr>
+                        <th>用户</th>
+                        <th>角色</th>
+                        <th>权限数量</th>
+                        <th>权限范围</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 14px;">W</div>
+                                <div>
+                                    <div style="font-weight: 600;">wuchenghao</div>
+                                    <div style="font-size: 12px; color: #666;">ID: 1</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td><span class="role-badge role-super_admin" style="padding: 6px 12px; border-radius: 50px; font-size: 12px; font-weight: 600; background: linear-gradient(135deg, #ff6b6b, #ee5a52); color: white;">超级管理员</span></td>
+                        <td><span class="permission-count">12</span></td>
+                        <td style="color: #10b981; font-size: 12px;">全部权限</td>
+                        <td>
+                            <button class="mini-btn assign-btn" onclick="showUserPermissionModal(1)">编辑权限</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 14px;">W</div>
+                                <div>
+                                    <div style="font-weight: 600;">wuchenghao15</div>
+                                    <div style="font-size: 12px; color: #666;">ID: 2</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td><span class="role-badge" style="padding: 6px 12px; border-radius: 50px; font-size: 12px; font-weight: 600; background: linear-gradient(135deg, #45b7d1, #2980b9); color: white;">硬件管理员</span></td>
+                        <td><span class="permission-count">4</span></td>
+                        <td style="color: #3b82f6; font-size: 12px;">硬件管理</td>
+                        <td>
+                            <button class="mini-btn assign-btn" onclick="showUserPermissionModal(2)">编辑权限</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 14px;">W</div>
+                                <div>
+                                    <div style="font-weight: 600;">wuchnenghao16</div>
+                                    <div style="font-size: 12px; color: #666;">ID: 3</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td><span class="role-badge" style="padding: 6px 12px; border-radius: 50px; font-size: 12px; font-weight: 600; background: linear-gradient(135deg, #4ecdc4, #44bd60); color: white;">管理员</span></td>
+                        <td><span class="permission-count">8</span></td>
+                        <td style="color: #8b5cf6; font-size: 12px;">管理权限</td>
+                        <td>
+                            <button class="mini-btn assign-btn" onclick="showUserPermissionModal(3)">编辑权限</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 14px;">C</div>
+                                <div>
+                                    <div style="font-weight: 600;">caopinwen</div>
+                                    <div style="font-size: 12px; color: #666;">ID: 4</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td><span class="role-badge" style="padding: 6px 12px; border-radius: 50px; font-size: 12px; font-weight: 600; background: linear-gradient(135deg, #96ceb4, #7cb342); color: white;">设计师</span></td>
+                        <td><span class="permission-count">3</span></td>
+                        <td style="color: #f59e0b; font-size: 12px;">设计权限</td>
+                        <td>
+                            <button class="mini-btn assign-btn" onclick="showUserPermissionModal(4)">编辑权限</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 14px;">C</div>
+                                <div>
+                                    <div style="font-weight: 600;">caopw</div>
+                                    <div style="font-size: 12px; color: #666;">ID: 5</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td><span class="role-badge" style="padding: 6px 12px; border-radius: 50px; font-size: 12px; font-weight: 600; background: linear-gradient(135deg, #74b9ff, #0984e3); color: white;">学生</span></td>
+                        <td><span class="permission-count">3</span></td>
+                        <td style="color: #6b7280; font-size: 12px;">学习权限</td>
+                        <td>
+                            <button class="mini-btn assign-btn" onclick="showUserPermissionModal(5)">编辑权限</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="pagination">
+            <a href="#" class="page-btn">&laquo;</a>
+            <a href="#" class="page-btn active">1</a>
+            <a href="#" class="page-btn">2</a>
+            <span class="page-info">... 共 1 页</span>
+            <a href="#" class="page-btn">&raquo;</a>
+        </div>
+    </div>
+    
+    <div class="modal-overlay" id="add-role-modal">
+        <div class="modal">
+            <h2 class="modal-title">
+                <!-- Icon fa-plus-circle not found -->
+                添加角色
+            </h2>
+            <div>
+                <div class="form-group">
+                    <label class="form-label">角色名称</label>
+                    <input type="text" class="form-input" placeholder="输入角色名称">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">角色标识</label>
+                    <input type="text" class="form-input" placeholder="如: admin, teacher">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">角色描述</label>
+                    <textarea class="form-textarea" placeholder="描述这个角色的职责和权限范围"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">显示颜色</label>
+                    <div class="color-picker">
+                        <div class="color-preview" style="background: #667eea;"></div>
+                        <input type="color" class="form-color" value="#667eea">
+                        <input type="text" class="form-input" style="flex: 1;" value="#667eea">
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button class="cancel-btn" onclick="closeModal()">取消</button>
+                    <button class="confirm-btn">创建角色</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal-overlay" id="edit-role-modal">
+        <div class="modal">
+            <h2 class="modal-title">
+                <!-- Icon fa-edit not found -->
+                编辑角色
+            </h2>
+            <div>
+                <div class="form-group">
+                    <label class="form-label">角色名称</label>
+                    <input type="text" class="form-input" value="管理员">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">角色标识</label>
+                    <input type="text" class="form-input" value="admin" disabled>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">角色描述</label>
+                    <textarea class="form-textarea">管理系统基本功能</textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">显示颜色</label>
+                    <div class="color-picker">
+                        <div class="color-preview" style="background: linear-gradient(135deg, #4ecdc4, #44bd60);"></div>
+                        <input type="color" class="form-color" value="#4ecdc4">
+                        <input type="text" class="form-input" style="flex: 1;" value="#4ecdc4">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">权限设置</label>
+                    <div class="permission-tree" style="max-height: 300px;">
+                        <div class="permission-items">
+                            <div class="permission-item">
+                                <input type="checkbox" checked>
+                                <div>
+                                    <div class="permission-item-label">系统设置</div>
+                                    <div class="permission-item-desc">system.settings</div>
+                                </div>
+                            </div>
+                            <div class="permission-item">
+                                <input type="checkbox" checked>
+                                <div>
+                                    <div class="permission-item-label">用户管理</div>
+                                    <div class="permission-item-desc">system.users</div>
+                                </div>
+                            </div>
+                            <div class="permission-item">
+                                <input type="checkbox">
+                                <div>
+                                    <div class="permission-item-label">权限管理</div>
+                                    <div class="permission-item-desc">system.permissions</div>
+                                </div>
+                            </div>
+                            <div class="permission-item">
+                                <input type="checkbox" checked>
+                                <div>
+                                    <div class="permission-item-label">系统日志</div>
+                                    <div class="permission-item-desc">system.logs</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button class="cancel-btn" onclick="closeModal()">取消</button>
+                    <button class="confirm-btn">保存修改</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal-overlay" id="role-detail-modal">
+        <div class="modal">
+            <h2 class="modal-title">
+                <svg class="svg-icon" viewBox="0 0 512 512" fill="#17a2b8" width="16" height="16"><path d="M256 8C119 8 8 119 8 256s111 248 248 248 248-111 248-248S393 8 256 8zm0 112c-22.1 0-40 17.9-40 40s17.9 40 40 40 40-17.9 40-40-17.9-40-40-40zm64 256H192c-13.3 0-24-10.7-24-24v-16c0-13.3 10.7-24 24-24h24v-64h-24c-13.3 0-24-10.7-24-24v-16c0-13.3 10.7-24 24-24h64c13.3 0 24 10.7 24 24v104h24c13.3 0 24 10.7 24 24v16c0 13.3-10.7 24-24 24z"/></svg>
+                角色详情
+            </h2>
+            <div class="role-detail-header">
+                <div class="role-detail-color" style="background: linear-gradient(135deg, #ff6b6b, #ee5a52);"></div>
+                <div class="role-detail-info">
+                    <div class="role-detail-name">超级管理员</div>
+                    <div class="role-detail-desc">super_admin</div>
+                </div>
+            </div>
+            <div class="detail-section">
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <div class="detail-item-label">角色标识</div>
+                        <div class="detail-item-value">super_admin</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-item-label">用户数量</div>
+                        <div class="detail-item-value">1</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-item-label">权限数量</div>
+                        <div class="detail-item-value">12</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-item-label">状态</div>
+                        <div class="detail-item-value" style="color: #10b981; font-weight: 500;">启用</div>
+                    </div>
+                </div>
+            </div>
+            <div class="detail-section">
+                <div class="detail-section-title">
+                    <svg class="svg-icon" viewBox="0 0 512 512" width="16" height="16"><path d="M336 144c0-26.5 21.5-48 48-48s48 21.5 48 48-21.5 48-48 48-48-21.5-48-48zm176 48c0-79.5-64.5-144-144-144s-144 64.5-144 144c0 19.3 3.8 37.7 10.7 54.6L144 352 48 256 0 304l96 96 48 48 48-48 16.4-16.4c15.5 5.6 32.1 8.8 49.6 8.8 79.5 0 144-64.5 144-144z"/></svg>权限列表
+                </div>
+                <div class="permission-items">
+                    <div class="permission-item">
+                        <input type="checkbox" checked disabled>
+                        <div>
+                            <div class="permission-item-label">系统设置</div>
+                            <div class="permission-item-desc">system.settings</div>
+                        </div>
+                    </div>
+                    <div class="permission-item">
+                        <input type="checkbox" checked disabled>
+                        <div>
+                            <div class="permission-item-label">用户管理</div>
+                            <div class="permission-item-desc">system.users</div>
+                        </div>
+                    </div>
+                    <div class="permission-item">
+                        <input type="checkbox" checked disabled>
+                        <div>
+                            <div class="permission-item-label">权限管理</div>
+                            <div class="permission-item-desc">system.permissions</div>
+                        </div>
+                    </div>
+                    <div class="permission-item">
+                        <input type="checkbox" checked disabled>
+                        <div>
+                            <div class="permission-item-label">系统日志</div>
+                            <div class="permission-item-desc">system.logs</div>
+                        </div>
+                    </div>
+                    <div class="permission-item">
+                        <input type="checkbox" checked disabled>
+                        <div>
+                            <div class="permission-item-label">题库管理</div>
+                            <div class="permission-item-desc">test.question_bank</div>
+                        </div>
+                    </div>
+                    <div class="permission-item">
+                        <input type="checkbox" checked disabled>
+                        <div>
+                            <div class="permission-item-label">考试管理</div>
+                            <div class="permission-item-desc">test.exam</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="cancel-btn" onclick="closeModal()">关闭</button>
+                <button class="confirm-btn" onclick="showEditRoleModal('super_admin')">编辑角色</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal-overlay" id="delete-role-modal">
+        <div class="modal">
+            <h2 class="modal-title">
+                <!-- Icon fa-trash-alt not found -->
+                确认删除角色
+            </h2>
+            <div style="color: #666; margin-bottom: 25px;">
+                <p>确定要删除该角色吗？此操作将影响所有拥有该角色的用户。</p>
+                <p style="color: #ff6b6b; margin-top: 10px;">此操作无法撤销！</p>
+            </div>
+            <div class="modal-actions">
+                <button class="cancel-btn" onclick="closeModal()">取消</button>
+                <button class="confirm-btn danger-btn">确认删除</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal-overlay" id="add-permission-modal">
+        <div class="modal">
+            <h2 class="modal-title">
+                <svg class="svg-icon" viewBox="0 0 512 512" width="16" height="16"><path d="M336 144c0-26.5 21.5-48 48-48s48 21.5 48 48-21.5 48-48 48-48-21.5-48-48zm176 48c0-79.5-64.5-144-144-144s-144 64.5-144 144c0 19.3 3.8 37.7 10.7 54.6L144 352 48 256 0 304l96 96 48 48 48-48 16.4-16.4c15.5 5.6 32.1 8.8 49.6 8.8 79.5 0 144-64.5 144-144z"/></svg>
+                添加权限
+            </h2>
+            <div>
+                <div class="form-group">
+                    <label class="form-label">权限名称</label>
+                    <input type="text" class="form-input" placeholder="输入权限名称">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">权限标识</label>
+                    <input type="text" class="form-input" placeholder="如: system.settings">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">权限描述</label>
+                    <textarea class="form-textarea" placeholder="描述这个权限的作用"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">所属分组</label>
+                    <select class="form-input" style="appearance: none; background-image: url('data:image/svg+xml,%3Csvg xmlns=http://www.w3.org/2000/svg width=24 height=24 viewBox=0 0 24 24 fill=none stroke=%23666 stroke-width=2 stroke-linecap=round stroke-linejoin=round%3E%3Cpolyline points=6 9 12 15 18 9%3E%3C/polyline%3E%3C/svg%3E'); background-repeat: no-repeat; background-position: right 15px center;">
+                        <option value="system">系统管理</option>
+                        <option value="test">测试管理</option>
+                        <option value="ai">AI功能</option>
+                        <option value="hardware">硬件管理</option>
+                    </select>
+                </div>
+                <div class="modal-actions">
+                    <button class="cancel-btn" onclick="closeModal()">取消</button>
+                    <button class="confirm-btn">创建权限</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal-overlay" id="user-permission-modal">
+        <div class="modal">
+            <h2 class="modal-title">
+                <svg class="svg-icon" viewBox="0 0 448 512" width="16" height="16"><path d="M224 256c70.7 0 128-57.3 128-128S294.7 0 224 0 96 57.3 96 128s57.3 128 128 128zm89.6 32h-17.2c-11.2 0-21.8 3.4-30.8 9.4-17.1 11.5-36.4 17.6-56.4 17.6s-39.3-6.1-56.4-17.6c-9-6-19.6-9.4-30.8-9.4H22.4C10.1 288 0 298.1 0 310.4V464c0 26.5 21.5 48 48 48h352c26.5 0 48-21.5 48-48V310.4c0-12.3-10.1-22.4-22.4-22.4z"/></svg>
+                编辑用户权限
+            </h2>
+            <div style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 10px;">
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <div style="width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 18px;">W</div>
+                    <div>
+                        <div style="font-weight: 600;">wuchenghao</div>
+                        <div style="font-size: 13px; color: #666;">当前角色: 超级管理员</div>
+                    </div>
+                </div>
+            </div>
+            <div class="permission-tree" style="max-height: 400px;">
+                <div class="permission-group">
+                    <div class="permission-group-header" onclick="togglePermissionGroup('user-system')">
+                        <svg class="svg-icon" viewBox="0 0 320 512" width="16" height="16"><path d="M285.5 239L97.9 51.4c-4.7-4.7-4.7-12.3 0-17l19.8-19.8c4.7-4.7 12.3-4.7 17 0l178.1 218c4.7 4.7 4.7 12.3 0 17l-178.1 218c-4.7 4.7-12.3 4.7-17 0l-19.8-19.8c-4.7-4.7-4.7-12.3 0-17l187.6-187.6c4.8-4.7 4.8-12.3.1-17z"/></svg>
+                        <div class="permission-group-title">系统管理</div>
+                        <div class="permission-group-count">4项权限</div>
+                    </div>
+                    <div class="permission-items" id="group-user-system">
+                        <div class="permission-item">
+                            <input type="checkbox" checked>
+                            <div>
+                                <div class="permission-item-label">系统设置</div>
+                                <div class="permission-item-desc">system.settings</div>
+                            </div>
+                        </div>
+                        <div class="permission-item">
+                            <input type="checkbox" checked>
+                            <div>
+                                <div class="permission-item-label">用户管理</div>
+                                <div class="permission-item-desc">system.users</div>
+                            </div>
+                        </div>
+                        <div class="permission-item">
+                            <input type="checkbox" checked>
+                            <div>
+                                <div class="permission-item-label">权限管理</div>
+                                <div class="permission-item-desc">system.permissions</div>
+                            </div>
+                        </div>
+                        <div class="permission-item">
+                            <input type="checkbox" checked>
+                            <div>
+                                <div class="permission-item-label">系统日志</div>
+                                <div class="permission-item-desc">system.logs</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="permission-group">
+                    <div class="permission-group-header" onclick="togglePermissionGroup('user-test')">
+                        <svg class="svg-icon" viewBox="0 0 320 512" width="16" height="16"><path d="M285.5 239L97.9 51.4c-4.7-4.7-4.7-12.3 0-17l19.8-19.8c4.7-4.7 12.3-4.7 17 0l178.1 218c4.7 4.7 4.7 12.3 0 17l-178.1 218c-4.7 4.7-12.3 4.7-17 0l-19.8-19.8c-4.7-4.7-4.7-12.3 0-17l187.6-187.6c4.8-4.7 4.8-12.3.1-17z"/></svg>
+                        <div class="permission-group-title">测试管理</div>
+                        <div class="permission-group-count">3项权限</div>
+                    </div>
+                    <div class="permission-items" id="group-user-test">
+                        <div class="permission-item">
+                            <input type="checkbox" checked>
+                            <div>
+                                <div class="permission-item-label">题库管理</div>
+                                <div class="permission-item-desc">test.question_bank</div>
+                            </div>
+                        </div>
+                        <div class="permission-item">
+                            <input type="checkbox" checked>
+                            <div>
+                                <div class="permission-item-label">考试管理</div>
+                                <div class="permission-item-desc">test.exam</div>
+                            </div>
+                        </div>
+                        <div class="permission-item">
+                            <input type="checkbox" checked>
+                            <div>
+                                <div class="permission-item-label">成绩管理</div>
+                                <div class="permission-item-desc">test.grades</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="cancel-btn" onclick="closeModal()">取消</button>
+                <button class="confirm-btn">保存权限</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function showTab(tabId) {
+        document.querySelectorAll('.tab-content').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        document.getElementById('tab-' + tabId).classList.add('active');
+        
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        event.target.classList.add('active');
+    }
+    
+    function togglePermissionGroup(groupId) {
+        const group = document.getElementById('group-' + groupId);
+        const icon = document.getElementById('icon-' + groupId);
+        
+        if (group.style.display === 'none' || group.style.display === '') {
+            group.style.display = 'grid';
+            icon.style.transform = 'rotate(90deg)';
+        } else {
+            group.style.display = 'none';
+            icon.style.transform = 'rotate(0deg)';
+        }
+    }
+    
+    function showAddRoleModal() {
+        document.getElementById('add-role-modal').classList.add('active');
+    }
+    
+    function showEditRoleModal(roleId) {
+        document.getElementById('edit-role-modal').classList.add('active');
+    }
+    
+    function showRoleDetail(roleId) {
+        document.getElementById('role-detail-modal').classList.add('active');
+    }
+    
+    function confirmDeleteRole(roleId) {
+        document.getElementById('delete-role-modal').classList.add('active');
+    }
+    
+    function showAddPermissionModal() {
+        document.getElementById('add-permission-modal').classList.add('active');
+    }
+    
+    function showUserPermissionModal(userId) {
+        document.getElementById('user-permission-modal').classList.add('active');
+    }
+    
+    function closeModal() {
+        document.querySelectorAll('.modal-overlay').forEach(modal => {
+            modal.classList.remove('active');
+        });
+    }
+    
+    document.querySelectorAll('.modal-overlay').forEach(modal => {
+        modal.addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+    });
+    
+    document.querySelectorAll('.permission-group-header').forEach(header => {
+        header.addEventListener('click', function() {
+            const icon = this.querySelector('i');
+            const contentId = this.id.replace('icon-', 'group-');
+            const content = document.getElementById(contentId);
+            
+            if (content.style.display === 'none' || content.style.display === '') {
+                content.style.display = 'grid';
+                icon.style.transform = 'rotate(90deg)';
+            } else {
+                content.style.display = 'none';
+                icon.style.transform = 'rotate(0deg)';
+            }
+        });
+    });
+</script>
+{% endblock %}

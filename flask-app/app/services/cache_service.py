@@ -621,7 +621,7 @@ class MultiLevelCacheService:
                             if (time.time() - data.get('created_at', 0)) > data.get('ttl', 86400):
                                 os.remove(file_path)
                                 count += 1
-                    except:
+                    except Exception:
                         os.remove(file_path)
                         count += 1
             

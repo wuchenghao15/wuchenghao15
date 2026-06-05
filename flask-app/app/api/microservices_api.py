@@ -303,7 +303,7 @@ def test():
     try:
         services = manager.get_all_services()
         results['services_test'] = len(services) > 0
-    except:
+    except Exception:
         pass
     
     # 测试服务注册
@@ -311,7 +311,7 @@ def test():
         manager.rpc.register_service('test-service', 'localhost', 9999)
         instances = manager.registry.discover('test-service')
         results['registry_test'] = len(instances) > 0
-    except:
+    except Exception:
         pass
     
     # 测试配置中心
@@ -319,7 +319,7 @@ def test():
         manager.set_config('test.key', 'test.value')
         value = manager.get_config('test.key')
         results['config_test'] = value == 'test.value'
-    except:
+    except Exception:
         pass
     
     # 测试监控
@@ -327,7 +327,7 @@ def test():
         manager.record_metric('test-service', 'test_metric', 10.0)
         metrics = manager.get_metrics('test-service')
         results['monitor_test'] = 'test_metric' in metrics
-    except:
+    except Exception:
         pass
     
     return jsonify(results)

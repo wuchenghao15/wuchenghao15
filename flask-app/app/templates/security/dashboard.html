@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>安全监控仪表盘 - MTSCOS AI</title>
+    <link href="https://cdn.tailwindcss.com" rel="stylesheet">
+    <!-- FontAwesome CDN removed -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .security-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border-radius: 1rem;
+        }
+        
+        .severity-high {
+            background: rgba(239, 68, 68, 0.1);
+            border-left: 4px solid #ef4444;
+        }
+        
+        .severity-medium {
+            background: rgba(245, 158, 11, 0.1);
+            border-left: 4px solid #f59e0b;
+        }
+        
+        .severity-low {
+            background: rgba(16, 185, 129, 0.1);
+            border-left: 4px solid #10b981;
+        }
+        
+        .status-active {
+            color: #10b981;
+        }
+        
+        .status-warning {
+            color: #f59e0b;
+        }
+        
+        .status-danger {
+            color: #ef4444;
+        }
+    </style>
+
+<style>
+.svg-icon {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    vertical-align: -0.125em;
+    fill: currentColor;
+}
+</style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- 导航栏 -->
+    <nav class="bg-white shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 flex items-center">
+                        <div class="w-8 h-8 rounded-md bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                            <svg class="svg-icon" viewBox="0 0 512 512" width="16" height="16"><path d="M466.5 83.68l-192-80a48 48 0 0 0-37 0l-192 80C27.72 91.69 16 108.62 16 127.1V240c0 119.1 85.41 221.2 199.4 252.9l18.24 51.66A16 16 0 0 0 248 544h16a16 16 0 0 0 14.35-8.44l18.24-51.66C410.6 461.2 496 359.1 496 240V127.1C496 108.6 484.3 91.69 466.5 83.68zM240 204.7L178.6 163.4l-37.21 24.81L202.8 230l-61.42 41.81 37.21 24.81L240 254.9l61.42 41.74 37.21-24.81L277.2 230l61.42-41.81-37.21-24.81z"/></svg>
+                        </div>
+                        <span class="ml-2 text-lg font-semibold text-gray-900">MTSCOS AI</span>
+                    </div>
+                    <div class="hidden md:ml-6 md:flex md:space-x-8">
+                        <a href="/" class="border-b-2 border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 text-sm font-medium">
+                            首页
+                        </a>
+                        <a href="/monitoring" class="border-b-2 border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 text-sm font-medium">
+                            系统监控
+                        </a>
+                        <a href="/security" class="border-b-2 border-blue-500 text-blue-600 inline-flex items-center px-1 pt-1 text-sm font-medium">
+                            安全监控
+                        </a>
+                        <a href="/log-management" class="border-b-2 border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 text-sm font-medium">
+                            日志管理
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- 主要内容 -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="mb-6">
+            <h1 class="text-2xl font-bold text-gray-900">安全监控仪表盘</h1>
+            <p class="text-gray-500">实时监控系统安全状态</p>
+        </div>
+        
+        <!-- 安全状态卡片 -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="security-card p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-500">安全状态</p>
+                        <p class="text-2xl font-bold text-gray-900">正常</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
+                        <svg class="svg-icon" viewBox="0 0 512 512" fill="#28a745" width="16" height="16"><path d="M256 8C119 8 8 119 8 256s111 248 248 248 248-111 248-248S393 8 256 8zm-24 336l-112-112 17-17 95 95 207-207 17 17z"/></svg>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div class="bg-green-500 h-2 rounded-full" style="width: 25%"></div>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">安全风险: 低 (25%)</p>
+                </div>
+            </div>
+            
+            <div class="security-card p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-500">安全事件</p>
+                        <p class="text-2xl font-bold text-gray-900">12</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-full bg-yellow-100 flex items-center justify-center">
+                        <svg class="svg-icon" viewBox="0 0 576 512" fill="#ffc107" width="16" height="16"><path d="M569.5 412L334.1 55c-11.7-19.5-42-19.5-53.7 0L6.5 412c-11.7 19.5 2.6 44 26.8 44h499.4c24.2 0 38.5-24.5 26.8-44zm-277-112c-13.3 0-24-10.7-24-24v-96c0-13.3 10.7-24 24-24s24 10.7 24 24v96c0 13.3-10.7 24-24 24zm0 160c-17.7 0-32-14.3-32-32s14.3-32 32-32 32 14.3 32 32-14.3 32-32 32z"/></svg>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <div class="flex items-center text-xs text-gray-500">
+                        <span class="w-2 h-2 rounded-full bg-red-500 mr-2"></span>
+                        <span>2 高危</span>
+                        <span class="mx-2">•</span>
+                        <span class="w-2 h-2 rounded-full bg-yellow-500 mr-2"></span>
+                        <span>5 中危</span>
+                        <span class="mx-2">•</span>
+                        <span class="w-2 h-2 rounded-full bg-green-500 mr-2"></span>
+                        <span>5 低危</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="security-card p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-500">最近扫描</p>
+                        <p class="text-2xl font-bold text-gray-900">今天</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+                        <svg class="svg-icon" viewBox="0 0 512 512" width="16" height="16"><path d="M505 442.7L405.3 343c-4.5-4.5-10.6-7-17-7H372c27.6-35.3 44-79.7 44-128C416 93.1 322.9 0 208 0S0 93.1 0 208s93.1 208 208 208c48.3 0 92.7-16.4 128-44v16.3c0 6.4 2.5 12.5 7 17l99.7 99.7c9.4 9.4 24.6 9.4 33.9 0l28.3-28.3c9.4-9.4 9.4-24.6.1-34zM208 336c-70.7 0-128-57.3-128-128s57.3-128 128-128 128 57.3 128 128-57.3 128-128 128z"/></svg>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <button id="start-scan" class="w-full bg-blue-600 text-white py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors">
+                        <svg class="svg-icon" viewBox="0 0 448 512" width="16" height="16"><path d="M424.4 214.7L72.4 6.6C43.8-10.3 0 10.1 0 47.9V464c0 37.9 43.8 58.2 72.4 41.3l352-208c31.4-18.5 31.4-64.1 0-82.6z"/></svg> 立即扫描
+                    </button>
+                </div>
+            </div>
+            
+            <div class="security-card p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-500">内存使用</p>
+                        <p class="text-2xl font-bold text-gray-900" id="memory-usage">--%</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
+                        <!-- Icon fa-memory not found -->
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div id="memory-bar" class="bg-purple-500 h-2 rounded-full" style="width: 0%"></div>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">内存使用率</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 图表和数据 -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- 安全事件趋势 -->
+            <div class="security-card p-6">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">安全事件趋势</h2>
+                <div class="h-64">
+                    <canvas id="eventsChart"></canvas>
+                </div>
+            </div>
+            
+            <!-- 扫描结果 -->
+            <div class="security-card p-6">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">最近扫描结果</h2>
+                <div class="space-y-4" id="recent-scans">
+                    <!-- 扫描结果将通过JavaScript动态加载 -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- 安全事件列表 -->
+        <div class="security-card p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold text-gray-900">最近安全事件</h2>
+                <a href="/security/events" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                    查看全部
+                </a>
+            </div>
+            <div class="space-y-3" id="recent-events">
+                <!-- 事件将通过JavaScript动态加载 -->
+            </div>
+        </div>
+    </main>
+    
+    <!-- JavaScript -->
+    <script>
+        // 页面加载完成后执行
+        document.addEventListener('DOMContentLoaded', function() {
+            // 加载安全事件
+            loadRecentEvents();
+            
+            // 加载最近扫描
+            loadRecentScans();
+            
+            // 初始化事件趋势图表
+            initEventsChart();
+            
+            // 加载内存使用情况
+            loadMemoryUsage();
+            
+            // 定期更新内存使用情况
+            setInterval(loadMemoryUsage, 5000);
+            
+            // 立即扫描按钮
+            document.getElementById('start-scan').addEventListener('click', function() {
+                startScan();
+            });
+        });
+        
+        // 加载最近安全事件
+        function loadRecentEvents() {
+            fetch('/security/api/events?limit=5')
+                .then(response => response.json())
+                .then(data => {
+                    const eventsContainer = document.getElementById('recent-events');
+                    eventsContainer.innerHTML = '';
+                    
+                    if (data.events.length === 0) {
+                        eventsContainer.innerHTML = '<p class="text-gray-500 text-center py-4">暂无安全事件</p>';
+                        return;
+                    }
+                    
+                    data.events.forEach(event => {
+                        const eventElement = document.createElement('div');
+                        eventElement.className = `p-4 rounded-md severity-${event.severity}`;
+                        
+                        eventElement.innerHTML = `
+                            <div class="flex items-start">
+                                <div class="flex-shrink-0">
+                                    <!-- Icon fa-${getEventIcon(event.event_type)} not found -->
+                                </div>
+                                <div class="ml-4 flex-1">
+                                    <h3 class="text-sm font-medium text-gray-900">${event.message}</h3>
+                                    <p class="text-xs text-gray-500 mt-1">
+                                        ${event.source || '系统'} • ${new Date(event.timestamp).toLocaleString()}
+                                    </p>
+                                </div>
+                                <div class="flex-shrink-0 ml-4">
+                                    <span class="px-2 py-1 text-xs font-medium rounded-full bg-${getSeverityBackgroundColor(event.severity)} text-${getSeverityColor(event.severity)}">
+                                        ${getSeverityText(event.severity)}
+                                    </span>
+                                </div>
+                            </div>
+                        `;
+                        
+                        eventsContainer.appendChild(eventElement);
+                    });
+                })
+                .catch(error => console.error('加载安全事件失败:', error));
+        }
+        
+        // 加载最近扫描
+        function loadRecentScans() {
+            fetch('/security/api/scans?limit=3')
+                .then(response => response.json())
+                .then(data => {
+                    const scansContainer = document.getElementById('recent-scans');
+                    scansContainer.innerHTML = '';
+                    
+                    if (data.scans.length === 0) {
+                        scansContainer.innerHTML = '<p class="text-gray-500 text-center py-4">暂无扫描记录</p>';
+                        return;
+                    }
+                    
+                    data.scans.forEach(scan => {
+                        const scanElement = document.createElement('div');
+                        scanElement.className = 'p-4 rounded-md border border-gray-200';
+                        
+                        const findings = scan.findings || [];
+                        const findingCount = findings.length;
+                        
+                        scanElement.innerHTML = `
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h3 class="text-sm font-medium text-gray-900">${getScanTypeText(scan.scan_type)}</h3>
+                                    <p class="text-xs text-gray-500 mt-1">
+                                        目标: ${scan.target} • ${new Date(scan.start_time).toLocaleString()}
+                                    </p>
+                                </div>
+                                <span class="px-2 py-1 text-xs font-medium rounded-full bg-${getScanStatusColor(scan.status)} text-${getScanStatusTextColor(scan.status)}">
+                                    ${scan.status}
+                                </span>
+                            </div>
+                            ${findingCount > 0 ? `
+                                <div class="mt-2">
+                                    <p class="text-xs text-gray-600">
+                                        <svg class="svg-icon" viewBox="0 0 512 512" width="16" height="16"><path d="M256 8C119 8 8 119 8 256s111 248 248 248 248-111 248-248S393 8 256 8zm0 400c-17.7 0-32-14.3-32-32s14.3-32 32-32 32 14.3 32 32-14.3 32-32 32zm32-160h-64c-17.7 0-32-14.3-32-32V176c0-17.7 14.3-32 32-32h64c17.7 0 32 14.3 32 32v40c0 17.7-14.3 32-32 32z"/></svg>
+                                        发现 ${findingCount} 个问题
+                                    </p>
+                                </div>
+                            ` : ''}
+                        `;
+                        
+                        scansContainer.appendChild(scanElement);
+                    });
+                })
+                .catch(error => console.error('加载扫描记录失败:', error));
+        }
+        
+        // 初始化事件趋势图表
+        function initEventsChart() {
+            const ctx = document.getElementById('eventsChart').getContext('2d');
+            
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['1月', '2月', '3月', '4月', '5月', '6月'],
+                    datasets: [
+                        {
+                            label: '高危事件',
+                            data: [5, 3, 2, 4, 2, 1],
+                            borderColor: '#ef4444',
+                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                            tension: 0.3
+                        },
+                        {
+                            label: '中危事件',
+                            data: [12, 15, 10, 8, 12, 9],
+                            borderColor: '#f59e0b',
+                            backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                            tension: 0.3
+                        },
+                        {
+                            label: '低危事件',
+                            data: [20, 18, 22, 15, 18, 25],
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            tension: 0.3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+        
+        // 开始扫描
+        function startScan() {
+            const button = document.getElementById('start-scan');
+            button.disabled = true;
+            button.innerHTML = '<!-- Icon fa-spinner not found --><!-- Icon fa-spin not found --> 扫描中...';
+            
+            fetch('/security/api/scan', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ type: 'vulnerability', target: 'app' })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('扫描已开始，ID: ' + data.scan_id);
+                    // 重新加载扫描记录
+                    setTimeout(loadRecentScans, 2000);
+                } else {
+                    alert('扫描启动失败: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('扫描失败:', error);
+                alert('扫描启动失败');
+            })
+            .finally(() => {
+                button.disabled = false;
+                button.innerHTML = '<svg class="svg-icon" viewBox="0 0 448 512" width="16" height="16"><path d="M424.4 214.7L72.4 6.6C43.8-10.3 0 10.1 0 47.9V464c0 37.9 43.8 58.2 72.4 41.3l352-208c31.4-18.5 31.4-64.1 0-82.6z"/></svg> 立即扫描';
+            });
+        }
+        
+        // 加载内存使用情况
+        function loadMemoryUsage() {
+            fetch('/security/api/memory-check')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // 提取内存使用率
+                        const match = data.message.match(/内存使用率: (\d+\.\d+)%/);
+                        if (match) {
+                            const usage = parseFloat(match[1]);
+                            const memoryUsageElement = document.getElementById('memory-usage');
+                            const memoryBarElement = document.getElementById('memory-bar');
+                            
+                            if (memoryUsageElement && memoryBarElement) {
+                                memoryUsageElement.textContent = usage.toFixed(1) + '%';
+                                memoryBarElement.style.width = usage + '%';
+                                
+                                // 根据内存使用率设置颜色
+                                if (usage > 90) {
+                                    memoryBarElement.className = 'bg-red-500 h-2 rounded-full';
+                                } else if (usage > 70) {
+                                    memoryBarElement.className = 'bg-yellow-500 h-2 rounded-full';
+                                } else {
+                                    memoryBarElement.className = 'bg-purple-500 h-2 rounded-full';
+                                }
+                            }
+                        }
+                    }
+                })
+                .catch(error => console.error('加载内存使用情况失败:', error));
+        }
+        
+        // 辅助函数
+        function getEventIcon(eventType) {
+            const icons = {
+                'scan': 'search',
+                'system': 'server',
+                'auth': 'user-lock',
+                'database': 'database',
+                'cache': 'memory-alt'
+            };
+            return icons[eventType] || 'bell';
+        }
+        
+        function getSeverityColor(severity) {
+            const colors = {
+                'high': 'red-600',
+                'medium': 'yellow-600',
+                'low': 'green-600'
+            };
+            return colors[severity] || 'gray-600';
+        }
+        
+        function getSeverityBackgroundColor(severity) {
+            const colors = {
+                'high': 'red-100',
+                'medium': 'yellow-100',
+                'low': 'green-100'
+            };
+            return colors[severity] || 'gray-100';
+        }
+        
+        function getSeverityText(severity) {
+            const texts = {
+                'high': '高危',
+                'medium': '中危',
+                'low': '低危'
+            };
+            return texts[severity] || severity;
+        }
+        
+        function getScanTypeText(scanType) {
+            const texts = {
+                'vulnerability': '漏洞扫描',
+                'database': '数据库扫描',
+                'cache': '缓存扫描'
+            };
+            return texts[scanType] || scanType;
+        }
+        
+        function getScanStatusColor(status) {
+            const colors = {
+                'running': 'blue-100',
+                'completed': 'green-100',
+                'error': 'red-100'
+            };
+            return colors[status] || 'gray-100';
+        }
+        
+        function getScanStatusTextColor(status) {
+            const colors = {
+                'running': 'blue-800',
+                'completed': 'green-800',
+                'error': 'red-800'
+            };
+            return colors[status] || 'gray-800';
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,257 @@
+{% extends "hardware_base.html" %}
+
+{% block title %}设备管理 - 硬件管理系统{% endblock %}
+
+{% block page_title %}设备管理{% endblock %}
+{% block page_subtitle %}管理和监控所有硬件设备{% endblock %}
+
+{% block content %}
+<div class="content-grid">
+    <!-- 设备列表 -->
+    <section class="card">
+        <div class="card-header">
+            <div class="card-title">
+                <svg class="svg-icon" viewBox="0 0 640 512" width="16" height="16"><path d="M480 160c0-26.5-21.5-48-48-48H64c-26.5 0-48 21.5-48 48v64h576v-64zm-208 80c-13.3 0-24-10.7-24-24s10.7-24 24-24 24 10.7 24 24-10.7 24-24 24zm128 0c-13.3 0-24-10.7-24-24s10.7-24 24-24 24 10.7 24 24-10.7 24-24 24zm192-64H16v160c0 26.5 21.5 48 48 48h352c26.5 0 48-21.5 48-48V256h128v-80zm-336 192c-13.3 0-24-10.7-24-24s10.7-24 24-24 24 10.7 24 24-10.7 24-24 24zm128 0c-13.3 0-24-10.7-24-24s10.7-24 24-24 24 10.7 24 24-10.7 24-24 24z"/></svg>
+                <h3>设备列表</h3>
+            </div>
+            <button class="btn btn-primary add-device-btn" onclick="showAddDeviceModal()">
+                <!-- Icon fa-plus not found -->
+                添加设备
+            </button>
+        </div>
+        <div class="table-container">
+            <table id="devices-table" class="data-table">
+                <thead>
+                    <tr>
+                        <th>设备名称</th>
+                        <th>类型</th>
+                        <th>IP地址</th>
+                        <th>状态</th>
+                        <th>CPU</th>
+                        <th>内存</th>
+                        <th>存储</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if devices %}
+                        {% for device in devices %}
+                        <tr data-device-id="{{ device.id }}">
+                            <td>{{ device.device_name }}</td>
+                            <td>
+                                <span class="badge {{ device.device_type }}">{{ device.device_type | capitalize }}</span>
+                            </td>
+                            <td>{{ device.ip_address or '-' }}</td>
+                            <td>
+                                <span class="status-badge {{ device.status }}">
+                                    <span class="status-dot"></span>
+                                    {{ device.status | capitalize }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="mini-progress">
+                                    <div class="mini-progress-fill cpu" style="width: {{ device.cpu_usage }}%"></div>
+                                </div>
+                                <span>{{ device.cpu_usage|round(2) }}%</span>
+                            </td>
+                            <td>
+                                <div class="mini-progress">
+                                    <div class="mini-progress-fill memory" style="width: {{ device.memory_usage }}%"></div>
+                                </div>
+                                <span>{{ device.memory_usage|round(2) }}%</span>
+                            </td>
+                            <td>
+                                <div class="mini-progress">
+                                    <div class="mini-progress-fill storage" style="width: {{ device.storage_usage }}%"></div>
+                                </div>
+                                <span>{{ device.storage_usage|round(2) }}%</span>
+                            </td>
+                            <td>
+                                <div class="action-buttons">
+                                    <button class="btn btn-sm btn-secondary" onclick="editDevice({{ device.id }})">
+                                        <!-- Icon fa-edit not found -->
+                                    </button>
+                                    <button class="btn btn-sm btn-danger" onclick="deleteDevice({{ device.id }})">
+                                        <!-- Icon fa-trash not found -->
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="8" style="text-align: center; color: var(--text-secondary);">
+                                暂无设备，点击上方按钮添加
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- 设备统计 -->
+    <div class="stats-panel">
+        <div class="stat-card">
+            <div class="stat-icon blue">
+                <svg class="svg-icon" viewBox="0 0 640 512" width="16" height="16"><path d="M480 160c0-26.5-21.5-48-48-48H64c-26.5 0-48 21.5-48 48v64h576v-64zm-208 80c-13.3 0-24-10.7-24-24s10.7-24 24-24 24 10.7 24 24-10.7 24-24 24zm128 0c-13.3 0-24-10.7-24-24s10.7-24 24-24 24 10.7 24 24-10.7 24-24 24zm192-64H16v160c0 26.5 21.5 48 48 48h352c26.5 0 48-21.5 48-48V256h128v-80zm-336 192c-13.3 0-24-10.7-24-24s10.7-24 24-24 24 10.7 24 24-10.7 24-24 24zm128 0c-13.3 0-24-10.7-24-24s10.7-24 24-24 24 10.7 24 24-10.7 24-24 24z"/></svg>
+            </div>
+            <div class="stat-info">
+                <div class="stat-value">{{ devices | length }}</div>
+                <div class="stat-label">设备总数</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon green">
+                <svg class="svg-icon" viewBox="0 0 512 512" fill="#28a745" width="16" height="16"><path d="M256 8C119 8 8 119 8 256s111 248 248 248 248-111 248-248S393 8 256 8zm-24 336l-112-112 17-17 95 95 207-207 17 17z"/></svg>
+            </div>
+            <div class="stat-info">
+                <div class="stat-value">{{ devices | selectattr('status', 'equalto', 'online') | list | length }}</div>
+                <div class="stat-label">在线设备</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon red">
+                <svg class="svg-icon" viewBox="0 0 352 512" width="16" height="16"><path d="M242.7 256l100.1-100.1c4.7-4.7 4.7-12.3 0-17l-22.6-22.6c-4.7-4.7-12.3-4.7-17 0L203.1 216.4 103 116.3c-4.7-4.7-12.3-4.7-17 0L63.4 138.9c-4.7 4.7-4.7 12.3 0 17L163.5 256 63.4 356.1c-4.7 4.7-4.7 12.3 0 17l22.6 22.6c4.7 4.7 12.3 4.7 17 0l100.1-100.1 100.1 100.1c4.7 4.7 12.3 4.7 17 0l22.6-22.6c4.7-4.7 4.7-12.3 0-17L242.7 256z"/></svg>
+            </div>
+            <div class="stat-info">
+                <div class="stat-value">{{ devices | selectattr('status', 'equalto', 'offline') | list | length }}</div>
+                <div class="stat-label">离线设备</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon purple">
+                <!-- Icon fa-cpu not found -->
+            </div>
+            <div class="stat-info">
+                <div class="stat-value">{{ avg_cpu|round(2) }}%</div>
+                <div class="stat-label">平均CPU</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 添加设备弹窗 -->
+<div id="addDeviceModal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="modal-title">添加设备</h3>
+            <button class="modal-close" onclick="closeModal()">×</button>
+        </div>
+        <div class="modal-body">
+            <form id="deviceForm">
+                <div class="form-group">
+                    <label>设备名称</label>
+                    <input type="text" id="deviceName" class="form-control" placeholder="输入设备名称" required>
+                </div>
+                <div class="form-group">
+                    <label>设备类型</label>
+                    <select id="deviceType" class="form-control">
+                        <option value="server">服务器</option>
+                        <option value="desktop">工作站</option>
+                        <option value="network">网络设备</option>
+                        <option value="storage">存储设备</option>
+                        <option value="other">其他</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>IP地址</label>
+                    <input type="text" id="deviceIp" class="form-control" placeholder="输入IP地址">
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal()">取消</button>
+            <button id="modal-confirm" class="btn btn-primary" onclick="submitDevice()">确认添加</button>
+        </div>
+    </div>
+</div>
+
+<script>
+let editingDeviceId = null;
+
+function showAddDeviceModal() {
+    editingDeviceId = null;
+    document.getElementById('modal-title').textContent = '添加设备';
+    document.getElementById('modal-confirm').textContent = '确认添加';
+    document.getElementById('deviceForm').reset();
+    document.getElementById('addDeviceModal').style.display = 'flex';
+}
+
+function editDevice(deviceId) {
+    editingDeviceId = deviceId;
+    document.getElementById('modal-title').textContent = '编辑设备';
+    document.getElementById('modal-confirm').textContent = '确认修改';
+    
+    fetch(`/api/hardware/devices/${deviceId}`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('deviceName').value = data.data.device_name;
+                document.getElementById('deviceType').value = data.data.device_type;
+                document.getElementById('deviceIp').value = data.data.ip_address;
+                document.getElementById('addDeviceModal').style.display = 'flex';
+            }
+        });
+}
+
+function closeModal() {
+    document.getElementById('addDeviceModal').style.display = 'none';
+    editingDeviceId = null;
+}
+
+function submitDevice() {
+    const data = {
+        device_name: document.getElementById('deviceName').value,
+        device_type: document.getElementById('deviceType').value,
+        ip_address: document.getElementById('deviceIp').value
+    };
+    
+    const url = editingDeviceId ? `/api/hardware/devices/${editingDeviceId}` : '/api/hardware/devices';
+    const method = editingDeviceId ? 'PUT' : 'POST';
+    
+    fetch(url, {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    })
+    .then(res => res.json())
+    .then(result => {
+        if (result.success) {
+            showToast(editingDeviceId ? '设备更新成功' : '设备添加成功');
+            closeModal();
+            location.reload();
+        } else {
+            showToast(result.message, 'error');
+        }
+    });
+}
+
+function deleteDevice(deviceId) {
+    if (confirm('确定要删除此设备吗？')) {
+        fetch(`/api/hardware/devices/${deviceId}`, { method: 'DELETE' })
+            .then(res => res.json())
+            .then(result => {
+                if (result.success) {
+                    showToast('设备删除成功');
+                    location.reload();
+                } else {
+                    showToast(result.message, 'error');
+                }
+            });
+    }
+}
+
+function showToast(message, type = 'success') {
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+</script>
+{% endblock %}

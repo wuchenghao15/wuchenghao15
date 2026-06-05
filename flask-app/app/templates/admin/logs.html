@@ -1,0 +1,748 @@
+{% extends "base.html" %}
+
+{% block title %}系统日志 - MTSCOS教育系统{% endblock %}
+
+{% block content %}
+<style>
+    .logs-container {
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+    
+    .logs-header {
+        text-align: center;
+        margin-bottom: 40px;
+        padding: 30px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 20px;
+        color: white;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .logs-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -20%;
+        width: 300px;
+        height: 300px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
+    }
+    
+    .logs-title {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 15px;
+        position: relative;
+        z-index: 1;
+    }
+    
+    .logs-description {
+        font-size: 1.1rem;
+        opacity: 0.9;
+        position: relative;
+        z-index: 1;
+    }
+    
+    .filter-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+        padding: 20px;
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+    
+    .search-box {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex: 1;
+        max-width: 400px;
+    }
+    
+    .search-input {
+        padding: 12px 18px;
+        border: 2px solid #e0e0e0;
+        border-radius: 50px;
+        font-size: 1rem;
+        width: 100%;
+        transition: all 0.3s ease;
+    }
+    
+    .search-input:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+    }
+    
+    .filter-section {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+    
+    .filter-select {
+        padding: 10px 15px;
+        border: 2px solid #e0e0e0;
+        border-radius: 10px;
+        font-size: 0.9rem;
+        background: white;
+        transition: all 0.3s ease;
+    }
+    
+    .filter-select:focus {
+        outline: none;
+        border-color: #667eea;
+    }
+    
+    .date-range {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+    
+    .date-input {
+        padding: 10px 15px;
+        border: 2px solid #e0e0e0;
+        border-radius: 10px;
+        font-size: 0.9rem;
+    }
+    
+    .action-btn {
+        padding: 12px 20px;
+        border: none;
+        border-radius: 50px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+        font-size: 14px;
+    }
+    
+    .primary-btn {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    .primary-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+    
+    .secondary-btn {
+        background: #f8f9fa;
+        color: #333;
+        border: 1px solid #e0e0e0;
+    }
+    
+    .secondary-btn:hover {
+        background: #e9ecef;
+    }
+    
+    .logs-content {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+    }
+    
+    .logs-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 15px;
+        padding: 20px;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    
+    .stat-item {
+        text-align: center;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 10px;
+    }
+    
+    .stat-value {
+        font-size: 1.8rem;
+        font-weight: 700;
+    }
+    
+    .stat-label {
+        font-size: 12px;
+        color: #666;
+        margin-top: 5px;
+    }
+    
+    .stat-item.info .stat-value { color: #3b82f6; }
+    .stat-item.warning .stat-value { color: #f59e0b; }
+    .stat-item.error .stat-value { color: #ef4444; }
+    .stat-item.success .stat-value { color: #10b981; }
+    
+    .logs-table-container {
+        max-height: 500px;
+        overflow-y: auto;
+    }
+    
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    th, td {
+        padding: 15px;
+        text-align: left;
+        border-bottom: 1px solid #f0f0f0;
+        font-size: 14px;
+    }
+    
+    th {
+        background: #f8f9fa;
+        font-weight: 600;
+        color: #495057;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+    
+    tr:hover {
+        background: #f8f9fa;
+    }
+    
+    .log-level {
+        padding: 4px 10px;
+        border-radius: 50px;
+        font-size: 11px;
+        font-weight: 600;
+        display: inline-block;
+    }
+    
+    .log-level.info { background: #dbeafe; color: #3b82f6; }
+    .log-level.warning { background: #fef3c7; color: #d97706; }
+    .log-level.error { background: #fee2e2; color: #dc2626; }
+    .log-level.debug { background: #f0f9ff; color: #0369a1; }
+    
+    .log-time {
+        font-family: 'Monaco', 'Consolas', monospace;
+        color: #666;
+    }
+    
+    .log-user {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .user-avatar-xs {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 10px;
+        font-weight: 600;
+    }
+    
+    .log-message {
+        max-width: 500px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    
+    .log-source {
+        font-family: 'Monaco', 'Consolas', monospace;
+        font-size: 12px;
+        color: #888;
+    }
+    
+    .pagination {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+        padding: 20px;
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        margin-top: 20px;
+    }
+    
+    .page-btn {
+        padding: 10px 15px;
+        border: 2px solid #e0e0e0;
+        border-radius: 10px;
+        background: white;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        color: #333;
+    }
+    
+    .page-btn:hover {
+        border-color: #667eea;
+        color: #667eea;
+    }
+    
+    .page-btn.active {
+        background: #667eea;
+        color: white;
+        border-color: #667eea;
+    }
+    
+    .page-info {
+        padding: 0 15px;
+        color: #666;
+    }
+    
+    /* 日志详情模态框 */
+    .modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+    }
+    
+    .modal-overlay.active {
+        display: flex;
+    }
+    
+    .modal {
+        background: white;
+        border-radius: 20px;
+        padding: 30px;
+        width: 90%;
+        max-width: 700px;
+        max-height: 80vh;
+        overflow-y: auto;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+    }
+    
+    .modal-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-bottom: 20px;
+        color: #333;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .modal-close {
+        margin-left: auto;
+        cursor: pointer;
+        color: #666;
+    }
+    
+    .detail-grid {
+        display: grid;
+        grid-template-columns: 1fr 2fr;
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .detail-item {
+        padding: 12px;
+        background: #f8f9fa;
+        border-radius: 8px;
+    }
+    
+    .detail-label {
+        font-size: 12px;
+        color: #666;
+        margin-bottom: 5px;
+    }
+    
+    .detail-value {
+        font-weight: 500;
+        font-family: 'Monaco', 'Consolas', monospace;
+        word-break: break-all;
+    }
+    
+    .log-full-message {
+        background: #1e293b;
+        color: #e2e8f0;
+        padding: 20px;
+        border-radius: 10px;
+        font-family: 'Monaco', 'Consolas', monospace;
+        font-size: 13px;
+        line-height: 1.6;
+        max-height: 300px;
+        overflow-y: auto;
+        white-space: pre-wrap;
+    }
+    
+    .modal-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: 20px;
+    }
+    
+    .cancel-btn {
+        padding: 10px 20px;
+        background: #f8f9fa;
+        color: #333;
+        border: 1px solid #e0e0e0;
+        border-radius: 10px;
+        cursor: pointer;
+    }
+    
+    .cancel-btn:hover {
+        background: #e9ecef;
+    }
+    
+    .copy-btn {
+        padding: 10px 20px;
+        background: #667eea;
+        color: white;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+    }
+    
+    .copy-btn:hover {
+        background: #5a6fd8;
+    }
+    
+    @media (max-width: 768px) {
+        .logs-container {
+            padding: 0 20px;
+        }
+        
+        .filter-bar {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        
+        .search-box {
+            max-width: 100%;
+        }
+        
+        .filter-section {
+            flex-wrap: wrap;
+        }
+        
+        .filter-select {
+            flex: 1;
+        }
+        
+        th, td {
+            padding: 10px 8px;
+            font-size: 12px;
+        }
+        
+        .log-message {
+            max-width: 200px;
+        }
+        
+        .detail-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .pagination {
+            flex-wrap: wrap;
+        }
+    }
+</style>
+
+<div class="logs-container">
+    <!-- 日志头部 -->
+    <div class="logs-header">
+        <h1 class="logs-title">
+            <!-- Icon fa-file-alt not found -->
+            系统日志
+        </h1>
+        <p class="logs-description">
+            查看和管理系统运行日志，追踪系统活动和排查问题。
+        </p>
+    </div>
+    
+    <!-- 统计卡片 -->
+    <div class="logs-content">
+        <div class="logs-stats">
+            <div class="stat-item info">
+                <div class="stat-value">1,234</div>
+                <div class="stat-label">今日日志</div>
+            </div>
+            <div class="stat-item success">
+                <div class="stat-value">892</div>
+                <div class="stat-label">Info</div>
+            </div>
+            <div class="stat-item warning">
+                <div class="stat-value">245</div>
+                <div class="stat-label">Warning</div>
+            </div>
+            <div class="stat-item error">
+                <div class="stat-value">97</div>
+                <div class="stat-label">Error</div>
+            </div>
+        </div>
+        
+        <!-- 日志表格 -->
+        <div class="logs-table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>时间</th>
+                        <th>级别</th>
+                        <th>用户</th>
+                        <th>来源</th>
+                        <th>消息</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="log-time">2026-06-04 14:23:45</td>
+                        <td><span class="log-level info">INFO</span></td>
+                        <td class="log-user">
+                            <div class="user-avatar-xs">W</div>
+                            <span>wuchenghao</span>
+                        </td>
+                        <td class="log-source">auth.login</td>
+                        <td class="log-message">用户登录成功</td>
+                        <td><button class="action-btn secondary-btn" style="padding: 5px 10px; font-size: 12px;" onclick="showLogDetail()">查看</button></td>
+                    </tr>
+                    <tr>
+                        <td class="log-time">2026-06-04 14:22:18</td>
+                        <td><span class="log-level warning">WARNING</span></td>
+                        <td class="log-user">
+                            <div class="user-avatar-xs">C</div>
+                            <span>caopw</span>
+                        </td>
+                        <td class="log-source">test.system</td>
+                        <td class="log-message">测试时间即将到期，已自动提交</td>
+                        <td><button class="action-btn secondary-btn" style="padding: 5px 10px; font-size: 12px;" onclick="showLogDetail()">查看</button></td>
+                    </tr>
+                    <tr>
+                        <td class="log-time">2026-06-04 14:20:33</td>
+                        <td><span class="log-level error">ERROR</span></td>
+                        <td class="log-user">
+                            <div class="user-avatar-xs">-</div>
+                            <span>匿名</span>
+                        </td>
+                        <td class="log-source">api.request</td>
+                        <td class="log-message">API请求认证失败: Token过期</td>
+                        <td><button class="action-btn secondary-btn" style="padding: 5px 10px; font-size: 12px;" onclick="showLogDetail()">查看</button></td>
+                    </tr>
+                    <tr>
+                        <td class="log-time">2026-06-04 14:18:55</td>
+                        <td><span class="log-level info">INFO</span></td>
+                        <td class="log-user">
+                            <div class="user-avatar-xs">W</div>
+                            <span>wuchenghao15</span>
+                        </td>
+                        <td class="log-source">system.backup</td>
+                        <td class="log-message">数据库自动备份完成</td>
+                        <td><button class="action-btn secondary-btn" style="padding: 5px 10px; font-size: 12px;" onclick="showLogDetail()">查看</button></td>
+                    </tr>
+                    <tr>
+                        <td class="log-time">2026-06-04 14:15:22</td>
+                        <td><span class="log-level debug">DEBUG</span></td>
+                        <td class="log-user">
+                            <div class="user-avatar-xs">C</div>
+                            <span>caopinwen</span>
+                        </td>
+                        <td class="log-source">designer.tool</td>
+                        <td class="log-message">设计工具初始化完成</td>
+                        <td><button class="action-btn secondary-btn" style="padding: 5px 10px; font-size: 12px;" onclick="showLogDetail()">查看</button></td>
+                    </tr>
+                    <tr>
+                        <td class="log-time">2026-06-04 14:12:45</td>
+                        <td><span class="log-level info">INFO</span></td>
+                        <td class="log-user">
+                            <div class="user-avatar-xs">W</div>
+                            <span>wuchnenghao16</span>
+                        </td>
+                        <td class="log-source">admin.users</td>
+                        <td class="log-message">用户列表查询成功，共5条记录</td>
+                        <td><button class="action-btn secondary-btn" style="padding: 5px 10px; font-size: 12px;" onclick="showLogDetail()">查看</button></td>
+                    </tr>
+                    <tr>
+                        <td class="log-time">2026-06-04 14:10:12</td>
+                        <td><span class="log-level warning">WARNING</span></td>
+                        <td class="log-user">
+                            <div class="user-avatar-xs">-</div>
+                            <span>系统</span>
+                        </td>
+                        <td class="log-source">system.cache</td>
+                        <td class="log-message">缓存使用率达到85%，建议清理</td>
+                        <td><button class="action-btn secondary-btn" style="padding: 5px 10px; font-size: 12px;" onclick="showLogDetail()">查看</button></td>
+                    </tr>
+                    <tr>
+                        <td class="log-time">2026-06-04 14:08:33</td>
+                        <td><span class="log-level info">INFO</span></td>
+                        <td class="log-user">
+                            <div class="user-avatar-xs">C</div>
+                            <span>caopw</span>
+                        </td>
+                        <td class="log-source">test.japanese</td>
+                        <td class="log-message">开始日语等级测试</td>
+                        <td><button class="action-btn secondary-btn" style="padding: 5px 10px; font-size: 12px;" onclick="showLogDetail()">查看</button></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- 操作栏 -->
+    <div class="filter-bar">
+        <div class="search-box">
+            <input type="text" class="search-input" placeholder="搜索日志内容...">
+            <button class="action-btn secondary-btn">
+                <svg class="svg-icon" viewBox="0 0 512 512" width="16" height="16"><path d="M505 442.7L405.3 343c-4.5-4.5-10.6-7-17-7H372c27.6-35.3 44-79.7 44-128C416 93.1 322.9 0 208 0S0 93.1 0 208s93.1 208 208 208c48.3 0 92.7-16.4 128-44v16.3c0 6.4 2.5 12.5 7 17l99.7 99.7c9.4 9.4 24.6 9.4 33.9 0l28.3-28.3c9.4-9.4 9.4-24.6.1-34zM208 336c-70.7 0-128-57.3-128-128s57.3-128 128-128 128 57.3 128 128-57.3 128-128 128z"/></svg>搜索
+            </button>
+        </div>
+        
+        <div class="filter-section">
+            <select class="filter-select">
+                <option value="all">全部级别</option>
+                <option value="info">Info</option>
+                <option value="warning">Warning</option>
+                <option value="error">Error</option>
+                <option value="debug">Debug</option>
+            </select>
+            <select class="filter-select">
+                <option value="all">全部来源</option>
+                <option value="auth">认证系统</option>
+                <option value="test">测试系统</option>
+                <option value="admin">管理后台</option>
+                <option value="system">系统服务</option>
+            </select>
+        </div>
+        
+        <div class="date-range">
+            <input type="date" class="date-input">
+            <span>至</span>
+            <input type="date" class="date-input">
+        </div>
+        
+        <div style="display: flex; gap: 10px;">
+            <button class="action-btn secondary-btn">
+                <!-- Icon fa-download not found -->导出
+            </button>
+            <button class="action-btn secondary-btn">
+                <!-- Icon fa-trash-alt not found -->清空
+            </button>
+        </div>
+    </div>
+    
+    <!-- 分页 -->
+    <div class="pagination">
+        <a href="#" class="page-btn">&laquo;</a>
+        <a href="#" class="page-btn active">1</a>
+        <a href="#" class="page-btn">2</a>
+        <a href="#" class="page-btn">3</a>
+        <a href="#" class="page-btn">4</a>
+        <a href="#" class="page-btn">5</a>
+        <span class="page-info">... 共 12 页</span>
+        <a href="#" class="page-btn">&raquo;</a>
+    </div>
+    
+    <!-- 日志详情模态框 -->
+    <div class="modal-overlay" id="log-detail-modal">
+        <div class="modal">
+            <h2 class="modal-title">
+                <!-- Icon fa-file-text not found -->
+                日志详情
+                <span class="modal-close" onclick="closeModal()">
+                    <svg class="svg-icon" viewBox="0 0 352 512" width="16" height="16"><path d="M242.7 256l100.1-100.1c4.7-4.7 4.7-12.3 0-17l-22.6-22.6c-4.7-4.7-12.3-4.7-17 0L203.1 216.4 103 116.3c-4.7-4.7-12.3-4.7-17 0L63.4 138.9c-4.7 4.7-4.7 12.3 0 17L163.5 256 63.4 356.1c-4.7 4.7-4.7 12.3 0 17l22.6 22.6c4.7 4.7 12.3 4.7 17 0l100.1-100.1 100.1 100.1c4.7 4.7 12.3 4.7 17 0l22.6-22.6c4.7-4.7 4.7-12.3 0-17L242.7 256z"/></svg>
+                </span>
+            </h2>
+            
+            <div class="detail-grid">
+                <div class="detail-item">
+                    <div class="detail-label">日志级别</div>
+                    <div class="detail-value"><span class="log-level info">INFO</span></div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">时间</div>
+                    <div class="detail-value">2026-06-04 14:23:45.123</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">用户</div>
+                    <div class="detail-value">wuchenghao (ID: 1)</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">来源</div>
+                    <div class="detail-value">auth.login</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">IP地址</div>
+                    <div class="detail-value">192.168.1.100</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">User-Agent</div>
+                    <div class="detail-value">Mozilla/5.0...</div>
+                </div>
+            </div>
+            
+            <div>
+                <div class="detail-label">完整消息</div>
+                <div class="log-full-message">用户登录成功
+用户ID: 1
+用户名: wuchenghao
+登录时间: 2026-06-04 14:23:45
+IP地址: 192.168.1.100
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36
+会话ID: session_abc123def456
+登录方式: 密码登录</div>
+            </div>
+            
+            <div class="modal-actions">
+                <button class="cancel-btn" onclick="closeModal()">关闭</button>
+                <button class="copy-btn" onclick="copyLog()">
+                    <!-- Icon fa-copy not found -->复制内容
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function showLogDetail() {
+        document.getElementById('log-detail-modal').classList.add('active');
+    }
+    
+    function closeModal() {
+        document.querySelectorAll('.modal-overlay').forEach(modal => {
+            modal.classList.remove('active');
+        });
+    }
+    
+    function copyLog() {
+        alert('日志内容已复制到剪贴板！');
+    }
+    
+    document.querySelectorAll('.modal-overlay').forEach(modal => {
+        modal.addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+    });
+</script>
+{% endblock %}

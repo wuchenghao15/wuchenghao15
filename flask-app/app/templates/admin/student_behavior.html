@@ -1,0 +1,697 @@
+{% extends "admin/base.html" %}
+
+{% block title %}学生行为管理{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h1 class="h3 mb-0 text-gray-800">学生行为管理</h1>
+            <p class="text-muted">管理学生行为记录、积分和目标</p>
+        </div>
+    </div>
+
+    <!-- 概览卡片 -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">总记录数</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalRecords">0</div>
+                        </div>
+                        <div class="col-auto">
+                            <!-- Icon fa-clipboard-list not found --><!-- Icon fa-2x not found -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">积极积分</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="positivePoints">0</div>
+                        </div>
+                        <div class="col-auto">
+                            <!-- Icon fa-thumbs-up not found --><!-- Icon fa-2x not found -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-danger shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">消极积分</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="negativePoints">0</div>
+                        </div>
+                        <div class="col-auto">
+                            <!-- Icon fa-thumbs-down not found --><!-- Icon fa-2x not found -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">学生总数</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalStudents">0</div>
+                        </div>
+                        <div class="col-auto">
+                            <svg class="svg-icon" viewBox="0 0 448 512" width="16" height="16"><path d="M224 256c70.7 0 128-57.3 128-128S294.7 0 224 0 96 57.3 96 128s57.3 128 128 128zm89.6 32h-17.2c-11.2 0-21.8 3.4-30.8 9.4-17.1 11.5-36.4 17.6-56.4 17.6s-39.3-6.1-56.4-17.6c-9-6-19.6-9.4-30.8-9.4H22.4C10.1 288 0 298.1 0 310.4V464c0 26.5 21.5 48 48 48h352c26.5 0 48-21.5 48-48V310.4c0-12.3-10.1-22.4-22.4-22.4z"/></svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 导航标签 -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <ul class="nav nav-tabs" id="behaviorTabs" role="tablist">
+                <li class="nav-item">
+                    <a class="nav-link active" id="records-tab" data-toggle="tab" href="#records" role="tab">行为记录</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="ranking-tab" data-toggle="tab" href="#ranking" role="tab">积分排名</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="categories-tab" data-toggle="tab" href="#categories" role="tab">分类管理</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="goals-tab" data-toggle="tab" href="#goals" role="tab">行为目标</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="tab-content" id="behaviorTabsContent">
+        <!-- 行为记录 -->
+        <div class="tab-pane fade show active" id="records" role="tabpanel">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">添加行为记录</h6>
+                    <button class="btn btn-primary btn-sm" onclick="showAddRecordModal()">
+                        <!-- Icon fa-plus not found --> 新增记录
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <select class="form-control" id="studentSelect">
+                                <option value="">选择学生...</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <button class="btn btn-info" onclick="loadStudentRecords()">查看记录</button>
+                        </div>
+                    </div>
+                    <div id="studentRecordsContainer"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 积分排名 -->
+        <div class="tab-pane fade" id="ranking" role="tabpanel">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">学生积分排名</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered" id="rankingTable" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th>排名</th>
+                                    <th>用户名</th>
+                                    <th>邮箱</th>
+                                    <th>总积分</th>
+                                    <th>记录数</th>
+                                </tr>
+                            </thead>
+                            <tbody id="rankingTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 分类管理 -->
+        <div class="tab-pane fade" id="categories" role="tabpanel">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">行为分类管理</h6>
+                    <button class="btn btn-primary btn-sm" onclick="showAddCategoryModal()">
+                        <!-- Icon fa-plus not found --> 新增分类
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered" id="categoriesTable" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th>名称</th>
+                                    <th>描述</th>
+                                    <th>默认积分</th>
+                                    <th>状态</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="categoriesTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 行为目标 -->
+        <div class="tab-pane fade" id="goals" role="tabpanel">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">行为目标管理</h6>
+                    <button class="btn btn-primary btn-sm" onclick="showAddGoalModal()">
+                        <!-- Icon fa-plus not found --> 新增目标
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <select class="form-control" id="goalStudentSelect">
+                                <option value="">选择学生...</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <button class="btn btn-info" onclick="loadStudentGoals()">查看目标</button>
+                        </div>
+                    </div>
+                    <div id="studentGoalsContainer"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 添加记录模态框 -->
+<div class="modal fade" id="addRecordModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">添加行为记录</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="addRecordForm">
+                    <div class="form-group">
+                        <label>学生</label>
+                        <select class="form-control" id="recordStudentId" required>
+                            <option value="">选择学生...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>行为分类</label>
+                        <select class="form-control" id="recordCategoryId" required>
+                            <option value="">选择分类...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>行为类型</label>
+                        <select class="form-control" id="recordBehaviorType" required>
+                            <option value="positive">积极</option>
+                            <option value="negative">消极</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>积分</label>
+                        <input type="number" class="form-control" id="recordPoints" required>
+                    </div>
+                    <div class="form-group">
+                        <label>描述</label>
+                        <textarea class="form-control" id="recordDescription" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>备注</label>
+                        <textarea class="form-control" id="recordNotes" rows="2"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="addRecord()">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 添加分类模态框 -->
+<div class="modal fade" id="addCategoryModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">添加行为分类</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="addCategoryForm">
+                    <div class="form-group">
+                        <label>名称</label>
+                        <input type="text" class="form-control" id="categoryName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>描述</label>
+                        <textarea class="form-control" id="categoryDescription" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>默认积分</label>
+                        <input type="number" class="form-control" id="categoryPointsDefault" value="5">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="addCategory()">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 添加目标模态框 -->
+<div class="modal fade" id="addGoalModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">添加行为目标</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="addGoalForm">
+                    <div class="form-group">
+                        <label>学生</label>
+                        <select class="form-control" id="goalStudentId" required>
+                            <option value="">选择学生...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>行为分类</label>
+                        <select class="form-control" id="goalCategoryId">
+                            <option value="">全部</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>目标积分</label>
+                        <input type="number" class="form-control" id="goalTargetPoints" required>
+                    </div>
+                    <div class="form-group">
+                        <label>开始日期</label>
+                        <input type="date" class="form-control" id="goalStartDate">
+                    </div>
+                    <div class="form-group">
+                        <label>结束日期</label>
+                        <input type="date" class="form-control" id="goalEndDate">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="addGoal()">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    initBehaviorSystem();
+});
+
+async function initBehaviorSystem() {
+    try {
+        await fetch('/api/student-behavior/init', { method: 'POST' });
+    } catch (e) {
+        console.log('System already initialized');
+    }
+    
+    loadOverview();
+    loadCategories();
+    loadStudents();
+    loadRanking();
+}
+
+async function loadOverview() {
+    try {
+        const response = await fetch('/api/student-behavior/statistics/overview');
+        const result = await response.json();
+        if (result.success) {
+            const data = result.data;
+            document.getElementById('totalRecords').textContent = data.total_records || 0;
+            document.getElementById('totalStudents').textContent = data.total_students || 0;
+            document.getElementById('positivePoints').textContent = data.positive?.total_points || 0;
+            document.getElementById('negativePoints').textContent = data.negative?.total_points || 0;
+        }
+    } catch (error) {
+        console.error('Error loading overview:', error);
+    }
+}
+
+async function loadCategories() {
+    try {
+        const response = await fetch('/api/student-behavior/categories');
+        const result = await response.json();
+        if (result.success) {
+            const categories = result.data;
+            
+            let html = '';
+            categories.forEach(cat => {
+                html += `
+                    <tr>
+                        <td>${cat.name}</td>
+                        <td>${cat.description || '-'}</td>
+                        <td>${cat.points_default}</td>
+                        <td>${cat.is_active ? '<span class="badge badge-success">启用</span>' : '<span class="badge badge-secondary">禁用</span>'}</td>
+                        <td>
+                            <button class="btn btn-sm btn-info" onclick="editCategory(${cat.id})">编辑</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            document.getElementById('categoriesTableBody').innerHTML = html;
+            
+            const selectHtml = categories.map(cat => `<option value="${cat.id}">${cat.name}</option>`).join('');
+            document.getElementById('recordCategoryId').innerHTML = '<option value="">选择分类...</option>' + selectHtml;
+            document.getElementById('goalCategoryId').innerHTML = '<option value="">全部</option>' + selectHtml;
+        }
+    } catch (error) {
+        console.error('Error loading categories:', error);
+    }
+}
+
+async function loadStudents() {
+    try {
+        const response = await fetch('/api/users');
+        const result = await response.json();
+        if (result.success) {
+            const students = result.data.filter(u => u.role === 'student' || u.role === 'user');
+            const selectHtml = students.map(s => `<option value="${s.id}">${s.username}</option>`).join('');
+            document.getElementById('studentSelect').innerHTML = '<option value="">选择学生...</option>' + selectHtml;
+            document.getElementById('recordStudentId').innerHTML = '<option value="">选择学生...</option>' + selectHtml;
+            document.getElementById('goalStudentId').innerHTML = '<option value="">选择学生...</option>' + selectHtml;
+            document.getElementById('goalStudentSelect').innerHTML = '<option value="">选择学生...</option>' + selectHtml;
+        }
+    } catch (error) {
+        console.error('Error loading students:', error);
+    }
+}
+
+async function loadRanking() {
+    try {
+        const response = await fetch('/api/student-behavior/ranking');
+        const result = await response.json();
+        if (result.success) {
+            let html = '';
+            result.data.forEach((student, index) => {
+                const rank = index + 1;
+                let badge = '';
+                if (rank === 1) badge = '<!-- Icon fa-trophy not found -->';
+                else if (rank === 2) badge = '<!-- Icon fa-trophy not found -->';
+                else if (rank === 3) badge = '<!-- Icon fa-trophy not found -->';
+                
+                html += `
+                    <tr>
+                        <td>${badge} ${rank}</td>
+                        <td>${student.username}</td>
+                        <td>${student.email || '-'}</td>
+                        <td>${student.total_points}</td>
+                        <td>${student.record_count}</td>
+                    </tr>
+                `;
+            });
+            document.getElementById('rankingTableBody').innerHTML = html;
+        }
+    } catch (error) {
+        console.error('Error loading ranking:', error);
+    }
+}
+
+async function loadStudentRecords() {
+    const studentId = document.getElementById('studentSelect').value;
+    if (!studentId) {
+        alert('请选择学生');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/student-behavior/records/student/${studentId}`);
+        const result = await response.json();
+        if (result.success) {
+            const data = result.data;
+            
+            let html = `
+                <div class="mb-3">
+                    <h5>总积分: <span class="text-primary">${data.total_points}</span></h5>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>日期</th>
+                                <th>分类</th>
+                                <th>类型</th>
+                                <th>积分</th>
+                                <th>描述</th>
+                                <th>记录人</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            data.records.forEach(record => {
+                const typeBadge = record.behavior_type === 'positive' 
+                    ? '<span class="badge badge-success">积极</span>' 
+                    : '<span class="badge badge-danger">消极</span>';
+                
+                html += `
+                    <tr>
+                        <td>${record.recorded_at}</td>
+                        <td>${record.category_name || '-'}</td>
+                        <td>${typeBadge}</td>
+                        <td>${record.points}</td>
+                        <td>${record.description || '-'}</td>
+                        <td>${record.recorder_name || '-'}</td>
+                        <td>
+                            <button class="btn btn-sm btn-danger" onclick="deleteRecord(${record.id})">删除</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table></div>';
+            document.getElementById('studentRecordsContainer').innerHTML = html;
+        }
+    } catch (error) {
+        console.error('Error loading student records:', error);
+    }
+}
+
+async function loadStudentGoals() {
+    const studentId = document.getElementById('goalStudentSelect').value;
+    if (!studentId) {
+        alert('请选择学生');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/student-behavior/goals/student/${studentId}`);
+        const result = await response.json();
+        if (result.success) {
+            let html = '<div class="table-responsive"><table class="table table-bordered">';
+            html += '<thead><tr><th>分类</th><th>目标积分</th><th>当前积分</th><th>进度</th><th>状态</th><th>日期</th><th>操作</th></tr></thead><tbody>';
+            
+            result.data.forEach(goal => {
+                const progress = goal.target_points > 0 ? Math.min(100, (goal.current_points / goal.target_points) * 100) : 0;
+                const statusBadge = goal.status === 'active' ? '<span class="badge badge-primary">进行中</span>' 
+                    : goal.status === 'completed' ? '<span class="badge badge-success">已完成</span>' 
+                    : '<span class="badge badge-danger">已过期</span>';
+                
+                html += `
+                    <tr>
+                        <td>${goal.category_name || '全部'}</td>
+                        <td>${goal.target_points}</td>
+                        <td>${goal.current_points}</td>
+                        <td>
+                            <div class="progress">
+                                <div class="progress-bar" role="progressbar" style="width: ${progress}%" 
+                                     aria-valuenow="${progress}" aria-valuemin="0" aria-valuemax="100">${progress.toFixed(0)}%</div>
+                            </div>
+                        </td>
+                        <td>${statusBadge}</td>
+                        <td>${goal.start_date || '-'} - ${goal.end_date || '-'}</td>
+                        <td>
+                            <button class="btn btn-sm btn-info" onclick="editGoal(${goal.id})">编辑</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table></div>';
+            document.getElementById('studentGoalsContainer').innerHTML = html;
+        }
+    } catch (error) {
+        console.error('Error loading student goals:', error);
+    }
+}
+
+function showAddRecordModal() {
+    $('#addRecordModal').modal('show');
+}
+
+async function addRecord() {
+    const studentId = document.getElementById('recordStudentId').value;
+    const categoryId = document.getElementById('recordCategoryId').value;
+    const behaviorType = document.getElementById('recordBehaviorType').value;
+    const points = parseInt(document.getElementById('recordPoints').value);
+    const description = document.getElementById('recordDescription').value;
+    const notes = document.getElementById('recordNotes').value;
+    
+    try {
+        const response = await fetch('/api/student-behavior/records', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                student_id: parseInt(studentId),
+                category_id: parseInt(categoryId),
+                behavior_type: behaviorType,
+                points: points,
+                description: description,
+                notes: notes
+            })
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+            alert('记录添加成功');
+            $('#addRecordModal').modal('hide');
+            loadOverview();
+            loadRanking();
+        } else {
+            alert('添加失败: ' + result.message);
+        }
+    } catch (error) {
+        console.error('Error adding record:', error);
+        alert('添加失败');
+    }
+}
+
+async function deleteRecord(recordId) {
+    if (!confirm('确定要删除这条记录吗？')) return;
+    
+    try {
+        const response = await fetch(`/api/student-behavior/records/${recordId}`, {
+            method: 'DELETE'
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+            alert('删除成功');
+            loadStudentRecords();
+            loadOverview();
+            loadRanking();
+        }
+    } catch (error) {
+        console.error('Error deleting record:', error);
+        alert('删除失败');
+    }
+}
+
+function showAddCategoryModal() {
+    $('#addCategoryModal').modal('show');
+}
+
+async function addCategory() {
+    const name = document.getElementById('categoryName').value;
+    const description = document.getElementById('categoryDescription').value;
+    const pointsDefault = parseInt(document.getElementById('categoryPointsDefault').value);
+    
+    try {
+        const response = await fetch('/api/student-behavior/categories', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name: name,
+                description: description,
+                points_default: pointsDefault,
+                is_active: 1
+            })
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+            alert('分类添加成功');
+            $('#addCategoryModal').modal('hide');
+            loadCategories();
+        } else {
+            alert('添加失败: ' + result.message);
+        }
+    } catch (error) {
+        console.error('Error adding category:', error);
+        alert('添加失败');
+    }
+}
+
+function showAddGoalModal() {
+    $('#addGoalModal').modal('show');
+}
+
+async function addGoal() {
+    const studentId = document.getElementById('goalStudentId').value;
+    const categoryId = document.getElementById('goalCategoryId').value;
+    const targetPoints = parseInt(document.getElementById('goalTargetPoints').value);
+    const startDate = document.getElementById('goalStartDate').value;
+    const endDate = document.getElementById('goalEndDate').value;
+    
+    try {
+        const response = await fetch('/api/student-behavior/goals', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                student_id: parseInt(studentId),
+                category_id: categoryId ? parseInt(categoryId) : null,
+                target_points: targetPoints,
+                start_date: startDate,
+                end_date: endDate,
+                status: 'active'
+            })
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+            alert('目标添加成功');
+            $('#addGoalModal').modal('hide');
+        } else {
+            alert('添加失败: ' + result.message);
+        }
+    } catch (error) {
+        console.error('Error adding goal:', error);
+        alert('添加失败');
+    }
+}
+</script>
+{% endblock %}

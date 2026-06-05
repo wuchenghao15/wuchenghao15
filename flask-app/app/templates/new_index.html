@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta name="theme-color" content="#3b82f6">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="MTSCOS AI 智能管理系统 - 基于AI脑库的智能项目管理平台">
+    <meta name="keywords" content="MTSCOS, AI脑库, 智能管理, 自动升级, 云端集成">
+    <title>MTSCOS AI 智能管理系统</title>
+    
+    <!-- 设计系统样式 -->
+    <link href="{{ url_for(\'static\', filename=\'css/mtscos-design-system.css\') }}" rel="stylesheet">
+    <!-- 主样式文件 -->
+    <link href="{{ url_for(\'static\', filename=\'css/style.css\') }}" rel="stylesheet">
+    <!-- 图标库 -->
+    <!-- FontAwesome CDN removed -->
+    
+    <style>
+        /* 自定义动画 */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        /* 渐变背景 */
+        .bg-gradient-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .bg-gradient-primary-secondary {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        
+        /* 卡片悬停效果 */
+        .ai-card-hover {
+            transition: all 0.3s ease;
+        }
+        
+        .ai-card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        
+        /* 滚动条美化 */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+    </style>
+
+<style>
+.svg-icon {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    vertical-align: -0.125em;
+    fill: currentColor;
+}
+</style>
+</head>
+<body class="bg-gray-50 text-gray-900 min-h-screen">
+    <!-- 顶部导航栏 -->
+    <header class="bg-white shadow-md fixed w-full top-0 z-50 transition-all duration-300">
+    <meta name="theme-color" content="#3b82f6">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <!-- Logo -->
+            <div class="flex items-center space-x-2">
+                <div class="w-10 h-10 bg-gradient-primary rounded-lg flex items-center justify-center">
+                    <svg class="svg-icon" viewBox="0 0 576 512" width="16" height="16"><path d="M528.1 171.2l-46.3-27.7c-1.3-4.2-3.5-8.1-6.4-11.5l33.8-39.8c7.6-8.9 6.6-22.1-2.4-30l-43.3-37.1c-9-7.7-22.7-6.8-30.6 2.1l-30.4 34.7c-11.5-6.1-24.5-9.7-38.2-9.7h-19.4c-2.6-11.8-9.9-22.1-20.1-29.3l-33.4-23.4c-13.1-9.2-30.9-6.1-40.1 7s-6.1 30.9 7 40.1l24.5 17.2c1.5 1 2.7 2.3 3.6 3.7h-20.2c-13.7 0-26.8 3.6-38.3 9.8l-30.3-34.8c-7.9-9.1-21.7-9.9-30.7-2l-43.3 37.1c-8.9 7.9-9.9 21.1-2.4 30l33.8 39.8c-2.9 3.4-5.1 7.3-6.4 11.5l-46.3 27.7C32.7 185.2 0 227.4 0 275.2V320c0 52.9 43 96 96 96h28.7c-2.6 15.9-4.7 32-4.7 48 0 39.8 18.6 75.1 47.5 97.9 10.5 8.2 26.4 6.4 34.6-4.1s6.4-26.4-4.1-34.6c-14.5-11.4-23.3-29.1-23.3-49.1 0-3.4.3-6.8.8-10.1h142.8c.5 3.3.8 6.7.8 10.1 0 20-8.8 37.7-23.3 49.1-10.5 8.2-12.3 24-4.1 34.6s24 12.3 34.6 4.1c28.9-22.9 47.5-58.1 47.5-97.9 0-16-2.1-32.1-4.7-48H480c53 0 96-43.1 96-96v-44.8c0-47.8-32.7-90-79.9-104zm-108.8 140.8h-160c-8.8 0-16-7.2-16-16s7.2-16 16-16h160c8.8 0 16 7.2 16 16s-7.2 16-16 16zm0-64h-160c-8.8 0-16-7.2-16-16s7.2-16 16-16h160c8.8 0 16 7.2 16 16s-7.2 16-16 16z"/></svg>
+                </div>
+                <h1 class="text-2xl font-bold text-gray-800">MTSCOS AI</h1>
+            </div>
+            
+            <!-- 导航链接 -->
+            <nav class="hidden md:flex items-center space-x-8">
+                <a href="#features" class="text-gray-600 hover:text-indigo-600 font-medium transition-colors">核心功能</a>
+                <a href="#ai-brain" class="text-gray-600 hover:text-indigo-600 font-medium transition-colors">AI脑库</a>
+                <a href="#cloud-features" class="text-gray-600 hover:text-indigo-600 font-medium transition-colors">云端功能</a>
+                <a href="#success-cases" class="text-gray-600 hover:text-indigo-600 font-medium transition-colors">成功案例</a>
+                <a href="#system-status" class="text-gray-600 hover:text-indigo-600 font-medium transition-colors">系统状态</a>
+            </nav>
+            
+            <!-- 登录按钮 -->
+            <div class="flex items-center space-x-4">
+                <button id="login-btn" class="bg-gradient-primary text-white px-5 py-2 rounded-lg font-medium hover:shadow-lg transition-all">
+                    <!-- Icon fa-sign-in-alt not found -->登录
+                </button>
+                <button id="theme-toggle" class="p-2 rounded-full hover:bg-gray-100 transition-colors">
+                    <!-- Icon fa-moon not found -->
+                </button>
+            </div>
+        </div>
+    </header>
+    
+    <!-- 主内容区域 -->
+    <main class="pt-20">
+        <!-- 英雄区域 -->
+        <section class="bg-gradient-primary text-white py-20">
+            <div class="container mx-auto px-4">
+                <div class="max-w-4xl mx-auto text-center">
+                    <h2 class="text-4xl md:text-5xl font-bold mb-6 animate-fadeIn">
+                        智能管理，<span class="text-yellow-300">未来已来</span>
+                    </h2>
+                    <p class="text-xl mb-10 opacity-90 animate-fadeIn" style="animation-delay: 0.2s;">
+                        基于AI脑库的智能项目管理系统，自动学习、持续升级，为您提供高效、智能的管理体验
+                    </p>
+                    <div class="flex flex-col sm:flex-row justify-center gap-4 animate-fadeIn" style="animation-delay: 0.4s;">
+                        <button id="get-started-btn" class="bg-white text-indigo-600 px-8 py-3 rounded-lg font-bold hover:shadow-xl transition-all transform hover:-translate-y-1">
+                            <!-- Icon fa-rocket not found -->立即开始
+                        </button>
+                        <button id="learn-more-btn" class="bg-transparent border-2 border-white text-white px-8 py-3 rounded-lg font-bold hover:bg-white hover:text-indigo-600 transition-all">
+                            <svg class="svg-icon" viewBox="0 0 512 512" fill="#17a2b8" width="16" height="16"><path d="M256 8C119 8 8 119 8 256s111 248 248 248 248-111 248-248S393 8 256 8zm0 112c-22.1 0-40 17.9-40 40s17.9 40 40 40 40-17.9 40-40-17.9-40-40-40zm64 256H192c-13.3 0-24-10.7-24-24v-16c0-13.3 10.7-24 24-24h24v-64h-24c-13.3 0-24-10.7-24-24v-16c0-13.3 10.7-24 24-24h64c13.3 0 24 10.7 24 24v104h24c13.3 0 24 10.7 24 24v16c0 13.3-10.7 24-24 24z"/></svg>了解更多
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- 系统状态卡片 -->
+        <section id="system-status" class="py-12 bg-white">
+            <div class="container mx-auto px-4">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- 服务状态 -->
+                    <div class="ai-card-hover bg-white shadow-lg rounded-xl p-6 border-l-4 border-green-500">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-800">服务状态</h3>
+                                <p class="text-sm text-gray-500 mt-1">实时监控系统服务运行情况</p>
+                            </div>
+                            <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                                <svg class="svg-icon" viewBox="0 0 640 512" width="16" height="16"><path d="M480 160c0-26.5-21.5-48-48-48H64c-26.5 0-48 21.5-48 48v64h576v-64zm-208 80c-13.3 0-24-10.7-24-24s10.7-24 24-24 24 10.7 24 24-10.7 24-24 24zm128 0c-13.3 0-24-10.7-24-24s10.7-24 24-24 24 10.7 24 24-10.7 24-24 24zm192-64H16v160c0 26.5 21.5 48 48 48h352c26.5 0 48-21.5 48-48V256h128v-80zm-336 192c-13.3 0-24-10.7-24-24s10.7-24 24-24 24 10.7 24 24-10.7 24-24 24zm128 0c-13.3 0-24-10.7-24-24s10.7-24 24-24 24 10.7 24 24-10.7 24-24 24z"/></svg>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <div class="flex items-center space-x-2">
+                                <span class="w-3 h-3 bg-green-500 rounded-full animate-pulse"></span>
+                                <span class="text-sm font-medium text-green-600">所有服务正常运行</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 系统版本 -->
+                    <div class="ai-card-hover bg-white shadow-lg rounded-xl p-6 border-l-4 border-blue-500">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-800">系统版本</h3>
+                                <p class="text-sm text-gray-500 mt-1">自动升级，持续优化</p>
+                            </div>
+                            <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                                <!-- Icon fa-code-branch not found -->
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <div class="text-lg font-bold text-blue-600">v2.5.0</div>
+                            <div class="text-xs text-gray-500 mt-1">基于AI脑库自动升级</div>
+                        </div>
+                    </div>
+                    
+                    <!-- AI脑库状态 -->
+                    <div class="ai-card-hover bg-white shadow-lg rounded-xl p-6 border-l-4 border-purple-500">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-800">AI脑库</h3>
+                                <p class="text-sm text-gray-500 mt-1">智能学习，持续进化</p>
+                            </div>
+                            <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                                <svg class="svg-icon" viewBox="0 0 576 512" width="16" height="16"><path d="M528.1 171.2l-46.3-27.7c-1.3-4.2-3.5-8.1-6.4-11.5l33.8-39.8c7.6-8.9 6.6-22.1-2.4-30l-43.3-37.1c-9-7.7-22.7-6.8-30.6 2.1l-30.4 34.7c-11.5-6.1-24.5-9.7-38.2-9.7h-19.4c-2.6-11.8-9.9-22.1-20.1-29.3l-33.4-23.4c-13.1-9.2-30.9-6.1-40.1 7s-6.1 30.9 7 40.1l24.5 17.2c1.5 1 2.7 2.3 3.6 3.7h-20.2c-13.7 0-26.8 3.6-38.3 9.8l-30.3-34.8c-7.9-9.1-21.7-9.9-30.7-2l-43.3 37.1c-8.9 7.9-9.9 21.1-2.4 30l33.8 39.8c-2.9 3.4-5.1 7.3-6.4 11.5l-46.3 27.7C32.7 185.2 0 227.4 0 275.2V320c0 52.9 43 96 96 96h28.7c-2.6 15.9-4.7 32-4.7 48 0 39.8 18.6 75.1 47.5 97.9 10.5 8.2 26.4 6.4 34.6-4.1s6.4-26.4-4.1-34.6c-14.5-11.4-23.3-29.1-23.3-49.1 0-3.4.3-6.8.8-10.1h142.8c.5 3.3.8 6.7.8 10.1 0 20-8.8 37.7-23.3 49.1-10.5 8.2-12.3 24-4.1 34.6s24 12.3 34.6 4.1c28.9-22.9 47.5-58.1 47.5-97.9 0-16-2.1-32.1-4.7-48H480c53 0 96-43.1 96-96v-44.8c0-47.8-32.7-90-79.9-104zm-108.8 140.8h-160c-8.8 0-16-7.2-16-16s7.2-16 16-16h160c8.8 0 16 7.2 16 16s-7.2 16-16 16zm0-64h-160c-8.8 0-16-7.2-16-16s7.2-16 16-16h160c8.8 0 16 7.2 16 16s-7.2 16-16 16z"/></svg>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <div class="text-lg font-bold text-purple-600">5 个核心功能</div>
+                            <div class="text-xs text-gray-500 mt-1">实时更新，智能推荐</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- 核心功能 -->
+        <section id="features" class="py-16 bg-gray-50">
+            <div class="container mx-auto px-4">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl font-bold text-gray-800 mb-4">核心功能</h2>
+                    <p class="text-gray-600 max-w-2xl mx-auto">基于AI脑库的智能管理系统，提供全方位的智能服务</p>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+                    <!-- 自动服务监控 -->
+                    <div class="ai-card-hover bg-white rounded-xl shadow-md p-6 text-center transition-all">
+                        <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <!-- Icon fa-monitor not found -->
+                        </div>
+                        <h3 class="text-lg font-semibold text-gray-800 mb-2">自动服务监控</h3>
+                        <p class="text-sm text-gray-600">实时监控系统服务状态，异常时自动重启，确保系统稳定运行</p>
+                    </div>
+                    
+                    <!-- AI技术推荐 -->
+                    <div class="ai-card-hover bg-white rounded-xl shadow-md p-6 text-center transition-all">
+                        <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <!-- Icon fa-lightbulb not found -->
+                        </div>
+                        <h3 class="text-lg font-semibold text-gray-800 mb-2">AI技术推荐</h3>
+                        <p class="text-sm text-gray-600">根据项目需求，智能推荐合适的AI技术方案，提升项目效率</p>
+                    </div>
+                    
+                    <!-- 成功案例适配 -->
+                    <div class="ai-card-hover bg-white rounded-xl shadow-md p-6 text-center transition-all">
+                        <div class="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <!-- Icon fa-thumbs-up not found -->
+                        </div>
+                        <h3 class="text-lg font-semibold text-gray-800 mb-2">成功案例适配</h3>
+                        <p class="text-sm text-gray-600">将AI成功案例适配到当前系统，借鉴最佳实践，快速提升系统能力</p>
+                    </div>
+                    
+                    <!-- 系统自动升级 -->
+                    <div class="ai-card-hover bg-white rounded-xl shadow-md p-6 text-center transition-all">
+                        <div class="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <!-- Icon fa-sync-alt not found -->
+                        </div>
+                        <h3 class="text-lg font-semibold text-gray-800 mb-2">系统自动升级</h3>
+                        <p class="text-sm text-gray-600">根据国际规则自动升级系统版本，确保系统始终处于最新状态</p>
+                    </div>
+                    
+                    <!-- 云端功能集成 -->
+                    <div class="ai-card-hover bg-white rounded-xl shadow-md p-6 text-center transition-all">
+                        <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <!-- Icon fa-cloud not found -->
+                        </div>
+                        <h3 class="text-lg font-semibold text-gray-800 mb-2">云端功能集成</h3>
+                        <p class="text-sm text-gray-600">集成云端存储、计算、备份和监控功能，实现系统的云端化管理</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- AI脑库 -->
+        <section id="ai-brain" class="py-16 bg-gradient-primary text-white">
+            <div class="container mx-auto px-4">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                    <div>
+                        <h2 class="text-3xl font-bold mb-6">AI脑库</h2>
+                        <p class="text-lg mb-8 opacity-90">
+                            AI脑库是系统的核心智能引擎，包含大量AI技术和成功案例，能够自动学习和持续进化，为系统提供智能支持。
+                        </p>
+                        <div class="space-y-4">
+                            <div class="flex items-start space-x-3">
+                                <div class="w-6 h-6 bg-white rounded-full flex items-center justify-center mt-1 flex-shrink-0">
+                                    <!-- Icon fa-check not found -->
+                                </div>
+                                <div>
+                                    <h3 class="font-semibold">AI技术知识库</h3>
+                                    <p class="text-sm opacity-80">包含深度学习、自然语言处理、计算机视觉等多种AI技术</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start space-x-3">
+                                <div class="w-6 h-6 bg-white rounded-full flex items-center justify-center mt-1 flex-shrink-0">
+                                    <!-- Icon fa-check not found -->
+                                </div>
+                                <div>
+                                    <h3 class="font-semibold">成功案例库</h3>
+                                    <p class="text-sm opacity-80">收集行业成功案例，提供最佳实践参考</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start space-x-3">
+                                <div class="w-6 h-6 bg-white rounded-full flex items-center justify-center mt-1 flex-shrink-0">
+                                    <!-- Icon fa-check not found -->
+                                </div>
+                                <div>
+                                    <h3 class="font-semibold">智能推荐系统</h3>
+                                    <p class="text-sm opacity-80">基于项目需求，智能推荐合适的AI技术和解决方案</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start space-x-3">
+                                <div class="w-6 h-6 bg-white rounded-full flex items-center justify-center mt-1 flex-shrink-0">
+                                    <!-- Icon fa-check not found -->
+                                </div>
+                                <div>
+                                    <h3 class="font-semibold">自动学习机制</h3>
+                                    <p class="text-sm opacity-80">持续学习新的AI技术和案例，不断提升系统智能水平</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="relative">
+                        <div class="bg-white rounded-2xl shadow-2xl p-8 transform rotate-3">
+                            <div class="flex items-center space-x-2 mb-6">
+                                <div class="w-3 h-3 bg-red-500 rounded-full"></div>
+                                <div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                                <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+                                <div class="ml-2 text-xs text-gray-500">AI脑库控制台</div>
+                            </div>
+                            <div class="space-y-4">
+                                <div class="h-4 bg-gray-200 rounded-full w-3/4"></div>
+                                <div class="h-4 bg-gray-200 rounded-full w-1/2"></div>
+                                <div class="h-4 bg-gray-200 rounded-full w-5/6"></div>
+                                <div class="h-4 bg-gray-200 rounded-full w-2/3"></div>
+                                <div class="h-4 bg-gray-200 rounded-full w-4/5"></div>
+                            </div>
+                        </div>
+                        <div class="absolute -bottom-6 -left-6 bg-white rounded-2xl shadow-2xl p-6 transform -rotate-3">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                                    <svg class="svg-icon" viewBox="0 0 576 512" width="16" height="16"><path d="M528.1 171.2l-46.3-27.7c-1.3-4.2-3.5-8.1-6.4-11.5l33.8-39.8c7.6-8.9 6.6-22.1-2.4-30l-43.3-37.1c-9-7.7-22.7-6.8-30.6 2.1l-30.4 34.7c-11.5-6.1-24.5-9.7-38.2-9.7h-19.4c-2.6-11.8-9.9-22.1-20.1-29.3l-33.4-23.4c-13.1-9.2-30.9-6.1-40.1 7s-6.1 30.9 7 40.1l24.5 17.2c1.5 1 2.7 2.3 3.6 3.7h-20.2c-13.7 0-26.8 3.6-38.3 9.8l-30.3-34.8c-7.9-9.1-21.7-9.9-30.7-2l-43.3 37.1c-8.9 7.9-9.9 21.1-2.4 30l33.8 39.8c-2.9 3.4-5.1 7.3-6.4 11.5l-46.3 27.7C32.7 185.2 0 227.4 0 275.2V320c0 52.9 43 96 96 96h28.7c-2.6 15.9-4.7 32-4.7 48 0 39.8 18.6 75.1 47.5 97.9 10.5 8.2 26.4 6.4 34.6-4.1s6.4-26.4-4.1-34.6c-14.5-11.4-23.3-29.1-23.3-49.1 0-3.4.3-6.8.8-10.1h142.8c.5 3.3.8 6.7.8 10.1 0 20-8.8 37.7-23.3 49.1-10.5 8.2-12.3 24-4.1 34.6s24 12.3 34.6 4.1c28.9-22.9 47.5-58.1 47.5-97.9 0-16-2.1-32.1-4.7-48H480c53 0 96-43.1 96-96v-44.8c0-47.8-32.7-90-79.9-104zm-108.8 140.8h-160c-8.8 0-16-7.2-16-16s7.2-16 16-16h160c8.8 0 16 7.2 16 16s-7.2 16-16 16zm0-64h-160c-8.8 0-16-7.2-16-16s7.2-16 16-16h160c8.8 0 16 7.2 16 16s-7.2 16-16 16z"/></svg>
+                                </div>
+                                <div>
+                                    <div class="text-sm font-semibold text-gray-800">AI脑库状态</div>
+                                    <div class="text-xs text-green-600">正常运行</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- 云端功能 -->
+        <section id="cloud-features" class="py-16 bg-white">
+            <div class="container mx-auto px-4">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl font-bold text-gray-800 mb-4">云端功能</h2>
+                    <p class="text-gray-600 max-w-2xl mx-auto">集成云端存储、计算、备份和监控功能，实现系统的云端化管理</p>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <!-- 云端存储 -->
+                    <div class="ai-card-hover bg-white rounded-xl shadow-md p-6 flex items-start space-x-4">
+                        <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                            <!-- Icon fa-database not found -->
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-800 mb-2">云端存储</h3>
+                            <p class="text-gray-600 mb-4">提供安全可靠的云端存储服务，实现数据的备份和共享，确保数据的安全性和可用性。</p>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-xs bg-blue-100 text-blue-600 px-3 py-1 rounded-full">安全可靠</span>
+                                <span class="text-xs bg-blue-100 text-blue-600 px-3 py-1 rounded-full">大容量</span>
+                                <span class="text-xs bg-blue-100 text-blue-600 px-3 py-1 rounded-full">高可用性</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 云端计算 -->
+                    <div class="ai-card-hover bg-white rounded-xl shadow-md p-6 flex items-start space-x-4">
+                        <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                            <svg class="svg-icon" viewBox="0 0 512 512" width="16" height="16"><path d="M416 48v416c0 17.69-14.33 32-32 32H128c-17.67 0-32-14.31-32-32V48c0-17.69 14.33-32 32-32h256c17.67 0 32 14.31 32 32zm-32 32H128v416h256V80zm64 64h32c17.67 0 32 14.33 32 32v16c0 17.67-14.33 32-32 32h-32v32h32c17.67 0 32 14.33 32 32v16c0 17.67-14.33 32-32 32h-32v32h32c17.67 0 32 14.33 32 32v16c0 17.67-14.33 32-32 32h-32v32h32c17.67 0 32 14.33 32 32v16c0 17.67-14.33 32-32 32h-32v32h32c17.67 0 32 14.33 32 32v16c0 17.67-14.33 32-32 32h-32V480h32c17.67 0 32 14.33 32 32v16c0 17.67-14.33 32-32 32h-32v32h32c17.67 0 32 14.33 32 32v16c0 17.67-14.33 32-32 32h-32v32h32c17.67 0 32 14.33 32 32v16c0 17.67-14.33 32-32 32h-32v32h32c17.67 0 32 14.33 32 32v16c0 17.67-14.33 32-32 32h-32V80zm-416 0v32h-32c-17.67 0-32-14.33-32-32V80c0-17.67 14.33-32 32-32h32v32h-32c-17.67 0-32 14.33-32 32v16c0 17.67 14.33 32 32 32h32v32h-32c-17.67 0-32 14.33-32 32v16c0 17.67 14.33 32 32 32h32v32h-32c-17.67 0-32 14.33-32 32v16c0 17.67 14.33 32 32 32h32v32h-32c-17.67 0-32 14.33-32 32v16c0 17.67 14.33 32 32 32h32v32h-32c-17.67 0-32 14.33-32 32v16c0 17.67 14.33 32 32 32h32v32h-32c-17.67 0-32 14.33-32 32v16c0 17.67 14.33 32 32 32h32V80z"/></svg>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-800 mb-2">云端计算</h3>
+                            <p class="text-gray-600 mb-4">利用云端强大的计算能力，实现大规模数据处理和AI模型训练，提高系统的计算效率。</p>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-xs bg-green-100 text-green-600 px-3 py-1 rounded-full">高性能</span>
+                                <span class="text-xs bg-green-100 text-green-600 px-3 py-1 rounded-full">弹性扩展</span>
+                                <span class="text-xs bg-green-100 text-green-600 px-3 py-1 rounded-full">成本优化</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 云端备份 -->
+                    <div class="ai-card-hover bg-white rounded-xl shadow-md p-6 flex items-start space-x-4">
+                        <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
+                            <!-- Icon fa-save not found -->
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-800 mb-2">云端备份</h3>
+                            <p class="text-gray-600 mb-4">自动将系统数据备份到云端，确保数据的安全性和可恢复性，避免数据丢失。</p>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-xs bg-purple-100 text-purple-600 px-3 py-1 rounded-full">自动备份</span>
+                                <span class="text-xs bg-purple-100 text-purple-600 px-3 py-1 rounded-full">增量备份</span>
+                                <span class="text-xs bg-purple-100 text-purple-600 px-3 py-1 rounded-full">快速恢复</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 云端监控 -->
+                    <div class="ai-card-hover bg-white rounded-xl shadow-md p-6 flex items-start space-x-4">
+                        <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+                            <svg class="svg-icon" viewBox="0 0 640 512" width="16" height="16"><path d="M608 400c0 17.67-14.33 32-32 32H32c-17.67 0-32-14.33-32-32V80c0-17.67 14.33-32 32-32s32 14.33 32 32v288h512v32zm0-352H64c-17.67 0-32 14.33-32 32v320c0 17.67 14.33 32 32 32h544c17.67 0 32-14.33 32-32V80c0-17.67-14.33-32-32-32zM128 384c-8.84 0-16-7.16-16-16s7.16-16 16-16 16 7.16 16 16-7.16 16-16 16zm128 0c-8.84 0-16-7.16-16-16s7.16-16 16-16 16 7.16 16 16-7.16 16-16 16zm128 0c-8.84 0-16-7.16-16-16s7.16-16 16-16 16 7.16 16 16-7.16 16-16 16zm128 0c-8.84 0-16-7.16-16-16s7.16-16 16-16 16 7.16 16 16-7.16 16-16 16zM128 288c-8.84 0-16-7.16-16-16s7.16-16 16-16 16 7.16 16 16-7.16 16-16 16zm128 0c-8.84 0-16-7.16-16-16s7.16-16 16-16 16 7.16 16 16-7.16 16-16 16zm128 0c-8.84 0-16-7.16-16-16s7.16-16 16-16 16 7.16 16 16-7.16 16-16 16zm128 0c-8.84 0-16-7.16-16-16s7.16-16 16-16 16 7.16 16 16-7.16 16-16 16zM128 192c-8.84 0-16-7.16-16-16s7.16-16 16-16 16 7.16 16 16-7.16 16-16 16zm128 0c-8.84 0-16-7.16-16-16s7.16-16 16-16 16 7.16 16 16-7.16 16-16 16zm128 0c-8.84 0-16-7.16-16-16s7.16-16 16-16 16 7.16 16 16-7.16 16-16 16zm128 0c-8.84 0-16-7.16-16-16s7.16-16 16-16 16 7.16 16 16-7.16 16-16 16z"/></svg>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-800 mb-2">云端监控</h3>
+                            <p class="text-gray-600 mb-4">实时监控系统的运行状态和性能指标，及时发现和解决问题，确保系统的稳定运行。</p>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-xs bg-red-100 text-red-600 px-3 py-1 rounded-full">实时监控</span>
+                                <span class="text-xs bg-red-100 text-red-600 px-3 py-1 rounded-full">智能告警</span>
+                                <span class="text-xs bg-red-100 text-red-600 px-3 py-1 rounded-full">性能分析</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- 成功案例 -->
+        <section id="success-cases" class="py-16 bg-gray-50">
+            <div class="container mx-auto px-4">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl font-bold text-gray-800 mb-4">成功案例</h2>
+                    <p class="text-gray-600 max-w-2xl mx-auto">AI脑库收集了多个行业的成功案例，为系统提供最佳实践参考</p>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <!-- 智能客服系统 -->
+                    <div class="ai-card-hover bg-white rounded-xl shadow-md overflow-hidden">
+                        <div class="bg-gradient-primary-secondary h-48 flex items-center justify-center">
+                            <!-- Icon fa-headset not found -->
+                        </div>
+                        <div class="p-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-xl font-bold text-gray-800">智能客服系统</h3>
+                                <span class="text-sm bg-blue-100 text-blue-600 px-3 py-1 rounded-full">金融行业</span>
+                            </div>
+                            <p class="text-gray-600 mb-6">
+                                基于自然语言处理的智能客服系统，自动回答用户问题，降低客服成本60%，提高用户满意度85%。
+                            </p>
+                            <button class="text-indigo-600 font-medium hover:underline flex items-center">
+                                查看详情 <!-- Icon fa-arrow-right not found -->
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- 预测性维护 -->
+                    <div class="ai-card-hover bg-white rounded-xl shadow-md overflow-hidden">
+                        <div class="bg-blue-500 h-48 flex items-center justify-center">
+                            <!-- Icon fa-industry not found -->
+                        </div>
+                        <div class="p-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-xl font-bold text-gray-800">预测性维护</h3>
+                                <span class="text-sm bg-green-100 text-green-600 px-3 py-1 rounded-full">制造业</span>
+                            </div>
+                            <p class="text-gray-600 mb-6">
+                                基于机器学习的设备故障预测系统，使用时序数据和深度学习模型，实时监控设备状态，减少设备 downtime 40%。
+                            </p>
+                            <button class="text-indigo-600 font-medium hover:underline flex items-center">
+                                查看详情 <!-- Icon fa-arrow-right not found -->
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- 登录区域 -->
+        <section class="py-16 bg-white">
+            <div class="container mx-auto px-4">
+                <div class="max-w-md mx-auto bg-white rounded-xl shadow-lg p-8">
+                    <div class="text-center mb-6">
+                        <h2 class="text-2xl font-bold text-gray-800 mb-2">登录系统</h2>
+                        <p class="text-gray-600">使用您的账号登录MTSCOS AI智能管理系统</p>
+                    </div>
+                    
+                    <form id="login-form">
+                        <div class="mb-4">
+                            <label for="username" class="block text-sm font-medium text-gray-700 mb-1">用户名</label>
+                            <input type="text" id="username" name="username" required placeholder="请输入用户名" 
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors">
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="password" class="block text-sm font-medium text-gray-700 mb-1">密码</label>
+                            <input type="password" id="password" name="password" required placeholder="请输入密码" 
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors">
+                        </div>
+                        
+                        <div class="mb-6 flex items-center justify-between">
+                            <label class="flex items-center space-x-2">
+                                <input type="checkbox" id="remember" name="remember" class="rounded text-indigo-600 focus:ring-indigo-500">
+                                <span class="text-sm text-gray-600">记住我</span>
+                            </label>
+                            <a href="#" class="text-sm text-indigo-600 hover:underline">忘记密码？</a>
+                        </div>
+                        
+                        <button type="submit" class="w-full bg-gradient-primary text-white px-4 py-3 rounded-lg font-medium hover:shadow-lg transition-all">
+                            登录
+                        </button>
+                    </form>
+                    
+                    <div class="mt-6 pt-6 border-t border-gray-200">
+                        <p class="text-center text-sm text-gray-600 mb-4">或使用第三方登录</p>
+                        <div class="grid grid-cols-3 gap-3">
+                            <button class="flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                                <!-- Icon fa-qq not found -->
+                            </button>
+                            <button class="flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                                <!-- Icon fa-weixin not found -->
+                            </button>
+                            <button class="flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                                <!-- Icon fa-github not found -->
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- 页脚 -->
+        <footer class="bg-gray-800 text-white py-12">
+            <div class="container mx-auto px-4">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                    <!-- 关于我们 -->
+                    <div>
+                        <div class="flex items-center space-x-2 mb-4">
+                            <div class="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
+                                <svg class="svg-icon" viewBox="0 0 576 512" width="16" height="16"><path d="M528.1 171.2l-46.3-27.7c-1.3-4.2-3.5-8.1-6.4-11.5l33.8-39.8c7.6-8.9 6.6-22.1-2.4-30l-43.3-37.1c-9-7.7-22.7-6.8-30.6 2.1l-30.4 34.7c-11.5-6.1-24.5-9.7-38.2-9.7h-19.4c-2.6-11.8-9.9-22.1-20.1-29.3l-33.4-23.4c-13.1-9.2-30.9-6.1-40.1 7s-6.1 30.9 7 40.1l24.5 17.2c1.5 1 2.7 2.3 3.6 3.7h-20.2c-13.7 0-26.8 3.6-38.3 9.8l-30.3-34.8c-7.9-9.1-21.7-9.9-30.7-2l-43.3 37.1c-8.9 7.9-9.9 21.1-2.4 30l33.8 39.8c-2.9 3.4-5.1 7.3-6.4 11.5l-46.3 27.7C32.7 185.2 0 227.4 0 275.2V320c0 52.9 43 96 96 96h28.7c-2.6 15.9-4.7 32-4.7 48 0 39.8 18.6 75.1 47.5 97.9 10.5 8.2 26.4 6.4 34.6-4.1s6.4-26.4-4.1-34.6c-14.5-11.4-23.3-29.1-23.3-49.1 0-3.4.3-6.8.8-10.1h142.8c.5 3.3.8 6.7.8 10.1 0 20-8.8 37.7-23.3 49.1-10.5 8.2-12.3 24-4.1 34.6s24 12.3 34.6 4.1c28.9-22.9 47.5-58.1 47.5-97.9 0-16-2.1-32.1-4.7-48H480c53 0 96-43.1 96-96v-44.8c0-47.8-32.7-90-79.9-104zm-108.8 140.8h-160c-8.8 0-16-7.2-16-16s7.2-16 16-16h160c8.8 0 16 7.2 16 16s-7.2 16-16 16zm0-64h-160c-8.8 0-16-7.2-16-16s7.2-16 16-16h160c8.8 0 16 7.2 16 16s-7.2 16-16 16z"/></svg>
+                            </div>
+                            <h3 class="text-lg font-bold">MTSCOS AI</h3>
+                        </div>
+                        <p class="text-gray-400 text-sm">
+                            基于AI脑库的智能管理系统，提供高效、智能的项目管理体验。
+                        </p>
+                    </div>
+                    
+                    <!-- 快速链接 -->
+                    <div>
+                        <h3 class="text-lg font-bold mb-4">快速链接</h3>
+                        <ul class="space-y-2">
+                            <li><a href="#features" class="text-gray-400 hover:text-white text-sm transition-colors">核心功能</a></li>
+                            <li><a href="#ai-brain" class="text-gray-400 hover:text-white text-sm transition-colors">AI脑库</a></li>
+                            <li><a href="#cloud-features" class="text-gray-400 hover:text-white text-sm transition-colors">云端功能</a></li>
+                            <li><a href="#success-cases" class="text-gray-400 hover:text-white text-sm transition-colors">成功案例</a></li>
+                        </ul>
+                    </div>
+                    
+                    <!-- 联系我们 -->
+                    <div>
+                        <h3 class="text-lg font-bold mb-4">联系我们</h3>
+                        <ul class="space-y-2">
+                            <li class="flex items-center space-x-2 text-sm text-gray-400">
+                                <!-- Icon fa-envelope not found -->
+                                <span>admin@mtscos.com</span>
+                            </li>
+                            <li class="flex items-center space-x-2 text-sm text-gray-400">
+                                <!-- Icon fa-phone not found -->
+                                <span>+86 123 4567 8910</span>
+                            </li>
+                            <li class="flex items-center space-x-2 text-sm text-gray-400">
+                                <!-- Icon fa-map-marker-alt not found -->
+                                <span>上海市浦东新区科技园区</span>
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    <!-- 关注我们 -->
+                    <div>
+                        <h3 class="text-lg font-bold mb-4">关注我们</h3>
+                        <div class="flex space-x-4">
+                            <a href="#" class="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center hover:bg-indigo-600 transition-colors">
+                                <!-- Icon fa-weixin not found -->
+                            </a>
+                            <a href="#" class="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center hover:bg-indigo-600 transition-colors">
+                                <!-- Icon fa-weibo not found -->
+                            </a>
+                            <a href="#" class="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center hover:bg-indigo-600 transition-colors">
+                                <!-- Icon fa-github not found -->
+                            </a>
+                            <a href="#" class="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center hover:bg-indigo-600 transition-colors">
+                                <!-- Icon fa-linkedin not found -->
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-12 pt-8 border-t border-gray-700 text-center text-gray-400 text-sm">
+                    <p>&copy; 2026 MTSCOS AI Project. All rights reserved. | <a href="#" class="hover:text-white transition-colors">隐私政策</a> | <a href="#" class="hover:text-white transition-colors">服务条款</a></p>
+                </div>
+            </div>
+        </footer>
+    </main>
+    
+    <!-- JavaScript -->
+    <script>
+        // 页面加载动画
+        document.addEventListener('DOMContentLoaded', function() {
+            const elements = document.querySelectorAll('.ai-card-hover');
+            elements.forEach((el, index) => {
+                el.style.animation = `fadeIn 0.6s ease-out ${index * 0.1}s forwards`;
+            });
+            
+            // 顶部导航栏滚动效果
+            window.addEventListener('scroll', function() {
+                const header = document.querySelector('header');
+                if (window.scrollY > 50) {
+                    header.classList.add('py-2', 'shadow-lg');
+                    header.classList.remove('py-3', 'shadow-md');
+                } else {
+                    header.classList.add('py-3', 'shadow-md');
+                    header.classList.remove('py-2', 'shadow-lg');
+                }
+            });
+            
+            // 平滑滚动
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const target = document.querySelector(this.getAttribute('href'));
+                    if (target) {
+                        target.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    }
+                });
+            });
+            
+            // 登录按钮点击事件
+            document.getElementById('login-btn').addEventListener('click', function() {
+                document.getElementById('login-form').scrollIntoView({ behavior: 'smooth' });
+            });
+            
+            // 主题切换
+            const themeToggle = document.getElementById('theme-toggle');
+            themeToggle.addEventListener('click', function() {
+                document.body.classList.toggle('dark');
+                const icon = this.querySelector('i');
+                if (document.body.classList.contains('dark')) {
+                    icon.classList.remove('fa-moon');
+                    icon.classList.add('fa-sun');
+                } else {
+                    icon.classList.remove('fa-sun');
+                    icon.classList.add('fa-moon');
+                }
+            });
+        });
+    </script>
+
+    {% block footer %}{% endblock %}
+
+</html>

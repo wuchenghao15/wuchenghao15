@@ -31,8 +31,8 @@ from flask_cors import CORS
 
 # 创建Flask应用
 app = Flask(__name__)
-app.template_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
-app.static_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
+app.template_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'app', 'templates')
+app.static_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'app', 'static')
 app.config['JSON_AS_ASCII'] = False
 app.secret_key = 'mtscos_ai_secret_key_2026'  # 设置session密钥
 
@@ -44,7 +44,7 @@ def add_security_headers(response):
     response.headers['X-Content-Type-Options'] = 'nosniff'
     response.headers['X-Frame-Options'] = 'SAMEORIGIN'
     response.headers['X-XSS-Protection'] = '1; mode=block'
-    response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';"
+    response.headers['Content-Security-Policy'] = "default-src 'self' http://localhost:8888 http://127.0.0.1:8888; script-src 'self' 'unsafe-inline' 'unsafe-eval' http://localhost:8888 http://127.0.0.1:8888; style-src 'self' 'unsafe-inline' http://localhost:8888 http://127.0.0.1:8888; img-src 'self' data:; font-src 'self'; connect-src 'self' http://localhost:8888 http://127.0.0.1:8888;"
     response.headers['Access-Control-Allow-Origin'] = '*'
     response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
     response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
@@ -94,6 +94,22 @@ app.register_blueprint(approval_api)
 from app.blueprints.notification_api import notification_api
 app.register_blueprint(notification_api)
 
+# 导入并注册学生行为管理API路由蓝图
+from app.routes.student_behavior_api import student_behavior_bp
+app.register_blueprint(student_behavior_bp)
+
+# 导入并注册锦标赛API路由蓝图
+from app.routes.tournament_api import tournament_bp
+app.register_blueprint(tournament_bp)
+
+# 导入并注册版本管理API路由蓝图
+from app.api.version_api import version_api
+app.register_blueprint(version_api)
+
+# 导入并注册高危敏感设置路由蓝图
+from app.routes.sensitive_settings_routes import sensitive_settings_bp
+app.register_blueprint(sensitive_settings_bp)
+
 DATABASE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'app.db')
 
 # 初始化权限管理器和会话管理器
@@ -122,6 +138,9 @@ init_monitor_manager(DATABASE_PATH, check_interval=10)
 
 # 初始化备份管理器(实时双备份,5分钟自动备份)
 init_backup_manager(DATABASE_PATH, auto_backup_interval=300)
+
+# 导入装饰器
+from app.middlewares.access_control import require_login, require_admin, require_super_admin, require_hardware_admin
 
 # 应用访问控制中间件
 app = access_control_middleware(app)
@@ -288,6 +307,11 @@ def get_server_time():
         'date': date_str,
         'weekday': weekday_str
     })
+
+# Vite客户端请求处理(开发环境)
+@app.route('/@vite/client')
+def vite_client():
+    return '', 204
 
 # 主页路由
 @app.route('/')
@@ -1094,6 +1118,24 @@ def notification_center():
 @app.route('/notification_admin')
 def notification_admin():
     return render_template('notification_admin.html')
+
+# 学生行为管理页面
+@app.route('/admin/student_behavior')
+@require_admin
+def student_behavior_management():
+    return render_template('admin/student_behavior.html')
+
+# 锦标赛管理页面
+@app.route('/admin/tournament')
+@require_admin
+def tournament_management():
+    return render_template('admin/tournament.html')
+
+# 学生端锦标赛页面
+@app.route('/student/tournament')
+@require_login
+def student_tournament():
+    return render_template('student/tournament.html')
 
 # 用户信息栏页面
 @app.route('/user_info')

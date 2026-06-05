@@ -29,7 +29,9 @@ ADMIN_REQUIRED_PAGES = [
     '/admin_center',
     '/api/settings/general',
     '/api/settings/permissions',
-    '/api/settings/errors'
+    '/api/settings/errors',
+    '/admin/student_behavior',
+    '/admin/tournament'
 ]
 
 SUPER_ADMIN_REQUIRED_PAGES = [

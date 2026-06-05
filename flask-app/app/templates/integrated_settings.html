@@ -1,0 +1,698 @@
+{% extends "base.html" %}
+{% block title %}高度集成设置界面{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row min-vh-100">
+        <!-- 侧边导航栏 -->
+        <nav class="col-md-3 col-lg-2 d-md-block bg-white shadow-sm sidebar" id="sidebarMenu">
+            <div class="position-sticky pt-3">
+                <div class="d-flex align-items-center justify-content-center py-4 border-bottom">
+                    <div class="text-center">
+                        <div class="rounded-circle bg-primary text-white p-3 mb-2">
+                            <svg class="svg-icon" viewBox="0 0 512 512" width="16" height="16"><path d="M487.4 315.7l-43.4-7.5c-1.3-3.2-2.8-6.3-4.5-9.3l19.9-39.8c3.6-7.2 2-16.1-3.8-21.6l-50-47.6c-5.8-5.5-14.9-6.5-21.9-2.4l-41.9 24.5c-11.4-8.8-23.9-16.2-37.2-21.8l-8.4-47.4C292.1 35 283.7 32 274.7 32h-37.5c-9 0-17.4 3-24.3 8.3l-8.4 47.4c-13.3 5.6-25.8 13-37.2 21.8l-41.9-24.5c-7-4.1-16.1-3.1-21.9 2.4l-50 47.6c-5.8 5.5-7.4 14.4-3.8 21.6l19.9 39.8c-1.7 3-3.2 6.1-4.5 9.3l-43.4 7.5C10.1 320.6 0 331.8 0 344.9v34.3c0 13.1 10.1 24.3 22.6 29.2l43.4 7.5c1.3 3.2 2.8 6.3 4.5 9.3l-19.9 39.8c-3.6 7.2-2 16.1 3.8 21.6l50 47.6c5.8 5.5 14.9 6.5 21.9 2.4l41.9-24.5c11.4 8.8 23.9 16.2 37.2 21.8l8.4 47.4c6.9 5.3 15.3 8.3 24.3 8.3h37.5c9 0 17.4-3 24.3-8.3l8.4-47.4c13.3-5.6 25.8-13 37.2-21.8l41.9 24.5c7 4.1 16.1 3.1 21.9-2.4l50-47.6c5.8-5.5 7.4-14.4 3.8-21.6l-19.9-39.8c1.7-3 3.2-6.1 4.5-9.3l43.4-7.5c12.5-4.9 22.6-16 22.6-29.2v-34.3c0-13.1-10.1-24.3-22.6-29.2zM256 384c-70.7 0-128-57.3-128-128s57.3-128 128-128 128 57.3 128 128-57.3 128-128 128z"/></svg>
+                        </div>
+                        <h5 class="text-dark font-weight-bold">智能设置中心</h5>
+                        <p class="text-muted text-sm">AI 托管配置</p>
+                    </div>
+                </div>
+                
+                <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-4 mt-4 mb-2 text-muted text-uppercase text-xs font-weight-bold">
+                    <span>设置菜单</span>
+                    <a class="link-secondary" href="#" aria-label="刷新菜单" onclick="refreshMenu()">
+                        <!-- Icon fa-sync-alt not found -->
+                    </a>
+                </h6>
+                <ul class="nav flex-column">
+                    {% for menu_item in menu_items %}
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == menu_item.url %}active bg-primary bg-opacity-10 text-primary{% endif %}" href="{{ menu_item.url }}">
+                                <svg class="svg-icon" viewBox="0 0 512 512" width="16" height="16"><path d="M487.4 315.7l-43.4-7.5c-1.3-3.2-2.8-6.3-4.5-9.3l19.9-39.8c3.6-7.2 2-16.1-3.8-21.6l-50-47.6c-5.8-5.5-14.9-6.5-21.9-2.4l-41.9 24.5c-11.4-8.8-23.9-16.2-37.2-21.8l-8.4-47.4C292.1 35 283.7 32 274.7 32h-37.5c-9 0-17.4 3-24.3 8.3l-8.4 47.4c-13.3 5.6-25.8 13-37.2 21.8l-41.9-24.5c-7-4.1-16.1-3.1-21.9 2.4l-50 47.6c-5.8 5.5-7.4 14.4-3.8 21.6l19.9 39.8c-1.7 3-3.2 6.1-4.5 9.3l-43.4 7.5C10.1 320.6 0 331.8 0 344.9v34.3c0 13.1 10.1 24.3 22.6 29.2l43.4 7.5c1.3 3.2 2.8 6.3 4.5 9.3l-19.9 39.8c-3.6 7.2-2 16.1 3.8 21.6l50 47.6c5.8 5.5 14.9 6.5 21.9 2.4l41.9-24.5c11.4 8.8 23.9 16.2 37.2 21.8l8.4 47.4c6.9 5.3 15.3 8.3 24.3 8.3h37.5c9 0 17.4-3 24.3-8.3l8.4-47.4c13.3-5.6 25.8-13 37.2-21.8l41.9 24.5c7 4.1 16.1 3.1 21.9-2.4l50-47.6c5.8-5.5 7.4-14.4 3.8-21.6l-19.9-39.8c1.7-3 3.2-6.1 4.5-9.3l43.4-7.5c12.5-4.9 22.6-16 22.6-29.2v-34.3c0-13.1-10.1-24.3-22.6-29.2zM256 384c-70.7 0-128-57.3-128-128s57.3-128 128-128 128 57.3 128 128-57.3 128-128 128z"/></svg>
+                                <span>{{ menu_item.name }}</span>
+                                {% if request.path == menu_item.url %}
+                                    <span class="ml-auto bg-primary rounded-full w-2 h-2"></span>
+                                {% endif %}
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+                
+                <div class="mt-auto p-4">
+                    <div class="text-center">
+                        <button class="btn btn-outline-primary w-100" onclick="enableAIManagement()">
+                            <svg class="svg-icon" viewBox="0 0 640 512" width="16" height="16"><path d="M320 0c-17.67 0-32 14.33-32 32v32h-64c-70.69 0-128 57.31-128 128v16c0 8.82 7.18 16 16 16h16v256c0 17.67 14.33 32 32 32h320c17.67 0 32-14.33 32-32V224h16c8.82 0 16-7.18 16-16v-16c0-70.69-57.31-128-128-128h-64V32c0-17.67-14.33-32-32-32zm-128 128h256c35.29 0 64 28.71 64 64v16H128v-16c0-35.29 28.71-64 64-64zm96 64c-26.51 0-48 21.49-48 48s21.49 48 48 48 48-21.49 48-48-21.49-48-48-48zm160 256H192v-96h256v96z"/></svg> 启用 AI 托管
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- 主内容区域 -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-5">
+            <!-- 页面头部 -->
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-4 mb-5 border-bottom border-gray-200">
+                <div>
+                    <h1 class="h2 text-gray-800 font-weight-bold">高度集成设置</h1>
+                    <p class="text-muted">智能管理系统配置，AI 为您推荐最佳设置</p>
+                </div>
+                <div class="btn-toolbar mb-2 mb-md-0">
+                    <div class="btn-group me-2">
+                        <button type="button" class="btn btn-sm btn-primary shadow-sm" onclick="saveAllSettings()">
+                            <!-- Icon fa-save not found --> 保存配置
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary shadow-sm" onclick="location.reload()">
+                            <!-- Icon fa-sync-alt not found --> 刷新
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 系统信息卡片 -->
+            <div class="row mb-6">
+                <div class="col-md-6">
+                    <div class="card shadow-sm hover-card border-0 rounded-lg overflow-hidden transition-all duration-300 hover:shadow-lg">
+                        <div class="card-header bg-gradient-primary bg-opacity-10 border-0">
+                            <h5 class="card-title mb-0 font-weight-bold text-primary">系统信息</h5>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="mb-3">
+                                <span class="text-muted text-sm">当前用户</span>
+                                <p class="font-weight-bold">{{ user.username }}</p>
+                            </div>
+                            <div class="mb-3">
+                                <span class="text-muted text-sm">用户角色</span>
+                                <p class="font-weight-bold">
+                                    {% if user.role == 'super_admin' %}
+                                        <span class="badge bg-danger">超级管理员</span>
+                                    {% elif user.role == 'admin' %}
+                                        <span class="badge bg-primary">管理员</span>
+                                    {% elif user.role == 'hardware_admin' %}
+                                        <span class="badge bg-warning">硬件管理员</span>
+                                    {% elif user.role == 'student' %}
+                                        <span class="badge bg-success">学生</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">普通用户</span>
+                                    {% endif %}
+                                </p>
+                            </div>
+                            <div>
+                                <span class="text-muted text-sm">系统状态</span>
+                                <p class="font-weight-bold">
+                                    <span class="badge bg-success">运行中</span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card shadow-sm hover-card border-0 rounded-lg overflow-hidden transition-all duration-300 hover:shadow-lg">
+                        <div class="card-header bg-gradient-secondary bg-opacity-10 border-0">
+                            <h5 class="card-title mb-0 font-weight-bold text-secondary">AI 系统状态</h5>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="mb-3">
+                                <span class="text-muted text-sm">AI 引擎状态</span>
+                                <p class="font-weight-bold">
+                                    <span class="badge bg-success">可用</span>
+                                </p>
+                            </div>
+                            <div class="mb-3">
+                                <span class="text-muted text-sm">AI 员工数量</span>
+                                <p class="font-weight-bold">5</p>
+                            </div>
+                            <div>
+                                <span class="text-muted text-sm">AI 自我学习</span>
+                                <p class="font-weight-bold">
+                                    <span class="badge bg-primary">已启用</span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI 托管状态卡片 -->
+            <div class="card shadow-sm mb-6 border-0 rounded-lg overflow-hidden">
+                <div class="card-header bg-gradient-info bg-opacity-10 border-0">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0 font-weight-bold text-info">AI 托管状态</h5>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="aiManagementToggle" checked>
+                            <label class="form-check-label" for="aiManagementToggle">启用 AI 托管</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="text-center p-3 bg-light rounded-lg">
+                                <div class="text-info mb-2">
+                                    <svg class="svg-icon" viewBox="0 0 576 512" width="16" height="16"><path d="M528.1 171.2l-46.3-27.7c-1.3-4.2-3.5-8.1-6.4-11.5l33.8-39.8c7.6-8.9 6.6-22.1-2.4-30l-43.3-37.1c-9-7.7-22.7-6.8-30.6 2.1l-30.4 34.7c-11.5-6.1-24.5-9.7-38.2-9.7h-19.4c-2.6-11.8-9.9-22.1-20.1-29.3l-33.4-23.4c-13.1-9.2-30.9-6.1-40.1 7s-6.1 30.9 7 40.1l24.5 17.2c1.5 1 2.7 2.3 3.6 3.7h-20.2c-13.7 0-26.8 3.6-38.3 9.8l-30.3-34.8c-7.9-9.1-21.7-9.9-30.7-2l-43.3 37.1c-8.9 7.9-9.9 21.1-2.4 30l33.8 39.8c-2.9 3.4-5.1 7.3-6.4 11.5l-46.3 27.7C32.7 185.2 0 227.4 0 275.2V320c0 52.9 43 96 96 96h28.7c-2.6 15.9-4.7 32-4.7 48 0 39.8 18.6 75.1 47.5 97.9 10.5 8.2 26.4 6.4 34.6-4.1s6.4-26.4-4.1-34.6c-14.5-11.4-23.3-29.1-23.3-49.1 0-3.4.3-6.8.8-10.1h142.8c.5 3.3.8 6.7.8 10.1 0 20-8.8 37.7-23.3 49.1-10.5 8.2-12.3 24-4.1 34.6s24 12.3 34.6 4.1c28.9-22.9 47.5-58.1 47.5-97.9 0-16-2.1-32.1-4.7-48H480c53 0 96-43.1 96-96v-44.8c0-47.8-32.7-90-79.9-104zm-108.8 140.8h-160c-8.8 0-16-7.2-16-16s7.2-16 16-16h160c8.8 0 16 7.2 16 16s-7.2 16-16 16zm0-64h-160c-8.8 0-16-7.2-16-16s7.2-16 16-16h160c8.8 0 16 7.2 16 16s-7.2 16-16 16z"/></svg>
+                                </div>
+                                <h6 class="font-weight-bold">智能推荐</h6>
+                                <p class="text-sm text-muted">AI 为您推荐最佳设置</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center p-3 bg-light rounded-lg">
+                                <div class="text-success mb-2">
+                                    <svg class="svg-icon" viewBox="0 0 640 512" width="16" height="16"><path d="M608 400c0 17.67-14.33 32-32 32H32c-17.67 0-32-14.33-32-32V80c0-17.67 14.33-32 32-32s32 14.33 32 32v288h512v32zm0-352H64c-17.67 0-32 14.33-32 32v320c0 17.67 14.33 32 32 32h544c17.67 0 32-14.33 32-32V80c0-17.67-14.33-32-32-32zM128 384c-8.84 0-16-7.16-16-16s7.16-16 16-16 16 7.16 16 16-7.16 16-16 16zm128 0c-8.84 0-16-7.16-16-16s7.16-16 16-16 16 7.16 16 16-7.16 16-16 16zm128 0c-8.84 0-16-7.16-16-16s7.16-16 16-16 16 7.16 16 16-7.16 16-16 16zm128 0c-8.84 0-16-7.16-16-16s7.16-16 16-16 16 7.16 16 16-7.16 16-16 16zM128 288c-8.84 0-16-7.16-16-16s7.16-16 16-16 16 7.16 16 16-7.16 16-16 16zm128 0c-8.84 0-16-7.16-16-16s7.16-16 16-16 16 7.16 16 16-7.16 16-16 16zm128 0c-8.84 0-16-7.16-16-16s7.16-16 16-16 16 7.16 16 16-7.16 16-16 16zm128 0c-8.84 0-16-7.16-16-16s7.16-16 16-16 16 7.16 16 16-7.16 16-16 16zM128 192c-8.84 0-16-7.16-16-16s7.16-16 16-16 16 7.16 16 16-7.16 16-16 16zm128 0c-8.84 0-16-7.16-16-16s7.16-16 16-16 16 7.16 16 16-7.16 16-16 16zm128 0c-8.84 0-16-7.16-16-16s7.16-16 16-16 16 7.16 16 16-7.16 16-16 16zm128 0c-8.84 0-16-7.16-16-16s7.16-16 16-16 16 7.16 16 16-7.16 16-16 16z"/></svg>
+                                </div>
+                                <h6 class="font-weight-bold">性能优化</h6>
+                                <p class="text-sm text-muted">自动优化系统性能</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center p-3 bg-light rounded-lg">
+                                <div class="text-warning mb-2">
+                                    <svg class="svg-icon" viewBox="0 0 512 512" width="16" height="16"><path d="M466.5 83.68l-192-80a48 48 0 0 0-37 0l-192 80C27.72 91.69 16 108.62 16 127.1V240c0 119.1 85.41 221.2 199.4 252.9l18.24 51.66A16 16 0 0 0 248 544h16a16 16 0 0 0 14.35-8.44l18.24-51.66C410.6 461.2 496 359.1 496 240V127.1C496 108.6 484.3 91.69 466.5 83.68zM240 204.7L178.6 163.4l-37.21 24.81L202.8 230l-61.42 41.81 37.21 24.81L240 254.9l61.42 41.74 37.21-24.81L277.2 230l61.42-41.81-37.21-24.81z"/></svg>
+                                </div>
+                                <h6 class="font-weight-bold">安全加固</h6>
+                                <p class="text-sm text-muted">智能安全配置建议</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-4 text-center">
+                        <button class="btn btn-primary shadow-sm" onclick="triggerAutoOptimize()">
+                            <!-- Icon fa-magic not found --> 触发 AI 自动优化
+                        </button>
+                        <p class="text-sm text-muted mt-2">AI 将分析系统状态并自动优化配置以提高性能</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 设置组列表 -->
+            <h2 class="h4 mb-4 font-weight-bold text-gray-800">可用设置组</h2>
+            <div class="row">
+                {% for group in settings_groups %}
+                    {% set group_config = SETTINGS_CONFIG.get(group, {}) %}
+                    <div class="col-md-4 mb-4">
+                        <div class="card h-100 shadow-sm hover-card border-0 rounded-lg overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+                            <div class="card-header bg-white border-0">
+                                <h5 class="card-title mb-0 font-weight-bold">{{ group_config.get('name', group) }}</h5>
+                            </div>
+                            <div class="card-body p-4">
+                                <p class="card-text text-muted mb-4">{{ group_config.get('description', '暂无描述') }}</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <a href="{{ url_for('integrated_settings.integrated_settings_group', group=group.replace('_', '-')) }}" class="btn btn-primary btn-sm shadow-sm">
+                                        <svg class="svg-icon" viewBox="0 0 320 512" width="16" height="16"><path d="M285.5 239L97.9 51.4c-4.7-4.7-4.7-12.3 0-17l19.8-19.8c4.7-4.7 12.3-4.7 17 0l178.1 218c4.7 4.7 4.7 12.3 0 17l-178.1 218c-4.7 4.7-12.3 4.7-17 0l-19.8-19.8c-4.7-4.7-4.7-12.3 0-17l187.6-187.6c4.8-4.7 4.8-12.3.1-17z"/></svg> 进入设置
+                                    </a>
+                                    <button class="btn btn-outline-secondary btn-sm" onclick="getAISuggestions('{{ group }}')" title="获取AI建议">
+                                        <svg class="svg-icon" viewBox="0 0 640 512" width="16" height="16"><path d="M320 0c-17.67 0-32 14.33-32 32v32h-64c-70.69 0-128 57.31-128 128v16c0 8.82 7.18 16 16 16h16v256c0 17.67 14.33 32 32 32h320c17.67 0 32-14.33 32-32V224h16c8.82 0 16-7.18 16-16v-16c0-70.69-57.31-128-128-128h-64V32c0-17.67-14.33-32-32-32zm-128 128h256c35.29 0 64 28.71 64 64v16H128v-16c0-35.29 28.71-64 64-64zm96 64c-26.51 0-48 21.49-48 48s21.49 48 48 48 48-21.49 48-48-21.49-48-48-48zm160 256H192v-96h256v96z"/></svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </main>
+    </div>
+</div>
+
+<style>
+    /* 自定义样式 */
+    .hover-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    }
+    
+    .transition-all {
+        transition: all 0.3s ease;
+    }
+    
+    .duration-300 {
+        transition-duration: 300ms;
+    }
+    
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    .bg-gradient-secondary {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+    
+    .bg-gradient-info {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    }
+    
+    /* 响应式侧边栏 */
+    @media (max-width: 768px) {
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: -100%;
+            height: 100vh;
+            z-index: 1000;
+            transition: left 0.3s ease;
+        }
+        
+        .sidebar.active {
+            left: 0;
+        }
+    }
+</style>
+
+<script>
+    // 全局缓存对象
+    const appCache = {
+        config: null,
+        suggestions: {},
+        lastFetchTime: 0,
+        cacheExpiry: 300000 // 5分钟缓存
+    };
+    
+    // 防抖函数
+    function debounce(func, wait) {
+        let timeout;
+        return function() {
+            const context = this;
+            const args = arguments;
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(context, args), wait);
+        };
+    }
+    
+    // 节流函数
+    function throttle(func, limit) {
+        let inThrottle;
+        return function() {
+            const args = arguments;
+            const context = this;
+            if (!inThrottle) {
+                func.apply(context, args);
+                inThrottle = true;
+                setTimeout(() => inThrottle = false, limit);
+            }
+        };
+    }
+    
+    // 设置界面交互脚本
+    document.addEventListener('DOMContentLoaded', function() {
+        // 侧边栏折叠功能
+        const sidebarToggle = document.querySelector('.navbar-toggler');
+        const sidebar = document.getElementById('sidebarMenu');
+        
+        if (sidebarToggle && sidebar) {
+            sidebarToggle.addEventListener('click', function() {
+                sidebar.classList.toggle('active');
+            });
+        }
+        
+        // 动态加载设置配置（带缓存）
+        loadSettingsConfig();
+        
+        // AI 托管开关
+        const aiToggle = document.getElementById('aiManagementToggle');
+        if (aiToggle) {
+            aiToggle.addEventListener('change', debounce(function() {
+                enableAIManagement(this.checked);
+            }, 300));
+        }
+        
+        // 初始化页面
+        initPage();
+    });
+    
+    // 初始化页面
+    function initPage() {
+        console.log('设置页面初始化完成');
+        // 可以添加其他初始化逻辑
+    }
+    
+    // 刷新菜单
+    function refreshMenu() {
+        showLoading('刷新菜单...');
+        
+        fetch('/api/integrated-settings/menu')
+            .then(response => response.json())
+            .then(data => {
+                hideLoading();
+                if (data.success) {
+                    showNotification('菜单刷新成功', 'success');
+                    // 可以在这里更新菜单
+                } else {
+                    showNotification('菜单刷新失败: ' + data.error, 'error');
+                }
+            })
+            .catch(error => {
+                hideLoading();
+                console.error('刷新菜单失败:', error);
+                showNotification('刷新菜单失败，请检查网络连接', 'error');
+            });
+    }
+    
+    // 加载设置配置（带缓存）
+    function loadSettingsConfig() {
+        const now = Date.now();
+        if (appCache.config && (now - appCache.lastFetchTime) < appCache.cacheExpiry) {
+            console.log('使用缓存的设置配置');
+            return appCache.config;
+        }
+        
+        fetch('/api/integrated-settings/config')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    appCache.config = data;
+                    appCache.lastFetchTime = Date.now();
+                    console.log('设置配置加载成功:', data.config);
+                }
+            })
+            .catch(error => {
+                console.error('加载设置配置失败:', error);
+            });
+    }
+    
+    // 保存所有设置
+    function saveAllSettings() {
+        showLoading('保存所有设置...');
+        
+        // 这里可以实现保存所有设置的逻辑
+        setTimeout(() => {
+            hideLoading();
+            showNotification('所有设置保存成功', 'success');
+        }, 1000);
+    }
+    
+    // 启用 AI 托管
+    function enableAIManagement(enabled = true) {
+        fetch('/api/integrated-settings/ai-management', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ enabled: enabled })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('AI 托管已' + (enabled ? '启用' : '禁用'), 'success');
+            } else {
+                showNotification('操作失败: ' + data.error, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('启用 AI 托管失败:', error);
+            showNotification('启用 AI 托管失败，请检查网络连接', 'error');
+        });
+    }
+    
+    // 获取 AI 建议（带缓存）
+    function getAISuggestions(group) {
+        // 检查缓存
+        if (appCache.suggestions[group] && (Date.now() - appCache.suggestions[group].timestamp) < appCache.cacheExpiry) {
+            showAISuggestionsModal(appCache.suggestions[group].data);
+            return;
+        }
+        
+        showLoading('获取 AI 建议...');
+        
+        fetch('/api/integrated-settings/ai-suggestions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ group: group })
+        })
+        .then(response => response.json())
+        .then(data => {
+            hideLoading();
+            if (data.success) {
+                // 缓存建议
+                appCache.suggestions[group] = {
+                    data: data.suggestions,
+                    timestamp: Date.now()
+                };
+                showAISuggestionsModal(data.suggestions);
+            } else {
+                showNotification('获取 AI 建议失败: ' + data.error, 'error');
+            }
+        })
+        .catch(error => {
+            hideLoading();
+            console.error('获取 AI 建议失败:', error);
+            showNotification('获取 AI 建议失败，请检查网络连接', 'error');
+        });
+    }
+    
+    // 显示通知
+    function showNotification(message, type = 'info') {
+        // 创建通知元素
+        const notification = document.createElement('div');
+        notification.className = `toast position-fixed top-20 right-4 z-50 bg-${type === 'success' ? 'success' : type === 'error' ? 'danger' : 'info'} text-white p-4 rounded-lg shadow-lg`;
+        notification.style.top = '20px';
+        notification.style.right = '20px';
+        notification.style.position = 'fixed';
+        notification.style.zIndex = '1000';
+        notification.style.transition = 'all 0.3s ease';
+        notification.style.opacity = '0';
+        notification.style.transform = 'translateY(-20px)';
+        notification.innerHTML = `
+            <div class="d-flex align-items-center">
+                <svg class="svg-icon" viewBox="0 0 512 512" width="16" height="16"><path d="M256 8C119 8 8 119 8 256s111 248 248 248 248-111 248-248S393 8 256 8zm0 400c-17.7 0-32-14.3-32-32s14.3-32 32-32 32 14.3 32 32-14.3 32-32 32zm32-160h-64c-17.7 0-32-14.3-32-32V176c0-17.7 14.3-32 32-32h64c17.7 0 32 14.3 32 32v40c0 17.7-14.3 32-32 32z"/></svg>
+                <span>${message}</span>
+            </div>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // 显示通知
+        setTimeout(() => {
+            notification.style.opacity = '1';
+            notification.style.transform = 'translateY(0)';
+        }, 100);
+        
+        // 3秒后隐藏
+        setTimeout(() => {
+            notification.style.opacity = '0';
+            notification.style.transform = 'translateY(-20px)';
+            setTimeout(() => {
+                document.body.removeChild(notification);
+            }, 300);
+        }, 3000);
+    }
+    
+    // 显示加载
+    function showLoading(message) {
+        // 检查是否已有加载元素
+        if (document.getElementById('loading')) {
+            return;
+        }
+        
+        // 创建加载元素
+        const loading = document.createElement('div');
+        loading.id = 'loading';
+        loading.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+        loading.innerHTML = `
+            <div class="bg-white p-4 rounded-lg shadow-lg">
+                <div class="d-flex align-items-center">
+                    <div class="spinner-border mr-3" role="status">
+                        <span class="sr-only">Loading...</span>
+                    </div>
+                    <span>${message}</span>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(loading);
+    }
+    
+    // 隐藏加载
+    function hideLoading() {
+        const loading = document.getElementById('loading');
+        if (loading) {
+            document.body.removeChild(loading);
+        }
+    }
+    
+    // 显示 AI 建议模态框
+    function showAISuggestionsModal(suggestions) {
+        // 创建模态框
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+        modal.innerHTML = `
+            <div class="bg-white rounded-lg shadow-lg w-full max-w-2xl max-h-[80vh] overflow-y-auto">
+                <div class="p-4 border-b">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="font-weight-bold">AI 智能建议</h5>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="this.closest('.fixed').remove()">
+                            <svg class="svg-icon" viewBox="0 0 352 512" width="16" height="16"><path d="M242.7 256l100.1-100.1c4.7-4.7 4.7-12.3 0-17l-22.6-22.6c-4.7-4.7-12.3-4.7-17 0L203.1 216.4 103 116.3c-4.7-4.7-12.3-4.7-17 0L63.4 138.9c-4.7 4.7-4.7 12.3 0 17L163.5 256 63.4 356.1c-4.7 4.7-4.7 12.3 0 17l22.6 22.6c4.7 4.7 12.3 4.7 17 0l100.1-100.1 100.1 100.1c4.7 4.7 12.3 4.7 17 0l22.6-22.6c4.7-4.7 4.7-12.3 0-17L242.7 256z"/></svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="p-4">
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center mb-2">
+                            <div class="bg-info bg-opacity-10 p-2 rounded-full mr-3">
+                                <svg class="svg-icon" viewBox="0 0 640 512" width="16" height="16"><path d="M320 0c-17.67 0-32 14.33-32 32v32h-64c-70.69 0-128 57.31-128 128v16c0 8.82 7.18 16 16 16h16v256c0 17.67 14.33 32 32 32h320c17.67 0 32-14.33 32-32V224h16c8.82 0 16-7.18 16-16v-16c0-70.69-57.31-128-128-128h-64V32c0-17.67-14.33-32-32-32zm-128 128h256c35.29 0 64 28.71 64 64v16H128v-16c0-35.29 28.71-64 64-64zm96 64c-26.51 0-48 21.49-48 48s21.49 48 48 48 48-21.49 48-48-21.49-48-48-48zm160 256H192v-96h256v96z"/></svg>
+                            </div>
+                            <h6 class="font-weight-bold">基于系统状态的智能推荐</h6>
+                        </div>
+                        <div class="pl-10">
+                            ${suggestions.map(s => `
+                                <div class="mb-3 p-3 bg-light rounded-lg">
+                                    <h7 class="font-weight-bold">${s.title}</h7>
+                                    <p class="text-sm text-muted mt-1">${s.description}</p>
+                                    <button class="btn btn-sm btn-primary mt-2" onclick="applyAISuggestion('${s.id}')">
+                                        应用建议
+                                    </button>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+    }
+    
+    // 应用 AI 建议
+    function applyAISuggestion(suggestionId) {
+        showLoading('应用 AI 建议...');
+        
+        fetch('/api/integrated-settings/apply-suggestion', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ suggestion_id: suggestionId })
+        })
+        .then(response => response.json())
+        .then(data => {
+            hideLoading();
+            if (data.success) {
+                showNotification('AI 建议应用成功', 'success');
+                // 关闭模态框
+                document.querySelector('.fixed.inset-0.bg-black').remove();
+                // 清除相关缓存
+                appCache.suggestions = {};
+            } else {
+                showNotification('应用 AI 建议失败: ' + data.error, 'error');
+            }
+        })
+        .catch(error => {
+            hideLoading();
+            console.error('应用 AI 建议失败:', error);
+            showNotification('应用 AI 建议失败，请检查网络连接', 'error');
+        });
+    }
+    
+    // 触发自动优化
+    function triggerAutoOptimize() {
+        if (confirm('确定要触发AI自动优化吗？这将自动调整系统配置以提高性能。')) {
+            showLoading('AI正在分析系统并优化配置...');
+            
+            fetch('/api/integrated-settings/auto-optimize', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({})
+            })
+            .then(response => response.json())
+            .then(data => {
+                hideLoading();
+                if (data.success) {
+                    showNotification('系统配置自动优化成功', 'success');
+                    // 显示优化详情
+                    showOptimizationResults(data);
+                    // 清除缓存
+                    appCache.config = null;
+                    appCache.suggestions = {};
+                } else {
+                    showNotification('自动优化失败: ' + data.error, 'error');
+                }
+            })
+            .catch(error => {
+                hideLoading();
+                console.error('自动优化失败:', error);
+                showNotification('自动优化失败，请检查网络连接', 'error');
+            });
+        }
+    }
+    
+    // 显示优化结果
+    function showOptimizationResults(data) {
+        // 创建模态框
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+        modal.innerHTML = `
+            <div class="bg-white rounded-lg shadow-lg w-full max-w-3xl max-h-[80vh] overflow-y-auto">
+                <div class="p-4 border-b">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="font-weight-bold">AI 自动优化结果</h5>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="this.closest('.fixed').remove()">
+                            <svg class="svg-icon" viewBox="0 0 352 512" width="16" height="16"><path d="M242.7 256l100.1-100.1c4.7-4.7 4.7-12.3 0-17l-22.6-22.6c-4.7-4.7-12.3-4.7-17 0L203.1 216.4 103 116.3c-4.7-4.7-12.3-4.7-17 0L63.4 138.9c-4.7 4.7-4.7 12.3 0 17L163.5 256 63.4 356.1c-4.7 4.7-4.7 12.3 0 17l22.6 22.6c4.7 4.7 12.3 4.7 17 0l100.1-100.1 100.1 100.1c4.7 4.7 12.3 4.7 17 0l22.6-22.6c4.7-4.7 4.7-12.3 0-17L242.7 256z"/></svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="p-4">
+                    <!-- 系统状态 -->
+                    <div class="mb-4">
+                        <h6 class="font-weight-bold mb-2">系统状态</h6>
+                        <div class="bg-light p-3 rounded-lg">
+                            <div class="row">
+                                <div class="col-md-4 mb-2">
+                                    <span class="text-muted">CPU使用率:</span>
+                                    <strong>${data.system_status.cpu_usage}%</strong>
+                                </div>
+                                <div class="col-md-4 mb-2">
+                                    <span class="text-muted">内存使用率:</span>
+                                    <strong>${data.system_status.memory_usage}%</strong>
+                                </div>
+                                <div class="col-md-4 mb-2">
+                                    <span class="text-muted">磁盘使用率:</span>
+                                    <strong>${data.system_status.disk_usage}%</strong>
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <span class="text-muted">网络流量:</span>
+                                    <strong>${data.system_status.network_traffic} MB/s</strong>
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <span class="text-muted">响应时间:</span>
+                                    <strong>${data.system_status.response_time} 秒</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 优化建议 -->
+                    <div class="mb-4">
+                        <h6 class="font-weight-bold mb-2">优化建议</h6>
+                        <div class="pl-4">
+                            ${data.optimization_suggestions.map(s => `
+                                <div class="mb-3 p-3 bg-light rounded-lg">
+                                    <h7 class="font-weight-bold">${s.title}</h7>
+                                    <p class="text-sm text-muted mt-1">${s.description}</p>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    
+                    <!-- 应用的设置 -->
+                    <div>
+                        <h6 class="font-weight-bold mb-2">应用的设置</h6>
+                        <div class="bg-light p-3 rounded-lg">
+                            ${Object.entries(data.applied_settings).map(([category, settings]) => `
+                                <div class="mb-3">
+                                    <h8 class="font-weight-bold">${category}</h8>
+                                    <ul class="list-unstyled mt-1 pl-4">
+                                        ${Object.entries(settings).map(([key, value]) => `
+                                            <li><strong>${key}:</strong> ${value}</li>
+                                        `).join('')}
+                                    </ul>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+    }
+</script>
+{% endblock %}

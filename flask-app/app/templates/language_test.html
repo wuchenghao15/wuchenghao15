@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>语言测试系统</title>
+    <style>
+        /* 基础样式重置 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 800px;
+            overflow: hidden;
+        }
+        
+        /* 头部样式 */
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        /* 内容区域 */
+        .content {
+            padding: 40px;
+        }
+        
+        /* 欢迎信息 */
+        .welcome-message {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .welcome-message h2 {
+            font-size: 20px;
+            color: #343a40;
+            margin-bottom: 10px;
+        }
+        
+        .welcome-message p {
+            color: #6c757d;
+        }
+        
+        /* 测试信息卡片 */
+        .test-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        
+        .test-info h3 {
+            font-size: 16px;
+            color: #343a40;
+            margin-bottom: 15px;
+        }
+        
+        .test-info-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        
+        .test-info-label {
+            color: #6c757d;
+        }
+        
+        .test-info-value {
+            font-weight: 600;
+            color: #343a40;
+        }
+        
+        /* 测试开始按钮 */
+        .test-actions {
+            text-align: center;
+        }
+        
+        .btn {
+            padding: 14px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        /* 侧边栏导航 */
+        .sidebar {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 30px;
+        }
+        
+        .sidebar h3 {
+            font-size: 16px;
+            color: #343a40;
+            margin-bottom: 15px;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+        }
+        
+        .sidebar li {
+            margin-bottom: 10px;
+        }
+        
+        .sidebar a {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+            transition: color 0.3s ease;
+        }
+        
+        .sidebar a:hover {
+            color: #764ba2;
+            text-decoration: underline;
+        }
+        
+        /* 错误信息 */
+        .error-message {
+            color: #dc3545;
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        /* 成功信息 */
+        .success-message {
+            color: #28a745;
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .content {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 20px;
+            }
+            
+            .welcome-message h2 {
+                font-size: 18px;
+            }
+        }
+    </style>
+    <!-- FontAwesome CDN removed -->
+
+<style>
+.svg-icon {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    vertical-align: -0.125em;
+    fill: currentColor;
+}
+</style>
+</head>
+<body>
+    <div class="container">
+        <!-- 头部 -->
+        <div class="header">
+            <h1>📚 语言测试系统</h1>
+            <p>学生专用语言测试平台</p>
+        </div>
+        
+        <!-- 内容区域 -->
+        <div class="content">
+            <!-- 欢迎信息 -->
+            <div class="welcome-message">
+                <h2>🎉 欢迎参加语言测试！</h2>
+                <p>你好，<strong>{{ username }}</strong>，请点击下方按钮开始测试</p>
+            </div>
+            
+            <!-- 错误信息显示 -->
+            {% if error %}
+                <div class="error-message">{{ error }}</div>
+            {% endif %}
+            
+            <!-- 成功信息显示 -->
+            {% if success %}
+                <div class="success-message">{{ success }}</div>
+            {% endif %}
+            
+            <!-- 测试信息卡片 -->
+            <div class="test-info">
+                <h3><svg class="svg-icon" viewBox="0 0 512 512" fill="#17a2b8" width="16" height="16"><path d="M256 8C119 8 8 119 8 256s111 248 248 248 248-111 248-248S393 8 256 8zm0 112c-22.1 0-40 17.9-40 40s17.9 40 40 40 40-17.9 40-40-17.9-40-40-40zm64 256H192c-13.3 0-24-10.7-24-24v-16c0-13.3 10.7-24 24-24h24v-64h-24c-13.3 0-24-10.7-24-24v-16c0-13.3 10.7-24 24-24h64c13.3 0 24 10.7 24 24v104h24c13.3 0 24 10.7 24 24v16c0 13.3-10.7 24-24 24z"/></svg> 测试信息</h3>
+                <div class="test-info-item">
+                    <span class="test-info-label">用户ID:</span>
+                    <span class="test-info-value">{{ user_id }}</span>
+                </div>
+                <div class="test-info-item">
+                    <span class="test-info-label">用户名:</span>
+                    <span class="test-info-value">{{ username }}</span>
+                </div>
+                <div class="test-info-item">
+                    <span class="test-info-label">邮箱:</span>
+                    <span class="test-info-value">{{ email }}</span>
+                </div>
+                <div class="test-info-item">
+                    <span class="test-info-label">测试类型:</span>
+                    <span class="test-info-value">语言能力测试</span>
+                </div>
+                <div class="test-info-item">
+                    <span class="test-info-label">测试时长:</span>
+                    <span class="test-info-value">60分钟</span>
+                </div>
+                <div class="test-info-item">
+                    <span class="test-info-label">题目数量:</span>
+                    <span class="test-info-value">50题</span>
+                </div>
+            </div>
+            
+            <!-- 语言选择 -->
+            <div class="test-info" style="margin-top: 20px;">
+                <h3><!-- Icon fa-language not found --> 选择测试语言</h3>
+                <div style="margin-top: 15px;">
+                    <form action="/language-test/start" method="POST">
+                        <div style="margin-bottom: 20px;">
+                            <label style="display: block; font-weight: 600; color: #495057; margin-bottom: 8px;">
+                                <svg class="svg-icon" viewBox="0 0 496 512" width="16" height="16"><path d="M336.5 160C322 70.7 287.8 8 248 8s-74 62.7-88.5 152h177zM152 256c0 22.2 1.2 43.5 3.3 64h185.3c2.1-20.5 3.3-41.8 3.3-64s-1.2-43.5-3.3-64H155.3c-2.1 20.5-3.3 41.8-3.3 64zM248 464c39.8 0 74-62.7 88.5-152h-177C174 401.3 208.2 464 248 464zm232-208c0 134.2-103.2 243.2-234.5 252.9-5.4 4-12.3 4-17.7 0C119.2 499.2 16 390.2 16 256S119.2 12.8 227.5 3.1c5.4-4 12.3-4 17.7 0C352.8 12.8 464 121.8 464 256zm-16 0c0-114.9-61.9-212-152-247.6V503.6C386.1 468 448 370.9 448 256zm-272 0V8.4C125.9 44 64 141.1 64 256s61.9 212 152 247.6z"/></svg> 请选择您要参加的语言测试
+                            </label>
+                            <select name="language" style="width: 100%; padding: 12px; border: 2px solid #e9ecef; border-radius: 8px; font-size: 16px; background: white; cursor: pointer;">
+                                <option value="english">🇬🇧 英语</option>
+                                <option value="japanese">🇯🇵 日语</option>
+                            </select>
+                        </div>
+                        
+                        <!-- 测试开始按钮 -->
+                        <div class="test-actions">
+                            <button type="submit" class="btn btn-primary">
+                                <svg class="svg-icon" viewBox="0 0 448 512" width="16" height="16"><path d="M424.4 214.7L72.4 6.6C43.8-10.3 0 10.1 0 47.9V464c0 37.9 43.8 58.2 72.4 41.3l352-208c31.4-18.5 31.4-64.1 0-82.6z"/></svg> 开始测试
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- 侧边栏导航 -->
+            <div class="sidebar">
+                <h3><!-- Icon fa-compass not found --> 测试导航</h3>
+                <ul>
+                    <li><a href="#"><!-- Icon fa-list not found --> 测试列表</a></li>
+                    <li><a href="#"><svg class="svg-icon" viewBox="0 0 512 512" width="16" height="16"><path d="M504 256c0 136.96-111.04 248-248 248S8 392.96 8 256 119.04 8 256 8c82.76 0 152.97 39.77 196.43 100.81l6.4 6.17L480 64v144H336l66.57-66.1C361.27 98.93 311.08 80 256 80 158.8 80 80 158.8 80 256s78.8 176 176 176 176-78.8 176-176c0-17.67 14.33-32 32-32s32 14.33 32 32zm-144-32v-64c0-17.67-14.33-32-32-32s-32 14.33-32 32v80c0 8.84 3.58 16.84 9.38 22.63l80 80c12.5 12.5 32.76 12.5 45.26 0s12.5-32.76 0-45.26l-70.63-70.63z"/></svg> 历史记录</a></li>
+                    <li><a href="#"><!-- Icon fa-chart-bar not found --> 成绩分析</a></li>
+                    <li><a href="#"><!-- Icon fa-book not found --> 学习资源</a></li>
+                    <li><a href="{{ url_for('index') }}"><svg class="svg-icon" viewBox="0 0 576 512" width="16" height="16"><path d="M575.8 255.3c0-1.1-.3-2.1-.7-3l-96-160c-5.2-8.7-14.6-14.3-25.1-14.3H416V48c0-26.5-21.5-48-48-48H208c-26.5 0-48 21.5-48 48v32H128c-10.5 0-19.9 5.6-25.1 14.3l-96 160c-.4.9-.7 1.9-.7 3 0 16.5 13.5 30 30 30h34V464c0 26.5 21.5 48 48 48H448c26.5 0 48-21.5 48-48V285.3h34c16.5 0 30-13.5 30-30zM160 464V288H96l96-160h32v112c0 8.8 7.2 16 16 16h32c8.8 0 16-7.2 16-16V128h192l96 160h-64v176H160z"/></svg> 返回首页</a></li>
+                    <li>
+                        <form action="/auth/logout" method="POST" style="margin: 0; display: inline;">
+                            <button type="submit" style="background: none; border: none; color: #667eea; cursor: pointer; font-size: 14px; padding: 0;">
+                                <svg class="svg-icon" viewBox="0 0 512 512" width="16" height="16"><path d="M497 273L329 441c-15 15-41 4.5-41-17v-96H152c-13.3 0-24-10.7-24-24v-96c0-13.3 10.7-24 24-24h136V88c0-21.4 25.9-32 41-17l168 168c9.3 9.4 9.3 24.6 0 34zM192 436v-40c0-6.6-5.4-12-12-12H96c-17.7 0-32-14.3-32-32V160c0-17.7 14.3-32 32-32h84c6.6 0 12-5.4 12-12V76c0-6.6-5.4-12-12-12H96c-53 0-96 43-96 96v192c0 53 43 96 96 96h84c6.6 0 12-5.4 12-12z"/></svg> 退出登录
+                            </button>
+                        </form>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

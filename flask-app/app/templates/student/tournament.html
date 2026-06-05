@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>锦标赛中心</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <style>
+        .tournament-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+        }
+        .tournament-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        .badge-gold { background-color: #FFD700; color: #333; }
+        .badge-silver { background-color: #C0C0C0; color: #333; }
+        .badge-bronze { background-color: #CD7F32; color: #333; }
+        .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .btn-success { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
+        .btn-warning { background: linear-gradient(135deg, #fc4a1a 0%, #f7b733 100%); }
+    </style>
+</head>
+<body>
+    {% include 'student/header.html' %}
+    
+    <div class="container-fluid mt-4">
+        <div class="row">
+            {% include 'student/sidebar.html' %}
+            
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">🏆 锦标赛中心</h1>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <div class="card bg-gradient-to-br from-yellow-500 to-orange-500 text-white rounded-lg p-4">
+                            <div class="card-body">
+                                <h5 class="card-title">可报名赛事</h5>
+                                <h2 class="card-text" id="availableTournaments">0</h2>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-gradient-to-br from-blue-500 to-indigo-500 text-white rounded-lg p-4">
+                            <div class="card-body">
+                                <h5 class="card-title">已报名</h5>
+                                <h2 class="card-text" id="registeredTournaments">0</h2>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-gradient-to-br from-green-500 to-teal-500 text-white rounded-lg p-4">
+                            <div class="card-body">
+                                <h5 class="card-title">已完成</h5>
+                                <h2 class="card-text" id="completedTournaments">0</h2>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <ul class="nav nav-tabs">
+                        <li class="nav-item">
+                            <button class="nav-link active" id="available-tab" data-bs-toggle="tab" data-bs-target="#available">可报名</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" id="my-tab" data-bs-toggle="tab" data-bs-target="#my">我的赛事</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" id="history-tab" data-bs-toggle="tab" data-bs-target="#history">历史记录</button>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="tab-content">
+                    <div class="tab-pane fade show active" id="available">
+                        <div class="row" id="availableList">
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="my">
+                        <div class="row" id="myList">
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="history">
+                        <div class="row" id="historyList">
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <div class="modal fade" id="tournamentDetailModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="detailTitle">锦标赛详情</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>基本信息</h6>
+                            <p><strong>类型:</strong> <span id="detailType"></span></p>
+                            <p><strong>状态:</strong> <span id="detailStatus"></span></p>
+                            <p><strong>最大参赛者:</strong> <span id="detailMaxParticipants"></span></p>
+                            <p><strong>当前参赛者:</strong> <span id="detailCurrentParticipants"></span></p>
+                            <p><strong>奖励类型:</strong> <span id="detailPrize"></span></p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>时间安排</h6>
+                            <p><strong>开始时间:</strong> <span id="detailStart"></span></p>
+                            <p><strong>结束时间:</strong> <span id="detailEnd"></span></p>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <h6>赛事描述</h6>
+                        <p id="detailDescription"></p>
+                    </div>
+                    <div class="mt-4">
+                        <h6>排行榜</h6>
+                        <div id="leaderboard">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                    <button type="button" class="btn btn-primary" id="registerBtn" onclick="registerTournament()">报名参赛</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentTournamentId = null;
+        let isRegistered = false;
+
+        function loadStats() {
+            fetch('/api/tournament/tournaments')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        const available = data.data.filter(t => t.status === 'upcoming').length;
+                        document.getElementById('availableTournaments').textContent = available;
+                    }
+                });
+            
+            fetch('/api/tournament/my-participations')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('registeredTournaments').textContent = data.data.filter(p => p.status === 'registered').length;
+                        document.getElementById('completedTournaments').textContent = data.data.filter(p => p.status === 'completed').length;
+                    }
+                });
+        }
+
+        function loadAvailableTournaments() {
+            fetch('/api/tournament/tournaments?status=upcoming')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        renderTournaments(data.data, 'availableList', true);
+                    }
+                });
+        }
+
+        function loadMyTournaments() {
+            fetch('/api/tournament/my-participations')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        const registered = data.data.filter(p => p.status === 'registered');
+                        renderMyTournaments(registered, 'myList');
+                    }
+                });
+        }
+
+        function loadHistory() {
+            fetch('/api/tournament/my-participations')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        const completed = data.data.filter(p => p.status === 'completed');
+                        renderHistory(completed, 'historyList');
+                    }
+                });
+        }
+
+        function renderTournaments(tournaments, containerId, showRegister) {
+            const container = document.getElementById(containerId);
+            if (tournaments.length === 0) {
+                container.innerHTML = '<p class="text-center text-muted">暂无可报名的赛事</p>';
+                return;
+            }
+            
+            container.innerHTML = tournaments.map(t => {
+                const typeText = { gold_cup: '🥇 金牌杯', master_cup: '🏆 大师杯', grand_prix: '⚡ 大奖赛', challenge: '🎯 挑战赛' };
+                const prizeText = { points: '积分奖励', badge: '荣誉徽章', certificate: '电子证书', ranking: '排名奖励' };
+                
+                return `
+                    <div class="col-md-4 mb-4">
+                        <div class="card tournament-card h-100" onclick="showDetail(${t.id})">
+                            <div class="card-header bg-gradient-to-r from-primary to-secondary text-white">
+                                <h5>${t.name}</h5>
+                                <span class="badge bg-warning">即将开始</span>
+                            </div>
+                            <div class="card-body">
+                                <p class="text-muted small mb-2">${typeText[t.tournament_type]}</p>
+                                <p class="card-text">${t.description || '暂无描述'}</p>
+                            </div>
+                            <div class="card-footer bg-light">
+                                <div class="d-flex justify-content-between">
+                                    <span>参赛名额: ${t.participant_count || 0}/${t.max_participants}</span>
+                                    <span>${prizeText[t.prize_type]}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderMyTournaments(tournaments, containerId) {
+            const container = document.getElementById(containerId);
+            if (tournaments.length === 0) {
+                container.innerHTML = '<p class="text-center text-muted">暂无已报名的赛事</p>';
+                return;
+            }
+            
+            container.innerHTML = tournaments.map(t => {
+                const typeText = { gold_cup: '🥇 金牌杯', master_cup: '🏆 大师杯', grand_prix: '⚡ 大奖赛', challenge: '🎯 挑战赛' };
+                
+                return `
+                    <div class="col-md-4 mb-4">
+                        <div class="card tournament-card h-100">
+                            <div class="card-header bg-gradient-to-r from-green-500 to-teal-500 text-white">
+                                <h5>${t.tournament_name}</h5>
+                                <span class="badge bg-white text-green-600">已报名</span>
+                            </div>
+                            <div class="card-body">
+                                <p class="text-muted small mb-2">${typeText[t.tournament_type]}</p>
+                                <p class="card-text">${t.description || '暂无描述'}</p>
+                            </div>
+                            <div class="card-footer bg-light">
+                                <button class="btn btn-warning btn-sm" onclick="startTournament(${t.tournament_id})">
+                                    🎮 开始比赛
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderHistory(records, containerId) {
+            const container = document.getElementById(containerId);
+            if (records.length === 0) {
+                container.innerHTML = '<p class="text-center text-muted">暂无历史记录</p>';
+                return;
+            }
+            
+            container.innerHTML = records.map(r => {
+                const typeText = { gold_cup: '🥇 金牌杯', master_cup: '🏆 大师杯', grand_prix: '⚡ 大奖赛', challenge: '🎯 挑战赛' };
+                
+                return `
+                    <div class="col-md-4 mb-4">
+                        <div class="card h-100">
+                            <div class="card-header bg-gradient-to-r from-gray-500 to-gray-600 text-white">
+                                <h5>${r.tournament_name}</h5>
+                                <span class="badge bg-white text-gray-600">已完成</span>
+                            </div>
+                            <div class="card-body">
+                                <p class="text-muted small mb-2">${typeText[r.tournament_type]}</p>
+                                <p class="card-text">${r.description || '暂无描述'}</p>
+                            </div>
+                            <div class="card-footer bg-light">
+                                <span>报名时间: ${r.registered_at}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function showDetail(id) {
+            currentTournamentId = id;
+            isRegistered = false;
+            
+            fetch(`/api/tournament/tournaments/${id}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        const t = data.data;
+                        const typeText = { gold_cup: '🥇 金牌杯', master_cup: '🏆 大师杯', grand_prix: '⚡ 大奖赛', challenge: '🎯 挑战赛' };
+                        const statusText = { upcoming: '即将开始', active: '进行中', ended: '已结束', cancelled: '已取消' };
+                        
+                        document.getElementById('detailTitle').textContent = t.name;
+                        document.getElementById('detailType').textContent = typeText[t.tournament_type];
+                        document.getElementById('detailStatus').textContent = statusText[t.status];
+                        document.getElementById('detailMaxParticipants').textContent = t.max_participants;
+                        document.getElementById('detailCurrentParticipants').textContent = t.participant_count || 0;
+                        document.getElementById('detailPrize').textContent = t.prize_type === 'points' ? '积分奖励' : t.prize_type === 'badge' ? '荣誉徽章' : t.prize_type === 'certificate' ? '电子证书' : '排名奖励';
+                        document.getElementById('detailStart').textContent = t.start_date || '未设置';
+                        document.getElementById('detailEnd').textContent = t.end_date || '未设置';
+                        document.getElementById('detailDescription').textContent = t.description || '暂无描述';
+                        
+                        loadLeaderboard(id);
+                        
+                        fetch('/api/tournament/my-participations')
+                            .then(res => res.json())
+                            .then(data => {
+                                if (data.success) {
+                                    isRegistered = data.data.some(p => p.tournament_id === id);
+                                    document.getElementById('registerBtn').textContent = isRegistered ? '已报名' : '报名参赛';
+                                    document.getElementById('registerBtn').disabled = isRegistered;
+                                }
+                                new bootstrap.Modal(document.getElementById('tournamentDetailModal')).show();
+                            });
+                    }
+                });
+        }
+
+        function loadLeaderboard(id) {
+            fetch(`/api/tournament/tournaments/${id}/leaderboard?limit=5`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success && data.data.length > 0) {
+                        document.getElementById('leaderboard').innerHTML = `
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr><th>排名</th><th>用户名</th><th>成绩</th></tr>
+                                </thead>
+                                <tbody>
+                                    ${data.data.map((r, i) => `
+                                        <tr>
+                                            <td><span class="badge ${i === 0 ? 'badge-gold' : i === 1 ? 'badge-silver' : i === 2 ? 'badge-bronze' : 'bg-secondary'}">${i + 1}</span></td>
+                                            <td>${r.username}</td>
+                                            <td>${r.score}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        `;
+                    } else {
+                        document.getElementById('leaderboard').innerHTML = '<p class="text-muted">暂无排名数据</p>';
+                    }
+                });
+        }
+
+        function registerTournament() {
+            fetch(`/api/tournament/tournaments/${currentTournamentId}/register`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            }).then(res => res.json()).then(data => {
+                if (data.success) {
+                    alert('报名成功!');
+                    bootstrap.Modal.getInstance(document.getElementById('tournamentDetailModal')).hide();
+                    loadStats();
+                    loadAvailableTournaments();
+                    loadMyTournaments();
+                } else {
+                    alert('报名失败: ' + data.message);
+                }
+            });
+        }
+
+        function startTournament(tournamentId) {
+            alert(`即将开始锦标赛: ${tournamentId}\n\n功能开发中...\n敬请期待!`);
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadStats();
+            loadAvailableTournaments();
+            
+            document.getElementById('my-tab').addEventListener('click', loadMyTournaments);
+            document.getElementById('history-tab').addEventListener('click', loadHistory);
+            document.getElementById('available-tab').addEventListener('click', loadAvailableTournaments);
+        });
+    </script>
+</body>
+</html>

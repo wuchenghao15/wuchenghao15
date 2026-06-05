@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系统设置 - MTSCOS AI</title>
+    <style>
+        :root {
+            --primary-color: #4F46E5;
+            --primary-light: #6366F1;
+            --dark-bg: #0F172A;
+            --dark-card: #1E293B;
+            --dark-border: #334155;
+            --text-primary: #F8FAFC;
+            --text-secondary: #94A3B8;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--dark-bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+        
+        .navbar {
+            background: var(--dark-card);
+            padding: 1rem 2rem;
+            border-bottom: 1px solid var(--dark-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .navbar-brand {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            text-decoration: none;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 1.5rem;
+        }
+        
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        
+        .nav-links a:hover {
+            color: var(--text-primary);
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+        
+        .page-title {
+            font-size: 2rem;
+            font-weight: 600;
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .page-title svg {
+            width: 28px;
+            height: 28px;
+            color: var(--primary-color);
+        }
+        
+        .settings-grid {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 2rem;
+        }
+        
+        .sidebar {
+            background: var(--dark-card);
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+        
+        .sidebar-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 1rem;
+        }
+        
+        .sidebar-menu {
+            list-style: none;
+        }
+        
+        .sidebar-menu li {
+            margin-bottom: 0.25rem;
+        }
+        
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+        
+        .sidebar-menu a:hover {
+            background: rgba(79, 70, 229, 0.1);
+            color: var(--text-primary);
+        }
+        
+        .sidebar-menu a.active {
+            background: var(--primary-color);
+            color: white;
+        }
+        
+        .sidebar-menu svg {
+            width: 18px;
+            height: 18px;
+        }
+        
+        .main-content {
+            background: var(--dark-card);
+            border-radius: 12px;
+            padding: 2rem;
+        }
+        
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: var(--text-primary);
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--dark-border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+        
+        .form-select {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--dark-border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            cursor: pointer;
+        }
+        
+        .form-select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+        
+        .form-select option {
+            background: var(--dark-bg);
+            color: var(--text-primary);
+        }
+        
+        .language-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+        }
+        
+        .language-option {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 16px;
+            border: 2px solid var(--dark-border);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: transparent;
+        }
+        
+        .language-option:hover {
+            border-color: rgba(79, 70, 229, 0.4);
+        }
+        
+        .language-option.active {
+            border-color: var(--primary-color);
+            background: rgba(79, 70, 229, 0.1);
+        }
+        
+        .language-option .flag {
+            font-size: 24px;
+        }
+        
+        .language-option .info {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .language-option .native-name {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .language-option .name {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: var(--primary-light);
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 2rem;
+        }
+        
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        
+        .status-resolved {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34D399;
+        }
+        
+        .status-pending {
+            background: rgba(245, 158, 11, 0.15);
+            color: #FBBF24;
+        }
+        
+        .error-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .error-item {
+            padding: 1rem;
+            border-bottom: 1px solid var(--dark-border);
+            transition: background 0.2s;
+        }
+        
+        .error-item:hover {
+            background: rgba(0, 0, 0, 0.1);
+        }
+        
+        .error-item:last-child {
+            border-bottom: none;
+        }
+        
+        .error-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+        
+        .error-type {
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+        
+        .error-message {
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+        }
+        
+        .error-details {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            font-family: monospace;
+        }
+        
+        .error-time {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: 0.5rem;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 4rem;
+            color: var(--text-secondary);
+        }
+        
+        .empty-state svg {
+            width: 64px;
+            height: 64px;
+            margin-bottom: 1rem;
+            opacity: 0.3;
+        }
+        
+        .empty-state h3 {
+            margin-bottom: 0.5rem;
+        }
+        
+        @media (max-width: 768px) {
+            .settings-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                order: 2;
+            }
+            
+            .main-content {
+                order: 1;
+            }
+            
+            .navbar {
+                flex-direction: column;
+                gap: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="/" class="navbar-brand">MTSCOS AI</a>
+        <div class="nav-links">
+            <a href="/">首页</a>
+            <a href="/dashboard">控制台</a>
+            <a href="/settings" class="active">设置</a>
+        </div>
+    </nav>
+    
+    <div class="container">
+        <h1 class="page-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+                <circle cx="12" cy="12" r="3"/>
+            </svg>
+            系统设置
+        </h1>
+        
+        <div class="settings-grid">
+            <aside class="sidebar">
+                <div class="sidebar-title">设置菜单</div>
+                <ul class="sidebar-menu">
+                    <li><a href="#general" class="active" onclick="showSection('general')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 20h9"/>
+                            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7.5 18H4v-3L16.5 3.5z"/>
+                        </svg>
+                        通用设置
+                    </a></li>
+                    <li><a href="#language" onclick="showSection('language')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                            <line x1="16" y1="13" x2="8" y2="13"/>
+                            <line x1="16" y1="17" x2="8" y2="17"/>
+                            <polyline points="10 9 9 9 8 9"/>
+                        </svg>
+                        语言设置
+                    </a></li>
+                    <li><a href="#permissions" onclick="showSection('permissions')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                        </svg>
+                        权限设置
+                    </a></li>
+                    <li><a href="#errors" onclick="showSection('errors')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="12" y1="8" x2="12" y2="12"/>
+                            <line x1="12" y1="16" x2="12.01" y2="16"/>
+                        </svg>
+                        错误日志
+                    </a></li>
+                </ul>
+            </aside>
+            
+            <main class="main-content">
+                <div id="general-section" class="section">
+                    <h2 class="section-title">通用设置</h2>
+                    
+                    <div class="form-group">
+                        <label class="form-label">系统名称</label>
+                        <input type="text" class="form-input" id="system-name" placeholder="输入系统名称">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">系统描述</label>
+                        <input type="text" class="form-input" id="system-desc" placeholder="输入系统描述">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">默认时区</label>
+                        <select class="form-select" id="timezone">
+                            <option value="Asia/Shanghai">Asia/Shanghai (UTC+8)</option>
+                            <option value="Asia/Tokyo">Asia/Tokyo (UTC+9)</option>
+                            <option value="Asia/Seoul">Asia/Seoul (UTC+9)</option>
+                            <option value="UTC">UTC</option>
+                        </select>
+                    </div>
+                    
+                    <div class="btn-group">
+                        <button class="btn btn-primary" onclick="saveGeneralSettings()">保存设置</button>
+                        <button class="btn btn-secondary" onclick="resetGeneralSettings()">重置</button>
+                    </div>
+                </div>
+                
+                <div id="language-section" class="section" style="display: none;">
+                    <h2 class="section-title">语言设置</h2>
+                    
+                    <div class="form-group">
+                        <label class="form-label">选择语言</label>
+                        <div class="language-grid" id="language-grid">
+                            <!-- 动态加载语言选项 -->
+                        </div>
+                    </div>
+                    
+                    <div class="btn-group">
+                        <button class="btn btn-primary" onclick="saveLanguage()">保存语言设置</button>
+                    </div>
+                </div>
+                
+                <div id="permissions-section" class="section" style="display: none;">
+                    <h2 class="section-title">权限设置</h2>
+                    
+                    <div class="form-group">
+                        <label class="form-label">会话超时时间（分钟）</label>
+                        <input type="number" class="form-input" id="session-timeout" value="30" min="5" max="120">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">最大登录尝试次数</label>
+                        <input type="number" class="form-input" id="max-login-attempts" value="5" min="3" max="10">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">密码过期天数</label>
+                        <input type="number" class="form-input" id="password-expiry" value="90" min="30" max="365">
+                    </div>
+                    
+                    <div class="btn-group">
+                        <button class="btn btn-primary" onclick="savePermissionSettings()">保存权限设置</button>
+                        <button class="btn btn-secondary" onclick="resetPermissionSettings()">重置</button>
+                    </div>
+                </div>
+                
+                <div id="errors-section" class="section" style="display: none;">
+                    <h2 class="section-title">错误日志（供AI学习）</h2>
+                    
+                    <div id="error-list" class="error-list">
+                        <!-- 动态加载错误列表 -->
+                    </div>
+                    
+                    <div id="empty-errors" class="empty-state" style="display: none;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                            <polyline points="22 4 12 14.01 9 11.01"/>
+                        </svg>
+                        <h3>暂无错误记录</h3>
+                        <p>系统运行正常，没有需要分析的错误</p>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+    
+    <script>
+        let currentLang = 'zh-CN';
+        
+        function showSection(section) {
+            document.querySelectorAll('.section').forEach(s => s.style.display = 'none');
+            document.querySelectorAll('.sidebar-menu a').forEach(a => a.classList.remove('active'));
+            document.getElementById(`${section}-section`).style.display = 'block';
+            btn.classList.add('active');
+            
+            if (section === 'language') {
+                loadLanguages();
+            } else if (section === 'errors') {
+                loadErrors();
+            }
+        }
+        
+        async function loadLanguages() {
+            try {
+                const response = await fetch('/api/settings/language');
+                const data = await response.json();
+                if (data.success) {
+                    currentLang = data.current_language;
+                    const grid = document.getElementById('language-grid');
+                    grid.innerHTML = '';
+                    
+                    data.available_languages.forEach(lang => {
+                        const flags = {
+                            'zh-CN': '🇨🇳',
+                            'zh-TW': '🇹🇼',
+                            'ja': '🇯🇵',
+                            'ko': '🇰🇷',
+                            'en': '🇺🇸'
+                        };
+                        
+                        grid.innerHTML += `
+                            <div class="language-option ${lang.code === currentLang ? 'active' : ''}" onclick="selectLanguage('${lang.code}')">
+                                <span class="flag">${flags[lang.code] || '🌐'}</span>
+                                <div class="info">
+                                    <span class="native-name">${lang.native_name}</span>
+                                    <span class="name">${lang.name}</span>
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+            } catch (e) {
+                console.error('Failed to load languages:', e);
+            }
+        }
+        
+        function selectLanguage(lang) {
+            document.querySelectorAll('.language-option').forEach(opt => opt.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+            currentLang = lang;
+        }
+        
+        async function saveLanguage() {
+            try {
+                const response = await fetch('/api/settings/language', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ lang: currentLang })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    alert('语言设置已保存！');
+                }
+            } catch (e) {
+                console.error('Failed to save language:', e);
+            }
+        }
+        
+        async function saveGeneralSettings() {
+            try {
+                const settings = {
+                    system_name: document.getElementById('system-name').value,
+                    system_description: document.getElementById('system-desc').value,
+                    timezone: document.getElementById('timezone').value
+                };
+                
+                const response = await fetch('/api/settings/general', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(settings)
+                });
+                const data = await response.json();
+                if (data.success) {
+                    alert('通用设置已保存！');
+                } else {
+                    alert('保存失败: ' + data.error);
+                }
+            } catch (e) {
+                console.error('Failed to save settings:', e);
+            }
+        }
+        
+        function resetGeneralSettings() {
+            document.getElementById('system-name').value = '';
+            document.getElementById('system-desc').value = '';
+            document.getElementById('timezone').value = 'Asia/Shanghai';
+        }
+        
+        async function savePermissionSettings() {
+            try {
+                const settings = {
+                    session_timeout: parseInt(document.getElementById('session-timeout').value),
+                    max_login_attempts: parseInt(document.getElementById('max-login-attempts').value),
+                    password_expiry: parseInt(document.getElementById('password-expiry').value)
+                };
+                
+                const response = await fetch('/api/settings/general', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(settings)
+                });
+                const data = await response.json();
+                if (data.success) {
+                    alert('权限设置已保存！');
+                }
+            } catch (e) {
+                console.error('Failed to save settings:', e);
+            }
+        }
+        
+        function resetPermissionSettings() {
+            document.getElementById('session-timeout').value = '30';
+            document.getElementById('max-login-attempts').value = '5';
+            document.getElementById('password-expiry').value = '90';
+        }
+        
+        async function loadErrors() {
+            try {
+                const response = await fetch('/api/settings/errors');
+                const data = await response.json();
+                if (data.success) {
+                    const list = document.getElementById('error-list');
+                    const empty = document.getElementById('empty-errors');
+                    
+                    if (data.count === 0) {
+                        list.style.display = 'none';
+                        empty.style.display = 'block';
+                        return;
+                    }
+                    
+                    empty.style.display = 'none';
+                    list.innerHTML = '';
+                    
+                    data.errors.forEach(error => {
+                        list.innerHTML += `
+                            <div class="error-item">
+                                <div class="error-header">
+                                    <span class="error-type">${error.error_type}</span>
+                                    <span class="status-badge ${error.resolved ? 'status-resolved' : 'status-pending'}">
+                                        ${error.resolved ? '已处理' : '待处理'}
+                                    </span>
+                                </div>
+                                <div class="error-message">${error.message}</div>
+                                ${error.details ? `<div class="error-details">${error.details}</div>` : ''}
+                                <div class="error-time">${error.created_at}</div>
+                            </div>
+                        `;
+                    });
+                }
+            } catch (e) {
+                console.error('Failed to load errors:', e);
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            loadLanguages();
+        });
+    </script>
+</body>
+</html>

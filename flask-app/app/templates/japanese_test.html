@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>日语能力测试</title>
+    <style>
+        /* 基础样式 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* 头部样式 */
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header h1 {
+            color: #343a40;
+            font-size: 24px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .back-btn {
+            background: #f8f9fa;
+            color: #343a40;
+            border: 2px solid #dee2e6;
+            padding: 8px 16px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .back-btn:hover {
+            background: #e9ecef;
+            border-color: #adb5bd;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            font-size: 16px;
+        }
+        
+        .username {
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .logout-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .logout-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        /* 主要内容样式 */
+        .container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+        }
+        
+        .test-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+            max-width: 900px;
+            width: 100%;
+        }
+        
+        .test-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .test-title {
+            color: #343a40;
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+        
+        .test-subtitle {
+            color: #6c757d;
+            font-size: 16px;
+        }
+        
+        .test-info {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        
+        .info-row:last-child {
+            margin-bottom: 0;
+        }
+        
+        .info-label {
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .info-value {
+            color: #6c757d;
+        }
+        
+        .test-content {
+            margin-bottom: 30px;
+        }
+        
+        .question-section {
+            background: #e7f3ff;
+            border: 1px solid #b3d7ff;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+        
+        .question-number {
+            color: #0066cc;
+            font-weight: 700;
+            font-size: 18px;
+            margin-bottom: 15px;
+        }
+        
+        .question-text {
+            color: #343a40;
+            font-size: 20px;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+        
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .option {
+            background: white;
+            border: 2px solid #b3d7ff;
+            border-radius: 10px;
+            padding: 15px 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .option:hover {
+            border-color: #0066cc;
+            background: #f0f8ff;
+            transform: translateX(5px);
+        }
+        
+        .option.selected {
+            border-color: #28a745;
+            background: #d4edda;
+        }
+        
+        .option input[type="radio"] {
+            accent-color: #0066cc;
+            width: 18px;
+            height: 18px;
+        }
+        
+        .option-label {
+            font-size: 16px;
+            color: #343a40;
+        }
+        
+        .test-actions {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+        }
+        
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex: 1;
+            max-width: 200px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #c82333;
+            transform: translateY(-2px);
+        }
+        
+        /* 页脚样式 */
+        .footer {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            text-align: center;
+            color: #6c757d;
+            font-size: 14px;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .header {
+                padding: 15px 20px;
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .header-left {
+                flex-direction: column;
+                gap: 10px;
+                text-align: center;
+            }
+            
+            .header h1 {
+                font-size: 20px;
+            }
+            
+            .user-info {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .container {
+                padding: 20px;
+            }
+            
+            .test-container {
+                padding: 20px;
+            }
+            
+            .test-title {
+                font-size: 24px;
+            }
+            
+            .info-row {
+                flex-direction: column;
+                gap: 5px;
+            }
+            
+            .test-actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .btn {
+                max-width: none;
+            }
+        }
+    </style>
+    <!-- FontAwesome CDN removed -->
+
+<style>
+.svg-icon {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    vertical-align: -0.125em;
+    fill: currentColor;
+}
+</style>
+</head>
+<body>
+    <!-- 头部 -->
+    <header class="header">
+        <div class="header-left">
+            <a href="/test-system" class="back-btn">
+                <svg class="svg-icon" viewBox="0 0 448 512" width="16" height="16"><path d="M257.5 445.1l-22.2 22.2c-9.4 9.4-24.6 9.4-33.9 0L7 273c-9.4-9.4-9.4-24.6 0-33.9L201.4 44.7c9.4-9.4 24.6-9.4 33.9 0l22.2 22.2c9.5 9.5 9.3 25-.4 34.3L136.6 216H424c13.3 0 24 10.7 24 24v32c0 13.3-10.7 24-24 24H136.6l120.5 114.8c9.8 9.3 10 24.8.4 34.3z"/></svg> 返回主页
+            </a>
+            <h1>
+                <span>🇯🇵</span>
+                日语能力测试
+            </h1>
+        </div>
+        <div class="user-info">
+            <span class="username">欢迎, {{ user.username }}！</span>
+            <a href="/auth/logout" class="logout-btn">退出登录</a>
+        </div>
+    </header>
+    
+    <!-- 主要内容 -->
+    <main class="container">
+        <div class="test-container">
+            <div class="test-header">
+                <h2 class="test-title">
+                    <span>📝</span>
+                    日语能力测试（N3级别）
+                </h2>
+                <p class="test-subtitle">测试您的日语听、说、读、写能力</p>
+            </div>
+            
+            <div class="test-info">
+                <div class="info-row">
+                    <span class="info-label">测试类型：</span>
+                    <span class="info-value">选择题</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">题目数量：</span>
+                    <span class="info-value">20题</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">测试时间：</span>
+                    <span class="info-value">30分钟</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">当前进度：</span>
+                    <span class="info-value">1/20</span>
+                </div>
+            </div>
+            
+            <div class="test-content">
+                <div class="question-section" id="initial-question">
+                    <div class="question-number">问题 1/20</div>
+                    <div class="question-text">
+                        このレストランの料理は_____です。
+                    </div>
+                    <div class="options">
+                        <label class="option">
+                            <input type="radio" name="question1" value="A">
+                            <span class="option-label">A. おいしい</span>
+                        </label>
+                        <label class="option">
+                            <input type="radio" name="question1" value="B">
+                            <span class="option-label">B. おいしくて</span>
+                        </label>
+                        <label class="option">
+                            <input type="radio" name="question1" value="C">
+                            <span class="option-label">C. おいしかった</span>
+                        </label>
+                        <label class="option">
+                            <input type="radio" name="question1" value="D">
+                            <span class="option-label">D. おいしくない</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="test-actions">
+                <button class="btn btn-secondary">
+                    <!-- Icon fa-save not found --> 保存
+                </button>
+                <button class="btn btn-primary">
+                    <!-- Icon fa-arrow-right not found --> 下一题
+                </button>
+                <button class="btn btn-danger">
+                    <svg class="svg-icon" viewBox="0 0 352 512" width="16" height="16"><path d="M242.7 256l100.1-100.1c4.7-4.7 4.7-12.3 0-17l-22.6-22.6c-4.7-4.7-12.3-4.7-17 0L203.1 216.4 103 116.3c-4.7-4.7-12.3-4.7-17 0L63.4 138.9c-4.7 4.7-4.7 12.3 0 17L163.5 256 63.4 356.1c-4.7 4.7-4.7 12.3 0 17l22.6 22.6c4.7 4.7 12.3 4.7 17 0l100.1-100.1 100.1 100.1c4.7 4.7 12.3 4.7 17 0l22.6-22.6c4.7-4.7 4.7-12.3 0-17L242.7 256z"/></svg> 结束测试
+                </button>
+            </div>
+        </div>
+    </main>
+    
+    <!-- 页脚 -->
+    <footer class="footer">
+        <p>&copy; 2026 统一语言测试系统. 保留所有权利.</p>
+    </footer>
+    
+    <script>
+        // 当前问题索引
+        let currentQuestionIndex = 0;
+        // 保存用户答案
+        const userAnswers = {};
+        // 总题目数量
+        const totalQuestions = 20;
+        
+        // 简单的选项选择逻辑
+        document.querySelectorAll('.option').forEach(option => {
+            option.addEventListener('click', function() {
+                // 移除其他选项的选中状态
+                this.closest('.options').querySelectorAll('.option').forEach(opt => {
+                    opt.classList.remove('selected');
+                });
+                // 添加当前选项的选中状态
+                this.classList.add('selected');
+                // 保存用户选择
+                const questionId = this.closest('.question-section').dataset.questionId || '1';
+                const selectedValue = this.querySelector('input[type="radio"]').value;
+                userAnswers[questionId] = selectedValue;
+            });
+        });
+        
+        // 更新当前进度
+        function updateProgress() {
+            const progress = document.querySelector('.info-value:last-child');
+            if (progress) {
+                progress.textContent = `${currentQuestionIndex + 1}/${totalQuestions}`;
+                const questionNumber = document.querySelector('.question-number');
+                if (questionNumber) {
+                    questionNumber.textContent = `问题 ${currentQuestionIndex + 1}/${totalQuestions}`;
+                }
+            }
+        }
+        
+        // 保存当前问题答案
+        function saveCurrentAnswer() {
+            const currentSection = document.querySelector('.question-section');
+            if (currentSection) {
+                const questionId = currentSection.dataset.questionId || '1';
+                const selectedOption = currentSection.querySelector('.option.selected');
+                if (selectedOption) {
+                    const selectedValue = selectedOption.querySelector('input[type="radio"]').value;
+                    userAnswers[questionId] = selectedValue;
+                }
+            }
+        }
+        
+        // 下一题按钮功能
+        document.querySelector('.btn-primary').addEventListener('click', function() {
+            // 保存当前问题答案
+            saveCurrentAnswer();
+            
+            // 简单的下一题逻辑
+            currentQuestionIndex++;
+            
+            if (currentQuestionIndex < totalQuestions) {
+                // 更新进度
+                updateProgress();
+                
+                // 这里可以添加加载下一个问题的逻辑
+                // 示例：通过API请求获取下一题
+                fetch('/api/japanese-test/next-question', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        current_index: currentQuestionIndex, 
+                        answers: userAnswers 
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.question_html) {
+                        document.querySelector('.test-content').innerHTML = data.question_html;
+                        // 重新绑定事件监听器
+                        bindOptionEvents();
+                    }
+                })
+                .catch(error => {
+                    console.error('获取下一题失败:', error);
+                    // 如果API请求失败，使用模拟数据更新问题
+                    simulateNextQuestion();
+                });
+            } else {
+                // 已经是最后一题，提示用户
+                alert('这是最后一题！');
+            }
+        });
+        
+        // 保存按钮功能
+        document.querySelector('.btn-secondary').addEventListener('click', function() {
+            // 保存当前问题答案
+            saveCurrentAnswer();
+            alert('保存成功！当前已保存 ' + Object.keys(userAnswers).length + ' 个答案');
+        });
+        
+        // 结束测试按钮功能
+        document.querySelector('.btn-danger').addEventListener('click', function() {
+            if (confirm('确定要结束测试吗？')) {
+                // 保存当前问题答案
+                saveCurrentAnswer();
+                
+                // 提交测试
+                fetch('/api/japanese-test/submit', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ answers: userAnswers })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.test_id) {
+                        window.location.href = '/test-result/' + data.test_id;
+                    } else {
+                        alert('测试已结束！共保存 ' + Object.keys(userAnswers).length + ' 个答案');
+                        // 无论是否有test_id，都跳转到测试系统主页
+                        window.location.href = '/test-system';
+                    }
+                })
+                .catch(error => {
+                    console.error('提交测试失败:', error);
+                    alert('测试已结束！共保存 ' + Object.keys(userAnswers).length + ' 个答案');
+                    // API请求失败时，也跳转到测试系统主页
+                    window.location.href = '/test-system';
+                });
+            }
+        });
+        
+        // 重新绑定选项事件
+        function bindOptionEvents() {
+            document.querySelectorAll('.option').forEach(option => {
+                option.addEventListener('click', function() {
+                    // 移除其他选项的选中状态
+                    this.closest('.options').querySelectorAll('.option').forEach(opt => {
+                        opt.classList.remove('selected');
+                    });
+                    // 添加当前选项的选中状态
+                    this.classList.add('selected');
+                    // 保存用户选择
+                    const questionId = this.closest('.question-section').dataset.questionId || (currentQuestionIndex + 1).toString();
+                    const selectedValue = this.querySelector('input[type="radio"]').value;
+                    userAnswers[questionId] = selectedValue;
+                });
+            });
+        }
+        
+        // 扩展的模拟题库
+        const mockQuestions = [
+            {
+                id: '1',
+                text: 'このレストランの料理は_____です。',
+                options: [
+                    { value: 'A', text: 'おいしい' },
+                    { value: 'B', text: 'おいしくて' },
+                    { value: 'C', text: 'おいしかった' },
+                    { value: 'D', text: 'おいしくない' }
+                ]
+            },
+            {
+                id: '2',
+                text: '昨日、友達と映画を_____。',
+                options: [
+                    { value: 'A', text: '見ます' },
+                    { value: 'B', text: '見ました' },
+                    { value: 'C', text: '見ています' },
+                    { value: 'D', text: '見る' }
+                ]
+            },
+            {
+                id: '3',
+                text: 'この本はとても_____です。',
+                options: [
+                    { value: 'A', text: '面白い' },
+                    { value: 'B', text: '面白くて' },
+                    { value: 'C', text: '面白かった' },
+                    { value: 'D', text: '面白くない' }
+                ]
+            },
+            {
+                id: '4',
+                text: '毎朝、7時に_____起きます。',
+                options: [
+                    { value: 'A', text: 'で' },
+                    { value: 'B', text: 'に' },
+                    { value: 'C', text: 'を' },
+                    { value: 'D', text: 'が' }
+                ]
+            },
+            {
+                id: '5',
+                text: '彼は日本語が_____です。',
+                options: [
+                    { value: 'A', text: '上手' },
+                    { value: 'B', text: '上手に' },
+                    { value: 'C', text: '上手な' },
+                    { value: 'D', text: '上手で' }
+                ]
+            },
+            {
+                id: '6',
+                text: '今日は天気が_____です。',
+                options: [
+                    { value: 'A', text: 'いい' },
+                    { value: 'B', text: 'いいに' },
+                    { value: 'C', text: 'いいで' },
+                    { value: 'D', text: 'いいな' }
+                ]
+            },
+            {
+                id: '7',
+                text: '学校まで_____かかりますか？',
+                options: [
+                    { value: 'A', text: 'どの' },
+                    { value: 'B', text: 'どこ' },
+                    { value: 'C', text: 'どう' },
+                    { value: 'D', text: 'どれ' }
+                ]
+            },
+            {
+                id: '8',
+                text: '私は毎日、30分_____散歩します。',
+                options: [
+                    { value: 'A', text: 'ごろ' },
+                    { value: 'B', text: 'くらい' },
+                    { value: 'C', text: 'まで' },
+                    { value: 'D', text: 'から' }
+                ]
+            },
+            {
+                id: '9',
+                text: '彼は昨日、病気で学校を_____ました。',
+                options: [
+                    { value: 'A', text: '休み' },
+                    { value: 'B', text: '休んで' },
+                    { value: 'C', text: '休んだ' },
+                    { value: 'D', text: '休んでい' }
+                ]
+            },
+            {
+                id: '10',
+                text: 'この部屋にはテレビが_____ありません。',
+                options: [
+                    { value: 'A', text: '何も' },
+                    { value: 'B', text: '誰も' },
+                    { value: 'C', text: 'どこも' },
+                    { value: 'D', text: 'いつも' }
+                ]
+            },
+            {
+                id: '11',
+                text: '明日、雨が_____そうです。',
+                options: [
+                    { value: 'A', text: '降る' },
+                    { value: 'B', text: '降って' },
+                    { value: 'C', text: '降った' },
+                    { value: 'D', text: '降り' }
+                ]
+            },
+            {
+                id: '12',
+                text: '私は寿司が_____好きです。',
+                options: [
+                    { value: 'A', text: 'たいへん' },
+                    { value: 'B', text: 'とても' },
+                    { value: 'C', text: 'ときどき' },
+                    { value: 'D', text: 'たまに' }
+                ]
+            },
+            {
+                id: '13',
+                text: 'この本は_____のですか？',
+                options: [
+                    { value: 'A', text: '誰' },
+                    { value: 'B', text: '誰の' },
+                    { value: 'C', text: '何' },
+                    { value: 'D', text: '何の' }
+                ]
+            },
+            {
+                id: '14',
+                text: '彼は英語が分かりますか？はい、_____。',
+                options: [
+                    { value: 'A', text: '分かります' },
+                    { value: 'B', text: '分かりません' },
+                    { value: 'C', text: '分かっています' },
+                    { value: 'D', text: '分かっていません' }
+                ]
+            },
+            {
+                id: '15',
+                text: '私は日本へ_____ことがあります。',
+                options: [
+                    { value: 'A', text: '行く' },
+                    { value: 'B', text: '行った' },
+                    { value: 'C', text: '行って' },
+                    { value: 'D', text: '行き' }
+                ]
+            },
+            {
+                id: '16',
+                text: '彼は毎日、夜10時まで_____しています。',
+                options: [
+                    { value: 'A', text: '勉強' },
+                    { value: 'B', text: '勉強に' },
+                    { value: 'C', text: '勉強を' },
+                    { value: 'D', text: '勉強で' }
+                ]
+            },
+            {
+                id: '17',
+                text: 'このレストランはとても人気が_____ます。',
+                options: [
+                    { value: 'A', text: 'ある' },
+                    { value: 'B', text: 'あり' },
+                    { value: 'C', text: 'あっ' },
+                    { value: 'D', text: 'あ' }
+                ]
+            },
+            {
+                id: '18',
+                text: '昨日、私は友達に映画のチケットを_____ました。',
+                options: [
+                    { value: 'A', text: 'あげ' },
+                    { value: 'B', text: 'あげて' },
+                    { value: 'C', text: 'あげた' },
+                    { value: 'D', text: 'あげま' }
+                ]
+            },
+            {
+                id: '19',
+                text: 'この部屋は_____ですか？',
+                options: [
+                    { value: 'A', text: 'いくら' },
+                    { value: 'B', text: 'どれ' },
+                    { value: 'C', text: 'どの' },
+                    { value: 'D', text: 'どこ' }
+                ]
+            },
+            {
+                id: '20',
+                text: '私は明日、北京へ_____予定です。',
+                options: [
+                    { value: 'A', text: '行く' },
+                    { value: 'B', text: '行った' },
+                    { value: 'C', text: '行って' },
+                    { value: 'D', text: '行き' }
+                ]
+            }
+        ];
+        
+        // 随机打乱数组的函数
+        function shuffleArray(array) {
+            const newArray = [...array];
+            for (let i = newArray.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+            }
+            return newArray;
+        }
+        
+        // 随机打乱选项顺序的函数
+        function shuffleOptions(options) {
+            return shuffleArray(options);
+        }
+        
+        // 初始化随机题库
+        let shuffledQuestions = [];
+        
+        // 初始化函数
+        function initTest() {
+            // 随机打乱题库顺序
+            shuffledQuestions = shuffleArray(mockQuestions);
+            // 为每个问题打乱选项顺序
+            shuffledQuestions.forEach(question => {
+                question.options = shuffleOptions(question.options);
+            });
+        }
+        
+        // 模拟下一题数据
+        function simulateNextQuestion() {
+            // 如果还没有初始化题库，先初始化
+            if (shuffledQuestions.length === 0) {
+                initTest();
+            }
+            
+            // 获取当前问题
+            const currentQuestion = shuffledQuestions[currentQuestionIndex];
+            if (currentQuestion) {
+                const questionHtml = `
+                    <div class="question-section" data-question-id="${currentQuestion.id}">
+                        <div class="question-number">問題 ${currentQuestionIndex + 1}/${totalQuestions}</div>
+                        <div class="question-text">${currentQuestion.text}</div>
+                        <div class="options">
+                            ${currentQuestion.options.map(opt => `
+                                <label class="option">
+                                    <input type="radio" name="question${currentQuestion.id}" value="${opt.value}">
+                                    <span class="option-label">${opt.value}. ${opt.text}</span>
+                                </label>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+                document.querySelector('.test-content').innerHTML = questionHtml;
+                // 重新绑定事件监听器
+                bindOptionEvents();
+            }
+        }
+        
+        // 初始化函数
+        function initializeTest() {
+            // 初始化随机题库
+            initTest();
+            // 更新初始问题为随机问题
+            updateInitialQuestion();
+            // 绑定事件监听器
+            bindOptionEvents();
+        }
+        
+        // 更新初始问题
+        function updateInitialQuestion() {
+            if (shuffledQuestions.length > 0) {
+                const firstQuestion = shuffledQuestions[0];
+                const questionHtml = `
+                    <div class="question-section" data-question-id="${firstQuestion.id}">
+                        <div class="question-number">問題 1/${totalQuestions}</div>
+                        <div class="question-text">${firstQuestion.text}</div>
+                        <div class="options">
+                            ${firstQuestion.options.map(opt => `
+                                <label class="option">
+                                    <input type="radio" name="question${firstQuestion.id}" value="${opt.value}">
+                                    <span class="option-label">${opt.value}. ${opt.text}</span>
+                                </label>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+                document.querySelector('.test-content').innerHTML = questionHtml;
+            }
+        }
+        
+        // 页面加载完成后初始化测试
+        window.addEventListener('load', initializeTest);
+    </script>
+</body>
+</html>

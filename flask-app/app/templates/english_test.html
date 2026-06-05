@@ -1,463 +1,892 @@
-{% extends "base.html" %}
-
-{% block title %}英语等级评估测试{% endblock %}
-
-{% block content %}
-<style>
-    /* 测试页面样式 */
-    .test-container {
-        max-width: 800px;
-        margin: 0 auto;
-        padding: 30px;
-        background: white;
-        border-radius: 20px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-    }
-    
-    .test-header {
-        text-align: center;
-        margin-bottom: 40px;
-        padding-bottom: 20px;
-        border-bottom: 2px solid #667eea;
-    }
-    
-    .test-title {
-        font-size: 2rem;
-        font-weight: 700;
-        color: #667eea;
-        margin-bottom: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 15px;
-    }
-    
-    .test-info {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 30px;
-        padding: 15px;
-        background: #f8f9fa;
-        border-radius: 10px;
-    }
-    
-    .info-item {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-    }
-    
-    .info-label {
-        font-size: 0.9rem;
-        color: #666;
-        margin-bottom: 5px;
-    }
-    
-    .info-value {
-        font-size: 1.1rem;
-        font-weight: 600;
-        color: #667eea;
-    }
-    
-    .question-container {
-        margin-bottom: 40px;
-    }
-    
-    .question-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 20px;
-        padding-bottom: 10px;
-        border-bottom: 1px solid #e0e0e0;
-    }
-    
-    .question-number {
-        font-size: 1.2rem;
-        font-weight: 600;
-        color: #667eea;
-    }
-    
-    .question-score {
-        font-size: 1rem;
-        color: #666;
-    }
-    
-    .question-content {
-        font-size: 1.1rem;
-        margin-bottom: 20px;
-        line-height: 1.6;
-    }
-    
-    .options {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-    }
-    
-    .option {
-        padding: 15px;
-        border: 2px solid #e0e0e0;
-        border-radius: 10px;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-    
-    .option:hover {
-        border-color: #667eea;
-        background: #f0f4ff;
-    }
-    
-    .option.selected {
-        border-color: #667eea;
-        background: #e6f0ff;
-    }
-    
-    .option input {
-        cursor: pointer;
-    }
-    
-    .option-label {
-        cursor: pointer;
-    }
-    
-    .navigation {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-top: 40px;
-        padding-top: 20px;
-        border-top: 2px solid #667eea;
-    }
-    
-    .nav-btn {
-        padding: 12px 24px;
-        border: none;
-        border-radius: 50px;
-        font-size: 1rem;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-    
-    .prev-btn {
-        background: #f0f0f0;
-        color: #333;
-    }
-    
-    .prev-btn:hover {
-        background: #e0e0e0;
-    }
-    
-    .next-btn {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-    }
-    
-    .next-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-    }
-    
-    .submit-btn {
-        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-        color: white;
-    }
-    
-    .submit-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-    }
-    
-    .progress-bar {
-        width: 100%;
-        height: 10px;
-        background: #f0f0f0;
-        border-radius: 5px;
-        margin-bottom: 30px;
-        overflow: hidden;
-    }
-    
-    .progress-fill {
-        height: 100%;
-        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-        border-radius: 5px;
-        transition: width 0.3s ease;
-    }
-    
-    /* 响应式设计 */
-    @media (max-width: 768px) {
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>英语水平测试</title>
+    <style>
+        /* 基础样式 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* 头部样式 */
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header h1 {
+            color: #343a40;
+            font-size: 24px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .back-btn {
+            background: #f8f9fa;
+            color: #343a40;
+            border: 2px solid #dee2e6;
+            padding: 8px 16px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .back-btn:hover {
+            background: #e9ecef;
+            border-color: #adb5bd;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            font-size: 16px;
+        }
+        
+        .username {
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .logout-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .logout-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        /* 主要内容样式 */
+        .container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+        }
+        
         .test-container {
-            padding: 20px;
-            margin: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+            max-width: 900px;
+            width: 100%;
+        }
+        
+        .test-header {
+            text-align: center;
+            margin-bottom: 40px;
         }
         
         .test-title {
-            font-size: 1.5rem;
+            color: #343a40;
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+        
+        .test-subtitle {
+            color: #6c757d;
+            font-size: 16px;
         }
         
         .test-info {
-            flex-direction: column;
-            gap: 10px;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
         }
         
-        .nav-btn {
-            padding: 10px 20px;
-            font-size: 0.9rem;
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
         }
-    }
-</style>
-
-<!-- 预加载动画 -->
-<div id="preloader" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; display: flex; justify-content: center; align-items: center; z-index: 9999;">
-    <div style="text-align: center;">
-        <div class="spinner" style="border: 4px solid rgba(0, 0, 0, 0.1); border-left: 4px solid #667eea; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 20px;"></div>
-        <p>Generating test questions, please wait...</p>
-    </div>
-    <style>
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        
+        .info-row:last-child {
+            margin-bottom: 0;
+        }
+        
+        .info-label {
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .info-value {
+            color: #6c757d;
+        }
+        
+        .test-content {
+            margin-bottom: 30px;
+        }
+        
+        .question-section {
+            background: #e7f3ff;
+            border: 1px solid #b3d7ff;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+        
+        .question-number {
+            color: #0066cc;
+            font-weight: 700;
+            font-size: 18px;
+            margin-bottom: 15px;
+        }
+        
+        .question-text {
+            color: #343a40;
+            font-size: 20px;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+        
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .option {
+            background: white;
+            border: 2px solid #b3d7ff;
+            border-radius: 10px;
+            padding: 15px 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .option:hover {
+            border-color: #0066cc;
+            background: #f0f8ff;
+            transform: translateX(5px);
+        }
+        
+        .option.selected {
+            border-color: #28a745;
+            background: #d4edda;
+        }
+        
+        .option input[type="radio"] {
+            accent-color: #0066cc;
+            width: 18px;
+            height: 18px;
+        }
+        
+        .option-label {
+            font-size: 16px;
+            color: #343a40;
+        }
+        
+        .test-actions {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+        }
+        
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex: 1;
+            max-width: 200px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #c82333;
+            transform: translateY(-2px);
+        }
+        
+        /* 页脚样式 */
+        .footer {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            text-align: center;
+            color: #6c757d;
+            font-size: 14px;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .header {
+                padding: 15px 20px;
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .header-left {
+                flex-direction: column;
+                gap: 10px;
+                text-align: center;
+            }
+            
+            .header h1 {
+                font-size: 20px;
+            }
+            
+            .user-info {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .container {
+                padding: 20px;
+            }
+            
+            .test-container {
+                padding: 20px;
+            }
+            
+            .test-title {
+                font-size: 24px;
+            }
+            
+            .info-row {
+                flex-direction: column;
+                gap: 5px;
+            }
+            
+            .test-actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .btn {
+                max-width: none;
+            }
         }
     </style>
-</div>
+    <!-- FontAwesome CDN removed -->
 
-<!-- 错误容器 -->
-<div id="error-container" style="display: none; max-width: 800px; margin: 0 auto; padding: 30px; background: white; border-radius: 20px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); text-align: center;">
-    <h2 style="color: #ff4757; margin-bottom: 20px;">Error</h2>
-    <p id="error-message" style="margin-bottom: 30px;"></p>
-    <button onclick="window.location.reload()" style="padding: 12px 24px; border: none; border-radius: 50px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; font-size: 1rem; font-weight: 600; cursor: pointer;">Retry</button>
-</div>
-
-<div id="test-container" class="test-container" style="display: none;">
-    <!-- 测试头部 -->
-    <div class="test-header">
-        <h1 class="test-title">
-            <i class="fas fa-flag-us"></i>
-            英语等级评估测试
-        </h1>
-        <p>Please answer the following questions, and the system will assess your English proficiency level based on your performance.</p>
-    </div>
+<style>
+.svg-icon {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    vertical-align: -0.125em;
+    fill: currentColor;
+}
+</style>
+</head>
+<body>
+    <!-- 头部 -->
+    <header class="header">
+        <div class="header-left">
+            <a href="/test-system" class="back-btn">
+                <svg class="svg-icon" viewBox="0 0 448 512" width="16" height="16"><path d="M257.5 445.1l-22.2 22.2c-9.4 9.4-24.6 9.4-33.9 0L7 273c-9.4-9.4-9.4-24.6 0-33.9L201.4 44.7c9.4-9.4 24.6-9.4 33.9 0l22.2 22.2c9.5 9.5 9.3 25-.4 34.3L136.6 216H424c13.3 0 24 10.7 24 24v32c0 13.3-10.7 24-24 24H136.6l120.5 114.8c9.8 9.3 10 24.8.4 34.3z"/></svg> 返回主页
+            </a>
+            <h1>
+                <span>🇬🇧</span>
+                英语水平测试
+            </h1>
+        </div>
+        <div class="user-info">
+            <span class="username">欢迎, {{ user.username }}！</span>
+            <a href="/auth/logout" class="logout-btn">退出登录</a>
+        </div>
+    </header>
     
-    <!-- 测试信息 -->
-    <div class="test-info">
-        <div class="info-item">
-            <span class="info-label">Total Questions</span>
-            <span class="info-value" id="total-questions">20</span>
+    <!-- 主要内容 -->
+    <main class="container">
+        <div class="test-container">
+            <div class="test-header">
+                <h2 class="test-title">
+                    <span>📝</span>
+                    英语水平测试（B1级别）
+                </h2>
+                <p class="test-subtitle">测试您的英语听、说、读、写能力</p>
+            </div>
+            
+            <div class="test-info">
+                <div class="info-row">
+                    <span class="info-label">测试类型：</span>
+                    <span class="info-value">选择题</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">题目数量：</span>
+                    <span class="info-value">20题</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">测试时间：</span>
+                    <span class="info-value">30分钟</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">当前进度：</span>
+                    <span class="info-value">1/20</span>
+                </div>
+            </div>
+            
+            <div class="test-content">
+                <div class="question-section">
+                    <div class="question-number">Question 1/20</div>
+                    <div class="question-text">
+                        The food in this restaurant is very _____.
+                    </div>
+                    <div class="options">
+                        <label class="option">
+                            <input type="radio" name="question1" value="A">
+                            <span class="option-label">A. delicious</span>
+                        </label>
+                        <label class="option">
+                            <input type="radio" name="question1" value="B">
+                            <span class="option-label">B. taste</span>
+                        </label>
+                        <label class="option">
+                            <input type="radio" name="question1" value="C">
+                            <span class="option-label">C. tasting</span>
+                        </label>
+                        <label class="option">
+                            <input type="radio" name="question1" value="D">
+                            <span class="option-label">D. tasted</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="test-actions">
+                <button class="btn btn-secondary">
+                    <!-- Icon fa-save not found --> Save
+                </button>
+                <button class="btn btn-primary">
+                    <!-- Icon fa-arrow-right not found --> Next
+                </button>
+                <button class="btn btn-danger">
+                    <svg class="svg-icon" viewBox="0 0 352 512" width="16" height="16"><path d="M242.7 256l100.1-100.1c4.7-4.7 4.7-12.3 0-17l-22.6-22.6c-4.7-4.7-12.3-4.7-17 0L203.1 216.4 103 116.3c-4.7-4.7-12.3-4.7-17 0L63.4 138.9c-4.7 4.7-4.7 12.3 0 17L163.5 256 63.4 356.1c-4.7 4.7-4.7 12.3 0 17l22.6 22.6c4.7 4.7 12.3 4.7 17 0l100.1-100.1 100.1 100.1c4.7 4.7 12.3 4.7 17 0l22.6-22.6c4.7-4.7 4.7-12.3 0-17L242.7 256z"/></svg> End Test
+                </button>
+            </div>
         </div>
-        <div class="info-item">
-            <span class="info-label">Current Question</span>
-            <span class="info-value" id="current-question">1/20</span>
-        </div>
-        <div class="info-item">
-            <span class="info-label">Time Remaining</span>
-            <span class="info-value" id="time-remaining">15:00</span>
-        </div>
-    </div>
+    </main>
     
-    <!-- 进度条 -->
-    <div class="progress-bar">
-        <div class="progress-fill" style="width: 5%;"></div>
-    </div>
+    <!-- 页脚 -->
+    <footer class="footer">
+        <p>&copy; 2026 统一语言测试系统. All rights reserved.</p>
+    </footer>
     
-    <!-- 题目容器 -->
-    <div class="question-container">
-        <div class="question-header">
-            <span class="question-number">Question 1</span>
-            <span class="question-score">10 points</span>
-        </div>
-        <div class="question-content" id="question-content">
-            What is the correct English word for "你好"?
-        </div>
-        <div class="options" id="options">
-            <div class="option">
-                <input type="radio" name="q1" value="a" id="q1-a">
-                <label for="q1-a" class="option-label">A. Hello</label>
-            </div>
-            <div class="option">
-                <input type="radio" name="q1" value="b" id="q1-b">
-                <label for="q1-b" class="option-label">B. Goodbye</label>
-            </div>
-            <div class="option">
-                <input type="radio" name="q1" value="c" id="q1-c">
-                <label for="q1-c" class="option-label">C. Thank you</label>
-            </div>
-            <div class="option">
-                <input type="radio" name="q1" value="d" id="q1-d">
-                <label for="q1-d" class="option-label">D. Sorry</label>
-            </div>
-        </div>
-    </div>
-    
-    <!-- 导航按钮 -->
-    <div class="navigation">
-        <button class="nav-btn prev-btn" disabled>
-            <i class="fas fa-arrow-left"></i> Previous
-        </button>
-        <button class="nav-btn next-btn">
-            Next <i class="fas fa-arrow-right"></i>
-        </button>
-    </div>
-</div>
-
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // 元素
-        const preloader = document.getElementById('preloader');
-        const testContainer = document.getElementById('test-container');
-        const errorContainer = document.getElementById('error-container');
-        const optionsContainer = document.getElementById('options');
-        const questionContent = document.getElementById('question-content');
-        const questionNumber = document.querySelector('.question-number');
-        const currentQuestionEl = document.getElementById('current-question');
-        const totalQuestionsEl = document.getElementById('total-questions');
-        const timeRemainingEl = document.getElementById('time-remaining');
-        const progressFill = document.querySelector('.progress-fill');
-        const prevBtn = document.querySelector('.prev-btn');
-        const nextBtn = document.querySelector('.next-btn');
+    <script>
+        // 当前问题索引
+        let currentQuestionIndex = 0;
+        // 保存用户答案
+        const userAnswers = {};
+        // 总题目数量
+        const totalQuestions = 20;
         
-        // 变量
-        let questions = [];
-        let currentQuestion = 0;
-        let userAnswers = {};
-        let timeRemaining = 15 * 60; // 15 minutes
+        // 简单的选项选择逻辑
+        document.querySelectorAll('.option').forEach(option => {
+            option.addEventListener('click', function() {
+                // 移除其他选项的选中状态
+                this.closest('.options').querySelectorAll('.option').forEach(opt => {
+                    opt.classList.remove('selected');
+                });
+                // 添加当前选项的选中状态
+                this.classList.add('selected');
+                // 保存用户选择
+                const questionId = this.closest('.question-section').dataset.questionId || '1';
+                const selectedValue = this.querySelector('input[type="radio"]').value;
+                userAnswers[questionId] = selectedValue;
+            });
+        });
         
-        // 从API获取题目
-        function fetchQuestions() {
-            fetch('/api/english-test/generate')
+        // 更新当前进度
+        function updateProgress() {
+            const progress = document.querySelector('.info-value:last-child');
+            if (progress) {
+                progress.textContent = `${currentQuestionIndex + 1}/${totalQuestions}`;
+                const questionNumber = document.querySelector('.question-number');
+                if (questionNumber) {
+                    questionNumber.textContent = `Question ${currentQuestionIndex + 1}/${totalQuestions}`;
+                }
+            }
+        }
+        
+        // 保存当前问题答案
+        function saveCurrentAnswer() {
+            const currentSection = document.querySelector('.question-section');
+            if (currentSection) {
+                const questionId = currentSection.dataset.questionId || '1';
+                const selectedOption = currentSection.querySelector('.option.selected');
+                if (selectedOption) {
+                    const selectedValue = selectedOption.querySelector('input[type="radio"]').value;
+                    userAnswers[questionId] = selectedValue;
+                }
+            }
+        }
+        
+        // 下一题按钮功能
+        document.querySelector('.btn-primary').addEventListener('click', function() {
+            // 保存当前问题答案
+            saveCurrentAnswer();
+            
+            // 简单的下一题逻辑
+            currentQuestionIndex++;
+            
+            if (currentQuestionIndex < totalQuestions) {
+                // 更新进度
+                updateProgress();
+                
+                // 这里可以添加加载下一个问题的逻辑
+                // 示例：通过API请求获取下一题
+                fetch('/api/english-test/next-question', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        current_index: currentQuestionIndex, 
+                        answers: userAnswers 
+                    })
+                })
                 .then(response => response.json())
                 .then(data => {
-                    if (data.success) {
-                        questions = data.data.questions;
-                        totalQuestionsEl.textContent = questions.length;
-                        
-                        // 隐藏预加载动画，显示测试容器
-                        preloader.style.display = 'none';
-                        testContainer.style.display = 'block';
-                        
-                        // 显示第一题
-                        showQuestion();
-                    } else {
-                        // 显示错误信息
-                        preloader.style.display = 'none';
-                        errorContainer.style.display = 'block';
-                        document.getElementById('error-message').textContent = data.message;
+                    if (data.question_html) {
+                        document.querySelector('.test-content').innerHTML = data.question_html;
+                        // 重新绑定事件监听器
+                        bindOptionEvents();
                     }
                 })
                 .catch(error => {
-                    // 显示错误信息
-                    preloader.style.display = 'none';
-                    errorContainer.style.display = 'block';
-                    document.getElementById('error-message').textContent = 'Failed to fetch questions. Please refresh the page and try again.';
-                    console.error('获取题目失败:', error);
+                    console.error('获取下一题失败:', error);
+                    // 如果API请求失败，使用模拟数据更新问题
+                    simulateNextQuestion();
                 });
-        }
+            } else {
+                // 已经是最后一题，提示用户
+                alert('This is the last question!');
+            }
+        });
         
-        // 显示当前题目
-        function showQuestion() {
-            if (questions.length === 0) return;
-            
-            const q = questions[currentQuestion];
-            questionContent.textContent = q.content;
-            questionNumber.textContent = `Question ${currentQuestion + 1}`;
-            currentQuestionEl.textContent = `${currentQuestion + 1}/${questions.length}`;
-            
-            // 更新进度条
-            const progress = (currentQuestion + 1) / questions.length * 100;
-            progressFill.style.width = `${progress}%`;
-            
-            // 更新按钮状态
-            prevBtn.disabled = currentQuestion === 0;
-            nextBtn.innerHTML = currentQuestion === questions.length - 1 ? '<i class="fas fa-check"></i> Submit Test' : 'Next <i class="fas fa-arrow-right"></i>';
-            nextBtn.className = currentQuestion === questions.length - 1 ? 'nav-btn submit-btn' : 'nav-btn next-btn';
-            
-            // 清空选项
-            optionsContainer.innerHTML = '';
-            
-            // 创建选项
-            q.options.forEach((option, index) => {
-                const optionLetter = String.fromCharCode(65 + index); // A, B, C, D...
-                const optionElement = document.createElement('div');
-                optionElement.className = 'option';
-                optionElement.innerHTML = `
-                    <input type="radio" name="question" value="${optionLetter}" id="option-${optionLetter}">
-                    <label for="option-${optionLetter}" class="option-label">${optionLetter}. ${option}</label>
-                `;
-                optionsContainer.appendChild(optionElement);
+        // 保存按钮功能
+        document.querySelector('.btn-secondary').addEventListener('click', function() {
+            // 保存当前问题答案
+            saveCurrentAnswer();
+            alert('Saved successfully! ' + Object.keys(userAnswers).length + ' answers have been saved');
+        });
+        
+        // 结束测试按钮功能
+        document.querySelector('.btn-danger').addEventListener('click', function() {
+            if (confirm('Are you sure you want to end the test?')) {
+                // 保存当前问题答案
+                saveCurrentAnswer();
                 
-                // 检查是否已选择
-                if (userAnswers[currentQuestion] === optionLetter) {
-                    optionElement.querySelector('input').checked = true;
-                    optionElement.classList.add('selected');
-                }
-                
-                // 添加点击事件
-                optionElement.addEventListener('click', function() {
-                    // 移除所有选项的选中状态
-                    document.querySelectorAll('.option').forEach(opt => opt.classList.remove('selected'));
+                // 提交测试
+                fetch('/api/english-test/submit', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ answers: userAnswers })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.test_id) {
+                        window.location.href = '/test-result/' + data.test_id;
+                    } else {
+                        alert('Test ended! ' + Object.keys(userAnswers).length + ' answers have been saved');
+                        // 无论是否有test_id，都跳转到测试系统主页
+                        window.location.href = '/test-system';
+                    }
+                })
+                .catch(error => {
+                    console.error('提交测试失败:', error);
+                    alert('Test ended! ' + Object.keys(userAnswers).length + ' answers have been saved');
+                    // API请求失败时，也跳转到测试系统主页
+                    window.location.href = '/test-system';
+                });
+            }
+        });
+        
+        // 重新绑定选项事件
+        function bindOptionEvents() {
+            document.querySelectorAll('.option').forEach(option => {
+                option.addEventListener('click', function() {
+                    // 移除其他选项的选中状态
+                    this.closest('.options').querySelectorAll('.option').forEach(opt => {
+                        opt.classList.remove('selected');
+                    });
                     // 添加当前选项的选中状态
                     this.classList.add('selected');
-                    // 选中对应的单选按钮
-                    const radio = this.querySelector('input[type="radio"]');
-                    radio.checked = true;
+                    // 保存用户选择
+                    const questionId = this.closest('.question-section').dataset.questionId || (currentQuestionIndex + 1).toString();
+                    const selectedValue = this.querySelector('input[type="radio"]').value;
+                    userAnswers[questionId] = selectedValue;
                 });
             });
         }
         
-        // 下一题按钮点击事件
-        nextBtn.addEventListener('click', function() {
-            // 保存答案
-            const selectedOption = document.querySelector('input[name="question"]:checked');
-            if (selectedOption) {
-                userAnswers[currentQuestion] = selectedOption.value;
+        // 扩展的模拟题库
+        const mockQuestions = [
+            {
+                id: '1',
+                text: 'The food in this restaurant is very _____.',
+                options: [
+                    { value: 'A', text: 'delicious' },
+                    { value: 'B', text: 'taste' },
+                    { value: 'C', text: 'tasting' },
+                    { value: 'D', text: 'tasted' }
+                ]
+            },
+            {
+                id: '2',
+                text: 'I _____ to the cinema yesterday.',
+                options: [
+                    { value: 'A', text: 'go' },
+                    { value: 'B', text: 'went' },
+                    { value: 'C', text: 'going' },
+                    { value: 'D', text: 'goes' }
+                ]
+            },
+            {
+                id: '3',
+                text: 'This book is very _____.',
+                options: [
+                    { value: 'A', text: 'interesting' },
+                    { value: 'B', text: 'interest' },
+                    { value: 'C', text: 'interested' },
+                    { value: 'D', text: 'interests' }
+                ]
+            },
+            {
+                id: '4',
+                text: 'She _____ English for 5 years.',
+                options: [
+                    { value: 'A', text: 'learns' },
+                    { value: 'B', text: 'learned' },
+                    { value: 'C', text: 'has learned' },
+                    { value: 'D', text: 'will learn' }
+                ]
+            },
+            {
+                id: '5',
+                text: 'If it _____ tomorrow, we will cancel the picnic.',
+                options: [
+                    { value: 'A', text: 'rain' },
+                    { value: 'B', text: 'rains' },
+                    { value: 'C', text: 'rained' },
+                    { value: 'D', text: 'will rain' }
+                ]
+            },
+            {
+                id: '6',
+                text: 'They _____ TV when I arrived.',
+                options: [
+                    { value: 'A', text: 'watch' },
+                    { value: 'B', text: 'watched' },
+                    { value: 'C', text: 'were watching' },
+                    { value: 'D', text: 'have watched' }
+                ]
+            },
+            {
+                id: '7',
+                text: 'I don\'t know _____ to do.',
+                options: [
+                    { value: 'A', text: 'what' },
+                    { value: 'B', text: 'how' },
+                    { value: 'C', text: 'where' },
+                    { value: 'D', text: 'when' }
+                ]
+            },
+            {
+                id: '8',
+                text: 'The meeting _____ at 2 PM.',
+                options: [
+                    { value: 'A', text: 'start' },
+                    { value: 'B', text: 'starts' },
+                    { value: 'C', text: 'started' },
+                    { value: 'D', text: 'will start' }
+                ]
+            },
+            {
+                id: '9',
+                text: 'He is _____ than his brother.',
+                options: [
+                    { value: 'A', text: 'tall' },
+                    { value: 'B', text: 'taller' },
+                    { value: 'C', text: 'tallest' },
+                    { value: 'D', text: 'more tall' }
+                ]
+            },
+            {
+                id: '10',
+                text: 'I _____ my keys yesterday.',
+                options: [
+                    { value: 'A', text: 'lose' },
+                    { value: 'B', text: 'lost' },
+                    { value: 'C', text: 'have lost' },
+                    { value: 'D', text: 'will lose' }
+                ]
+            },
+            {
+                id: '11',
+                text: 'She speaks English _____.',
+                options: [
+                    { value: 'A', text: 'good' },
+                    { value: 'B', text: 'well' },
+                    { value: 'C', text: 'better' },
+                    { value: 'D', text: 'best' }
+                ]
+            },
+            {
+                id: '12',
+                text: 'They _____ to London last week.',
+                options: [
+                    { value: 'A', text: 'went' },
+                    { value: 'B', text: 'go' },
+                    { value: 'C', text: 'have gone' },
+                    { value: 'D', text: 'will go' }
+                ]
+            },
+            {
+                id: '13',
+                text: 'I _____ breakfast when the phone rang.',
+                options: [
+                    { value: 'A', text: 'have' },
+                    { value: 'B', text: 'had' },
+                    { value: 'C', text: 'was having' },
+                    { value: 'D', text: 'have had' }
+                ]
+            },
+            {
+                id: '14',
+                text: 'The cat _____ on the sofa.',
+                options: [
+                    { value: 'A', text: 'sits' },
+                    { value: 'B', text: 'sat' },
+                    { value: 'C', text: 'is sitting' },
+                    { value: 'D', text: 'has sat' }
+                ]
+            },
+            {
+                id: '15',
+                text: 'Would you like _____ coffee?',
+                options: [
+                    { value: 'A', text: 'some' },
+                    { value: 'B', text: 'any' },
+                    { value: 'C', text: 'a' },
+                    { value: 'D', text: 'an' }
+                ]
+            },
+            {
+                id: '16',
+                text: 'He _____ be at home now.',
+                options: [
+                    { value: 'A', text: 'can' },
+                    { value: 'B', text: 'may' },
+                    { value: 'C', text: 'must' },
+                    { value: 'D', text: 'should' }
+                ]
+            },
+            {
+                id: '17',
+                text: 'The book _____ by J.K. Rowling.',
+                options: [
+                    { value: 'A', text: 'writes' },
+                    { value: 'B', text: 'wrote' },
+                    { value: 'C', text: 'is written' },
+                    { value: 'D', text: 'was written' }
+                ]
+            },
+            {
+                id: '18',
+                text: 'I _____ to the party if I have time.',
+                options: [
+                    { value: 'A', text: 'come' },
+                    { value: 'B', text: 'came' },
+                    { value: 'C', text: 'will come' },
+                    { value: 'D', text: 'have come' }
+                ]
+            },
+            {
+                id: '19',
+                text: 'This is the _____ movie I have ever seen.',
+                options: [
+                    { value: 'A', text: 'good' },
+                    { value: 'B', text: 'better' },
+                    { value: 'C', text: 'best' },
+                    { value: 'D', text: 'most good' }
+                ]
+            },
+            {
+                id: '20',
+                text: 'She asked me _____ I was feeling.',
+                options: [
+                    { value: 'A', text: 'how' },
+                    { value: 'B', text: 'what' },
+                    { value: 'C', text: 'where' },
+                    { value: 'D', text: 'when' }
+                ]
+            }
+        ];
+        
+        // 随机打乱数组的函数
+        function shuffleArray(array) {
+            const newArray = [...array];
+            for (let i = newArray.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+            }
+            return newArray;
+        }
+        
+        // 随机打乱选项顺序的函数
+        function shuffleOptions(options) {
+            return shuffleArray(options);
+        }
+        
+        // 初始化随机题库
+        let shuffledQuestions = [];
+        
+        // 初始化函数
+        function initTest() {
+            // 随机打乱题库顺序
+            shuffledQuestions = shuffleArray(mockQuestions);
+            // 为每个问题打乱选项顺序
+            shuffledQuestions.forEach(question => {
+                question.options = shuffleOptions(question.options);
+            });
+        }
+        
+        // 模拟下一题数据
+        function simulateNextQuestion() {
+            // 如果还没有初始化题库，先初始化
+            if (shuffledQuestions.length === 0) {
+                initTest();
             }
             
-            if (currentQuestion < questions.length - 1) {
-                currentQuestion++;
-                showQuestion();
-            } else {
-                // 提交测试
-                alert('Test submitted successfully!');
-                window.location.href = '/test-system';
+            // 获取当前问题
+            const currentQuestion = shuffledQuestions[currentQuestionIndex];
+            if (currentQuestion) {
+                const questionHtml = `
+                    <div class="question-section" data-question-id="${currentQuestion.id}">
+                        <div class="question-number">Question ${currentQuestionIndex + 1}/${totalQuestions}</div>
+                        <div class="question-text">${currentQuestion.text}</div>
+                        <div class="options">
+                            ${currentQuestion.options.map(opt => `
+                                <label class="option">
+                                    <input type="radio" name="question${currentQuestion.id}" value="${opt.value}">
+                                    <span class="option-label">${opt.value}. ${opt.text}</span>
+                                </label>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+                document.querySelector('.test-content').innerHTML = questionHtml;
+                // 重新绑定事件监听器
+                bindOptionEvents();
             }
-        });
+        }
         
-        // 上一题按钮点击事件
-        prevBtn.addEventListener('click', function() {
-            // 保存答案
-            const selectedOption = document.querySelector('input[name="question"]:checked');
-            if (selectedOption) {
-                userAnswers[currentQuestion] = selectedOption.value;
-            }
-            
-            if (currentQuestion > 0) {
-                currentQuestion--;
-                showQuestion();
-            }
-        });
+        // 初始化函数
+        function initializeTest() {
+            // 初始化随机题库
+            initTest();
+            // 更新初始问题为随机问题
+            updateInitialQuestion();
+            // 绑定事件监听器
+            bindOptionEvents();
+        }
         
-        // 倒计时功能
-        const timer = setInterval(function() {
-            timeRemaining--;
-            const minutes = Math.floor(timeRemaining / 60);
-            const seconds = timeRemaining % 60;
-            timeRemainingEl.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-            
-            if (timeRemaining <= 0) {
-                clearInterval(timer);
-                alert('Time is up! Test submitted automatically.');
-                window.location.href = '/test-system';
+        // 更新初始问题
+        function updateInitialQuestion() {
+            if (shuffledQuestions.length > 0) {
+                const firstQuestion = shuffledQuestions[0];
+                const questionHtml = `
+                    <div class="question-section" data-question-id="${firstQuestion.id}">
+                        <div class="question-number">Question 1/${totalQuestions}</div>
+                        <div class="question-text">${firstQuestion.text}</div>
+                        <div class="options">
+                            ${firstQuestion.options.map(opt => `
+                                <label class="option">
+                                    <input type="radio" name="question${firstQuestion.id}" value="${opt.value}">
+                                    <span class="option-label">${opt.value}. ${opt.text}</span>
+                                </label>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+                document.querySelector('.test-content').innerHTML = questionHtml;
             }
-        }, 1000);
+        }
         
-        // 开始获取题目
-        fetchQuestions();
-    });
-</script>
-{% endblock %}
+        // 页面加载完成后初始化测试
+        window.addEventListener('load', initializeTest);
+    </script>
+</body>
+</html>

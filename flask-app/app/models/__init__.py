@@ -1,1 +1,20 @@
 # -*- coding: utf-8 -*-
+"""
+数据库模型模块
+包含所有数据模型定义
+"""
+
+from .base_model import BaseModel
+from .user import User
+from .question import Question
+
+__all__ = [
+    # 基础模型
+    'BaseModel',
+    
+    # 用户相关
+    'User',
+    
+    # 题库相关
+    'Question'
+]

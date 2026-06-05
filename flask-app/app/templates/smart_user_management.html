@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能用户管理 - 后台管理系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome CDN removed -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    
+    <!-- Tailwind 配置 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#6B7280',
+                        success: '#10B981',
+                        danger: '#EF4444',
+                        warning: '#F59E0B',
+                        info: '#3B82F6',
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .scrollbar-hide {
+                scrollbar-width: none;
+                -ms-overflow-style: none;
+            }
+            .scrollbar-hide::-webkit-scrollbar {
+                display: none;
+            }
+        }
+    </style>
+
+<style>
+.svg-icon {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    vertical-align: -0.125em;
+    fill: currentColor;
+}
+</style>
+</head>
+<body class="bg-gray-50 font-sans">
+    <!-- 顶部导航栏 -->
+    <header class="bg-white shadow-md fixed top-0 left-0 right-0 z-50">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-4">
+                <button id="sidebar-toggle" class="lg:hidden text-gray-600 hover:text-primary">
+                    <!-- Icon fa-bars not found -->
+                </button>
+                <h1 class="text-xl font-bold text-gray-800">智能用户管理</h1>
+            </div>
+            
+            <div class="flex items-center space-x-4">
+                <!-- 通知图标 -->
+                <button class="relative text-gray-600 hover:text-primary">
+                    <svg class="svg-icon" viewBox="0 0 448 512" width="16" height="16"><path d="M224 512c35.3 0 64-28.7 64-64H160c0 35.3 28.7 64 64 64zm215.3-149.7c-14.6-14.6-46.1-29.8-67.4-59.3-24-33.5-35.3-72.8-35.3-110.4 0-77.4-57.6-141.6-133-150.7-2.6-15.4-17.6-25.6-33.6-25.6s-31 10.2-33.6 25.6C91.6 91 34 155.2 34 232.6c0 37.6-11.3 76.9-35.3 110.4C-22.6 372.5-68.9 387.7-83.5 402.3c-14.6 14.6-14.6 38.2 0 52.8 7.3 7.3 17.1 10.9 26.8 10.9h369.5c9.7 0 19.5-3.7 26.8-10.9 14.5-14.6 14.5-38.2 0-52.8z"/></svg>
+                    <span class="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
+                </button>
+                
+                <!-- 用户信息 -->
+                <div class="flex items-center space-x-3">
+                    <div class="h-10 w-10 bg-primary rounded-full flex items-center justify-center text-white font-bold">
+                        {{ user.username[0].upper() }}
+                    </div>
+                    <div class="hidden md:block">
+                        <p class="text-sm font-medium text-gray-800">{{ user.username }}</p>
+                        <p class="text-xs text-gray-500">{{ user.role }}</p>
+                    </div>
+                    <!-- Icon fa-caret-down not found -->
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主要内容区 -->
+    <main class="flex mt-16">
+        <!-- 侧边栏 -->
+        <aside id="sidebar" class="bg-white shadow-md w-64 fixed left-0 top-16 bottom-0 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 z-40 overflow-y-auto scrollbar-hide">
+            <nav class="p-4">
+                <ul class="space-y-2">
+                    <li>
+                        <a href="/dashboard" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-blue-50 text-gray-700 hover:text-primary transition-colors">
+                            <!-- Icon fa-tachometer not found -->
+                            <span>仪表盘</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/smart-dashboard" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-blue-50 text-gray-700 hover:text-primary transition-colors">
+                            <svg class="svg-icon" viewBox="0 0 512 512" width="16" height="16"><path d="M487.4 315.7l-43.4-7.5c-1.3-3.2-2.8-6.3-4.5-9.3l19.9-39.8c3.6-7.2 2-16.1-3.8-21.6l-50-47.6c-5.8-5.5-14.9-6.5-21.9-2.4l-41.9 24.5c-11.4-8.8-23.9-16.2-37.2-21.8l-8.4-47.4C292.1 35 283.7 32 274.7 32h-37.5c-9 0-17.4 3-24.3 8.3l-8.4 47.4c-13.3 5.6-25.8 13-37.2 21.8l-41.9-24.5c-7-4.1-16.1-3.1-21.9 2.4l-50 47.6c-5.8 5.5-7.4 14.4-3.8 21.6l19.9 39.8c-1.7 3-3.2 6.1-4.5 9.3l-43.4 7.5C10.1 320.6 0 331.8 0 344.9v34.3c0 13.1 10.1 24.3 22.6 29.2l43.4 7.5c1.3 3.2 2.8 6.3 4.5 9.3l-19.9 39.8c-3.6 7.2-2 16.1 3.8 21.6l50 47.6c5.8 5.5 14.9 6.5 21.9 2.4l41.9-24.5c11.4 8.8 23.9 16.2 37.2 21.8l8.4 47.4c6.9 5.3 15.3 8.3 24.3 8.3h37.5c9 0 17.4-3 24.3-8.3l8.4-47.4c13.3-5.6 25.8-13 37.2-21.8l41.9 24.5c7 4.1 16.1 3.1 21.9-2.4l50-47.6c5.8-5.5 7.4-14.4 3.8-21.6l-19.9-39.8c1.7-3 3.2-6.1 4.5-9.3l43.4-7.5c12.5-4.9 22.6-16 22.6-29.2v-34.3c0-13.1-10.1-24.3-22.6-29.2zM256 384c-70.7 0-128-57.3-128-128s57.3-128 128-128 128 57.3 128 128-57.3 128-128 128z"/></svg>
+                            <span>智能仪表盘</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/smart-user-management" class="flex items-center space-x-3 p-3 rounded-lg bg-blue-50 text-primary font-medium">
+                            <svg class="svg-icon" viewBox="0 0 448 512" width="16" height="16"><path d="M224 256c70.7 0 128-57.3 128-128S294.7 0 224 0 96 57.3 96 128s57.3 128 128 128zm89.6 32h-17.2c-11.2 0-21.8 3.4-30.8 9.4-17.1 11.5-36.4 17.6-56.4 17.6s-39.3-6.1-56.4-17.6c-9-6-19.6-9.4-30.8-9.4H22.4C10.1 288 0 298.1 0 310.4V464c0 26.5 21.5 48 48 48h352c26.5 0 48-21.5 48-48V310.4c0-12.3-10.1-22.4-22.4-22.4z"/></svg>
+                            <span>智能用户管理</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/users" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-blue-50 text-gray-700 hover:text-primary transition-colors">
+                            <svg class="svg-icon" viewBox="0 0 448 512" width="16" height="16"><path d="M224 256c70.7 0 128-57.3 128-128S294.7 0 224 0 96 57.3 96 128s57.3 128 128 128zm89.6 32h-17.2c-11.2 0-21.8 3.4-30.8 9.4-17.1 11.5-36.4 17.6-56.4 17.6s-39.3-6.1-56.4-17.6c-9-6-19.6-9.4-30.8-9.4H22.4C10.1 288 0 298.1 0 310.4V464c0 26.5 21.5 48 48 48h352c26.5 0 48-21.5 48-48V310.4c0-12.3-10.1-22.4-22.4-22.4z"/></svg>
+                            <span>用户管理</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/settings" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-blue-50 text-gray-700 hover:text-primary transition-colors">
+                            <!-- Icon fa-gear not found -->
+                            <span>系统设置</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- 内容区 -->
+        <section class="flex-1 lg:ml-64 p-4">
+            <!-- 覆盖层，用于在移动端点击时关闭侧边栏 -->
+            <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 lg:hidden hidden z-30"></div>
+            
+            <div class="container mx-auto">
+                <!-- 系统概览卡片 -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div class="bg-white rounded-xl shadow-md p-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-500">总用户数</p>
+                                <h3 class="text-2xl font-bold text-gray-800" id="total-users">0</h3>
+                            </div>
+                            <div class="h-12 w-12 bg-blue-100 rounded-full flex items-center justify-center">
+                                <svg class="svg-icon" viewBox="0 0 448 512" width="16" height="16"><path d="M224 256c70.7 0 128-57.3 128-128S294.7 0 224 0 96 57.3 96 128s57.3 128 128 128zm89.6 32h-17.2c-11.2 0-21.8 3.4-30.8 9.4-17.1 11.5-36.4 17.6-56.4 17.6s-39.3-6.1-56.4-17.6c-9-6-19.6-9.4-30.8-9.4H22.4C10.1 288 0 298.1 0 310.4V464c0 26.5 21.5 48 48 48h352c26.5 0 48-21.5 48-48V310.4c0-12.3-10.1-22.4-22.4-22.4z"/></svg>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white rounded-xl shadow-md p-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-500">异常用户</p>
+                                <h3 class="text-2xl font-bold text-gray-800" id="anomaly-users">0</h3>
+                            </div>
+                            <div class="h-12 w-12 bg-yellow-100 rounded-full flex items-center justify-center">
+                                <svg class="svg-icon" viewBox="0 0 576 512" fill="#ffc107" width="16" height="16"><path d="M569.5 412L334.1 55c-11.7-19.5-42-19.5-53.7 0L6.5 412c-11.7 19.5 2.6 44 26.8 44h499.4c24.2 0 38.5-24.5 26.8-44zm-277-112c-13.3 0-24-10.7-24-24v-96c0-13.3 10.7-24 24-24s24 10.7 24 24v96c0 13.3-10.7 24-24 24zm0 160c-17.7 0-32-14.3-32-32s14.3-32 32-32 32 14.3 32 32-14.3 32-32 32z"/></svg>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white rounded-xl shadow-md p-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-500">高风险用户</p>
+                                <h3 class="text-2xl font-bold text-gray-800" id="high-risk-users">0</h3>
+                            </div>
+                            <div class="h-12 w-12 bg-red-100 rounded-full flex items-center justify-center">
+                                <!-- Icon fa-fire not found -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 主要内容 -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- 左侧：用户列表 -->
+                    <div class="lg:col-span-2 space-y-6">
+                        <!-- 用户列表卡片 -->
+                        <div class="bg-white rounded-xl shadow-md p-4">
+                            <div class="flex justify-between items-center mb-4">
+                                <h2 class="text-lg font-semibold text-gray-800">用户列表</h2>
+                                <div class="relative">
+                                    <input type="text" placeholder="搜索用户..." class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent w-64">
+                                    <svg class="svg-icon" viewBox="0 0 512 512" width="16" height="16"><path d="M505 442.7L405.3 343c-4.5-4.5-10.6-7-17-7H372c27.6-35.3 44-79.7 44-128C416 93.1 322.9 0 208 0S0 93.1 0 208s93.1 208 208 208c48.3 0 92.7-16.4 128-44v16.3c0 6.4 2.5 12.5 7 17l99.7 99.7c9.4 9.4 24.6 9.4 33.9 0l28.3-28.3c9.4-9.4 9.4-24.6.1-34zM208 336c-70.7 0-128-57.3-128-128s57.3-128 128-128 128 57.3 128 128-57.3 128-128 128z"/></svg>
+                                </div>
+                            </div>
+                            
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full">
+                                    <thead>
+                                        <tr class="border-b">
+                                            <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">用户名</th>
+                                            <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">角色</th>
+                                            <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">风险评分</th>
+                                            <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">状态</th>
+                                            <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="user-table-body">
+                                        <!-- 用户数据将通过JS动态加载 -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <!-- 用户行为趋势图表 -->
+                        <div class="bg-white rounded-xl shadow-md p-4">
+                            <h2 class="text-lg font-semibold text-gray-800 mb-4">用户行为趋势</h2>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <h3 class="text-sm font-medium text-gray-600 mb-2">登录频率</h3>
+                                    <canvas id="login-frequency-chart" height="200"></canvas>
+                                </div>
+                                <div>
+                                    <h3 class="text-sm font-medium text-gray-600 mb-2">操作频率</h3>
+                                    <canvas id="action-frequency-chart" height="200"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 右侧：用户分析和推荐 -->
+                    <div class="space-y-6">
+                        <!-- 风险评分分布 -->
+                        <div class="bg-white rounded-xl shadow-md p-4">
+                            <h2 class="text-lg font-semibold text-gray-800 mb-4">风险评分分布</h2>
+                            <canvas id="risk-score-chart" height="200"></canvas>
+                        </div>
+                        
+                        <!-- 用户推荐 -->
+                        <div class="bg-white rounded-xl shadow-md p-4">
+                            <h2 class="text-lg font-semibold text-gray-800 mb-4">智能推荐</h2>
+                            <div id="recommendations" class="space-y-3 max-h-96 overflow-y-auto scrollbar-hide">
+                                <!-- 推荐数据将通过JS动态加载 -->
+                            </div>
+                        </div>
+                        
+                        <!-- 用户分组建议 -->
+                        <div class="bg-white rounded-xl shadow-md p-4">
+                            <h2 class="text-lg font-semibold text-gray-800 mb-4">分组建议</h2>
+                            <div id="group-suggestions" class="space-y-3 max-h-96 overflow-y-auto scrollbar-hide">
+                                <!-- 分组建议将通过JS动态加载 -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 用户详情模态框 -->
+    <div id="user-detail-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-xl shadow-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div class="p-6 border-b">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-xl font-bold text-gray-800" id="modal-title">用户详情</h2>
+                    <button id="close-modal" class="text-gray-500 hover:text-gray-700">
+                        <svg class="svg-icon" viewBox="0 0 352 512" width="16" height="16"><path d="M242.7 256l100.1-100.1c4.7-4.7 4.7-12.3 0-17l-22.6-22.6c-4.7-4.7-12.3-4.7-17 0L203.1 216.4 103 116.3c-4.7-4.7-12.3-4.7-17 0L63.4 138.9c-4.7 4.7-4.7 12.3 0 17L163.5 256 63.4 356.1c-4.7 4.7-4.7 12.3 0 17l22.6 22.6c4.7 4.7 12.3 4.7 17 0l100.1-100.1 100.1 100.1c4.7 4.7 12.3 4.7 17 0l22.6-22.6c4.7-4.7 4.7-12.3 0-17L242.7 256z"/></svg>
+                    </button>
+                </div>
+            </div>
+            <div class="p-6" id="user-detail-content">
+                <!-- 用户详情内容将通过JS动态加载 -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 加载用户数据
+        async function loadUserData() {
+            try {
+                const response = await axios.get('/api/smart-user-management/users');
+                const users = response.data.users;
+                
+                // 更新用户统计
+                document.getElementById('total-users').textContent = users.length;
+                const anomalyUsers = users.filter(user => user.has_anomalies).length;
+                const highRiskUsers = users.filter(user => user.risk_score > 70).length;
+                document.getElementById('anomaly-users').textContent = anomalyUsers;
+                document.getElementById('high-risk-users').textContent = highRiskUsers;
+                
+                // 更新用户表格
+                const tableBody = document.getElementById('user-table-body');
+                tableBody.innerHTML = '';
+                
+                users.forEach(user => {
+                    const row = document.createElement('tr');
+                    row.className = 'border-b hover:bg-gray-50';
+                    row.innerHTML = `
+                        <td class="px-4 py-3">
+                            <div class="flex items-center">
+                                <div class="h-8 w-8 bg-primary rounded-full flex items-center justify-center text-white text-sm font-bold mr-3">
+                                    ${user.username[0].toUpperCase()}
+                                </div>
+                                <div>
+                                    <p class="text-sm font-medium text-gray-800">${user.username}</p>
+                                    <p class="text-xs text-gray-500">${user.email}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-4 py-3">
+                            <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-primary">${user.role}</span>
+                        </td>
+                        <td class="px-4 py-3">
+                            <div class="flex items-center">
+                                <div class="w-20 bg-gray-200 rounded-full h-2.5 mr-2">
+                                    <div 
+                                        class="h-2.5 rounded-full ${user.risk_score > 70 ? 'bg-red-500' : user.risk_score > 50 ? 'bg-yellow-500' : 'bg-green-500'}" 
+                                        style="width: ${user.risk_score}%">
+                                    </div>
+                                </div>
+                                <span class="text-sm font-medium text-gray-800">${user.risk_score}</span>
+                            </div>
+                        </td>
+                        <td class="px-4 py-3">
+                            <span class="px-2 py-1 text-xs rounded-full ${user.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">
+                                ${user.is_active ? '活跃' : '禁用'}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3">
+                            <button class="text-primary hover:text-primary-dark mr-2" onclick="viewUserDetails('${user.username}')">
+                                <!-- Icon fa-eye not found -->
+                            </button>
+                            <button class="text-gray-500 hover:text-gray-700">
+                                <!-- Icon fa-edit not found -->
+                            </button>
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+                
+                // 更新风险评分分布图表
+                updateRiskScoreChart(users);
+            } catch (error) {
+                console.error('加载用户数据失败:', error);
+            }
+        }
+        
+        // 更新风险评分分布图表
+        function updateRiskScoreChart(users) {
+            const riskScores = users.map(user => user.risk_score);
+            const lowRisk = riskScores.filter(score => score <= 30).length;
+            const mediumRisk = riskScores.filter(score => score > 30 && score <= 70).length;
+            const highRisk = riskScores.filter(score => score > 70).length;
+            
+            const ctx = document.getElementById('risk-score-chart').getContext('2d');
+            if (window.riskScoreChart) {
+                window.riskScoreChart.destroy();
+            }
+            window.riskScoreChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['低风险', '中风险', '高风险'],
+                    datasets: [{
+                        data: [lowRisk, mediumRisk, highRisk],
+                        backgroundColor: ['#10B981', '#F59E0B', '#EF4444'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+        
+        // 加载推荐数据
+        async function loadRecommendations() {
+            try {
+                const response = await axios.get('/api/smart-user-management/recommendations');
+                const recommendations = response.data.recommendations;
+                
+                const recommendationsContainer = document.getElementById('recommendations');
+                recommendationsContainer.innerHTML = '';
+                
+                recommendations.forEach(rec => {
+                    const recElement = document.createElement('div');
+                    recElement.className = 'p-3 bg-gray-50 rounded-lg border-l-4 ' + 
+                        (rec.priority === 'high' ? 'border-red-500' : rec.priority === 'medium' ? 'border-yellow-500' : 'border-green-500');
+                    recElement.innerHTML = `
+                        <p class="text-sm text-gray-800">${rec.description}</p>
+                        <p class="text-xs text-gray-500 mt-1">
+                            <svg class="svg-icon" viewBox="0 0 512 512" width="16" height="16"><path d="M256 8C119 8 8 119 8 256s111 248 248 248 248-111 248-248S393 8 256 8zm0 448c-110.5 0-200-89.5-200-200S145.5 56 256 56s200 89.5 200 200-89.5 200-200 200zm61.6-265.5c-4.7-4.7-12.3-4.7-17 0L268 223.1V132c0-6.6-5.4-12-12-12h-28c-6.6 0-12 5.4-12 12v124.1c0 6.4 2.5 12.6 7 17.1l74.5 74.5c4.7 4.7 12.3 4.7 17 0l19.8-19.8c4.7-4.7 4.7-12.3 0-17l-68.7-68.7z"/></svg>${new Date().toLocaleTimeString()}
+                        </p>
+                    `;
+                    recommendationsContainer.appendChild(recElement);
+                });
+            } catch (error) {
+                console.error('加载推荐数据失败:', error);
+            }
+        }
+        
+        // 加载分组建议
+        async function loadGroupSuggestions() {
+            try {
+                const response = await axios.get('/api/smart-user-management/groups/suggestions');
+                const groupSuggestions = response.data.group_suggestions;
+                
+                const groupContainer = document.getElementById('group-suggestions');
+                groupContainer.innerHTML = '';
+                
+                groupSuggestions.forEach(group => {
+                    const groupElement = document.createElement('div');
+                    groupElement.className = 'p-3 bg-gray-50 rounded-lg';
+                    groupElement.innerHTML = `
+                        <h3 class="text-sm font-medium text-gray-800">${group.group_name}</h3>
+                        <p class="text-xs text-gray-500 mt-1">${group.description}</p>
+                        <p class="text-xs text-gray-500 mt-1"><strong>建议成员:</strong> ${group.suggested_members.join(', ')}</p>
+                        <p class="text-xs text-gray-500 mt-1"><strong>原因:</strong> ${group.reason}</p>
+                    `;
+                    groupContainer.appendChild(groupElement);
+                });
+            } catch (error) {
+                console.error('加载分组建议失败:', error);
+            }
+        }
+        
+        // 加载用户行为趋势数据
+        async function loadUserBehaviorTrends() {
+            try {
+                // 获取第一个用户的行为趋势数据作为示例
+                const response = await axios.get('/api/smart-user-management/users');
+                const users = response.data.users;
+                
+                if (users.length > 0) {
+                    const username = users[0].username;
+                    const trendsResponse = await axios.get(`/api/smart-user-management/user/${username}/behavior-trends`);
+                    const trends = trendsResponse.data.trends;
+                    
+                    // 更新登录频率图表
+                    const loginCtx = document.getElementById('login-frequency-chart').getContext('2d');
+                    if (window.loginFrequencyChart) {
+                        window.loginFrequencyChart.destroy();
+                    }
+                    window.loginFrequencyChart = new Chart(loginCtx, {
+                        type: 'line',
+                        data: {
+                            labels: trends.login_frequency.labels,
+                            datasets: [{
+                                label: '登录次数',
+                                data: trends.login_frequency.data,
+                                borderColor: '#3B82F6',
+                                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                                tension: 0.3,
+                                fill: true
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: {
+                                    display: false
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true
+                                }
+                            }
+                        }
+                    });
+                    
+                    // 更新操作频率图表
+                    const actionCtx = document.getElementById('action-frequency-chart').getContext('2d');
+                    if (window.actionFrequencyChart) {
+                        window.actionFrequencyChart.destroy();
+                    }
+                    window.actionFrequencyChart = new Chart(actionCtx, {
+                        type: 'bar',
+                        data: {
+                            labels: trends.action_frequency.labels,
+                            datasets: [{
+                                label: '操作次数',
+                                data: trends.action_frequency.data,
+                                backgroundColor: '#3B82F6',
+                                borderRadius: 4
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: {
+                                    display: false
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true
+                                }
+                            }
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('加载用户行为趋势失败:', error);
+            }
+        }
+        
+        // 查看用户详情
+        async function viewUserDetails(username) {
+            try {
+                const response = await axios.get(`/api/smart-user-management/user/${username}/behavior`);
+                const userData = response.data;
+                
+                const modal = document.getElementById('user-detail-modal');
+                const modalTitle = document.getElementById('modal-title');
+                const content = document.getElementById('user-detail-content');
+                
+                modalTitle.textContent = `${username} 的用户详情`;
+                
+                // 格式化登录历史
+                const formattedLoginHistory = userData.behavior_data.login_history.map(login => {
+                    const date = new Date(login.timestamp * 1000);
+                    return `
+                        <tr class="border-b">
+                            <td class="px-4 py-2 text-sm text-gray-600">${date.toLocaleString()}</td>
+                            <td class="px-4 py-2 text-sm text-gray-600">${login.ip}</td>
+                            <td class="px-4 py-2 text-sm text-gray-600">${login.device}</td>
+                            <td class="px-4 py-2 text-sm text-gray-600">${login.location}</td>
+                            <td class="px-4 py-2 text-sm text-gray-600">
+                                <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-700">${login.status}</span>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+                
+                // 格式化操作历史
+                const formattedActionHistory = userData.behavior_data.action_history.map(action => {
+                    const date = new Date(action.timestamp * 1000);
+                    return `
+                        <tr class="border-b">
+                            <td class="px-4 py-2 text-sm text-gray-600">${date.toLocaleString()}</td>
+                            <td class="px-4 py-2 text-sm text-gray-600">${action.action}</td>
+                            <td class="px-4 py-2 text-sm text-gray-600">${action.resource}</td>
+                            <td class="px-4 py-2 text-sm text-gray-600">
+                                <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-700">${action.status}</span>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+                
+                content.innerHTML = `
+                    <div class="space-y-6">
+                        <!-- 基本信息 -->
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-800 mb-3">基本信息</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <p class="text-sm text-gray-500">用户名</p>
+                                    <p class="text-base font-medium text-gray-800">${username}</p>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-500">行为模式</p>
+                                    <p class="text-base font-medium text-gray-800">${userData.analysis.behavior_pattern}</p>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-500">登录时间模式</p>
+                                    <p class="text-base font-medium text-gray-800">${userData.analysis.login_time_pattern}</p>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-500">操作模式</p>
+                                    <p class="text-base font-medium text-gray-800">${userData.analysis.action_pattern}</p>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-500">异常评分</p>
+                                    <p class="text-base font-medium text-gray-800">${userData.analysis.anomaly_score}</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 登录历史 -->
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-800 mb-3">登录历史</h3>
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full">
+                                    <thead>
+                                        <tr class="border-b">
+                                            <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">时间</th>
+                                            <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">IP</th>
+                                            <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">设备</th>
+                                            <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">位置</th>
+                                            <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">状态</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${formattedLoginHistory}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <!-- 操作历史 -->
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-800 mb-3">操作历史</h3>
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full">
+                                    <thead>
+                                        <tr class="border-b">
+                                            <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">时间</th>
+                                            <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">操作</th>
+                                            <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">资源</th>
+                                            <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">状态</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${formattedActionHistory}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <!-- 分析建议 -->
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-800 mb-3">分析建议</h3>
+                            <ul class="space-y-2">
+                                ${userData.analysis.recommendations.map(rec => `<li class="text-sm text-gray-600"><!-- Icon fa-arrow-right not found -->${rec}</li>`).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                `;
+                
+                modal.classList.remove('hidden');
+            } catch (error) {
+                console.error('加载用户详情失败:', error);
+            }
+        }
+        
+        // 初始化页面
+        function init() {
+            // 加载数据
+            loadUserData();
+            loadRecommendations();
+            loadGroupSuggestions();
+            loadUserBehaviorTrends();
+            
+            // 每30秒刷新一次数据
+            setInterval(() => {
+                loadUserData();
+                loadRecommendations();
+                loadGroupSuggestions();
+            }, 30000);
+            
+            // 侧边栏切换
+            const sidebarToggle = document.getElementById('sidebar-toggle');
+            const sidebarOverlay = document.getElementById('sidebar-overlay');
+            const sidebar = document.getElementById('sidebar');
+            
+            sidebarToggle.addEventListener('click', () => {
+                sidebar.classList.toggle('-translate-x-full');
+                sidebarOverlay.classList.toggle('hidden');
+            });
+            
+            sidebarOverlay.addEventListener('click', () => {
+                sidebar.classList.add('-translate-x-full');
+                sidebarOverlay.classList.add('hidden');
+            });
+            
+            // 关闭模态框
+            document.getElementById('close-modal').addEventListener('click', () => {
+                document.getElementById('user-detail-modal').classList.add('hidden');
+            });
+            
+            // 点击模态框外部关闭
+            document.getElementById('user-detail-modal').addEventListener('click', (e) => {
+                if (e.target.id === 'user-detail-modal') {
+                    e.target.classList.add('hidden');
+                }
+            });
+        }
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

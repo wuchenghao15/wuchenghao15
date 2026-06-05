@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试结果 - 语言测试系统</title>
+    <style>
+        /* 基础样式重置 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 800px;
+            overflow: hidden;
+        }
+        
+        /* 头部样式 */
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+        
+        /* 内容区域 */
+        .content {
+            padding: 40px;
+        }
+        
+        /* 结果标题 */
+        .result-title {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .result-title h2 {
+            font-size: 28px;
+            color: #343a40;
+            margin-bottom: 10px;
+        }
+        
+        .result-title p {
+            color: #6c757d;
+            font-size: 16px;
+        }
+        
+        /* 分数卡片 */
+        .score-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .score-value {
+            font-size: 72px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+        
+        .score-label {
+            font-size: 20px;
+            opacity: 0.9;
+        }
+        
+        /* 统计信息 */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 36px;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            color: #6c757d;
+        }
+        
+        /* 分析区域 */
+        .analysis {
+            background: #f0f2ff;
+            padding: 30px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        
+        .analysis h3 {
+            font-size: 18px;
+            color: #343a40;
+            margin-bottom: 15px;
+        }
+        
+        .analysis p {
+            color: #6c757d;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+        
+        /* 建议区域 */
+        .suggestions {
+            background: #e8f5e8;
+            padding: 30px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        
+        .suggestions h3 {
+            font-size: 18px;
+            color: #343a40;
+            margin-bottom: 15px;
+        }
+        
+        .suggestions ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .suggestions li {
+            color: #6c757d;
+            line-height: 1.6;
+            margin-bottom: 10px;
+            padding-left: 25px;
+            position: relative;
+        }
+        
+        .suggestions li:before {
+            content: "✅";
+            position: absolute;
+            left: 0;
+        }
+        
+        /* 操作按钮 */
+        .action-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 40px;
+        }
+        
+        .btn {
+            padding: 14px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-secondary {
+            background: #f8f9fa;
+            color: #343a40;
+            border: 2px solid #e9ecef;
+        }
+        
+        .btn-secondary:hover {
+            background: #e9ecef;
+        }
+        
+        /* 侧边栏 */
+        .sidebar {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 30px;
+        }
+        
+        .sidebar h3 {
+            font-size: 16px;
+            color: #343a40;
+            margin-bottom: 15px;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+        }
+        
+        .sidebar li {
+            margin-bottom: 10px;
+        }
+        
+        .sidebar a {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+            transition: color 0.3s ease;
+        }
+        
+        .sidebar a:hover {
+            color: #764ba2;
+            text-decoration: underline;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .content {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 20px;
+            }
+            
+            .result-title h2 {
+                font-size: 24px;
+            }
+            
+            .score-card {
+                padding: 20px;
+            }
+            
+            .score-value {
+                font-size: 48px;
+            }
+            
+            .stats {
+                grid-template-columns: 1fr;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+    <!-- FontAwesome CDN removed -->
+
+<style>
+.svg-icon {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    vertical-align: -0.125em;
+    fill: currentColor;
+}
+</style>
+</head>
+<body>
+    <div class="container">
+        <!-- 头部 -->
+        <div class="header">
+            <h1>📚 语言测试系统</h1>
+            <p>测试结果</p>
+        </div>
+        
+        <!-- 内容区域 -->
+        <div class="content">
+            <!-- 结果标题 -->
+            <div class="result-title">
+                <h2>🎉 测试完成！</h2>
+                <p>恭喜您完成了语言测试，以下是您的测试结果</p>
+            </div>
+            
+            <!-- 分数卡片 -->
+            <div class="score-card">
+                <div class="score-value">{{ score }}%</div>
+                <div class="score-label">测试得分</div>
+            </div>
+            
+            <!-- 统计信息 -->
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-value">{{ correct_questions }}</div>
+                    <div class="stat-label">正确题目</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ total_questions }}</div>
+                    <div class="stat-label">总题目数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ duration }}秒</div>
+                    <div class="stat-label">测试时长</div>
+                </div>
+            </div>
+            
+            <!-- 分析区域 -->
+            <div class="analysis">
+                <h3><svg class="svg-icon" viewBox="0 0 640 512" width="16" height="16"><path d="M608 400c0 17.67-14.33 32-32 32H32c-17.67 0-32-14.33-32-32V80c0-17.67 14.33-32 32-32s32 14.33 32 32v288h512v32zm0-352H64c-17.67 0-32 14.33-32 32v320c0 17.67 14.33 32 32 32h544c17.67 0 32-14.33 32-32V80c0-17.67-14.33-32-32-32zM128 384c-8.84 0-16-7.16-16-16s7.16-16 16-16 16 7.16 16 16-7.16 16-16 16zm128 0c-8.84 0-16-7.16-16-16s7.16-16 16-16 16 7.16 16 16-7.16 16-16 16zm128 0c-8.84 0-16-7.16-16-16s7.16-16 16-16 16 7.16 16 16-7.16 16-16 16zm128 0c-8.84 0-16-7.16-16-16s7.16-16 16-16 16 7.16 16 16-7.16 16-16 16zM128 288c-8.84 0-16-7.16-16-16s7.16-16 16-16 16 7.16 16 16-7.16 16-16 16zm128 0c-8.84 0-16-7.16-16-16s7.16-16 16-16 16 7.16 16 16-7.16 16-16 16zm128 0c-8.84 0-16-7.16-16-16s7.16-16 16-16 16 7.16 16 16-7.16 16-16 16zm128 0c-8.84 0-16-7.16-16-16s7.16-16 16-16 16 7.16 16 16-7.16 16-16 16zM128 192c-8.84 0-16-7.16-16-16s7.16-16 16-16 16 7.16 16 16-7.16 16-16 16zm128 0c-8.84 0-16-7.16-16-16s7.16-16 16-16 16 7.16 16 16-7.16 16-16 16zm128 0c-8.84 0-16-7.16-16-16s7.16-16 16-16 16 7.16 16 16-7.16 16-16 16zm128 0c-8.84 0-16-7.16-16-16s7.16-16 16-16 16 7.16 16 16-7.16 16-16 16z"/></svg> 成绩分析</h3>
+                <p>您本次测试的得分为 {{ score }}%，共答对了 {{ correct_questions }} 道题目，答错了 {{ total_questions - correct_questions }} 道题目。</p>
+                <p>测试时长为 {{ duration }} 秒，您的答题速度和准确性都有很大的提升空间。</p>
+            </div>
+            
+            <!-- 建议区域 -->
+            <div class="suggestions">
+                <h3><!-- Icon fa-lightbulb not found --> 学习建议</h3>
+                <ul>
+                    <li>继续巩固基础知识，加强词汇量积累</li>
+                    <li>多做练习题，提高答题速度和准确性</li>
+                    <li>针对错误题目进行重点复习</li>
+                    <li>定期进行模拟测试，跟踪学习进度</li>
+                    <li>结合实际场景练习，提高语言应用能力</li>
+                </ul>
+            </div>
+            
+            <!-- 操作按钮 -->
+            <div class="action-buttons">
+                <a href="/language-test" class="btn btn-primary">
+                    <!-- Icon fa-redo not found --> 重新测试
+                </a>
+                <a href="/" class="btn btn-secondary">
+                    <svg class="svg-icon" viewBox="0 0 576 512" width="16" height="16"><path d="M575.8 255.3c0-1.1-.3-2.1-.7-3l-96-160c-5.2-8.7-14.6-14.3-25.1-14.3H416V48c0-26.5-21.5-48-48-48H208c-26.5 0-48 21.5-48 48v32H128c-10.5 0-19.9 5.6-25.1 14.3l-96 160c-.4.9-.7 1.9-.7 3 0 16.5 13.5 30 30 30h34V464c0 26.5 21.5 48 48 48H448c26.5 0 48-21.5 48-48V285.3h34c16.5 0 30-13.5 30-30zM160 464V288H96l96-160h32v112c0 8.8 7.2 16 16 16h32c8.8 0 16-7.2 16-16V128h192l96 160h-64v176H160z"/></svg> 返回首页
+                </a>
+            </div>
+            
+            <!-- 侧边栏导航 -->
+            <div class="sidebar">
+                <h3><!-- Icon fa-compass not found --> 测试导航</h3>
+                <ul>
+                    <li><a href="/language-test"><!-- Icon fa-list not found --> 测试列表</a></li>
+                    <li><a href="#"><svg class="svg-icon" viewBox="0 0 512 512" width="16" height="16"><path d="M504 256c0 136.96-111.04 248-248 248S8 392.96 8 256 119.04 8 256 8c82.76 0 152.97 39.77 196.43 100.81l6.4 6.17L480 64v144H336l66.57-66.1C361.27 98.93 311.08 80 256 80 158.8 80 80 158.8 80 256s78.8 176 176 176 176-78.8 176-176c0-17.67 14.33-32 32-32s32 14.33 32 32zm-144-32v-64c0-17.67-14.33-32-32-32s-32 14.33-32 32v80c0 8.84 3.58 16.84 9.38 22.63l80 80c12.5 12.5 32.76 12.5 45.26 0s12.5-32.76 0-45.26l-70.63-70.63z"/></svg> 历史记录</a></li>
+                    <li><a href="#"><!-- Icon fa-chart-bar not found --> 成绩分析</a></li>
+                    <li><a href="#"><!-- Icon fa-book not found --> 学习资源</a></li>
+                    <li><a href="/auth/logout" method="POST" style="color: #dc3545;"><svg class="svg-icon" viewBox="0 0 512 512" width="16" height="16"><path d="M497 273L329 441c-15 15-41 4.5-41-17v-96H152c-13.3 0-24-10.7-24-24v-96c0-13.3 10.7-24 24-24h136V88c0-21.4 25.9-32 41-17l168 168c9.3 9.4 9.3 24.6 0 34zM192 436v-40c0-6.6-5.4-12-12-12H96c-17.7 0-32-14.3-32-32V160c0-17.7 14.3-32 32-32h84c6.6 0 12-5.4 12-12V76c0-6.6-5.4-12-12-12H96c-53 0-96 43-96 96v192c0 53 43 96 96 96h84c6.6 0 12-5.4 12-12z"/></svg> 退出登录</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

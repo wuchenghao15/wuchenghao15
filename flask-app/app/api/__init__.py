@@ -20,6 +20,21 @@ try:
 except ImportError:
     server_system_api_bp = None
 
+try:
+    from app.api.question_bank_ai_api import question_bank_ai_api
+except ImportError:
+    question_bank_ai_api = None
+
+try:
+    from app.api.student_learning_api import student_learning_api
+except ImportError:
+    student_learning_api = None
+
+try:
+    from app.api.version_api import version_api
+except ImportError:
+    version_api = None
+
 # 创建主API蓝图
 api_bp = Blueprint('api', __name__, url_prefix='/api')
 
@@ -32,6 +47,15 @@ if firewall_api_bp:
 
 if server_system_api_bp:
     api_bp.register_blueprint(server_system_api_bp, url_prefix='/server')
+
+if question_bank_ai_api:
+    api_bp.register_blueprint(question_bank_ai_api, url_prefix='/question-bank-ai')
+
+if student_learning_api:
+    api_bp.register_blueprint(student_learning_api, url_prefix='/student')
+
+if version_api:
+    api_bp.register_blueprint(version_api, url_prefix='/version')
 
 # 导入API路由
 try:

@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>增强型系统监控 - 后台管理系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome CDN removed -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    
+    <!-- Tailwind 配置 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#6B7280',
+                        success: '#10B981',
+                        danger: '#EF4444',
+                        warning: '#F59E0B',
+                        info: '#3B82F6',
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .scrollbar-hide {
+                scrollbar-width: none;
+                -ms-overflow-style: none;
+            }
+            .scrollbar-hide::-webkit-scrollbar {
+                display: none;
+            }
+            .gauge-bg {
+                background: conic-gradient(
+                    #EF4444 0% 10%,
+                    #F59E0B 10% 50%,
+                    #10B981 50% 100%
+                );
+            }
+        }
+    </style>
+
+<style>
+.svg-icon {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    vertical-align: -0.125em;
+    fill: currentColor;
+}
+</style>
+</head>
+<body class="bg-gray-50 font-sans">
+    <!-- 顶部导航栏 -->
+    <header class="bg-white shadow-md fixed top-0 left-0 right-0 z-50">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-4">
+                <button id="sidebar-toggle" class="lg:hidden text-gray-600 hover:text-primary">
+                    <!-- Icon fa-bars not found -->
+                </button>
+                <h1 class="text-xl font-bold text-gray-800">增强型系统监控</h1>
+            </div>
+            
+            <div class="flex items-center space-x-4">
+                <!-- 通知图标 -->
+                <button class="relative text-gray-600 hover:text-primary">
+                    <svg class="svg-icon" viewBox="0 0 448 512" width="16" height="16"><path d="M224 512c35.3 0 64-28.7 64-64H160c0 35.3 28.7 64 64 64zm215.3-149.7c-14.6-14.6-46.1-29.8-67.4-59.3-24-33.5-35.3-72.8-35.3-110.4 0-77.4-57.6-141.6-133-150.7-2.6-15.4-17.6-25.6-33.6-25.6s-31 10.2-33.6 25.6C91.6 91 34 155.2 34 232.6c0 37.6-11.3 76.9-35.3 110.4C-22.6 372.5-68.9 387.7-83.5 402.3c-14.6 14.6-14.6 38.2 0 52.8 7.3 7.3 17.1 10.9 26.8 10.9h369.5c9.7 0 19.5-3.7 26.8-10.9 14.5-14.6 14.5-38.2 0-52.8z"/></svg>
+                    <span class="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
+                </button>
+                
+                <!-- 用户信息 -->
+                <div class="flex items-center space-x-3">
+                    <div class="h-10 w-10 bg-primary rounded-full flex items-center justify-center text-white font-bold">
+                        {{ user.username[0].upper() }}
+                    </div>
+                    <div class="hidden md:block">
+                        <p class="text-sm font-medium text-gray-800">{{ user.username }}</p>
+                        <p class="text-xs text-gray-500">{{ user.role }}</p>
+                    </div>
+                    <!-- Icon fa-caret-down not found -->
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主要内容区 -->
+    <main class="flex mt-16">
+        <!-- 侧边栏 -->
+        <aside id="sidebar" class="bg-white shadow-md w-64 fixed left-0 top-16 bottom-0 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 z-40 overflow-y-auto scrollbar-hide">
+            <nav class="p-4">
+                <ul class="space-y-2">
+                    <li>
+                        <a href="/dashboard" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-blue-50 text-gray-700 hover:text-primary transition-colors">
+                            <!-- Icon fa-tachometer not found -->
+                            <span>仪表盘</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/smart-dashboard" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-blue-50 text-gray-700 hover:text-primary transition-colors">
+                            <svg class="svg-icon" viewBox="0 0 512 512" width="16" height="16"><path d="M487.4 315.7l-43.4-7.5c-1.3-3.2-2.8-6.3-4.5-9.3l19.9-39.8c3.6-7.2 2-16.1-3.8-21.6l-50-47.6c-5.8-5.5-14.9-6.5-21.9-2.4l-41.9 24.5c-11.4-8.8-23.9-16.2-37.2-21.8l-8.4-47.4C292.1 35 283.7 32 274.7 32h-37.5c-9 0-17.4 3-24.3 8.3l-8.4 47.4c-13.3 5.6-25.8 13-37.2 21.8l-41.9-24.5c-7-4.1-16.1-3.1-21.9 2.4l-50 47.6c-5.8 5.5-7.4 14.4-3.8 21.6l19.9 39.8c-1.7 3-3.2 6.1-4.5 9.3l-43.4 7.5C10.1 320.6 0 331.8 0 344.9v34.3c0 13.1 10.1 24.3 22.6 29.2l43.4 7.5c1.3 3.2 2.8 6.3 4.5 9.3l-19.9 39.8c-3.6 7.2-2 16.1 3.8 21.6l50 47.6c5.8 5.5 14.9 6.5 21.9 2.4l41.9-24.5c11.4 8.8 23.9 16.2 37.2 21.8l8.4 47.4c6.9 5.3 15.3 8.3 24.3 8.3h37.5c9 0 17.4-3 24.3-8.3l8.4-47.4c13.3-5.6 25.8-13 37.2-21.8l41.9 24.5c7 4.1 16.1 3.1 21.9-2.4l50-47.6c5.8-5.5 7.4-14.4 3.8-21.6l-19.9-39.8c1.7-3 3.2-6.1 4.5-9.3l43.4-7.5c12.5-4.9 22.6-16 22.6-29.2v-34.3c0-13.1-10.1-24.3-22.6-29.2zM256 384c-70.7 0-128-57.3-128-128s57.3-128 128-128 128 57.3 128 128-57.3 128-128 128z"/></svg>
+                            <span>智能仪表盘</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/smart-user-management" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-blue-50 text-gray-700 hover:text-primary transition-colors">
+                            <svg class="svg-icon" viewBox="0 0 448 512" width="16" height="16"><path d="M224 256c70.7 0 128-57.3 128-128S294.7 0 224 0 96 57.3 96 128s57.3 128 128 128zm89.6 32h-17.2c-11.2 0-21.8 3.4-30.8 9.4-17.1 11.5-36.4 17.6-56.4 17.6s-39.3-6.1-56.4-17.6c-9-6-19.6-9.4-30.8-9.4H22.4C10.1 288 0 298.1 0 310.4V464c0 26.5 21.5 48 48 48h352c26.5 0 48-21.5 48-48V310.4c0-12.3-10.1-22.4-22.4-22.4z"/></svg>
+                            <span>智能用户管理</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/smart-permission-management" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-blue-50 text-gray-700 hover:text-primary transition-colors">
+                            <svg class="svg-icon" viewBox="0 0 512 512" width="16" height="16"><path d="M336 144c0-26.5 21.5-48 48-48s48 21.5 48 48-21.5 48-48 48-48-21.5-48-48zm176 48c0-79.5-64.5-144-144-144s-144 64.5-144 144c0 19.3 3.8 37.7 10.7 54.6L144 352 48 256 0 304l96 96 48 48 48-48 16.4-16.4c15.5 5.6 32.1 8.8 49.6 8.8 79.5 0 144-64.5 144-144z"/></svg>
+                            <span>智能权限管理</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/enhanced-monitoring" class="flex items-center space-x-3 p-3 rounded-lg bg-blue-50 text-primary font-medium">
+                            <!-- Icon fa-line-chart not found -->
+                            <span>增强型系统监控</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/users" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-blue-50 text-gray-700 hover:text-primary transition-colors">
+                            <svg class="svg-icon" viewBox="0 0 448 512" width="16" height="16"><path d="M224 256c70.7 0 128-57.3 128-128S294.7 0 224 0 96 57.3 96 128s57.3 128 128 128zm89.6 32h-17.2c-11.2 0-21.8 3.4-30.8 9.4-17.1 11.5-36.4 17.6-56.4 17.6s-39.3-6.1-56.4-17.6c-9-6-19.6-9.4-30.8-9.4H22.4C10.1 288 0 298.1 0 310.4V464c0 26.5 21.5 48 48 48h352c26.5 0 48-21.5 48-48V310.4c0-12.3-10.1-22.4-22.4-22.4z"/></svg>
+                            <span>用户管理</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/settings" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-blue-50 text-gray-700 hover:text-primary transition-colors">
+                            <!-- Icon fa-gear not found -->
+                            <span>系统设置</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- 内容区 -->
+        <section class="flex-1 lg:ml-64 p-4">
+            <!-- 覆盖层，用于在移动端点击时关闭侧边栏 -->
+            <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 lg:hidden hidden z-30"></div>
+            
+            <div class="container mx-auto">
+                <!-- 系统健康评分卡片 -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                    <div class="bg-white rounded-xl shadow-md p-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-500">系统健康评分</p>
+                                <div class="flex items-center mt-1">
+                                    <h3 class="text-2xl font-bold text-gray-800" id="health-score">0</h3>
+                                    <span class="ml-2 text-sm font-medium" id="health-status">-</span>
+                                </div>
+                            </div>
+                            <div class="relative w-20 h-20">
+                                <div class="absolute inset-0 gauge-bg rounded-full"></div>
+                                <div class="absolute inset-2 bg-white rounded-full flex items-center justify-center">
+                                    <span class="text-2xl font-bold text-gray-800" id="health-score-inner">0</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white rounded-xl shadow-md p-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-500">CPU使用率</p>
+                                <h3 class="text-2xl font-bold text-gray-800" id="cpu-usage">0%</h3>
+                            </div>
+                            <div class="h-12 w-12 bg-blue-100 rounded-full flex items-center justify-center">
+                                <svg class="svg-icon" viewBox="0 0 512 512" width="16" height="16"><path d="M416 48v416c0 17.69-14.33 32-32 32H128c-17.67 0-32-14.31-32-32V48c0-17.69 14.33-32 32-32h256c17.67 0 32 14.31 32 32zm-32 32H128v416h256V80zm64 64h32c17.67 0 32 14.33 32 32v16c0 17.67-14.33 32-32 32h-32v32h32c17.67 0 32 14.33 32 32v16c0 17.67-14.33 32-32 32h-32v32h32c17.67 0 32 14.33 32 32v16c0 17.67-14.33 32-32 32h-32v32h32c17.67 0 32 14.33 32 32v16c0 17.67-14.33 32-32 32h-32v32h32c17.67 0 32 14.33 32 32v16c0 17.67-14.33 32-32 32h-32V480h32c17.67 0 32 14.33 32 32v16c0 17.67-14.33 32-32 32h-32v32h32c17.67 0 32 14.33 32 32v16c0 17.67-14.33 32-32 32h-32v32h32c17.67 0 32 14.33 32 32v16c0 17.67-14.33 32-32 32h-32v32h32c17.67 0 32 14.33 32 32v16c0 17.67-14.33 32-32 32h-32V80zm-416 0v32h-32c-17.67 0-32-14.33-32-32V80c0-17.67 14.33-32 32-32h32v32h-32c-17.67 0-32 14.33-32 32v16c0 17.67 14.33 32 32 32h32v32h-32c-17.67 0-32 14.33-32 32v16c0 17.67 14.33 32 32 32h32v32h-32c-17.67 0-32 14.33-32 32v16c0 17.67 14.33 32 32 32h32v32h-32c-17.67 0-32 14.33-32 32v16c0 17.67 14.33 32 32 32h32v32h-32c-17.67 0-32 14.33-32 32v16c0 17.67 14.33 32 32 32h32v32h-32c-17.67 0-32 14.33-32 32v16c0 17.67 14.33 32 32 32h32V80z"/></svg>
+                            </div>
+                        </div>
+                        <div class="mt-2 h-2 bg-gray-200 rounded-full">
+                            <div class="h-2 bg-primary rounded-full transition-all duration-300" id="cpu-progress" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white rounded-xl shadow-md p-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-500">内存使用率</p>
+                                <h3 class="text-2xl font-bold text-gray-800" id="memory-usage">0%</h3>
+                            </div>
+                            <div class="h-12 w-12 bg-green-100 rounded-full flex items-center justify-center">
+                                <!-- Icon fa-memory not found -->
+                            </div>
+                        </div>
+                        <div class="mt-2 h-2 bg-gray-200 rounded-full">
+                            <div class="h-2 bg-green-500 rounded-full transition-all duration-300" id="memory-progress" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white rounded-xl shadow-md p-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-500">磁盘使用率</p>
+                                <h3 class="text-2xl font-bold text-gray-800" id="disk-usage">0%</h3>
+                            </div>
+                            <div class="h-12 w-12 bg-yellow-100 rounded-full flex items-center justify-center">
+                                <!-- Icon fa-hdd-o not found -->
+                            </div>
+                        </div>
+                        <div class="mt-2 h-2 bg-gray-200 rounded-full">
+                            <div class="h-2 bg-yellow-500 rounded-full transition-all duration-300" id="disk-progress" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 主要内容 -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- 左侧：实时系统状态 -->
+                    <div class="lg:col-span-2 space-y-6">
+                        <!-- 实时系统状态卡片 -->
+                        <div class="bg-white rounded-xl shadow-md p-4">
+                            <h2 class="text-lg font-semibold text-gray-800 mb-4">实时系统状态</h2>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                                <div>
+                                    <h3 class="text-sm font-medium text-gray-600 mb-2">CPU核心使用率</h3>
+                                    <div id="cpu-cores" class="space-y-2">
+                                        <!-- CPU核心使用率将通过JS动态加载 -->
+                                    </div>
+                                </div>
+                                
+                                <div>
+                                    <h3 class="text-sm font-medium text-gray-600 mb-2">系统信息</h3>
+                                    <div class="space-y-1 text-sm text-gray-600">
+                                        <p><span class="font-medium text-gray-800">平台:</span> <span id="platform">-</span></p>
+                                        <p><span class="font-medium text-gray-800">处理器:</span> <span id="processor">-</span></p>
+                                        <p><span class="font-medium text-gray-800">Python版本:</span> <span id="python-version">-</span></p>
+                                        <p><span class="font-medium text-gray-800">启动时间:</span> <span id="boot-time">-</span></p>
+                                    </div>
+                                </div>
+                                
+                                <div>
+                                    <h3 class="text-sm font-medium text-gray-600 mb-2">网络流量</h3>
+                                    <div class="space-y-1 text-sm text-gray-600">
+                                        <p><span class="font-medium text-gray-800">发送:</span> <span id="network-sent">0 B</span></p>
+                                        <p><span class="font-medium text-gray-800">接收:</span> <span id="network-recv">0 B</span></p>
+                                        <p><span class="font-medium text-gray-800">发送包数:</span> <span id="packets-sent">0</span></p>
+                                        <p><span class="font-medium text-gray-800">接收包数:</span> <span id="packets-recv">0</span></p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 磁盘信息 -->
+                            <div>
+                                <h3 class="text-sm font-medium text-gray-600 mb-2">磁盘使用情况</h3>
+                                <div id="disk-info" class="space-y-2">
+                                    <!-- 磁盘信息将通过JS动态加载 -->
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 资源使用预测卡片 -->
+                        <div class="bg-white rounded-xl shadow-md p-4">
+                            <h2 class="text-lg font-semibold text-gray-800 mb-4">资源使用预测 (24小时)</h2>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <h3 class="text-sm font-medium text-gray-600 mb-3">CPU使用率预测</h3>
+                                    <canvas id="cpu-forecast-chart" height="200"></canvas>
+                                </div>
+                                <div>
+                                    <h3 class="text-sm font-medium text-gray-600 mb-3">内存使用率预测</h3>
+                                    <canvas id="memory-forecast-chart" height="200"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 进程监控卡片 -->
+                        <div class="bg-white rounded-xl shadow-md p-4">
+                            <h2 class="text-lg font-semibold text-gray-800 mb-4">进程监控</h2>
+                            
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full">
+                                    <thead>
+                                        <tr class="border-b">
+                                            <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">PID</th>
+                                            <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">进程名称</th>
+                                            <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">CPU%</th>
+                                            <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">内存%</th>
+                                            <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">创建时间</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="process-table">
+                                        <!-- 进程信息将通过JS动态加载 -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 右侧：预测性维护和优化建议 -->
+                    <div class="space-y-6">
+                        <!-- 异常检测结果卡片 -->
+                        <div class="bg-white rounded-xl shadow-md p-4">
+                            <h2 class="text-lg font-semibold text-gray-800 mb-4">异常检测结果</h2>
+                            
+                            <div id="anomalies" class="space-y-3 max-h-96 overflow-y-auto scrollbar-hide">
+                                <!-- 异常检测结果将通过JS动态加载 -->
+                            </div>
+                        </div>
+                        
+                        <!-- 预测性维护建议卡片 -->
+                        <div class="bg-white rounded-xl shadow-md p-4">
+                            <h2 class="text-lg font-semibold text-gray-800 mb-4">预测性维护建议</h2>
+                            
+                            <div id="maintenance-suggestions" class="space-y-3 max-h-96 overflow-y-auto scrollbar-hide">
+                                <!-- 预测性维护建议将通过JS动态加载 -->
+                            </div>
+                        </div>
+                        
+                        <!-- 性能优化建议卡片 -->
+                        <div class="bg-white rounded-xl shadow-md p-4">
+                            <h2 class="text-lg font-semibold text-gray-800 mb-4">性能优化建议</h2>
+                            
+                            <div id="optimization-suggestions" class="space-y-3 max-h-96 overflow-y-auto scrollbar-hide">
+                                <!-- 性能优化建议将通过JS动态加载 -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // 格式化字节大小
+        function formatBytes(bytes, decimals = 2) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const dm = decimals < 0 ? 0 : decimals;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+        }
+        
+        // 加载系统状态
+        async function loadSystemStatus() {
+            try {
+                const response = await axios.get('/api/enhanced-monitoring/system-status');
+                const data = response.data;
+                
+                // 更新系统信息
+                document.getElementById('platform').textContent = `${data.system_info.platform} ${data.system_info.platform_version}`;
+                document.getElementById('processor').textContent = data.system_info.processor;
+                document.getElementById('python-version').textContent = data.system_info.python_version;
+                document.getElementById('boot-time').textContent = data.boot_time;
+                
+                // 更新CPU信息
+                const avgCpu = data.cpu_info.cpu_percent.reduce((sum, val) => sum + val, 0) / data.cpu_info.cpu_percent.length;
+                document.getElementById('cpu-usage').textContent = `${avgCpu.toFixed(1)}%`;
+                document.getElementById('cpu-progress').style.width = `${avgCpu.toFixed(1)}%`;
+                
+                // 更新CPU核心使用率
+                const cpuCoresContainer = document.getElementById('cpu-cores');
+                cpuCoresContainer.innerHTML = '';
+                data.cpu_info.cpu_percent.forEach((coreUsage, index) => {
+                    const coreDiv = document.createElement('div');
+                    coreDiv.className = 'flex items-center';
+                    coreDiv.innerHTML = `
+                        <span class="text-xs text-gray-500 w-8">Core ${index+1}</span>
+                        <div class="flex-1 h-1.5 bg-gray-200 rounded-full mx-2">
+                            <div class="h-1.5 bg-primary rounded-full" style="width: ${coreUsage}%"></div>
+                        </div>
+                        <span class="text-xs font-medium text-gray-700 w-8">${coreUsage.toFixed(1)}%</span>
+                    `;
+                    cpuCoresContainer.appendChild(coreDiv);
+                });
+                
+                // 更新内存信息
+                document.getElementById('memory-usage').textContent = `${data.memory_info.percent}%`;
+                document.getElementById('memory-progress').style.width = `${data.memory_info.percent}%`;
+                
+                // 更新网络信息
+                document.getElementById('network-sent').textContent = formatBytes(data.network_info.bytes_sent);
+                document.getElementById('network-recv').textContent = formatBytes(data.network_info.bytes_recv);
+                document.getElementById('packets-sent').textContent = data.network_info.packets_sent;
+                document.getElementById('packets-recv').textContent = data.network_info.packets_recv;
+                
+                // 更新磁盘信息
+                const diskInfoContainer = document.getElementById('disk-info');
+                diskInfoContainer.innerHTML = '';
+                data.disk_info.forEach(disk => {
+                    const diskDiv = document.createElement('div');
+                    diskDiv.className = 'space-y-1';
+                    diskDiv.innerHTML = `
+                        <div class="flex justify-between text-sm">
+                            <span class="font-medium text-gray-800">${disk.device}</span>
+                            <span class="text-gray-600">${disk.percent}%</span>
+                        </div>
+                        <div class="h-1.5 bg-gray-200 rounded-full">
+                            <div class="h-1.5 bg-yellow-500 rounded-full" style="width: ${disk.percent}%"></div>
+                        </div>
+                        <div class="text-xs text-gray-500">
+                            ${formatBytes(disk.used)} / ${formatBytes(disk.total)} (${disk.fstype})
+                        </div>
+                    `;
+                    diskInfoContainer.appendChild(diskDiv);
+                });
+                
+                // 更新磁盘使用率（使用第一个磁盘的使用率）
+                if (data.disk_info.length > 0) {
+                    document.getElementById('disk-usage').textContent = `${data.disk_info[0].percent}%`;
+                    document.getElementById('disk-progress').style.width = `${data.disk_info[0].percent}%`;
+                }
+                
+                // 更新进程信息
+                const processTable = document.getElementById('process-table');
+                processTable.innerHTML = '';
+                data.top_processes.forEach(process => {
+                    const row = document.createElement('tr');
+                    row.className = 'border-b hover:bg-gray-50';
+                    row.innerHTML = `
+                        <td class="px-4 py-2 text-sm text-gray-600">${process.pid}</td>
+                        <td class="px-4 py-2 text-sm text-gray-800">${process.name}</td>
+                        <td class="px-4 py-2 text-sm text-gray-600">${process.cpu_percent.toFixed(1)}%</td>
+                        <td class="px-4 py-2 text-sm text-gray-600">${process.memory_percent.toFixed(1)}%</td>
+                        <td class="px-4 py-2 text-sm text-gray-500">${process.create_time}</td>
+                    `;
+                    processTable.appendChild(row);
+                });
+            } catch (error) {
+                console.error('加载系统状态失败:', error);
+            }
+        }
+        
+        // 加载系统健康评分
+        async function loadSystemHealthScore() {
+            try {
+                const response = await axios.get('/api/enhanced-monitoring/system-health-score');
+                const data = response.data;
+                
+                // 更新健康评分
+                const score = data.health_score;
+                document.getElementById('health-score').textContent = score;
+                document.getElementById('health-score-inner').textContent = score;
+                
+                // 更新健康状态
+                const statusMap = {
+                    'excellent': { text: '优秀', class: 'text-green-600' },
+                    'good': { text: '良好', class: 'text-blue-600' },
+                    'fair': { text: '一般', class: 'text-yellow-600' },
+                    'poor': { text: '较差', class: 'text-orange-600' },
+                    'critical': { text: '危急', class: 'text-red-600' }
+                };
+                const statusInfo = statusMap[data.status] || { text: '未知', class: 'text-gray-600' };
+                document.getElementById('health-status').textContent = statusInfo.text;
+                document.getElementById('health-status').className = `ml-2 text-sm font-medium ${statusInfo.class}`;
+            } catch (error) {
+                console.error('加载系统健康评分失败:', error);
+            }
+        }
+        
+        // 加载异常检测结果
+        async function loadAnomalies() {
+            try {
+                const response = await axios.get('/api/enhanced-monitoring/anomaly-detection');
+                const data = response.data;
+                
+                const anomaliesContainer = document.getElementById('anomalies');
+                anomaliesContainer.innerHTML = '';
+                
+                if (data.anomalies.length === 0) {
+                    anomaliesContainer.innerHTML = '<p class="text-sm text-gray-500 text-center py-4">未检测到异常</p>';
+                    return;
+                }
+                
+                data.anomalies.forEach(anomaly => {
+                    const anomalyDiv = document.createElement('div');
+                    const severityMap = {
+                        'critical': { class: 'border-red-500 bg-red-50', icon: 'fa-exclamation-triangle text-red-500' },
+                        'warning': { class: 'border-yellow-500 bg-yellow-50', icon: 'fa-exclamation-circle text-yellow-500' }
+                    };
+                    const severityInfo = severityMap[anomaly.severity] || { class: 'border-gray-500 bg-gray-50', icon: 'fa-info-circle text-gray-500' };
+                    
+                    anomalyDiv.className = `p-3 rounded-lg border-l-4 ${severityInfo.class}`;
+                    anomalyDiv.innerHTML = `
+                        <div class="flex items-start">
+                            <i class="${severityInfo.icon} mr-2 mt-0.5"></i>
+                            <div class="flex-1">
+                                <p class="text-sm font-medium text-gray-800">${anomaly.description}</p>
+                                <p class="text-xs text-gray-500 mt-1">
+                                    类型: ${anomaly.type} | 时间: ${new Date(anomaly.timestamp * 1000).toLocaleString()}
+                                </p>
+                            </div>
+                        </div>
+                    `;
+                    anomaliesContainer.appendChild(anomalyDiv);
+                });
+            } catch (error) {
+                console.error('加载异常检测结果失败:', error);
+            }
+        }
+        
+        // 加载预测性维护建议
+        async function loadMaintenanceSuggestions() {
+            try {
+                const response = await axios.get('/api/enhanced-monitoring/predictive-maintenance');
+                const data = response.data;
+                
+                const container = document.getElementById('maintenance-suggestions');
+                container.innerHTML = '';
+                
+                if (data.maintenance_suggestions.length === 0) {
+                    container.innerHTML = '<p class="text-sm text-gray-500 text-center py-4">暂无维护建议</p>';
+                    return;
+                }
+                
+                data.maintenance_suggestions.forEach(suggestion => {
+                    const suggestionDiv = document.createElement('div');
+                    const severityMap = {
+                        'high': { class: 'border-red-500', text: '高优先级' },
+                        'medium': { class: 'border-yellow-500', text: '中优先级' },
+                        'low': { class: 'border-green-500', text: '低优先级' }
+                    };
+                    const severityInfo = severityMap[suggestion.severity] || { class: 'border-gray-500', text: '未知优先级' };
+                    
+                    suggestionDiv.className = `p-3 bg-gray-50 rounded-lg border-l-4 ${severityInfo.class}`;
+                    suggestionDiv.innerHTML = `
+                        <div class="flex justify-between items-start mb-2">
+                            <p class="text-sm font-medium text-gray-800">${suggestion.description}</p>
+                            <span class="text-xs font-medium ${severityInfo.class.replace('border', 'text')}">${severityInfo.text}</span>
+                        </div>
+                        <p class="text-xs text-gray-600 mb-2">${suggestion.suggestion.replace(/\n/g, '<br>')}</p>
+                        <div class="flex justify-between items-center text-xs text-gray-500">
+                            <span>可信度: ${(suggestion.confidence * 100).toFixed(0)}%</span>
+                            <span>类型: ${suggestion.type}</span>
+                        </div>
+                    `;
+                    container.appendChild(suggestionDiv);
+                });
+            } catch (error) {
+                console.error('加载预测性维护建议失败:', error);
+            }
+        }
+        
+        // 加载性能优化建议
+        async function loadPerformanceOptimization() {
+            try {
+                const response = await axios.get('/api/enhanced-monitoring/performance-optimization');
+                const data = response.data;
+                
+                const container = document.getElementById('optimization-suggestions');
+                container.innerHTML = '';
+                
+                if (data.optimization_suggestions.length === 0) {
+                    container.innerHTML = '<p class="text-sm text-gray-500 text-center py-4">暂无性能优化建议</p>';
+                    return;
+                }
+                
+                data.optimization_suggestions.forEach(suggestion => {
+                    const suggestionDiv = document.createElement('div');
+                    suggestionDiv.className = 'p-3 bg-gray-50 rounded-lg border-l-4 border-blue-500';
+                    suggestionDiv.innerHTML = `
+                        <div class="flex items-start">
+                            <!-- Icon fa-lightbulb-o not found -->
+                            <div class="flex-1">
+                                <p class="text-sm font-medium text-gray-800">${suggestion.title || '性能优化建议'}</p>
+                                <p class="text-xs text-gray-600 mt-1">${suggestion.description || '暂无描述'}</p>
+                                ${suggestion.details ? `<p class="text-xs text-gray-500 mt-2">${suggestion.details}</p>` : ''}
+                                <div class="flex justify-between items-center text-xs text-gray-500 mt-2">
+                                    <span>类型: ${suggestion.type || 'general'}</span>
+                                    <span>预期提升: ${suggestion.expected_improvement || 'unknown'}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(suggestionDiv);
+                });
+            } catch (error) {
+                console.error('加载性能优化建议失败:', error);
+            }
+        }
+        
+        // 加载资源使用预测
+        async function loadResourceForecast() {
+            try {
+                const response = await axios.get('/api/enhanced-monitoring/resource-forecast');
+                const data = response.data;
+                
+                // 更新CPU预测图表
+                const cpuCtx = document.getElementById('cpu-forecast-chart').getContext('2d');
+                if (window.cpuForecastChart) {
+                    window.cpuForecastChart.destroy();
+                }
+                
+                const cpuLabels = data.cpu_forecast.map(item => `${item.hour}时`);
+                const cpuData = data.cpu_forecast.map(item => item.predicted_value);
+                
+                window.cpuForecastChart = new Chart(cpuCtx, {
+                    type: 'line',
+                    data: {
+                        labels: cpuLabels,
+                        datasets: [{
+                            label: 'CPU使用率 (%)',
+                            data: cpuData,
+                            borderColor: '#3B82F6',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            tension: 0.3,
+                            fill: true,
+                            pointRadius: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: 100
+                            },
+                            x: {
+                                display: false
+                            }
+                        }
+                    }
+                });
+                
+                // 更新内存预测图表
+                const memoryCtx = document.getElementById('memory-forecast-chart').getContext('2d');
+                if (window.memoryForecastChart) {
+                    window.memoryForecastChart.destroy();
+                }
+                
+                const memoryLabels = data.memory_forecast.map(item => `${item.hour}时`);
+                const memoryData = data.memory_forecast.map(item => item.predicted_value);
+                
+                window.memoryForecastChart = new Chart(memoryCtx, {
+                    type: 'line',
+                    data: {
+                        labels: memoryLabels,
+                        datasets: [{
+                            label: '内存使用率 (%)',
+                            data: memoryData,
+                            borderColor: '#10B981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            tension: 0.3,
+                            fill: true,
+                            pointRadius: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: 100
+                            },
+                            x: {
+                                display: false
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('加载资源使用预测失败:', error);
+            }
+        }
+        
+        // 初始化页面
+        function init() {
+            // 加载数据
+            loadSystemStatus();
+            loadSystemHealthScore();
+            loadAnomalies();
+            loadMaintenanceSuggestions();
+            loadPerformanceOptimization();
+            loadResourceForecast();
+            
+            // 每10秒刷新一次实时数据
+            setInterval(() => {
+                loadSystemStatus();
+                loadSystemHealthScore();
+                loadAnomalies();
+            }, 10000);
+            
+            // 每30秒刷新一次预测和建议数据
+            setInterval(() => {
+                loadMaintenanceSuggestions();
+                loadPerformanceOptimization();
+                loadResourceForecast();
+            }, 30000);
+            
+            // 侧边栏切换
+            const sidebarToggle = document.getElementById('sidebar-toggle');
+            const sidebarOverlay = document.getElementById('sidebar-overlay');
+            const sidebar = document.getElementById('sidebar');
+            
+            sidebarToggle.addEventListener('click', () => {
+                sidebar.classList.toggle('-translate-x-full');
+                sidebarOverlay.classList.toggle('hidden');
+            });
+            
+            sidebarOverlay.addEventListener('click', () => {
+                sidebar.classList.add('-translate-x-full');
+                sidebarOverlay.classList.add('hidden');
+            });
+        }
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

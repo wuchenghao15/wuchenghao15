@@ -3,354 +3,924 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}语言学习系统{% endblock %}</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <title>{% block title %}MTSCOS AI 系统{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% if request.path.startswith('/test-system') or request.path.startswith('/level-assessment') or request.path.startswith('/ai-generated-test') or request.path.startswith('/bilingual-test') or request.path.startswith('/english-test') or request.path.startswith('/japanese-test') %}
+    <!-- 预加载动画样式 -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/preloader.css') }}">
+    <!-- 预加载动画脚本 -->
+    <script src="{{ url_for('static', filename='js/preloader.js') }}"></script>
+    {% endif %}
+    <!-- Web App支持 -->
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <meta name="theme-color" content="#667eea">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="MTSCOS AI">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/logo.svg') }}">
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='images/logo.svg') }}">
     <style>
-        /* 预载入动画 */
-        .preloader {
+        /* SVG图标样式 */
+        .svg-icon {
+            display: inline-block;
+            width: 1em;
+            height: 1em;
+            vertical-align: -0.125em;
+            fill: currentColor;
+        }
+
+        /* 仅保留必要的本地样式，主要样式已移至外部CSS文件 */
+        .flash-messages {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            width: 380px;
+            max-width: calc(100% - 40px);
+            pointer-events: none;
+        }
+        
+        /* 基础消息样式 */
+        .flash-message {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px 20px;
+            border-radius: 16px;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+            animation: flashSlideIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards, flashFadeOut 0.6s ease 4s forwards;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            cursor: pointer;
+            border-left: 4px solid transparent;
+            background-clip: padding-box;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            pointer-events: all;
+        }
+        
+        /* 消息动画 */
+        @keyframes flashSlideIn {
+            0% {
+                transform: translateX(100%) scale(0.8);
+                opacity: 0;
+                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            }
+            50% {
+                transform: translateX(-10px) scale(1.05);
+                opacity: 0.9;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            }
+            100% {
+                transform: translateX(0) scale(1);
+                opacity: 1;
+                box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+            }
+        }
+        
+        @keyframes flashFadeOut {
+            0% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+                box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+            }
+            50% {
+                opacity: 0.5;
+                transform: translateY(-10px) scale(0.95);
+                box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-20px) scale(0.9);
+                box-shadow: 0 1px 5px rgba(0, 0, 0, 0.02);
+            }
+        }
+        
+        /* 消息内容淡入动画 */
+        @keyframes messageContentFadeIn {
+            from {
+                opacity: 0;
+                transform: translateX(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        /* 堆叠动画延迟 */
+        .flash-message:nth-child(2) {
+            animation-delay: 0.15s, 3.65s;
+        }
+        
+        .flash-message:nth-child(3) {
+            animation-delay: 0.3s, 3.8s;
+        }
+        
+        .flash-message:nth-child(n+4) {
+            animation-delay: 0.45s, 3.95s;
+        }
+        
+        /* 消息内容动画 */
+        .flash-message .message-content {
+            animation: messageContentFadeIn 0.3s ease 0.2s forwards;
+            opacity: 0;
+        }
+        
+        /* 消息图标 */
+        .flash-icon {
+            flex-shrink: 0;
+            width: 18px;
+            height: 18px;
+        }
+        
+        /* 移动端适配 */
+        @media (max-width: 768px) {
+            .flash-messages {
+                top: 60px;
+                right: 15px;
+                left: 15px;
+                width: auto;
+                max-width: none;
+            }
+            
+            .flash-message {
+                padding: 14px 16px;
+                font-size: 13px;
+                gap: 10px;
+            }
+        }
+        
+        .flash-message:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+        
+        /* 状态样式 */
+        .success-message {
+            background: linear-gradient(135deg, rgba(212, 237, 218, 0.95) 0%, rgba(195, 230, 203, 0.95) 100%);
+            color: #155724;
+            border-left-color: #28a745;
+            box-shadow: 0 6px 20px rgba(40, 167, 69, 0.15);
+        }
+
+        .error-message {
+            background: linear-gradient(135deg, rgba(248, 215, 218, 0.95) 0%, rgba(245, 198, 203, 0.95) 100%);
+            color: #721c24;
+            border-left-color: #dc3545;
+            box-shadow: 0 6px 20px rgba(220, 53, 69, 0.15);
+        }
+
+        .warning-message {
+            background: linear-gradient(135deg, rgba(255, 243, 205, 0.95) 0%, rgba(255, 238, 186, 0.95) 100%);
+            color: #856404;
+            border-left-color: #ffc107;
+            box-shadow: 0 6px 20px rgba(255, 193, 7, 0.15);
+        }
+
+        .info-message {
+            background: linear-gradient(135deg, rgba(209, 236, 241, 0.95) 0%, rgba(190, 229, 235, 0.95) 100%);
+            color: #0c5460;
+            border-left-color: #17a2b8;
+            box-shadow: 0 6px 20px rgba(23, 162, 184, 0.15);
+        }
+        
+        /* 状态悬停效果 */
+        .success-message:hover {
+            box-shadow: 0 8px 25px rgba(40, 167, 69, 0.25);
+            border-left-color: #218838;
+        }
+        
+        .error-message:hover {
+            box-shadow: 0 8px 25px rgba(220, 53, 69, 0.25);
+            border-left-color: #c82333;
+        }
+        
+        .warning-message:hover {
+            box-shadow: 0 8px 25px rgba(255, 193, 7, 0.25);
+            border-left-color: #e0a800;
+        }
+        
+        .info-message:hover {
+            box-shadow: 0 8px 25px rgba(23, 162, 184, 0.25);
+            border-left-color: #138496;
+        }
+        
+        /* 关闭按钮 */
+        .flash-message .close-btn {
+            margin-left: auto;
+            background: transparent;
+            border: none;
+            color: inherit;
+            font-size: 16px;
+            cursor: pointer;
+            opacity: 0.7;
+            transition: opacity 0.2s ease;
+            padding: 0;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .flash-message .close-btn:hover {
+            opacity: 1;
+        }
+        
+        /* 环境标识样式 */
+        .env-badge {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 10000;
+            background: #dc3545;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            text-transform: uppercase;
+        }
+        
+        /* 时间显示样式 */
+        .time-display-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 12px 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+            font-size: 14px;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .time-display {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
+        }
+        
+        /* 用户信息样式 */
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 4px 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+            width: 100%;
+        }
+        
+        .user-avatar {
+            font-size: 32px;
+            color: #667eea;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+        }
+        
+        .user-details {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        
+        .user-name {
+            font-weight: 600;
+            font-size: 14px;
+            color: #333;
+        }
+        
+        .user-role {
+            font-size: 12px;
+            color: #666;
+            background: #e3f2fd;
+            padding: 2px 8px;
+            border-radius: 12px;
+            display: inline-block;
+            width: fit-content;
+        }
+        
+        /* 登录提示样式 */
+        .login-prompt {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+            width: 100%;
+            color: #dc3545;
+            font-size: 13px;
+        }
+        
+        .login-prompt .svg-icon {
+            font-size: 14px;
+            width: 14px;
+            height: 14px;
+        }
+        
+        .login-link {
+            color: #667eea;
+            text-decoration: underline;
+            font-weight: 500;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+        
+        .login-link:hover {
+            color: #5a6fd8;
+        }
+        
+        /* 时间信息样式 */
+        .time-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        
+        .current-time {
+            font-weight: 600;
+            color: #1976d2;
+            font-size: 18px;
+        }
+        
+        .lunar-time {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .lunar-time.lunar-special {
+            color: #dc3545;
+            font-weight: 600;
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- 环境标识 -->
+    {% if config.ENV == 'test' %}
+        <div class="env-badge">测试环境</div>
+    {% elif config.ENV == 'development' %}
+        <div class="env-badge" style="background: #ffc107; color: #212529;">开发环境</div>
+    {% endif %}
+    
+    <!-- Flash消息显示 -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flash-messages">
+                {% for category, message in messages %}
+                    <div class="flash-message {{ category }}-message">
+                        {% if category == 'success' %}
+                            <svg class="flash-icon" viewBox="0 0 512 512" fill="#28a745">
+                                <path d="M256 48a208 208 0 1 0 208 208A208.25 208.25 0 0 0 256 48zm-24 314.14l-80-80L178.75 264l53.25 53.25L333.25 116l24 24z"/>
+                            </svg>
+                        {% elif category == 'error' %}
+                            <svg class="flash-icon" viewBox="0 0 512 512" fill="#dc3545">
+                                <path d="M256 48a208 208 0 1 0 208 208A208.25 208.25 0 0 0 256 48zm48 280a16 16 0 0 1-16 16h-64a16 16 0 0 1-16-16v-64a16 16 0 0 1 16-16h64a16 16 0 0 1 16 16zm-16-176a24 24 0 1 1-24 24 24 24 0 0 1 24-24z"/>
+                            </svg>
+                        {% elif category == 'warning' %}
+                            <svg class="flash-icon" viewBox="0 0 512 512" fill="#ffc107">
+                                <path d="M256 32C114.6 32 0 125.1 0 240c0 49.6 21.4 95 57 130.7C44.5 421.1 2.7 466 2.2 466.8c-2.2 2.9-2.8 6.7-1.5 10.2S11 480 15.2 480c126.3 0 228.8-45.4 280.8-139.4 17.6-31.4 27.2-66.8 27.2-100.6C323.2 125.1 208.6 32 96 32h160zm-16 152v-16a16 16 0 0 0-32 0v16a16 16 0 0 0 32 0zm-16 128a32 32 0 1 1 32-32 32 32 0 0 1-32 32z"/>
+                            </svg>
+                        {% else %}
+                            <svg class="flash-icon" viewBox="0 0 512 512" fill="#17a2b8">
+                                <path d="M256 48a208 208 0 1 0 208 208A208.25 208.25 0 0 0 256 48zm-24 314.14l-80-80L178.75 264l53.25 53.25L333.25 116l24 24z"/>
+                            </svg>
+                        {% endif %}
+                        <span class="message-content">{{ message }}</span>
+                        <button class="close-btn" onclick="this.parentElement.remove()">&times;</button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+    
+    <!-- 用户信息和时间显示组件 -->
+    <div class="time-display-container">
+        <div class="time-display" id="time-display">
+            <!-- 用户信息 -->
+            {% if session.get('user_id') %}
+                <div class="user-info">
+                    <span class="user-avatar">
+                        <svg class="svg-icon" viewBox="0 0 496 512" fill="currentColor">
+                            <path d="M248 8C111 8 0 119 0 256s111 248 248 248 248-111 248-248S385 8 248 8zm0 96c48.6 0 88 39.4 88 88s-39.4 88-88 88-88-39.4-88-88 39.4-88 88-88zm0 344c-58.7 0-111.3-30-143.3-77.4-1.8-2.5-2.8-5.5-2.8-8.6 0-44.2 35.8-80 80-80h132c44.2 0 80 35.8 80 80 0 3.1-1 6.1-2.8 8.6C359.3 418 306.7 448 248 448z"/>
+                        </svg>
+                    </span>
+                    <div class="user-details">
+                        <span class="user-name">{{ session.get('username', '用户') }}</span>
+                        <span class="user-role">{{ session.get('role', '访客') }}</span>
+                    </div>
+                </div>
+            {% else %}
+                <div class="login-prompt">
+                    <svg class="svg-icon" viewBox="0 0 512 512" fill="currentColor">
+                        <path d="M256 0C114.6 0 0 114.6 0 256s114.6 256 256 256 256-114.6 256-256S397.4 0 256 0zm0 384c-17.7 0-32-14.3-32-32s14.3-32 32-32 32 14.3 32 32-14.3 32-32 32zm32-160h-64c-17.7 0-32-14.3-32-32V160c0-17.7 14.3-32 32-32h64c17.7 0 32 14.3 32 32v32c0 17.7-14.3 32-32 32z"/>
+                    </svg>
+                    <span>请先 <a href="{{ url_for('auth.login') }}" class="login-link">登录</a></span>
+                </div>
+            {% endif %}
+            <!-- 时间显示 -->
+            <div class="time-info">
+                <span class="current-time" id="server-time"></span>
+                <span class="lunar-time" id="server-date"></span>
+            </div>
+        </div>
+    </div>
+    
+
+    
+    {% block content %}
+    <!-- 主内容区 -->
+{% endblock %}
+    
+    <!-- 加载JavaScript AI实例代码 -->
+    <!-- <script src="#"></script> -->
+    
+    <script>
+        // 服务器时间相关变量
+        let serverTimestamp = null;
+        let lastFetchTime = null;
+        
+        // 获取服务器时间
+        async function fetchServerTime() {
+            try {
+                const response = await fetch('/api/server-time');
+                const data = await response.json();
+                if (data.success) {
+                    serverTimestamp = data.timestamp;
+                    lastFetchTime = Date.now();
+                    updateTimeDisplay(data.time, data.date, data.weekday);
+                }
+            } catch (error) {
+                console.error('获取服务器时间失败:', error);
+                // 如果获取失败，使用客户端时间作为后备
+                useClientTimeAsFallback();
+            }
+        }
+        
+        // 使用客户端时间作为后备
+        function useClientTimeAsFallback() {
+            const now = new Date();
+            const timeStr = now.getHours().toString().padStart(2, '0') + ':' +
+                           now.getMinutes().toString().padStart(2, '0') + ':' +
+                           now.getSeconds().toString().padStart(2, '0');
+            const dateStr = now.getFullYear() + '年' + 
+                           (now.getMonth() + 1) + '月' + 
+                           now.getDate() + '日';
+            updateTimeDisplay(timeStr, dateStr, '');
+        }
+        
+        // 更新时间显示
+        function updateTimeDisplay(timeStr, dateStr, weekdayStr) {
+            const timeElement = document.getElementById('server-time');
+            const dateElement = document.getElementById('server-date');
+            
+            if (timeElement) {
+                timeElement.textContent = timeStr;
+            }
+            if (dateElement) {
+                const fullDateStr = weekdayStr ? `${dateStr} ${weekdayStr}` : dateStr;
+                dateElement.textContent = fullDateStr;
+            }
+        }
+        
+        // 本地时间自动递增（基于服务器时间）
+        function incrementLocalTime() {
+            if (serverTimestamp && lastFetchTime) {
+                const elapsed = Date.now() - lastFetchTime;
+                const newTimestamp = serverTimestamp + elapsed;
+                const now = new Date(newTimestamp);
+                
+                const timeStr = now.getHours().toString().padStart(2, '0') + ':' +
+                               now.getMinutes().toString().padStart(2, '0') + ':' +
+                               now.getSeconds().toString().padStart(2, '0');
+                
+                const timeElement = document.getElementById('server-time');
+                if (timeElement) {
+                    timeElement.textContent = timeStr;
+                }
+            }
+        }
+        
+        // 初始化时间显示
+        document.addEventListener('DOMContentLoaded', function() {
+            // 立即获取服务器时间
+            fetchServerTime();
+            
+            // 每秒本地更新时间
+            setInterval(incrementLocalTime, 1000);
+            
+            // 每30秒重新从服务器获取一次，保持同步
+            setInterval(fetchServerTime, 30000);
+        });
+    </script>
+    <script src="{{ url_for('static', filename='js/mobile-interactions.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+
+    {% block footer %}{% endblock %}
+
+    <!-- 锁定遮罩和解锁界面 -->
+    <div id="lock-overlay" class="lock-overlay" style="display: none;">
+        <div class="lock-container">
+            <div class="lock-header">
+                <h2>
+                    <svg class="svg-icon" viewBox="0 0 448 512" style="width: 24px; height: 24px; fill: #667eea;">
+                        <path d="M400 192h-32V144c0-61.9-50.1-112-112-112S144 82.1 144 144v48h-32c-26.5 0-48 21.5-48 48v192c0 26.5 21.5 48 48 48h256c26.5 0 48-21.5 48-48V240c0-26.5-21.5-48-48-48zm-176 0V144c0-26.5 21.5-48 48-48s48 21.5 48 48v48H224z"/>
+                    </svg>
+                    系统已锁定
+                </h2>
+                <p>请使用密码或硬件ID解锁</p>
+            </div>
+            <div class="lock-tabs">
+                <button class="lock-tab active" data-tab="password">密码解锁</button>
+                <button class="lock-tab" data-tab="hardware">硬件ID解锁</button>
+            </div>
+            <div class="lock-content">
+                <!-- 密码解锁表单 -->
+                <div class="lock-form active" id="password-form">
+                    <div class="form-group">
+                        <label for="unlock-password">
+                            <svg class="svg-icon" viewBox="0 0 512 512" style="width: 16px; height: 16px; fill: #667eea;">
+                                <path d="M336 144h-80V64C256 28.7 227.3 0 192 0S128 28.7 128 64v80H48c-26.5 0-48 21.5-48 48v256c0 26.5 21.5 48 48 48h288c26.5 0 48-21.5 48-48V192c0-26.5-21.5-48-48-48zM192 64c0-17.6 14.4-32 32-32s32 14.4 32 32v80H192V64z"/>
+                            </svg>
+                             密码
+                        </label>
+                        <input type="password" id="unlock-password" placeholder="请输入密码" autocomplete="current-password">
+                    </div>
+                    <button class="unlock-btn" onclick="unlockWithPassword()">
+                        <svg class="svg-icon" viewBox="0 0 448 512" style="width: 16px; height: 16px;">
+                            <path d="M400 192h-32V144c0-61.9-50.1-112-112-112S144 82.1 144 144v48h-32c-26.5 0-48 21.5-48 48v192c0 26.5 21.5 48 48 48h256c26.5 0 48-21.5 48-48V240c0-26.5-21.5-48-48-48zm-224 0V144c0-26.5 21.5-48 48-48s48 21.5 48 48v48H176z"/>
+                        </svg>
+                         解锁
+                    </button>
+                    <div class="error-message" id="password-error" style="display: none;"></div>
+                </div>
+                <!-- 硬件ID解锁表单 -->
+                <div class="lock-form" id="hardware-form">
+                    <div class="form-group">
+                        <label for="vikey-id">
+                            <svg class="svg-icon" viewBox="0 0 640 512" style="width: 16px; height: 16px; fill: #667eea;">
+                                <path d="M480 192h32c17.7 0 32-14.3 32-32v-32c0-17.7-14.3-32-32-32h-32c-17.7 0-32 14.3-32 32v32c0 17.7 14.3 32 32 32zm0 128h32c17.7 0 32-14.3 32-32v-32c0-17.7-14.3-32-32-32h-32c-17.7 0-32 14.3-32 32v32c0 17.7 14.3 32 32 32zm-160 0h32c17.7 0 32-14.3 32-32v-32c0-17.7-14.3-32-32-32h-32c-17.7 0-32 14.3-32 32v32c0 17.7 14.3 32 32 32zM480 64h32c17.7 0 32-14.3 32-32V0c0-17.7-14.3-32-32-32h-32c-17.7 0-32 14.3-32 32v32c0 17.7 14.3 32 32 32zM320 384h32c17.7 0 32-14.3 32-32v-32c0-17.7-14.3-32-32-32h-32c-17.7 0-32 14.3-32 32v32c0 17.7 14.3 32 32 32zM0 448c0 35.3 86 64 192 64s192-28.7 192-64V64c0-35.3-86-64-192-64S0 28.7 0 64v384z"/>
+                            </svg>
+                             硬件ID
+                        </label>
+                        <input type="text" id="vikey-id" placeholder="请输入硬件ID">
+                    </div>
+                    <button class="unlock-btn" onclick="unlockWithHardware()">
+                        <svg class="svg-icon" viewBox="0 0 448 512" style="width: 16px; height: 16px;">
+                            <path d="M400 192h-32V144c0-61.9-50.1-112-112-112S144 82.1 144 144v48h-32c-26.5 0-48 21.5-48 48v192c0 26.5 21.5 48 48 48h256c26.5 0 48-21.5 48-48V240c0-26.5-21.5-48-48-48zm-224 0V144c0-26.5 21.5-48 48-48s48 21.5 48 48v48H176z"/>
+                        </svg>
+                         解锁
+                    </button>
+                    <div class="error-message" id="hardware-error" style="display: none;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        /* 锁定遮罩样式 */
+        .lock-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background-color: rgba(0, 0, 0, 0.8); /* 默认透明度80% */
             display: flex;
+            align-items: center;
             justify-content: center;
-            align-items: center;
-            z-index: 9999;
-            transition: opacity 0.5s ease, visibility 0.5s ease;
+            z-index: 99999;
+            backdrop-filter: blur(5px);
         }
-        
-        .preloader.hidden {
-            opacity: 0;
-            visibility: hidden;
-        }
-        
-        .preloader-content {
-            text-align: center;
-            color: white;
-        }
-        
-        .preloader-spinner {
-            width: 80px;
-            height: 80px;
-            border: 8px solid rgba(255, 255, 255, 0.3);
-            border-top: 8px solid white;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
-        }
-        
-        .preloader-text {
-            font-size: 18px;
-            font-weight: 600;
-            margin-bottom: 10px;
-        }
-        
-        .preloader-subtext {
-            font-size: 14px;
-            opacity: 0.8;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        /* 全局样式 */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            background-color: #f5f5f5;
-        }
-        
-        /* 导航栏 */
-        .navbar {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 15px 0;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
-        
-        .container {
+
+        .lock-container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             width: 90%;
-            max-width: 1200px;
-            margin: 0 auto;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            max-width: 400px;
+            padding: 30px;
+            animation: lockSlideIn 0.5s ease-out;
         }
-        
-        .logo {
-            font-size: 1.5rem;
-            font-weight: 700;
-            text-decoration: none;
-            color: white;
+
+        @keyframes lockSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px) scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .lock-header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .lock-header h2 {
+            color: #333;
+            font-size: 24px;
+            margin-bottom: 8px;
             display: flex;
             align-items: center;
+            justify-content: center;
             gap: 10px;
         }
-        
-        .nav-links {
-            list-style: none;
+
+        .lock-header p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .lock-tabs {
             display: flex;
-            gap: 20px;
+            margin-bottom: 25px;
+            border-bottom: 1px solid #e0e0e0;
         }
-        
-        .nav-links li a {
-            color: white;
-            text-decoration: none;
-            font-weight: 500;
-            transition: color 0.3s ease;
-        }
-        
-        .nav-links li a:hover {
-            color: #f0f0f0;
-        }
-        
-        /* 内容区域 */
-        .content {
-            padding: 40px 0;
-            min-height: 80vh;
-        }
-        
-        /* 页脚 */
-        .footer {
-            background: #333;
-            color: white;
-            padding: 30px 0;
-            margin-top: 40px;
-        }
-        
-        .footer-content {
-            display: flex;
-            justify-content: space-between;
-            flex-wrap: wrap;
-        }
-        
-        .footer-section {
+
+        .lock-tab {
             flex: 1;
-            min-width: 200px;
-            margin-bottom: 20px;
+            padding: 12px;
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid transparent;
+            color: #666;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
         }
-        
-        .footer-section h3 {
-            margin-bottom: 15px;
+
+        .lock-tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .lock-tab:hover {
             color: #667eea;
         }
-        
-        .footer-section p {
-            margin-bottom: 10px;
+
+        .lock-content {
+            position: relative;
         }
-        
-        .footer-bottom {
+
+        .lock-form {
+            display: none;
+        }
+
+        .lock-form.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .unlock-btn {
+            width: 100%;
+            padding: 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .unlock-btn:hover {
+            background: #5a6fd8;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .error-message {
+            margin-top: 15px;
+            padding: 10px;
+            background: #fee;
+            color: #dc3545;
+            border: 1px solid #fcc;
+            border-radius: 6px;
+            font-size: 13px;
             text-align: center;
-            padding-top: 20px;
-            border-top: 1px solid #555;
-            margin-top: 20px;
         }
-        
+
         /* 响应式设计 */
-        @media (max-width: 768px) {
-            .container {
-                flex-direction: column;
-                gap: 15px;
+        @media (max-width: 480px) {
+            .lock-container {
+                padding: 20px;
+                width: 95%;
             }
-            
-            .nav-links {
-                flex-wrap: wrap;
-                justify-content: center;
+
+            .lock-header h2 {
+                font-size: 20px;
             }
-            
-            .footer-content {
-                flex-direction: column;
-                gap: 20px;
+
+            .lock-form input {
+                padding: 10px;
+                font-size: 14px;
+            }
+
+            .unlock-btn {
+                padding: 10px;
+                font-size: 14px;
             }
         }
     </style>
-</head>
-<body>
-    <!-- 预载入动画 -->
-    <div class="preloader" id="preloader">
-        <div class="preloader-content">
-            <div class="preloader-spinner"></div>
-            <div class="preloader-text">系统加载中</div>
-            <div class="preloader-subtext">正在准备测试系统，请稍候...</div>
-        </div>
-    </div>
-    
-    <!-- 导航栏 -->
-    <nav class="navbar">
-        <div class="container">
-            <a href="/" class="logo">
-                <i class="fas fa-language"></i>
-                语言学习系统
-            </a>
-            <ul class="nav-links">
-                <li><a href="/">首页</a></li>
-                <!-- 只有学生、教师和游客可以参加考试、测试、练习和学习 -->
-                {% if not user.username or user.role == 'student' or user.role == 'teacher' %}
-                <li><a href="/test-system">测试系统</a></li>
-                <li><a href="/level-assessment">等级评估</a></li>
-                {% endif %}
-                {% if user.username %}
-                    <!-- 硬件管理员菜单 (最高权限) -->
-                    {% if user.role == 'hardware_admin' %}
-                    <li><a href="/admin/dashboard">管理面板</a></li>
-                    <li><a href="/admin/users">用户管理</a></li>
-                    <li><a href="/admin/settings">系统设置</a></li>
-                    <li><a href="/hardware/dashboard">硬件管理</a></li>
-                    <li><a href="/design/dashboard">设计工具</a></li>
-                    {% elif user.role == 'super_admin' %}
-                    <!-- 超级管理员菜单 -->
-                    <li><a href="/admin/dashboard">管理面板</a></li>
-                    <li><a href="/admin/users">用户管理</a></li>
-                    <li><a href="/admin/settings">系统设置</a></li>
-                    <li><a href="/hardware/dashboard">硬件管理</a></li>
-                    <li><a href="/design/dashboard">设计工具</a></li>
-                    {% elif user.role == 'admin' %}
-                    <!-- 管理员菜单 -->
-                    <li><a href="/admin/dashboard">管理面板</a></li>
-                    <li><a href="/admin/users">用户管理</a></li>
-                    <li><a href="/admin/settings">系统设置</a></li>
-                    {% elif user.role == 'designer' %}
-                    <!-- 设计师菜单 -->
-                    <li><a href="/design/dashboard">设计工具</a></li>
-                    {% elif user.role == 'teacher' %}
-                    <!-- 教师菜单 -->
-                    <li><a href="/teacher/dashboard">教师面板</a></li>
-                    <li><a href="/teacher/students">学生管理</a></li>
-                    <li><a href="/teacher/homework">作业管理</a></li>
-                    <li><a href="/teacher/exams">考试管理</a></li>
-                    {% elif user.role == 'student' %}
-                    <!-- 学生菜单 -->
-                    <li><a href="/student/dashboard">学习面板</a></li>
-                    <li><a href="/student/homework">我的作业</a></li>
-                    <li><a href="/student/exams">我的考试</a></li>
-                    <li><a href="/student/grades">我的成绩</a></li>
-                    {% else %}
-                    <!-- 其他用户菜单 -->
-                    {% endif %}
-                    <!-- 通用用户菜单 -->
-                    <li><a href="/profile">{{ user.username }}</a></li>
-                    <li><a href="/logout">退出</a></li>
-                {% else %}
-                <!-- 游客菜单 -->
-                <li><a href="/login">登录</a></li>
-                <li><a href="/register">注册</a></li>
-                {% endif %}
-            </ul>
-        </div>
-    </nav>
-    
-    <!-- 内容区域 -->
-    <div class="content">
-        <div class="container">
-            {% block content %}
-            {% endblock %}
-        </div>
-    </div>
-    
-    <!-- 页脚 -->
-    <footer class="footer">
-        <div class="container">
-            <div class="footer-content">
-                <div class="footer-section">
-                    <h3>关于我们</h3>
-                    <p>语言学习系统致力于为用户提供高质量的语言学习和测试服务，帮助用户提高语言水平。</p>
-                </div>
-                <div class="footer-section">
-                    <h3>联系我们</h3>
-                    <p><i class="fas fa-envelope"></i> contact@language-learning.com</p>
-                    <p><i class="fas fa-phone"></i> +86 123 4567 8910</p>
-                </div>
-                <div class="footer-section">
-                    <h3>快速链接</h3>
-                    <p><a href="/" style="color: white; text-decoration: none;">首页</a></p>
-                    <p><a href="/test-system" style="color: white; text-decoration: none;">测试系统</a></p>
-                    <p><a href="/level-assessment" style="color: white; text-decoration: none;">等级评估</a></p>
-                </div>
-            </div>
-            <div class="footer-bottom">
-                <p>&copy; 2026 语言学习系统. 保留所有权利.</p>
-            </div>
-        </div>
-    </footer>
-    
-    <!-- 超时和锁屏功能（除主页外） -->
-    {% if request.path != '/' %}
-        {% include 'includes/timeout_lock.html' %}
-    {% endif %}
-    
-    <!-- 预载入动画脚本 -->
+
     <script>
-        // 检查是否已经显示过预载入动画
-        function checkPreloaderShown() {
-            return sessionStorage.getItem('preloaderShown') === 'true';
+        // 锁定机制相关变量
+        let lockCheckInterval;
+        let lastActivityTime = Date.now();
+        let lockSettings = { 
+            lock_mask_opacity: 0.8,
+            idle_timeout_minutes: 15,  // 15分钟无活动自动锁定
+            max_idle_time_minutes: 30  // 30分钟无活动自动退出
+        };
+
+        // 初始化锁定机制
+        function initLockMechanism() {
+            // 设置遮罩透明度
+            document.getElementById('lock-overlay').style.backgroundColor = `rgba(0, 0, 0, ${lockSettings.lock_mask_opacity})`;
+
+            // 定期检查锁定状态（每5秒）
+            lockCheckInterval = setInterval(checkLockStatus, 5000);
+
+            // 监听用户活动
+            document.addEventListener('mousemove', handleUserActivity);
+            document.addEventListener('keydown', handleUserActivity);
+            document.addEventListener('click', handleUserActivity);
+            document.addEventListener('scroll', handleUserActivity);
         }
-        
-        // 标记预载入动画已显示
-        function markPreloaderShown() {
-            sessionStorage.setItem('preloaderShown', 'true');
-        }
-        
-        // 显示预载入动画
-        function showPreloader() {
-            const preloader = document.getElementById('preloader');
-            if (preloader) {
-                preloader.classList.remove('hidden');
-            }
-        }
-        
-        // 隐藏预载入动画
-        function hidePreloader() {
-            const preloader = document.getElementById('preloader');
-            if (preloader) {
-                preloader.classList.add('hidden');
-                // 动画结束后完全移除元素
-                setTimeout(() => {
-                    if (preloader.parentNode) {
-                        preloader.parentNode.removeChild(preloader);
-                    }
-                }, 500);
-            }
-        }
-        
-        // 页面加载完成后处理
-        window.addEventListener('load', function() {
-            // 检查是否已经显示过预载入动画
-            if (!checkPreloaderShown()) {
-                // 标记动画已显示
-                markPreloaderShown();
-                
-                // 显示动画一段时间后隐藏
-                setTimeout(hidePreloader, 2000); // 2秒后隐藏
+
+        // 检查用户锁定状态
+        function checkLockStatus() {
+            const currentTime = Date.now();
+            const idleTime = (currentTime - lastActivityTime) / (1000 * 60); // 转换为分钟
+            
+            if (idleTime >= lockSettings.max_idle_time_minutes) {
+                // 超时退出，刷新页面
+                window.location.reload();
+            } else if (idleTime >= lockSettings.idle_timeout_minutes) {
+                // 自动锁定
+                document.getElementById('lock-overlay').style.display = 'flex';
             } else {
-                // 如果已经显示过，直接隐藏
-                hidePreloader();
+                // 未锁定
+                document.getElementById('lock-overlay').style.display = 'none';
+            }
+        }
+
+        // 处理用户活动
+        function handleUserActivity() {
+            lastActivityTime = Date.now();
+        }
+
+        // 密码解锁
+        function unlockWithPassword() {
+            const password = document.getElementById('unlock-password').value;
+            const errorElement = document.getElementById('password-error');
+            
+            if (!password) {
+                errorElement.textContent = '请输入密码';
+                errorElement.style.display = 'block';
+                return;
+            }
+
+            // 简单的密码验证（实际项目中应该使用更安全的验证方式）
+            if (password === 'admin123') { // 示例密码
+                // 解锁成功，隐藏遮罩
+                document.getElementById('lock-overlay').style.display = 'none';
+                document.getElementById('unlock-password').value = '';
+                errorElement.style.display = 'none';
+                // 重置活动时间
+                lastActivityTime = Date.now();
+            } else {
+                // 解锁失败，显示错误
+                errorElement.textContent = '密码错误';
+                errorElement.style.display = 'block';
+            }
+        }
+
+        // 硬件ID解锁
+        function unlockWithHardware() {
+            const vikeyId = document.getElementById('vikey-id').value;
+            const errorElement = document.getElementById('hardware-error');
+            
+            if (!vikeyId) {
+                errorElement.textContent = '请输入硬件ID';
+                errorElement.style.display = 'block';
+                return;
+            }
+
+            // 简单的硬件ID验证（实际项目中应该使用更安全的验证方式）
+            if (vikeyId === '123456') { // 示例硬件ID
+                // 解锁成功，隐藏遮罩
+                document.getElementById('lock-overlay').style.display = 'none';
+                document.getElementById('vikey-id').value = '';
+                errorElement.style.display = 'none';
+                // 重置活动时间
+                lastActivityTime = Date.now();
+            } else {
+                // 解锁失败，显示错误
+                errorElement.textContent = '硬件ID错误';
+                errorElement.style.display = 'block';
+            }
+        }
+
+        // 切换解锁选项卡
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('lock-tab')) {
+                // 移除所有活动状态
+                document.querySelectorAll('.lock-tab').forEach(tab => tab.classList.remove('active'));
+                document.querySelectorAll('.lock-form').forEach(form => form.classList.remove('active'));
+                
+                // 添加当前标签活动状态
+                e.target.classList.add('active');
+                
+                // 显示对应表单
+                const tabId = e.target.dataset.tab;
+                document.getElementById(`${tabId}-form`).classList.add('active');
             }
         });
-        
-        // 页面切换时重新显示预载入动画（如果是第一次访问测试系统）
-        document.addEventListener('click', function(e) {
-            const target = e.target.closest('a');
-            if (target && target.href) {
-                // 检查是否是测试系统相关链接
-                if (target.href.includes('/test-system') || target.href.includes('/japanese-test') || target.href.includes('/english-test')) {
-                    // 检查是否已经显示过预载入动画
-                    if (!checkPreloaderShown()) {
-                        showPreloader();
-                    }
-                }
+
+        // 密码输入框回车事件
+        document.addEventListener('keypress', function(e) {
+            if (e.target.id === 'unlock-password' && e.key === 'Enter') {
+                unlockWithPassword();
+            } else if (e.target.id === 'vikey-id' && e.key === 'Enter') {
+                unlockWithHardware();
+            }
+        });
+
+        // 页面加载完成后初始化锁定机制
+        document.addEventListener('DOMContentLoaded', function() {
+            // 检查是否为首页或注册页面，这些页面不启用锁定机制
+            const path = window.location.pathname;
+            if (path !== '/' && !path.includes('/auth/register') && !path.includes('/auth/login')) {
+                initLockMechanism();
+            }
+        });
+
+        // 页面卸载时清理定时器
+        window.addEventListener('beforeunload', function() {
+            if (lockCheckInterval) {
+                clearInterval(lockCheckInterval);
             }
         });
     </script>
-</body>
+    
+    <!-- JSON语法高亮脚本 -->
+    <script src="{{ url_for('static', filename='js/json-highlight.js') }}"></script>
 </html>

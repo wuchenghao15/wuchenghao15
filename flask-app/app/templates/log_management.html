@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>日志管理面板 - MTSCOS AI</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1e3a8a;
+            margin-bottom: 8px;
+        }
+        
+        .header p {
+            font-size: 16px;
+            color: #6b7280;
+        }
+        
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+        
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+        }
+        
+        .card h2 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1e3a8a;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .card h2 i {
+            color: #3b82f6;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            color: #6b7280;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: 600;
+            color: #1e3a8a;
+        }
+        
+        .stat-value.error {
+            color: #ef4444;
+        }
+        
+        .stat-value.warning {
+            color: #f59e0b;
+        }
+        
+        .stat-value.info {
+            color: #3b82f6;
+        }
+        
+        .stat-value.debug {
+            color: #10b981;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 200px;
+            margin-top: 16px;
+        }
+        
+        .log-list {
+            list-style: none;
+            margin-top: 16px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .log-item {
+            padding: 12px;
+            background: rgba(249, 250, 251, 0.8);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            border-left: 4px solid #3b82f6;
+            font-size: 14px;
+        }
+        
+        .log-item.error {
+            border-left-color: #ef4444;
+            background: rgba(239, 68, 68, 0.05);
+        }
+        
+        .log-item.warning {
+            border-left-color: #f59e0b;
+            background: rgba(245, 158, 11, 0.05);
+        }
+        
+        .log-item.info {
+            border-left-color: #3b82f6;
+            background: rgba(59, 130, 246, 0.05);
+        }
+        
+        .log-item.debug {
+            border-left-color: #10b981;
+            background: rgba(16, 185, 129, 0.05);
+        }
+        
+        .log-time {
+            font-size: 12px;
+            color: #6b7280;
+            margin-bottom: 4px;
+        }
+        
+        .log-module {
+            font-size: 12px;
+            color: #6b7280;
+            margin-bottom: 4px;
+        }
+        
+        .log-message {
+            font-weight: 500;
+        }
+        
+        .filters {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+        
+        .filter-select {
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.9);
+            font-size: 14px;
+        }
+        
+        .refresh-btn {
+            background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 16px;
+        }
+        
+        .refresh-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+        
+        .refresh-btn:active {
+            transform: translateY(0);
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #3b82f6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .loading-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 16px;
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .filters {
+                flex-direction: column;
+            }
+        }
+    </style>
+
+<style>
+.svg-icon {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    vertical-align: -0.125em;
+    fill: currentColor;
+}
+</style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><!-- Icon fa-file-alt not found --> 日志管理面板</h1>
+            <p>实时监控和分析系统日志，便于问题排查和性能优化</p>
+            <div class="filters">
+                <select class="filter-select" id="level-filter">
+                    <option value="all">所有级别</option>
+                    <option value="ERROR">错误</option>
+                    <option value="WARNING">警告</option>
+                    <option value="INFO">信息</option>
+                    <option value="DEBUG">调试</option>
+                </select>
+                <select class="filter-select" id="module-filter">
+                    <option value="all">所有模块</option>
+                    <!-- 模块选项将通过JavaScript动态生成 -->
+                </select>
+                <select class="filter-select" id="time-filter">
+                    <option value="1h">最近1小时</option>
+                    <option value="6h">最近6小时</option>
+                    <option value="12h">最近12小时</option>
+                    <option value="24h">最近24小时</option>
+                    <option value="7d">最近7天</option>
+                </select>
+            </div>
+            <button class="refresh-btn" onclick="refreshData()">
+                <!-- Icon fa-sync-alt not found --> 刷新数据
+            </button>
+        </div>
+        
+        <div class="dashboard">
+            <!-- 日志统计 -->
+            <div class="card">
+                <h2><!-- Icon fa-chart-pie not found --> 日志统计</h2>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <span class="stat-label">错误</span>
+                        <span class="stat-value error" id="error-count">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">警告</span>
+                        <span class="stat-value warning" id="warning-count">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">信息</span>
+                        <span class="stat-value info" id="info-count">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">调试</span>
+                        <span class="stat-value debug" id="debug-count">0</span>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="log-level-chart"></canvas>
+                </div>
+            </div>
+            
+            <!-- 错误类型分析 -->
+            <div class="card">
+                <h2><svg class="svg-icon" viewBox="0 0 576 512" fill="#ffc107" width="16" height="16"><path d="M569.5 412L334.1 55c-11.7-19.5-42-19.5-53.7 0L6.5 412c-11.7 19.5 2.6 44 26.8 44h499.4c24.2 0 38.5-24.5 26.8-44zm-277-112c-13.3 0-24-10.7-24-24v-96c0-13.3 10.7-24 24-24s24 10.7 24 24v96c0 13.3-10.7 24-24 24zm0 160c-17.7 0-32-14.3-32-32s14.3-32 32-32 32 14.3 32 32-14.3 32-32 32z"/></svg> 错误类型分析</h2>
+                <div class="chart-container">
+                    <canvas id="error-type-chart"></canvas>
+                </div>
+            </div>
+            
+            <!-- 时间分布 -->
+            <div class="card">
+                <h2><svg class="svg-icon" viewBox="0 0 512 512" width="16" height="16"><path d="M256 8C119 8 8 119 8 256s111 248 248 248 248-111 248-248S393 8 256 8zm0 448c-110.5 0-200-89.5-200-200S145.5 56 256 56s200 89.5 200 200-89.5 200-200 200zm61.6-265.5c-4.7-4.7-12.3-4.7-17 0L268 223.1V132c0-6.6-5.4-12-12-12h-28c-6.6 0-12 5.4-12 12v124.1c0 6.4 2.5 12.6 7 17.1l74.5 74.5c4.7 4.7 12.3 4.7 17 0l19.8-19.8c4.7-4.7 4.7-12.3 0-17l-68.7-68.7z"/></svg> 时间分布</h2>
+                <div class="chart-container">
+                    <canvas id="time-distribution-chart"></canvas>
+                </div>
+            </div>
+            
+            <!-- 模块分布 -->
+            <div class="card">
+                <h2><!-- Icon fa-cubes not found --> 模块分布</h2>
+                <div class="chart-container">
+                    <canvas id="module-distribution-chart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 日志列表 -->
+        <div class="card">
+            <h2><!-- Icon fa-list not found --> 最近日志</h2>
+            <ul class="log-list" id="log-list">
+                <!-- 日志列表将通过JavaScript动态生成 -->
+            </ul>
+        </div>
+    </div>
+    
+    <script>
+        // 全局变量
+        let logLevelChart, errorTypeChart, timeDistributionChart, moduleDistributionChart;
+        
+        // 初始化图表
+        function initCharts() {
+            // 日志级别饼图
+            const levelCtx = document.getElementById('log-level-chart').getContext('2d');
+            logLevelChart = new Chart(levelCtx, {
+                type: 'pie',
+                data: {
+                    labels: ['错误', '警告', '信息', '调试'],
+                    datasets: [{
+                        data: [0, 0, 0, 0],
+                        backgroundColor: [
+                            '#ef4444',
+                            '#f59e0b',
+                            '#3b82f6',
+                            '#10b981'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+            
+            // 错误类型柱状图
+            const errorCtx = document.getElementById('error-type-chart').getContext('2d');
+            errorTypeChart = new Chart(errorCtx, {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: '错误数量',
+                        data: [],
+                        backgroundColor: '#ef4444',
+                        borderColor: '#ef4444',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+            
+            // 时间分布柱状图
+            const timeCtx = document.getElementById('time-distribution-chart').getContext('2d');
+            timeDistributionChart = new Chart(timeCtx, {
+                type: 'bar',
+                data: {
+                    labels: Array.from({length: 24}, (_, i) => i + '时'),
+                    datasets: [{
+                        label: '日志数量',
+                        data: Array(24).fill(0),
+                        backgroundColor: '#3b82f6',
+                        borderColor: '#3b82f6',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+            
+            // 模块分布饼图
+            const moduleCtx = document.getElementById('module-distribution-chart').getContext('2d');
+            moduleDistributionChart = new Chart(moduleCtx, {
+                type: 'pie',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        data: [],
+                        backgroundColor: [
+                            '#3b82f6',
+                            '#10b981',
+                            '#f59e0b',
+                            '#ef4444',
+                            '#8b5cf6',
+                            '#ec4899',
+                            '#14b8a6',
+                            '#f97316'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+        
+        // 更新日志统计
+        function updateLogStats(data) {
+            document.getElementById('error-count').textContent = data.error_count;
+            document.getElementById('warning-count').textContent = data.warning_count;
+            document.getElementById('info-count').textContent = data.info_count;
+            document.getElementById('debug-count').textContent = data.debug_count;
+            
+            // 更新日志级别饼图
+            logLevelChart.data.datasets[0].data = [
+                data.error_count,
+                data.warning_count,
+                data.info_count,
+                data.debug_count
+            ];
+            logLevelChart.update();
+        }
+        
+        // 更新错误类型图表
+        function updateErrorTypeChart(data) {
+            const errorTypes = Object.keys(data.error_types);
+            const errorCounts = Object.values(data.error_types);
+            
+            errorTypeChart.data.labels = errorTypes;
+            errorTypeChart.data.datasets[0].data = errorCounts;
+            errorTypeChart.update();
+        }
+        
+        // 更新时间分布图表
+        function updateTimeDistributionChart(data) {
+            const timeData = Array(24).fill(0);
+            
+            Object.entries(data.time_distribution).forEach(([hour, count]) => {
+                const hourIndex = parseInt(hour);
+                if (hourIndex >= 0 && hourIndex < 24) {
+                    timeData[hourIndex] = count;
+                }
+            });
+            
+            timeDistributionChart.data.datasets[0].data = timeData;
+            timeDistributionChart.update();
+        }
+        
+        // 更新模块分布图表
+        function updateModuleDistributionChart(data) {
+            const modules = Object.keys(data.module_distribution);
+            const counts = Object.values(data.module_distribution);
+            
+            moduleDistributionChart.data.labels = modules;
+            moduleDistributionChart.data.datasets[0].data = counts;
+            moduleDistributionChart.update();
+        }
+        
+        // 更新日志列表
+        function updateLogList(logs) {
+            const logList = document.getElementById('log-list');
+            logList.innerHTML = '';
+            
+            logs.forEach(log => {
+                const li = document.createElement('li');
+                li.className = `log-item ${log.level.toLowerCase()}`;
+                li.innerHTML = `
+                    <div class="log-time">${log.timestamp}</div>
+                    <div class="log-module">${log.module}</div>
+                    <div class="log-message">${log.message}</div>
+                `;
+                logList.appendChild(li);
+            });
+        }
+        
+        // 刷新数据
+        function refreshData() {
+            // 显示加载状态
+            const refreshBtn = document.querySelector('.refresh-btn');
+            const originalText = refreshBtn.innerHTML;
+            refreshBtn.innerHTML = '<div class="loading"></div> 刷新中...';
+            refreshBtn.disabled = true;
+            
+            // 模拟获取数据（实际项目中应该通过API获取）
+            setTimeout(() => {
+                // 模拟日志分析结果
+                const analysisData = {
+                    error_count: Math.floor(Math.random() * 50),
+                    warning_count: Math.floor(Math.random() * 100),
+                    info_count: Math.floor(Math.random() * 500),
+                    debug_count: Math.floor(Math.random() * 200),
+                    error_types: {
+                        'ImportError': Math.floor(Math.random() * 10),
+                        'AttributeError': Math.floor(Math.random() * 15),
+                        'ValueError': Math.floor(Math.random() * 8),
+                        'TypeError': Math.floor(Math.random() * 12),
+                        'OtherError': Math.floor(Math.random() * 5)
+                    },
+                    warning_types: {},
+                    info_types: {},
+                    debug_types: {},
+                    time_distribution: {
+                        '0': Math.floor(Math.random() * 50),
+                        '6': Math.floor(Math.random() * 100),
+                        '12': Math.floor(Math.random() * 200),
+                        '18': Math.floor(Math.random() * 150),
+                        '23': Math.floor(Math.random() * 80)
+                    },
+                    module_distribution: {
+                        'app.ai.intelligence_manager': Math.floor(Math.random() * 100),
+                        'app.ai.thread_process_manager': Math.floor(Math.random() * 80),
+                        'app.ai.ai_engine_integrator': Math.floor(Math.random() * 120),
+                        'app.services.service_manager': Math.floor(Math.random() * 60),
+                        'app.routes.monitoring': Math.floor(Math.random() * 40)
+                    }
+                };
+                
+                // 模拟日志列表
+                const logs = [];
+                const levels = ['ERROR', 'WARNING', 'INFO', 'DEBUG'];
+                const modules = ['app.ai.intelligence_manager', 'app.ai.thread_process_manager', 'app.ai.ai_engine_integrator', 'app.services.service_manager'];
+                
+                for (let i = 0; i < 20; i++) {
+                    const now = new Date();
+                    now.setMinutes(now.getMinutes() - i);
+                    
+                    logs.push({
+                        timestamp: now.toISOString(),
+                        module: modules[Math.floor(Math.random() * modules.length)],
+                        level: levels[Math.floor(Math.random() * levels.length)],
+                        message: `这是一条${levels[Math.floor(Math.random() * levels.length)]}级别的日志消息，用于测试日志管理功能。`
+                    });
+                }
+                
+                // 更新数据
+                updateLogStats(analysisData);
+                updateErrorTypeChart(analysisData);
+                updateTimeDistributionChart(analysisData);
+                updateModuleDistributionChart(analysisData);
+                updateLogList(logs);
+                
+                // 恢复按钮状态
+                refreshBtn.innerHTML = originalText;
+                refreshBtn.disabled = false;
+            }, 1000);
+        }
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initCharts();
+            refreshData();
+            
+            // 每30秒自动刷新数据
+            setInterval(refreshData, 30000);
+        });
+    </script>
+    
+    <!-- Font Awesome -->
+    <!-- FontAwesome CDN removed --></script>
+</body>
+</html>

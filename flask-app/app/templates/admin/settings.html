@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 
-{% block title %}系统设置 - 语言学习系统{% endblock %}
+{% block title %}系统设置 - MTSCOS教育系统{% endblock %}
 
 {% block content %}
 <style>
     /* 系统设置页面样式 */
     .system-settings {
-        max-width: 1000px;
+        max-width: 1400px;
         margin: 0 auto;
     }
     
@@ -18,6 +18,19 @@
         border-radius: 20px;
         color: white;
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .settings-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -20%;
+        width: 300px;
+        height: 300px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
     }
     
     .settings-title {
@@ -28,113 +41,430 @@
         align-items: center;
         justify-content: center;
         gap: 15px;
+        position: relative;
+        z-index: 1;
     }
     
     .settings-description {
         font-size: 1.1rem;
         opacity: 0.9;
+        position: relative;
+        z-index: 1;
     }
     
     .settings-sections {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+        grid-template-columns: 1fr 350px;
         gap: 30px;
     }
     
     .settings-section {
         background: white;
-        border-radius: 20px;
-        padding: 30px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        border-radius: 16px;
+        padding: 25px;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+        transition: all 0.3s ease;
+    }
+    
+    .settings-section:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 12px 35px rgba(0, 0, 0, 0.12);
     }
     
     .section-title {
-        font-size: 1.5rem;
+        font-size: 1.3rem;
         font-weight: 600;
         margin-bottom: 20px;
-        color: #667eea;
+        color: #333;
         display: flex;
         align-items: center;
         gap: 10px;
-        padding-bottom: 10px;
-        border-bottom: 2px solid #e0e0e0;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #f0f0f0;
+        position: relative;
+    }
+    
+    .section-title i {
+        color: #667eea;
+    }
+    
+    .section-title::after {
+        content: '';
+        position: absolute;
+        bottom: -2px;
+        left: 0;
+        width: 60px;
+        height: 2px;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        border-radius: 2px;
     }
     
     .form-group {
-        margin-bottom: 20px;
+        margin-bottom: 25px;
     }
     
     .form-label {
         display: block;
-        margin-bottom: 8px;
+        margin-bottom: 10px;
         font-weight: 600;
         color: #333;
+        font-size: 14px;
     }
     
     .form-input {
         width: 100%;
-        padding: 12px 15px;
+        padding: 14px 18px;
         border: 2px solid #e0e0e0;
-        border-radius: 10px;
+        border-radius: 12px;
         font-size: 1rem;
         transition: all 0.3s ease;
+        background: #fafafa;
     }
     
     .form-input:focus {
         outline: none;
         border-color: #667eea;
-        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+        background: white;
     }
     
     .form-select {
         width: 100%;
-        padding: 12px 15px;
+        padding: 14px 18px;
         border: 2px solid #e0e0e0;
-        border-radius: 10px;
+        border-radius: 12px;
         font-size: 1rem;
-        background: white;
+        background: #fafafa;
         transition: all 0.3s ease;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 15px center;
     }
     
     .form-select:focus {
         outline: none;
         border-color: #667eea;
-        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+        background-color: white;
+    }
+    
+    .form-textarea {
+        width: 100%;
+        padding: 14px 18px;
+        border: 2px solid #e0e0e0;
+        border-radius: 12px;
+        font-size: 1rem;
+        min-height: 120px;
+        resize: vertical;
+        transition: all 0.3s ease;
+        background: #fafafa;
+    }
+    
+    .form-textarea:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+        background: white;
     }
     
     .form-checkbox {
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 12px;
+        padding: 15px;
+        background: #fafafa;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .form-checkbox:hover {
+        background: #f0f0f0;
     }
     
     .form-checkbox input[type="checkbox"] {
-        width: 20px;
-        height: 20px;
+        width: 22px;
+        height: 22px;
         cursor: pointer;
+        accent-color: #667eea;
+    }
+    
+    .form-checkbox-label {
+        font-weight: 500;
+        color: #333;
+        cursor: pointer;
+    }
+    
+    .form-checkbox-description {
+        font-size: 13px;
+        color: #666;
+        margin-top: 4px;
+    }
+    
+    .form-group-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+    }
+    
+    .save-section {
+        margin-top: 30px;
+        padding: 25px;
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+    }
+    
+    .save-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 15px;
     }
     
     .save-btn {
-        display: block;
-        width: 100%;
-        padding: 15px;
+        padding: 12px 25px;
         border: none;
-        border-radius: 10px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        font-size: 1.1rem;
+        border-radius: 12px;
+        font-size: 1rem;
         font-weight: 600;
         cursor: pointer;
         transition: all 0.3s ease;
-        margin-top: 30px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
     }
     
-    .save-btn:hover {
+    .primary-save-btn {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    .primary-save-btn:hover {
         transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+    }
+    
+    .secondary-save-btn {
+        background: #f8f9fa;
+        color: #333;
+        border: 2px solid #e0e0e0;
+    }
+    
+    .secondary-save-btn:hover {
+        background: #e9ecef;
+    }
+    
+    .reset-btn {
+        background: #fff3cd;
+        color: #856404;
+        border: 2px solid #ffeeba;
+    }
+    
+    .reset-btn:hover {
+        background: #ffeeba;
+    }
+    
+    /* 设置标签页 */
+    .settings-tabs {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 30px;
+        padding: 15px;
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        overflow-x: auto;
+    }
+    
+    .tab-btn {
+        padding: 12px 22px;
+        border: none;
+        border-radius: 50px;
+        background: #f8f9fa;
+        color: #666;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .tab-btn.active {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    .tab-btn:hover:not(.active) {
+        background: #e9ecef;
+    }
+    
+    /* 设置卡片 */
+    .setting-card {
+        background: #fafafa;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 20px;
+        border-left: 4px solid #667eea;
+    }
+    
+    .setting-card.warning {
+        border-left-color: #f59e0b;
+        background: #fffbeb;
+    }
+    
+    .setting-card.success {
+        border-left-color: #10b981;
+        background: #ecfdf5;
+    }
+    
+    .setting-card.info {
+        border-left-color: #3b82f6;
+        background: #eff6ff;
+    }
+    
+    .setting-card-title {
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: #333;
+    }
+    
+    .setting-card-description {
+        font-size: 13px;
+        color: #666;
+        line-height: 1.5;
+    }
+    
+    /* 通知设置 */
+    .notification-toggle {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px;
+        background: #fafafa;
+        border-radius: 12px;
+        margin-bottom: 15px;
+        transition: background 0.2s;
+    }
+    
+    .notification-toggle:hover {
+        background: #f0f0f0;
+    }
+    
+    .toggle-label {
+        font-weight: 500;
+        color: #333;
+    }
+    
+    .toggle-switch {
+        position: relative;
+        width: 50px;
+        height: 28px;
+        background: #ccc;
+        border-radius: 14px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .toggle-switch.active {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+    }
+    
+    .toggle-switch::after {
+        content: '';
+        position: absolute;
+        top: 4px;
+        left: 4px;
+        width: 20px;
+        height: 20px;
+        background: white;
+        border-radius: 50%;
+        transition: all 0.3s ease;
+    }
+    
+    .toggle-switch.active::after {
+        left: 26px;
+    }
+    
+    /* 配置导入导出卡片 */
+    .config-card {
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    
+    .config-card-title {
+        font-weight: 600;
+        margin-bottom: 15px;
+        color: #333;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .config-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .config-btn {
+        padding: 10px 15px;
+        border: 1px solid #e0e0e0;
+        border-radius: 10px;
+        background: white;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+        color: #333;
+        font-size: 14px;
+    }
+    
+    .config-btn:hover {
+        background: #667eea;
+        color: white;
+        border-color: #667eea;
+    }
+    
+    /* 数据库设置 */
+    .db-settings-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+    }
+    
+    .db-setting-item {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 15px;
+        text-align: center;
+    }
+    
+    .db-setting-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #667eea;
+    }
+    
+    .db-setting-label {
+        font-size: 12px;
+        color: #666;
+        margin-top: 5px;
     }
     
     /* 响应式设计 */
+    @media (max-width: 1024px) {
+        .settings-sections {
+            grid-template-columns: 1fr;
+        }
+    }
+    
     @media (max-width: 768px) {
         .system-settings {
             padding: 0 20px;
@@ -143,6 +473,28 @@
         .settings-sections {
             grid-template-columns: 1fr;
         }
+        
+        .form-group-row {
+            grid-template-columns: 1fr;
+        }
+        
+        .save-actions {
+            flex-direction: column;
+        }
+        
+        .save-btn {
+            width: 100%;
+            justify-content: center;
+        }
+        
+        .settings-tabs {
+            flex-wrap: wrap;
+        }
+        
+        .tab-btn {
+            flex: 1;
+            justify-content: center;
+        }
     }
 </style>
 
@@ -150,7 +502,7 @@
     <!-- 设置头部 -->
     <div class="settings-header">
         <h1 class="settings-title">
-            <i class="fas fa-cogs"></i>
+            <svg class="svg-icon" viewBox="0 0 512 512" width="16" height="16"><path d="M487.4 315.7l-43.4-7.5c-1.3-3.2-2.8-6.3-4.5-9.3l19.9-39.8c3.6-7.2 2-16.1-3.8-21.6l-50-47.6c-5.8-5.5-14.9-6.5-21.9-2.4l-41.9 24.5c-11.4-8.8-23.9-16.2-37.2-21.8l-8.4-47.4C292.1 35 283.7 32 274.7 32h-37.5c-9 0-17.4 3-24.3 8.3l-8.4 47.4c-13.3 5.6-25.8 13-37.2 21.8l-41.9-24.5c-7-4.1-16.1-3.1-21.9 2.4l-50 47.6c-5.8 5.5-7.4 14.4-3.8 21.6l19.9 39.8c-1.7 3-3.2 6.1-4.5 9.3l-43.4 7.5C10.1 320.6 0 331.8 0 344.9v34.3c0 13.1 10.1 24.3 22.6 29.2l43.4 7.5c1.3 3.2 2.8 6.3 4.5 9.3l-19.9 39.8c-3.6 7.2-2 16.1 3.8 21.6l50 47.6c5.8 5.5 14.9 6.5 21.9 2.4l41.9-24.5c11.4 8.8 23.9 16.2 37.2 21.8l8.4 47.4c6.9 5.3 15.3 8.3 24.3 8.3h37.5c9 0 17.4-3 24.3-8.3l8.4-47.4c13.3-5.6 25.8-13 37.2-21.8l41.9 24.5c7 4.1 16.1 3.1 21.9-2.4l50-47.6c5.8-5.5 7.4-14.4 3.8-21.6l-19.9-39.8c1.7-3 3.2-6.1 4.5-9.3l43.4-7.5c12.5-4.9 22.6-16 22.6-29.2v-34.3c0-13.1-10.1-24.3-22.6-29.2zM256 384c-70.7 0-128-57.3-128-128s57.3-128 128-128 128 57.3 128 128-57.3 128-128 128z"/></svg>
             系统设置
         </h1>
         <p class="settings-description">
@@ -158,121 +510,666 @@
         </p>
     </div>
     
+    <!-- 设置标签页 -->
+    <div class="settings-tabs">
+        <button class="tab-btn active" onclick="showTab('general')">
+            <svg class="svg-icon" viewBox="0 0 512 512" fill="#17a2b8" width="16" height="16"><path d="M256 8C119 8 8 119 8 256s111 248 248 248 248-111 248-248S393 8 256 8zm0 112c-22.1 0-40 17.9-40 40s17.9 40 40 40 40-17.9 40-40-17.9-40-40-40zm64 256H192c-13.3 0-24-10.7-24-24v-16c0-13.3 10.7-24 24-24h24v-64h-24c-13.3 0-24-10.7-24-24v-16c0-13.3 10.7-24 24-24h64c13.3 0 24 10.7 24 24v104h24c13.3 0 24 10.7 24 24v16c0 13.3-10.7 24-24 24z"/></svg>基本设置
+        </button>
+        <button class="tab-btn" onclick="showTab('security')">
+            <svg class="svg-icon" viewBox="0 0 512 512" width="16" height="16"><path d="M466.5 83.68l-192-80a48 48 0 0 0-37 0l-192 80C27.72 91.69 16 108.62 16 127.1V240c0 119.1 85.41 221.2 199.4 252.9l18.24 51.66A16 16 0 0 0 248 544h16a16 16 0 0 0 14.35-8.44l18.24-51.66C410.6 461.2 496 359.1 496 240V127.1C496 108.6 484.3 91.69 466.5 83.68zM240 204.7L178.6 163.4l-37.21 24.81L202.8 230l-61.42 41.81 37.21 24.81L240 254.9l61.42 41.74 37.21-24.81L277.2 230l61.42-41.81-37.21-24.81z"/></svg>安全设置
+        </button>
+        <button class="tab-btn" onclick="showTab('test')">
+            <!-- Icon fa-clipboard-check not found -->测试设置
+        </button>
+        <button class="tab-btn" onclick="showTab('notification')">
+            <svg class="svg-icon" viewBox="0 0 448 512" width="16" height="16"><path d="M224 512c35.3 0 64-28.7 64-64H160c0 35.3 28.7 64 64 64zm215.3-149.7c-14.6-14.6-46.1-29.8-67.4-59.3-24-33.5-35.3-72.8-35.3-110.4 0-77.4-57.6-141.6-133-150.7-2.6-15.4-17.6-25.6-33.6-25.6s-31 10.2-33.6 25.6C91.6 91 34 155.2 34 232.6c0 37.6-11.3 76.9-35.3 110.4C-22.6 372.5-68.9 387.7-83.5 402.3c-14.6 14.6-14.6 38.2 0 52.8 7.3 7.3 17.1 10.9 26.8 10.9h369.5c9.7 0 19.5-3.7 26.8-10.9 14.5-14.6 14.5-38.2 0-52.8z"/></svg>通知设置
+        </button>
+        <button class="tab-btn" onclick="showTab('database')">
+            <!-- Icon fa-database not found -->数据库设置
+        </button>
+        <button class="tab-btn" onclick="showTab('advanced')">
+            <!-- Icon fa-sliders-h not found -->高级设置
+        </button>
+    </div>
+    
     <!-- 设置区域 -->
-    <div class="settings-sections">
+    <div class="settings-sections" id="settings-content">
         <!-- 基本设置 -->
-        <div class="settings-section">
+        <div id="tab-general" class="settings-section">
             <h2 class="section-title">
-                <i class="fas fa-info-circle"></i>
+                <svg class="svg-icon" viewBox="0 0 512 512" fill="#17a2b8" width="16" height="16"><path d="M256 8C119 8 8 119 8 256s111 248 248 248 248-111 248-248S393 8 256 8zm0 112c-22.1 0-40 17.9-40 40s17.9 40 40 40 40-17.9 40-40-17.9-40-40-40zm64 256H192c-13.3 0-24-10.7-24-24v-16c0-13.3 10.7-24 24-24h24v-64h-24c-13.3 0-24-10.7-24-24v-16c0-13.3 10.7-24 24-24h64c13.3 0 24 10.7 24 24v104h24c13.3 0 24 10.7 24 24v16c0 13.3-10.7 24-24 24z"/></svg>
                 基本设置
             </h2>
-            <form>
-                <div class="form-group">
-                    <label class="form-label">系统名称</label>
-                    <input type="text" class="form-input" value="语言学习系统">
-                </div>
-                <div class="form-group">
+            
+            <div class="setting-card">
+                <div class="setting-card-title">系统信息</div>
+                <div class="setting-card-description">设置系统的基本信息和标识。</div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">系统名称</label>
+                <input type="text" class="form-input" value="MTSCOS教育系统" placeholder="输入系统名称">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">系统描述</label>
+                <textarea class="form-textarea" placeholder="输入系统描述">提供高质量语言学习和测试服务的教育系统</textarea>
+            </div>
+            
+            <div class="form-group-row">
+                <div>
                     <label class="form-label">系统版本</label>
-                    <input type="text" class="form-input" value="1.0.0">
+                    <input type="text" class="form-input" value="1.5.0" readonly>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">系统描述</label>
-                    <input type="text" class="form-input" value="提供语言学习和测试服务的系统">
-                </div>
-                <div class="form-group">
+                <div>
                     <label class="form-label">管理员邮箱</label>
-                    <input type="email" class="form-input" value="admin@example.com">
+                    <input type="email" class="form-input" value="admin@mtscos.edu" placeholder="输入管理员邮箱">
                 </div>
-            </form>
+            </div>
+            
+            <div class="form-group-row">
+                <div>
+                    <label class="form-label">系统语言</label>
+                    <select class="form-select">
+                        <option value="zh-CN">中文(简体)</option>
+                        <option value="zh-TW">中文(繁体)</option>
+                        <option value="en">English</option>
+                        <option value="ja">日本語</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label">时区</label>
+                    <select class="form-select">
+                        <option value="Asia/Shanghai">Asia/Shanghai (UTC+8)</option>
+                        <option value="UTC">UTC</option>
+                        <option value="America/New_York">America/New_York (UTC-5)</option>
+                        <option value="Europe/London">Europe/London (UTC+0)</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <div class="form-checkbox">
+                    <input type="checkbox" id="enable_registration" checked>
+                    <div>
+                        <label for="enable_registration" class="form-checkbox-label">允许用户注册</label>
+                        <div class="form-checkbox-description">允许新用户通过注册页面创建账户</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <div class="form-checkbox">
+                    <input type="checkbox" id="enable_guest_access">
+                    <div>
+                        <label for="enable_guest_access" class="form-checkbox-label">允许访客访问</label>
+                        <div class="form-checkbox-description">允许未登录用户访问部分功能</div>
+                    </div>
+                </div>
+            </div>
         </div>
         
         <!-- 安全设置 -->
-        <div class="settings-section">
+        <div id="tab-security" class="settings-section" style="display: none;">
             <h2 class="section-title">
-                <i class="fas fa-shield-alt"></i>
+                <svg class="svg-icon" viewBox="0 0 512 512" width="16" height="16"><path d="M466.5 83.68l-192-80a48 48 0 0 0-37 0l-192 80C27.72 91.69 16 108.62 16 127.1V240c0 119.1 85.41 221.2 199.4 252.9l18.24 51.66A16 16 0 0 0 248 544h16a16 16 0 0 0 14.35-8.44l18.24-51.66C410.6 461.2 496 359.1 496 240V127.1C496 108.6 484.3 91.69 466.5 83.68zM240 204.7L178.6 163.4l-37.21 24.81L202.8 230l-61.42 41.81 37.21 24.81L240 254.9l61.42 41.74 37.21-24.81L277.2 230l61.42-41.81-37.21-24.81z"/></svg>
                 安全设置
             </h2>
-            <form>
-                <div class="form-group">
-                    <label class="form-label">会话超时时间（分钟）</label>
-                    <input type="number" class="form-input" value="30">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">密码复杂度要求</label>
-                    <select class="form-select">
-                        <option value="low">低</option>
-                        <option value="medium" selected>中</option>
-                        <option value="high">高</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">登录失败锁定次数</label>
-                    <input type="number" class="form-input" value="5">
-                </div>
-                <div class="form-group form-checkbox">
+            
+            <div class="setting-card warning">
+                <div class="setting-card-title">安全警告</div>
+                <div class="setting-card-description">修改安全设置可能影响系统安全性，请谨慎操作。</div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">会话超时时间（分钟）</label>
+                <input type="number" class="form-input" value="30" min="5" max="120">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">密码复杂度要求</label>
+                <select class="form-select">
+                    <option value="low">低（仅字母或数字）</option>
+                    <option value="medium" selected>中（字母+数字）</option>
+                    <option value="high">高（字母+数字+特殊字符）</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">登录失败锁定次数</label>
+                <input type="number" class="form-input" value="5" min="3" max="10">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">锁定时间（分钟）</label>
+                <input type="number" class="form-input" value="15" min="5" max="60">
+            </div>
+            
+            <div class="form-group">
+                <div class="form-checkbox">
                     <input type="checkbox" id="enable_2fa" checked>
-                    <label for="enable_2fa">启用两步验证</label>
+                    <div>
+                        <label for="enable_2fa" class="form-checkbox-label">启用两步验证</label>
+                        <div class="form-checkbox-description">登录时需要额外的验证步骤</div>
+                    </div>
                 </div>
-            </form>
+            </div>
+            
+            <div class="form-group">
+                <div class="form-checkbox">
+                    <input type="checkbox" id="enable_ip_restriction">
+                    <div>
+                        <label for="enable_ip_restriction" class="form-checkbox-label">启用IP限制</label>
+                        <div class="form-checkbox-description">限制特定IP地址访问系统</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <div class="form-checkbox">
+                    <input type="checkbox" id="enable_secure_cookies" checked>
+                    <div>
+                        <label for="enable_secure_cookies" class="form-checkbox-label">启用安全Cookie</label>
+                        <div class="form-checkbox-description">仅在HTTPS连接时发送Cookie</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <div class="form-checkbox">
+                    <input type="checkbox" id="enable_csrf_protection" checked>
+                    <div>
+                        <label for="enable_csrf_protection" class="form-checkbox-label">启用CSRF保护</label>
+                        <div class="form-checkbox-description">防止跨站请求伪造攻击</div>
+                    </div>
+                </div>
+            </div>
         </div>
         
         <!-- 测试设置 -->
-        <div class="settings-section">
+        <div id="tab-test" class="settings-section" style="display: none;">
             <h2 class="section-title">
-                <i class="fas fa-clipboard-check"></i>
+                <!-- Icon fa-clipboard-check not found -->
                 测试设置
             </h2>
-            <form>
-                <div class="form-group">
+            
+            <div class="setting-card">
+                <div class="setting-card-title">测试配置</div>
+                <div class="setting-card-description">配置测试系统的默认参数。</div>
+            </div>
+            
+            <div class="form-group-row">
+                <div>
                     <label class="form-label">测试时长（分钟）</label>
-                    <input type="number" class="form-input" value="15">
+                    <input type="number" class="form-input" value="15" min="5" max="120">
                 </div>
-                <div class="form-group">
+                <div>
                     <label class="form-label">题目数量</label>
-                    <input type="number" class="form-input" value="20">
+                    <input type="number" class="form-input" value="20" min="5" max="100">
                 </div>
-                <div class="form-group">
+            </div>
+            
+            <div class="form-group-row">
+                <div>
                     <label class="form-label">及格分数</label>
-                    <input type="number" class="form-input" value="60">
+                    <input type="number" class="form-input" value="60" min="0" max="100">
                 </div>
-                <div class="form-group form-checkbox">
+                <div>
+                    <label class="form-label">满分</label>
+                    <input type="number" class="form-input" value="100" min="50" max="200">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">默认测试类型</label>
+                <select class="form-select">
+                    <option value="japanese">日语测试</option>
+                    <option value="english">英语测试</option>
+                    <option value="unified" selected>统一等级测试</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <div class="form-checkbox">
                     <input type="checkbox" id="enable_test_timer" checked>
-                    <label for="enable_test_timer">启用测试计时器</label>
+                    <div>
+                        <label for="enable_test_timer" class="form-checkbox-label">启用测试计时器</label>
+                        <div class="form-checkbox-description">测试过程中显示倒计时</div>
+                    </div>
                 </div>
-            </form>
+            </div>
+            
+            <div class="form-group">
+                <div class="form-checkbox">
+                    <input type="checkbox" id="enable_random_questions">
+                    <div>
+                        <label for="enable_random_questions" class="form-checkbox-label">随机出题</label>
+                        <div class="form-checkbox-description">从题库中随机抽取题目</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <div class="form-checkbox">
+                    <input type="checkbox" id="enable_instant_feedback">
+                    <div>
+                        <label for="enable_instant_feedback" class="form-checkbox-label">即时反馈</label>
+                        <div class="form-checkbox-description">答题后立即显示正确答案</div>
+                    </div>
+                </div>
+            </div>
         </div>
         
-        <!-- 邮件设置 -->
-        <div class="settings-section">
+        <!-- 通知设置 -->
+        <div id="tab-notification" class="settings-section" style="display: none;">
             <h2 class="section-title">
-                <i class="fas fa-envelope"></i>
-                邮件设置
+                <svg class="svg-icon" viewBox="0 0 448 512" width="16" height="16"><path d="M224 512c35.3 0 64-28.7 64-64H160c0 35.3 28.7 64 64 64zm215.3-149.7c-14.6-14.6-46.1-29.8-67.4-59.3-24-33.5-35.3-72.8-35.3-110.4 0-77.4-57.6-141.6-133-150.7-2.6-15.4-17.6-25.6-33.6-25.6s-31 10.2-33.6 25.6C91.6 91 34 155.2 34 232.6c0 37.6-11.3 76.9-35.3 110.4C-22.6 372.5-68.9 387.7-83.5 402.3c-14.6 14.6-14.6 38.2 0 52.8 7.3 7.3 17.1 10.9 26.8 10.9h369.5c9.7 0 19.5-3.7 26.8-10.9 14.5-14.6 14.5-38.2 0-52.8z"/></svg>
+                通知设置
             </h2>
-            <form>
-                <div class="form-group">
-                    <label class="form-label">SMTP服务器</label>
-                    <input type="text" class="form-input" value="smtp.example.com">
-                </div>
-                <div class="form-group">
+            
+            <div class="setting-card success">
+                <div class="setting-card-title">通知配置</div>
+                <div class="setting-card-description">配置系统通知和邮件提醒。</div>
+            </div>
+            
+            <div class="notification-toggle">
+                <span class="toggle-label">系统通知</span>
+                <div class="toggle-switch active"></div>
+            </div>
+            
+            <div class="notification-toggle">
+                <span class="toggle-label">邮件通知</span>
+                <div class="toggle-switch active"></div>
+            </div>
+            
+            <div class="notification-toggle">
+                <span class="toggle-label">作业提醒</span>
+                <div class="toggle-switch active"></div>
+            </div>
+            
+            <div class="notification-toggle">
+                <span class="toggle-label">成绩通知</span>
+                <div class="toggle-switch"></div>
+            </div>
+            
+            <div class="notification-toggle">
+                <span class="toggle-label">系统公告</span>
+                <div class="toggle-switch active"></div>
+            </div>
+            
+            <div class="notification-toggle">
+                <span class="toggle-label">安全告警</span>
+                <div class="toggle-switch active"></div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">SMTP服务器</label>
+                <input type="text" class="form-input" value="smtp.mtscos.edu" placeholder="输入SMTP服务器地址">
+            </div>
+            
+            <div class="form-group-row">
+                <div>
                     <label class="form-label">SMTP端口</label>
-                    <input type="number" class="form-input" value="587">
+                    <input type="number" class="form-input" value="587" min="1" max="65535">
                 </div>
-                <div class="form-group">
+                <div>
                     <label class="form-label">发件人邮箱</label>
-                    <input type="email" class="form-input" value="no-reply@example.com">
+                    <input type="email" class="form-input" value="no-reply@mtscos.edu">
                 </div>
-                <div class="form-group form-checkbox">
-                    <input type="checkbox" id="enable_email_notifications" checked>
-                    <label for="enable_email_notifications">启用邮件通知</label>
+            </div>
+            
+            <div class="form-group-row">
+                <div>
+                    <label class="form-label">SMTP用户名</label>
+                    <input type="text" class="form-input" value="smtp_user" placeholder="SMTP用户名">
                 </div>
-            </form>
+                <div>
+                    <label class="form-label">SMTP密码</label>
+                    <input type="password" class="form-input" value="********" placeholder="SMTP密码">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <div class="form-checkbox">
+                    <input type="checkbox" id="enable_smtp_ssl" checked>
+                    <div>
+                        <label for="enable_smtp_ssl" class="form-checkbox-label">启用SSL加密</label>
+                        <div class="form-checkbox-description">使用SSL/TLS加密连接SMTP服务器</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 数据库设置 -->
+        <div id="tab-database" class="settings-section" style="display: none;">
+            <h2 class="section-title">
+                <!-- Icon fa-database not found -->
+                数据库设置
+            </h2>
+            
+            <div class="setting-card info">
+                <div class="setting-card-title">数据库配置</div>
+                <div class="setting-card-description">管理数据库连接和备份设置。</div>
+            </div>
+            
+            <div class="db-settings-grid">
+                <div class="db-setting-item">
+                    <div class="db-setting-value">MySQL</div>
+                    <div class="db-setting-label">数据库类型</div>
+                </div>
+                <div class="db-setting-item">
+                    <div class="db-setting-value">localhost</div>
+                    <div class="db-setting-label">数据库主机</div>
+                </div>
+                <div class="db-setting-item">
+                    <div class="db-setting-value">3306</div>
+                    <div class="db-setting-label">端口</div>
+                </div>
+                <div class="db-setting-item">
+                    <div class="db-setting-value">mtscos_db</div>
+                    <div class="db-setting-label">数据库名</div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">数据库用户名</label>
+                <input type="text" class="form-input" value="admin" placeholder="数据库用户名">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">数据库密码</label>
+                <input type="password" class="form-input" value="********" placeholder="数据库密码">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">自动备份时间</label>
+                <select class="form-select">
+                    <option value="00:00">00:00 (凌晨)</option>
+                    <option value="02:00">02:00</option>
+                    <option value="04:00">04:00</option>
+                    <option value="06:00">06:00</option>
+                    <option value="23:00" selected>23:00 (深夜)</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">备份保留天数</label>
+                <input type="number" class="form-input" value="7" min="1" max="30">
+            </div>
+            
+            <div class="form-group">
+                <div class="form-checkbox">
+                    <input type="checkbox" id="enable_auto_backup" checked>
+                    <div>
+                        <label for="enable_auto_backup" class="form-checkbox-label">启用自动备份</label>
+                        <div class="form-checkbox-description">每天自动备份数据库</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <div class="form-checkbox">
+                    <input type="checkbox" id="enable_backup_compression" checked>
+                    <div>
+                        <label for="enable_backup_compression" class="form-checkbox-label">启用备份压缩</label>
+                        <div class="form-checkbox-description">压缩备份文件以节省存储空间</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 高级设置 -->
+        <div id="tab-advanced" class="settings-section" style="display: none;">
+            <h2 class="section-title">
+                <!-- Icon fa-sliders-h not found -->
+                高级设置
+            </h2>
+            
+            <div class="setting-card warning">
+                <div class="setting-card-title">高级配置</div>
+                <div class="setting-card-description">这些设置可能影响系统性能和稳定性，请谨慎修改。</div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">日志级别</label>
+                <select class="form-select">
+                    <option value="debug">Debug（详细）</option>
+                    <option value="info" selected>Info（标准）</option>
+                    <option value="warning">Warning（警告）</option>
+                    <option value="error">Error（错误）</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">最大上传文件大小（MB）</label>
+                <input type="number" class="form-input" value="50" min="1" max="500">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">缓存过期时间（分钟）</label>
+                <input type="number" class="form-input" value="60" min="5" max="1440">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">请求超时时间（秒）</label>
+                <input type="number" class="form-input" value="30" min="10" max="120">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">API限流（每分钟请求数）</label>
+                <input type="number" class="form-input" value="1000" min="100" max="10000">
+            </div>
+            
+            <div class="form-group">
+                <div class="form-checkbox">
+                    <input type="checkbox" id="enable_cache" checked>
+                    <div>
+                        <label for="enable_cache" class="form-checkbox-label">启用缓存</label>
+                        <div class="form-checkbox-description">提高系统响应速度</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <div class="form-checkbox">
+                    <input type="checkbox" id="enable_gzip_compression" checked>
+                    <div>
+                        <label for="enable_gzip_compression" class="form-checkbox-label">启用Gzip压缩</label>
+                        <div class="form-checkbox-description">减少传输数据大小</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <div class="form-checkbox">
+                    <input type="checkbox" id="enable_cors">
+                    <div>
+                        <label for="enable_cors" class="form-checkbox-label">启用CORS</label>
+                        <div class="form-checkbox-description">允许跨域请求</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <div class="form-checkbox">
+                    <input type="checkbox" id="enable_api_logging">
+                    <div>
+                        <label for="enable_api_logging" class="form-checkbox-label">启用API日志</label>
+                        <div class="form-checkbox-description">记录所有API请求</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 右侧面板 -->
+        <div class="side-panel">
+            <!-- 设置帮助 -->
+            <div class="settings-section">
+                <h2 class="section-title">
+                    <svg class="svg-icon" viewBox="0 0 512 512" fill="#17a2b8" width="16" height="16"><path d="M256 8C119 8 8 119 8 256s111 248 248 248 248-111 248-248S393 8 256 8zm0 112c-22.1 0-40 17.9-40 40s17.9 40 40 40 40-17.9 40-40-17.9-40-40-40zm64 256H192c-13.3 0-24-10.7-24-24v-16c0-13.3 10.7-24 24-24h24v-64h-24c-13.3 0-24-10.7-24-24v-16c0-13.3 10.7-24 24-24h64c13.3 0 24 10.7 24 24v104h24c13.3 0 24 10.7 24 24v16c0 13.3-10.7 24-24 24z"/></svg>
+                    设置帮助
+                </h2>
+                
+                <div class="setting-card">
+                    <div class="setting-card-title">保存设置</div>
+                    <div class="setting-card-description">修改设置后请点击底部的保存按钮以应用更改。</div>
+                </div>
+                
+                <div class="setting-card">
+                    <div class="setting-card-title">配置备份</div>
+                    <div class="setting-card-description">建议定期备份系统配置，以防数据丢失。</div>
+                </div>
+                
+                <div class="setting-card">
+                    <div class="setting-card-title">安全提示</div>
+                    <div class="setting-card-description">请定期更新管理员密码，确保系统安全。</div>
+                </div>
+                
+                <div class="setting-card success">
+                    <div class="setting-card-title">系统状态</div>
+                    <div class="setting-card-description">所有设置配置正常，系统运行稳定。</div>
+                </div>
+            </div>
+            
+            <!-- 配置导入导出 -->
+            <div class="settings-section">
+                <h2 class="section-title">
+                    <!-- Icon fa-exchange-alt not found -->
+                    配置管理
+                </h2>
+                
+                <div class="config-card">
+                    <div class="config-card-title">
+                        <!-- Icon fa-download not found -->配置导出
+                    </div>
+                    <div class="config-actions">
+                        <button class="config-btn" onclick="exportConfig()">
+                            <!-- Icon fa-file-download not found -->导出当前配置
+                        </button>
+                        <button class="config-btn" onclick="exportJson()">
+                            <!-- Icon fa-file-code not found -->导出为JSON文件
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="config-card">
+                    <div class="config-card-title">
+                        <!-- Icon fa-upload not found -->配置导入
+                    </div>
+                    <div class="config-actions">
+                        <button class="config-btn" onclick="importConfig()">
+                            <!-- Icon fa-file-upload not found -->导入配置文件
+                        </button>
+                        <button class="config-btn" onclick="restoreDefaults()">
+                            <!-- Icon fa-undo not found -->恢复默认设置
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 系统信息 -->
+            <div class="settings-section">
+                <h2 class="section-title">
+                    <svg class="svg-icon" viewBox="0 0 640 512" width="16" height="16"><path d="M480 160c0-26.5-21.5-48-48-48H64c-26.5 0-48 21.5-48 48v64h576v-64zm-208 80c-13.3 0-24-10.7-24-24s10.7-24 24-24 24 10.7 24 24-10.7 24-24 24zm128 0c-13.3 0-24-10.7-24-24s10.7-24 24-24 24 10.7 24 24-10.7 24-24 24zm192-64H16v160c0 26.5 21.5 48 48 48h352c26.5 0 48-21.5 48-48V256h128v-80zm-336 192c-13.3 0-24-10.7-24-24s10.7-24 24-24 24 10.7 24 24-10.7 24-24 24zm128 0c-13.3 0-24-10.7-24-24s10.7-24 24-24 24 10.7 24 24-10.7 24-24 24z"/></svg>
+                    系统信息
+                </h2>
+                
+                <div style="padding-top: 10px;">
+                    <div class="version-item">
+                        <span style="opacity: 0.7;">当前版本</span>
+                        <span style="font-weight: 600;">v1.5.0</span>
+                    </div>
+                    <div class="version-item">
+                        <span style="opacity: 0.7;">构建号</span>
+                        <span style="font-weight: 600;">20240430</span>
+                    </div>
+                    <div class="version-item">
+                        <span style="opacity: 0.7;">Python版本</span>
+                        <span style="font-weight: 600;">3.10.x</span>
+                    </div>
+                    <div class="version-item">
+                        <span style="opacity: 0.7;">Flask版本</span>
+                        <span style="font-weight: 600;">2.3.x</span>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
     
-    <!-- 保存按钮 -->
-    <button class="save-btn">
-        <i class="fas fa-save"></i>
-        保存设置
-    </button>
+    <!-- 保存区域 -->
+    <div class="save-section">
+        <div class="save-actions">
+            <button class="save-btn reset-btn" onclick="resetSettings()">
+                <!-- Icon fa-undo not found -->
+                重置
+            </button>
+            <button class="save-btn secondary-save-btn" onclick="exportJson()">
+                <!-- Icon fa-download not found -->
+                保存为配置文件
+            </button>
+            <button class="save-btn primary-save-btn" onclick="saveSettings()">
+                <!-- Icon fa-save not found -->
+                保存设置
+            </button>
+        </div>
+    </div>
 </div>
+
+<script>
+    // 标签页切换
+    function showTab(tabId) {
+        document.querySelectorAll('[id^="tab-"]').forEach(tab => {
+            tab.style.display = 'none';
+        });
+        
+        document.getElementById('tab-' + tabId).style.display = 'block';
+        
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        
+        event.target.classList.add('active');
+    }
+    
+    // 通知开关切换
+    document.querySelectorAll('.toggle-switch').forEach(toggle => {
+        toggle.addEventListener('click', function() {
+            this.classList.toggle('active');
+        });
+    });
+    
+    // 保存设置
+    function saveSettings() {
+        alert('设置已保存！');
+    }
+    
+    // 重置设置
+    function resetSettings() {
+        if (confirm('确定要重置所有设置吗？此操作将恢复默认设置。')) {
+            alert('设置已重置为默认值！');
+        }
+    }
+    
+    // 导出配置
+    function exportConfig() {
+        alert('配置导出功能已触发！');
+    }
+    
+    // 导出JSON
+    function exportJson() {
+        alert('配置已导出为JSON文件！');
+    }
+    
+    // 导入配置
+    function importConfig() {
+        alert('请选择配置文件进行导入。');
+    }
+    
+    // 恢复默认设置
+    function restoreDefaults() {
+        if (confirm('确定要恢复所有默认设置吗？此操作不可撤销。')) {
+            alert('已恢复默认设置！');
+        }
+    }
+</script>
 {% endblock %}

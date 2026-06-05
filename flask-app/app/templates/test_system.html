@@ -1,307 +1,438 @@
-{% extends "base.html" %}
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>统一语言测试系统</title>
+    <style>
+        /* 预载入动画 */
+        .preloader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+        
+        .preloader.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+        
+        .preloader-content {
+            text-align: center;
+            color: white;
+        }
+        
+        .preloader-spinner {
+            width: 80px;
+            height: 80px;
+            border: 8px solid rgba(255, 255, 255, 0.3);
+            border-top: 8px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        .preloader-text {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        
+        .preloader-subtext {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* 基础样式 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* 头部样式 */
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header h1 {
+            color: #343a40;
+            font-size: 28px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .header-icon {
+            font-size: 32px;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            font-size: 16px;
+        }
+        
+        .username {
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .logout-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .logout-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        /* 主要内容样式 */
+        .container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+        }
+        
+        .welcome-section {
+            text-align: center;
+            margin-bottom: 60px;
+            color: white;
+        }
+        
+        .welcome-title {
+            font-size: 42px;
+            font-weight: 700;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        .welcome-subtitle {
+            font-size: 20px;
+            opacity: 0.95;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+        }
+        
+        /* 测试选项卡片 */
+        .test-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            max-width: 800px;
+            width: 100%;
+        }
+        
+        .test-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        
+        .test-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+            border-color: #667eea;
+        }
+        
+        .test-icon {
+            font-size: 64px;
+            margin-bottom: 25px;
+            display: block;
+        }
+        
+        .test-card h2 {
+            color: #343a40;
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 15px;
+        }
+        
+        .test-description {
+            color: #6c757d;
+            font-size: 16px;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+        
+        .test-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            text-decoration: none;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            display: inline-block;
+        }
+        
+        .test-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        /* 双语测试卡片 */
+        .bilingual-card {
+            grid-column: 1 / -1;
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+            color: white;
+        }
+        
+        .bilingual-card h2 {
+            color: white;
+        }
+        
+        .bilingual-card .test-description {
+            color: rgba(255, 255, 255, 0.9);
+        }
+        
+        .bilingual-card .test-btn {
+            background: white;
+            color: #ff6b6b;
+        }
+        
+        .bilingual-card .test-btn:hover {
+            box-shadow: 0 6px 20px rgba(255, 255, 255, 0.3);
+        }
+        
+        /* 页脚样式 */
+        .footer {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            text-align: center;
+            color: #6c757d;
+            font-size: 14px;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .header {
+                padding: 15px 20px;
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .header h1 {
+                font-size: 24px;
+            }
+            
+            .user-info {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .container {
+                padding: 20px;
+            }
+            
+            .welcome-title {
+                font-size: 32px;
+            }
+            
+            .welcome-subtitle {
+                font-size: 16px;
+            }
+            
+            .test-options {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .test-card {
+                padding: 30px 20px;
+            }
+        }
+    </style>
+    <!-- FontAwesome CDN removed -->
 
-{% block title %}测试系统 - 语言学习系统{% endblock %}
-
-{% block content %}
 <style>
-    /* 测试系统页面样式 */
-    .test-system-container {
-        max-width: 1000px;
-        margin: 0 auto;
-    }
-    
-    .test-system-header {
-        text-align: center;
-        margin-bottom: 60px;
-        padding: 40px 20px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        border-radius: 20px;
-        color: white;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-    }
-    
-    .test-system-title {
-        font-size: 2.5rem;
-        font-weight: 700;
-        margin-bottom: 15px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 15px;
-    }
-    
-    .test-system-description {
-        font-size: 1.1rem;
-        max-width: 800px;
-        margin: 0 auto;
-        line-height: 1.6;
-        opacity: 0.9;
-    }
-    
-    .test-categories {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        gap: 30px;
-        margin-bottom: 60px;
-    }
-    
-    .test-category {
-        background: white;
-        border-radius: 20px;
-        padding: 30px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-        transition: all 0.3s ease;
-        text-align: center;
-    }
-    
-    .test-category:hover {
-        transform: translateY(-10px);
-        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
-    }
-    
-    .category-icon {
-        font-size: 4rem;
-        margin-bottom: 20px;
-        color: #667eea;
-    }
-    
-    .category-title {
-        font-size: 1.5rem;
-        font-weight: 600;
-        margin-bottom: 15px;
-        color: #333;
-    }
-    
-    .category-description {
-        font-size: 1rem;
-        color: #666;
-        margin-bottom: 25px;
-        line-height: 1.5;
-    }
-    
-    .category-buttons {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-    }
-    
-    .btn {
-        padding: 12px 24px;
-        border: none;
-        border-radius: 50px;
-        font-size: 1rem;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        text-decoration: none;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 10px;
-    }
-    
-    .btn-primary {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-    }
-    
-    .btn-primary:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-    }
-    
-    .btn-secondary {
-        background: #f0f0f0;
-        color: #333;
-    }
-    
-    .btn-secondary:hover {
-        background: #e0e0e0;
-    }
-    
-    .test-info-section {
-        background: white;
-        border-radius: 20px;
-        padding: 40px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-    }
-    
-    .section-title {
-        font-size: 1.8rem;
-        font-weight: 600;
-        margin-bottom: 30px;
-        color: #667eea;
-        text-align: center;
-    }
-    
-    .info-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 20px;
-    }
-    
-    .info-card {
-        padding: 20px;
-        background: #f8f9fa;
-        border-radius: 10px;
-        text-align: center;
-    }
-    
-    .info-card-icon {
-        font-size: 2.5rem;
-        margin-bottom: 15px;
-        color: #667eea;
-    }
-    
-    .info-card-title {
-        font-size: 1.2rem;
-        font-weight: 600;
-        margin-bottom: 10px;
-        color: #333;
-    }
-    
-    .info-card-description {
-        font-size: 0.9rem;
-        color: #666;
-        line-height: 1.5;
-    }
-    
-    /* 响应式设计 */
-    @media (max-width: 768px) {
-        .test-system-container {
-            padding: 0 20px;
-        }
-        
-        .test-system-title {
-            font-size: 2rem;
-        }
-        
-        .test-categories {
-            grid-template-columns: 1fr;
-        }
-        
-        .test-info-section {
-            padding: 30px 20px;
-        }
-    }
+.svg-icon {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    vertical-align: -0.125em;
+    fill: currentColor;
+}
 </style>
-
-<div class="test-system-container">
-    <!-- 测试系统头部 -->
-    <div class="test-system-header">
-        <h1 class="test-system-title">
-            <i class="fas fa-clipboard-check"></i>
-            语言测试系统
+</head>
+<body>
+    <!-- 预载入动画 -->
+    <div class="preloader" id="preloader">
+        <div class="preloader-content">
+            <div class="preloader-spinner"></div>
+            <div class="preloader-text">系统加载中</div>
+            <div class="preloader-subtext">正在准备测试系统，请稍候...</div>
+        </div>
+    </div>
+    
+    <!-- 头部 -->
+    <header class="header">
+        <h1>
+            <span class="header-icon">🎓</span>
+            统一语言测试系统
         </h1>
-        <p class="test-system-description">
-            欢迎使用我们的语言测试系统，这里提供多种语言的测试和评估服务，帮助您了解自己的语言水平，制定更有效的学习计划。
-        </p>
-    </div>
+        <div class="user-info">
+            <span class="username">欢迎, {{ user.username }}！</span>
+            <a href="/auth/logout" class="logout-btn">退出登录</a>
+        </div>
+    </header>
     
-    <!-- 测试分类 -->
-    <div class="test-categories">
-        <!-- 日语测试 -->
-        <div class="test-category">
-            <div class="category-icon">
-                <i class="fas fa-flag-jp"></i>
-            </div>
-            <h2 class="category-title">日语测试</h2>
-            <p class="category-description">
-                包含日语等级评估测试，帮助您了解自己的日语水平，为学习提供参考。
-            </p>
-            <div class="category-buttons">
-                <a href="/test-system/japanese" class="btn btn-primary">
-                    <i class="fas fa-play-circle"></i> 开始测试
-                </a>
-                <a href="/level-assessment" class="btn btn-secondary">
-                    <i class="fas fa-tasks"></i> 等级评估
-                </a>
-            </div>
-        </div>
+    <!-- 主要内容 -->
+    <main class="container">
+        <section class="welcome-section">
+            <h1 class="welcome-title">🌟 欢迎使用统一语言测试系统</h1>
+            <p class="welcome-subtitle">选择您要参加的语言测试类型</p>
+        </section>
         
-        <!-- 英语测试 -->
-        <div class="test-category">
-            <div class="category-icon">
-                <i class="fas fa-flag-us"></i>
+        <section class="test-options">
+            <!-- 日语测试卡片 -->
+            <div class="test-card">
+                <span class="test-icon">🇯🇵</span>
+                <h2>日语能力测试</h2>
+                <p class="test-description">
+                    测试您的日语听、说、读、写能力，涵盖N5到N1各级别的知识点
+                </p>
+                <a href="/test-system/japanese" class="test-btn">开始日语测试</a>
             </div>
-            <h2 class="category-title">英语测试</h2>
-            <p class="category-description">
-                包含英语等级评估测试，帮助您了解自己的英语水平，为学习提供参考。
-            </p>
-            <div class="category-buttons">
-                <a href="/test-system/english" class="btn btn-primary">
-                    <i class="fas fa-play-circle"></i> 开始测试
-                </a>
-                <a href="/level-assessment" class="btn btn-secondary">
-                    <i class="fas fa-tasks"></i> 等级评估
-                </a>
+            
+            <!-- 英语测试卡片 -->
+            <div class="test-card">
+                <span class="test-icon">🇬🇧</span>
+                <h2>英语水平测试</h2>
+                <p class="test-description">
+                    全面评估您的英语能力，包括词汇、语法、阅读和写作技能
+                </p>
+                <a href="/test-system/english" class="test-btn">开始英语测试</a>
             </div>
-        </div>
-        
-        <!-- 统一等级测试 -->
-        <div class="test-category">
-            <div class="category-icon">
-                <i class="fas fa-globe"></i>
+            
+            <!-- 双语对比测试卡片 -->
+            <div class="test-card bilingual-card">
+                <span class="test-icon">🌐</span>
+                <h2>双语对比测试</h2>
+                <p class="test-description">
+                    同时测试您的日语和英语能力，比较两种语言的掌握程度
+                </p>
+                <a href="/test-system/bilingual" class="test-btn">开始双语测试</a>
             </div>
-            <h2 class="category-title">统一等级测试</h2>
-            <p class="category-description">
-                综合评估您的语言水平，提供详细的测试报告和学习建议。
-            </p>
-            <div class="category-buttons">
-                <a href="/unified-level-test" class="btn btn-primary">
-                    <i class="fas fa-play-circle"></i> 开始测试
-                </a>
-                <a href="/level-assessment" class="btn btn-secondary">
-                    <i class="fas fa-tasks"></i> 等级评估
-                </a>
-            </div>
-        </div>
-    </div>
+        </section>
+    </main>
     
-    <!-- 测试信息 -->
-    <div class="test-info-section">
-        <h2 class="section-title">
-            <i class="fas fa-info-circle"></i>
-            测试信息
-        </h2>
-        <div class="info-grid">
-            <div class="info-card">
-                <div class="info-card-icon">
-                    <i class="fas fa-clock"></i>
-                </div>
-                <h3 class="info-card-title">测试时长</h3>
-                <p class="info-card-description">
-                    每个测试通常需要10-15分钟完成，请确保您有足够的时间。
-                </p>
-            </div>
-            <div class="info-card">
-                <div class="info-card-icon">
-                    <i class="fas fa-question-circle"></i>
-                </div>
-                <h3 class="info-card-title">题目数量</h3>
-                <p class="info-card-description">
-                    每个测试包含20道题目，全面评估您的语言水平。
-                </p>
-            </div>
-            <div class="info-card">
-                <div class="info-card-icon">
-                    <i class="fas fa-award"></i>
-                </div>
-                <h3 class="info-card-title">评估标准</h3>
-                <p class="info-card-description">
-                    采用国际语言水平标准，为您提供专业的评估结果。
-                </p>
-            </div>
-            <div class="info-card">
-                <div class="info-card-icon">
-                    <i class="fas fa-chart-line"></i>
-                </div>
-                <h3 class="info-card-title">测试结果</h3>
-                <p class="info-card-description">
-                    测试完成后，您将获得详细的测试报告和学习建议。
-                </p>
-            </div>
-        </div>
-    </div>
-</div>
-{% endblock %}
+    <!-- 页脚 -->
+    <footer class="footer">
+        <p>&copy; 2026 统一语言测试系统. 保留所有权利.</p>
+    </footer>
+    
+    <!-- 预载入动画脚本 -->
+    <script>
+        // 检查是否已经显示过预载入动画
+        function checkPreloaderShown() {
+            return sessionStorage.getItem('preloaderShown') === 'true';
+        }
+        
+        // 标记预载入动画已显示
+        function markPreloaderShown() {
+            sessionStorage.setItem('preloaderShown', 'true');
+        }
+        
+        // 显示预载入动画
+        function showPreloader() {
+            const preloader = document.getElementById('preloader');
+            if (preloader) {
+                preloader.classList.remove('hidden');
+            }
+        }
+        
+        // 隐藏预载入动画
+        function hidePreloader() {
+            const preloader = document.getElementById('preloader');
+            if (preloader) {
+                preloader.classList.add('hidden');
+                // 动画结束后完全移除元素
+                setTimeout(() => {
+                    if (preloader.parentNode) {
+                        preloader.parentNode.removeChild(preloader);
+                    }
+                }, 500);
+            }
+        }
+        
+        // 页面加载完成后处理
+        window.addEventListener('load', function() {
+            // 检查是否已经显示过预载入动画
+            if (!checkPreloaderShown()) {
+                // 标记动画已显示
+                markPreloaderShown();
+                
+                // 显示动画一段时间后隐藏
+                setTimeout(hidePreloader, 2000); // 2秒后隐藏
+            } else {
+                // 如果已经显示过，直接隐藏
+                hidePreloader();
+            }
+        });
+        
+        // 页面切换时重新显示预载入动画（如果是第一次访问测试系统）
+        document.addEventListener('click', function(e) {
+            const target = e.target.closest('a');
+            if (target && target.href) {
+                // 检查是否是测试系统相关链接
+                if (target.href.includes('/test-system') || target.href.includes('/japanese-test') || target.href.includes('/english-test')) {
+                    // 检查是否已经显示过预载入动画
+                    if (!checkPreloaderShown()) {
+                        showPreloader();
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

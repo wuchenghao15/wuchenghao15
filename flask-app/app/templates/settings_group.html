@@ -1,0 +1,618 @@
+{% extends "base.html" %}
+{% block title %}{{ group_config.name }} - 集成设置{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row min-vh-100">
+        <!-- 侧边导航栏 -->
+        <nav class="col-md-3 col-lg-2 d-md-block bg-white shadow-sm sidebar collapse" id="sidebarMenu">
+            <div class="position-sticky pt-3">
+                <div class="d-flex align-items-center justify-content-center py-4 border-bottom">
+                    <div class="text-center">
+                        <div class="rounded-circle bg-primary text-white p-3 mb-2">
+                            <svg class="svg-icon" viewBox="0 0 512 512" width="16" height="16"><path d="M487.4 315.7l-43.4-7.5c-1.3-3.2-2.8-6.3-4.5-9.3l19.9-39.8c3.6-7.2 2-16.1-3.8-21.6l-50-47.6c-5.8-5.5-14.9-6.5-21.9-2.4l-41.9 24.5c-11.4-8.8-23.9-16.2-37.2-21.8l-8.4-47.4C292.1 35 283.7 32 274.7 32h-37.5c-9 0-17.4 3-24.3 8.3l-8.4 47.4c-13.3 5.6-25.8 13-37.2 21.8l-41.9-24.5c-7-4.1-16.1-3.1-21.9 2.4l-50 47.6c-5.8 5.5-7.4 14.4-3.8 21.6l19.9 39.8c-1.7 3-3.2 6.1-4.5 9.3l-43.4 7.5C10.1 320.6 0 331.8 0 344.9v34.3c0 13.1 10.1 24.3 22.6 29.2l43.4 7.5c1.3 3.2 2.8 6.3 4.5 9.3l-19.9 39.8c-3.6 7.2-2 16.1 3.8 21.6l50 47.6c5.8 5.5 14.9 6.5 21.9 2.4l41.9-24.5c11.4 8.8 23.9 16.2 37.2 21.8l8.4 47.4c6.9 5.3 15.3 8.3 24.3 8.3h37.5c9 0 17.4-3 24.3-8.3l8.4-47.4c13.3-5.6 25.8-13 37.2-21.8l41.9 24.5c7 4.1 16.1 3.1 21.9-2.4l50-47.6c5.8-5.5 7.4-14.4 3.8-21.6l-19.9-39.8c1.7-3 3.2-6.1 4.5-9.3l43.4-7.5c12.5-4.9 22.6-16 22.6-29.2v-34.3c0-13.1-10.1-24.3-22.6-29.2zM256 384c-70.7 0-128-57.3-128-128s57.3-128 128-128 128 57.3 128 128-57.3 128-128 128z"/></svg>
+                        </div>
+                        <h5 class="text-dark font-weight-bold">智能设置中心</h5>
+                        <p class="text-muted text-sm">AI 托管配置</p>
+                    </div>
+                </div>
+                
+                <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-4 mt-4 mb-2 text-muted text-uppercase text-xs font-weight-bold">
+                    <span>设置菜单</span>
+                    <a class="link-secondary" href="#" aria-label="刷新菜单">
+                        <!-- Icon fa-sync-alt not found -->
+                    </a>
+                </h6>
+                <ul class="nav flex-column">
+                    {% for menu_item in menu_items %}
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == menu_item.url %}active bg-primary bg-opacity-10 text-primary{% endif %}" href="{{ menu_item.url }}">
+                                <svg class="svg-icon" viewBox="0 0 512 512" width="16" height="16"><path d="M487.4 315.7l-43.4-7.5c-1.3-3.2-2.8-6.3-4.5-9.3l19.9-39.8c3.6-7.2 2-16.1-3.8-21.6l-50-47.6c-5.8-5.5-14.9-6.5-21.9-2.4l-41.9 24.5c-11.4-8.8-23.9-16.2-37.2-21.8l-8.4-47.4C292.1 35 283.7 32 274.7 32h-37.5c-9 0-17.4 3-24.3 8.3l-8.4 47.4c-13.3 5.6-25.8 13-37.2 21.8l-41.9-24.5c-7-4.1-16.1-3.1-21.9 2.4l-50 47.6c-5.8 5.5-7.4 14.4-3.8 21.6l19.9 39.8c-1.7 3-3.2 6.1-4.5 9.3l-43.4 7.5C10.1 320.6 0 331.8 0 344.9v34.3c0 13.1 10.1 24.3 22.6 29.2l43.4 7.5c1.3 3.2 2.8 6.3 4.5 9.3l-19.9 39.8c-3.6 7.2-2 16.1 3.8 21.6l50 47.6c5.8 5.5 14.9 6.5 21.9 2.4l41.9-24.5c11.4 8.8 23.9 16.2 37.2 21.8l8.4 47.4c6.9 5.3 15.3 8.3 24.3 8.3h37.5c9 0 17.4-3 24.3-8.3l8.4-47.4c13.3-5.6 25.8-13 37.2-21.8l41.9 24.5c7 4.1 16.1 3.1 21.9-2.4l50-47.6c5.8-5.5 7.4-14.4 3.8-21.6l-19.9-39.8c1.7-3 3.2-6.1 4.5-9.3l43.4-7.5c12.5-4.9 22.6-16 22.6-29.2v-34.3c0-13.1-10.1-24.3-22.6-29.2zM256 384c-70.7 0-128-57.3-128-128s57.3-128 128-128 128 57.3 128 128-57.3 128-128 128z"/></svg>
+                                <span>{{ menu_item.name }}</span>
+                                {% if request.path == menu_item.url %}
+                                    <span class="ml-auto bg-primary rounded-full w-2 h-2"></span>
+                                {% endif %}
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+                
+                <div class="mt-auto p-4">
+                    <div class="text-center">
+                        <button class="btn btn-outline-primary w-100" onclick="enableAIManagement()">
+                            <svg class="svg-icon" viewBox="0 0 640 512" width="16" height="16"><path d="M320 0c-17.67 0-32 14.33-32 32v32h-64c-70.69 0-128 57.31-128 128v16c0 8.82 7.18 16 16 16h16v256c0 17.67 14.33 32 32 32h320c17.67 0 32-14.33 32-32V224h16c8.82 0 16-7.18 16-16v-16c0-70.69-57.31-128-128-128h-64V32c0-17.67-14.33-32-32-32zm-128 128h256c35.29 0 64 28.71 64 64v16H128v-16c0-35.29 28.71-64 64-64zm96 64c-26.51 0-48 21.49-48 48s21.49 48 48 48 48-21.49 48-48-21.49-48-48-48zm160 256H192v-96h256v96z"/></svg> 启用 AI 托管
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- 主内容区域 -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-5">
+            <!-- 页面头部 -->
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-4 mb-5 border-bottom border-gray-200">
+                <div>
+                    <h1 class="h2 text-gray-800 font-weight-bold">{{ group_config.name }}</h1>
+                    <p class="text-muted">{{ group_config.description }}</p>
+                </div>
+                <div class="btn-toolbar mb-2 mb-md-0">
+                    <div class="btn-group me-2">
+                        <button type="button" class="btn btn-sm btn-primary shadow-sm" onclick="saveSettings()">
+                            <!-- Icon fa-save not found --> 保存设置
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary shadow-sm" onclick="resetSettings()">
+                            <!-- Icon fa-undo not found --> 重置
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-info shadow-sm" onclick="getAISuggestions('{{ group }}')">
+                            <svg class="svg-icon" viewBox="0 0 640 512" width="16" height="16"><path d="M320 0c-17.67 0-32 14.33-32 32v32h-64c-70.69 0-128 57.31-128 128v16c0 8.82 7.18 16 16 16h16v256c0 17.67 14.33 32 32 32h320c17.67 0 32-14.33 32-32V224h16c8.82 0 16-7.18 16-16v-16c0-70.69-57.31-128-128-128h-64V32c0-17.67-14.33-32-32-32zm-128 128h256c35.29 0 64 28.71 64 64v16H128v-16c0-35.29 28.71-64 64-64zm96 64c-26.51 0-48 21.49-48 48s21.49 48 48 48 48-21.49 48-48-21.49-48-48-48zm160 256H192v-96h256v96z"/></svg> AI 建议
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 设置组描述 -->
+            <div class="alert alert-info mb-6 p-4 rounded-lg border-0 shadow-sm">
+                <div class="d-flex align-items-start">
+                    <div class="bg-info bg-opacity-10 p-2 rounded-full mr-3">
+                        <svg class="svg-icon" viewBox="0 0 512 512" fill="#17a2b8" width="16" height="16"><path d="M256 8C119 8 8 119 8 256s111 248 248 248 248-111 248-248S393 8 256 8zm0 112c-22.1 0-40 17.9-40 40s17.9 40 40 40 40-17.9 40-40-17.9-40-40-40zm64 256H192c-13.3 0-24-10.7-24-24v-16c0-13.3 10.7-24 24-24h24v-64h-24c-13.3 0-24-10.7-24-24v-16c0-13.3 10.7-24 24-24h64c13.3 0 24 10.7 24 24v104h24c13.3 0 24 10.7 24 24v16c0 13.3-10.7 24-24 24z"/></svg>
+                    </div>
+                    <div>
+                        <h6 class="font-weight-bold mb-1">设置说明</h6>
+                        <p class="mb-0">{{ group_config.description }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 设置表单 -->
+            <form id="settings-form" class="needs-validation" novalidate>
+                <div class="row">
+                    {% for setting in group_config.settings %}
+                        {% if setting.type == 'section' %}
+                            <!-- 分组标题 -->
+                            <div class="col-12 mb-4">
+                                <div class="bg-white p-3 rounded-lg shadow-sm border-l-4 border-primary">
+                                    <h5 class="font-weight-bold text-gray-800">{{ setting.name }}</h5>
+                                </div>
+                            </div>
+                        {% else %}
+                            <!-- 设置项 -->
+                            <div class="col-md-6 mb-4">
+                                <div class="card shadow-sm hover-card border-0 rounded-lg overflow-hidden transition-all duration-300 hover:shadow-lg">
+                                    <div class="card-header bg-white border-0">
+                                        <h5 class="card-title mb-0 font-weight-bold">
+                                            {{ setting.name }}
+                                            {% if setting.required %}
+                                                <span class="text-danger">*</span>
+                                            {% endif %}
+                                        </h5>
+                                    </div>
+                                    <div class="card-body p-4">
+                                        {% if setting.type == 'text' %}
+                                            <div class="mb-3">
+                                                <input type="text" class="form-control form-control-sm border-gray-300 focus:ring-primary focus:border-primary" 
+                                                       id="{{ setting.key }}" name="{{ setting.key }}" 
+                                                       required="{{ setting.required }}" 
+                                                       value="{{ setting.default if setting.default is defined else '' }}">
+                                                {% if setting.required %}
+                                                    <div class="invalid-feedback">
+                                                        此项为必填项
+                                                    </div>
+                                                {% endif %}
+                                            </div>
+                                        {% elif setting.type == 'email' %}
+                                            <div class="mb-3">
+                                                <input type="email" class="form-control form-control-sm border-gray-300 focus:ring-primary focus:border-primary" 
+                                                       id="{{ setting.key }}" name="{{ setting.key }}" 
+                                                       required="{{ setting.required }}" 
+                                                       value="{{ setting.default if setting.default is defined else '' }}">
+                                                {% if setting.required %}
+                                                    <div class="invalid-feedback">
+                                                        请输入有效的电子邮箱地址
+                                                    </div>
+                                                {% endif %}
+                                            </div>
+                                        {% elif setting.type == 'password' %}
+                                            <div class="mb-3">
+                                                <input type="password" class="form-control form-control-sm border-gray-300 focus:ring-primary focus:border-primary" 
+                                                       id="{{ setting.key }}" name="{{ setting.key }}" 
+                                                       required="{{ setting.required }}">
+                                                {% if setting.required %}
+                                                    <div class="invalid-feedback">
+                                                        此项为必填项
+                                                    </div>
+                                                {% endif %}
+                                            </div>
+                                        {% elif setting.type == 'number' %}
+                                            <div class="mb-3">
+                                                <input type="number" class="form-control form-control-sm border-gray-300 focus:ring-primary focus:border-primary" 
+                                                       id="{{ setting.key }}" name="{{ setting.key }}" 
+                                                       required="{{ setting.required }}" 
+                                                       min="{{ setting.min }}" 
+                                                       max="{{ setting.max }}" 
+                                                       value="{{ setting.default }}">
+                                                {% if setting.required %}
+                                                    <div class="invalid-feedback">
+                                                        请输入有效的数字
+                                                    </div>
+                                                {% endif %}
+                                                {% if setting.min or setting.max %}
+                                                    <div class="text-xs text-muted mt-1">
+                                                        范围: {{ setting.min or 0 }} - {{ setting.max or '无限制' }}
+                                                    </div>
+                                                {% endif %}
+                                            </div>
+                                        {% elif setting.type == 'boolean' %}
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" id="{{ setting.key }}" name="{{ setting.key }}" 
+                                                       {% if setting.default is defined and setting.default %}checked{% endif %}>
+                                                <label class="form-check-label" for="{{ setting.key }}">
+                                                    启用{{ setting.name }}
+                                                </label>
+                                            </div>
+                                        {% elif setting.type == 'select' %}
+                                            <div class="mb-3">
+                                                <select class="form-select form-select-sm border-gray-300 focus:ring-primary focus:border-primary" 
+                                                        id="{{ setting.key }}" name="{{ setting.key }}" 
+                                                        required="{{ setting.required }}">
+                                                    <option value="">请选择</option>
+                                                    {% for option in setting.options %}
+                                                        <option value="{{ option }}" {% if setting.default is defined and option == setting.default %}selected{% endif %}>{{ option }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                                {% if setting.required %}
+                                                    <div class="invalid-feedback">
+                                                        请选择一个选项
+                                                    </div>
+                                                {% endif %}
+                                            </div>
+                                        {% elif setting.type == 'checkbox' %}
+                                            <div class="mb-3">
+                                                {% for option in setting.options %}
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="{{ setting.key }}_{{ option }}" name="{{ setting.key }}" value="{{ option }}">
+                                                        <label class="form-check-label" for="{{ setting.key }}_{{ option }}">
+                                                            {{ option }}
+                                                        </label>
+                                                    </div>
+                                                {% endfor %}
+                                            </div>
+                                        {% elif setting.type == 'file' %}
+                                            <div class="mb-3">
+                                                <input class="form-control form-control-sm border-gray-300 focus:ring-primary focus:border-primary" 
+                                                       type="file" id="{{ setting.key }}" name="{{ setting.key }}" 
+                                                       required="{{ setting.required }}">
+                                                {% if setting.required %}
+                                                    <div class="invalid-feedback">
+                                                        请选择一个文件
+                                                    </div>
+                                                {% endif %}
+                                            </div>
+                                        {% elif setting.type == 'action' %}
+                                            <button type="button" class="btn btn-sm btn-warning w-100" 
+                                                    onclick="confirmAction('{{ setting.confirm_message }}', '{{ setting.action }}')">
+                                                <svg class="svg-icon" viewBox="0 0 576 512" fill="#ffc107" width="16" height="16"><path d="M569.5 412L334.1 55c-11.7-19.5-42-19.5-53.7 0L6.5 412c-11.7 19.5 2.6 44 26.8 44h499.4c24.2 0 38.5-24.5 26.8-44zm-277-112c-13.3 0-24-10.7-24-24v-96c0-13.3 10.7-24 24-24s24 10.7 24 24v96c0 13.3-10.7 24-24 24zm0 160c-17.7 0-32-14.3-32-32s14.3-32 32-32 32 14.3 32 32-14.3 32-32 32z"/></svg> {{ setting.name }}
+                                            </button>
+                                            {% if setting.confirm %}
+                                                <div class="text-xs text-muted mt-2">
+                                                    执行此操作将{{ setting.confirm_message|replace('确定要', '')|replace('吗？', '') }}
+                                                </div>
+                                            {% endif %}
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </form>
+        </main>
+    </div>
+</div>
+
+<style>
+    /* 自定义样式 */
+    .hover-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    }
+    
+    .transition-all {
+        transition: all 0.3s ease;
+    }
+    
+    .duration-300 {
+        transition-duration: 300ms;
+    }
+    
+    .focus:ring-primary {
+        box-shadow: 0 0 0 0.2rem rgba(66, 153, 225, 0.5);
+    }
+    
+    .focus:border-primary {
+        border-color: #4299e1;
+    }
+    
+    .border-l-4 {
+        border-left-width: 4px;
+    }
+</style>
+
+<script>
+    // 设置表单交互脚本
+    document.addEventListener('DOMContentLoaded', function() {
+        // 加载设置数据
+        loadSettings();
+        
+        // 表单验证
+        const form = document.getElementById('settings-form');
+        form.addEventListener('submit', function(event) {
+            event.preventDefault();
+            if (form.checkValidity() === false) {
+                event.stopPropagation();
+            } else {
+                saveSettings();
+            }
+            form.classList.add('was-validated');
+        }, false);
+    });
+    
+    // 加载设置
+    function loadSettings() {
+        fetch('/api/integrated-settings/config')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // 获取当前设置组的配置
+                    const groupConfig = data.config['{{ group }}'.replace('-', '_')];
+                    if (groupConfig) {
+                        // 遍历所有设置项，加载实际值
+                        groupConfig.settings.forEach(setting => {
+                            const element = document.getElementById(setting.key);
+                            if (element) {
+                                // 根据设置类型加载值
+                                if (setting.type === 'boolean') {
+                                    // 布尔类型设置为checkbox
+                                    element.checked = setting.value === true || setting.value === 'true' || setting.value === '1';
+                                } else if (setting.type === 'select') {
+                                    // 选择类型设置为select
+                                    element.value = setting.value || setting.default || '';
+                                } else if (setting.type === 'checkbox') {
+                                    // 多选类型设置为多个checkbox
+                                    // 这里假设value是数组
+                                    const values = Array.isArray(setting.value) ? setting.value : [setting.value];
+                                    values.forEach(value => {
+                                        const checkbox = document.getElementById(`${setting.key}_${value}`);
+                                        if (checkbox) {
+                                            checkbox.checked = true;
+                                        }
+                                    });
+                                } else {
+                                    // 其他类型设置为input value
+                                    element.value = setting.value || setting.default || '';
+                                }
+                            }
+                        });
+                        console.log('设置数据加载成功');
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('加载设置失败:', error);
+                showNotification('加载设置失败，请刷新页面重试', 'error');
+            });
+    }
+    
+    // 保存设置
+    function saveSettings() {
+        showLoading('保存设置中...');
+        
+        const form = document.getElementById('settings-form');
+        const formData = new FormData(form);
+        const settings = {};
+        
+        // 处理表单数据
+        formData.forEach((value, key) => {
+            if (settings[key]) {
+                if (!Array.isArray(settings[key])) {
+                    settings[key] = [settings[key]];
+                }
+                settings[key].push(value);
+            } else {
+                settings[key] = value;
+            }
+        });
+        
+        // 处理布尔类型
+        document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+            if (!checkbox.checked) {
+                if (checkbox.name.includes('_')) {
+                    // 处理多选项中的未选中项
+                } else {
+                    // 处理单个布尔值
+                    settings[checkbox.name] = false;
+                }
+            } else {
+                if (!checkbox.name.includes('_')) {
+                    // 处理单个布尔值
+                    settings[checkbox.name] = true;
+                }
+            }
+        });
+        
+        // 发送保存请求
+        fetch('/api/integrated-settings/save', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                group: '{{ group }}',
+                settings: settings
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            hideLoading();
+            if (data.success) {
+                showNotification('设置保存成功', 'success');
+            } else {
+                showNotification('保存失败: ' + data.error, 'error');
+            }
+        })
+        .catch(error => {
+            hideLoading();
+            console.error('保存设置失败:', error);
+            showNotification('保存设置失败，请检查网络连接', 'error');
+        });
+    }
+    
+    // 重置设置
+    function resetSettings() {
+        if (confirm('确定要重置所有设置吗？此操作不可恢复。')) {
+            document.getElementById('settings-form').reset();
+            document.getElementById('settings-form').classList.remove('was-validated');
+            showNotification('设置已重置', 'info');
+        }
+    }
+    
+    // 确认操作
+    function confirmAction(message, action) {
+        if (confirm(message)) {
+            showLoading('执行操作中...');
+            
+            fetch('/api/integrated-settings/system-operation', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    operation: action,
+                    require_approval: true
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                hideLoading();
+                if (data.success) {
+                    showNotification(data.message, 'success');
+                } else {
+                    showNotification('操作失败: ' + data.error, 'error');
+                }
+            })
+            .catch(error => {
+                hideLoading();
+                console.error('执行操作失败:', error);
+                showNotification('执行操作失败，请检查网络连接', 'error');
+            });
+        }
+    }
+    
+    // 启用 AI 托管
+    function enableAIManagement(enabled = true) {
+        fetch('/api/integrated-settings/ai-management', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ enabled: enabled })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('AI 托管已' + (enabled ? '启用' : '禁用'), 'success');
+            } else {
+                showNotification('操作失败: ' + data.error, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('启用 AI 托管失败:', error);
+            showNotification('启用 AI 托管失败，请检查网络连接', 'error');
+        });
+    }
+    
+    // 获取 AI 建议
+    function getAISuggestions(group) {
+        showLoading('获取 AI 建议...');
+        
+        fetch('/api/integrated-settings/ai-suggestions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ group: group })
+        })
+        .then(response => response.json())
+        .then(data => {
+            hideLoading();
+            if (data.success) {
+                showAISuggestionsModal(data.suggestions);
+            } else {
+                showNotification('获取 AI 建议失败: ' + data.error, 'error');
+            }
+        })
+        .catch(error => {
+            hideLoading();
+            console.error('获取 AI 建议失败:', error);
+            showNotification('获取 AI 建议失败，请检查网络连接', 'error');
+        });
+    }
+    
+    // 显示通知
+    function showNotification(message, type = 'info') {
+        // 创建通知元素
+        const notification = document.createElement('div');
+        notification.className = `toast position-fixed top-20 right-4 z-50 bg-${type === 'success' ? 'success' : type === 'error' ? 'danger' : 'info'} text-white p-4 rounded-lg shadow-lg`;
+        notification.style.top = '20px';
+        notification.style.right = '20px';
+        notification.style.position = 'fixed';
+        notification.style.zIndex = '1000';
+        notification.style.transition = 'all 0.3s ease';
+        notification.style.opacity = '0';
+        notification.style.transform = 'translateY(-20px)';
+        notification.innerHTML = `
+            <div class="d-flex align-items-center">
+                <svg class="svg-icon" viewBox="0 0 512 512" width="16" height="16"><path d="M256 8C119 8 8 119 8 256s111 248 248 248 248-111 248-248S393 8 256 8zm0 400c-17.7 0-32-14.3-32-32s14.3-32 32-32 32 14.3 32 32-14.3 32-32 32zm32-160h-64c-17.7 0-32-14.3-32-32V176c0-17.7 14.3-32 32-32h64c17.7 0 32 14.3 32 32v40c0 17.7-14.3 32-32 32z"/></svg>
+                <span>${message}</span>
+            </div>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // 显示通知
+        setTimeout(() => {
+            notification.style.opacity = '1';
+            notification.style.transform = 'translateY(0)';
+        }, 100);
+        
+        // 3秒后隐藏
+        setTimeout(() => {
+            notification.style.opacity = '0';
+            notification.style.transform = 'translateY(-20px)';
+            setTimeout(() => {
+                document.body.removeChild(notification);
+            }, 300);
+        }, 3000);
+    }
+    
+    // 显示加载
+    function showLoading(message) {
+        // 创建加载元素
+        const loading = document.createElement('div');
+        loading.id = 'loading';
+        loading.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+        loading.innerHTML = `
+            <div class="bg-white p-4 rounded-lg shadow-lg">
+                <div class="d-flex align-items-center">
+                    <div class="spinner-border mr-3" role="status">
+                        <span class="sr-only">Loading...</span>
+                    </div>
+                    <span>${message}</span>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(loading);
+    }
+    
+    // 隐藏加载
+    function hideLoading() {
+        const loading = document.getElementById('loading');
+        if (loading) {
+            document.body.removeChild(loading);
+        }
+    }
+    
+    // 显示 AI 建议模态框
+    function showAISuggestionsModal(suggestions) {
+        // 创建模态框
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+        modal.innerHTML = `
+            <div class="bg-white rounded-lg shadow-lg w-full max-w-2xl max-h-[80vh] overflow-y-auto">
+                <div class="p-4 border-b">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="font-weight-bold">AI 智能建议</h5>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="this.closest('.fixed').remove()">
+                            <svg class="svg-icon" viewBox="0 0 352 512" width="16" height="16"><path d="M242.7 256l100.1-100.1c4.7-4.7 4.7-12.3 0-17l-22.6-22.6c-4.7-4.7-12.3-4.7-17 0L203.1 216.4 103 116.3c-4.7-4.7-12.3-4.7-17 0L63.4 138.9c-4.7 4.7-4.7 12.3 0 17L163.5 256 63.4 356.1c-4.7 4.7-4.7 12.3 0 17l22.6 22.6c4.7 4.7 12.3 4.7 17 0l100.1-100.1 100.1 100.1c4.7 4.7 12.3 4.7 17 0l22.6-22.6c4.7-4.7 4.7-12.3 0-17L242.7 256z"/></svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="p-4">
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center mb-2">
+                            <div class="bg-info bg-opacity-10 p-2 rounded-full mr-3">
+                                <svg class="svg-icon" viewBox="0 0 640 512" width="16" height="16"><path d="M320 0c-17.67 0-32 14.33-32 32v32h-64c-70.69 0-128 57.31-128 128v16c0 8.82 7.18 16 16 16h16v256c0 17.67 14.33 32 32 32h320c17.67 0 32-14.33 32-32V224h16c8.82 0 16-7.18 16-16v-16c0-70.69-57.31-128-128-128h-64V32c0-17.67-14.33-32-32-32zm-128 128h256c35.29 0 64 28.71 64 64v16H128v-16c0-35.29 28.71-64 64-64zm96 64c-26.51 0-48 21.49-48 48s21.49 48 48 48 48-21.49 48-48-21.49-48-48-48zm160 256H192v-96h256v96z"/></svg>
+                            </div>
+                            <h6 class="font-weight-bold">基于系统状态的智能推荐</h6>
+                        </div>
+                        <div class="pl-10">
+                            ${suggestions.map(s => `
+                                <div class="mb-3 p-3 bg-light rounded-lg">
+                                    <h7 class="font-weight-bold">${s.title}</h7>
+                                    <p class="text-sm text-muted mt-1">${s.description}</p>
+                                    <button class="btn btn-sm btn-primary mt-2" onclick="applyAISuggestion('${s.id}')">
+                                        应用建议
+                                    </button>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+    }
+    
+    // 应用 AI 建议
+    function applyAISuggestion(suggestionId) {
+        showLoading('应用 AI 建议...');
+        
+        fetch('/api/integrated-settings/apply-suggestion', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ suggestion_id: suggestionId })
+        })
+        .then(response => response.json())
+        .then(data => {
+            hideLoading();
+            if (data.success) {
+                showNotification('AI 建议应用成功', 'success');
+                // 关闭模态框
+                document.querySelector('.fixed.inset-0.bg-black').remove();
+                // 重新加载设置
+                loadSettings();
+            } else {
+                showNotification('应用 AI 建议失败: ' + data.error, 'error');
+            }
+        })
+        .catch(error => {
+            hideLoading();
+            console.error('应用 AI 建议失败:', error);
+            showNotification('应用 AI 建议失败，请检查网络连接', 'error');
+        });
+    }
+</script>
+{% endblock %}

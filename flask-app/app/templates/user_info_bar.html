@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户信息栏</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f7fa; }
+        
+        .user-bar-container {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* 顶部导航栏 */
+        .top-bar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .top-bar .logo {
+            font-size: 20px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .top-bar .server-time {
+            font-size: 14px;
+            opacity: 0.9;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .top-bar .user-info {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .user-avatar:hover {
+            transform: scale(1.05);
+        }
+        
+        .notification-badge {
+            position: relative;
+            cursor: pointer;
+        }
+        
+        .notification-badge .icon {
+            font-size: 20px;
+        }
+        
+        .notification-badge .count {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            background: #ef4444;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        /* 主内容区 */
+        .main-content {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 24px;
+            padding: 24px;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+        }
+        
+        /* 左侧信息面板 */
+        .info-panel {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        
+        .info-panel h2 {
+            font-size: 18px;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #f0f0f0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .user-card {
+            text-align: center;
+            padding: 20px;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .user-card .avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0 auto 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            color: white;
+        }
+        
+        .user-card .name {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1f2937;
+        }
+        
+        .user-card .role {
+            display: inline-block;
+            padding: 4px 12px;
+            background: #e0e7ff;
+            color: #4338ca;
+            border-radius: 20px;
+            font-size: 12px;
+            margin-top: 8px;
+        }
+        
+        .info-list {
+            list-style: none;
+        }
+        
+        .info-list li {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 14px;
+        }
+        
+        .info-list li:last-child {
+            border-bottom: none;
+        }
+        
+        .info-list .label {
+            color: #6b7280;
+        }
+        
+        .info-list .value {
+            color: #1f2937;
+            font-weight: 500;
+        }
+        
+        /* 右侧功能区 */
+        .features-panel {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+        
+        .feature-card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+        }
+        
+        .feature-card .icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin-bottom: 16px;
+        }
+        
+        .feature-card .icon.system { background: #dbeafe; color: #2563eb; }
+        .feature-card .icon.exam { background: #dcfce7; color: #16a34a; }
+        .feature-card .icon.approval { background: #fef3c7; color: #d97706; }
+        .feature-card .icon.notification { background: #fce7f3; color: #db2777; }
+        .feature-card .icon.setting { background: #e0e7ff; color: #4338ca; }
+        .feature-card .icon.help { background: #f3f4f6; color: #6b7280; }
+        
+        .feature-card h3 {
+            font-size: 16px;
+            margin-bottom: 8px;
+            color: #1f2937;
+        }
+        
+        .feature-card p {
+            font-size: 13px;
+            color: #6b7280;
+            line-height: 1.5;
+        }
+        
+        /* 系统状态卡片 */
+        .status-card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        
+        .status-card h3 {
+            font-size: 16px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+        
+        .status-item {
+            text-align: center;
+            padding: 16px;
+            background: #f9fafb;
+            border-radius: 12px;
+        }
+        
+        .status-item .indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin: 0 auto 8px;
+        }
+        
+        .status-item .indicator.online { background: #10b981; box-shadow: 0 0 10px #10b981; }
+        .status-item .indicator.warning { background: #f59e0b; box-shadow: 0 0 10px #f59e0b; }
+        .status-item .indicator.offline { background: #ef4444; }
+        
+        .status-item .label {
+            font-size: 12px;
+            color: #6b7280;
+        }
+        
+        /* 通知预览 */
+        .notification-preview {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        
+        .notification-preview .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        
+        .notification-preview h3 {
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .notification-preview .view-all {
+            font-size: 13px;
+            color: #667eea;
+            text-decoration: none;
+        }
+        
+        .notification-items {
+            list-style: none;
+        }
+        
+        .notification-items li {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .notification-items li:hover {
+            background: #f9fafb;
+        }
+        
+        .notification-items li.unread {
+            background: #fffbeb;
+        }
+        
+        .notification-items .title {
+            font-size: 14px;
+            font-weight: 500;
+            color: #1f2937;
+        }
+        
+        .notification-items .time {
+            font-size: 12px;
+            color: #9ca3af;
+            margin-top: 4px;
+        }
+        
+        .notification-items .empty {
+            text-align: center;
+            color: #9ca3af;
+            padding: 20px;
+        }
+        
+        /* 智能快捷操作 */
+        .quick-actions {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        
+        .quick-actions h3 {
+            font-size: 16px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .quick-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+        }
+        
+        .quick-btn {
+            padding: 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .quick-btn:hover {
+            background: #f9fafb;
+            border-color: #667eea;
+        }
+        
+        .quick-btn .icon {
+            font-size: 20px;
+            margin-bottom: 6px;
+        }
+        
+        .quick-btn .label {
+            font-size: 12px;
+            color: #374151;
+        }
+        
+        /* 响应式 */
+        @media (max-width: 900px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .status-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .quick-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="user-bar-container">
+        <!-- 顶部导航栏 -->
+        <div class="top-bar">
+            <div class="logo">
+                <span>🧠</span>
+                <span>MTSCOS AI</span>
+            </div>
+            <div class="server-time" id="serverTime">--:--:--</div>
+            <div class="user-info">
+                <div class="notification-badge" onclick="toggleNotificationPanel()">
+                    <span class="icon">🔔</span>
+                    <span class="count" id="unreadCount" style="display: none;">0</span>
+                </div>
+                <div class="user-avatar" id="userAvatar">?</div>
+            </div>
+        </div>
+        
+        <!-- 主内容区 -->
+        <div class="main-content">
+            <!-- 左侧信息面板 -->
+            <div class="info-panel">
+                <h2>👤 用户信息</h2>
+                <div class="user-card">
+                    <div class="avatar" id="largeAvatar">?</div>
+                    <div class="name" id="userName">加载中...</div>
+                    <div class="role" id="userRole">--</div>
+                </div>
+                
+                <ul class="info-list">
+                    <li><span class="label">用户ID</span><span class="value" id="userId">--</span></li>
+                    <li><span class="label">注册时间</span><span class="value" id="registerTime">--</span></li>
+                    <li><span class="label">最近登录</span><span class="value" id="lastLogin">--</span></li>
+                    <li><span class="label">角色权限</span><span class="value" id="userPermissions">--</span></li>
+                    <li><span class="label">系统版本</span><span class="value">v2.0.0</span></li>
+                </ul>
+            </div>
+            
+            <!-- 右侧功能区 -->
+            <div class="features-panel">
+                <!-- 系统状态 -->
+                <div class="status-card" style="grid-column: 1 / -1;">
+                    <h3>📊 系统状态</h3>
+                    <div class="status-grid">
+                        <div class="status-item">
+                            <div class="indicator online"></div>
+                            <div class="label">服务器状态</div>
+                            <div class="value" style="font-weight: 600; color: #1f2937;">运行正常</div>
+                        </div>
+                        <div class="status-item">
+                            <div class="indicator online"></div>
+                            <div class="label">数据库连接</div>
+                            <div class="value" style="font-weight: 600; color: #1f2937;">已连接</div>
+                        </div>
+                        <div class="status-item">
+                            <div class="indicator online"></div>
+                            <div class="label">AI服务</div>
+                            <div class="value" style="font-weight: 600; color: #1f2937;">正常</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 快捷功能入口 -->
+                <div class="feature-card" onclick="navigateTo('/exam')">
+                    <div class="icon exam">📝</div>
+                    <h3>在线考试</h3>
+                    <p>参加各类语言能力测试，支持日语、英语等多语种考试</p>
+                </div>
+                
+                <div class="feature-card" onclick="navigateTo('/notification_center')">
+                    <div class="icon notification">🔔</div>
+                    <h3>通知中心</h3>
+                    <p>查看系统通知、私信消息和广播公告</p>
+                </div>
+                
+                <div class="feature-card" onclick="navigateTo('/approval_management')">
+                    <div class="icon approval">📋</div>
+                    <h3>审批管理</h3>
+                    <p>管理考试暂停、成绩申诉等审批流程</p>
+                </div>
+                
+                <div class="feature-card" onclick="navigateTo('/system')">
+                    <div class="icon system">⚙️</div>
+                    <h3>系统设置</h3>
+                    <p>配置个人信息、通知偏好和系统参数</p>
+                </div>
+                
+                <!-- 智能快捷操作 -->
+                <div class="quick-actions" style="grid-column: 1 / -1;">
+                    <h3>⚡ 智能快捷操作</h3>
+                    <div class="quick-grid">
+                        <div class="quick-btn" onclick="quickAction('startExam')">
+                            <div class="icon">📝</div>
+                            <div class="label">开始考试</div>
+                        </div>
+                        <div class="quick-btn" onclick="quickAction('checkResults')">
+                            <div class="icon">📊</div>
+                            <div class="label">查看成绩</div>
+                        </div>
+                        <div class="quick-btn" onclick="quickAction('sendMessage')">
+                            <div class="icon">💬</div>
+                            <div class="label">发送消息</div>
+                        </div>
+                        <div class="quick-btn" onclick="quickAction('help')">
+                            <div class="icon">❓</div>
+                            <div class="label">帮助中心</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 通知预览 -->
+                <div class="notification-preview" style="grid-column: 1 / -1;">
+                    <div class="header">
+                        <h3>🔔 最新通知</h3>
+                        <a href="/notification_center" class="view-all">查看全部</a>
+                    </div>
+                    <ul class="notification-items" id="notificationList">
+                        <li class="empty">加载中...</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let notifications = [];
+        
+        function updateServerTime() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('zh-CN', { 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit' 
+            });
+            const dateStr = now.toLocaleDateString('zh-CN', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                weekday: 'long'
+            });
+            document.getElementById('serverTime').textContent = `${dateStr} ${timeStr}`;
+        }
+        
+        async function loadUserInfo() {
+            try {
+                const response = await fetch('/api/auth/user');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success && data.user) {
+                        const user = data.user;
+                        document.getElementById('userName').textContent = user.username || '未知用户';
+                        document.getElementById('userRole').textContent = user.role || '用户';
+                        document.getElementById('userId').textContent = user.id || '--';
+                        document.getElementById('userPermissions').textContent = user.role || '--';
+                        
+                        const avatar = (user.username || '用户').charAt(0).toUpperCase();
+                        document.getElementById('userAvatar').textContent = avatar;
+                        document.getElementById('largeAvatar').textContent = avatar;
+                        
+                        if (user.created_at) {
+                            document.getElementById('registerTime').textContent = formatDate(user.created_at);
+                        }
+                        if (user.last_login) {
+                            document.getElementById('lastLogin').textContent = formatDate(user.last_login);
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('加载用户信息失败:', error);
+            }
+        }
+        
+        async function loadNotifications() {
+            try {
+                const response = await fetch('/api/notifications?per_page=5');
+                const data = await response.json();
+                if (data.success) {
+                    notifications = data.data;
+                    renderNotifications();
+                    updateUnreadCount();
+                }
+            } catch (error) {
+                console.error('加载通知失败:', error);
+            }
+        }
+        
+        function renderNotifications() {
+            const list = document.getElementById('notificationList');
+            
+            if (notifications.length === 0) {
+                list.innerHTML = '<li class="empty">暂无通知</li>';
+                return;
+            }
+            
+            list.innerHTML = notifications.map(n => `
+                <li class="${n.status === 'unread' ? 'unread' : ''}">
+                    <div class="title">${n.title}</div>
+                    <div class="time">${formatTime(n.created_at)}</div>
+                </li>
+            `).join('');
+        }
+        
+        function updateUnreadCount() {
+            const count = notifications.filter(n => n.status === 'unread').length;
+            const badge = document.getElementById('unreadCount');
+            if (count > 0) {
+                badge.textContent = count;
+                badge.style.display = 'flex';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+        
+        function formatDate(dateStr) {
+            try {
+                return new Date(dateStr).toLocaleDateString('zh-CN');
+            } catch {
+                return '--';
+            }
+        }
+        
+        function formatTime(timestamp) {
+            const date = new Date(timestamp);
+            const now = new Date();
+            const diff = now - date;
+            
+            if (diff < 60000) return '刚刚';
+            if (diff < 3600000) return `${Math.floor(diff / 60000)}分钟前`;
+            if (diff < 86400000) return `${Math.floor(diff / 3600000)}小时前`;
+            return date.toLocaleDateString('zh-CN');
+        }
+        
+        function navigateTo(url) {
+            window.location.href = url;
+        }
+        
+        function toggleNotificationPanel() {
+            window.location.href = '/notification_center';
+        }
+        
+        function quickAction(action) {
+            switch(action) {
+                case 'startExam':
+                    window.location.href = '/exam';
+                    break;
+                case 'checkResults':
+                    window.location.href = '/exam_results';
+                    break;
+                case 'sendMessage':
+                    window.location.href = '/notification_center';
+                    break;
+                case 'help':
+                    alert('帮助中心功能开发中...');
+                    break;
+            }
+        }
+        
+        updateServerTime();
+        setInterval(updateServerTime, 1000);
+        
+        loadUserInfo();
+        loadNotifications();
+        
+        setInterval(loadNotifications, 30000);
+    </script>
+</body>
+</html>

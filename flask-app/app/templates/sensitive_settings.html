@@ -1,0 +1,1132 @@
+{% extends "hardware_base.html" %}
+
+{% block title %}高危敏感设置 - MTSCOS AI{% endblock %}
+
+{% block content %}
+<div class="sensitive-settings-container">
+    <!-- 页面标题 -->
+    <div class="page-header">
+        <h1 class="page-title">
+            <svg class="svg-icon" viewBox="0 0 16 16" width="24" height="24">
+                <path d="M8 1a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v1h2a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-1v1a2 2 0 0 1-2 2H10a2 2 0 0 1-2-2v-1H7a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h1V2zm0 2v1h5v5h1V4a2 2 0 0 0-2-2H8z" fill="currentColor"/>
+            </svg>
+            高危敏感设置管理
+        </h1>
+        <p class="page-description">管理系统核心参数和敏感配置（仅限硬件管理员和超级管理员访问）</p>
+    </div>
+
+    <!-- 权限提示 -->
+    <div class="permission-notice" id="permissionNotice">
+        <div class="notice-icon">
+            <svg viewBox="0 0 16 16" width="20" height="20">
+                <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zM7 4h2v5H7V4zm0 6h2v2H7v-2z" fill="currentColor"/>
+            </svg>
+        </div>
+        <div class="notice-content">
+            <strong>权限说明：</strong>
+            <span id="permissionText">正在检查权限...</span>
+        </div>
+    </div>
+
+    <!-- 待审批提醒（仅硬件管理员可见） -->
+    <div class="pending-approvals-card" id="pendingApprovalsCard" style="display: none;">
+        <div class="card-header">
+            <h3>
+                <svg class="svg-icon" viewBox="0 0 16 16" width="16" height="16">
+                    <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zM7 4h2v5H7V4zm0 6h2v2H7v-2z" fill="currentColor"/>
+                </svg>
+                待审批请求
+            </h3>
+            <span class="badge" id="pendingCount">0</span>
+        </div>
+        <div class="card-body" id="pendingApprovalsList">
+            <!-- 待审批列表将在这里动态加载 -->
+        </div>
+    </div>
+
+    <!-- 设置分类标签 -->
+    <div class="settings-tabs">
+        <button class="tab-btn active" data-category="all">全部</button>
+        <button class="tab-btn" data-category="system">系统</button>
+        <button class="tab-btn" data-category="database">数据库</button>
+        <button class="tab-btn" data-category="security">安全</button>
+        <button class="tab-btn" data-category="ai_employee">AI员工</button>
+        <button class="tab-btn" data-category="performance">性能</button>
+        <button class="tab-btn" data-category="network">网络</button>
+    </div>
+
+    <!-- 设置列表 -->
+    <div class="settings-list" id="settingsList">
+        <!-- 设置项将在这里动态加载 -->
+        <div class="loading">
+            <div class="spinner"></div>
+            <p>加载中...</p>
+        </div>
+    </div>
+
+    <!-- 操作按钮区域 -->
+    <div class="actions-panel">
+        <button class="btn btn-primary" id="applySettingsBtn" style="display: none;">
+            <svg class="svg-icon" viewBox="0 0 16 16" width="16" height="16">
+                <path d="M3 13a1 1 0 1 0 0 2 1 1 0 0 0 0-2zm14 0a1 1 0 1 0 0 2 1 1 0 0 0 0-2zm-7 5a1 1 0 1 0 0 2 1 1 0 0 0 0-2z" fill="currentColor"/>
+            </svg>
+            应用设置并重启服务
+        </button>
+        <button class="btn btn-secondary" id="backupBtn">
+            <svg class="svg-icon" viewBox="0 0 16 16" width="16" height="16">
+                <path d="M0 12.5A2.5 2.5 0 0 0 2.5 15h15a2.5 2.5 0 0 0 2.5-2.5v-5a2.5 2.5 0 0 0-2.5-2.5h-15A2.5 2.5 0 0 0 0 7.5v5z" fill="currentColor"/>
+            </svg>
+            手动备份
+        </button>
+    </div>
+
+    <!-- 操作历史 -->
+    <div class="history-section">
+        <div class="section-header">
+            <h3>
+                <svg class="svg-icon" viewBox="0 0 16 16" width="16" height="16">
+                    <path d="M0 12.5A2.5 2.5 0 0 0 2.5 15h15a2.5 2.5 0 0 0 2.5-2.5v-5a2.5 2.5 0 0 0-2.5-2.5h-15A2.5 2.5 0 0 0 0 7.5v5z" fill="currentColor"/>
+                </svg>
+                操作历史
+            </h3>
+            <div class="history-tabs">
+                <button class="history-tab active" data-type="logs">操作日志</button>
+                <button class="history-tab" data-type="backups">备份记录</button>
+                <button class="history-tab" data-type="restarts">重启记录</button>
+            </div>
+        </div>
+        <div class="history-content" id="historyContent">
+            <!-- 历史记录将在这里动态加载 -->
+        </div>
+    </div>
+</div>
+
+<!-- 确认对话框 -->
+<div class="modal" id="confirmModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="confirmTitle">确认操作</h3>
+            <button class="close-btn" onclick="closeModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p id="confirmMessage"></p>
+            <div class="warning-box" id="warningBox" style="display: none;">
+                <svg class="svg-icon" viewBox="0 0 16 16" width="20" height="20">
+                    <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zM7 4h2v5H7V4zm0 6h2v2H7v-2z" fill="currentColor"/>
+                </svg>
+                <div id="warningContent"></div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal()">取消</button>
+            <button class="btn btn-danger" id="confirmBtn">确认</button>
+        </div>
+    </div>
+</div>
+
+<style>
+.sensitive-settings-container {
+    padding: 20px;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.page-header {
+    margin-bottom: 30px;
+}
+
+.page-title {
+    font-size: 28px;
+    font-weight: 600;
+    color: #f8fafc;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.page-description {
+    color: #94a3b8;
+    font-size: 14px;
+}
+
+.permission-notice {
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.notice-icon {
+    color: #3b82f6;
+}
+
+.pending-approvals-card {
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    border-radius: 12px;
+    margin-bottom: 20px;
+    overflow: hidden;
+}
+
+.pending-approvals-card .card-header {
+    background: rgba(245, 158, 11, 0.15);
+    padding: 16px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.pending-approvals-card h3 {
+    color: #fbbf24;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.badge {
+    background: #f59e0b;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.settings-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.tab-btn {
+    background: rgba(30, 41, 59, 0.8);
+    border: 1px solid #334155;
+    color: #94a3b8;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-size: 14px;
+}
+
+.tab-btn:hover {
+    background: rgba(79, 70, 229, 0.2);
+    border-color: #4f46e5;
+}
+
+.tab-btn.active {
+    background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+    border-color: #4f46e5;
+    color: white;
+}
+
+.settings-list {
+    display: grid;
+    gap: 16px;
+    margin-bottom: 30px;
+}
+
+.setting-card {
+    background: rgba(30, 41, 59, 0.8);
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 20px;
+    transition: all 0.3s;
+}
+
+.setting-card:hover {
+    border-color: #4f46e5;
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.15);
+}
+
+.setting-card.dangerous {
+    border-color: rgba(239, 68, 68, 0.5);
+    background: rgba(239, 68, 68, 0.05);
+}
+
+.setting-card.dangerous:hover {
+    border-color: #ef4444;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15);
+}
+
+.setting-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+}
+
+.setting-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #f8fafc;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.danger-badge {
+    background: #ef4444;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.setting-key {
+    font-family: monospace;
+    color: #94a3b8;
+    font-size: 12px;
+    margin-bottom: 8px;
+}
+
+.setting-description {
+    color: #94a3b8;
+    font-size: 13px;
+    margin-bottom: 16px;
+    line-height: 1.5;
+}
+
+.setting-control {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.setting-input {
+    flex: 1;
+    background: rgba(15, 23, 42, 0.8);
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: #f8fafc;
+    font-size: 14px;
+}
+
+.setting-input:focus {
+    outline: none;
+    border-color: #4f46e5;
+}
+
+.switch {
+    position: relative;
+    width: 50px;
+    height: 26px;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #334155;
+    transition: .4s;
+    border-radius: 26px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 20px;
+    width: 20px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+input:checked + .slider {
+    background-color: #4f46e5;
+}
+
+input:checked + .slider:before {
+    transform: translateX(24px);
+}
+
+.btn-save {
+    background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.3s;
+}
+
+.btn-save:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+}
+
+.btn-save:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.actions-panel {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 30px;
+}
+
+.btn {
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: none;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+    color: white;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+}
+
+.btn-secondary {
+    background: rgba(30, 41, 59, 0.8);
+    border: 1px solid #334155;
+    color: #f8fafc;
+}
+
+.btn-secondary:hover {
+    background: rgba(79, 70, 229, 0.2);
+    border-color: #4f46e5;
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, #ef4444 0%, #f87171 100%);
+    color: white;
+}
+
+.btn-danger:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+}
+
+.history-section {
+    background: rgba(30, 41, 59, 0.8);
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 20px;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.section-header h3 {
+    color: #f8fafc;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.history-tabs {
+    display: flex;
+    gap: 8px;
+}
+
+.history-tab {
+    background: transparent;
+    border: 1px solid #334155;
+    color: #94a3b8;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.history-tab.active {
+    background: rgba(79, 70, 229, 0.2);
+    border-color: #4f46e5;
+    color: #f8fafc;
+}
+
+.history-content {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.log-item {
+    padding: 12px;
+    border-bottom: 1px solid #334155;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.log-item:last-child {
+    border-bottom: none;
+}
+
+.log-info {
+    flex: 1;
+}
+
+.log-type {
+    font-weight: 600;
+    color: #f8fafc;
+    margin-bottom: 4px;
+}
+
+.log-description {
+    color: #94a3b8;
+    font-size: 13px;
+}
+
+.log-time {
+    color: #64748b;
+    font-size: 12px;
+}
+
+.loading {
+    text-align: center;
+    padding: 40px;
+    color: #94a3b8;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid #334155;
+    border-top-color: #4f46e5;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 16px;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Modal样式 */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal.show {
+    display: flex;
+}
+
+.modal-content {
+    background: #1e293b;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.modal-header {
+    padding: 20px;
+    border-bottom: 1px solid #334155;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h3 {
+    color: #f8fafc;
+    font-size: 18px;
+}
+
+.close-btn {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    font-size: 24px;
+    cursor: pointer;
+}
+
+.modal-body {
+    padding: 20px;
+    color: #f8fafc;
+}
+
+.warning-box {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 8px;
+    padding: 16px;
+    margin-top: 16px;
+    display: flex;
+    gap: 12px;
+    color: #fbbf24;
+}
+
+.modal-footer {
+    padding: 20px;
+    border-top: 1px solid #334155;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+.svg-icon {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    vertical-align: -0.125em;
+    fill: currentColor;
+}
+</style>
+
+<script>
+let currentUserRole = '{{ session.get("role", "") }}';
+let currentCategory = 'all';
+let settingsData = [];
+let hasChanges = false;
+
+// 页面加载时初始化
+document.addEventListener('DOMContentLoaded', function() {
+    checkPermission();
+    loadSettings();
+    loadHistory('logs');
+    
+    if (currentUserRole === 'hardware_admin') {
+        loadPendingApprovals();
+    }
+    
+    // 绑定事件
+    bindEvents();
+});
+
+function checkPermission() {
+    const permissionText = document.getElementById('permissionText');
+    
+    if (currentUserRole === 'hardware_admin') {
+        permissionText.textContent = '您是硬件管理员，可以直接修改和应用所有设置。';
+        document.getElementById('applySettingsBtn').style.display = 'flex';
+    } else if (currentUserRole === 'super_admin') {
+        permissionText.textContent = '您是超级管理员，可以修改设置但需要硬件管理员审批才能应用。';
+    } else {
+        permissionText.textContent = '您没有权限访问此页面。';
+        window.location.href = '/hardware/dashboard';
+    }
+}
+
+function bindEvents() {
+    // 分类标签点击
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            currentCategory = this.dataset.category;
+            filterAndRenderSettings();
+        });
+    });
+    
+    // 历史标签点击
+    document.querySelectorAll('.history-tab').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.history-tab').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            loadHistory(this.dataset.type);
+        });
+    });
+    
+    // 应用设置按钮
+    document.getElementById('applySettingsBtn').addEventListener('click', function() {
+        showApplyConfirm();
+    });
+    
+    // 备份按钮
+    document.getElementById('backupBtn').addEventListener('click', function() {
+        performBackup();
+    });
+}
+
+async function loadSettings() {
+    try {
+        const response = await fetch('/api/sensitive-settings');
+        const data = await response.json();
+        
+        if (data.success) {
+            settingsData = data.settings;
+            filterAndRenderSettings();
+        } else if (response.status === 401 && data.redirect) {
+            // 未登录，重定向到登录页面
+            alert('请先登录！');
+            window.location.href = data.redirect;
+        } else {
+            showError(data.message);
+        }
+    } catch (error) {
+        showError('加载设置失败: ' + error.message);
+    }
+}
+
+function filterAndRenderSettings() {
+    const filtered = currentCategory === 'all' 
+        ? settingsData 
+        : settingsData.filter(s => s.category === currentCategory);
+    
+    renderSettings(filtered);
+}
+
+function renderSettings(settings) {
+    const container = document.getElementById('settingsList');
+    
+    if (settings.length === 0) {
+        container.innerHTML = '<div class="loading"><p>没有找到设置项</p></div>';
+        return;
+    }
+    
+    container.innerHTML = settings.map(setting => `
+        <div class="setting-card ${setting.is_dangerous ? 'dangerous' : ''}" data-id="${setting.id}">
+            <div class="setting-header">
+                <div class="setting-title">
+                    ${setting.setting_name}
+                    ${setting.is_dangerous ? '<span class="danger-badge">高危</span>' : ''}
+                    ${setting.requires_restart ? '<span class="badge" style="background:#f59e0b;">需重启</span>' : ''}
+                </div>
+                <div class="setting-category">${setting.category}</div>
+            </div>
+            <div class="setting-key">${setting.setting_key}</div>
+            <div class="setting-description">${setting.description}</div>
+            <div class="setting-control">
+                ${renderSettingControl(setting)}
+                <button class="btn-save" onclick="saveSetting(${setting.id})" id="saveBtn-${setting.id}">
+                    ${currentUserRole === 'hardware_admin' ? '保存' : '提交审批'}
+                </button>
+            </div>
+            ${setting.approval_status === 'pending' ? '<div class="approval-status">⏳ 等待审批中...</div>' : ''}
+        </div>
+    `).join('');
+}
+
+function renderSettingControl(setting) {
+    if (setting.value_type === 'boolean') {
+        const checked = setting.setting_value === 'true';
+        return `
+            <label class="switch">
+                <input type="checkbox" ${checked ? 'checked' : ''} 
+                       onchange="markChanged(${setting.id})"
+                       id="input-${setting.id}">
+                <span class="slider"></span>
+            </label>
+        `;
+    } else if (setting.value_type === 'integer') {
+        return `
+            <input type="number" class="setting-input" 
+                   value="${setting.setting_value}"
+                   onchange="markChanged(${setting.id})"
+                   id="input-${setting.id}">
+        `;
+    } else {
+        return `
+            <input type="text" class="setting-input" 
+                   value="${setting.setting_value}"
+                   onchange="markChanged(${setting.id})"
+                   id="input-${setting.id}">
+        `;
+    }
+}
+
+function markChanged(settingId) {
+    hasChanges = true;
+}
+
+async function saveSetting(settingId) {
+    const input = document.getElementById(`input-${settingId}`);
+    const saveBtn = document.getElementById(`saveBtn-${settingId}`);
+    const setting = settingsData.find(s => s.id === settingId);
+    
+    let newValue;
+    if (setting.value_type === 'boolean') {
+        newValue = input.checked.toString();
+    } else {
+        newValue = input.value;
+    }
+    
+    // 检查值是否改变
+    if (newValue === setting.setting_value) {
+        alert('值未改变');
+        return;
+    }
+    
+    // 高危设置确认
+    if (setting.is_dangerous && currentUserRole === 'hardware_admin') {
+        if (!confirm('这是一个高危设置，确定要修改吗？')) {
+            return;
+        }
+    }
+    
+    saveBtn.disabled = true;
+    saveBtn.textContent = '保存中...';
+    
+    try {
+        const response = await fetch(`/api/sensitive-settings/${settingId}`, {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                value: newValue,
+                reason: '通过设置页面修改'
+            })
+        });
+        
+        if (response.status === 401) {
+            alert('请先登录！');
+            window.location.href = '/login';
+            return;
+        }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            alert(data.message);
+            if (data.requires_restart && currentUserRole === 'hardware_admin') {
+                if (confirm('此设置需要重启服务才能生效，是否立即重启？')) {
+                    await restartServices();
+                }
+            }
+            loadSettings();
+        } else {
+            alert(data.message);
+        }
+    } catch (error) {
+        alert('保存失败: ' + error.message);
+    } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = currentUserRole === 'hardware_admin' ? '保存' : '提交审批';
+    }
+}
+
+async function loadPendingApprovals() {
+    try {
+        const response = await fetch('/api/sensitive-settings/pending-approvals');
+        if (response.status === 401) {
+            alert('请先登录！');
+            window.location.href = '/login';
+            return;
+        }
+        const data = await response.json();
+        
+        if (data.success && data.approvals.length > 0) {
+            document.getElementById('pendingApprovalsCard').style.display = 'block';
+            document.getElementById('pendingCount').textContent = data.approvals.length;
+            
+            const listHtml = data.approvals.map(approval => `
+                <div class="approval-item">
+                    <div class="approval-info">
+                        <strong>${approval.setting_name}</strong>
+                        <span class="approval-requester">请求人: ${approval.requester_name}</span>
+                    </div>
+                    <div class="approval-changes">
+                        <span class="old-value">${approval.old_value}</span>
+                        <span>→</span>
+                        <span class="new-value">${approval.new_value}</span>
+                    </div>
+                    <div class="approval-reason">${approval.reason || '无说明'}</div>
+                    <div class="approval-actions">
+                        <button class="btn btn-primary" onclick="approveSetting(${approval.setting_id}, true)">批准</button>
+                        <button class="btn btn-danger" onclick="approveSetting(${approval.setting_id}, false)">拒绝</button>
+                    </div>
+                </div>
+            `).join('');
+            
+            document.getElementById('pendingApprovalsList').innerHTML = listHtml;
+        }
+    } catch (error) {
+        console.error('加载待审批列表失败:', error);
+    }
+}
+
+async function approveSetting(settingId, approved) {
+    const notes = prompt('请输入审批意见（可选）:');
+    
+    try {
+        const response = await fetch(`/api/sensitive-settings/${settingId}/approve`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                approved: approved,
+                notes: notes || ''
+            })
+        });
+        
+        if (response.status === 401) {
+            alert('请先登录！');
+            window.location.href = '/login';
+            return;
+        }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            alert(data.message);
+            loadPendingApprovals();
+            loadSettings();
+            
+            if (approved && data.requires_restart) {
+                if (confirm('此设置需要重启服务才能生效，是否立即重启？')) {
+                    await restartServices();
+                }
+            }
+        } else {
+            alert(data.message);
+        }
+    } catch (error) {
+        alert('审批失败: ' + error.message);
+    }
+}
+
+function showApplyConfirm() {
+    const modal = document.getElementById('confirmModal');
+    const warningBox = document.getElementById('warningBox');
+    
+    document.getElementById('confirmTitle').textContent = '确认应用设置';
+    document.getElementById('confirmMessage').textContent = 
+        '应用设置将执行以下操作：';
+    
+    warningBox.style.display = 'block';
+    document.getElementById('warningContent').innerHTML = `
+        <ul>
+            <li>✓ 执行双数据库备份</li>
+            <li>✓ 重启所有服务（包括子服务器）</li>
+            <li>✓ 重启所有AI员工</li>
+            <li>✓ 重新加载所有路由和API</li>
+        </ul>
+        <p style="margin-top: 12px; color: #ef4444;">
+            ⚠️ 此操作会导致服务短暂中断，请确保已通知所有用户！
+        </p>
+    `;
+    
+    document.getElementById('confirmBtn').onclick = async function() {
+        await applySettings();
+        closeModal();
+    };
+    
+    modal.classList.add('show');
+}
+
+function closeModal() {
+    document.getElementById('confirmModal').classList.remove('show');
+}
+
+async function applySettings() {
+    try {
+        const response = await fetch('/api/sensitive-settings/apply', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                setting_ids: settingsData.map(s => s.id),
+                confirmed: true
+            })
+        });
+        
+        if (response.status === 401) {
+            alert('请先登录！');
+            window.location.href = '/login';
+            return;
+        }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            alert('设置已成功应用！\n\n备份路径：' + data.backups[0].path + '\n\n服务重启中...');
+            loadHistory('restarts');
+        } else {
+            alert(data.message);
+        }
+    } catch (error) {
+        alert('应用设置失败: ' + error.message);
+    }
+}
+
+async function performBackup() {
+    if (!confirm('确定要执行数据库备份吗？')) return;
+    
+    try {
+        const response = await fetch('/api/sensitive-settings/backup', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({reason: '手动备份'})
+        });
+        
+        if (response.status === 401) {
+            alert('请先登录！');
+            window.location.href = '/login';
+            return;
+        }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            alert('备份成功！\n路径: ' + data.backup_path + '\n大小: ' + formatBytes(data.backup_size));
+            loadHistory('backups');
+        } else {
+            alert(data.message);
+        }
+    } catch (error) {
+        alert('备份失败: ' + error.message);
+    }
+}
+
+async function restartServices() {
+    if (!confirm('确定要重启所有服务吗？这将导致服务短暂中断！')) return;
+    
+    try {
+        const response = await fetch('/api/sensitive-settings/restart-services', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                reason: '应用设置变更',
+                confirmed: true
+            })
+        });
+        
+        if (response.status === 401) {
+            alert('请先登录！');
+            window.location.href = '/login';
+            return;
+        }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            alert('服务重启成功！');
+            loadHistory('restarts');
+        } else {
+            alert(data.message);
+        }
+    } catch (error) {
+        alert('重启失败: ' + error.message);
+    }
+}
+
+async function loadHistory(type) {
+    const container = document.getElementById('historyContent');
+    container.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+    
+    try {
+        let url;
+        if (type === 'logs') {
+            url = '/api/sensitive-settings/operation-logs?limit=20';
+        } else if (type === 'backups') {
+            url = '/api/sensitive-settings/backups?limit=20';
+        } else {
+            url = '/api/sensitive-settings/restart-history?limit=20';
+        }
+        
+        const response = await fetch(url);
+        if (response.status === 401) {
+            alert('请先登录！');
+            window.location.href = '/login';
+            return;
+        }
+        const data = await response.json();
+        
+        if (data.success) {
+            const items = data[type] || data.logs || data.backups || data.restarts;
+            renderHistory(type, items);
+        }
+    } catch (error) {
+        container.innerHTML = '<p style="color: #ef4444;">加载失败: ' + error.message + '</p>';
+    }
+}
+
+function renderHistory(type, items) {
+    const container = document.getElementById('historyContent');
+    
+    if (!items || items.length === 0) {
+        container.innerHTML = '<p style="color: #94a3b8; text-align: center; padding: 20px;">暂无记录</p>';
+        return;
+    }
+    
+    container.innerHTML = items.map(item => {
+        if (type === 'logs') {
+            return `
+                <div class="log-item">
+                    <div class="log-info">
+                        <div class="log-type">${item.operation_type} - ${item.description}</div>
+                        <div class="log-description">操作人: ${item.user_name} (${item.user_role}) | IP: ${item.ip_address}</div>
+                    </div>
+                    <div class="log-time">${formatTime(item.created_at)}</div>
+                </div>
+            `;
+        } else if (type === 'backups') {
+            return `
+                <div class="log-item">
+                    <div class="log-info">
+                        <div class="log-type">${item.backup_type === 'manual' ? '手动备份' : '自动备份'}</div>
+                        <div class="log-description">${item.trigger_reason} | 大小: ${formatBytes(item.backup_size)}</div>
+                    </div>
+                    <div class="log-time">${formatTime(item.created_at)}</div>
+                </div>
+            `;
+        } else {
+            return `
+                <div class="log-item">
+                    <div class="log-info">
+                        <div class="log-type">${item.restart_type === 'full' ? '完全重启' : '部分重启'}</div>
+                        <div class="log-description">${item.reason} | 状态: ${item.status}</div>
+                    </div>
+                    <div class="log-time">${formatTime(item.started_at)}</div>
+                </div>
+            `;
+        }
+    }).join('');
+}
+
+function formatTime(timeStr) {
+    const date = new Date(timeStr);
+    return date.toLocaleString('zh-CN');
+}
+
+function formatBytes(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+}
+
+function showError(message) {
+    const container = document.getElementById('settingsList');
+    container.innerHTML = `
+        <div style="text-align: center; padding: 40px; color: #ef4444;">
+            <p>❌ ${message}</p>
+            <button class="btn btn-secondary" onclick="location.reload()">刷新页面</button>
+        </div>
+    `;
+}
+</script>
+{% endblock %}

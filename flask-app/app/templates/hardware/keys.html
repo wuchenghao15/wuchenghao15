@@ -1,0 +1,254 @@
+{% extends "hardware/base.html" %}
+
+{% block title %}硬件密钥 - 硬件管理系统{% endblock %}
+
+{% block page_title %}硬件密钥{% endblock %}
+{% block page_subtitle %}管理API密钥和硬件认证{% endblock %}
+
+{% block content %}
+<div class="content-grid">
+    <!-- 密钥列表 -->
+    <section class="card">
+        <div class="card-header">
+            <div class="card-title">
+                <svg class="svg-icon" viewBox="0 0 512 512" width="16" height="16"><path d="M336 144c0-26.5 21.5-48 48-48s48 21.5 48 48-21.5 48-48 48-48-21.5-48-48zm176 48c0-79.5-64.5-144-144-144s-144 64.5-144 144c0 19.3 3.8 37.7 10.7 54.6L144 352 48 256 0 304l96 96 48 48 48-48 16.4-16.4c15.5 5.6 32.1 8.8 49.6 8.8 79.5 0 144-64.5 144-144z"/></svg>
+                <h3>API密钥管理</h3>
+            </div>
+            <button class="btn btn-primary" onclick="showAddKeyModal()">
+                <!-- Icon fa-plus not found -->
+                创建密钥
+            </button>
+        </div>
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>密钥名称</th>
+                        <th>密钥类型</th>
+                        <th>密钥值</th>
+                        <th>状态</th>
+                        <th>创建时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if keys %}
+                        {% for key in keys %}
+                        <tr>
+                            <td>{{ key.key_name }}</td>
+                            <td>
+                                <span class="badge {{ key.key_type }}">{{ key.key_type | capitalize }}</span>
+                            </td>
+                            <td>
+                                <code class="key-value">{{ key.key_value[:12] }}...</code>
+                                <button class="btn btn-xs" onclick="copyKey('{{ key.key_value }}')">
+                                    <!-- Icon fa-copy not found -->
+                                </button>
+                            </td>
+                            <td>
+                                <span class="status-badge {{ 'online' if key.is_active else 'offline' }}">
+                                    <span class="status-dot"></span>
+                                    {{ '启用' if key.is_active else '禁用' }}
+                                </span>
+                            </td>
+                            <td>{{ key.created_at }}</td>
+                            <td>
+                                <div class="action-buttons">
+                                    <button class="btn btn-sm btn-secondary" onclick="regenerateKey({{ key.id }})">
+                                        <!-- Icon fa-refresh not found -->
+                                    </button>
+                                    <button class="btn btn-sm btn-secondary" onclick="toggleKey({{ key.id }}, {{ key.is_active }})">
+                                        <!-- Icon fa-power-off not found -->
+                                    </button>
+                                    <button class="btn btn-sm btn-danger" onclick="deleteKey({{ key.id }})">
+                                        <!-- Icon fa-trash not found -->
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="6" style="text-align: center; color: var(--text-secondary);">
+                                暂无密钥，点击上方按钮创建
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- 密钥统计 -->
+    <div class="stats-panel">
+        <div class="stat-card">
+            <div class="stat-icon blue">
+                <svg class="svg-icon" viewBox="0 0 512 512" width="16" height="16"><path d="M336 144c0-26.5 21.5-48 48-48s48 21.5 48 48-21.5 48-48 48-48-21.5-48-48zm176 48c0-79.5-64.5-144-144-144s-144 64.5-144 144c0 19.3 3.8 37.7 10.7 54.6L144 352 48 256 0 304l96 96 48 48 48-48 16.4-16.4c15.5 5.6 32.1 8.8 49.6 8.8 79.5 0 144-64.5 144-144z"/></svg>
+            </div>
+            <div class="stat-info">
+                <div class="stat-value">{{ keys | length }}</div>
+                <div class="stat-label">密钥总数</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon green">
+                <svg class="svg-icon" viewBox="0 0 512 512" fill="#28a745" width="16" height="16"><path d="M256 8C119 8 8 119 8 256s111 248 248 248 248-111 248-248S393 8 256 8zm-24 336l-112-112 17-17 95 95 207-207 17 17z"/></svg>
+            </div>
+            <div class="stat-info">
+                <div class="stat-value">{{ keys | selectattr('is_active', 'equalto', 1) | list | length }}</div>
+                <div class="stat-label">已启用</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon red">
+                <svg class="svg-icon" viewBox="0 0 352 512" width="16" height="16"><path d="M242.7 256l100.1-100.1c4.7-4.7 4.7-12.3 0-17l-22.6-22.6c-4.7-4.7-12.3-4.7-17 0L203.1 216.4 103 116.3c-4.7-4.7-12.3-4.7-17 0L63.4 138.9c-4.7 4.7-4.7 12.3 0 17L163.5 256 63.4 356.1c-4.7 4.7-4.7 12.3 0 17l22.6 22.6c4.7 4.7 12.3 4.7 17 0l100.1-100.1 100.1 100.1c4.7 4.7 12.3 4.7 17 0l22.6-22.6c4.7-4.7 4.7-12.3 0-17L242.7 256z"/></svg>
+            </div>
+            <div class="stat-info">
+                <div class="stat-value">{{ keys | selectattr('is_active', 'equalto', 0) | list | length }}</div>
+                <div class="stat-label">已禁用</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 添加密钥弹窗 -->
+<div id="addKeyModal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>创建API密钥</h3>
+            <button class="modal-close" onclick="closeModal()">×</button>
+        </div>
+        <div class="modal-body">
+            <form id="keyForm">
+                <div class="form-group">
+                    <label>密钥名称</label>
+                    <input type="text" id="keyName" class="form-control" placeholder="输入密钥名称" required>
+                </div>
+                <div class="form-group">
+                    <label>密钥类型</label>
+                    <select id="keyType" class="form-control">
+                        <option value="api">API密钥</option>
+                        <option value="device">设备密钥</option>
+                        <option value="service">服务密钥</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>描述</label>
+                    <textarea id="keyDesc" class="form-control" rows="2" placeholder="密钥描述（可选）"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>有效期</label>
+                    <input type="date" id="keyExpire" class="form-control">
+                    <span style="font-size: 0.85rem; color: var(--text-secondary);">留空表示永久有效</span>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal()">取消</button>
+            <button class="btn btn-primary" onclick="createKey()">创建密钥</button>
+        </div>
+    </div>
+</div>
+
+<script>
+function showAddKeyModal() {
+    document.getElementById('keyForm').reset();
+    document.getElementById('addKeyModal').style.display = 'flex';
+}
+
+function closeModal() {
+    document.getElementById('addKeyModal').style.display = 'none';
+}
+
+function createKey() {
+    const data = {
+        key_name: document.getElementById('keyName').value,
+        key_type: document.getElementById('keyType').value,
+        description: document.getElementById('keyDesc').value,
+        expires_at: document.getElementById('keyExpire').value || null
+    };
+    
+    fetch('/api/hardware/keys', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    })
+    .then(res => res.json())
+    .then(result => {
+        if (result.success) {
+            showToast('密钥创建成功');
+            closeModal();
+            location.reload();
+        } else {
+            showToast(result.message, 'error');
+        }
+    });
+}
+
+function copyKey(key) {
+    navigator.clipboard.writeText(key).then(() => {
+        showToast('密钥已复制到剪贴板');
+    });
+}
+
+function regenerateKey(keyId) {
+    if (confirm('确定要重新生成此密钥吗？原密钥将失效！')) {
+        fetch(`/api/hardware/keys/regenerate/${keyId}`, { method: 'POST' })
+            .then(res => res.json())
+            .then(result => {
+                if (result.success) {
+                    showToast('密钥已重新生成');
+                    location.reload();
+                } else {
+                    showToast(result.message, 'error');
+                }
+            });
+    }
+}
+
+function toggleKey(keyId, isActive) {
+    const newStatus = !isActive;
+    fetch(`/api/hardware/keys/${keyId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_active: newStatus })
+    })
+    .then(res => res.json())
+    .then(result => {
+        if (result.success) {
+            showToast(newStatus ? '密钥已启用' : '密钥已禁用');
+            location.reload();
+        } else {
+            showToast(result.message, 'error');
+        }
+    });
+}
+
+function deleteKey(keyId) {
+    if (confirm('确定要删除此密钥吗？')) {
+        fetch(`/api/hardware/keys/${keyId}`, { method: 'DELETE' })
+            .then(res => res.json())
+            .then(result => {
+                if (result.success) {
+                    showToast('密钥已删除');
+                    location.reload();
+                } else {
+                    showToast(result.message, 'error');
+                }
+            });
+    }
+}
+
+function showToast(message, type = 'success') {
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+</script>
+{% endblock %}

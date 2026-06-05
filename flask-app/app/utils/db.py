@@ -569,9 +569,9 @@ class DatabaseManager:
         # 根据数据库类型选择占位符
         if self.db_type == 'mysql':
             placeholders = ', '.join(['%s'] * len(data))
-            placeholders = ', '.join(['%s'] * len(data))
-        else:  # sqlite
+        else:  # sqlite/postgresql
             placeholders = ', '.join(['?'] * len(data))
+        query = f"INSERT INTO {table} ({columns}) VALUES ({placeholders})"
         values = tuple(data.values())
         cursor, success = self.execute(query, values)
 
@@ -668,7 +668,7 @@ class DatabaseManager:
             logger.error(f"提交事务失败: {str(e)}")
             try:
                 conn.rollback()
-            except:
+            except Exception:
                 pass
             return False
         finally:

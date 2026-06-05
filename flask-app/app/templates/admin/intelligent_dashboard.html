@@ -1,0 +1,596 @@
+{% extends "admin/base.html" %}
+
+{% block title %}AI智慧仪表盘 - MTSCOS{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- 页面标题 -->
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center mb-4">
+        <h1 class="h2">
+            <svg class="svg-icon" viewBox="0 0 576 512" width="16" height="16"><path d="M528.1 171.2l-46.3-27.7c-1.3-4.2-3.5-8.1-6.4-11.5l33.8-39.8c7.6-8.9 6.6-22.1-2.4-30l-43.3-37.1c-9-7.7-22.7-6.8-30.6 2.1l-30.4 34.7c-11.5-6.1-24.5-9.7-38.2-9.7h-19.4c-2.6-11.8-9.9-22.1-20.1-29.3l-33.4-23.4c-13.1-9.2-30.9-6.1-40.1 7s-6.1 30.9 7 40.1l24.5 17.2c1.5 1 2.7 2.3 3.6 3.7h-20.2c-13.7 0-26.8 3.6-38.3 9.8l-30.3-34.8c-7.9-9.1-21.7-9.9-30.7-2l-43.3 37.1c-8.9 7.9-9.9 21.1-2.4 30l33.8 39.8c-2.9 3.4-5.1 7.3-6.4 11.5l-46.3 27.7C32.7 185.2 0 227.4 0 275.2V320c0 52.9 43 96 96 96h28.7c-2.6 15.9-4.7 32-4.7 48 0 39.8 18.6 75.1 47.5 97.9 10.5 8.2 26.4 6.4 34.6-4.1s6.4-26.4-4.1-34.6c-14.5-11.4-23.3-29.1-23.3-49.1 0-3.4.3-6.8.8-10.1h142.8c.5 3.3.8 6.7.8 10.1 0 20-8.8 37.7-23.3 49.1-10.5 8.2-12.3 24-4.1 34.6s24 12.3 34.6 4.1c28.9-22.9 47.5-58.1 47.5-97.9 0-16-2.1-32.1-4.7-48H480c53 0 96-43.1 96-96v-44.8c0-47.8-32.7-90-79.9-104zm-108.8 140.8h-160c-8.8 0-16-7.2-16-16s7.2-16 16-16h160c8.8 0 16 7.2 16 16s-7.2 16-16 16zm0-64h-160c-8.8 0-16-7.2-16-16s7.2-16 16-16h160c8.8 0 16 7.2 16 16s-7.2 16-16 16z"/></svg> AI智慧仪表盘
+        </h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <div class="btn-group mr-2">
+                <button class="btn btn-primary" onclick="initializeAIServices()">
+                    <svg class="svg-icon" viewBox="0 0 448 512" width="16" height="16"><path d="M424.4 214.7L72.4 6.6C43.8-10.3 0 10.1 0 47.9V464c0 37.9 43.8 58.2 72.4 41.3l352-208c31.4-18.5 31.4-64.1 0-82.6z"/></svg> 初始化AI服务
+                </button>
+                <button class="btn btn-outline-secondary" onclick="refreshDashboard()">
+                    <!-- Icon fa-sync-alt not found --> 刷新
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 系统概览卡片 -->
+    <div class="row">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">决策引擎</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalDecisions">0</div>
+                        </div>
+                        <div class="col-auto">
+                            <!-- Icon fa-lightbulb not found --><!-- Icon fa-2x not found -->
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <small class="text-muted">成功率: <span id="decisionSuccessRate">0%</span></small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">知识图谱</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalNodes">0</div>
+                        </div>
+                        <div class="col-auto">
+                            <!-- Icon fa-project-diagram not found --><!-- Icon fa-2x not found -->
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <small class="text-muted">关系数: <span id="totalEdges">0</span></small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">预测分析</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalPredictions">0</div>
+                        </div>
+                        <div class="col-auto">
+                            <svg class="svg-icon" viewBox="0 0 640 512" width="16" height="16"><path d="M608 400c0 17.67-14.33 32-32 32H32c-17.67 0-32-14.33-32-32V80c0-17.67 14.33-32 32-32s32 14.33 32 32v288h512v32zm0-352H64c-17.67 0-32 14.33-32 32v320c0 17.67 14.33 32 32 32h544c17.67 0 32-14.33 32-32V80c0-17.67-14.33-32-32-32zM128 384c-8.84 0-16-7.16-16-16s7.16-16 16-16 16 7.16 16 16-7.16 16-16 16zm128 0c-8.84 0-16-7.16-16-16s7.16-16 16-16 16 7.16 16 16-7.16 16-16 16zm128 0c-8.84 0-16-7.16-16-16s7.16-16 16-16 16 7.16 16 16-7.16 16-16 16zm128 0c-8.84 0-16-7.16-16-16s7.16-16 16-16 16 7.16 16 16-7.16 16-16 16zM128 288c-8.84 0-16-7.16-16-16s7.16-16 16-16 16 7.16 16 16-7.16 16-16 16zm128 0c-8.84 0-16-7.16-16-16s7.16-16 16-16 16 7.16 16 16-7.16 16-16 16zm128 0c-8.84 0-16-7.16-16-16s7.16-16 16-16 16 7.16 16 16-7.16 16-16 16zm128 0c-8.84 0-16-7.16-16-16s7.16-16 16-16 16 7.16 16 16-7.16 16-16 16zM128 192c-8.84 0-16-7.16-16-16s7.16-16 16-16 16 7.16 16 16-7.16 16-16 16zm128 0c-8.84 0-16-7.16-16-16s7.16-16 16-16 16 7.16 16 16-7.16 16-16 16zm128 0c-8.84 0-16-7.16-16-16s7.16-16 16-16 16 7.16 16 16-7.16 16-16 16zm128 0c-8.84 0-16-7.16-16-16s7.16-16 16-16 16 7.16 16 16-7.16 16-16 16z"/></svg>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <small class="text-muted">活跃序列: <span id="activeSeries">0</span></small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">AI员工</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalWorkers">0</div>
+                        </div>
+                        <div class="col-auto">
+                            <svg class="svg-icon" viewBox="0 0 640 512" width="16" height="16"><path d="M320 0c-17.67 0-32 14.33-32 32v32h-64c-70.69 0-128 57.31-128 128v16c0 8.82 7.18 16 16 16h16v256c0 17.67 14.33 32 32 32h320c17.67 0 32-14.33 32-32V224h16c8.82 0 16-7.18 16-16v-16c0-70.69-57.31-128-128-128h-64V32c0-17.67-14.33-32-32-32zm-128 128h256c35.29 0 64 28.71 64 64v16H128v-16c0-35.29 28.71-64 64-64zm96 64c-26.51 0-48 21.49-48 48s21.49 48 48 48 48-21.49 48-48-21.49-48-48-48zm160 256H192v-96h256v96z"/></svg>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <small class="text-muted">忙碌中: <span id="busyWorkers">0</span></small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主要内容区域 -->
+    <div class="row">
+        <!-- 预警信息 -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <svg class="svg-icon" viewBox="0 0 576 512" fill="#ffc107" width="16" height="16"><path d="M569.5 412L334.1 55c-11.7-19.5-42-19.5-53.7 0L6.5 412c-11.7 19.5 2.6 44 26.8 44h499.4c24.2 0 38.5-24.5 26.8-44zm-277-112c-13.3 0-24-10.7-24-24v-96c0-13.3 10.7-24 24-24s24 10.7 24 24v96c0 13.3-10.7 24-24 24zm0 160c-17.7 0-32-14.3-32-32s14.3-32 32-32 32 14.3 32 32-14.3 32-32 32z"/></svg> 活跃预警
+                    </h6>
+                    <span class="badge badge-danger" id="activeAlertsBadge">0</span>
+                </div>
+                <div class="card-body">
+                    <div id="alertsList" class="alert-list">
+                        <p class="text-muted text-center">暂无预警信息</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 待执行决策 -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <!-- Icon fa-tasks not found --> 待执行决策
+                    </h6>
+                    <span class="badge badge-info" id="pendingDecisionsBadge">0</span>
+                </div>
+                <div class="card-body">
+                    <div id="decisionsList">
+                        <p class="text-muted text-center">暂无待执行决策</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- 系统洞察 -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <!-- Icon fa-eye not found --> 系统洞察
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div id="insightsList">
+                        <p class="text-muted text-center">暂无洞察信息</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 任务管理 -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <!-- Icon fa-clipboard-list not found --> 任务管理
+                    </h6>
+                    <button class="btn btn-sm btn-primary" onclick="showSubmitTaskModal()">
+                        <!-- Icon fa-plus not found --> 新建任务
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div id="tasksStats">
+                        <div class="row text-center">
+                            <div class="col-3">
+                                <div class="h5" id="totalTasks">0</div>
+                                <small class="text-muted">总数</small>
+                            </div>
+                            <div class="col-3">
+                                <div class="h5 text-success" id="completedTasks">0</div>
+                                <small class="text-muted">完成</small>
+                            </div>
+                            <div class="col-3">
+                                <div class="h5 text-danger" id="failedTasks">0</div>
+                                <small class="text-muted">失败</small>
+                            </div>
+                            <div class="col-3">
+                                <div class="h5 text-info" id="pendingTasks">0</div>
+                                <small class="text-muted">等待中</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 知识搜索 -->
+    <div class="row">
+        <div class="col-12 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <svg class="svg-icon" viewBox="0 0 512 512" width="16" height="16"><path d="M505 442.7L405.3 343c-4.5-4.5-10.6-7-17-7H372c27.6-35.3 44-79.7 44-128C416 93.1 322.9 0 208 0S0 93.1 0 208s93.1 208 208 208c48.3 0 92.7-16.4 128-44v16.3c0 6.4 2.5 12.5 7 17l99.7 99.7c9.4 9.4 24.6 9.4 33.9 0l28.3-28.3c9.4-9.4 9.4-24.6.1-34zM208 336c-70.7 0-128-57.3-128-128s57.3-128 128-128 128 57.3 128 128-57.3 128-128 128z"/></svg> 知识搜索
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="input-group mb-3">
+                        <input type="text" class="form-control" id="knowledgeSearchInput" placeholder="搜索知识...">
+                        <div class="input-group-append">
+                            <button class="btn btn-primary" onclick="searchKnowledge()">
+                                <svg class="svg-icon" viewBox="0 0 512 512" width="16" height="16"><path d="M505 442.7L405.3 343c-4.5-4.5-10.6-7-17-7H372c27.6-35.3 44-79.7 44-128C416 93.1 322.9 0 208 0S0 93.1 0 208s93.1 208 208 208c48.3 0 92.7-16.4 128-44v16.3c0 6.4 2.5 12.5 7 17l99.7 99.7c9.4 9.4 24.6 9.4 33.9 0l28.3-28.3c9.4-9.4 9.4-24.6.1-34zM208 336c-70.7 0-128-57.3-128-128s57.3-128 128-128 128 57.3 128 128-57.3 128-128 128z"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="knowledgeSearchResults">
+                        <p class="text-muted text-center">输入关键词搜索知识图谱</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 提交任务模态框 -->
+<div class="modal fade" id="submitTaskModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">提交AI任务</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="submitTaskForm">
+                    <div class="form-group">
+                        <label>任务类型</label>
+                        <select class="form-control" id="taskType">
+                            <option value="system_optimization">系统优化</option>
+                            <option value="error_detection">错误检测</option>
+                            <option value="learning_analysis">学习分析</option>
+                            <option value="knowledge_management">知识管理</option>
+                            <option value="prediction">预测分析</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>任务描述</label>
+                        <textarea class="form-control" id="taskDescription" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>优先级 (1-10)</label>
+                        <input type="number" class="form-control" id="taskPriority" min="1" max="10" value="5">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="submitTask()">提交</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// 仪表盘数据刷新
+let refreshInterval;
+
+$(document).ready(function() {
+    refreshDashboard();
+    // 每30秒自动刷新
+    refreshInterval = setInterval(refreshDashboard, 30000);
+});
+
+// 刷新仪表盘
+async function refreshDashboard() {
+    try {
+        const response = await fetch('/api/intelligent/overview');
+        const result = await response.json();
+        
+        if (result.success) {
+            updateOverview(result.data);
+        }
+        
+        // 同时加载其他数据
+        loadAlerts();
+        loadDecisions();
+        loadInsights();
+        loadTasks();
+    } catch (error) {
+        console.error('刷新失败:', error);
+    }
+}
+
+// 更新概览数据
+function updateOverview(data) {
+    // 决策引擎
+    $('#totalDecisions').text(data.decision_engine.total_decisions);
+    $('#decisionSuccessRate').text((data.decision_engine.success_rate * 100).toFixed(1) + '%');
+    
+    // 知识图谱
+    $('#totalNodes').text(data.knowledge_graph.total_nodes);
+    $('#totalEdges').text(data.knowledge_graph.total_edges);
+    
+    // 预测分析
+    $('#totalPredictions').text(data.predictor.total_predictions);
+    $('#activeSeries').text(data.predictor.active_series);
+    
+    // AI员工
+    $('#totalWorkers').text(data.orchestrator.total_tasks > 0 ? 5 : 0);
+    $('#busyWorkers').text(data.orchestrator.busy_workers);
+    
+    // 更新徽章
+    $('#activeAlertsBadge').text(data.orchestrator.active_alerts);
+}
+
+// 加载预警
+async function loadAlerts() {
+    try {
+        const response = await fetch('/api/intelligent/alerts');
+        const result = await response.json();
+        
+        if (result.success) {
+            const alerts = result.data.alerts;
+            $('#activeAlertsBadge').text(alerts.length);
+            
+            if (alerts.length === 0) {
+                $('#alertsList').html('<p class="text-muted text-center">暂无预警信息</p>');
+            } else {
+                const html = alerts.map(alert => `
+                    <div class="alert alert-${getAlertLevelClass(alert.level)} alert-dismissible fade show" role="alert">
+                        <strong>${alert.title}</strong>
+                        <p class="mb-1">${alert.description}</p>
+                        <small class="text-muted">来源: ${alert.source} | ${new Date(alert.created_at).toLocaleString()}</small>
+                        <div class="mt-2">
+                            ${!alert.acknowledged ? `<button class="btn btn-sm btn-outline-primary" onclick="acknowledgeAlert('${alert.alert_id}')">确认</button>` : ''}
+                            <button class="btn btn-sm btn-outline-success" onclick="resolveAlert('${alert.alert_id}')">解决</button>
+                        </div>
+                    </div>
+                `).join('');
+                $('#alertsList').html(html);
+            }
+        }
+    } catch (error) {
+        console.error('加载预警失败:', error);
+    }
+}
+
+// 获取预警级别样式
+function getAlertLevelClass(level) {
+    const classes = {
+        'info': 'info',
+        'warning': 'warning',
+        'error': 'danger',
+        'critical': 'danger'
+    };
+    return classes[level] || 'secondary';
+}
+
+// 确认预警
+async function acknowledgeAlert(alertId) {
+    try {
+        const response = await fetch(`/api/intelligent/alerts/${alertId}/acknowledge`, { method: 'POST' });
+        const result = await response.json();
+        
+        if (result.success) {
+            loadAlerts();
+        }
+    } catch (error) {
+        console.error('确认预警失败:', error);
+    }
+}
+
+// 解决预警
+async function resolveAlert(alertId) {
+    try {
+        const response = await fetch(`/api/intelligent/alerts/${alertId}/resolve`, { method: 'POST' });
+        const result = await response.json();
+        
+        if (result.success) {
+            loadAlerts();
+        }
+    } catch (error) {
+        console.error('解决预警失败:', error);
+    }
+}
+
+// 加载决策
+async function loadDecisions() {
+    try {
+        const response = await fetch('/api/intelligent/decisions');
+        const result = await response.json();
+        
+        if (result.success) {
+            const decisions = result.data.pending_decisions;
+            $('#pendingDecisionsBadge').text(decisions.length);
+            
+            if (decisions.length === 0) {
+                $('#decisionsList').html('<p class="text-muted text-center">暂无待执行决策</p>');
+            } else {
+                const html = decisions.map(decision => `
+                    <div class="decision-item mb-2 p-2 border rounded">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <strong>${decision.title}</strong>
+                                <span class="badge badge-${getPriorityBadge(decision.priority)} ml-2">${decision.priority}</span>
+                                <p class="mb-1 small text-muted">${decision.description}</p>
+                                <small class="text-muted">置信度: ${(decision.confidence * 100).toFixed(1)}%</small>
+                            </div>
+                            <button class="btn btn-sm btn-success" onclick="executeDecision('${decision.id}')">执行</button>
+                        </div>
+                    </div>
+                `).join('');
+                $('#decisionsList').html(html);
+            }
+        }
+    } catch (error) {
+        console.error('加载决策失败:', error);
+    }
+}
+
+// 获取优先级徽章
+function getPriorityBadge(priority) {
+    if (priority === 'CRITICAL' || priority === 'HIGH') return 'danger';
+    if (priority === 'MEDIUM') return 'warning';
+    return 'info';
+}
+
+// 执行决策
+async function executeDecision(decisionId) {
+    try {
+        const response = await fetch(`/api/intelligent/decisions/${decisionId}/execute`, { method: 'POST' });
+        const result = await response.json();
+        
+        if (result.success) {
+            alert('决策执行成功!');
+            loadDecisions();
+        }
+    } catch (error) {
+        console.error('执行决策失败:', error);
+        alert('执行失败: ' + error.message);
+    }
+}
+
+// 加载洞察
+async function loadInsights() {
+    try {
+        const response = await fetch('/api/intelligent/insights');
+        const result = await response.json();
+        
+        if (result.success) {
+            const insights = result.data.insights;
+            
+            if (insights.length === 0) {
+                $('#insightsList').html('<p class="text-muted text-center">暂无洞察信息</p>');
+            } else {
+                const html = insights.map(insight => `
+                    <div class="insight-item mb-2 p-2 bg-light rounded">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <strong>${insight.title}</strong>
+                                ${insight.actionable ? '<span class="badge badge-primary ml-2">可执行</span>' : ''}
+                                <p class="mb-1 small">${insight.description}</p>
+                                <small class="text-muted">置信度: ${(insight.confidence * 100).toFixed(1)}%</small>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+                $('#insightsList').html(html);
+            }
+        }
+    } catch (error) {
+        console.error('加载洞察失败:', error);
+    }
+}
+
+// 加载任务
+async function loadTasks() {
+    try {
+        const response = await fetch('/api/intelligent/tasks');
+        const result = await response.json();
+        
+        if (result.success) {
+            const tasks = result.data;
+            $('#totalTasks').text(tasks.total || 0);
+            $('#completedTasks').text(tasks.completed || 0);
+            $('#failedTasks').text(tasks.failed || 0);
+            $('#pendingTasks').text(tasks.pending || 0);
+        }
+    } catch (error) {
+        console.error('加载任务失败:', error);
+    }
+}
+
+// 显示提交任务模态框
+function showSubmitTaskModal() {
+    $('#submitTaskModal').modal('show');
+}
+
+// 提交任务
+async function submitTask() {
+    const taskData = {
+        type: $('#taskType').val(),
+        description: $('#taskDescription').val(),
+        priority: parseInt($('#taskPriority').val())
+    };
+    
+    try {
+        const response = await fetch('/api/intelligent/tasks', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(taskData)
+        });
+        const result = await response.json();
+        
+        if (result.success) {
+            alert('任务提交成功!');
+            $('#submitTaskModal').modal('hide');
+            $('#submitTaskForm')[0].reset();
+            loadTasks();
+        }
+    } catch (error) {
+        console.error('提交任务失败:', error);
+        alert('提交失败: ' + error.message);
+    }
+}
+
+// 知识搜索
+async function searchKnowledge() {
+    const query = $('#knowledgeSearchInput').val();
+    if (!query) return;
+    
+    try {
+        const response = await fetch(`/api/intelligent/knowledge/search?q=${encodeURIComponent(query)}`);
+        const result = await response.json();
+        
+        if (result.success) {
+            const results = result.data.results;
+            
+            if (results.length === 0) {
+                $('#knowledgeSearchResults').html('<p class="text-muted text-center">未找到相关知识</p>');
+            } else {
+                const html = results.map(r => `
+                    <div class="search-result-item mb-2 p-2 border rounded">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <strong>${r.node.name}</strong>
+                                <span class="badge badge-secondary ml-2">${r.node.entity_type}</span>
+                                <span class="badge badge-info ml-1">得分: ${r.score.toFixed(2)}</span>
+                                <p class="mb-1 small text-muted">${r.node.description}</p>
+                                ${r.node.tags && r.node.tags.length > 0 ? 
+                                    r.node.tags.map(t => `<span class="badge badge-light mr-1">${t}</span>`).join('') : ''}
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+                $('#knowledgeSearchResults').html(html);
+            }
+        }
+    } catch (error) {
+        console.error('搜索失败:', error);
+    }
+}
+
+// 初始化AI服务
+async function initializeAIServices() {
+    if (!confirm('确定要初始化所有AI服务吗?')) return;
+    
+    try {
+        const response = await fetch('/api/intelligent/initialize', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ start_orchestrator: true })
+        });
+        const result = await response.json();
+        
+        if (result.success) {
+            alert('AI服务初始化成功!');
+            refreshDashboard();
+        }
+    } catch (error) {
+        console.error('初始化失败:', error);
+        alert('初始化失败: ' + error.message);
+    }
+}
+
+// 回车搜索
+$('#knowledgeSearchInput').keypress(function(e) {
+    if (e.which === 13) {
+        searchKnowledge();
+    }
+});
+</script>
+{% endblock %}

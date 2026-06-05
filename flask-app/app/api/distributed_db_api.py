@@ -202,21 +202,21 @@ def test():
             'password_hash': 'test'
         })
         results['insert_test'] = True
-    except:
+    except Exception:
         pass
     
     # 测试查询
     try:
         result = db.query('users', 'SELECT * FROM users WHERE id = ?', (999,), shard_key_value=999)
         results['query_test'] = len(result) > 0
-    except:
+    except Exception:
         pass
     
     # 测试分片分布
     try:
         stats = db.get_stats()
         results['shard_distribution'] = len(stats.get('data_distribution', {})) > 0
-    except:
+    except Exception:
         pass
     
     return jsonify(results)

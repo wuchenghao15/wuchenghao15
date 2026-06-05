@@ -277,7 +277,7 @@ def test():
         search_engine.add_document('test_index', 'test1', {'title': 'Test', 'content': 'Test content'})
         res = search_engine.search('test_index', 'Test')
         results['search_test'] = len(res) > 0
-    except:
+    except Exception:
         pass
     
     # 测试NoSQL
@@ -285,13 +285,13 @@ def test():
         doc_id = nosql_manager.insert('test_collection', {'name': 'Test'})
         found = nosql_manager.find_one('test_collection', {'_id': doc_id})
         results['nosql_test'] = found is not None
-    except:
+    except Exception:
         pass
     
     # 测试综合
     try:
         results['index_test'] = True
-    except:
+    except Exception:
         pass
     
     return jsonify(results)

@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
-MTSCOS 历史版本管理系统 v3.0.0
-功能：版本追踪、版本对比、版本回滚、版本统计、自动升级、云端同步
+MTSCOS 历史版本管理系统 v4.0.0
+功能：版本追踪、版本对比、版本回滚、版本统计、自动升级、云端同步、数据库版本历史记录
 """
 
 import os
@@ -11,6 +11,7 @@ import time
 import logging
 import shutil
 import hashlib
+import sqlite3
 from datetime import datetime
 from typing import Dict, List, Any, Optional, Tuple
 from collections import OrderedDict
@@ -27,14 +28,276 @@ logging.basicConfig(
 
 logger = logging.getLogger('version_manager')
 
+class DatabaseManager:
+    """数据库版本历史记录管理器"""
+    
+    def __init__(self, db_path: str = 'version_history.db'):
+        self.db_path = db_path
+        self.conn = None
+        self._init_database()
+    
+    def _init_database(self):
+        """初始化数据库表"""
+        self.conn = sqlite3.connect(self.db_path)
+        cursor = self.conn.cursor()
+        
+        # 创建版本历史表
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS version_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                version TEXT NOT NULL UNIQUE,
+                release_date TEXT NOT NULL,
+                version_type TEXT NOT NULL,
+                description TEXT,
+                status TEXT DEFAULT 'stable',
+                changes TEXT,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        
+        # 创建更新日志表
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS update_log (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id TEXT,
+                from_version TEXT NOT NULL,
+                to_version TEXT NOT NULL,
+                update_time TEXT DEFAULT CURRENT_TIMESTAMP,
+                success INTEGER DEFAULT 1,
+                backup_path TEXT,
+                ip_address TEXT,
+                user_agent TEXT
+            )
+        ''')
+        
+        # 创建组件版本表
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS component_versions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                component_name TEXT NOT NULL UNIQUE,
+                version TEXT NOT NULL,
+                last_updated TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        
+        # 创建系统配置表
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS system_config (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                config_key TEXT NOT NULL UNIQUE,
+                config_value TEXT,
+                description TEXT,
+                updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        
+        self.conn.commit()
+    
+    def add_version(self, version_info: Dict[str, Any]) -> bool:
+        """添加版本到数据库"""
+        try:
+            cursor = self.conn.cursor()
+            cursor.execute('''
+                INSERT OR REPLACE INTO version_history 
+                (version, release_date, version_type, description, status, changes)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', (
+                version_info['version'],
+                version_info['date'],
+                version_info['type'],
+                version_info['description'],
+                version_info.get('status', 'stable'),
+                json.dumps(version_info.get('changes', []), ensure_ascii=False)
+            ))
+            self.conn.commit()
+            return True
+        except Exception as e:
+            logger.error(f"添加版本失败: {e}")
+            return False
+    
+    def add_update_log(self, from_version: str, to_version: str, user_id: str = None, 
+                       success: bool = True, backup_path: str = None) -> bool:
+        """记录更新日志"""
+        try:
+            cursor = self.conn.cursor()
+            cursor.execute('''
+                INSERT INTO update_log 
+                (user_id, from_version, to_version, success, backup_path)
+                VALUES (?, ?, ?, ?, ?)
+            ''', (user_id, from_version, to_version, 1 if success else 0, backup_path))
+            self.conn.commit()
+            return True
+        except Exception as e:
+            logger.error(f"记录更新日志失败: {e}")
+            return False
+    
+    def get_all_versions(self) -> List[Dict[str, Any]]:
+        """获取所有版本历史"""
+        cursor = self.conn.cursor()
+        cursor.execute('SELECT * FROM version_history ORDER BY release_date DESC')
+        rows = cursor.fetchall()
+        
+        versions = []
+        for row in rows:
+            versions.append({
+                'id': row[0],
+                'version': row[1],
+                'date': row[2],
+                'type': row[3],
+                'description': row[4],
+                'status': row[5],
+                'changes': json.loads(row[6]) if row[6] else [],
+                'created_at': row[7]
+            })
+        return versions
+    
+    def get_version_by_number(self, version: str) -> Optional[Dict[str, Any]]:
+        """根据版本号获取版本信息"""
+        cursor = self.conn.cursor()
+        cursor.execute('SELECT * FROM version_history WHERE version = ?', (version,))
+        row = cursor.fetchone()
+        
+        if row:
+            return {
+                'id': row[0],
+                'version': row[1],
+                'date': row[2],
+                'type': row[3],
+                'description': row[4],
+                'status': row[5],
+                'changes': json.loads(row[6]) if row[6] else [],
+                'created_at': row[7]
+            }
+        return None
+    
+    def get_update_logs(self, user_id: str = None) -> List[Dict[str, Any]]:
+        """获取更新日志"""
+        cursor = self.conn.cursor()
+        if user_id:
+            cursor.execute('SELECT * FROM update_log WHERE user_id = ? ORDER BY update_time DESC', (user_id,))
+        else:
+            cursor.execute('SELECT * FROM update_log ORDER BY update_time DESC')
+        
+        rows = cursor.fetchall()
+        logs = []
+        for row in rows:
+            logs.append({
+                'id': row[0],
+                'user_id': row[1],
+                'from_version': row[2],
+                'to_version': row[3],
+                'update_time': row[4],
+                'success': bool(row[5]),
+                'backup_path': row[6],
+                'ip_address': row[7],
+                'user_agent': row[8]
+            })
+        return logs
+    
+    def set_component_version(self, component_name: str, version: str) -> bool:
+        """设置组件版本"""
+        try:
+            cursor = self.conn.cursor()
+            cursor.execute('''
+                INSERT OR REPLACE INTO component_versions 
+                (component_name, version)
+                VALUES (?, ?)
+            ''', (component_name, version))
+            self.conn.commit()
+            return True
+        except Exception as e:
+            logger.error(f"设置组件版本失败: {e}")
+            return False
+    
+    def get_component_versions(self) -> Dict[str, str]:
+        """获取所有组件版本"""
+        cursor = self.conn.cursor()
+        cursor.execute('SELECT component_name, version FROM component_versions')
+        rows = cursor.fetchall()
+        return {row[0]: row[1] for row in rows}
+    
+    def set_config(self, key: str, value: str, description: str = '') -> bool:
+        """设置系统配置"""
+        try:
+            cursor = self.conn.cursor()
+            cursor.execute('''
+                INSERT OR REPLACE INTO system_config 
+                (config_key, config_value, description)
+                VALUES (?, ?, ?)
+            ''', (key, value, description))
+            self.conn.commit()
+            return True
+        except Exception as e:
+            logger.error(f"设置配置失败: {e}")
+            return False
+    
+    def get_config(self, key: str) -> Optional[str]:
+        """获取系统配置"""
+        cursor = self.conn.cursor()
+        cursor.execute('SELECT config_value FROM system_config WHERE config_key = ?', (key,))
+        row = cursor.fetchone()
+        return row[0] if row else None
+    
+    def get_all_configs(self) -> Dict[str, Dict[str, str]]:
+        """获取所有配置"""
+        cursor = self.conn.cursor()
+        cursor.execute('SELECT config_key, config_value, description FROM system_config')
+        rows = cursor.fetchall()
+        return {row[0]: {'value': row[1], 'description': row[2]} for row in rows}
+    
+    def get_version_statistics(self) -> Dict[str, Any]:
+        """获取版本统计"""
+        cursor = self.conn.cursor()
+        
+        cursor.execute('SELECT COUNT(*) FROM version_history')
+        total_versions = cursor.fetchone()[0]
+        
+        cursor.execute('SELECT COUNT(*) FROM version_history WHERE version_type = ?', ('major',))
+        major_versions = cursor.fetchone()[0]
+        
+        cursor.execute('SELECT COUNT(*) FROM version_history WHERE version_type = ?', ('minor',))
+        minor_versions = cursor.fetchone()[0]
+        
+        cursor.execute('SELECT COUNT(*) FROM version_history WHERE version_type = ?', ('patch',))
+        patch_versions = cursor.fetchone()[0]
+        
+        cursor.execute('SELECT COUNT(*) FROM update_log')
+        total_updates = cursor.fetchone()[0]
+        
+        cursor.execute('SELECT COUNT(*) FROM update_log WHERE success = 1')
+        successful_updates = cursor.fetchone()[0]
+        
+        cursor.execute('SELECT MIN(release_date), MAX(release_date) FROM version_history')
+        dates = cursor.fetchone()
+        
+        return {
+            'total_versions': total_versions,
+            'major_versions': major_versions,
+            'minor_versions': minor_versions,
+            'patch_versions': patch_versions,
+            'total_updates': total_updates,
+            'successful_updates': successful_updates,
+            'first_release': dates[0],
+            'last_release': dates[1],
+            'success_rate': round(successful_updates / total_updates * 100, 2) if total_updates > 0 else 0
+        }
+    
+    def close(self):
+        """关闭数据库连接"""
+        if self.conn:
+            self.conn.close()
+
+
 class VersionModel:
-    """版本数据模型 v2.0"""
+    """版本数据模型 v3.0"""
     
     def __init__(self):
         self.versions = OrderedDict()
         self.current_version = None
         self.version_history = []
+        self.db_manager = DatabaseManager()
         self._load_versions()
+        self._sync_to_database()
     
     def _load_versions(self):
         """加载版本数据"""
@@ -58,13 +321,46 @@ class VersionModel:
             {'version': '3.2.0', 'date': '2026-02-20', 'type': 'minor', 'description': '新增自适应学习引擎', 'status': 'stable'},
             {'version': '3.3.0', 'date': '2026-04-01', 'type': 'minor', 'description': '优化权限系统', 'status': 'stable'},
             {'version': '3.4.0', 'date': '2026-06-02', 'type': 'minor', 'description': '升级自动升级系统v2.0 + AI能力集提升', 'status': 'stable'},
-            {'version': '3.5.0', 'date': '2026-06-03', 'type': 'minor', 'description': '升级版本管理系统v3.0 + 云端同步支持', 'status': 'stable'}
+            {'version': '3.5.0', 'date': '2026-06-03', 'type': 'minor', 'description': '升级版本管理系统v3.0 + 云端同步支持', 'status': 'stable'},
+            {'version': '4.0.0', 'date': '2026-06-03', 'type': 'major', 'description': '重大升级：数据库自动加密系统', 'status': 'stable'},
+            {'version': '4.1.0', 'date': '2026-06-03', 'type': 'minor', 'description': '新增HTTPS强制登录功能', 'status': 'stable'},
+            {'version': '4.2.0', 'date': '2026-06-04', 'type': 'minor', 'description': '升级版本管理系统v4.0 + 数据库版本历史记录', 'status': 'stable'}
         ]
         
         for v in version_definitions:
             self.versions[v['version']] = v
         
-        self.current_version = '3.5.0'
+        self.current_version = '4.2.0'
+    
+    def _sync_to_database(self):
+        """同步版本数据到数据库"""
+        for version, info in self.versions.items():
+            db_version = self.db_manager.get_version_by_number(version)
+            if not db_version:
+                self.db_manager.add_version(info)
+        
+        # 设置组件版本
+        components = {
+            'frontend': '2.3.0',
+            'backend': '3.7.0',
+            'database': '3.7.0',
+            'api': '3.7.0',
+            'ai_engine': '4.1.0',
+            'version_manager': '4.0.0'
+        }
+        for name, version in components.items():
+            self.db_manager.set_component_version(name, version)
+        
+        # 设置系统配置
+        configs = {
+            'current_version': '4.2.0',
+            'auto_upgrade_enabled': 'true',
+            'backup_enabled': 'true',
+            'history_retention_days': '365',
+            'database_history_enabled': 'true'
+        }
+        for key, value in configs.items():
+            self.db_manager.set_config(key, value)
     
     def get_version(self, version: str) -> Optional[Dict[str, Any]]:
         """获取指定版本信息"""
@@ -211,7 +507,10 @@ class VersionModel:
             '3.2.0': ['自适应学习引擎v2.0', '知识图谱', '难度调整'],
             '3.3.0': ['优化权限系统', '教育类型管理'],
             '3.4.0': ['自动升级系统v2.0', 'AI能力集提升', '文档完善'],
-            '3.5.0': ['版本管理系统v3.0', '云端同步支持', '版本对比增强', '自动备份', '版本统计报告']
+            '3.5.0': ['版本管理系统v3.0', '云端同步支持', '版本对比增强', '自动备份', '版本统计报告'],
+            '4.0.0': ['数据库自动加密系统', 'AES-256加密', '多级别加密', '密钥管理', '自动敏感列发现'],
+            '4.1.0': ['HTTPS强制登录', '安全路由自动重定向', '自动SSL证书生成', '安全HTTP头', '内容安全策略'],
+            '4.2.0': ['版本管理系统v4.0', '数据库版本历史记录', '自动归档系统', '组件版本追踪', '系统配置管理']
         }
         return changes.get(version, [])
     
@@ -246,7 +545,7 @@ class VersionModel:
         }
 
 class VersionManager:
-    """版本管理核心类 v3.0"""
+    """版本管理核心类 v4.0"""
     
     def __init__(self):
         self.version_model = VersionModel()
@@ -254,7 +553,8 @@ class VersionManager:
         self.migration_records = {}
         self.backup_dir = Path('.version_backups')
         self.backup_dir.mkdir(exist_ok=True)
-        logger.info("MTSCOS历史版本管理系统 v3.0.0 初始化完成")
+        self.db_manager = self.version_model.db_manager
+        logger.info("MTSCOS历史版本管理系统 v4.0.0 初始化完成")
     
     def get_current_version(self) -> Dict[str, Any]:
         """获取当前版本"""
@@ -503,6 +803,39 @@ class VersionManager:
             'current_index': next((i for i, v in enumerate(versions) if v['version'] == self.version_model.current_version), -1),
             'total_versions': len(versions)
         }
+    
+    def get_database_version_history(self) -> List[Dict[str, Any]]:
+        """从数据库获取版本历史"""
+        return self.db_manager.get_all_versions()
+    
+    def get_database_update_logs(self, user_id: str = None) -> List[Dict[str, Any]]:
+        """从数据库获取更新日志"""
+        return self.db_manager.get_update_logs(user_id)
+    
+    def get_component_versions(self) -> Dict[str, str]:
+        """获取组件版本"""
+        return self.db_manager.get_component_versions()
+    
+    def get_system_configs(self) -> Dict[str, Dict[str, str]]:
+        """获取系统配置"""
+        return self.db_manager.get_all_configs()
+    
+    def get_database_statistics(self) -> Dict[str, Any]:
+        """获取数据库统计信息"""
+        return self.db_manager.get_version_statistics()
+    
+    def record_update_to_database(self, from_version: str, to_version: str, user_id: str = None, 
+                                   success: bool = True, backup_path: str = None) -> bool:
+        """记录更新到数据库"""
+        return self.db_manager.add_update_log(from_version, to_version, user_id, success, backup_path)
+    
+    def set_system_config(self, key: str, value: str, description: str = '') -> bool:
+        """设置系统配置"""
+        return self.db_manager.set_config(key, value, description)
+    
+    def get_system_config(self, key: str) -> Optional[str]:
+        """获取系统配置"""
+        return self.db_manager.get_config(key)
 
 version_manager = VersionManager()
 
@@ -521,20 +854,20 @@ if __name__ == '__main__':
         marker = " *" if v['is_current'] else "  "
         print(f"{marker} {v['version']} - {v['date']} - {v['type']}")
     
-    print("\n=== 版本对比 (3.5.0 vs 3.0.0) ===")
-    comparison = manager.compare_versions('3.5.0', '3.0.0')
+    print("\n=== 版本对比 (4.2.0 vs 4.0.0) ===")
+    comparison = manager.compare_versions('4.2.0', '4.0.0')
     print(json.dumps(comparison, indent=2, ensure_ascii=False))
     
-    print("\n=== 检查更新 (3.3.0) ===")
-    update_info = manager.check_for_updates('3.3.0')
+    print("\n=== 检查更新 (4.0.0) ===")
+    update_info = manager.check_for_updates('4.0.0')
     print(json.dumps(update_info, indent=2, ensure_ascii=False))
     
-    print("\n=== 版本变更日志 (3.5.0) ===")
-    changelog = manager.get_changelog('3.5.0')
+    print("\n=== 版本变更日志 (4.2.0) ===")
+    changelog = manager.get_changelog('4.2.0')
     print(json.dumps(changelog, indent=2, ensure_ascii=False))
     
-    print("\n=== 模拟升级到3.5.0 ===")
-    simulation = manager.simulate_upgrade('3.5.0')
+    print("\n=== 模拟升级到4.2.0 ===")
+    simulation = manager.simulate_upgrade('4.2.0')
     print(json.dumps(simulation, indent=2, ensure_ascii=False))
     
     print("\n=== 验证版本一致性 ===")
@@ -542,7 +875,7 @@ if __name__ == '__main__':
     print(json.dumps(validation, indent=2, ensure_ascii=False))
     
     print("\n=== 记录更新 ===")
-    manager.record_update('3.4.0', '3.5.0', 'user123')
+    manager.record_update('4.1.0', '4.2.0', 'user123')
     print("更新记录成功")
     
     print("\n=== 生成版本报告 ===")
@@ -554,3 +887,31 @@ if __name__ == '__main__':
     print("\n=== 导出版本数据 ===")
     export_path = manager.export_version_data_to_file()
     print(f"数据已导出到: {export_path}")
+    
+    print("\n=== 数据库版本历史记录 ===")
+    db_history = manager.get_database_version_history()
+    print(f"数据库中版本记录数: {len(db_history)}")
+    for v in db_history[:3]:
+        print(f"  - {v['version']} ({v['date']})")
+    
+    print("\n=== 数据库统计信息 ===")
+    db_stats = manager.get_database_statistics()
+    print(json.dumps(db_stats, indent=2, ensure_ascii=False))
+    
+    print("\n=== 组件版本 ===")
+    components = manager.get_component_versions()
+    print(json.dumps(components, indent=2, ensure_ascii=False))
+    
+    print("\n=== 系统配置 ===")
+    configs = manager.get_system_configs()
+    print(json.dumps(configs, indent=2, ensure_ascii=False))
+    
+    print("\n=== 记录更新到数据库 ===")
+    success = manager.record_update_to_database('4.1.0', '4.2.0', 'admin', True, '/backups/v4.1.0')
+    print(f"数据库更新记录成功: {success}")
+    
+    print("\n=== 获取更新日志 ===")
+    logs = manager.get_database_update_logs()
+    print(f"更新日志记录数: {len(logs)}")
+    if logs:
+        print(json.dumps(logs[-1], indent=2, ensure_ascii=False))

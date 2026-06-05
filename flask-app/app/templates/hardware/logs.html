@@ -1,0 +1,127 @@
+{% extends "hardware/base.html" %}
+
+{% block title %}系统日志 - 硬件管理系统{% endblock %}
+
+{% block page_title %}系统日志{% endblock %}
+{% block page_subtitle %}查看和管理系统操作日志{% endblock %}
+
+{% block content %}
+<div class="content-full">
+    <!-- 日志筛选 -->
+    <section class="card">
+        <div class="card-header">
+            <div class="card-title">
+                <!-- Icon fa-file-text not found -->
+                <h3>系统日志</h3>
+            </div>
+            <div class="card-actions">
+                <select id="log-level" class="form-control" style="width: 150px;">
+                    <option value="all">全部级别</option>
+                    <option value="info">信息</option>
+                    <option value="warning">警告</option>
+                    <option value="error">错误</option>
+                    <option value="debug">调试</option>
+                </select>
+                <input type="text" id="search-input" class="form-control" placeholder="搜索日志..." style="width: 250px;">
+                <button class="btn btn-secondary" onclick="filterLogs()">
+                    <!-- Icon fa-filter not found -->
+                    筛选
+                </button>
+                <button class="btn btn-danger" onclick="clearLogs()">
+                    <!-- Icon fa-trash not found -->
+                    清空日志
+                </button>
+            </div>
+        </div>
+        <div class="logs-container">
+            {% if logs %}
+                {% for log in logs %}
+                <div class="log-item {{ log.level }}">
+                    <div class="log-level">
+                        <span class="level-icon">
+                            {% if log.level == 'info' %}<svg class="svg-icon" viewBox="0 0 512 512" fill="#17a2b8" width="16" height="16"><path d="M256 8C119 8 8 119 8 256s111 248 248 248 248-111 248-248S393 8 256 8zm0 112c-22.1 0-40 17.9-40 40s17.9 40 40 40 40-17.9 40-40-17.9-40-40-40zm64 256H192c-13.3 0-24-10.7-24-24v-16c0-13.3 10.7-24 24-24h24v-64h-24c-13.3 0-24-10.7-24-24v-16c0-13.3 10.7-24 24-24h64c13.3 0 24 10.7 24 24v104h24c13.3 0 24 10.7 24 24v16c0 13.3-10.7 24-24 24z"/></svg>{% endif %}
+                            {% if log.level == 'warning' %}<svg class="svg-icon" viewBox="0 0 576 512" fill="#ffc107" width="16" height="16"><path d="M569.5 412L334.1 55c-11.7-19.5-42-19.5-53.7 0L6.5 412c-11.7 19.5 2.6 44 26.8 44h499.4c24.2 0 38.5-24.5 26.8-44zm-277-112c-13.3 0-24-10.7-24-24v-96c0-13.3 10.7-24 24-24s24 10.7 24 24v96c0 13.3-10.7 24-24 24zm0 160c-17.7 0-32-14.3-32-32s14.3-32 32-32 32 14.3 32 32-14.3 32-32 32z"/></svg>{% endif %}
+                            {% if log.level == 'error' %}<svg class="svg-icon" viewBox="0 0 352 512" width="16" height="16"><path d="M242.7 256l100.1-100.1c4.7-4.7 4.7-12.3 0-17l-22.6-22.6c-4.7-4.7-12.3-4.7-17 0L203.1 216.4 103 116.3c-4.7-4.7-12.3-4.7-17 0L63.4 138.9c-4.7 4.7-4.7 12.3 0 17L163.5 256 63.4 356.1c-4.7 4.7-4.7 12.3 0 17l22.6 22.6c4.7 4.7 12.3 4.7 17 0l100.1-100.1 100.1 100.1c4.7 4.7 12.3 4.7 17 0l22.6-22.6c4.7-4.7 4.7-12.3 0-17L242.7 256z"/></svg>{% endif %}
+                            {% if log.level == 'debug' %}<!-- Icon fa-bug not found -->{% endif %}
+                        </span>
+                        <span class="level-text">{{ log.level | capitalize }}</span>
+                    </div>
+                    <div class="log-content">
+                        <div class="log-message">{{ log.message }}</div>
+                        <div class="log-meta">
+                            <span class="log-source">{{ log.source or 'system' }}</span>
+                            <span class="log-time">{{ log.timestamp }}</span>
+                        </div>
+                    </div>
+                    <button class="log-action" onclick="deleteLog({{ log.id }})">
+                        <!-- Icon fa-trash not found -->
+                    </button>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                    <!-- Icon fa-file-text not found -->
+                    <div>暂无日志记录</div>
+                </div>
+            {% endif %}
+        </div>
+    </section>
+</div>
+
+<script>
+function filterLogs() {
+    const level = document.getElementById('log-level').value;
+    const search = document.getElementById('search-input').value;
+    
+    fetch(`/api/hardware/logs?level=${level}&q=${search}`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                showToast('日志筛选完成');
+            }
+        });
+}
+
+function deleteLog(logId) {
+    if (confirm('确定要删除这条日志吗？')) {
+        fetch(`/api/hardware/logs/${logId}`, { method: 'DELETE' })
+            .then(res => res.json())
+            .then(result => {
+                if (result.success) {
+                    showToast('日志删除成功');
+                    location.reload();
+                } else {
+                    showToast(result.message, 'error');
+                }
+            });
+    }
+}
+
+function clearLogs() {
+    if (confirm('确定要清空所有日志吗？此操作不可恢复！')) {
+        fetch('/api/hardware/logs/clear', { method: 'POST' })
+            .then(res => res.json())
+            .then(result => {
+                if (result.success) {
+                    showToast('日志已清空');
+                    location.reload();
+                } else {
+                    showToast(result.message, 'error');
+                }
+            });
+    }
+}
+
+function showToast(message, type = 'success') {
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+</script>
+{% endblock %}

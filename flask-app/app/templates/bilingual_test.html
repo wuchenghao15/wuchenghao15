@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>双语对比测试</title>
+    <style>
+        /* 基础样式 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* 头部样式 */
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header h1 {
+            color: #343a40;
+            font-size: 24px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .back-btn {
+            background: #f8f9fa;
+            color: #343a40;
+            border: 2px solid #dee2e6;
+            padding: 8px 16px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .back-btn:hover {
+            background: #e9ecef;
+            border-color: #adb5bd;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            font-size: 16px;
+        }
+        
+        .username {
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .logout-btn {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .logout-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
+        }
+        
+        /* 主要内容样式 */
+        .container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+        }
+        
+        .test-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+            max-width: 1000px;
+            width: 100%;
+        }
+        
+        .test-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .test-title {
+            color: #343a40;
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+        
+        .test-subtitle {
+            color: #6c757d;
+            font-size: 16px;
+        }
+        
+        .test-info {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        
+        .info-row:last-child {
+            margin-bottom: 0;
+        }
+        
+        .info-label {
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .info-value {
+            color: #6c757d;
+        }
+        
+        .test-content {
+            margin-bottom: 30px;
+        }
+        
+        .question-section {
+            background: #fff3cd;
+            border: 1px solid #ffeeba;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+        
+        .question-number {
+            color: #856404;
+            font-weight: 700;
+            font-size: 18px;
+            margin-bottom: 15px;
+        }
+        
+        .language-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #ffeeba;
+            padding-bottom: 10px;
+        }
+        
+        .language-tab {
+            background: #ffeeba;
+            color: #856404;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .language-tab.active {
+            background: #856404;
+            color: white;
+        }
+        
+        .language-tab:hover {
+            background: #715603;
+            color: white;
+        }
+        
+        .language-content {
+            display: none;
+        }
+        
+        .language-content.active {
+            display: block;
+        }
+        
+        .question-text {
+            color: #343a40;
+            font-size: 20px;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+        
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .option {
+            background: white;
+            border: 2px solid #ffeeba;
+            border-radius: 10px;
+            padding: 15px 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .option:hover {
+            border-color: #856404;
+            background: #fff9c4;
+            transform: translateX(5px);
+        }
+        
+        .option.selected {
+            border-color: #28a745;
+            background: #d4edda;
+        }
+        
+        .option input[type="radio"] {
+            accent-color: #856404;
+            width: 18px;
+            height: 18px;
+        }
+        
+        .option-label {
+            font-size: 16px;
+            color: #343a40;
+        }
+        
+        .test-actions {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+        }
+        
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex: 1;
+            max-width: 200px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #c82333;
+            transform: translateY(-2px);
+        }
+        
+        /* 页脚样式 */
+        .footer {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            text-align: center;
+            color: #6c757d;
+            font-size: 14px;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .header {
+                padding: 15px 20px;
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .header-left {
+                flex-direction: column;
+                gap: 10px;
+                text-align: center;
+            }
+            
+            .header h1 {
+                font-size: 20px;
+            }
+            
+            .user-info {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .container {
+                padding: 20px;
+            }
+            
+            .test-container {
+                padding: 20px;
+            }
+            
+            .test-title {
+                font-size: 24px;
+            }
+            
+            .info-row {
+                flex-direction: column;
+                gap: 5px;
+            }
+            
+            .test-actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .btn {
+                max-width: none;
+            }
+            
+            .language-tabs {
+                flex-direction: column;
+            }
+            
+            .language-tab {
+                width: 100%;
+            }
+        }
+    </style>
+    <!-- FontAwesome CDN removed -->
+
+<style>
+.svg-icon {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    vertical-align: -0.125em;
+    fill: currentColor;
+}
+</style>
+</head>
+<body>
+    <!-- 头部 -->
+    <header class="header">
+        <div class="header-left">
+            <a href="/test-system" class="back-btn">
+                <svg class="svg-icon" viewBox="0 0 448 512" width="16" height="16"><path d="M257.5 445.1l-22.2 22.2c-9.4 9.4-24.6 9.4-33.9 0L7 273c-9.4-9.4-9.4-24.6 0-33.9L201.4 44.7c9.4-9.4 24.6-9.4 33.9 0l22.2 22.2c9.5 9.5 9.3 25-.4 34.3L136.6 216H424c13.3 0 24 10.7 24 24v32c0 13.3-10.7 24-24 24H136.6l120.5 114.8c9.8 9.3 10 24.8.4 34.3z"/></svg> 返回主页
+            </a>
+            <h1>
+                <span>🌐</span>
+                双语对比测试
+            </h1>
+        </div>
+        <div class="user-info">
+            <span class="username">欢迎, {{ user.username }}！</span>
+            <a href="/auth/logout" class="logout-btn">退出登录</a>
+        </div>
+    </header>
+    
+    <!-- 主要内容 -->
+    <main class="container">
+        <div class="test-container">
+            <div class="test-header">
+                <h2 class="test-title">
+                    <span>📝</span>
+                    双语对比测试（日语&英语&汉语）
+                </h2>
+                <p class="test-subtitle">同时测试您的日语和英语能力，进行对比分析</p>
+            </div>
+            
+            <!-- 多语言翻译功能 -->
+            <div class="translation-section" style="background: #e3f2fd; border: 1px solid #bbdefb; border-radius: 12px; padding: 25px; margin-bottom: 30px;">
+                <h3 style="color: #1976d2; font-size: 20px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                    <span>🔄</span>
+                    多语言翻译工具
+                </h3>
+                <div class="translation-container" style="display: flex; flex-direction: column; gap: 20px;">
+                    <div class="translation-input" style="display: flex; flex-direction: column; gap: 10px;">
+                        <div class="language-selector" style="display: flex; gap: 10px; align-items: center;">
+                            <label style="font-weight: 600; color: #343a40;">源语言：</label>
+                            <select id="source-language" style="padding: 10px; border: 2px solid #bbdefb; border-radius: 8px; font-size: 16px;">
+                                <option value="japanese">🇯🇵 日语</option>
+                                <option value="english">🇬🇧 英语</option>
+                                <option value="chinese">🇨🇳 汉语</option>
+                            </select>
+                            
+                            <button id="swap-languages" style="background: #1976d2; color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-size: 18px; transition: all 0.3s ease;">
+                                ⇄
+                            </button>
+                            
+                            <label style="font-weight: 600; color: #343a40;">目标语言：</label>
+                            <select id="target-language" style="padding: 10px; border: 2px solid #bbdefb; border-radius: 8px; font-size: 16px;">
+                                <option value="english">🇬🇧 英语</option>
+                                <option value="japanese">🇯🇵 日语</option>
+                                <option value="chinese">🇨🇳 汉语</option>
+                            </select>
+                        </div>
+                        
+                        <div style="display: flex; flex-direction: column; gap: 15px;">
+                            <textarea 
+                                id="translation-input" 
+                                placeholder="请输入要翻译的文本..." 
+                                style="padding: 15px; border: 2px solid #bbdefb; border-radius: 8px; font-size: 16px; min-height: 120px; resize: vertical; font-family: inherit;">
+                            </textarea>
+                            
+                            <button 
+                                id="translate-btn" 
+                                style="background: linear-gradient(135deg, #1976d2 0%, #2196f3 100%); color: white; border: none; padding: 12px 25px; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; align-self: flex-start;">
+                                <span>🌐</span> 开始翻译
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="translation-result" style="background: white; border: 2px solid #bbdefb; border-radius: 8px; padding: 15px; min-height: 120px;">
+                        <div style="font-weight: 600; color: #1976d2; margin-bottom: 10px;">翻译结果：</div>
+                        <div id="translation-output" style="color: #343a40; line-height: 1.6; font-size: 16px;">请输入文本进行翻译</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="test-info">
+                <div class="info-row">
+                    <span class="info-label">测试类型：</span>
+                    <span class="info-value">双语对比测试</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">题目数量：</span>
+                    <span class="info-value">15组（30题）</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">测试时间：</span>
+                    <span class="info-value">45分钟</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">当前进度：</span>
+                    <span class="info-value">1/15</span>
+                </div>
+            </div>
+            
+            <div class="test-content">
+                <div class="question-section">
+                    <div class="question-number">题目组 1/15</div>
+                    
+                    <!-- 语言切换标签 -->
+                    <div class="language-tabs">
+                        <button class="language-tab active" data-language="japanese">
+                            <span>🇯🇵</span> 日语
+                        </button>
+                        <button class="language-tab" data-language="english">
+                            <span>🇬🇧</span> 英语
+                        </button>
+                        <button class="language-tab" data-language="chinese">
+                            <span>🇨🇳</span> 汉语
+                        </button>
+                    </div>
+                    
+                    <!-- 日语题目内容 -->
+                    <div class="language-content active" id="japanese-content">
+                        <div class="question-text">
+                            このレストランの料理は_____です。
+                        </div>
+                        <div class="options">
+                            <label class="option">
+                                <input type="radio" name="japanese1" value="A">
+                                <span class="option-label">A. おいしい</span>
+                            </label>
+                            <label class="option">
+                                <input type="radio" name="japanese1" value="B">
+                                <span class="option-label">B. おいしくて</span>
+                            </label>
+                            <label class="option">
+                                <input type="radio" name="japanese1" value="C">
+                                <span class="option-label">C. おいしかった</span>
+                            </label>
+                            <label class="option">
+                                <input type="radio" name="japanese1" value="D">
+                                <span class="option-label">D. おいしくない</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- 英语题目内容 -->
+                    <div class="language-content" id="english-content">
+                        <div class="question-text">
+                            The food in this restaurant is very _____.
+                        </div>
+                        <div class="options">
+                            <label class="option">
+                                <input type="radio" name="english1" value="A">
+                                <span class="option-label">A. delicious</span>
+                            </label>
+                            <label class="option">
+                                <input type="radio" name="english1" value="B">
+                                <span class="option-label">B. taste</span>
+                            </label>
+                            <label class="option">
+                                <input type="radio" name="english1" value="C">
+                                <span class="option-label">C. tasting</span>
+                            </label>
+                            <label class="option">
+                                <input type="radio" name="english1" value="D">
+                                <span class="option-label">D. tasted</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- 汉语题目内容 -->
+                    <div class="language-content" id="chinese-content">
+                        <div class="question-text">
+                            这家餐厅的食物非常_____。
+                        </div>
+                        <div class="options">
+                            <label class="option">
+                                <input type="radio" name="chinese1" value="A">
+                                <span class="option-label">A. 美味的</span>
+                            </label>
+                            <label class="option">
+                                <input type="radio" name="chinese1" value="B">
+                                <span class="option-label">B. 味道</span>
+                            </label>
+                            <label class="option">
+                                <input type="radio" name="chinese1" value="C">
+                                <span class="option-label">C. 品尝</span>
+                            </label>
+                            <label class="option">
+                                <input type="radio" name="chinese1" value="D">
+                                <span class="option-label">D. 品尝过</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="test-actions">
+                <button class="btn btn-secondary">
+                    <!-- Icon fa-save not found --> 保存
+                </button>
+                <button class="btn btn-primary">
+                    <!-- Icon fa-arrow-right not found --> 下一题组
+                </button>
+                <button class="btn btn-danger">
+                    <svg class="svg-icon" viewBox="0 0 352 512" width="16" height="16"><path d="M242.7 256l100.1-100.1c4.7-4.7 4.7-12.3 0-17l-22.6-22.6c-4.7-4.7-12.3-4.7-17 0L203.1 216.4 103 116.3c-4.7-4.7-12.3-4.7-17 0L63.4 138.9c-4.7 4.7-4.7 12.3 0 17L163.5 256 63.4 356.1c-4.7 4.7-4.7 12.3 0 17l22.6 22.6c4.7 4.7 12.3 4.7 17 0l100.1-100.1 100.1 100.1c4.7 4.7 12.3 4.7 17 0l22.6-22.6c4.7-4.7 4.7-12.3 0-17L242.7 256z"/></svg> 结束测试
+                </button>
+            </div>
+        </div>
+    </main>
+    
+    <!-- 页脚 -->
+    <footer class="footer">
+        <p>&copy; 2026 统一语言测试系统. 保留所有权利.</p>
+    </footer>
+    
+    <script>
+        // 语言切换功能 - 支持汉语
+        document.querySelectorAll('.language-tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                // 移除所有标签的active类
+                document.querySelectorAll('.language-tab').forEach(t => t.classList.remove('active'));
+                // 添加当前标签的active类
+                this.classList.add('active');
+                
+                // 获取当前语言
+                const language = this.dataset.language;
+                
+                // 隐藏所有语言内容
+                document.querySelectorAll('.language-content').forEach(content => {
+                    content.classList.remove('active');
+                });
+                
+                // 显示当前语言内容
+                document.getElementById(`${language}-content`).classList.add('active');
+            });
+        });
+        
+        // 选项选择逻辑
+        document.querySelectorAll('.option').forEach(option => {
+            option.addEventListener('click', function() {
+                // 移除当前语言下其他选项的选中状态
+                const languageContent = this.closest('.language-content');
+                languageContent.querySelectorAll('.option').forEach(opt => {
+                    opt.classList.remove('selected');
+                });
+                // 添加当前选项的选中状态
+                this.classList.add('selected');
+            });
+        });
+        
+        // 多语言翻译功能
+        document.getElementById('translate-btn').addEventListener('click', function() {
+            const sourceLang = document.getElementById('source-language').value;
+            const targetLang = document.getElementById('target-language').value;
+            const inputText = document.getElementById('translation-input').value.trim();
+            const outputDiv = document.getElementById('translation-output');
+            
+            if (!inputText) {
+                outputDiv.innerHTML = '<span style="color: #dc3545;">请输入要翻译的文本</span>';
+                return;
+            }
+            
+            // 模拟翻译功能（实际项目中应调用API）
+            outputDiv.innerHTML = '<span style="color: #6c757d;">正在翻译...</span>';
+            
+            setTimeout(() => {
+                // 简单的模拟翻译结果
+                const translations = {
+                    japanese: {
+                        english: `[日语→英语翻译结果] ${inputText}`,
+                        chinese: `[日语→汉语翻译结果] ${inputText}`,
+                        japanese: inputText
+                    },
+                    english: {
+                        japanese: `[英语→日语翻译结果] ${inputText}`,
+                        chinese: `[英语→汉语翻译结果] ${inputText}`,
+                        english: inputText
+                    },
+                    chinese: {
+                        japanese: `[汉语→日语翻译结果] ${inputText}`,
+                        english: `[汉语→英语翻译结果] ${inputText}`,
+                        chinese: inputText
+                    }
+                };
+                
+                const result = translations[sourceLang][targetLang];
+                outputDiv.textContent = result;
+            }, 1000);
+        });
+        
+        // 交换语言功能
+        document.getElementById('swap-languages').addEventListener('click', function() {
+            const sourceSelect = document.getElementById('source-language');
+            const targetSelect = document.getElementById('target-language');
+            const temp = sourceSelect.value;
+            sourceSelect.value = targetSelect.value;
+            targetSelect.value = temp;
+        });
+        
+        // 测试页面中途退出限制
+        let testStarted = true; // 假设进入页面即开始测试
+        
+        // 监听窗口关闭事件
+        window.addEventListener('beforeunload', function(e) {
+            if (testStarted) {
+                e.preventDefault();
+                e.returnValue = '';
+                return '您正在参加测试，确定要中途退出吗？退出后测试将视为无效。';
+            }
+        });
+        
+        // 监听页面导航事件
+        document.addEventListener('click', function(e) {
+            // 检查是否点击了退出测试的按钮
+            if (e.target.closest('.btn-danger') && testStarted) {
+                if (!confirm('您正在参加测试，确定要中途退出吗？退出后测试将视为无效。')) {
+                    e.preventDefault();
+                }
+            }
+            
+            // 检查是否点击了返回按钮
+            if (e.target.closest('.back-btn') && testStarted) {
+                if (!confirm('您正在参加测试，确定要中途退出吗？退出后测试将视为无效。')) {
+                    e.preventDefault();
+                }
+            }
+        });
+    </script>
+</body>
+</html>

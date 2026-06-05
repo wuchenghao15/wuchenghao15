@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系统管理中心 - MTSCOS AI</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --primary-color: #667eea;
+            --secondary-color: #764ba2;
+            --success-color: #28a745;
+            --warning-color: #f59e0b;
+            --danger-color: #dc3545;
+            --info-color: #17a2b8;
+            --dark-bg: #0f0f1a;
+            --dark-card: #1a1a2e;
+            --dark-border: #2a2a4a;
+            --dark-hover: rgba(102, 126, 234, 0.1);
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 50%, #16213e 100%);
+            min-height: 100vh;
+            color: #e0e0e0;
+        }
+        .auth-denied {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .auth-denied-card {
+            background: var(--dark-card);
+            border-radius: 20px;
+            padding: 50px;
+            text-align: center;
+            border: 1px solid var(--dark-border);
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        .auth-denied-icon { font-size: 80px; margin-bottom: 20px; color: var(--danger-color); }
+        .auth-denied-title { font-size: 28px; font-weight: 700; margin-bottom: 15px; color: #e0e0e0; }
+        .auth-denied-message { font-size: 16px; color: #888; margin-bottom: 30px; line-height: 1.6; }
+        .auth-denied-btn {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s ease;
+        }
+        .auth-denied-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4); }
+        
+        .main-container { display: flex; min-height: 100vh; }
+        .sidebar {
+            width: 260px;
+            background: var(--dark-card);
+            border-right: 1px solid var(--dark-border);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            overflow-y: auto;
+        }
+        .sidebar-header { padding-bottom: 20px; border-bottom: 1px solid var(--dark-border); margin-bottom: 20px; }
+        .logo-icon {
+            width: 45px; height: 45px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            border-radius: 12px; display: flex; align-items: center; justify-content: center;
+            font-size: 24px; margin-bottom: 15px;
+        }
+        .sidebar-title { font-size: 18px; font-weight: 700; color: #e0e0e0; }
+        .sidebar-subtitle { font-size: 12px; color: #888; margin-top: 3px; }
+        
+        .nav-menu { flex: 1; }
+        .nav-item {
+            display: flex; align-items: center; gap: 12px;
+            padding: 12px 15px; border-radius: 10px; margin-bottom: 5px;
+            cursor: pointer; transition: all 0.3s ease; color: #888; text-decoration: none;
+        }
+        .nav-item:hover { background: var(--dark-hover); color: #e0e0e0; }
+        .nav-item.active {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(118, 75, 162, 0.2));
+            color: #e0e0e0; border-left: 3px solid var(--primary-color);
+        }
+        .nav-icon { font-size: 18px; }
+        .nav-text { font-size: 14px; font-weight: 500; }
+        .nav-divider { height: 1px; background: var(--dark-border); margin: 15px 0; }
+        
+        .sidebar-footer { padding-top: 20px; border-top: 1px solid var(--dark-border); }
+        .user-card {
+            display: flex; align-items: center; gap: 12px;
+            padding: 12px; background: rgba(255, 255, 255, 0.03); border-radius: 10px;
+            margin-bottom: 15px;
+        }
+        .user-avatar {
+            width: 40px; height: 40px; border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            display: flex; align-items: center; justify-content: center; font-size: 18px;
+        }
+        .user-info { flex: 1; }
+        .user-name { font-size: 14px; font-weight: 600; color: #e0e0e0; }
+        .user-role { font-size: 12px; color: #888; }
+        .logout-btn {
+            width: 100%; padding: 10px;
+            background: rgba(220, 53, 69, 0.1); border: 1px solid rgba(220, 53, 69, 0.3);
+            border-radius: 8px; color: var(--danger-color); font-size: 13px; font-weight: 600;
+            cursor: pointer; transition: all 0.3s ease;
+        }
+        .logout-btn:hover { background: var(--danger-color); color: white; border-color: var(--danger-color); }
+        
+        .content-area { flex: 1; margin-left: 260px; padding: 30px; min-height: 100vh; }
+        .page-header { margin-bottom: 30px; }
+        .page-title { font-size: 28px; font-weight: 700; color: #e0e0e0; margin-bottom: 8px; }
+        .page-subtitle { font-size: 14px; color: #888; }
+        
+        .stats-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px; margin-bottom: 30px;
+        }
+        .stat-card {
+            background: var(--dark-card); padding: 25px; border-radius: 16px;
+            border: 1px solid var(--dark-border); transition: all 0.3s ease;
+        }
+        .stat-card:hover { border-color: var(--primary-color); transform: translateY(-3px); box-shadow: 0 10px 30px rgba(102, 126, 234, 0.15); }
+        .stat-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .stat-icon {
+            width: 45px; height: 45px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 22px; background: rgba(102, 126, 234, 0.15);
+        }
+        .stat-value {
+            font-size: 36px; font-weight: 700;
+            background: linear-gradient(135deg, #fff, #b8b8d0);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .stat-label { font-size: 13px; color: #888; margin-top: 5px; text-transform: uppercase; letter-spacing: 1px; }
+        .stat-bar { height: 5px; background: rgba(255, 255, 255, 0.1); border-radius: 3px; margin-top: 15px; overflow: hidden; }
+        .stat-bar-fill {
+            height: 100%; border-radius: 3px;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            transition: width 0.5s ease;
+        }
+        .status-dot { width: 10px; height: 10px; border-radius: 50%; animation: pulse 2s ease-in-out infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .status-dot.normal { background: var(--success-color); }
+        .status-dot.warning { background: var(--warning-color); }
+        .status-dot.critical { background: var(--danger-color); }
+        
+        .panel {
+            background: var(--dark-card); border-radius: 16px; border: 1px solid var(--dark-border);
+            overflow: hidden; margin-bottom: 30px;
+        }
+        .panel-header {
+            background: rgba(0, 0, 0, 0.2); padding: 20px 25px;
+            border-bottom: 1px solid var(--dark-border);
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .panel-title { font-size: 18px; font-weight: 600; color: #e0e0e0; }
+        .panel-content { padding: 25px; }
+        
+        .form-group { margin-bottom: 20px; }
+        .form-label { display: block; font-size: 14px; font-weight: 600; color: #e0e0e0; margin-bottom: 8px; }
+        .form-control {
+            width: 100%; padding: 12px 15px; border: 1px solid var(--dark-border);
+            border-radius: 10px; background: rgba(0, 0, 0, 0.2);
+            color: #e0e0e0; font-size: 14px; transition: all 0.3s ease;
+        }
+        .form-control:focus {
+            outline: none; border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        .form-control::placeholder { color: #666; }
+        .form-select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 12px center; background-repeat: no-repeat;
+            background-size: 16px; padding-right: 40px;
+        }
+        .form-textarea { min-height: 100px; resize: vertical; }
+        
+        .btn { padding: 12px 24px; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; }
+        .btn-primary { background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); color: white; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4); }
+        .btn-secondary { background: rgba(255, 255, 255, 0.1); color: #e0e0e0; border: 1px solid var(--dark-border); }
+        .btn-secondary:hover { background: rgba(255, 255, 255, 0.15); }
+        .btn-danger { background: rgba(220, 53, 69, 0.1); color: var(--danger-color); border: 1px solid rgba(220, 53, 69, 0.3); }
+        .btn-danger:hover { background: var(--danger-color); color: white; }
+        .btn-group { display: flex; gap: 12px; }
+        
+        .alert { padding: 15px 20px; border-radius: 10px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px; }
+        .alert-success { background: rgba(40, 167, 69, 0.1); border: 1px solid rgba(40, 167, 69, 0.3); color: var(--success-color); }
+        .alert-error { background: rgba(220, 53, 69, 0.1); border: 1px solid rgba(220, 53, 69, 0.3); color: var(--danger-color); }
+        .alert-warning { background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); color: var(--warning-color); }
+        
+        .tab-container {
+            display: flex; gap: 5px; margin-bottom: 25px;
+            background: var(--dark-card); padding: 5px; border-radius: 12px;
+            border: 1px solid var(--dark-border);
+        }
+        .tab-item {
+            padding: 12px 24px; border-radius: 8px; font-size: 14px; font-weight: 600;
+            cursor: pointer; transition: all 0.3s ease; color: #888;
+            border: none; background: transparent;
+        }
+        .tab-item.active { background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); color: white; }
+        .tab-item:hover:not(.active) { background: rgba(255, 255, 255, 0.05); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; }
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        
+        .permission-table { width: 100%; border-collapse: collapse; }
+        .permission-table th, .permission-table td {
+            padding: 12px 15px; text-align: left;
+            border-bottom: 1px solid var(--dark-border);
+        }
+        .permission-table th {
+            font-weight: 600; color: #888; font-size: 13px;
+            text-transform: uppercase; letter-spacing: 1px;
+        }
+        .permission-table tr:hover { background: rgba(255, 255, 255, 0.03); }
+        .permission-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+        .permission-badge.allowed { background: rgba(40, 167, 69, 0.1); color: var(--success-color); }
+        .permission-badge.denied { background: rgba(220, 53, 69, 0.1); color: var(--danger-color); }
+        
+        .language-options { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; }
+        .language-option {
+            padding: 20px; background: rgba(255, 255, 255, 0.03);
+            border: 2px solid var(--dark-border); border-radius: 12px;
+            cursor: pointer; transition: all 0.3s ease; text-align: center;
+        }
+        .language-option:hover { border-color: var(--primary-color); background: rgba(102, 126, 234, 0.1); }
+        .language-option.selected {
+            border-color: var(--primary-color);
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.15), rgba(118, 75, 162, 0.15));
+        }
+        .language-flag { font-size: 32px; margin-bottom: 10px; }
+        .language-name { font-size: 14px; font-weight: 600; color: #e0e0e0; }
+        .language-code { font-size: 12px; color: #888; margin-top: 3px; }
+        
+        .alert-list { list-style: none; }
+        .alert-item {
+            padding: 15px; border-radius: 10px; margin-bottom: 12px;
+            border-left: 4px solid; background: rgba(255, 255, 255, 0.03);
+        }
+        .alert-item.critical { border-color: var(--danger-color); }
+        .alert-item.warning { border-color: var(--warning-color); }
+        .alert-item.info { border-color: var(--info-color); }
+        .alert-title { font-weight: 600; margin-bottom: 5px; }
+        .alert-time { font-size: 12px; color: #888; }
+        
+        .empty-state { text-align: center; padding: 40px; color: #666; }
+        .empty-state-icon { font-size: 48px; margin-bottom: 15px; }
+        
+        .toggle-switch {
+            position: relative; width: 50px; height: 28px;
+            appearance: none; background: #333; border-radius: 14px;
+            cursor: pointer; transition: all 0.3s ease;
+        }
+        .toggle-switch:checked { background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); }
+        .toggle-switch::before {
+            content: ''; position: absolute; width: 24px; height: 24px;
+            background: white; border-radius: 50%; top: 2px; left: 2px;
+            transition: all 0.3s ease;
+        }
+        .toggle-switch:checked::before { left: 24px; }
+        .toggle-label { display: flex; align-items: center; gap: 12px; }
+        
+        @media (max-width: 768px) {
+            .sidebar { width: 100%; position: relative; }
+            .content-area { margin-left: 0; padding: 20px; }
+            .grid-2, .grid-3 { grid-template-columns: 1fr; }
+            .language-options { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+    {% if not user or not user.is_authenticated or not has_access %}
+    <div class="auth-denied">
+        <div class="auth-denied-card">
+            <div class="auth-denied-icon">{{ access_error.icon if access_error else '🚫' }}</div>
+            <h2 class="auth-denied-title">{{ access_error.title if access_error else '访问被拒绝' }}</h2>
+            <p class="auth-denied-message">{{ access_error.message if access_error else '您无权访问此页面' }}</p>
+            {% if access_error and access_error.code == 'Unauthorized' %}
+            <a href="/auth/login" class="auth-denied-btn">立即登录</a>
+            {% else %}
+            <a href="/" class="auth-denied-btn">返回首页</a>
+            {% endif %}
+        </div>
+    </div>
+    {% else %}
+    <div class="main-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo-icon">🧠</div>
+                <div>
+                    <div class="sidebar-title">MTSCOS AI</div>
+                    <div class="sidebar-subtitle">智能学习评估系统</div>
+                </div>
+            </div>
+
+            <nav class="nav-menu">
+                <a href="#dashboard" class="nav-item active" onclick="showTab('dashboard')">
+                    <span class="nav-icon">📊</span>
+                    <span class="nav-text">系统概览</span>
+                </a>
+                <a href="#system" class="nav-item" onclick="showTab('system')">
+                    <span class="nav-icon">⚙️</span>
+                    <span class="nav-text">系统设置</span>
+                </a>
+                <a href="#security" class="nav-item" onclick="showTab('security')">
+                    <span class="nav-icon">🔒</span>
+                    <span class="nav-text">安全设置</span>
+                </a>
+                <a href="#language" class="nav-item" onclick="showTab('language')">
+                    <span class="nav-icon">🌐</span>
+                    <span class="nav-text">语言设置</span>
+                </a>
+                <a href="#permissions" class="nav-item" onclick="showTab('permissions')">
+                    <span class="nav-icon">🛡️</span>
+                    <span class="nav-text">权限管理</span>
+                </a>
+                <a href="#monitor" class="nav-item" onclick="showTab('monitor')">
+                    <span class="nav-icon">📈</span>
+                    <span class="nav-text">系统监控</span>
+                </a>
+
+                <div class="nav-divider"></div>
+
+                {% if user.role in ['admin', 'super_admin', 'hardware_admin'] %}
+                <a href="#users" class="nav-item" onclick="showTab('users')">
+                    <span class="nav-icon">👥</span>
+                    <span class="nav-text">用户管理</span>
+                </a>
+                {% endif %}
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-card">
+                    <div class="user-avatar">👤</div>
+                    <div class="user-info">
+                        <div class="user-name">{{ user.username }}</div>
+                        <div class="user-role">{{ user.role_display }}</div>
+                    </div>
+                </div>
+                <button class="logout-btn" onclick="logout()">退出登录</button>
+            </div>
+        </aside>
+
+        <main class="content-area">
+            <header class="page-header">
+                <h1 class="page-title" id="page-title">系统概览</h1>
+                <p class="page-subtitle" id="page-subtitle">查看系统状态和管理设置</p>
+            </header>
+
+            <div class="tab-container">
+                <button class="tab-item active" id="tab-dashboard" onclick="showTab('dashboard')">📊 概览</button>
+                <button class="tab-item" id="tab-system" onclick="showTab('system')">⚙️ 系统</button>
+                <button class="tab-item" id="tab-security" onclick="showTab('security')">🔒 安全</button>
+                <button class="tab-item" id="tab-language" onclick="showTab('language')">🌐 语言</button>
+                {% if user.role in ['admin', 'super_admin', 'hardware_admin'] %}
+                <button class="tab-item" id="tab-permissions" onclick="showTab('permissions')">🛡️ 权限</button>
+                <button class="tab-item" id="tab-users" onclick="showTab('users')">👥 用户</button>
+                {% endif %}
+                <button class="tab-item" id="tab-monitor" onclick="showTab('monitor')">📈 监控</button>
+            </div>
+
+            <div id="tab-dashboard-content" class="tab-content active">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <span class="stat-icon">💻</span>
+                            <span id="cpu-status" class="status-dot normal"></span>
+                        </div>
+                        <div class="stat-value" id="cpu-value">--</div>
+                        <div class="stat-label">CPU 使用率</div>
+                        <div class="stat-bar"><div class="stat-bar-fill" id="cpu-bar"></div></div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <span class="stat-icon">💾</span>
+                            <span id="memory-status" class="status-dot normal"></span>
+                        </div>
+                        <div class="stat-value" id="memory-value">--</div>
+                        <div class="stat-label">内存使用率</div>
+                        <div class="stat-bar"><div class="stat-bar-fill" id="memory-bar"></div></div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <span class="stat-icon">🖥️</span>
+                            <span id="disk-status" class="status-dot normal"></span>
+                        </div>
+                        <div class="stat-value" id="disk-value">--</div>
+                        <div class="stat-label">磁盘使用率</div>
+                        <div class="stat-bar"><div class="stat-bar-fill" id="disk-bar"></div></div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-header"><span class="stat-icon">⚠️</span></div>
+                        <div class="stat-value" id="alert-count">--</div>
+                        <div class="stat-label">活动告警</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-header"><span class="stat-icon">👥</span></div>
+                        <div class="stat-value">{{ total_users or '--' }}</div>
+                        <div class="stat-label">总用户数</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-header"><span class="stat-icon">🔗</span></div>
+                        <div class="stat-value" id="session-count">--</div>
+                        <div class="stat-label">活动会话</div>
+                    </div>
+                </div>
+
+                <div class="grid-2">
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3 class="panel-title">🔔 最新告警</h3>
+                        </div>
+                        <div class="panel-content">
+                            <ul class="alert-list" id="alert-list">
+                                <li class="empty-state">
+                                    <div class="empty-state-icon">⏳</div>
+                                    <div>加载中...</div>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3 class="panel-title">📜 最近活动</h3>
+                        </div>
+                        <div class="panel-content">
+                            <div id="activity-list">
+                                <div class="empty-state">
+                                    <div class="empty-state-icon">⏳</div>
+                                    <div>加载中...</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-system-content" class="tab-content">
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3 class="panel-title">基本设置</h3>
+                    </div>
+                    <div class="panel-content">
+                        <div class="grid-2">
+                            <div class="form-group">
+                                <label class="form-label">系统名称</label>
+                                <input type="text" class="form-control" value="{{ system_settings.system_name or 'MTSCOS AI 智能学习评估系统' }}" placeholder="输入系统名称">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">系统版本</label>
+                                <input type="text" class="form-control" value="{{ system_settings.version or 'v4.6.0' }}" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">系统描述</label>
+                                <textarea class="form-control form-textarea" placeholder="输入系统描述">{{ system_settings.description or '基于AI的智能学习评估系统，提供个性化学习体验和智能评估功能。' }}</textarea>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">管理员邮箱</label>
+                                <input type="email" class="form-control" value="{{ system_settings.admin_email or 'admin@example.com' }}" placeholder="输入管理员邮箱">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">维护模式</label>
+                                <div class="toggle-label">
+                                    <span>启用维护模式</span>
+                                    <input type="checkbox" class="toggle-switch" {{ 'checked' if system_settings.maintenance_mode else '' }}>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">自动备份</label>
+                                <div class="toggle-label">
+                                    <span>启用自动备份</span>
+                                    <input type="checkbox" class="toggle-switch" {{ 'checked' if system_settings.auto_backup else 'checked' }}>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="btn-group" style="margin-top: 20px;">
+                            <button class="btn btn-primary" onclick="saveSystemSettings()">保存设置</button>
+                            <button class="btn btn-secondary">重置</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-security-content" class="tab-content">
+                <div class="grid-2">
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3 class="panel-title">登录安全</h3>
+                        </div>
+                        <div class="panel-content">
+                            <div class="form-group">
+                                <label class="form-label">最大登录尝试次数</label>
+                                <input type="number" class="form-control" value="{{ security_settings.max_login_attempts or 5 }}" min="1" max="10">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">账户锁定时长（分钟）</label>
+                                <input type="number" class="form-control" value="{{ security_settings.lockout_duration or 5 }}" min="1" max="60">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">会话超时时间（分钟）</label>
+                                <input type="number" class="form-control" value="{{ security_settings.session_timeout or 30 }}" min="5" max="120">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">密码过期天数</label>
+                                <input type="number" class="form-control" value="{{ security_settings.password_expiry_days or 90 }}" min="7" max="365">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3 class="panel-title">安全选项</h3>
+                        </div>
+                        <div class="panel-content">
+                            <div class="form-group">
+                                <div class="toggle-label">
+                                    <span>启用硬件加密认证</span>
+                                    <input type="checkbox" class="toggle-switch" {{ 'checked' if security_settings.hardware_auth_enabled else 'checked' }}>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div class="toggle-label">
+                                    <span>启用双因素认证</span>
+                                    <input type="checkbox" class="toggle-switch" {{ 'checked' if security_settings.two_factor_auth else '' }}>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div class="toggle-label">
+                                    <span>记录登录日志</span>
+                                    <input type="checkbox" class="toggle-switch" {{ 'checked' if security_settings.login_logging else 'checked' }}>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div class="toggle-label">
+                                    <span>启用IP白名单</span>
+                                    <input type="checkbox" class="toggle-switch" {{ 'checked' if security_settings.ip_whitelist else '' }}>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div class="toggle-label">
+                                    <span>启用SQL注入防护</span>
+                                    <input type="checkbox" class="toggle-switch" {{ 'checked' if security_settings.sql_protection else 'checked' }}>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div class="toggle-label">
+                                    <span>启用XSS防护</span>
+                                    <input type="checkbox" class="toggle-switch" {{ 'checked' if security_settings.xss_protection else 'checked' }}>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="btn-group" style="margin-top: 20px;">
+                    <button class="btn btn-primary" onclick="saveSecuritySettings()">保存安全设置</button>
+                </div>
+            </div>
+
+            <div id="tab-language-content" class="tab-content">
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3 class="panel-title">系统语言</h3>
+                    </div>
+                    <div class="panel-content">
+                        <div class="language-options">
+                            <div class="language-option {{ 'selected' if language_settings.language == 'zh-CN' else '' }}" onclick="selectLanguage('zh-CN')">
+                                <div class="language-flag">🇨🇳</div>
+                                <div class="language-name">简体中文</div>
+                                <div class="language-code">zh-CN</div>
+                            </div>
+                            <div class="language-option {{ 'selected' if language_settings.language == 'zh-TW' else '' }}" onclick="selectLanguage('zh-TW')">
+                                <div class="language-flag">🇹🇼</div>
+                                <div class="language-name">繁体中文</div>
+                                <div class="language-code">zh-TW</div>
+                            </div>
+                            <div class="language-option {{ 'selected' if language_settings.language == 'ja-JP' else '' }}" onclick="selectLanguage('ja-JP')">
+                                <div class="language-flag">🇯🇵</div>
+                                <div class="language-name">日本語</div>
+                                <div class="language-code">ja-JP</div>
+                            </div>
+                            <div class="language-option {{ 'selected' if language_settings.language == 'ko-KR' else '' }}" onclick="selectLanguage('ko-KR')">
+                                <div class="language-flag">🇰🇷</div>
+                                <div class="language-name">한국어</div>
+                                <div class="language-code">ko-KR</div>
+                            </div>
+                        </div>
+                        <div class="grid-2" style="margin-top: 30px;">
+                            <div class="form-group">
+                                <label class="form-label">测试语言</label>
+                                <select class="form-control form-select">
+                                    <option value="japanese" {{ 'selected' if language_settings.test_language == 'japanese' else '' }}>日语</option>
+                                    <option value="english" {{ 'selected' if language_settings.test_language == 'english' else '' }}>英语</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">语音类型</label>
+                                <select class="form-control form-select">
+                                    <option value="standard" {{ 'selected' if language_settings.voice_type == 'standard' else '' }}>标准音</option>
+                                    <option value="natural" {{ 'selected' if language_settings.voice_type == 'natural' else '' }}>自然音</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="btn-group" style="margin-top: 30px;">
+                            <button class="btn btn-primary" onclick="saveLanguageSettings()">应用语言设置</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-permissions-content" class="tab-content">
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3 class="panel-title">权限矩阵</h3>
+                    </div>
+                    <div class="panel-content">
+                        <table class="permission-table">
+                            <thead>
+                                <tr>
+                                    <th>权限</th>
+                                    <th>学生</th>
+                                    <th>设计师</th>
+                                    <th>管理员</th>
+                                    <th>超级管理员</th>
+                                    <th>硬件管理员</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>查看仪表盘</td>
+                                    <td><span class="permission-badge allowed">允许</span></td>
+                                    <td><span class="permission-badge allowed">允许</span></td>
+                                    <td><span class="permission-badge allowed">允许</span></td>
+                                    <td><span class="permission-badge allowed">允许</span></td>
+                                    <td><span class="permission-badge allowed">允许</span></td>
+                                </tr>
+                                <tr>
+                                    <td>系统设置</td>
+                                    <td><span class="permission-badge denied">拒绝</span></td>
+                                    <td><span class="permission-badge denied">拒绝</span></td>
+                                    <td><span class="permission-badge allowed">允许</span></td>
+                                    <td><span class="permission-badge allowed">允许</span></td>
+                                    <td><span class="permission-badge allowed">允许</span></td>
+                                </tr>
+                                <tr>
+                                    <td>用户管理</td>
+                                    <td><span class="permission-badge denied">拒绝</span></td>
+                                    <td><span class="permission-badge denied">拒绝</span></td>
+                                    <td><span class="permission-badge allowed">允许</span></td>
+                                    <td><span class="permission-badge allowed">允许</span></td>
+                                    <td><span class="permission-badge allowed">允许</span></td>
+                                </tr>
+                                <tr>
+                                    <td>权限管理</td>
+                                    <td><span class="permission-badge denied">拒绝</span></td>
+                                    <td><span class="permission-badge denied">拒绝</span></td>
+                                    <td><span class="permission-badge denied">拒绝</span></td>
+                                    <td><span class="permission-badge allowed">允许</span></td>
+                                    <td><span class="permission-badge allowed">允许</span></td>
+                                </tr>
+                                <tr>
+                                    <td>硬件认证</td>
+                                    <td><span class="permission-badge denied">拒绝</span></td>
+                                    <td><span class="permission-badge denied">拒绝</span></td>
+                                    <td><span class="permission-badge denied">拒绝</span></td>
+                                    <td><span class="permission-badge denied">拒绝</span></td>
+                                    <td><span class="permission-badge allowed">允许</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-users-content" class="tab-content">
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3 class="panel-title">用户列表</h3>
+                        <button class="btn btn-primary" style="font-size: 12px; padding: 8px 16px;" onclick="showAddUserModal()">添加用户</button>
+                    </div>
+                    <div class="panel-content">
+                        <table class="permission-table">
+                            <thead>
+                                <tr>
+                                    <th>用户名</th>
+                                    <th>邮箱</th>
+                                    <th>角色</th>
+                                    <th>状态</th>
+                                    <th>创建时间</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for u in users %}
+                                <tr>
+                                    <td>{{ u.username }}</td>
+                                    <td>{{ u.email or '-' }}</td>
+                                    <td>{{ u.role_display }}</td>
+                                    <td><span class="permission-badge {% if u.is_active %}allowed{% else %}denied{% endif %}">{% if u.is_active %}活跃{% else %}禁用{% endif %}</span></td>
+                                    <td>{{ u.created_at }}</td>
+                                    <td>
+                                        <button class="btn btn-secondary" style="font-size: 11px; padding: 5px 10px;" onclick="editUser({{ u.id }})">编辑</button>
+                                        <button class="btn btn-danger" style="font-size: 11px; padding: 5px 10px;" onclick="deleteUser({{ u.id }}, '{{ u.username }}')">删除</button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-monitor-content" class="tab-content">
+                <div class="grid-2">
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3 class="panel-title">系统状态</h3>
+                        </div>
+                        <div class="panel-content" style="padding: 0;">
+                            <div style="padding: 15px 25px; border-bottom: 1px solid var(--dark-border); display: flex; justify-content: space-between;">
+                                <span><span class="status-dot" id="sys-db-status"></span>数据库连接</span>
+                                <span id="sys-db-text">--</span>
+                            </div>
+                            <div style="padding: 15px 25px; border-bottom: 1px solid var(--dark-border); display: flex; justify-content: space-between;">
+                                <span><span class="status-dot" id="sys-net-status"></span>网络状态</span>
+                                <span id="sys-net-text">--</span>
+                            </div>
+                            <div style="padding: 15px 25px; border-bottom: 1px solid var(--dark-border); display: flex; justify-content: space-between;">
+                                <span><span class="status-dot" id="sys-rule-status"></span>规则引擎</span>
+                                <span id="sys-rule-text">--</span>
+                            </div>
+                            <div style="padding: 15px 25px; display: flex; justify-content: space-between;">
+                                <span>最后检查</span>
+                                <span id="sys-last-check">--</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3 class="panel-title">导航异常</h3>
+                        </div>
+                        <div class="panel-content">
+                            <div id="nav-anomaly-list">
+                                <div class="empty-state">
+                                    <div class="empty-state-icon">🔍</div>
+                                    <div>加载中...</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-item').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            
+            document.getElementById(`tab-${tabName}-content`).classList.add('active');
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+            document.querySelector(`.nav-item[onclick="showTab('${tabName}')"]`)?.classList.add('active');
+
+            const titles = {
+                dashboard: { title: '系统概览', subtitle: '查看系统状态和管理设置' },
+                system: { title: '系统设置', subtitle: '配置系统基本参数' },
+                security: { title: '安全设置', subtitle: '管理系统安全选项' },
+                language: { title: '语言设置', subtitle: '配置系统语言偏好' },
+                permissions: { title: '权限管理', subtitle: '管理用户权限和角色' },
+                users: { title: '用户管理', subtitle: '管理系统用户' },
+                monitor: { title: '系统监控', subtitle: '监控系统状态和异常' }
+            };
+            
+            const info = titles[tabName] || titles.dashboard;
+            document.getElementById('page-title').textContent = info.title;
+            document.getElementById('page-subtitle').textContent = info.subtitle;
+        }
+
+        function logout() {
+            fetch('/auth/logout', { method: 'POST' })
+                .then(() => { window.location.href = '/auth/logout'; });
+        }
+
+        function loadSystemStatus() {
+            fetch('/api/admin/monitor/system_status')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success && data.status) {
+                        const s = data.status;
+                        document.getElementById('cpu-value').textContent = s.cpu_usage + '%';
+                        document.getElementById('memory-value').textContent = s.memory_usage + '%';
+                        document.getElementById('disk-value').textContent = s.disk_usage + '%';
+                        
+                        updateBar('cpu-bar', s.cpu_usage);
+                        updateBar('memory-bar', s.memory_usage);
+                        updateBar('disk-bar', s.disk_usage);
+                        
+                        updateStatus('cpu-status', s.cpu_usage);
+                        updateStatus('memory-status', s.memory_usage);
+                        updateStatus('disk-status', s.disk_usage);
+                        
+                        document.getElementById('sys-db-text').textContent = s.database_status;
+                        document.getElementById('sys-db-status').className = 'status-dot ' + (s.database_status === 'connected' ? 'normal' : 'critical');
+                        
+                        document.getElementById('sys-net-text').textContent = s.network_status;
+                        document.getElementById('sys-net-status').className = 'status-dot ' + (s.network_status === 'normal' ? 'normal' : 'warning');
+                        
+                        document.getElementById('sys-rule-text').textContent = s.rule_engine_status || '未知';
+                        document.getElementById('sys-rule-status').className = 'status-dot ' + ((s.rule_engine_status === 'running') ? 'normal' : 'warning');
+                        
+                        document.getElementById('sys-last-check').textContent = new Date(s.last_check).toLocaleString('zh-CN');
+                    }
+                }).catch(() => {});
+
+            fetch('/api/admin/monitor/session_statistics')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success && data.stats) {
+                        document.getElementById('user-count').textContent = data.stats.unique_users || '--';
+                        document.getElementById('session-count').textContent = data.stats.active_sessions || '--';
+                    }
+                }).catch(() => {});
+        }
+
+        function updateBar(id, value) {
+            const bar = document.getElementById(id);
+            bar.style.width = value + '%';
+            bar.className = 'stat-bar-fill' + (value >= 90 ? ' critical' : value >= 70 ? ' warning' : '');
+        }
+
+        function updateStatus(id, value) {
+            const dot = document.getElementById(id);
+            dot.className = 'status-dot ' + (value >= 90 ? 'critical' : value >= 70 ? 'warning' : 'normal');
+        }
+
+        function loadAlerts() {
+            fetch('/api/admin/monitor/alerts?resolved=false&limit=5')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success && data.alerts) {
+                        document.getElementById('alert-count').textContent = data.count || '--';
+                        const list = document.getElementById('alert-list');
+                        if (data.alerts.length === 0) {
+                            list.innerHTML = '<li class="empty-state"><div class="empty-state-icon">✅</div><div>暂无告警</div></li>';
+                            return;
+                        }
+                        list.innerHTML = data.alerts.map(a => `
+                            <li class="alert-item ${a.alert_level.toLowerCase()}">
+                                <div class="alert-title">${a.message}</div>
+                                <div class="alert-time">${new Date(a.created_at).toLocaleString('zh-CN')}</div>
+                            </li>
+                        `).join('');
+                    }
+                }).catch(() => {});
+        }
+
+        function loadActivity() {
+            fetch('/api/admin/monitor/recent_activity?limit=5')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success && data.activities) {
+                        const list = document.getElementById('activity-list');
+                        if (data.activities.length === 0) {
+                            list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📋</div><div>暂无活动</div></div>';
+                            return;
+                        }
+                        list.innerHTML = data.activities.map(a => `
+                            <div style="padding: 12px; border-radius: 8px; background: rgba(255,255,255,0.03); margin-bottom: 8px;">
+                                <div style="font-size: 14px; color: #e0e0e0;">${a.description}</div>
+                                <div style="font-size: 12px; color: #888; margin-top: 4px;">${new Date(a.created_at).toLocaleString('zh-CN')}</div>
+                            </div>
+                        `).join('');
+                    }
+                }).catch(() => {});
+        }
+
+        function loadNavAnomalies() {
+            fetch('/api/admin/monitor/navigation_anomalies?resolved=false&limit=5')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success && data.anomalies) {
+                        const list = document.getElementById('nav-anomaly-list');
+                        if (data.anomalies.length === 0) {
+                            list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🔍</div><div>暂无导航异常</div></div>';
+                            return;
+                        }
+                        list.innerHTML = data.anomalies.map(a => `
+                            <div style="padding: 12px; border-radius: 8px; background: rgba(220,53,69,0.1); margin-bottom: 8px;">
+                                <div style="font-size: 14px; color: #dc3545; font-weight: 600;">${a.anomaly_type.replace('_', ' ')}</div>
+                                <div style="font-size: 12px; color: #888; margin-top: 4px;">用户: ${a.username || '匿名'} | 次数: ${a.navigation_count}</div>
+                            </div>
+                        `).join('');
+                    }
+                }).catch(() => {});
+        }
+
+        function saveSystemSettings() {
+            const data = {
+                system_name: document.querySelector('#tab-system-content input[placeholder="输入系统名称"]').value,
+                description: document.querySelector('#tab-system-content textarea').value,
+                admin_email: document.querySelector('#tab-system-content input[type="email"]').value,
+                maintenance_mode: document.querySelector('#tab-system-content .toggle-switch').checked,
+                auto_backup: document.querySelectorAll('#tab-system-content .toggle-switch')[1].checked
+            };
+            
+            fetch('/api/settings/general', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            }).then(r => r.json()).then(res => {
+                if (res.success) alert('设置保存成功');
+                else alert('保存失败: ' + res.message);
+            });
+        }
+
+        function saveSecuritySettings() {
+            const toggles = document.querySelectorAll('#tab-security-content .toggle-switch');
+            const data = {
+                max_login_attempts: parseInt(document.querySelector('#tab-security-content input[min="1"]').value),
+                lockout_duration: parseInt(document.querySelectorAll('#tab-security-content input[type="number"]')[1].value),
+                session_timeout: parseInt(document.querySelectorAll('#tab-security-content input[type="number"]')[2].value),
+                password_expiry_days: parseInt(document.querySelectorAll('#tab-security-content input[type="number"]')[3].value),
+                hardware_auth_enabled: toggles[0].checked,
+                two_factor_auth: toggles[1].checked,
+                login_logging: toggles[2].checked,
+                ip_whitelist: toggles[3].checked,
+                sql_protection: toggles[4].checked,
+                xss_protection: toggles[5].checked
+            };
+            
+            fetch('/api/settings/security', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            }).then(r => r.json()).then(res => {
+                if (res.success) alert('安全设置保存成功');
+                else alert('保存失败: ' + res.message);
+            });
+        }
+
+        function saveLanguageSettings() {
+            const selectedLang = document.querySelector('#tab-language-content .language-option.selected')?.querySelector('.language-code').textContent || 'zh-CN';
+            const data = {
+                language: selectedLang,
+                test_language: document.querySelector('#tab-language-content .form-select').value,
+                voice_type: document.querySelectorAll('#tab-language-content .form-select')[1].value
+            };
+            
+            fetch('/api/settings/language', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            }).then(r => r.json()).then(res => {
+                if (res.success) alert('语言设置保存成功');
+                else alert('保存失败: ' + res.message);
+            });
+        }
+
+        function selectLanguage(code) {
+            document.querySelectorAll('.language-option').forEach(el => el.classList.remove('selected'));
+            document.querySelector(`.language-option[onclick="selectLanguage('${code}')"]`).classList.add('selected');
+        }
+
+        function showAddUserModal() {
+            alert('添加用户功能开发中');
+        }
+
+        function editUser(userId) {
+            alert(`编辑用户 ID: ${userId}`);
+        }
+
+        function deleteUser(userId, username) {
+            if (confirm(`确定要删除用户 "${username}" 吗？`)) {
+                fetch(`/api/admin/users/${userId}`, { method: 'DELETE' })
+                    .then(r => r.json()).then(res => {
+                        if (res.success) {
+                            alert('删除成功');
+                            location.reload();
+                        } else {
+                            alert('删除失败: ' + res.message);
+                        }
+                    });
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadSystemStatus();
+            loadAlerts();
+            loadActivity();
+            loadNavAnomalies();
+
+            setInterval(loadSystemStatus, 10000);
+            setInterval(loadAlerts, 30000);
+            setInterval(loadActivity, 60000);
+            setInterval(loadNavAnomalies, 30000);
+        });
+    </script>
+    {% endif %}
+</body>
+</html>

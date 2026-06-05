@@ -151,7 +151,7 @@ class MonitorManager:
                 try:
                     net_io = psutil.net_io_counters()
                     self.system_status['network_status'] = 'normal'
-                except:
+                except Exception:
                     self.system_status['network_status'] = 'unknown'
                 
                 # 数据库连接状态
@@ -160,7 +160,7 @@ class MonitorManager:
                         
                         conn.execute('SELECT 1')
                         self.system_status['database_status'] = 'connected'
-                except:
+                except Exception:
                     self.system_status['database_status'] = 'disconnected'
                 
                 self.system_status['last_check'] = datetime.now().isoformat()

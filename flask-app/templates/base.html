@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}MTSCOS AI 系统{% endblock %}</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     {% if request.path.startswith('/test-system') or request.path.startswith('/level-assessment') or request.path.startswith('/ai-generated-test') or request.path.startswith('/bilingual-test') or request.path.startswith('/english-test') or request.path.startswith('/japanese-test') %}
     <!-- 预加载动画样式 -->
@@ -22,6 +21,15 @@
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='images/logo.svg') }}">
     <style>
+        /* SVG图标样式 */
+        .svg-icon {
+            display: inline-block;
+            width: 1em;
+            height: 1em;
+            vertical-align: -0.125em;
+            fill: currentColor;
+        }
+
         /* 仅保留必要的本地样式，主要样式已移至外部CSS文件 */
         .flash-messages {
             position: fixed;
@@ -126,6 +134,13 @@
             opacity: 0;
         }
         
+        /* 消息图标 */
+        .flash-icon {
+            flex-shrink: 0;
+            width: 18px;
+            height: 18px;
+        }
+        
         /* 移动端适配 */
         @media (max-width: 768px) {
             .flash-messages {
@@ -140,10 +155,6 @@
                 padding: 14px 16px;
                 font-size: 13px;
                 gap: 10px;
-            }
-            
-            .flash-message::before {
-                font-size: 16px;
             }
         }
         
@@ -200,34 +211,6 @@
         .info-message:hover {
             box-shadow: 0 8px 25px rgba(23, 162, 184, 0.25);
             border-left-color: #138496;
-        }
-        
-        /* 消息图标 */
-        .flash-message::before {
-            font-family: 'Font Awesome 6 Free';
-            font-weight: 900;
-            font-size: 18px;
-            flex-shrink: 0;
-        }
-        
-        .success-message::before {
-            content: '\f058';
-            color: #28a745;
-        }
-        
-        .error-message::before {
-            content: '\f06a';
-            color: #dc3545;
-        }
-        
-        .warning-message::before {
-            content: '\f06e';
-            color: #ffc107;
-        }
-        
-        .info-message::before {
-            content: '\f05a';
-            color: #17a2b8;
         }
         
         /* 关闭按钮 */
@@ -310,6 +293,8 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            width: 32px;
+            height: 32px;
         }
         
         .user-details {
@@ -346,8 +331,10 @@
             font-size: 13px;
         }
         
-        .login-prompt i {
+        .login-prompt .svg-icon {
             font-size: 14px;
+            width: 14px;
+            height: 14px;
         }
         
         .login-link {
@@ -401,6 +388,23 @@
             <div class="flash-messages">
                 {% for category, message in messages %}
                     <div class="flash-message {{ category }}-message">
+                        {% if category == 'success' %}
+                            <svg class="flash-icon" viewBox="0 0 512 512" fill="#28a745">
+                                <path d="M256 48a208 208 0 1 0 208 208A208.25 208.25 0 0 0 256 48zm-24 314.14l-80-80L178.75 264l53.25 53.25L333.25 116l24 24z"/>
+                            </svg>
+                        {% elif category == 'error' %}
+                            <svg class="flash-icon" viewBox="0 0 512 512" fill="#dc3545">
+                                <path d="M256 48a208 208 0 1 0 208 208A208.25 208.25 0 0 0 256 48zm48 280a16 16 0 0 1-16 16h-64a16 16 0 0 1-16-16v-64a16 16 0 0 1 16-16h64a16 16 0 0 1 16 16zm-16-176a24 24 0 1 1-24 24 24 24 0 0 1 24-24z"/>
+                            </svg>
+                        {% elif category == 'warning' %}
+                            <svg class="flash-icon" viewBox="0 0 512 512" fill="#ffc107">
+                                <path d="M256 32C114.6 32 0 125.1 0 240c0 49.6 21.4 95 57 130.7C44.5 421.1 2.7 466 2.2 466.8c-2.2 2.9-2.8 6.7-1.5 10.2S11 480 15.2 480c126.3 0 228.8-45.4 280.8-139.4 17.6-31.4 27.2-66.8 27.2-100.6C323.2 125.1 208.6 32 96 32h160zm-16 152v-16a16 16 0 0 0-32 0v16a16 16 0 0 0 32 0zm-16 128a32 32 0 1 1 32-32 32 32 0 0 1-32 32z"/>
+                            </svg>
+                        {% else %}
+                            <svg class="flash-icon" viewBox="0 0 512 512" fill="#17a2b8">
+                                <path d="M256 48a208 208 0 1 0 208 208A208.25 208.25 0 0 0 256 48zm-24 314.14l-80-80L178.75 264l53.25 53.25L333.25 116l24 24z"/>
+                            </svg>
+                        {% endif %}
                         <span class="message-content">{{ message }}</span>
                         <button class="close-btn" onclick="this.parentElement.remove()">&times;</button>
                     </div>
@@ -416,7 +420,9 @@
             {% if session.get('user_id') %}
                 <div class="user-info">
                     <span class="user-avatar">
-                        <i class="fas fa-user-circle"></i>
+                        <svg class="svg-icon" viewBox="0 0 496 512" fill="currentColor">
+                            <path d="M248 8C111 8 0 119 0 256s111 248 248 248 248-111 248-248S385 8 248 8zm0 96c48.6 0 88 39.4 88 88s-39.4 88-88 88-88-39.4-88-88 39.4-88 88-88zm0 344c-58.7 0-111.3-30-143.3-77.4-1.8-2.5-2.8-5.5-2.8-8.6 0-44.2 35.8-80 80-80h132c44.2 0 80 35.8 80 80 0 3.1-1 6.1-2.8 8.6C359.3 418 306.7 448 248 448z"/>
+                        </svg>
                     </span>
                     <div class="user-details">
                         <span class="user-name">{{ session.get('username', '用户') }}</span>
@@ -425,7 +431,9 @@
                 </div>
             {% else %}
                 <div class="login-prompt">
-                    <i class="fas fa-exclamation-circle"></i>
+                    <svg class="svg-icon" viewBox="0 0 512 512" fill="currentColor">
+                        <path d="M256 0C114.6 0 0 114.6 0 256s114.6 256 256 256 256-114.6 256-256S397.4 0 256 0zm0 384c-17.7 0-32-14.3-32-32s14.3-32 32-32 32 14.3 32 32-14.3 32-32 32zm32-160h-64c-17.7 0-32-14.3-32-32V160c0-17.7 14.3-32 32-32h64c17.7 0 32 14.3 32 32v32c0 17.7-14.3 32-32 32z"/>
+                    </svg>
                     <span>请先 <a href="{{ url_for('auth.login') }}" class="login-link">登录</a></span>
                 </div>
             {% endif %}
@@ -533,7 +541,12 @@
     <div id="lock-overlay" class="lock-overlay" style="display: none;">
         <div class="lock-container">
             <div class="lock-header">
-                <h2><i class="fas fa-lock"></i> 系统已锁定</h2>
+                <h2>
+                    <svg class="svg-icon" viewBox="0 0 448 512" style="width: 24px; height: 24px; fill: #667eea;">
+                        <path d="M400 192h-32V144c0-61.9-50.1-112-112-112S144 82.1 144 144v48h-32c-26.5 0-48 21.5-48 48v192c0 26.5 21.5 48 48 48h256c26.5 0 48-21.5 48-48V240c0-26.5-21.5-48-48-48zm-176 0V144c0-26.5 21.5-48 48-48s48 21.5 48 48v48H224z"/>
+                    </svg>
+                    系统已锁定
+                </h2>
                 <p>请使用密码或硬件ID解锁</p>
             </div>
             <div class="lock-tabs">
@@ -544,19 +557,39 @@
                 <!-- 密码解锁表单 -->
                 <div class="lock-form active" id="password-form">
                     <div class="form-group">
-                        <label for="unlock-password"><i class="fas fa-key"></i> 密码</label>
+                        <label for="unlock-password">
+                            <svg class="svg-icon" viewBox="0 0 512 512" style="width: 16px; height: 16px; fill: #667eea;">
+                                <path d="M336 144h-80V64C256 28.7 227.3 0 192 0S128 28.7 128 64v80H48c-26.5 0-48 21.5-48 48v256c0 26.5 21.5 48 48 48h288c26.5 0 48-21.5 48-48V192c0-26.5-21.5-48-48-48zM192 64c0-17.6 14.4-32 32-32s32 14.4 32 32v80H192V64z"/>
+                            </svg>
+                             密码
+                        </label>
                         <input type="password" id="unlock-password" placeholder="请输入密码" autocomplete="current-password">
                     </div>
-                    <button class="unlock-btn" onclick="unlockWithPassword()"><i class="fas fa-unlock"></i> 解锁</button>
+                    <button class="unlock-btn" onclick="unlockWithPassword()">
+                        <svg class="svg-icon" viewBox="0 0 448 512" style="width: 16px; height: 16px;">
+                            <path d="M400 192h-32V144c0-61.9-50.1-112-112-112S144 82.1 144 144v48h-32c-26.5 0-48 21.5-48 48v192c0 26.5 21.5 48 48 48h256c26.5 0 48-21.5 48-48V240c0-26.5-21.5-48-48-48zm-224 0V144c0-26.5 21.5-48 48-48s48 21.5 48 48v48H176z"/>
+                        </svg>
+                         解锁
+                    </button>
                     <div class="error-message" id="password-error" style="display: none;"></div>
                 </div>
                 <!-- 硬件ID解锁表单 -->
                 <div class="lock-form" id="hardware-form">
                     <div class="form-group">
-                        <label for="vikey-id"><i class="fas fa-microchip"></i> 硬件ID</label>
+                        <label for="vikey-id">
+                            <svg class="svg-icon" viewBox="0 0 640 512" style="width: 16px; height: 16px; fill: #667eea;">
+                                <path d="M480 192h32c17.7 0 32-14.3 32-32v-32c0-17.7-14.3-32-32-32h-32c-17.7 0-32 14.3-32 32v32c0 17.7 14.3 32 32 32zm0 128h32c17.7 0 32-14.3 32-32v-32c0-17.7-14.3-32-32-32h-32c-17.7 0-32 14.3-32 32v32c0 17.7 14.3 32 32 32zm-160 0h32c17.7 0 32-14.3 32-32v-32c0-17.7-14.3-32-32-32h-32c-17.7 0-32 14.3-32 32v32c0 17.7 14.3 32 32 32zM480 64h32c17.7 0 32-14.3 32-32V0c0-17.7-14.3-32-32-32h-32c-17.7 0-32 14.3-32 32v32c0 17.7 14.3 32 32 32zM320 384h32c17.7 0 32-14.3 32-32v-32c0-17.7-14.3-32-32-32h-32c-17.7 0-32 14.3-32 32v32c0 17.7 14.3 32 32 32zM0 448c0 35.3 86 64 192 64s192-28.7 192-64V64c0-35.3-86-64-192-64S0 28.7 0 64v384z"/>
+                            </svg>
+                             硬件ID
+                        </label>
                         <input type="text" id="vikey-id" placeholder="请输入硬件ID">
                     </div>
-                    <button class="unlock-btn" onclick="unlockWithHardware()"><i class="fas fa-unlock"></i> 解锁</button>
+                    <button class="unlock-btn" onclick="unlockWithHardware()">
+                        <svg class="svg-icon" viewBox="0 0 448 512" style="width: 16px; height: 16px;">
+                            <path d="M400 192h-32V144c0-61.9-50.1-112-112-112S144 82.1 144 144v48h-32c-26.5 0-48 21.5-48 48v192c0 26.5 21.5 48 48 48h256c26.5 0 48-21.5 48-48V240c0-26.5-21.5-48-48-48zm-224 0V144c0-26.5 21.5-48 48-48s48 21.5 48 48v48H176z"/>
+                        </svg>
+                         解锁
+                    </button>
                     <div class="error-message" id="hardware-error" style="display: none;"></div>
                 </div>
             </div>
@@ -613,10 +646,6 @@
             align-items: center;
             justify-content: center;
             gap: 10px;
-        }
-
-        .lock-header i {
-            color: #667eea;
         }
 
         .lock-header p {
@@ -677,10 +706,6 @@
             display: flex;
             align-items: center;
             gap: 8px;
-        }
-
-        .form-group i {
-            color: #667eea;
         }
 
         .form-group input {
