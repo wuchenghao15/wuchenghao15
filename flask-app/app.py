@@ -44,7 +44,7 @@ def add_security_headers(response):
     response.headers['X-Content-Type-Options'] = 'nosniff'
     response.headers['X-Frame-Options'] = 'SAMEORIGIN'
     response.headers['X-XSS-Protection'] = '1; mode=block'
-    response.headers['Content-Security-Policy'] = "default-src 'self' http://localhost:8888 http://127.0.0.1:8888; script-src 'self' 'unsafe-inline' 'unsafe-eval' http://localhost:8888 http://127.0.0.1:8888; style-src 'self' 'unsafe-inline' http://localhost:8888 http://127.0.0.1:8888; img-src 'self' data:; font-src 'self'; connect-src 'self' http://localhost:8888 http://127.0.0.1:8888;"
+    response.headers['Content-Security-Policy'] = "default-src 'self' http://localhost:8888 http://127.0.0.1:8888 http://0.0.0.0:8888 http://192.168.0.0/16; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' http://localhost:8888 http://127.0.0.1:8888 http://0.0.0.0:8888 http://192.168.0.0/16; media-src 'self' data:;"
     response.headers['Access-Control-Allow-Origin'] = '*'
     response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
     response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
@@ -53,6 +53,10 @@ def add_security_headers(response):
 # 导入并注册硬件管理路由蓝图
 from app.routes.hardware_routes import hardware_bp
 app.register_blueprint(hardware_bp)
+
+# 导入并注册OAuth路由蓝图
+from app.routes.oauth_routes import oauth_bp
+app.register_blueprint(oauth_bp)
 
 # 导入并注册设置路由蓝图
 from app.routes.settings_routes import settings_bp
@@ -69,6 +73,10 @@ app.register_blueprint(placement_test_api)
 # 导入并注册配置API路由蓝图
 from app.api.config_api import config_api_bp
 app.register_blueprint(config_api_bp)
+
+# 导入并注册数学公式API路由蓝图
+from app.api.formula_api import formula_api_bp
+app.register_blueprint(formula_api_bp)
 
 # 导入并注册监考API路由蓝图
 from app.blueprints.proctor_api import proctor_api
@@ -98,6 +106,10 @@ app.register_blueprint(notification_api)
 from app.routes.student_behavior_api import student_behavior_bp
 app.register_blueprint(student_behavior_bp)
 
+# 导入并注册超时锁定API路由蓝图
+from app.api.timeout_lock_api import timeout_lock_api
+app.register_blueprint(timeout_lock_api)
+
 # 导入并注册锦标赛API路由蓝图
 from app.routes.tournament_api import tournament_bp
 app.register_blueprint(tournament_bp)
@@ -105,6 +117,10 @@ app.register_blueprint(tournament_bp)
 # 导入并注册版本管理API路由蓝图
 from app.api.version_api import version_api
 app.register_blueprint(version_api)
+
+# 导入并注册考试判断API路由蓝图
+from app.api.exam_judge_api import exam_judge_api
+app.register_blueprint(exam_judge_api)
 
 # 导入并注册高危敏感设置路由蓝图
 from app.routes.sensitive_settings_routes import sensitive_settings_bp
@@ -144,6 +160,10 @@ from app.middlewares.access_control import require_login, require_admin, require
 
 # 应用访问控制中间件
 app = access_control_middleware(app)
+
+# 导入并应用全局认证中间件
+from app.middlewares.authentication import authentication_middleware, login_user, logout_user, get_redirect_url
+app = authentication_middleware(app)
 
 def verify_password(stored_password, provided_password):
     """验证密码 - 支持多种哈希方式"""
@@ -195,7 +215,7 @@ def get_system_settings():
     """获取系统设置"""
     settings = {
         'system_name': 'MTSCOS AI 智能学习评估系统',
-        'version': 'v4.6.0',
+        'version': "1.4.0",
         'description': '基于AI的智能学习评估系统,提供个性化学习体验和智能评估功能.',
         'admin_email': 'admin@example.com',
         'maintenance_mode': False,
@@ -887,7 +907,7 @@ def health():
 # 系统状态
 @app.route('/api/system/status')
 def system_status():
-    return jsonify({'status': 'running', 'version': '4.5.5', 'timestamp': datetime.now().isoformat()})
+    return jsonify({'status': 'running', 'version': "1.3.0", 'timestamp': datetime.now().isoformat()})
 
 # 用户信息API
 @app.route('/api/user/<username>')
