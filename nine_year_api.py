@@ -526,7 +526,7 @@ def index():
             </ul>
         </body>
     </html>
-
+    '''
 
 if __name__ == '__main__':
     print("=" * 80)
@@ -544,4 +544,6 @@ if __name__ == '__main__':
         print(f"⚠️  数据库初始化警告: {e}")
     
     app.run(host='0.0.0.0', port=5002, debug=True)
+
+# END
 

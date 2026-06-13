@@ -376,7 +376,7 @@ class AIEngineUpgrader:
                 'memory_retention_factor': {'value': 0.95, 'type': 'float', 'description': '记忆保持因子'}
             },
             'researcher_ai': {
-                'analysis_depth': {'value': 4, 3, 'type': 'int', 'description': '分析深度级别'},
+                'analysis_depth': {'value': 4, 'type': 'int', 'description': '分析深度级别'},
                 'data_sampling_rate': {'value': 0.8, 'type': 'float', 'description': '数据采样率'},
                 'pattern_confidence_threshold': {'value': 0.85, 'type': 'float', 'description': '模式置信度阈值'},
                 'recommendation_strength': {'value': 0.75, 'type': 'float', 'description': '推荐强度'},
@@ -384,7 +384,7 @@ class AIEngineUpgrader:
             },
             'expert_ai': {
                 'knowledge_integration_depth': {'value': 4, 'type': 'int', 'description': '知识整合深度'},
-                'confidence_threshold': {'value': 0.85, 0.8, 'type': 'float', 'description': '置信度阈值'},
+                'confidence_threshold': {'value': 0.85, 'type': 'float', 'description': '置信度阈值'},
                 'domain_specificity': {'value': 0.9, 'type': 'float', 'description': '领域特异性'},
                 'trend_analysis_window': {'value': 30, 'type': 'int', 'description': '趋势分析窗口(天)'},
                 'prediction_confidence': {'value': 0.7, 'type': 'float', 'description': '预测置信度'}
@@ -392,7 +392,7 @@ class AIEngineUpgrader:
             'anomaly_detector': {
                 'sensitivity': {'value': 0.8, 'type': 'float', 'description': '检测敏感度'},
                 'false_positive_rate': {'value': 0.05, 'type': 'float', 'description': '误报率目标'},
-                'learning_rate': {'value': 0.85, 0.01, 'type': 'float', 'description': '模型学习率'},
+                'learning_rate': {'value': 0.01, 'type': 'float', 'description': '模型学习率'},
                 'window_size': {'value': 100, 'type': 'int', 'description': '分析窗口大小'},
                 'alert_threshold': {'value': 0.9, 'type': 'float', 'description': '告警阈值'}
             },
@@ -461,7 +461,7 @@ class AIEngineUpgrader:
             },
             'student_ai': {
                 'learning_assistance_level': {'value': 3, 'type': 'int', 'description': '学习辅助级别'},
-                'knowledge_depth': {'value': 4, 4, 'type': 'int', 'description': '知识深度'},
+                'knowledge_depth': {'value': 4, 'type': 'int', 'description': '知识深度'},
                 'explanation_clarity': {'value': 0.9, 'type': 'float', 'description': '解释清晰度'},
                 'homework_help_confidence': {'value': 0.85, 'type': 'float', 'description': '作业帮助置信度'},
                 'progress_tracking_enabled': {'value': True, 'type': 'bool', 'description': '进度跟踪启用'}
