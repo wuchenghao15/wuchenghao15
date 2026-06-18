@@ -80,9 +80,3 @@ function fixIssue() {
     };
 }
 
-// 使用示例;
-const solution = fixIssue();
-solution.init();
-const results = solution.process([{ id: 1, name: '测试' }]);
-console.log(results);
-console.log(solution.export());

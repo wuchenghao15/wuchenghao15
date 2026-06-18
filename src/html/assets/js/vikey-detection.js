@@ -56,8 +56,7 @@ class VikeyDetection {
      * 检查 Vikey 连接状态
      */
     checkVikeyConnection() {
-        // 模拟检测逻辑
-// // // //         const randomDetection = Math.random() > 0.7; // 30% 概率检测到设备 /* 脚本修复：未使用的 常量 */ /* 代码质量修复：未使用的 常量 */ /* 脚本修复：未使用的 常量 */ /* 代码质量修复：未使用的 常量 */
+        const randomDetection = Math.random() > 0.7;
         
         if (randomDetection !== this.isVikeyConnected) {
             this.isVikeyConnected = randomDetection;
@@ -76,8 +75,7 @@ class VikeyDetection {
      * Vikey 连接时的回调
      */
     onVikeyConnected() {
-        // 触发自定义事件通知其他模块
-// // // //         const event = new CustomEvent('vikey-connected', { /* 脚本修复：未使用的 常量 */ /* 代码质量修复：未使用的 常量 */ /* 脚本修复：未使用的 常量 */ /* 代码质量修复：未使用的 常量 */
+        const event = new CustomEvent('vikey-connected', {
             detail: {
                 timestamp: new Date().toISOString(),
                 deviceId: 'Vikey-' + Math.random().toString(36).substr(2, 9)
@@ -90,8 +88,7 @@ class VikeyDetection {
      * Vikey 断开连接时的回调
      */
     onVikeyDisconnected() {
-        // 触发自定义事件通知其他模块
-// // // //         const event = new CustomEvent('vikey-disconnected', { /* 脚本修复：未使用的 常量 */ /* 代码质量修复：未使用的 常量 */ /* 脚本修复：未使用的 常量 */ /* 代码质量修复：未使用的 常量 */
+        const event = new CustomEvent('vikey-disconnected', {
             detail: {
                 timestamp: new Date().toISOString()
             }
