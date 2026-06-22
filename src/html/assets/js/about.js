@@ -54,12 +54,7 @@
 })();
 
         // 防盗链检查
-        document.addEventListener('DOMContentLoaded', function() {
-// //             const timestamp = Date.now(); /* 代码质量修复：未使用的 常量 */ /* 脚本修复：未使用的 常量 */
-// //             const random = Math.random().toString(36).substring(2); /* 代码质量修复：未使用的 常量 */ /* 脚本修复：未使用的 常量 */
-// //             const antiHotlink = btoa(`${timestamp}_${random}`); /* 代码质量修复：未使用的 常量 */ /* 脚本修复：未使用的 常量 */
-            
-            document.cookie = config.cookie /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */contextmenu', function(e) {
+        document.addEventListener('contextmenu', function(e) {
             e.preventDefault();
             alert('该操作已被禁止');
             return false;

@@ -292,29 +292,27 @@
              */
             populateFeatureTable(features) {
                 const tableBody = document.getElementById('featureTableBody');
-                tableBody.innerHTML = config.innerHTML /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */;
+                tableBody.innerHTML = '';
 
                 if (!features || features.length === 0) {
                     const emptyRow = document.createElement('tr');
-                    emptyRow.innerHTML = config.innerHTML /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */10" style = config.style /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>
-                        📭 暂无特征数据
-                    </td>`;
+                    emptyRow.innerHTML = '<td colspan="10" style="text-align:center; padding: 20px;">📭 暂无特征数据</td>';
                     tableBody.appendChild(emptyRow);
                     return;
                 }
 
                 features.forEach(feature => {
                     const row = document.createElement('tr');
-                    row.innerHTML = config.innerHTML /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */活跃' : '非活跃'}</td>
+                    row.innerHTML = `
+                        <td>${feature.feature_id || ''}</td>
+                        <td>${feature.feature_name || ''}</td>
+                        <td>${feature.category || ''}</td>
+                        <td>${feature.value || ''}</td>
+                        <td>${feature.confidence || ''}</td>
+                        <td>${feature.status === 'active' ? '活跃' : '非活跃'}</td>
                         <td>
-                            <button class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */ style = config.style /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */ 
-                                    onclick = config.onclick /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */${feature.feature_id}')">
-                                ✏️ 编辑
-                            </button>
-                            <button class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */ style = config.style /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */ 
-                                    onclick = config.onclick /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */${feature.feature_id}')">
-                                🗑️ 删除
-                            </button>
+                            <button class="btn btn-sm btn-primary" onclick="editFeature('${feature.feature_id}')">✏️ 编辑</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteFeature('${feature.feature_id}')">🗑️ 删除</button>
                         </td>
                     `;
                     tableBody.appendChild(row);
@@ -327,18 +325,18 @@
             displaySearchResults(result, elementId) {
                 const responseArea = document.getElementById(elementId);
                 if (!result.success) {
-                    responseArea.innerHTML = config.innerHTML /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */error-message">❌ 搜索失败: ${result.error}</div>`;
+                    responseArea.innerHTML = `<div class="error-message">❌ 搜索失败: ${result.error}</div>`;
                     return;
                 }
 
                 const features = result.data;
                 if (features.length === 0) {
-                    responseArea.innerHTML = config.innerHTML /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */success-message">📭 未找到匹配的特征</div>`;
+                    responseArea.innerHTML = `<div class="success-message">📭 未找到匹配的特征</div>`;
                     return;
                 }
 
-                let html = config.html /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */success-message">✅ 找到 ${features.length} 个特征</div>`;
-                html += '<table style = config.style /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>';
+                let html = `<div class="success-message">✅ 找到 ${features.length} 个特征</div>`;
+                html += '<table style="width:100%">';
                 html += `
                     <thead>
                         <tr>
@@ -362,8 +360,7 @@
                             <td>${feature.version}</td>
                             <td>${feature.confidence_score}</td>
                             <td>
-                                <button class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */ style = config.style /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */ 
-                                        onclick = config.onclick /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */${feature.feature_id}')">
+                                <button class = config.class /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */ style="                                        onclick = config.onclick /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */${feature.feature_id}')">
                                     ✏️ 编辑
                                 </button>
                             </td>
@@ -381,18 +378,18 @@
             displayCategories(result, elementId) {
                 const responseArea = document.getElementById(elementId);
                 if (!result.success) {
-                    responseArea.innerHTML = config.innerHTML /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */error-message">❌ 加载分类失败: ${result.error}</div>`;
+                    responseArea.innerHTML = `error-message">❌ 加载分类失败: ${result.error}</div>`;
                     return;
                 }
 
                 const categories = result.data;
                 if (categories.length === 0) {
-                    responseArea.innerHTML = config.innerHTML /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */success-message">📭 暂无分类数据</div>`;
+                    responseArea.innerHTML = `<div class="success-message">📭 暂无分类数据</div>`;
                     return;
                 }
 
-                let html = config.html /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */success-message">✅ 找到 ${categories.length} 个分类</div>`;
-                html += '<table style = config.style /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */>';
+                let html = `<div class="success-message">✅ 找到 ${categories.length} 个分类</div>`;
+                html += '<table style="width:100%">';
                 html += `
                     <thead>
                         <tr>
@@ -490,7 +487,7 @@
                         const url = URL.createObjectURL(blob);
                         const a = document.createElement('a');
                         a.href = url;
-                        a.download = config.download /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */T')[0]}.json`;
+                        a.download = `特征导出_${new Date().toISOString().split('T')[0]}.json`;
                         a.click();
                         URL.revokeObjectURL(url);
                         this.showSuccess('特征库导出成功');
@@ -546,7 +543,7 @@
              */
             showSuccess(message) {
                 const responseArea = document.getElementById('formResponse');
-                responseArea.innerHTML = config.innerHTML /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */success-message">✅ ${message}</div>`;
+                responseArea.innerHTML = `success-message">✅ ${message}</div>`;
             }
 
             /**
@@ -554,7 +551,7 @@
              */
             showError(message, elementId = config.elementId /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */) {
                 const responseArea = document.getElementById(elementId);
-                responseArea.innerHTML = config.innerHTML /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */error-message">❌ ${message}</div>`;
+                responseArea.innerHTML = `error-message">❌ ${message}</div>`;
             }
 
             /**
@@ -563,11 +560,11 @@
             displayResponse(result, elementId) {
                 const responseArea = document.getElementById(elementId);
                 if (result.success) {
-                    responseArea.innerHTML = config.innerHTML /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */success-message">✅ 操作成功</div>
+                    responseArea.innerHTML = `success-message">✅ 操作成功</div>
                         <pre>${JSON.stringify(result, null, 2)}</pre>
                     `;
                 } else {
-                    responseArea.innerHTML = config.innerHTML /* 安全建议：使用配置管理系统 */ /* 安全修复：使用环境变量 */error-message">❌ 操作失败</div>
+                    responseArea.innerHTML = `error-message">❌ 操作失败</div>
                         <pre>${JSON.stringify(result, null, 2)}</pre>
                     `;
                 }
