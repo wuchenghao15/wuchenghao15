@@ -1,12 +1,12 @@
 /**
  * MTSCOS AI System - 前端核心系统
- * 版本: 4.3.0
- * 描述: 多模块集成的智能云操作系统前端核心
+ * 版本: 4.4.0
+ * 描述: 多模块集成的智能云操作系统前端核心 - 智能教育大数据版
  */
 
 class MTSCOSSystem {
     constructor() {
-        this.version = '4.3.0';
+        this.version = '4.4.0';
         this.config = null;
         this.modules = {};
         this.isInitialized = false;
@@ -95,8 +95,9 @@ class MTSCOSSystem {
         return {
             system: {
                 name: 'MTSCOS AI System',
-                version: '4.3.0',
-                status: 'stable'
+                version: '4.4.0',
+                status: 'stable',
+                codename: '智能教育大数据版'
             },
             modules: {
                 data: { enabled: true, priority: 1 },

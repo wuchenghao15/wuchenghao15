@@ -34,7 +34,7 @@ except ImportError:
 class Config:
     """系统配置"""
     VERSION: str = "4.4.0"
-    BUILD: str = "20260622"
+    BUILD: str = "20260623"
     DB_PATH: str = "data/mtscos.db"
     SECRET_KEY: str = secrets.token_hex(32)
     ENCRYPTION_KEY: str = secrets.token_hex(32)
