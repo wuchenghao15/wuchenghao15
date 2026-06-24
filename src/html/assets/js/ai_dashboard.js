@@ -1,8 +1,6 @@
-
 // 兼容性检查和回退方案
 (function() {
     'use strict';
-    
     // 检查Array.includes支持
     if (!Array.prototype.includes) {
         Array.prototype.includes = function(searchElement, fromIndex) {
@@ -16,11 +14,9 @@
         };
     }
 })();
-
 // 兼容性检查和回退方案
 (function() {
     'use strict';
-    
     // 检查Array.includes支持
     if (!Array.prototype.includes) {
         Array.prototype.includes = function(searchElement, fromIndex) {
@@ -34,11 +30,9 @@
         };
     }
 })();
-
 // 兼容性检查和回退方案
 (function() {
     'use strict';
-    
     // 检查Array.includes支持
     if (!Array.prototype.includes) {
         Array.prototype.includes = function(searchElement, fromIndex) {
@@ -52,11 +46,9 @@
         };
     }
 })();
-
 // 兼容性检查和回退方案
 (function() {
     'use strict';
-    
     // 检查Array.includes支持
     if (!Array.prototype.includes) {
         Array.prototype.includes = function(searchElement, fromIndex) {
@@ -70,11 +62,9 @@
         };
     }
 })();
-
 // 兼容性检查和回退方案
 (function() {
     'use strict';
-    
     // 检查Array.includes支持
     if (!Array.prototype.includes) {
         Array.prototype.includes = function(searchElement, fromIndex) {
@@ -88,11 +78,9 @@
         };
     }
 })();
-
 // 兼容性检查和回退方案
 (function() {
     'use strict';
-    
     // 检查Array.includes支持
     if (!Array.prototype.includes) {
         Array.prototype.includes = function(searchElement, fromIndex) {
@@ -106,11 +94,9 @@
         };
     }
 })();
-
 // 兼容性检查和回退方案
 (function() {
     'use strict';
-    
     // 检查Array.includes支持
     if (!Array.prototype.includes) {
         Array.prototype.includes = function(searchElement, fromIndex) {
@@ -124,12 +110,10 @@
         };
     }
 })();
-
         // 初始化页面
         document.addEventListener('DOMContentLoaded', function() {
             // 初始化选项卡
             initTabs();
-            
             // 加载数据
             loadSystemStats();
             loadAIInstances();
@@ -137,7 +121,6 @@
             loadOptimizationHistory();
             loadSupervisionTree();
             loadSupervisionStats();
-            
             // 定期刷新数据（每30秒）
             setInterval(() => {
                 loadSystemStats();
@@ -147,7 +130,6 @@
                 loadSupervisionStats();
             }, 30000);
         });
-
         // 初始化选项卡
         function initTabs() {
             const tabs = document.querySelectorAll('.tab');
@@ -156,7 +138,6 @@
                     // 移除所有活动状态
                     tabs.forEach(t => t.classList.remove('active'));
                     document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-                    
                     // 添加当前活动状态
                     this.classList.add('active');
                     const tabId = this.getAttribute('data-tab');
@@ -164,7 +145,6 @@
                 });
             });
         }
-
         // 加载系统统计数据
         async function loadSystemStats() {
             try {
@@ -212,7 +192,6 @@
                 console.error('加载系统统计失败:', error);
             }
         }
-
         // 加载AI实例数据
         async function loadAIInstances() {
             try {
@@ -242,14 +221,12 @@
                 console.error('加载AI实例失败:', error);
             }
         }
-
         // 刷新监管关系
         async function refreshSupervision() {
             await loadAIInstances();
             loadSupervisionTree();
             loadSupervisionStats();
         }
-
         // 重新分配监管
         async function reassignSupervision() {
             if (confirm('确定要重新分配监管关系吗？')) {
@@ -265,7 +242,6 @@
                 }
             }
         }
-
         // 加载监管关系树
         async function loadSupervisionTree() {
             try {
@@ -274,14 +250,12 @@
                 if (data.success) {
                     const instances = data.data;
                     const container = document.getElementById('supervisionTree');
-                    
                     // 构建监管关系树
                     const mainAIs = instances.filter(ai => ai.isMainAI);
                     const aIsById = instances.reduce((map, ai) => {
                         map[ai.id] = ai;
                         return map;
                     }, {});
-                    
                     let treeHTML = '<h3>监管关系树</h3>';
                     mainAIs.forEach(mainAI => {
                         treeHTML += `
@@ -291,7 +265,6 @@
                                 </div>
                                 <div style="margin-left: 20px;">
                         `;
-                        
                         // 添加子AI
                         if (mainAI.subordinateIds.length > 0) {
                             treeHTML += '<h4>子AI列表:</h4>';
@@ -308,20 +281,17 @@
                         } else {
                             treeHTML += '<p>暂无子AI</p>';
                         }
-                        
                         treeHTML += `
                                 </div>
                             </div>
                         `;
                     });
-                    
                     container.innerHTML = treeHTML;
                 }
             } catch (error) {
                 console.error('加载监管关系树失败:', error);
             }
         }
-
         // 加载监管统计
         async function loadSupervisionStats() {
             try {
@@ -330,14 +300,12 @@
                 if (data.success) {
                     const instances = data.data;
                     const container = document.getElementById('supervisionStats');
-                    
                     // 计算统计数据
                     const totalAIs = instances.length;
                     const mainAIs = instances.filter(ai => ai.isMainAI).length;
                     const subAIs = instances.filter(ai => !ai.isMainAI).length;
                     const supervisedAIs = instances.filter(ai => ai.supervisorId).length;
                     const unsupervisedAIs = instances.filter(ai => !ai.supervisorId && !ai.isMainAI).length;
-                    
                     container.innerHTML = `
                         <div class="stat-item">
                             <div class="stat-value">${totalAIs}</div>
@@ -365,7 +333,6 @@
                 console.error('加载监管统计失败:', error);
             }
         }
-
         // 加载任务数据
         async function loadTasks() {
             try {
@@ -391,7 +358,6 @@
                 console.error('加载任务失败:', error);
             }
         }
-
         // 加载优化历史
         async function loadOptimizationHistory() {
             try {
@@ -419,12 +385,10 @@
                 console.error('加载优化历史失败:', error);
             }
         }
-
         // 打开添加AI实例模态框
         function openAddAIModal() {
             document.getElementById('addAIModal').style.display = 'block';
         }
-
         // 关闭添加AI实例模态框
         function closeAddAIModal() {
             document.getElementById('addAIModal').style.display = 'none';
@@ -433,18 +397,15 @@
             document.getElementById('aiRole').value = 'functional';
             document.getElementById('aiGroup').value = 'core';
         }
-
         // 添加AI实例
         async function addAIInstance() {
             const name = document.getElementById('aiName').value.trim();
             const role = document.getElementById('aiRole').value;
             const group = document.getElementById('aiGroup').value;
-            
             if (!name) {
                 alert('请输入AI名称');
                 return;
             }
-            
             try {
                 const response = await fetch('/api/ai/add-instance', {
                     method: 'POST',
@@ -453,7 +414,6 @@
                     },
                     body: JSON.stringify({ name, role, group })
                 });
-                
                 const data = await response.json();
                 if (data.success) {
                     alert('添加AI实例成功');
@@ -468,7 +428,6 @@
                 alert('添加AI实例失败: ' + error.message);
             }
         }
-
         // 移除AI实例
         async function removeAIInstance(aiId) {
             if (confirm('确定要移除这个AI实例吗？')) {
@@ -476,7 +435,6 @@
                     const response = await fetch(`/api/ai/remove-instance/${aiId}`, {
                         method: 'DELETE'
                     });
-                    
                     const data = await response.json();
                     if (data.success) {
                         alert('移除AI实例成功');
@@ -491,25 +449,21 @@
                 }
             }
         }
-
         // 生成任务
         async function generateTasks() {
             const functionalModules = document.getElementById('functionalModules').value.trim();
             const performanceMetrics = document.getElementById('performanceMetrics').value.trim();
             const managementProcesses = document.getElementById('managementProcesses').value.trim();
             const securityVulnerabilities = document.getElementById('securityVulnerabilities').value.trim();
-            
             const project需求 = {};
             if (functionalModules) project需求.功能优化 = functionalModules.split(',');
             if (performanceMetrics) project需求.性能优化 = performanceMetrics.split(',');
             if (managementProcesses) project需求.管理优化 = managementProcesses.split(',');
             if (securityVulnerabilities) project需求.安全优化 = securityVulnerabilities.split(',');
-            
             if (Object.keys(project需求).length === 0) {
                 alert('请至少填写一项需求');
                 return;
             }
-            
             try {
                 const response = await fetch('/api/ai/generate-tasks', {
                     method: 'POST',
@@ -518,7 +472,6 @@
                     },
                     body: JSON.stringify(project需求)
                 });
-                
                 const data = await response.json();
                 const resultDiv = document.getElementById('generateTasksResult');
                 if (data.success) {
@@ -547,4 +500,3 @@
                 alert('生成任务失败: ' + error.message);
             }
         }
-    

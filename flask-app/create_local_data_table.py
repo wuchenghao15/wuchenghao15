@@ -20,7 +20,7 @@ def create_table():
     print("=" * 60)
 
     try:
-        with sqlite3.connect(sqlite3.connect(DB_PATH)) as conn:
+        with sqlite3.connect(DB_PATH) as conn:
             conn_cursor = conn.cursor()
             cursor = conn.cursor()
             

@@ -1,6 +1,5 @@
 (function() {
     'use strict';
-    
     if (!Array.prototype.includes) {
         Array.prototype.includes = function(searchElement, fromIndex) {
             fromIndex = parseInt(fromIndex) || 0;
@@ -13,24 +12,20 @@
         };
     }
 })();
-
 if (typeof Promise === "undefined") {
     console.warn("This browser requires a polyfill for ES6+ features");
 }
-
 function fixIssue() {
     const config = {
         version: '1.0.0',
         features: ['AI驱动', '实时响应', '智能优化']
     };
-    
     return {
         init: () => console.log('系统初始化完成'),
         process: (data) => data.map(item => ({ ...item, processed: true })),
         export: () => config.features.join(', ')
     };
 }
-
 class ThemeManager {
     constructor() {
         this.themeToggle = null;
@@ -39,12 +34,10 @@ class ThemeManager {
         this.themeIcon = document.querySelector('.theme-icon');
         this.init();
     }
-    
     init() {
         this.loadTheme();
         this.bindEvents();
     }
-    
     loadTheme() {
         const savedTheme = localStorage.getItem('theme');
         if (savedTheme) {
@@ -55,7 +48,6 @@ class ThemeManager {
             this.setTheme('light');
         }
     }
-    
     bindEvents() {
         const themeToggleBtn = document.getElementById('theme-toggle');
         if (themeToggleBtn) {
@@ -63,7 +55,6 @@ class ThemeManager {
                 this.toggleThemeMenu();
             });
         }
-        
         document.addEventListener('click', (e) => {
             const themeMenu = document.getElementById('theme-menu');
             const themeBtn = document.getElementById('theme-toggle');
@@ -71,7 +62,6 @@ class ThemeManager {
                 themeMenu.style.display = 'none';
             }
         });
-        
         window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
             const savedTheme = localStorage.getItem('theme');
             if (!savedTheme) {
@@ -79,27 +69,23 @@ class ThemeManager {
             }
         });
     }
-    
     toggleThemeMenu() {
         const themeMenu = document.getElementById('theme-menu');
         if (themeMenu) {
             themeMenu.style.display = themeMenu.style.display === 'block' ? 'none' : 'block';
         }
     }
-    
     setTheme(theme) {
         this.html.setAttribute('data-theme', theme);
         localStorage.setItem('theme', theme);
         this.updateThemeInfo(theme);
         this.updateThemeIcon(theme);
         this.updateThemePreview(theme);
-        
         const themeMenu = document.getElementById('theme-menu');
         if (themeMenu) {
             themeMenu.style.display = 'none';
         }
     }
-    
     getThemeColors(theme) {
         const colors = {
             'light': { primary: '#3b82f6', secondary: '#a855f7', accent: '#14b8a6', bg: '#ffffff' },
@@ -111,7 +97,6 @@ class ThemeManager {
         };
         return colors[theme] || colors['light'];
     }
-    
     getThemeDescription(theme) {
         const descriptions = {
             'light': '明亮清爽的浅色主题，适合白天使用',
@@ -123,7 +108,6 @@ class ThemeManager {
         };
         return descriptions[theme] || '未定义主题';
     }
-    
     updateThemeInfo(theme) {
         const themeNames = {
             'light': '浅色主题',
@@ -133,12 +117,10 @@ class ThemeManager {
             'gray': '灰色主题',
             'festive': '喜庆主题'
         };
-        
         const colors = this.getThemeColors(theme);
         const description = this.getThemeDescription(theme);
         const savedTheme = localStorage.getItem('theme');
         const isSystemDefault = !savedTheme;
-        
         if (this.themeInfo) {
             this.themeInfo.textContent = `主题: ${themeNames[theme] || theme}`;
             this.themeInfo.setAttribute('data-theme', theme);
@@ -151,7 +133,6 @@ class ThemeManager {
             this.themeInfo.setAttribute('data-theme-source', isSystemDefault ? 'system' : 'user');
         }
     }
-    
     updateThemeIcon(theme) {
         if (this.themeIcon) {
             const icons = {
@@ -162,37 +143,30 @@ class ThemeManager {
                 'gray': 'fa-cloud',
                 'festive': 'fa-star'
             };
-            
             const currentIcon = this.themeIcon.classList[1];
             this.themeIcon.classList.remove(currentIcon);
             this.themeIcon.classList.add(icons[theme] || 'fa-moon');
         }
     }
-    
     updateThemePreview(theme) {
         const colors = this.getThemeColors(theme);
-        
         if (this.themeInfo) {
             this.themeInfo.style.color = colors.primary;
         }
-        
         const colorPreview = document.getElementById('theme-color-preview');
         if (colorPreview) {
             colorPreview.style.background = `linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 50%, ${colors.accent} 100%)`;
             colorPreview.style.borderColor = colors.primary;
         }
     }
-    
     getTheme() {
         return this.html.getAttribute('data-theme') || 'light';
     }
-    
     getCurrentThemeInfo() {
         const theme = this.getTheme();
         const colors = this.getThemeColors(theme);
         const description = this.getThemeDescription(theme);
         const savedTheme = localStorage.getItem('theme');
-        
         return {
             theme: theme,
             name: this.getThemeName(theme),
@@ -202,7 +176,6 @@ class ThemeManager {
             source: savedTheme ? 'user' : 'system'
         };
     }
-    
     getThemeName(theme) {
         const themeNames = {
             'light': '浅色主题',
@@ -214,7 +187,6 @@ class ThemeManager {
         };
         return themeNames[theme] || theme;
     }
-    
     getAvailableThemes() {
         return [
             { id: 'light', name: '浅色主题', icon: 'fa-sun', description: '明亮清爽的浅色主题' },
@@ -225,7 +197,6 @@ class ThemeManager {
             { id: 'festive', name: '喜庆主题', icon: 'fa-star', description: '喜庆热烈的节日主题' }
         ];
     }
-    
     resetToSystemDefault() {
         localStorage.removeItem('theme');
         if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
@@ -235,27 +206,22 @@ class ThemeManager {
         }
     }
 }
-
 window.switchTheme = function(theme) {
     if (window.themeManager) {
         window.themeManager.setTheme(theme);
     }
 };
-
 document.addEventListener('DOMContentLoaded', () => {
     window.themeManager = new ThemeManager();
 });
-
 class PerformanceOptimizer {
     constructor() {
         this.init();
     }
-    
     init() {
         this.lazyLoad();
         this.optimizeImages();
     }
-    
     lazyLoad() {
         if ('IntersectionObserver' in window) {
             const imageObserver = new IntersectionObserver((entries, observer) => {
@@ -267,13 +233,11 @@ class PerformanceOptimizer {
                     }
                 });
             });
-            
             const images = document.querySelectorAll('img[data-src]');
             images.forEach(image => {
                 imageObserver.observe(image);
             });
         }
-        
         if ('IntersectionObserver' in window) {
             const videoObserver = new IntersectionObserver((entries, observer) => {
                 entries.forEach(entry => {
@@ -284,20 +248,17 @@ class PerformanceOptimizer {
                     }
                 });
             });
-            
             const videos = document.querySelectorAll('video[data-src]');
             videos.forEach(video => {
                 videoObserver.observe(video);
             });
         }
     }
-    
     optimizeImages() {
         const images = document.querySelectorAll('img');
         images.forEach(image => {
             if (!image.src.includes('.webp') && !image.src.includes('.avif')) {
             }
-            
             if (!image.alt) {
                 image.alt = '未命名图片';
             }

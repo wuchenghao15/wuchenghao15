@@ -16,7 +16,7 @@ if not os.path.exists(db_path):
 print(f"Checking database integrity at: {db_path}")
 
 # 连接到数据库
-with sqlite3.connect(sqlite3.connect(db_path)) as conn:
+with sqlite3.connect(db_path) as conn:
     conn_cursor = conn.cursor()
     cursor = conn.cursor()
     

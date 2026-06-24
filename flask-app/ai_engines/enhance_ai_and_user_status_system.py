@@ -242,7 +242,7 @@ class AIAndUserStatusSystemEnhancer:
         try:
             logger.info("开始优化用户状态系统配置")
 
-            with sqlite3.connect(sqlite3.connect(self.db_path)) as conn:
+            with sqlite3.connect(self.db_path) as conn:
                 conn_cursor = conn.cursor()
                 cursor = conn.cursor()
                 

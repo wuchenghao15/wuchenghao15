@@ -7,7 +7,7 @@ from contextlib import contextmanager
 import os
 
 # 连接数据库
-with sqlite3.connect(sqlite3.connect('data/mtscos_ai_project.db')) as conn:
+with sqlite3.connect('data/mtscos_ai_project.db') as conn:
     conn_cursor = conn.cursor()
     cursor = conn.cursor()
     

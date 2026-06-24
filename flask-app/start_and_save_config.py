@@ -28,7 +28,7 @@ def save_config_to_db():
         config = load_config()
 
         # 连接数据库
-        with sqlite3.connect(sqlite3.connect('app.db')) as conn:
+        with sqlite3.connect('app.db') as conn:
             conn_cursor = conn.cursor()
             cursor = conn.cursor()
             

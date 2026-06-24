@@ -117,7 +117,7 @@ class SystemMonitor:
 
         获取数据库指标
         try:
-            with sqlite3.connect(sqlite3.connect(Config.DATABASE_PATH)) as conn:
+            with sqlite3.connect(Config.DATABASE_PATH) as conn:
                 conn_cursor = conn.cursor()
                 cursor = conn.cursor()
                 

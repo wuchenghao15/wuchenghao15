@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
 from flask import Blueprint, render_template, redirect, url_for
 from flask import session
+import os
 
-main_bp = Blueprint('main', __name__)
+# 获取flask-app根目录
+APP_ROOT = os.path.dirname(os.path.abspath(__file__))
+
+main_bp = Blueprint('main', __name__, template_folder=os.path.join(APP_ROOT, 'templates'))
 
 @main_bp.route('/')
 def index():
@@ -16,6 +20,5 @@ def home():
 
 @main_bp.route('/dashboard')
 def dashboard():
-    """仪表板"""
-    username = session.get('username', 'Guest')
-    return render_template('dashboard.html', username=username)
+    """仪表板 - 重定向到设置页面（仪表盘已整合到设置页面中）"""
+    return redirect('/settings')

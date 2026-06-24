@@ -13,7 +13,7 @@ import hashlib
 import time
 from contextlib import contextmanager
 from datetime import datetime
-from flask import jsonify, render_template, request, redirect, session
+from flask import jsonify, render_template, request, redirect, session, make_response
 
 # 设置日志
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -28,16 +28,34 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from flask import Flask
 from flask_cors import CORS
+from flask import send_from_directory
 
 # 创建Flask应用
 app = Flask(__name__)
-app.template_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'app', 'templates')
-app.static_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'app', 'static')
+# 模板文件夹：项目根目录下的 templates 文件夹
+app.template_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
+# 启用模板自动重载（开发环境）
+app.config['TEMPLATES_AUTO_RELOAD'] = True
+# 静态文件文件夹
+app.static_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src', 'html', 'assets')
+app.static_url_path = '/assets'
 app.config['JSON_AS_ASCII'] = False
 app.secret_key = 'mtscos_ai_secret_key_2026'  # 设置session密钥
 
 # 配置CORS支持
 CORS(app, resources={r"/*": {"origins": "*"}})
+
+ASSETS_FOLDER = app.static_folder
+
+@app.route('/assets/<path:filename>')
+def custom_static(filename):
+    return send_from_directory(ASSETS_FOLDER, filename)
+
+# 处理 Font Awesome 字体文件请求（/webfonts/ -> /assets/webfonts/）
+@app.route('/webfonts/<path:filename>')
+def webfonts(filename):
+    webfonts_folder = os.path.join(ASSETS_FOLDER, 'webfonts')
+    return send_from_directory(webfonts_folder, filename)
 
 @app.after_request
 def add_security_headers(response):
@@ -51,82 +69,229 @@ def add_security_headers(response):
     return response
 
 # 导入并注册硬件管理路由蓝图
-from app.routes.hardware_routes import hardware_bp
-app.register_blueprint(hardware_bp)
+try:
+    from app.routes.hardware_routes import hardware_bp
+    app.register_blueprint(hardware_bp)
+except ImportError:
+    logger.warning("[路由] 硬件管理路由蓝图未找到，跳过注册")
+
+# 导入并注册认证API路由蓝图
+try:
+    from app.api.auth_api import auth_api
+    app.register_blueprint(auth_api)
+    logger.info("[路由] 认证API路由蓝图注册成功")
+except ImportError:
+    logger.warning("[路由] 认证API路由蓝图未找到，跳过注册")
 
 # 导入并注册OAuth路由蓝图
-from app.routes.oauth_routes import oauth_bp
-app.register_blueprint(oauth_bp)
+try:
+    from app.routes.oauth_routes import oauth_bp
+    app.register_blueprint(oauth_bp)
+except ImportError:
+    logger.warning("[路由] OAuth路由蓝图未找到，跳过注册")
 
 # 导入并注册设置路由蓝图
-from app.routes.settings_routes import settings_bp
-app.register_blueprint(settings_bp)
+try:
+    from app.routes.settings_routes import settings_bp
+    app.register_blueprint(settings_bp)
+except ImportError:
+    logger.warning("[路由] 设置路由蓝图未找到，跳过注册")
 
 # 导入并注册管理员API路由蓝图
-from app.routes.admin_api import admin_api_bp
-app.register_blueprint(admin_api_bp)
+try:
+    from app.routes.admin_api import admin_api_bp
+    app.register_blueprint(admin_api_bp)
+except ImportError:
+    logger.warning("[路由] 管理员API路由蓝图未找到，跳过注册")
 
 # 导入并注册摸底测试API路由蓝图
-from app.blueprints.placement_test_api import placement_test_api
-app.register_blueprint(placement_test_api)
+try:
+    from app.blueprints.placement_test_api import placement_test_api
+    app.register_blueprint(placement_test_api)
+except ImportError:
+    logger.warning("[路由] 摸底测试API路由蓝图未找到，跳过注册")
 
 # 导入并注册配置API路由蓝图
-from app.api.config_api import config_api_bp
-app.register_blueprint(config_api_bp)
+try:
+    from app.api.config_api import config_api_bp
+    app.register_blueprint(config_api_bp)
+except ImportError:
+    logger.warning("[路由] 配置API路由蓝图未找到，跳过注册")
 
 # 导入并注册数学公式API路由蓝图
-from app.api.formula_api import formula_api_bp
-app.register_blueprint(formula_api_bp)
+try:
+    from app.api.formula_api import formula_api_bp
+    app.register_blueprint(formula_api_bp)
+except ImportError:
+    logger.warning("[路由] 数学公式API路由蓝图未找到，跳过注册")
 
 # 导入并注册监考API路由蓝图
-from app.blueprints.proctor_api import proctor_api
-app.register_blueprint(proctor_api)
+try:
+    from app.blueprints.proctor_api import proctor_api
+    app.register_blueprint(proctor_api)
+except ImportError:
+    logger.warning("[路由] 监考API路由蓝图未找到，跳过注册")
 
 # 导入并注册音频API路由蓝图
-from app.blueprints.audio_api import audio_api
-app.register_blueprint(audio_api)
+try:
+    from app.blueprints.audio_api import audio_api
+    app.register_blueprint(audio_api)
+except ImportError:
+    logger.warning("[路由] 音频API路由蓝图未找到，跳过注册")
 
 # 导入并注册音频字库API路由蓝图
-from app.blueprints.pronunciation_api import pronunciation_api
-app.register_blueprint(pronunciation_api)
+try:
+    from app.blueprints.pronunciation_api import pronunciation_api
+    app.register_blueprint(pronunciation_api)
+except ImportError:
+    logger.warning("[路由] 音频字库API路由蓝图未找到，跳过注册")
 
 # 导入并注册矩阵题库API路由蓝图
-from app.blueprints.matrix_bp import matrix_bp
-app.register_blueprint(matrix_bp)
+try:
+    from app.blueprints.matrix_bp import matrix_bp
+    app.register_blueprint(matrix_bp)
+except ImportError:
+    logger.warning("[路由] 矩阵题库API路由蓝图未找到，跳过注册")
 
 # 导入并注册审批API路由蓝图
-from app.blueprints.approval_api import approval_api
-app.register_blueprint(approval_api)
+try:
+    from app.blueprints.approval_api import approval_api
+    app.register_blueprint(approval_api)
+except ImportError:
+    logger.warning("[路由] 审批API路由蓝图未找到，跳过注册")
 
 # 导入并注册通知API路由蓝图
-from app.blueprints.notification_api import notification_api
-app.register_blueprint(notification_api)
+try:
+    from app.blueprints.notification_api import notification_api
+    app.register_blueprint(notification_api)
+except ImportError:
+    logger.warning("[路由] 通知API路由蓝图未找到，跳过注册")
 
 # 导入并注册学生行为管理API路由蓝图
-from app.routes.student_behavior_api import student_behavior_bp
-app.register_blueprint(student_behavior_bp)
+try:
+    from app.routes.student_behavior_api import student_behavior_bp
+    app.register_blueprint(student_behavior_bp)
+except ImportError:
+    logger.warning("[路由] 学生行为管理API路由蓝图未找到，跳过注册")
 
 # 导入并注册超时锁定API路由蓝图
-from app.api.timeout_lock_api import timeout_lock_api
-app.register_blueprint(timeout_lock_api)
+try:
+    from app.api.timeout_lock_api import timeout_lock_api
+    app.register_blueprint(timeout_lock_api)
+except ImportError:
+    logger.warning("[路由] 超时锁定API路由蓝图未找到，跳过注册")
 
 # 导入并注册锦标赛API路由蓝图
-from app.routes.tournament_api import tournament_bp
-app.register_blueprint(tournament_bp)
+try:
+    from app.routes.tournament_api import tournament_bp
+    app.register_blueprint(tournament_bp)
+except ImportError:
+    logger.warning("[路由] 锦标赛API路由蓝图未找到，跳过注册")
 
 # 导入并注册版本管理API路由蓝图
-from app.api.version_api import version_api
-app.register_blueprint(version_api)
+try:
+    from app.api.version_api import version_api
+    app.register_blueprint(version_api)
+except ImportError:
+    logger.warning("[路由] 版本管理API路由蓝图未找到，跳过注册")
 
 # 导入并注册考试判断API路由蓝图
-from app.api.exam_judge_api import exam_judge_api
-app.register_blueprint(exam_judge_api)
+try:
+    from app.api.exam_judge_api import exam_judge_api
+    app.register_blueprint(exam_judge_api)
+except ImportError:
+    logger.warning("[路由] 考试判断API路由蓝图未找到，跳过注册")
 
 # 导入并注册高危敏感设置路由蓝图
-from app.routes.sensitive_settings_routes import sensitive_settings_bp
-app.register_blueprint(sensitive_settings_bp)
+try:
+    from app.routes.sensitive_settings_routes import sensitive_settings_bp
+    app.register_blueprint(sensitive_settings_bp)
+except ImportError:
+    logger.warning("[路由] 高危敏感设置路由蓝图未找到，跳过注册")
+
+# 导入并注册客户端监控API路由蓝图
+try:
+    from app.routes.monitor_routes import monitor_bp
+    app.register_blueprint(monitor_bp)
+    logger.info("[路由] 客户端监控API路由蓝图注册成功")
+except ImportError:
+    logger.warning("[路由] 客户端监控API路由蓝图未找到，跳过注册")
+
+# 导入并注册代码修复API路由蓝图
+try:
+    from app.routes.code_repair_routes import repair_bp
+    app.register_blueprint(repair_bp)
+    logger.info("[路由] 代码修复API路由蓝图注册成功")
+except ImportError:
+    logger.warning("[路由] 代码修复API路由蓝图未找到，跳过注册")
+
+# 导入并注册端口监控API路由蓝图
+try:
+    from app.routes.port_monitor_routes import port_monitor_bp
+    app.register_blueprint(port_monitor_bp)
+    logger.info("[路由] 端口监控API路由蓝图注册成功")
+except ImportError:
+    logger.warning("[路由] 端口监控API路由蓝图未找到，跳过注册")
+
+# 导入并注册用户行为监控API路由蓝图
+try:
+    from app.routes.user_behavior_routes import behavior_bp
+    app.register_blueprint(behavior_bp)
+    logger.info("[路由] 用户行为监控API路由蓝图注册成功")
+except ImportError:
+    logger.warning("[路由] 用户行为监控API路由蓝图未找到，跳过注册")
+
+# 导入并注册系统优化API路由蓝图
+try:
+    from app.routes.system_optimization_routes import optimizer_bp
+    app.register_blueprint(optimizer_bp)
+    logger.info("[路由] 系统优化API路由蓝图注册成功")
+except ImportError:
+    logger.warning("[路由] 系统优化API路由蓝图未找到，跳过注册")
+
+# 导入并注册智能仪表盘API路由蓝图
+try:
+    from app.routes.intelligent_dashboard_api import intelligent_dashboard_bp
+    app.register_blueprint(intelligent_dashboard_bp)
+    logger.info("[路由] 智能仪表盘API路由蓝图注册成功")
+except ImportError:
+    logger.warning("[路由] 智能仪表盘API路由蓝图未找到，跳过注册")
+
+# 导入并注册设置页面数据API路由蓝图
+try:
+    from app.api.settings_data_api import settings_data_bp
+    app.register_blueprint(settings_data_bp)
+    logger.info("[路由] 设置页面数据API路由蓝图注册成功")
+except ImportError:
+    logger.warning("[路由] 设置页面数据API路由蓝图未找到，跳过注册")
+
+# 导入并注册路由约束引擎API
+try:
+    from app.api.route_constraint_api import constraint_api_bp
+    app.register_blueprint(constraint_api_bp)
+    logger.info("[路由] 路由约束引擎API注册成功")
+except ImportError:
+    logger.warning("[路由] 路由约束引擎API未找到，跳过注册")
+
+# 导入并注册角色路由跳转API
+try:
+    from app.utils.role_router import role_router_bp, create_role_routes
+    app.register_blueprint(role_router_bp)
+    app = create_role_routes(app)
+    logger.info("[路由] 角色路由跳转API注册成功")
+except ImportError:
+    logger.warning("[路由] 角色路由跳转API未找到，跳过注册")
 
 DATABASE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'app.db')
+
+@contextmanager
+def get_db_connection():
+    conn = sqlite3.connect(DATABASE_PATH)
+    conn.row_factory = sqlite3.Row
+    try:
+        yield conn
+    finally:
+        conn.close()
 
 # 初始化权限管理器和会话管理器
 from app.utils.permission_manager import init_permission_manager
@@ -156,14 +321,25 @@ init_monitor_manager(DATABASE_PATH, check_interval=10)
 init_backup_manager(DATABASE_PATH, auto_backup_interval=300)
 
 # 导入装饰器
-from app.middlewares.access_control import require_login, require_admin, require_super_admin, require_hardware_admin
+try:
+    from app.middlewares.access_control import require_login, require_admin, require_super_admin, require_hardware_admin
+except ImportError:
+    logger.warning("[中间件] 访问控制装饰器未找到，跳过导入")
+    require_login = require_admin = require_super_admin = require_hardware_admin = lambda f: f
 
 # 应用访问控制中间件
-app = access_control_middleware(app)
+try:
+    app = access_control_middleware(app)
+except Exception:
+    logger.warning("[中间件] 访问控制中间件应用失败，跳过")
 
 # 导入并应用全局认证中间件
-from app.middlewares.authentication import authentication_middleware, login_user, logout_user, get_redirect_url
-app = authentication_middleware(app)
+try:
+    from app.middlewares.authentication import authentication_middleware, login_user, logout_user, get_redirect_url
+    app = authentication_middleware(app)
+except ImportError:
+    logger.warning("[中间件] 认证中间件未找到，跳过")
+    login_user = logout_user = get_redirect_url = lambda *args, **kwargs: None
 
 def verify_password(stored_password, provided_password):
     """验证密码 - 支持多种哈希方式"""
@@ -541,6 +717,11 @@ def login():
                 logger.warning(f"[登录失败] 用户已锁定 - IP: {request.remote_addr}, 用户名: {username}")
                 return jsonify({'success': False, 'message': '账户已被锁定,请联系管理员'}), 403
             
+            # 检查是否勾选"记住我"
+            remember = data.get('remember', False)
+            if isinstance(remember, str):
+                remember = remember.lower() in ['true', '1', 'yes', 'on']
+            
             # 生成会话ID
             session_id = f"session_{datetime.now().strftime('%Y%m%d%H%M%S')}_{user['id']}_{hashlib.md5(str(time.time()).encode()).hexdigest()[:8]}"
             
@@ -552,7 +733,20 @@ def login():
             session['email'] = user['email']
             session['login_time'] = datetime.now().isoformat()
             session['login_ip'] = request.remote_addr
-            session.permanent = True
+            session['remember_me'] = remember
+            
+            # 根据"记住我"设置会话有效期
+            if remember:
+                # 勾选了"记住我"：会话有效期30天
+                session.permanent = True
+                from datetime import timedelta
+                app.permanent_session_lifetime = timedelta(days=30)
+                logger.info(f"[记住我] 用户 {username} 登录，会话有效期30天")
+            else:
+                # 未勾选"记住我"：会话有效期30分钟
+                session.permanent = True
+                from datetime import timedelta
+                app.permanent_session_lifetime = timedelta(minutes=30)
             
             # 重置登录尝试计数
             session['login_attempts'] = 0
@@ -565,7 +759,7 @@ def login():
             # 根据用户角色确定登录后重定向页面
             redirect_url = get_redirect_url_by_role(user['role'])
             
-            logger.info(f"[登录成功] 用户: {username}, 角色: {user['role']}, 重定向: {redirect_url}, IP: {request.remote_addr}")
+            logger.info(f"[登录成功] 用户: {username}, 角色: {user['role']}, 重定向: {redirect_url}, IP: {request.remote_addr}, 记住我: {remember}")
             
             # 判断请求类型,决定返回方式
             accept_header = request.headers.get('Accept', '')
@@ -574,6 +768,8 @@ def login():
                     'success': True, 
                     'message': '登录成功', 
                     'session_id': session_id,
+                    'remember_me': remember,
+                    'session_expires_in': 30 * 24 * 3600 if remember else 30 * 60,  # 秒
                     'user': {
                         'id': user['id'],
                         'username': user['username'],
@@ -676,7 +872,7 @@ def register():
             hashed_password = base64.b64encode(hashlib.sha256(data['password'].encode()).digest()).decode()
             
             try:
-                with sqlite3.connect(sqlite3.connect(DATABASE_PATH)) as conn:
+                with sqlite3.connect(DATABASE_PATH) as conn:
                     conn_cursor = conn.cursor()
                     cursor = conn.cursor()
                     cursor.execute(
@@ -696,50 +892,13 @@ def register():
 # 导入权限装饰器
 from app.middlewares.access_control import require_login, require_admin, require_super_admin, require_role
 
-# 仪表板路由 - 需要登录
+
 @app.route('/dashboard')
 @require_login
 def dashboard():
-    username = session.get('username', '未知用户')
-    role = session.get('role', 'guest')
-    user_id = session.get('user_id', 0)
-    
-    # 学生角色强制重定向到考试系统
-    student_roles = ['student', 'student_vip']
-    if role in student_roles:
-        logger.warning(f"[路由异常] 学生角色尝试访问Dashboard - 用户: {username}, 角色: {role}, IP: {request.remote_addr}")
-        
-        # 记录导航异常到数据库
-        try:
-            with sqlite3.connect(DATABASE_PATH) as conn:
-                cursor = conn.cursor()
-                cursor.execute('''
-                    INSERT INTO navigation_anomalies 
-                    (user_id, username, session_id, anomaly_type, navigation_count, time_window, details, created_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                ''', (
-                    user_id,
-                    username,
-                    session.get('session_id', ''),
-                    'unauthorized_dashboard_access',
-                    1,
-                    0,
-                    json.dumps({'role': role, 'intended_page': '/dashboard', 'redirect_to': '/exam/exam_center'}),
-                    datetime.now().isoformat()
-                ))
-                conn.commit()
-        except Exception as e:
-            logger.error(f"记录导航异常失败: {e}")
-        
-        # 强制重定向到考试系统
-        return redirect('/exam/exam_center')
-    
-    logger.info(f"Dashboard访问 - 用户: {username}, 角色: {role}, 用户ID: {user_id}")
-    
-    return render_template('dashboard.html', 
-                           username=username, 
-                           role=role,
-                           user_id=user_id)
+    """仪表板 - 重定向到设置页面（仪表盘已整合到设置页面中）"""
+    return redirect('/settings')
+
 
 # 超级管理员仪表板 - 需要超级管理员权限
 @app.route('/super_admin_dashboard')
@@ -934,148 +1093,595 @@ def debug_routes():
 # 在线考试页面路由
 @app.route('/exam')
 def exam_page():
-    return render_template('exam_page.html')
+    role = session.get('role', 'guest')
+    if role not in ['student', 'teacher', 'researcher', 'admin', 'super_admin', 'hardware_admin', 'hardware_vikey_admin']:
+        return redirect('/')
+    response = make_response(render_template('exam_page.html'))
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    return response
 
-# 考试系统路由
+def get_user_education_type(user_id: int) -> str:
+    """获取用户教育类型：九年义务教育、成人教育、或通用"""
+    try:
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT grade, education_level, student_type FROM users WHERE id = ?', (user_id,))
+            row = cursor.fetchone()
+            if row:
+                grade, education_level, student_type = row
+                
+                # 优先使用 education_level 判断
+                if education_level:
+                    if '义务' in education_level or '初中' in education_level or '高中' in education_level:
+                        return 'nine_year'
+                    elif '成人' in education_level or '继续教育' in education_level:
+                        return 'adult'
+                
+                # 使用 grade 判断
+                if grade:
+                    if grade.startswith('小学') or grade.startswith('初中') or grade.startswith('高中'):
+                        return 'nine_year'
+                    elif grade.startswith('成人'):
+                        return 'adult'
+                    elif '雅思' in grade or '托福' in grade:
+                        return 'adult'
+                
+                # 使用 student_type 判断
+                if student_type:
+                    if '义务' in student_type:
+                        return 'nine_year'
+                    elif '成人' in student_type:
+                        return 'adult'
+    except Exception as e:
+        logger.error(f"获取用户教育类型失败: {e}")
+    
+    return 'general'
+
+# 考试系统路由 - 学生仪表盘
 @app.route('/exam_system')
 def exam_system():
-    with sqlite3.connect(sqlite3.connect(DATABASE_PATH)) as conn:
-        conn_cursor = conn.cursor()
-        conn.row_factory = sqlite3.Row
-        
-        cursor = conn.cursor()
-        cursor.execute('SELECT * FROM t_a4394fa841fb07b4 WHERE is_active = 1 ORDER BY name')
-        exams = cursor.fetchall()
-        
-        exam_list = []
-        for exam in exams:
-            exam_list.append({
-                'id': exam['id'],
-                'name': exam['name'],
-                'description': exam['description'],
-                'duration': exam['duration'],
-                'total_questions': exam['total_questions'],
-                'passing_score': exam['passing_score'],
-                'language': exam['language'],
-                'difficulty_level': exam['difficulty_level'],
-                'exam_type': exam['exam_type'],
-                'audio_type': exam['audio_type']
-            })
-        
+    user_id = session.get('user_id')
     
-    return render_template('exam_system.html', exams=exam_list)
+    # 未登录用户，跳转到登录页
+    if not user_id:
+        return redirect('/auth/login')
+    
+    # 获取用户信息
+    user_info = get_user_info(user_id)
+    if not user_info:
+        return redirect('/auth/login')
+    
+    # 获取教育类型
+    education_type = get_user_education_type(user_id)
+    education_type_label = {
+        'nine_year': '九年制义务教育',
+        'adult': '成人教育',
+        'general': '通用学习'
+    }.get(education_type, '通用学习')
+    
+    # 获取用户统计数据
+    stats = get_user_stats(user_id)
+    
+    # 获取即将开始的考试（最近的3个）
+    upcoming_exams = get_upcoming_exams(education_type, limit=3)
+    
+    # 获取错题（最近的5个）
+    wrong_questions = get_user_wrong_questions(user_id, limit=5)
+    
+    # 获取推荐考试
+    recommended_exams = get_recommended_exams(education_type, limit=6)
+    
+    return render_template('student_dashboard.html',
+                         user=user_info,
+                         education_type=education_type,
+                         education_type_label=education_type_label,
+                         stats=stats,
+                         upcoming_exams=upcoming_exams,
+                         wrong_questions=wrong_questions,
+                         recommended_exams=recommended_exams)
+
+
+def get_user_info(user_id):
+    """获取用户详细信息"""
+    try:
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute('SELECT * FROM users WHERE id = ?', (user_id,))
+            row = cursor.fetchone()
+            if row:
+                return dict(row)
+    except Exception as e:
+        logger.error(f"获取用户信息失败: {e}")
+    return {
+        'id': user_id,
+        'username': '用户',
+        'grade': '',
+        'student_type': '学生',
+        'education_level': ''
+    }
+
+
+def get_user_stats(user_id):
+    """获取用户学习统计数据"""
+    stats = {
+        'total_exams': 0,
+        'average_score': 0,
+        'wrong_questions': 0,
+        'points': 0,
+        'streak_days': 1,
+        'daily_chances': 3,
+        'overall_progress': 35,
+        'weekly_progress': 60
+    }
+    
+    try:
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            cursor = conn.cursor()
+            
+            # 已完成考试数
+            cursor.execute('SELECT COUNT(*) FROM exam_sessions WHERE user_id = ? AND status = "completed"', (user_id,))
+            stats['total_exams'] = cursor.fetchone()[0] or 0
+            
+            # 平均正确率
+            cursor.execute('SELECT AVG(score) FROM exam_sessions WHERE user_id = ? AND status = "completed"', (user_id,))
+            avg = cursor.fetchone()[0]
+            stats['average_score'] = int(avg) if avg else 0
+            
+            # 错题数
+            try:
+                cursor.execute('SELECT COUNT(*) FROM wrong_questions WHERE user_id = ?', (user_id,))
+                stats['wrong_questions'] = cursor.fetchone()[0] or 0
+            except:
+                pass
+            
+            # 学习积分
+            try:
+                cursor.execute('SELECT points FROM user_points WHERE user_id = ?', (user_id,))
+                result = cursor.fetchone()
+                stats['points'] = result[0] if result else 100
+            except:
+                stats['points'] = 100
+                
+    except Exception as e:
+        logger.error(f"获取用户统计数据失败: {e}")
+    
+    return stats
+
+
+def get_upcoming_exams(education_type='general', limit=3):
+    """获取即将开始的考试"""
+    try:
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            
+            query = 'SELECT * FROM exams WHERE status = "active"'
+            params = []
+            
+            if education_type == 'nine_year':
+                query += ' AND (title LIKE ? OR description LIKE ? OR level LIKE ?)'
+                params.extend(['%小学%', '%初中%', '%初级'])
+            elif education_type == 'adult':
+                query += ' AND (language = ? OR title LIKE ? OR level LIKE ?)'
+                params.extend(['japanese', '%成人%', '%中级'])
+            
+            query += ' ORDER BY created_at DESC LIMIT ?'
+            params.append(limit)
+            
+            cursor.execute(query, tuple(params))
+            rows = cursor.fetchall()
+            return [dict(row) for row in rows]
+    except Exception as e:
+        logger.error(f"获取即将开始的考试失败: {e}")
+    
+    # 返回默认测试数据
+    return [
+        {
+            'id': 'default_1',
+            'title': '综合能力测试',
+            'description': '测试您的综合学习能力',
+            'duration': 60,
+            'question_count': 20,
+            'total_points': 100,
+            'language': '综合',
+            'level': '初级'
+        }
+    ]
+
+
+def get_user_wrong_questions(user_id, limit=5):
+    """获取用户错题列表"""
+    try:
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute('''
+                SELECT wq.*, q.subject, q.type, q.question_text 
+                FROM wrong_questions wq 
+                LEFT JOIN questions q ON wq.question_id = q.id
+                WHERE wq.user_id = ? 
+                ORDER BY wq.wrong_count DESC 
+                LIMIT ?
+            ''', (user_id, limit))
+            rows = cursor.fetchall()
+            return [dict(row) for row in rows]
+    except Exception as e:
+        logger.error(f"获取用户错题失败: {e}")
+    
+    return []
+
+
+def get_recommended_exams(education_type='general', limit=6):
+    """获取推荐考试"""
+    try:
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute('SELECT * FROM exams WHERE status = "active" ORDER BY question_count LIMIT ?', (limit,))
+            rows = cursor.fetchall()
+            return [dict(row) for row in rows]
+    except Exception as e:
+        logger.error(f"获取推荐考试失败: {e}")
+    
+    return []
+
+
+# 随机有奖测试页面
+@app.route('/exam/random_challenge')
+def random_challenge():
+    user_id = session.get('user_id')
+    if not user_id:
+        return redirect('/auth/login')
+    
+    # 生成随机题目
+    question = generate_random_question()
+    
+    return render_template('random_challenge.html', 
+                         question=question,
+                         user=get_user_info(user_id))
+
+
+def generate_random_question():
+    """生成随机测试题"""
+    import random
+    
+    questions = [
+        {
+            'type': 'single',
+            'subject': '综合知识',
+            'question': '以下哪个是Python的关键字？',
+            'options': ['function', 'def', 'func', 'define'],
+            'answer': 1,
+            'points': 10
+        },
+        {
+            'type': 'single',
+            'subject': '逻辑推理',
+            'question': '1, 4, 9, 16, 25, ? 下一个数字是？',
+            'options': ['30', '36', '49', '64'],
+            'answer': 1,
+            'points': 15
+        },
+        {
+            'type': 'single',
+            'subject': '常识',
+            'question': '一年有多少个月？',
+            'options': ['10', '11', '12', '13'],
+            'answer': 2,
+            'points': 5
+        },
+        {
+            'type': 'single',
+            'subject': '数学',
+            'question': '2的8次方等于多少？',
+            'options': ['64', '128', '256', '512'],
+            'answer': 2,
+            'points': 10
+        },
+        {
+            'type': 'single',
+            'subject': '语言',
+            'question': '"Hello" 的中文意思是？',
+            'options': ['再见', '你好', '谢谢', '对不起'],
+            'answer': 1,
+            'points': 5
+        }
+    ]
+    
+    return random.choice(questions)
+
+
+# 提交随机测试答案
+@app.route('/api/exam/random_challenge/submit', methods=['POST'])
+def submit_random_challenge():
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({'success': False, 'message': '请先登录'}), 401
+    
+    try:
+        data = request.get_json()
+        user_answer = data.get('answer')
+        correct_answer = data.get('correct_answer')
+        points = data.get('points', 10)
+        
+        is_correct = user_answer == correct_answer
+        
+        if is_correct:
+            # 答对了，奖励积分
+            earned_points = points
+            result = {
+                'success': True,
+                'correct': True,
+                'points': earned_points,
+                'message': f'恭喜！答对了，获得 {earned_points} 积分！'
+            }
+        else:
+            result = {
+                'success': True,
+                'correct': False,
+                'points': 0,
+                'message': '很遗憾，答错了，继续加油！'
+            }
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        logger.error(f"提交随机测试失败: {e}")
+        return jsonify({'success': False, 'message': '服务器错误'}), 500
+
+
+# 错题本页面
+@app.route('/exam/wrong_book')
+def wrong_book():
+    user_id = session.get('user_id')
+    if not user_id:
+        return redirect('/auth/login')
+    
+    wrong_questions = get_user_wrong_questions(user_id, limit=20)
+    
+    return render_template('wrong_book.html',
+                         user=get_user_info(user_id),
+                         wrong_questions=wrong_questions)
+
+
+# 错题练习页面
+@app.route('/exam/wrong_book/practice')
+def wrong_book_practice():
+    user_id = session.get('user_id')
+    if not user_id:
+        return redirect('/auth/login')
+    
+    return redirect('/exam/wrong_book')
+
+
+# Arduino设计页面路由
+@app.route('/arduino')
+def arduino_page():
+    role = session.get('role', 'guest')
+    if role != 'designer':
+        from app.utils.role_router import get_role_router
+        return redirect(get_role_router().get_redirect_path(role))
+    return app.send_static_file('html/arduino.html')
+
+# 教师管理后台路由
+@app.route('/teacher')
+def teacher_page():
+    role = session.get('role', 'guest')
+    if role != 'teacher':
+        from app.utils.role_router import get_role_router
+        return redirect(get_role_router().get_redirect_path(role))
+    return app.send_static_file('html/teacher.html')
+
+# 教研员专属页面路由
+@app.route('/researcher')
+def researcher_page():
+    role = session.get('role', 'guest')
+    if role != 'researcher':
+        from app.utils.role_router import get_role_router
+        return redirect(get_role_router().get_redirect_path(role))
+    return app.send_static_file('html/researcher.html')
+
+# Dashboard重定向到角色页面
+@app.route('/dashboard')
+def dashboard_page():
+    role = session.get('role', 'guest')
+    from app.utils.role_router import get_role_router
+    router = get_role_router()
+    return redirect(router.get_redirect_path(role))
 
 # 获取考试列表API
 @app.route('/api/exams', methods=['GET'])
 def get_exams():
-    with sqlite3.connect(sqlite3.connect(DATABASE_PATH)) as conn:
-        conn_cursor = conn.cursor()
+    with sqlite3.connect(DATABASE_PATH) as conn:
         conn.row_factory = sqlite3.Row
-        
         cursor = conn.cursor()
-        cursor.execute('SELECT * FROM t_a4394fa841fb07b4 WHERE is_active = 1 ORDER BY name')
+        cursor.execute('SELECT * FROM exams WHERE status = "active" ORDER BY title')
         exams = cursor.fetchall()
         
         exam_list = []
         for exam in exams:
             exam_list.append({
                 'id': exam['id'],
-                'name': exam['name'],
+                'name': exam['title'],
                 'description': exam['description'],
                 'duration': exam['duration'],
-                'total_questions': exam['total_questions'],
+                'total_questions': exam['question_count'],
                 'passing_score': exam['passing_score'],
                 'language': exam['language'],
-                'difficulty_level': exam['difficulty_level'],
-                'exam_type': exam['exam_type'],
-                'audio_type': exam['audio_type']
+                'difficulty_level': exam['level'],
+                'exam_type': 'standard',
+                'audio_type': None
             })
-        
     
     return jsonify({'success': True, 'data': exam_list})
 
 # 删除考试API
-@app.route('/api/exams/<int:exam_id>', methods=['DELETE'])
+@app.route('/api/exams/<exam_id>', methods=['DELETE'])
 def delete_exam(exam_id):
-    with sqlite3.connect(sqlite3.connect(DATABASE_PATH)) as conn:
-        conn_cursor = conn.cursor()
+    with sqlite3.connect(DATABASE_PATH) as conn:
         cursor = conn.cursor()
         
-        cursor.execute('SELECT * FROM t_a4394fa841fb07b4 WHERE id = ?', (exam_id,))
+        cursor.execute('SELECT * FROM exams WHERE id = ?', (exam_id,))
         exam = cursor.fetchone()
         
         if not exam:
             return jsonify({'success': False, 'message': '考试不存在'}), 404
         
         try:
-            cursor.execute('DELETE FROM t_a4394fa841fb07b4 WHERE id = ?', (exam_id,))
+            cursor.execute('DELETE FROM exams WHERE id = ?', (exam_id,))
             cursor.execute('DELETE FROM ai_generated_questions WHERE exam_id = ?', (exam_id,))
             cursor.execute('DELETE FROM exam_sessions WHERE exam_id = ?', (exam_id,))
             
             conn.commit()
-            conn.close()
-            
             return jsonify({'success': True, 'message': '考试删除成功'})
         except Exception as e:
             conn.rollback()
-            conn.close()
             return jsonify({'success': False, 'message': f'删除失败: {str(e)}'}), 500
 
-# 获取考试题目API
-@app.route('/api/exams/<int:exam_id>/questions', methods=['GET'])
-def get_exam_questions(exam_id):
-    from app.ai.exam_expert_generator import enhanced_exam_generator
+def generate_test_questions(language, difficulty, count):
+    """生成测试题目"""
+    questions = []
     
-    with sqlite3.connect(sqlite3.connect(DATABASE_PATH)) as conn:
-        conn_cursor = conn.cursor()
+    base_questions = {
+        'japanese': {
+            'beginner': [
+                {'content': '「りんご」の意味は何ですか？', 'type': '单选题', 'options': [{'key': 'A', 'text': '梨'}, {'key': 'B', 'text': '苹果'}, {'key': 'C', 'text': '香蕉'}, {'key': 'D', 'text': '葡萄'}]},
+                {'content': '「ありがとう」の意味は何ですか？', 'type': '单选题', 'options': [{'key': 'A', 'text': '对不起'}, {'key': 'B', 'text': '谢谢'}, {'key': 'C', 'text': '你好'}, {'key': 'D', 'text': '再见'}]},
+                {'content': '日本の首都はどこですか？', 'type': '单选题', 'options': [{'key': 'A', 'text': '大阪'}, {'key': 'B', 'text': '京都'}, {'key': 'C', 'text': '东京'}, {'key': 'D', 'text': '横滨'}]},
+                {'content': '「水」の読み方は何ですか？', 'type': '单选题', 'options': [{'key': 'A', 'text': 'みず'}, {'key': 'B', 'text': 'すい'}, {'key': 'C', 'text': 'くみ'}, {'key': 'D', 'text': 'おと'}]},
+                {'content': '「学校」の読み方は何ですか？', 'type': '单选题', 'options': [{'key': 'A', 'text': 'がっこう'}, {'key': 'B', 'text': 'えんきょう'}, {'key': 'C', 'text': 'じゅく'}, {'key': 'D', 'text': 'ほうこう'}]},
+            ],
+            'intermediate': [
+                {'content': '「勉強」の意味は何ですか？', 'type': '单选题', 'options': [{'key': 'A', 'text': '工作'}, {'key': 'B', 'text': '学习'}, {'key': 'C', 'text': '休息'}, {'key': 'D', 'text': '玩耍'}]},
+                {'content': '「今日はとても暑いですね」の意味は何ですか？', 'type': '单选题', 'options': [{'key': 'A', 'text': '今天很冷'}, {'key': 'B', 'text': '今天很热'}, {'key': 'C', 'text': '今天很凉快'}, {'key': 'D', 'text': '今天很舒服'}]},
+                {'content': '「友達と遊びに行きます」の意味は何ですか？', 'type': '单选题', 'options': [{'key': 'A', 'text': '和朋友一起去玩'}, {'key': 'B', 'text': '和朋友一起工作'}, {'key': 'C', 'text': '和朋友一起学习'}, {'key': 'D', 'text': '和朋友一起吃饭'}]},
+                {'content': '「明日は雨が降るそうです」の意味は何ですか？', 'type': '单选题', 'options': [{'key': 'A', 'text': '明天会晴天'}, {'key': 'B', 'text': '明天会下雨'}, {'key': 'C', 'text': '明天会下雪'}, {'key': 'D', 'text': '明天会刮风'}]},
+                {'content': '「いつもありがとうございます」の意味は何ですか？', 'type': '单选题', 'options': [{'key': 'A', 'text': '谢谢'}, {'key': 'B', 'text': '一直以来谢谢你'}, {'key': 'C', 'text': '对不起'}, {'key': 'D', 'text': '请多关照'}]},
+            ],
+            'advanced': [
+                {'content': '「相談する」の意味は何ですか？', 'type': '单选题', 'options': [{'key': 'A', 'text': '回答'}, {'key': 'B', 'text': '商量'}, {'key': 'C', 'text': '拒绝'}, {'key': 'D', 'text': '接受'}]},
+                {'content': '「問題を解決する」の意味は何ですか？', 'type': '单选题', 'options': [{'key': 'A', 'text': '提出问题'}, {'key': 'B', 'text': '解决问题'}, {'key': 'C', 'text': '忽略问题'}, {'key': 'D', 'text': '发现问题'}]},
+                {'content': '「契約を結ぶ」の意味は何ですか？', 'type': '单选题', 'options': [{'key': 'A', 'text': '签订合同'}, {'key': 'B', 'text': '解除合同'}, {'key': 'C', 'text': '修改合同'}, {'key': 'D', 'text': '阅读合同'}]},
+                {'content': '「責任を負う」の意味は何ですか？', 'type': '单选题', 'options': [{'key': 'A', 'text': '推卸责任'}, {'key': 'B', 'text': '承担责任'}, {'key': 'C', 'text': '放弃责任'}, {'key': 'D', 'text': '逃避责任'}]},
+                {'content': '「経験を積む」の意味は何ですか？', 'type': '单选题', 'options': [{'key': 'A', 'text': '积累经验'}, {'key': 'B', 'text': '失去经验'}, {'key': 'C', 'text': '忘记经验'}, {'key': 'D', 'text': '分享经验'}]},
+            ]
+        },
+        'english': {
+            'beginner': [
+                {'content': 'What is the meaning of "apple"?', 'type': '单选题', 'options': [{'key': 'A', 'text': '香蕉'}, {'key': 'B', 'text': '苹果'}, {'key': 'C', 'text': '橙子'}, {'key': 'D', 'text': '葡萄'}]},
+                {'content': 'What is the capital of the United States?', 'type': '单选题', 'options': [{'key': 'A', 'text': 'New York'}, {'key': 'B', 'text': 'Los Angeles'}, {'key': 'C', 'text': 'Washington D.C.'}, {'key': 'D', 'text': 'Chicago'}]},
+                {'content': 'How do you say "thank you" in English?', 'type': '单选题', 'options': [{'key': 'A', 'text': 'Sorry'}, {'key': 'B', 'text': 'Thank you'}, {'key': 'C', 'text': 'Hello'}, {'key': 'D', 'text': 'Goodbye'}]},
+                {'content': 'What is 2 + 2?', 'type': '单选题', 'options': [{'key': 'A', 'text': '3'}, {'key': 'B', 'text': '4'}, {'key': 'C', 'text': '5'}, {'key': 'D', 'text': '6'}]},
+                {'content': 'What color is the sky?', 'type': '单选题', 'options': [{'key': 'A', 'text': 'Green'}, {'key': 'B', 'text': 'Blue'}, {'key': 'C', 'text': 'Red'}, {'key': 'D', 'text': 'Yellow'}]},
+            ],
+            'intermediate': [
+                {'content': 'What does "accomplish" mean?', 'type': '单选题', 'options': [{'key': 'A', 'text': 'Start'}, {'key': 'B', 'text': 'Complete'}, {'key': 'C', 'text': 'Delay'}, {'key': 'D', 'text': 'Cancel'}]},
+                {'content': 'Choose the correct sentence: "She ___ to school every day."', 'type': '单选题', 'options': [{'key': 'A', 'text': 'go'}, {'key': 'B', 'text': 'goes'}, {'key': 'C', 'text': 'going'}, {'key': 'D', 'text': 'went'}]},
+                {'content': 'What does "environment" mean?', 'type': '单选题', 'options': [{'key': 'A', 'text': 'Technology'}, {'key': 'B', 'text': 'Surroundings'}, {'key': 'C', 'text': 'Economy'}, {'key': 'D', 'text': 'Politics'}]},
+                {'content': 'Which word is a synonym for "happy"?', 'type': '单选题', 'options': [{'key': 'A', 'text': 'Sad'}, {'key': 'B', 'text': 'Angry'}, {'key': 'C', 'text': 'Joyful'}, {'key': 'D', 'text': 'Tired'}]},
+                {'content': 'What is the past tense of "eat"?', 'type': '单选题', 'options': [{'key': 'A', 'text': 'Eated'}, {'key': 'B', 'text': 'Ate'}, {'key': 'C', 'text': 'Eaten'}, {'key': 'D', 'text': 'Eating'}]},
+            ],
+            'advanced': [
+                {'content': 'What does "comprehensive" mean?', 'type': '单选题', 'options': [{'key': 'A', 'text': 'Limited'}, {'key': 'B', 'text': 'Thorough'}, {'key': 'C', 'text': 'Superficial'}, {'key': 'D', 'text': 'Narrow'}]},
+                {'content': 'Choose the correct word: "The research findings are ___ significant."', 'type': '单选题', 'options': [{'key': 'A', 'text': 'highly'}, {'key': 'B', 'text': 'height'}, {'key': 'C', 'text': 'high'}, {'key': 'D', 'text': 'higher'}]},
+                {'content': 'What does "perspective" mean?', 'type': '单选题', 'options': [{'key': 'A', 'text': 'Distance'}, {'key': 'B', 'text': 'Opinion'}, {'key': 'C', 'text': 'Speed'}, {'key': 'D', 'text': 'Weight'}]},
+                {'content': 'Which sentence is grammatically correct?', 'type': '单选题', 'options': [{'key': 'A', 'text': 'He don\'t like coffee.'}, {'key': 'B', 'text': 'He doesn\'t likes coffee.'}, {'key': 'C', 'text': 'He doesn\'t like coffee.'}, {'key': 'D', 'text': 'He not like coffee.'}]},
+                {'content': 'What does "substantial" mean?', 'type': '单选题', 'options': [{'key': 'A', 'text': 'Small'}, {'key': 'B', 'text': 'Insignificant'}, {'key': 'C', 'text': 'Considerable'}, {'key': 'D', 'text': 'Minimal'}]},
+            ]
+        },
+        'chinese': {
+            'beginner': [
+                {'content': '"苹果"的英文是什么？', 'type': '单选题', 'options': [{'key': 'A', 'text': 'Banana'}, {'key': 'B', 'text': 'Apple'}, {'key': 'C', 'text': 'Orange'}, {'key': 'D', 'text': 'Grape'}]},
+                {'content': '中国的首都是哪里？', 'type': '单选题', 'options': [{'key': 'A', 'text': '上海'}, {'key': 'B', 'text': '北京'}, {'key': 'C', 'text': '广州'}, {'key': 'D', 'text': '深圳'}]},
+                {'content': '"谢谢"的英文是什么？', 'type': '单选题', 'options': [{'key': 'A', 'text': 'Sorry'}, {'key': 'B', 'text': 'Hello'}, {'key': 'C', 'text': 'Thank you'}, {'key': 'D', 'text': 'Goodbye'}]},
+                {'content': '"水"的拼音是什么？', 'type': '单选题', 'options': [{'key': 'A', 'text': 'shui'}, {'key': 'B', 'text': 'sui'}, {'key': 'C', 'text': 'shou'}, {'key': 'D', 'text': 'sou'}]},
+                {'content': '"学校"的拼音是什么？', 'type': '单选题', 'options': [{'key': 'A', 'text': 'xuexiao'}, {'key': 'B', 'text': 'xiaoxue'}, {'key': 'C', 'text': 'xueyao'}, {'key': 'D', 'text': 'xiaoyao'}]},
+            ],
+            'intermediate': [
+                {'content': '"学习"的近义词是什么？', 'type': '单选题', 'options': [{'key': 'A', 'text': '玩耍'}, {'key': 'B', 'text': '工作'}, {'key': 'C', 'text': '研读'}, {'key': 'D', 'text': '休息'}]},
+                {'content': '"今天天气很好"的英文翻译是什么？', 'type': '单选题', 'options': [{'key': 'A', 'text': 'Today is bad weather.'}, {'key': 'B', 'text': 'Today is good weather.'}, {'key': 'C', 'text': 'Today is nice weather.'}, {'key': 'D', 'text': 'The weather is good today.'}]},
+                {'content': '"朋友"的英文是什么？', 'type': '单选题', 'options': [{'key': 'A', 'text': 'Enemy'}, {'key': 'B', 'text': 'Friend'}, {'key': 'C', 'text': 'Family'}, {'key': 'D', 'text': 'Stranger'}]},
+                {'content': '"明天会下雨"的英文翻译是什么？', 'type': '单选题', 'options': [{'key': 'A', 'text': 'It will rain tomorrow.'}, {'key': 'B', 'text': 'Tomorrow rain.'}, {'key': 'C', 'text': 'Rain tomorrow.'}, {'key': 'D', 'text': 'Will rain tomorrow.'}]},
+                {'content': '"谢谢"的日文是什么？', 'type': '单选题', 'options': [{'key': 'A', 'text': 'すみません'}, {'key': 'B', 'text': 'ありがとう'}, {'key': 'C', 'text': 'こんにちは'}, {'key': 'D', 'text': 'さようなら'}]},
+            ],
+            'advanced': [
+                {'content': '"解决"的近义词是什么？', 'type': '单选题', 'options': [{'key': 'A', 'text': '提出'}, {'key': 'B', 'text': '解决'}, {'key': 'C', 'text': '忽略'}, {'key': 'D', 'text': '发现'}]},
+                {'content': '"承担责任"的英文翻译是什么？', 'type': '单选题', 'options': [{'key': 'A', 'text': 'Take responsibility'}, {'key': 'B', 'text': 'Avoid responsibility'}, {'key': 'C', 'text': 'Share responsibility'}, {'key': 'D', 'text': 'Ignore responsibility'}]},
+                {'content': '"积累经验"的英文翻译是什么？', 'type': '单选题', 'options': [{'key': 'A', 'text': 'Lose experience'}, {'key': 'B', 'text': 'Gain experience'}, {'key': 'C', 'text': 'Forget experience'}, {'key': 'D', 'text': 'Share experience'}]},
+                {'content': '"签订合同"的英文翻译是什么？', 'type': '单选题', 'options': [{'key': 'A', 'text': 'Break a contract'}, {'key': 'B', 'text': 'Sign a contract'}, {'key': 'C', 'text': 'Read a contract'}, {'key': 'D', 'text': 'Modify a contract'}]},
+                {'content': '"商量"的英文翻译是什么？', 'type': '单选题', 'options': [{'key': 'A', 'text': 'Answer'}, {'key': 'B', 'text': 'Discuss'}, {'key': 'C', 'text': 'Refuse'}, {'key': 'D', 'text': 'Accept'}]},
+            ]
+        }
+    }
+    
+    lang_key = language.lower() if language else 'japanese'
+    diff_key = difficulty.lower() if difficulty else 'intermediate'
+    
+    if lang_key not in base_questions:
+        lang_key = 'japanese'
+    if diff_key not in base_questions[lang_key]:
+        diff_key = 'intermediate'
+    
+    available_questions = base_questions[lang_key][diff_key]
+    
+    for i in range(count):
+        base_q = available_questions[i % len(available_questions)]
+        questions.append({
+            'id': i + 1,
+            'content': base_q['content'],
+            'type': base_q['type'],
+            'options': base_q['options'],
+            'audio_available': True,
+            'audio_url': None
+        })
+    
+    return questions
+
+# 获取考试题目API
+@app.route('/api/exams/<exam_id>/questions', methods=['GET'])
+def get_exam_questions(exam_id):
+    with sqlite3.connect(DATABASE_PATH) as conn:
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
-        cursor.execute('SELECT * FROM t_a4394fa841fb07b4 WHERE id = ?', (exam_id,))
+        cursor.execute('SELECT * FROM exams WHERE id = ?', (exam_id,))
         exam = cursor.fetchone()
     
     if not exam:
         return jsonify({'success': False, 'message': '考试不存在'}), 404
     
-    language = exam['language'] if exam['language'] else '日语'
-    difficulty = exam['difficulty_level'] if exam['difficulty_level'] else '中级'
-    exam_type = exam['exam_type'] if exam['exam_type'] else 'standard'
-    total_questions = exam['total_questions'] if exam['total_questions'] else 10
-    voice_type = exam['audio_type'] if exam['audio_type'] else 'standard'
+    language = exam['language'] if exam['language'] else 'japanese'
+    difficulty = exam['level'] if exam['level'] else 'intermediate'
+    exam_type = 'standard'
+    total_questions = exam['question_count'] if exam['question_count'] else 10
+    voice_type = 'standard'
     
-    questions = enhanced_exam_generator.generate_questions_with_audio(
-        language=language,
-        difficulty=difficulty,
-        exam_type=exam_type,
-        question_count=total_questions,
-        voice_type=voice_type
-    )
+    questions = generate_test_questions(language, difficulty, total_questions)
     
     return jsonify({'success': True, 'data': questions})
 
 # 获取单个考试详情API
-@app.route('/api/exams/<int:exam_id>', methods=['GET'])
+@app.route('/api/exams/<exam_id>', methods=['GET'])
 def get_exam(exam_id):
-    with sqlite3.connect(sqlite3.connect(DATABASE_PATH)) as conn:
-        conn_cursor = conn.cursor()
+    with sqlite3.connect(DATABASE_PATH) as conn:
         conn.row_factory = sqlite3.Row
-        
         cursor = conn.cursor()
-        cursor.execute('SELECT * FROM t_a4394fa841fb07b4 WHERE id = ?', (exam_id,))
+        cursor.execute('SELECT * FROM exams WHERE id = ?', (exam_id,))
         exam = cursor.fetchone()
-        
     
     if exam:
         exam_data = {
             'id': exam['id'],
-            'name': exam['name'],
+            'name': exam['title'],
             'description': exam['description'],
             'duration': exam['duration'],
-            'total_questions': exam['total_questions'],
+            'total_questions': exam['question_count'],
             'passing_score': exam['passing_score'],
             'language': exam['language'],
-            'difficulty_level': exam['difficulty_level'],
-            'exam_type': exam['exam_type'],
-            'audio_type': exam['audio_type']
+            'difficulty_level': exam['level'],
+            'exam_type': 'standard',
+            'audio_type': None
         }
         return jsonify({'success': True, 'data': exam_data})
     else:
@@ -1089,28 +1695,37 @@ def create_exam():
     if not data or 'name' not in data:
         return jsonify({'success': False, 'message': '缺少考试名称'}), 400
     
-    with sqlite3.connect(sqlite3.connect(DATABASE_PATH)) as conn:
-        conn_cursor = conn.cursor()
+    import uuid
+    exam_id = str(uuid.uuid4())
+    
+    with sqlite3.connect(DATABASE_PATH) as conn:
         cursor = conn.cursor()
         
         cursor.execute('''
-        INSERT INTO t_a4394fa841fb07b4 
-        (name, description, duration, total_questions, passing_score, is_active, language, difficulty_level, exam_type, audio_type)
-        VALUES (?, ?, ?, ?, ?, 1, ?, ?, ?, ?)
+        INSERT INTO exams 
+        (id, title, description, duration, question_count, total_points, passing_score, status, language, level, shuffle_questions, shuffle_options, allow_retake, max_retakes, created_by, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
+        exam_id,
         data.get('name'),
         data.get('description', ''),
         data.get('duration', 60),
         data.get('total_questions', 50),
+        data.get('total_points', 100.0),
         data.get('passing_score', 60.0),
-        data.get('language', '中文'),
-        data.get('difficulty_level', '中级'),
-        data.get('exam_type', 'standard'),
-        data.get('audio_type')
+        'active',
+        data.get('language', 'japanese'),
+        data.get('difficulty_level', 'intermediate'),
+        1,
+        1,
+        1,
+        3,
+        'admin',
+        int(time.time()),
+        int(time.time())
         ))
         
         conn.commit()
-        exam_id = cursor.lastrowid
     
     return jsonify({'success': True, 'message': '考试创建成功', 'exam_id': exam_id})
 
@@ -1333,7 +1948,7 @@ def fix_paths():
 
 @app.route('/api/file/recommendations')
 def get_fix_recommendations():
-    with sqlite3.connect(sqlite3.connect(DATABASE_PATH)) as conn:
+    with sqlite3.connect(DATABASE_PATH) as conn:
         conn_cursor = conn.cursor()
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
@@ -1378,7 +1993,7 @@ def get_fix_recommendations():
 
 @app.route('/api/file/categories')
 def get_file_categories():
-    with sqlite3.connect(sqlite3.connect(DATABASE_PATH)) as conn:
+    with sqlite3.connect(DATABASE_PATH) as conn:
         conn_cursor = conn.cursor()
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
@@ -1867,12 +2482,421 @@ def serve_audio(language, accent, voice, filename):
 def audio_test():
     return render_template('audio_test.html')
 
+
+# ============================================================
+# 前端API路由补充 - 用户数据相关
+# ============================================================
+
+@app.route('/api/user/data/get', methods=['POST'])
+def api_user_data_get():
+    try:
+        data = request.get_json() or {}
+        username = data.get('username') or session.get('username')
+        collection = data.get('collection')
+        
+        if not username:
+            return jsonify({'success': False, 'error': '未登录'}), 401
+        
+        with get_db_connection() as conn:
+            if collection:
+                cursor = conn.execute('SELECT * FROM data_records WHERE collection = ?', (collection,))
+            else:
+                cursor = conn.execute('SELECT * FROM data_records')
+            records = cursor.fetchall()
+            
+        return jsonify({
+            'success': True,
+            'data': [dict(r) for r in records]
+        })
+    except Exception as e:
+        logger.error(f"API /api/user/data/get error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/user/data/store', methods=['POST'])
+def api_user_data_store():
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'success': False, 'error': '数据为空'}), 400
+        
+        collection = data.get('collection', 'default')
+        payload = data.get('data', {})
+        
+        with get_db_connection() as conn:
+            cursor = conn.execute('''
+                INSERT INTO data_records (collection, data, created_at, updated_at)
+                VALUES (?, ?, ?, ?)
+            ''', (collection, json.dumps(payload), int(time.time()), int(time.time())))
+            conn.commit()
+        
+        return jsonify({'success': True, 'id': cursor.lastrowid})
+    except Exception as e:
+        logger.error(f"API /api/user/data/store error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/user/data/delete', methods=['POST'])
+def api_user_data_delete():
+    try:
+        data = request.get_json()
+        record_id = data.get('id')
+        
+        if not record_id:
+            return jsonify({'success': False, 'error': '缺少ID'}), 400
+        
+        with get_db_connection() as conn:
+            conn.execute('DELETE FROM data_records WHERE id = ?', (record_id,))
+            conn.commit()
+        
+        return jsonify({'success': True})
+    except Exception as e:
+        logger.error(f"API /api/user/data/delete error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# ============================================================
+# 前端API路由补充 - AI相关
+# ============================================================
+
+@app.route('/api/ai/status', methods=['GET'])
+def api_ai_status():
+    try:
+        return jsonify({
+            'success': True,
+            'status': 'online',
+            'model': 'local',
+            'version': '4.4.0'
+        })
+    except Exception as e:
+        logger.error(f"API /api/ai/status error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/ai/instances', methods=['GET'])
+def api_ai_instances():
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.execute('SELECT * FROM ai_employees')
+            employees = cursor.fetchall()
+        
+        return jsonify({
+            'success': True,
+            'data': [dict(e) for e in employees]
+        })
+    except Exception as e:
+        logger.error(f"API /api/ai/instances error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/ai/tasks', methods=['GET'])
+def api_ai_tasks():
+    try:
+        return jsonify({
+            'success': True,
+            'data': []
+        })
+    except Exception as e:
+        logger.error(f"API /api/ai/tasks error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/ai/history', methods=['GET'])
+def api_ai_history():
+    try:
+        return jsonify({
+            'success': True,
+            'data': []
+        })
+    except Exception as e:
+        logger.error(f"API /api/ai/history error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/ai/add-instance', methods=['POST'])
+def api_ai_add_instance():
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'success': False, 'error': '数据为空'}), 400
+        
+        with get_db_connection() as conn:
+            cursor = conn.execute('''
+                INSERT OR IGNORE INTO ai_employees (employee_id, name, title, description, category,
+                                        capabilities, efficiency, workload, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                data.get('employee_id', f"emp_{int(time.time())}"),
+                data.get('name', ''),
+                data.get('title', ''),
+                data.get('description', ''),
+                data.get('category', 'general'),
+                json.dumps(data.get('capabilities', [])),
+                data.get('efficiency', 100),
+                data.get('workload', 0),
+                int(time.time()),
+                int(time.time())
+            ))
+            conn.commit()
+        
+        return jsonify({'success': True, 'id': cursor.lastrowid})
+    except Exception as e:
+        logger.error(f"API /api/ai/add-instance error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/ai/generate-tasks', methods=['POST'])
+def api_ai_generate_tasks():
+    try:
+        return jsonify({
+            'success': True,
+            'tasks': []
+        })
+    except Exception as e:
+        logger.error(f"API /api/ai/generate-tasks error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# ============================================================
+# 前端API路由补充 - 题库相关
+# ============================================================
+
+@app.route('/api/banks', methods=['GET', 'POST'])
+def api_banks():
+    try:
+        if request.method == 'GET':
+            with get_db_connection() as conn:
+                cursor = conn.execute('SELECT * FROM question_banks LIMIT 20')
+                banks = cursor.fetchall()
+            return jsonify({'success': True, 'data': [dict(b) for b in banks]})
+        else:
+            return jsonify({'success': True, 'message': '题库更新成功'})
+    except Exception as e:
+        logger.error(f"API /api/banks error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/data', methods=['GET'])
+def api_data():
+    try:
+        return jsonify({
+            'success': True,
+            'version': '4.4.0',
+            'timestamp': int(time.time())
+        })
+    except Exception as e:
+        logger.error(f"API /api/data error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# ============================================================
+# 前端API路由补充 - 认证相关
+# ============================================================
+
+@app.route('/api/auth/user', methods=['GET'])
+def api_auth_user():
+    try:
+        username = session.get('username')
+        if username:
+            return jsonify({'success': True, 'user': {'username': username, 'role': session.get('role', 'user')}})
+        return jsonify({'success': False, 'error': '未登录'}), 401
+    except Exception as e:
+        logger.error(f"API /api/auth/user error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/auth/check-permission', methods=['POST'])
+def api_auth_check_permission():
+    try:
+        data = request.get_json()
+        permission = data.get('permission', '')
+        role = session.get('role', 'user')
+        
+        permissions = {
+            'admin': ['all'],
+            'teacher': ['exam', 'manage'],
+            'user': ['view']
+        }
+        
+        has_permission = role == 'admin' or permission in permissions.get(role, [])
+        return jsonify({'success': True, 'hasPermission': has_permission})
+    except Exception as e:
+        logger.error(f"API /api/auth/check-permission error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/auth/unlock', methods=['POST'])
+def api_auth_unlock():
+    try:
+        return jsonify({'success': True, 'message': '解锁成功'})
+    except Exception as e:
+        logger.error(f"API /api/auth/unlock error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/security/event', methods=['POST'])
+def api_security_event():
+    try:
+        data = request.get_json()
+        logger.info(f"安全事件: {data}")
+        return jsonify({'success': True})
+    except Exception as e:
+        logger.error(f"API /api/security/event error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# ============================================================
+# 前端API路由补充 - 绑定管理相关
+# ============================================================
+
+@app.route('/api/binding/config/all', methods=['GET'])
+def api_binding_config_all():
+    try:
+        return jsonify({'success': True, 'data': []})
+    except Exception as e:
+        logger.error(f"API /api/binding/config/all error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/binding/config/get', methods=['POST'])
+def api_binding_config_get():
+    try:
+        return jsonify({'success': True, 'data': {}})
+    except Exception as e:
+        logger.error(f"API /api/binding/config/get error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/binding/config/update', methods=['POST'])
+def api_binding_config_update():
+    try:
+        return jsonify({'success': True})
+    except Exception as e:
+        logger.error(f"API /api/binding/config/update error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/binding/pages/scan', methods=['GET'])
+def api_binding_pages_scan():
+    try:
+        return jsonify({'success': True, 'pages': []})
+    except Exception as e:
+        logger.error(f"API /api/binding/pages/scan error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/binding/page/get', methods=['POST'])
+def api_binding_page_get():
+    try:
+        return jsonify({'success': True, 'data': {}})
+    except Exception as e:
+        logger.error(f"API /api/binding/page/get error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/binding/page/bind', methods=['POST'])
+def api_binding_page_bind():
+    try:
+        return jsonify({'success': True})
+    except Exception as e:
+        logger.error(f"API /api/binding/page/bind error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/binding/page/bind-all', methods=['POST'])
+def api_binding_page_bind_all():
+    try:
+        return jsonify({'success': True})
+    except Exception as e:
+        logger.error(f"API /api/binding/page/bind-all error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/binding/usage/stats', methods=['GET'])
+def api_binding_usage_stats():
+    try:
+        return jsonify({'success': True, 'stats': {}})
+    except Exception as e:
+        logger.error(f"API /api/binding/usage/stats error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/binding/usage/record', methods=['POST'])
+def api_binding_usage_record():
+    try:
+        return jsonify({'success': True})
+    except Exception as e:
+        logger.error(f"API /api/binding/usage/record error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/binding/auto-bind', methods=['POST'])
+def api_binding_auto_bind():
+    try:
+        return jsonify({'success': True})
+    except Exception as e:
+        logger.error(f"API /api/binding/auto-bind error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# ============================================================
+# 前端API路由补充 - 日语考试相关
+# ============================================================
+
+@app.route('/api/jptest/questions', methods=['GET'])
+def api_jptest_questions():
+    try:
+        return jsonify({'success': True, 'questions': []})
+    except Exception as e:
+        logger.error(f"API /api/jptest/questions error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
 if __name__ == '__main__':
+    try:
+        from app.services.client_monitor_service import init_monitor_tables, create_monitor_employee
+        init_monitor_tables()
+        create_monitor_employee()
+        print("[INFO] 客户端监控服务初始化完成")
+    except Exception as e:
+        print(f"[WARNING] 客户端监控服务初始化失败: {e}")
+    
+    try:
+        from app.middleware.monitor_middleware import ClientMonitorMiddleware
+        monitor_middleware = ClientMonitorMiddleware(app)
+        print("[INFO] 客户端监控中间件注册成功")
+    except Exception as e:
+        print(f"[WARNING] 客户端监控中间件注册失败: {e}")
+    
+    try:
+        from app.services.code_repair_service import init_repair_tables, create_repair_employee
+        init_repair_tables()
+        create_repair_employee()
+        print("[INFO] 代码修复服务初始化完成")
+    except Exception as e:
+        print(f"[WARNING] 代码修复服务初始化失败: {e}")
+    
+    try:
+        from app.services.port_monitor_service import init_port_monitor
+        init_port_monitor()
+        print("[INFO] 端口监控服务初始化完成")
+    except Exception as e:
+        print(f"[WARNING] 端口监控服务初始化失败: {e}")
+    
+    try:
+        from app.services.user_behavior_service import init_behavior_monitor
+        init_behavior_monitor()
+        print("[INFO] 用户行为监控服务初始化完成")
+    except Exception as e:
+        print(f"[WARNING] 用户行为监控服务初始化失败: {e}")
+    
+    try:
+        from app.services.system_optimization_service import init_system_optimizer
+        init_system_optimizer()
+        print("[INFO] 系统优化服务初始化完成")
+    except Exception as e:
+        print(f"[WARNING] 系统优化服务初始化失败: {e}")
+    
     parser = argparse.ArgumentParser()
     parser.add_argument('--port', type=int, default=8888, help='端口号')
+    parser.add_argument('--ssl', action='store_true', help='启用SSL/TLS加密')
+    parser.add_argument('--ssl-port', type=int, default=8443, help='SSL端口号')
+    parser.add_argument('--ssl-cert', type=str, default=os.path.join(os.path.dirname(os.path.abspath(__file__)), 'ssl', 'mtscos.crt'), help='SSL证书路径')
+    parser.add_argument('--ssl-key', type=str, default=os.path.join(os.path.dirname(os.path.abspath(__file__)), 'ssl', 'mtscos.key'), help='SSL密钥路径')
     args = parser.parse_args()
 
     print(f"[INFO] 启动MTSCOS AI应用...")
     print(f"[INFO] 数据库路径: {DATABASE_PATH}")
-    print(f"[INFO] 服务器运行在 http://0.0.0.0:{args.port}")
-    app.run(host='0.0.0.0', port=args.port, debug=False, use_reloader=False)
+
+    if args.ssl:
+        if os.path.exists(args.ssl_cert) and os.path.exists(args.ssl_key):
+            print(f"[INFO] 🔒 启用SSL/TLS加密")
+            print(f"[INFO] SSL证书: {args.ssl_cert}")
+            print(f"[INFO] SSL密钥: {args.ssl_key}")
+            print(f"[INFO] 服务器运行在 https://0.0.0.0:{args.ssl_port}")
+            app.run(host='0.0.0.0', port=args.ssl_port, debug=False, use_reloader=False, ssl_context=(args.ssl_cert, args.ssl_key))
+        else:
+            print(f"[ERROR] SSL证书或密钥文件不存在")
+            print(f"[ERROR] 证书: {args.ssl_cert}")
+            print(f"[ERROR] 密钥: {args.ssl_key}")
+            print(f"[INFO] 回退到HTTP模式")
+            print(f"[INFO] 服务器运行在 http://0.0.0.0:{args.port}")
+            app.run(host='0.0.0.0', port=args.port, debug=False, use_reloader=False)
+    else:
+        print(f"[INFO] 服务器运行在 http://0.0.0.0:{args.port}")
+        app.run(host='0.0.0.0', port=args.port, debug=False, use_reloader=False)

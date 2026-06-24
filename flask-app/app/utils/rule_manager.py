@@ -157,7 +157,7 @@ class RuleManager:
                 'rule_name': '查看仪表盘权限',
                 'rule_description': '允许访问仪表盘的角色',
                 'rule_type': 'permission',
-                'rule_value': '["student", "designer", "admin", "super_admin", "hardware_admin"]',
+                'rule_value': '["student", "designer", "admin", "super_admin", "hardware_admin", "hardware_vikey_admin"]',
                 'priority': 20
             },
             {
@@ -165,7 +165,7 @@ class RuleManager:
                 'rule_name': '查看设置权限',
                 'rule_description': '允许访问设置页面的角色',
                 'rule_type': 'permission',
-                'rule_value': '["admin", "super_admin", "hardware_admin"]',
+                'rule_value': '["admin", "super_admin", "hardware_admin", "hardware_vikey_admin"]',
                 'priority': 20
             },
             {
@@ -173,7 +173,7 @@ class RuleManager:
                 'rule_name': '管理用户权限',
                 'rule_description': '允许管理用户的角色',
                 'rule_type': 'permission',
-                'rule_value': '["admin", "super_admin", "hardware_admin"]',
+                'rule_value': '["admin", "super_admin", "hardware_admin", "hardware_vikey_admin"]',
                 'priority': 20
             },
             {
@@ -181,7 +181,7 @@ class RuleManager:
                 'rule_name': '删除用户权限',
                 'rule_description': '允许删除用户的角色',
                 'rule_type': 'permission',
-                'rule_value': '["super_admin", "hardware_admin"]',
+                'rule_value': '["super_admin", "hardware_admin", "hardware_vikey_admin"]',
                 'priority': 20
             },
             {
@@ -189,7 +189,7 @@ class RuleManager:
                 'rule_name': '管理数据库权限',
                 'rule_description': '允许管理数据库的角色',
                 'rule_type': 'permission',
-                'rule_value': '["super_admin", "hardware_admin"]',
+                'rule_value': '["super_admin", "hardware_admin", "hardware_vikey_admin"]',
                 'priority': 20
             },
             {
@@ -197,7 +197,7 @@ class RuleManager:
                 'rule_name': '查看日志权限',
                 'rule_description': '允许查看系统日志的角色',
                 'rule_type': 'permission',
-                'rule_value': '["admin", "super_admin", "hardware_admin"]',
+                'rule_value': '["admin", "super_admin", "hardware_admin", "hardware_vikey_admin"]',
                 'priority': 20
             },
             # 访问规则
@@ -318,8 +318,21 @@ class RuleManager:
     def _load_rules_cache(self):
         """加载规则到内存缓存"""
         self.rules_cache = {}
+        import os
+        logger.info(f"[规则管理器] 数据库路径: {self.db_path}, 存在: {os.path.exists(self.db_path)}")
+        logger.info(f"[规则管理器] 数据库文件大小: {os.path.getsize(self.db_path) if os.path.exists(self.db_path) else 0} bytes")
+        
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
+            
+            cursor.execute('SELECT COUNT(*) FROM system_rules')
+            total_count = cursor.fetchone()[0]
+            logger.info(f"[规则管理器] 数据库中system_rules表总行数: {total_count}")
+            
+            cursor.execute('SELECT rule_code, rule_value, is_active FROM system_rules WHERE rule_code = "PERM_VIEW_DASHBOARD"')
+            row = cursor.fetchone()
+            if row:
+                logger.info(f"[规则管理器] 数据库中PERM_VIEW_DASHBOARD: {row}")
             
             cursor.execute('SELECT rule_code, rule_value, is_active FROM system_rules WHERE is_active = 1')
             for row in cursor.fetchall():
@@ -329,6 +342,15 @@ class RuleManager:
                     self.rules_cache[rule_code] = json.loads(rule_value)
                 except Exception:
                     self.rules_cache[rule_code] = rule_value
+        
+        logger.info(f"[规则管理器] 缓存加载完成，共 {len(self.rules_cache)} 条规则")
+        logger.info(f"[规则管理器] PERM_VIEW_DASHBOARD = {self.rules_cache.get('PERM_VIEW_DASHBOARD')}")
+        logger.info(f"[规则管理器] PERM_VIEW_SETTINGS = {self.rules_cache.get('PERM_VIEW_SETTINGS')}")
+    
+    def refresh_cache(self):
+        """强制刷新规则缓存"""
+        logger.info("[规则管理器] 强制刷新规则缓存...")
+        self._load_rules_cache()
             
     
     def get_rule(self, rule_code: str) -> Any:
@@ -585,6 +607,7 @@ def init_rule_manager(db_path: str):
     """初始化规则管理器"""
     global rule_manager
     rule_manager = RuleManager(db_path)
+    rule_manager.refresh_cache()
     return rule_manager
 
 

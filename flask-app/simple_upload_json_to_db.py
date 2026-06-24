@@ -25,7 +25,7 @@ DB_PATH = os.path.join(os.path.dirname(__file__), 'app.db')
 
 def create_table_if_not_exists():
     """创建表(如果不存在)"""
-    with sqlite3.connect(sqlite3.connect(DB_PATH)) as conn:
+    with sqlite3.connect(DB_PATH) as conn:
         conn_cursor = conn.cursor()
         cursor = conn.cursor()
         

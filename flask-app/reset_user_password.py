@@ -24,7 +24,7 @@ def reset_user_password(username, new_password):
     print(f"连接数据库: {db_path}")
 
     try:
-        with sqlite3.connect(sqlite3.connect(db_path)) as conn:
+        with sqlite3.connect(db_path) as conn:
             conn_cursor = conn.cursor()
             cursor = conn.cursor()
             

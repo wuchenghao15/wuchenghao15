@@ -4,704 +4,977 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>系统设置 - MTSCOS AI</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
     <style>
-        :root {
-            --primary-color: #4F46E5;
-            --primary-light: #6366F1;
-            --dark-bg: #0F172A;
-            --dark-card: #1E293B;
-            --dark-border: #334155;
-            --text-primary: #F8FAFC;
-            --text-secondary: #94A3B8;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; background: #f3f4f6; min-height: 100vh; }
+        .top-bar { background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.05); padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+        .logo { display: flex; align-items: center; gap: 10px; }
+        .logo-icon { width: 36px; height: 36px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; }
+        .container { max-width: 1800px; margin: 24px auto; padding: 0 24px; display: grid; grid-template-columns: 260px 1fr; gap: 24px; }
+        .sidebar { background: white; border-radius: 12px; padding: 16px; height: fit-content; box-shadow: 0 2px 8px rgba(0,0,0,0.04); position: sticky; top: 80px; }
+        .sidebar-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 8px; cursor: pointer; color: #4b5563; font-size: 14px; margin-bottom: 4px; transition: all 0.15s; }
+        .sidebar-item:hover { background: #f3f4f6; color: #1f2937; }
+        .sidebar-item.active { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .sidebar-item i { width: 18px; text-align: center; }
+        .sidebar-section-title { font-size: 11px; font-weight: 600; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px; padding: 12px 14px 6px; }
+        .content { background: white; border-radius: 12px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); min-height: calc(100vh - 160px); }
+        .section-title { font-size: 22px; font-weight: 700; color: #1f2937; margin-bottom: 6px; }
+        .section-subtitle { font-size: 13px; color: #6b7280; margin-bottom: 24px; }
+        .employee-card { background: #f9fafb; border-radius: 10px; padding: 16px; border: 1px solid #e5e7eb; transition: all 0.2s; }
+        .employee-card:hover { transform: translateY(-2px); box-shadow: 0 8px 16px rgba(0,0,0,0.06); border-color: #c7d2fe; }
+        .status-badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+        .status-running { background: #d1fae5; color: #065f46; }
+        .status-stopped { background: #fee2e2; color: #b91c1c; }
+        .status-pulse { width: 6px; height: 6px; border-radius: 50%; background: #10b981; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+        .stat-card { padding: 20px; border-radius: 12px; color: white; }
+        .btn { padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: all 0.15s; }
+        .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 10px rgba(102,126,234,0.3); }
+        .btn-secondary { background: #f3f4f6; color: #4b5563; }
+        .btn-secondary:hover { background: #e5e7eb; }
+        .panel { display: none; }
+        .panel.active { display: block; }
+        .table-row { padding: 12px 0; border-bottom: 1px solid #f3f4f6; display: flex; justify-content: space-between; align-items: center; }
+        .table-row:last-child { border-bottom: none; }
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; align-items: center; justify-content: center; }
+        .modal.active { display: flex; }
+        .modal-content { background: white; border-radius: 12px; padding: 24px; max-width: 600px; width: 90%; max-height: 80vh; overflow: auto; }
         
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+        .stat-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .stat-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; opacity: 0.9; }
+        .stat-value { font-size: 36px; font-weight: 700; }
+        .stat-label { font-size: 12px; opacity: 0.8; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
+        .stat-bar { height: 4px; background: rgba(255,255,255,0.2); border-radius: 2px; margin-top: 12px; overflow: hidden; }
+        .stat-bar-fill { height: 100%; border-radius: 2px; background: rgba(255,255,255,0.8); transition: width 0.5s ease; }
         
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background-color: var(--dark-bg);
-            color: var(--text-primary);
-            min-height: 100vh;
-        }
+        .alert-item { padding: 14px; border-radius: 10px; margin-bottom: 10px; border-left: 4px solid; }
+        .alert-item.critical { background: rgba(220,53,69,0.08); border-color: #dc3545; }
+        .alert-item.warning { background: rgba(245,158,11,0.08); border-color: #f59e0b; }
+        .alert-item.info { background: rgba(23,162,184,0.08); border-color: #17a2b8; }
         
-        .navbar {
-            background: var(--dark-card);
-            padding: 1rem 2rem;
-            border-bottom: 1px solid var(--dark-border);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
+        .recent-activity-item { display: flex; gap: 12px; padding: 12px; border-radius: 10px; margin-bottom: 8px; background: #f9fafb; }
+        .activity-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
         
-        .navbar-brand {
-            font-size: 1.25rem;
-            font-weight: 600;
-            color: var(--text-primary);
-            text-decoration: none;
-        }
+        .feature-card { background: #f9fafb; border-radius: 10px; padding: 20px; text-align: center; cursor: pointer; transition: all 0.2s; border: 1px solid transparent; }
+        .feature-card:hover { transform: translateY(-3px); box-shadow: 0 8px 16px rgba(0,0,0,0.06); border-color: #e5e7eb; }
+        .feature-icon { font-size: 36px; margin-bottom: 10px; }
         
-        .nav-links {
-            display: flex;
-            gap: 1.5rem;
-        }
+        .system-status-item { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f3f4f6; }
+        .status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 8px; }
+        .status-dot.connected { background: #10b981; }
+        .status-dot.disconnected { background: #ef4444; }
+        .status-dot.normal { background: #10b981; }
+        .status-dot.warning { background: #f59e0b; }
         
-        .nav-links a {
-            color: var(--text-secondary);
-            text-decoration: none;
-            transition: color 0.2s;
-        }
+        .perm-level { padding: 12px; border-radius: 10px; border-left: 4px solid; margin-bottom: 8px; }
+        .perm-level.highest { background: rgba(220,53,69,0.08); border-color: #dc3545; }
+        .perm-level.super { background: rgba(245,158,11,0.08); border-color: #f59e0b; }
+        .perm-level.admin { background: rgba(102,126,234,0.08); border-color: #667eea; }
+        .perm-level.user { background: rgba(16,185,129,0.08); border-color: #10b981; }
+        .perm-level.lowest { background: #f9fafb; border-color: #9ca3af; }
         
-        .nav-links a:hover {
-            color: var(--text-primary);
-        }
+        .user-table { width: 100%; border-collapse: collapse; }
+        .user-table th, .user-table td { padding: 12px; text-align: left; border-bottom: 1px solid #f3f4f6; }
+        .user-table th { background: #f9fafb; font-weight: 600; font-size: 13px; color: #6b7280; }
+        .user-table tr:hover { background: #f9fafb; }
+
+        .ai-service-card { background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-radius: 12px; padding: 20px; border: 1px solid #bae6fd; transition: all 0.2s; }
+        .ai-service-card:hover { box-shadow: 0 4px 12px rgba(59,130,246,0.15); }
+        .ai-service-icon { font-size: 28px; margin-bottom: 12px; }
+        .ai-service-name { font-weight: 600; color: #1e40af; margin-bottom: 4px; }
+        .ai-service-status { font-size: 12px; padding: 3px 8px; border-radius: 6px; display: inline-block; }
+        .ai-service-status.active { background: #dcfce7; color: #166534; }
+        .ai-service-status.inactive { background: #fef2f2; color: #991b1b; }
         
-        .container {
-            max-width: 1200px;
-            margin: 2rem auto;
-            padding: 0 1rem;
-        }
+        .task-item { display: flex; justify-content: space-between; align-items: center; padding: 14px; border-radius: 10px; background: #f9fafb; margin-bottom: 8px; }
+        .task-item:hover { background: #f3f4f6; }
+        .task-priority { font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: 600; }
+        .task-priority.high { background: #fee2e2; color: #dc2626; }
+        .task-priority.medium { background: #fef3c7; color: #d97706; }
+        .task-priority.low { background: #d1fae5; color: #059669; }
         
-        .page-title {
-            font-size: 2rem;
-            font-weight: 600;
-            margin-bottom: 2rem;
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
+        .nav-anomaly-item { padding: 14px; border-radius: 10px; background: #fef2f2; border: 1px solid #fecaca; margin-bottom: 8px; }
+        .nav-anomaly-item:hover { background: #fee2e2; }
         
-        .page-title svg {
-            width: 28px;
-            height: 28px;
-            color: var(--primary-color);
-        }
+        .progress-ring { width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; position: relative; background: conic-gradient(#667eea 0deg, #e5e7eb 0deg); }
+        .progress-ring::before { content: ''; position: absolute; width: 60px; height: 60px; border-radius: 50%; background: white; }
+        .progress-value { position: relative; font-size: 18px; font-weight: 700; color: #1f2937; }
         
-        .settings-grid {
-            display: grid;
-            grid-template-columns: 280px 1fr;
-            gap: 2rem;
-        }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+        .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; }
         
-        .sidebar {
-            background: var(--dark-card);
-            border-radius: 12px;
-            padding: 1.5rem;
-        }
-        
-        .sidebar-title {
-            font-size: 0.875rem;
-            font-weight: 600;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin-bottom: 1rem;
-        }
-        
-        .sidebar-menu {
-            list-style: none;
-        }
-        
-        .sidebar-menu li {
-            margin-bottom: 0.25rem;
-        }
-        
-        .sidebar-menu a {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            padding: 0.75rem 1rem;
-            border-radius: 8px;
-            color: var(--text-secondary);
-            text-decoration: none;
-            transition: all 0.2s;
-        }
-        
-        .sidebar-menu a:hover {
-            background: rgba(79, 70, 229, 0.1);
-            color: var(--text-primary);
-        }
-        
-        .sidebar-menu a.active {
-            background: var(--primary-color);
-            color: white;
-        }
-        
-        .sidebar-menu svg {
-            width: 18px;
-            height: 18px;
-        }
-        
-        .main-content {
-            background: var(--dark-card);
-            border-radius: 12px;
-            padding: 2rem;
-        }
-        
-        .section-title {
-            font-size: 1.25rem;
-            font-weight: 600;
-            margin-bottom: 1.5rem;
-            color: var(--text-primary);
-        }
-        
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-        
-        .form-label {
-            display: block;
-            font-size: 0.875rem;
-            font-weight: 500;
-            color: var(--text-secondary);
-            margin-bottom: 0.5rem;
-        }
-        
-        .form-input {
-            width: 100%;
-            padding: 0.75rem 1rem;
-            background: rgba(0, 0, 0, 0.2);
-            border: 1px solid var(--dark-border);
-            border-radius: 8px;
-            color: var(--text-primary);
-            font-size: 1rem;
-            transition: border-color 0.2s;
-        }
-        
-        .form-input:focus {
-            outline: none;
-            border-color: var(--primary-color);
-        }
-        
-        .form-select {
-            width: 100%;
-            padding: 0.75rem 1rem;
-            background: rgba(0, 0, 0, 0.2);
-            border: 1px solid var(--dark-border);
-            border-radius: 8px;
-            color: var(--text-primary);
-            font-size: 1rem;
-            cursor: pointer;
-        }
-        
-        .form-select:focus {
-            outline: none;
-            border-color: var(--primary-color);
-        }
-        
-        .form-select option {
-            background: var(--dark-bg);
-            color: var(--text-primary);
-        }
-        
-        .language-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 12px;
-        }
-        
-        .language-option {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 14px 16px;
-            border: 2px solid var(--dark-border);
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.2s;
-            background: transparent;
-        }
-        
-        .language-option:hover {
-            border-color: rgba(79, 70, 229, 0.4);
-        }
-        
-        .language-option.active {
-            border-color: var(--primary-color);
-            background: rgba(79, 70, 229, 0.1);
-        }
-        
-        .language-option .flag {
-            font-size: 24px;
-        }
-        
-        .language-option .info {
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .language-option .native-name {
-            font-weight: 600;
-            color: var(--text-primary);
-        }
-        
-        .language-option .name {
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-        }
-        
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.75rem 1.5rem;
-            border: none;
-            border-radius: 8px;
-            font-size: 0.875rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        
-        .btn-primary {
-            background: var(--primary-color);
-            color: white;
-        }
-        
-        .btn-primary:hover {
-            background: var(--primary-light);
-        }
-        
-        .btn-secondary {
-            background: rgba(255, 255, 255, 0.1);
-            color: var(--text-primary);
-        }
-        
-        .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.15);
-        }
-        
-        .btn-group {
-            display: flex;
-            gap: 0.75rem;
-            margin-top: 2rem;
-        }
-        
-        .status-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.25rem 0.75rem;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 500;
-        }
-        
-        .status-resolved {
-            background: rgba(16, 185, 129, 0.15);
-            color: #34D399;
-        }
-        
-        .status-pending {
-            background: rgba(245, 158, 11, 0.15);
-            color: #FBBF24;
-        }
-        
-        .error-list {
-            max-height: 400px;
-            overflow-y: auto;
-        }
-        
-        .error-item {
-            padding: 1rem;
-            border-bottom: 1px solid var(--dark-border);
-            transition: background 0.2s;
-        }
-        
-        .error-item:hover {
-            background: rgba(0, 0, 0, 0.1);
-        }
-        
-        .error-item:last-child {
-            border-bottom: none;
-        }
-        
-        .error-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 0.5rem;
-        }
-        
-        .error-type {
-            font-weight: 600;
-            color: var(--primary-color);
-        }
-        
-        .error-message {
-            color: var(--text-primary);
-            margin-bottom: 0.25rem;
-        }
-        
-        .error-details {
-            font-size: 0.875rem;
-            color: var(--text-secondary);
-            font-family: monospace;
-        }
-        
-        .error-time {
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-            margin-top: 0.5rem;
-        }
-        
-        .empty-state {
-            text-align: center;
-            padding: 4rem;
-            color: var(--text-secondary);
-        }
-        
-        .empty-state svg {
-            width: 64px;
-            height: 64px;
-            margin-bottom: 1rem;
-            opacity: 0.3;
-        }
-        
-        .empty-state h3 {
-            margin-bottom: 0.5rem;
+        @media (max-width: 1200px) {
+            .grid-2 { grid-template-columns: 1fr; }
+            .grid-3 { grid-template-columns: repeat(2, 1fr); }
+            .grid-4 { grid-template-columns: repeat(2, 1fr); }
         }
         
         @media (max-width: 768px) {
-            .settings-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .sidebar {
-                order: 2;
-            }
-            
-            .main-content {
-                order: 1;
-            }
-            
-            .navbar {
-                flex-direction: column;
-                gap: 1rem;
-            }
+            .container { grid-template-columns: 1fr; }
+            .sidebar { position: relative; top: 0; }
+            .grid-3 { grid-template-columns: 1fr; }
+            .grid-4 { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
-    <nav class="navbar">
-        <a href="/" class="navbar-brand">MTSCOS AI</a>
-        <div class="nav-links">
-            <a href="/">首页</a>
-            <a href="/dashboard">控制台</a>
-            <a href="/settings" class="active">设置</a>
+    <div class="top-bar">
+        <div class="logo">
+            <div class="logo-icon"><i class="fas fa-brain"></i></div>
+            <div>
+                <div style="font-weight: 700; color: #1f2937;">MTSCOS AI</div>
+                <div style="font-size: 11px; color: #6b7280;">v5.0.0 智能系统优化版</div>
+            </div>
         </div>
-    </nav>
-    
-    <div class="container">
-        <h1 class="page-title">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
-                <circle cx="12" cy="12" r="3"/>
-            </svg>
-            系统设置
-        </h1>
-        
-        <div class="settings-grid">
-            <aside class="sidebar">
-                <div class="sidebar-title">设置菜单</div>
-                <ul class="sidebar-menu">
-                    <li><a href="#general" class="active" onclick="showSection('general')">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M12 20h9"/>
-                            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7.5 18H4v-3L16.5 3.5z"/>
-                        </svg>
-                        通用设置
-                    </a></li>
-                    <li><a href="#language" onclick="showSection('language')">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                            <polyline points="14 2 14 8 20 8"/>
-                            <line x1="16" y1="13" x2="8" y2="13"/>
-                            <line x1="16" y1="17" x2="8" y2="17"/>
-                            <polyline points="10 9 9 9 8 9"/>
-                        </svg>
-                        语言设置
-                    </a></li>
-                    <li><a href="#permissions" onclick="showSection('permissions')">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                        </svg>
-                        权限设置
-                    </a></li>
-                    <li><a href="#errors" onclick="showSection('errors')">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="10"/>
-                            <line x1="12" y1="8" x2="12" y2="12"/>
-                            <line x1="12" y1="16" x2="12.01" y2="16"/>
-                        </svg>
-                        错误日志
-                    </a></li>
-                </ul>
-            </aside>
-            
-            <main class="main-content">
-                <div id="general-section" class="section">
-                    <h2 class="section-title">通用设置</h2>
-                    
-                    <div class="form-group">
-                        <label class="form-label">系统名称</label>
-                        <input type="text" class="form-input" id="system-name" placeholder="输入系统名称">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">系统描述</label>
-                        <input type="text" class="form-input" id="system-desc" placeholder="输入系统描述">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">默认时区</label>
-                        <select class="form-select" id="timezone">
-                            <option value="Asia/Shanghai">Asia/Shanghai (UTC+8)</option>
-                            <option value="Asia/Tokyo">Asia/Tokyo (UTC+9)</option>
-                            <option value="Asia/Seoul">Asia/Seoul (UTC+9)</option>
-                            <option value="UTC">UTC</option>
-                        </select>
-                    </div>
-                    
-                    <div class="btn-group">
-                        <button class="btn btn-primary" onclick="saveGeneralSettings()">保存设置</button>
-                        <button class="btn btn-secondary" onclick="resetGeneralSettings()">重置</button>
-                    </div>
-                </div>
-                
-                <div id="language-section" class="section" style="display: none;">
-                    <h2 class="section-title">语言设置</h2>
-                    
-                    <div class="form-group">
-                        <label class="form-label">选择语言</label>
-                        <div class="language-grid" id="language-grid">
-                            <!-- 动态加载语言选项 -->
-                        </div>
-                    </div>
-                    
-                    <div class="btn-group">
-                        <button class="btn btn-primary" onclick="saveLanguage()">保存语言设置</button>
-                    </div>
-                </div>
-                
-                <div id="permissions-section" class="section" style="display: none;">
-                    <h2 class="section-title">权限设置</h2>
-                    
-                    <div class="form-group">
-                        <label class="form-label">会话超时时间（分钟）</label>
-                        <input type="number" class="form-input" id="session-timeout" value="30" min="5" max="120">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">最大登录尝试次数</label>
-                        <input type="number" class="form-input" id="max-login-attempts" value="5" min="3" max="10">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">密码过期天数</label>
-                        <input type="number" class="form-input" id="password-expiry" value="90" min="30" max="365">
-                    </div>
-                    
-                    <div class="btn-group">
-                        <button class="btn btn-primary" onclick="savePermissionSettings()">保存权限设置</button>
-                        <button class="btn btn-secondary" onclick="resetPermissionSettings()">重置</button>
-                    </div>
-                </div>
-                
-                <div id="errors-section" class="section" style="display: none;">
-                    <h2 class="section-title">错误日志（供AI学习）</h2>
-                    
-                    <div id="error-list" class="error-list">
-                        <!-- 动态加载错误列表 -->
-                    </div>
-                    
-                    <div id="empty-errors" class="empty-state" style="display: none;">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                            <polyline points="22 4 12 14.01 9 11.01"/>
-                        </svg>
-                        <h3>暂无错误记录</h3>
-                        <p>系统运行正常，没有需要分析的错误</p>
-                    </div>
-                </div>
-            </main>
+        <div style="display: flex; align-items: center; gap: 16px;">
+            <a href="/dashboard" style="color: #4b5563; text-decoration: none; font-size: 13px;">
+                <i class="fas fa-tachometer-alt"></i> 仪表盘
+            </a>
+            <a href="/" style="color: #4b5563; text-decoration: none; font-size: 13px;">
+                <i class="fas fa-sign-out-alt"></i> 退出
+            </a>
         </div>
     </div>
-    
-    <script>
-        let currentLang = 'zh-CN';
-        
-        function showSection(section) {
-            document.querySelectorAll('.section').forEach(s => s.style.display = 'none');
-            document.querySelectorAll('.sidebar-menu a').forEach(a => a.classList.remove('active'));
-            document.getElementById(`${section}-section`).style.display = 'block';
-            btn.classList.add('active');
+
+    <div class="container">
+        <aside class="sidebar">
+            <div class="sidebar-section-title">系统概览</div>
+            <div class="sidebar-item active" data-panel="dashboard">
+                <i class="fas fa-chart-pie"></i> 系统仪表盘
+            </div>
+            <div class="sidebar-item" data-panel="ai-overview">
+                <i class="fas fa-cpu"></i> AI智能概览
+            </div>
             
-            if (section === 'language') {
-                loadLanguages();
-            } else if (section === 'errors') {
-                loadErrors();
+            <div class="sidebar-section-title">AI员工管理</div>
+            <div class="sidebar-item" data-panel="ai-employees">
+                <i class="fas fa-robot"></i> AI员工管理
+            </div>
+            
+            <div class="sidebar-section-title">用户管理</div>
+            <div class="sidebar-item" data-panel="users">
+                <i class="fas fa-users"></i> 用户管理
+            </div>
+            <div class="sidebar-item" data-panel="permissions">
+                <i class="fas fa-lock"></i> 权限设置
+            </div>
+            
+            <div class="sidebar-section-title">系统设置</div>
+            <div class="sidebar-item" data-panel="system-config">
+                <i class="fas fa-cog"></i> 系统配置
+            </div>
+            <div class="sidebar-item" data-panel="security">
+                <i class="fas fa-shield-alt"></i> 安全设置
+            </div>
+            <div class="sidebar-item" data-panel="database-settings">
+                <i class="fas fa-database"></i> 数据库设置
+            </div>
+            <div class="sidebar-item" data-panel="ai-settings">
+                <i class="fas fa-robot"></i> AI设置
+            </div>
+            
+            <div class="sidebar-section-title">系统工具</div>
+            <div class="sidebar-item" data-panel="logs">
+                <i class="fas fa-file-alt"></i> 系统日志
+            </div>
+            <div class="sidebar-item" data-panel="audit">
+                <i class="fas fa-history"></i> 操作审计
+            </div>
+            
+            <div class="sidebar-section-title">关于</div>
+            <div class="sidebar-item" data-panel="about">
+                <i class="fas fa-info-circle"></i> 关于系统
+            </div>
+        </aside>
+
+        <div class="content">
+            <!-- 系统仪表盘面板 -->
+            <div class="panel active" id="panel-dashboard">
+                <div class="section-title"><i class="fas fa-chart-pie text-indigo-600"></i> 系统仪表盘</div>
+                <div class="section-subtitle">实时监控系统性能和状态</div>
+                
+                <div class="stat-grid">
+                    <div class="stat-card" style="background: linear-gradient(135deg, #f87171 0%, #ef4444 100%);">
+                        <div class="stat-card-header">
+                            <span class="stat-icon" style="background: rgba(255,255,255,0.2);">💻</span>
+                            <span class="status-dot" id="cpu-status"></span>
+                        </div>
+                        <div class="stat-value" id="cpu-value">--</div>
+                        <div class="stat-label">CPU 使用率</div>
+                        <div class="stat-bar">
+                            <div class="stat-bar-fill" id="cpu-bar"></div>
+                        </div>
+                    </div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #6ee7b7 0%, #10b981 100%);">
+                        <div class="stat-card-header">
+                            <span class="stat-icon" style="background: rgba(255,255,255,0.2);">💾</span>
+                            <span class="status-dot" id="memory-status"></span>
+                        </div>
+                        <div class="stat-value" id="memory-value">--</div>
+                        <div class="stat-label">内存使用率</div>
+                        <div class="stat-bar">
+                            <div class="stat-bar-fill" id="memory-bar"></div>
+                        </div>
+                    </div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);">
+                        <div class="stat-card-header">
+                            <span class="stat-icon" style="background: rgba(255,255,255,0.2);">🖥️</span>
+                            <span class="status-dot" id="disk-status"></span>
+                        </div>
+                        <div class="stat-value" id="disk-value">--</div>
+                        <div class="stat-label">磁盘使用率</div>
+                        <div class="stat-bar">
+                            <div class="stat-bar-fill" id="disk-bar"></div>
+                        </div>
+                    </div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%);">
+                        <div class="stat-card-header">
+                            <span class="stat-icon" style="background: rgba(255,255,255,0.2);">⚠️</span>
+                        </div>
+                        <div class="stat-value" id="alert-count">--</div>
+                        <div class="stat-label">活动告警</div>
+                    </div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);">
+                        <div class="stat-card-header">
+                            <span class="stat-icon" style="background: rgba(255,255,255,0.2);">👥</span>
+                        </div>
+                        <div class="stat-value" id="user-count">--</div>
+                        <div class="stat-label">活跃用户</div>
+                    </div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #f472b6 0%, #ec4899 100%);">
+                        <div class="stat-card-header">
+                            <span class="stat-icon" style="background: rgba(255,255,255,0.2);">🔗</span>
+                        </div>
+                        <div class="stat-value" id="session-count">--</div>
+                        <div class="stat-label">活动会话</div>
+                    </div>
+                </div>
+
+                <div class="grid-2">
+                    <div>
+                        <h3 style="font-size: 16px; font-weight: 600; color: #1f2937; margin-bottom: 16px;">🔔 系统告警</h3>
+                        <div id="alert-list">
+                            <div style="text-align: center; padding: 40px; color: #9ca3af;">加载中...</div>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 style="font-size: 16px; font-weight: 600; color: #1f2937; margin-bottom: 16px;">📡 系统状态</h3>
+                        <div class="system-status-item">
+                            <span><span class="status-dot" id="db-status"></span>数据库连接</span>
+                            <span id="db-status-text">--</span>
+                        </div>
+                        <div class="system-status-item">
+                            <span><span class="status-dot" id="net-status"></span>网络状态</span>
+                            <span id="net-status-text">--</span>
+                        </div>
+                        <div class="system-status-item">
+                            <span>系统版本</span>
+                            <span>v5.0.0</span>
+                        </div>
+                        <div class="system-status-item">
+                            <span>最后检查时间</span>
+                            <span id="last-check">--</span>
+                        </div>
+                        <div class="system-status-item">
+                            <span>运行时长</span>
+                            <span id="uptime">--</span>
+                        </div>
+                        <div class="system-status-item">
+                            <span>API请求次数</span>
+                            <span id="api-requests">--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 24px;">
+                    <h3 style="font-size: 16px; font-weight: 600; color: #1f2937; margin-bottom: 16px;">📜 最近活动</h3>
+                    <div id="recent-activity-list">
+                        <div style="text-align: center; padding: 40px; color: #9ca3af;">加载中...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI智能概览面板 -->
+            <div class="panel" id="panel-ai-overview">
+                <div class="section-title"><i class="fas fa-cpu text-indigo-600"></i> AI智能概览</div>
+                <div class="section-subtitle">监控AI系统核心服务状态</div>
+                
+                <div class="grid-4" style="margin-bottom: 24px;">
+                    <div class="ai-service-card">
+                        <div class="ai-service-icon">🧠</div>
+                        <div class="ai-service-name">决策引擎</div>
+                        <div class="ai-service-status active" id="de-status">运行中</div>
+                        <div style="margin-top: 12px;">
+                            <div style="font-size: 24px; font-weight: 700; color: #1f2937;" id="de-decisions">0</div>
+                            <div style="font-size: 12px; color: #6b7280;">总决策数</div>
+                        </div>
+                    </div>
+                    <div class="ai-service-card">
+                        <div class="ai-service-icon">🔗</div>
+                        <div class="ai-service-name">知识图谱</div>
+                        <div class="ai-service-status active" id="kg-status">运行中</div>
+                        <div style="margin-top: 12px;">
+                            <div style="font-size: 24px; font-weight: 700; color: #1f2937;" id="kg-nodes">0</div>
+                            <div style="font-size: 12px; color: #6b7280;">节点数</div>
+                        </div>
+                    </div>
+                    <div class="ai-service-card">
+                        <div class="ai-service-icon">🔮</div>
+                        <div class="ai-service-name">预测器</div>
+                        <div class="ai-service-status active" id="pr-status">运行中</div>
+                        <div style="margin-top: 12px;">
+                            <div style="font-size: 24px; font-weight: 700; color: #1f2937;" id="pr-predictions">0</div>
+                            <div style="font-size: 12px; color: #6b7280;">预测次数</div>
+                        </div>
+                    </div>
+                    <div class="ai-service-card">
+                        <div class="ai-service-icon">⚙️</div>
+                        <div class="ai-service-name">编排器</div>
+                        <div class="ai-service-status active" id="orc-status">运行中</div>
+                        <div style="margin-top: 12px;">
+                            <div style="font-size: 24px; font-weight: 700; color: #1f2937;" id="orc-tasks">0</div>
+                            <div style="font-size: 12px; color: #6b7280;">任务数</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid-2">
+                    <div>
+                        <h3 style="font-size: 16px; font-weight: 600; color: #1f2937; margin-bottom: 16px;">📋 任务列表</h3>
+                        <div id="task-list">
+                            <div style="text-align: center; padding: 40px; color: #9ca3af;">加载中...</div>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 style="font-size: 16px; font-weight: 600; color: #1f2937; margin-bottom: 16px;">🚨 导航异常检测</h3>
+                        <div id="nav-anomaly-list">
+                            <div style="text-align: center; padding: 40px; color: #9ca3af;">加载中...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 24px;">
+                    <h3 style="font-size: 16px; font-weight: 600; color: #1f2937; margin-bottom: 16px;">💡 系统洞察</h3>
+                    <div id="insights-list">
+                        <div style="text-align: center; padding: 40px; color: #9ca3af;">加载中...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI员工管理面板 -->
+            <div class="panel" id="panel-ai-employees">
+                <div class="section-title"><i class="fas fa-robot text-indigo-600"></i> AI员工管理</div>
+                <div class="section-subtitle">管理和监控所有AI员工的运行状态</div>
+                
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    <div class="stat-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                        <div style="font-size: 28px; font-weight: 700;" id="stat-total">5</div>
+                        <div style="font-size: 12px; opacity: 0.9;">AI员工总数</div>
+                    </div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                        <div style="font-size: 28px; font-weight: 700;" id="stat-running">5</div>
+                        <div style="font-size: 12px; opacity: 0.9;">运行中</div>
+                    </div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);">
+                        <div style="font-size: 28px; font-weight: 700;" id="stat-alerts">0</div>
+                        <div style="font-size: 12px; opacity: 0.9;">待处理警报</div>
+                    </div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #fbc2eb 0%, #a6c1ee 100%);">
+                        <div style="font-size: 28px; font-weight: 700;" id="stat-efficiency">98%</div>
+                        <div style="font-size: 12px; opacity: 0.9;">平均效率</div>
+                    </div>
+                </div>
+
+                <div class="flex justify-between items-center mb-4">
+                    <h3 style="font-size: 16px; font-weight: 600; color: #1f2937;">员工列表</h3>
+                    <button class="btn btn-primary" onclick="refreshEmployees()">
+                        <i class="fas fa-sync-alt"></i> 刷新
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="employees-container">
+                    <div class="employee-card">
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <div style="font-weight: 600; color: #1f2937;">客户端监控员</div>
+                                <div style="font-size: 12px; color: #6b7280;">远程客户端接入监控专家</div>
+                            </div>
+                            <span class="status-badge status-running"><span class="status-pulse"></span>运行中</span>
+                        </div>
+                        <div style="font-size: 11px; color: #9ca3af; margin-top: 8px; font-family: monospace;">emp_monitor_client_access</div>
+                        <div class="flex gap-2 mt-3">
+                            <a href="/api/monitor/stats" target="_blank" class="btn btn-secondary" style="font-size: 11px; padding: 5px 10px;">统计</a>
+                            <a href="/api/monitor/anomalies" target="_blank" class="btn btn-secondary" style="font-size: 11px; padding: 5px 10px;">异常</a>
+                        </div>
+                    </div>
+                    <div class="employee-card">
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <div style="font-weight: 600; color: #1f2937;">代码修复员</div>
+                                <div style="font-size: 12px; color: #6b7280;">系统代码自动修复专家</div>
+                            </div>
+                            <span class="status-badge status-running"><span class="status-pulse"></span>运行中</span>
+                        </div>
+                        <div style="font-size: 11px; color: #9ca3af; margin-top: 8px; font-family: monospace;">emp_code_repair_ai</div>
+                        <div class="flex gap-2 mt-3">
+                            <a href="/api/repair/stats" target="_blank" class="btn btn-secondary" style="font-size: 11px; padding: 5px 10px;">统计</a>
+                            <a href="/api/repair/errors" target="_blank" class="btn btn-secondary" style="font-size: 11px; padding: 5px 10px;">错误</a>
+                        </div>
+                    </div>
+                    <div class="employee-card">
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <div style="font-weight: 600; color: #1f2937;">端口监控员</div>
+                                <div style="font-size: 12px; color: #6b7280;">系统端口异常监控与修复专家</div>
+                            </div>
+                            <span class="status-badge status-running"><span class="status-pulse"></span>运行中</span>
+                        </div>
+                        <div style="font-size: 11px; color: #9ca3af; margin-top: 8px; font-family: monospace;">emp_port_monitor_ai</div>
+                        <div class="flex gap-2 mt-3">
+                            <a href="/api/port-monitor/stats" target="_blank" class="btn btn-secondary" style="font-size: 11px; padding: 5px 10px;">统计</a>
+                            <a href="/api/port-monitor/status" target="_blank" class="btn btn-secondary" style="font-size: 11px; padding: 5px 10px;">状态</a>
+                        </div>
+                    </div>
+                    <div class="employee-card">
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <div style="font-weight: 600; color: #1f2937;">行为监控员</div>
+                                <div style="font-size: 12px; color: #6b7280;">用户行为记录与异常警报专家</div>
+                            </div>
+                            <span class="status-badge status-running"><span class="status-pulse"></span>运行中</span>
+                        </div>
+                        <div style="font-size: 11px; color: #9ca3af; margin-top: 8px; font-family: monospace;">emp_behavior_monitor_ai</div>
+                        <div class="flex gap-2 mt-3">
+                            <a href="/api/behavior/stats" target="_blank" class="btn btn-secondary" style="font-size: 11px; padding: 5px 10px;">统计</a>
+                            <a href="/api/behavior/alerts" target="_blank" class="btn btn-secondary" style="font-size: 11px; padding: 5px 10px;">警报</a>
+                        </div>
+                    </div>
+                    <div class="employee-card">
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <div style="font-weight: 600; color: #1f2937;">系统优化员</div>
+                                <div style="font-size: 12px; color: #6b7280;">系统自动优化与功能拓展专家</div>
+                            </div>
+                            <span class="status-badge status-running"><span class="status-pulse"></span>运行中</span>
+                        </div>
+                        <div style="font-size: 11px; color: #9ca3af; margin-top: 8px; font-family: monospace;">emp_system_optimizer_ai</div>
+                        <div class="flex gap-2 mt-3">
+                            <a href="/api/optimizer/version" target="_blank" class="btn btn-secondary" style="font-size: 11px; padding: 5px 10px;">版本</a>
+                            <a href="/api/optimizer/optimize" target="_blank" class="btn btn-secondary" style="font-size: 11px; padding: 5px 10px;">优化</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 用户管理面板 -->
+            <div class="panel" id="panel-users">
+                <div class="section-title"><i class="fas fa-users text-indigo-600"></i> 用户管理</div>
+                <div class="section-subtitle">管理系统用户和权限</div>
+                
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                    <div>
+                        <input type="text" placeholder="搜索用户..." style="padding: 8px 12px; border-radius: 8px; border: 1px solid #e5e7eb; width: 200px;">
+                    </div>
+                    <button class="btn btn-primary"><i class="fas fa-plus"></i> 添加用户</button>
+                </div>
+                
+                <table class="user-table">
+                    <thead>
+                        <tr>
+                            <th>用户名</th>
+                            <th>角色</th>
+                            <th>状态</th>
+                            <th>审批状态</th>
+                            <th>创建时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>wuchenghao15</td>
+                            <td><span style="background: #fef3c7; color: #d97706; padding: 4px 8px; border-radius: 6px; font-size: 12px;">硬件管理员</span></td>
+                            <td><span style="color: #10b981;">已激活</span></td>
+                            <td><span style="color: #10b981;">已审批</span></td>
+                            <td>2026-06-23</td>
+                            <td>
+                                <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 12px;">编辑</button>
+                                <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 12px;">删除</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 权限设置面板 -->
+            <div class="panel" id="panel-permissions">
+                <div class="section-title"><i class="fas fa-lock text-indigo-600"></i> 权限设置</div>
+                <div class="section-subtitle">管理系统权限等级</div>
+                
+                <div class="permission-hierarchy">
+                    <div class="perm-level highest">
+                        <span style="font-size: 24px;">🔴</span>
+                        <div style="flex: 1;">
+                            <strong style="display: block;">硬件管理员</strong>
+                            <span style="font-size: 12px; color: #6b7280;">最高权限，需配合硬件加密狗使用</span>
+                        </div>
+                    </div>
+                    <div class="perm-level super">
+                        <span style="font-size: 24px;">🟠</span>
+                        <div style="flex: 1;">
+                            <strong style="display: block;">超级管理员</strong>
+                            <span style="font-size: 12px; color: #6b7280;">系统最高管理权限</span>
+                        </div>
+                    </div>
+                    <div class="perm-level admin">
+                        <span style="font-size: 24px;">🟡</span>
+                        <div style="flex: 1;">
+                            <strong style="display: block;">管理员</strong>
+                            <span style="font-size: 12px; color: #6b7280;">系统管理权限</span>
+                        </div>
+                    </div>
+                    <div class="perm-level user">
+                        <span style="font-size: 24px;">🟢</span>
+                        <div style="flex: 1;">
+                            <strong style="display: block;">学生 / 设计师</strong>
+                            <span style="font-size: 12px; color: #6b7280;">基础用户权限</span>
+                        </div>
+                    </div>
+                    <div class="perm-level lowest">
+                        <span style="font-size: 24px;">⚪</span>
+                        <div style="flex: 1;">
+                            <strong style="display: block;">访客</strong>
+                            <span style="font-size: 12px; color: #6b7280;">未登录用户</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 系统配置面板 -->
+            <div class="panel" id="panel-system-config">
+                <div class="section-title"><i class="fas fa-cog text-indigo-600"></i> 系统配置</div>
+                <div class="section-subtitle">配置系统基本参数</div>
+                <div class="table-row">
+                    <div><strong>系统名称</strong><div style="font-size: 12px; color: #6b7280;">MTSCOS AI 智能管理系统</div></div>
+                    <div style="color: #6b7280;">v5.0.0</div>
+                </div>
+                <div class="table-row">
+                    <div><strong>开发代号</strong><div style="font-size: 12px; color: #6b7280;">系统开发版本代号</div></div>
+                    <div style="color: #6b7280;">智能系统优化版</div>
+                </div>
+                <div class="table-row">
+                    <div><strong>数据库</strong><div style="font-size: 12px; color: #6b7280;">SQLite</div></div>
+                    <div style="color: #10b981; font-weight: 600;">已连接</div>
+                </div>
+                <div class="table-row">
+                    <div><strong>SSL/TLS</strong><div style="font-size: 12px; color: #6b7280;">HTTPS加密通信</div></div>
+                    <div style="color: #10b981; font-weight: 600;">已启用</div>
+                </div>
+            </div>
+
+            <!-- 安全设置面板 -->
+            <div class="panel" id="panel-security">
+                <div class="section-title"><i class="fas fa-shield-alt text-indigo-600"></i> 安全设置</div>
+                <div class="section-subtitle">系统安全相关配置</div>
+                <div class="table-row">
+                    <div><strong>登录失败限制</strong><div style="font-size: 12px; color: #6b7280;">超过此次数自动锁定</div></div>
+                    <div>5 次</div>
+                </div>
+                <div class="table-row">
+                    <div><strong>会话超时</strong><div style="font-size: 12px; color: #6b7280;">用户会话自动过期时间</div></div>
+                    <div>30 分钟</div>
+                </div>
+                <div class="table-row">
+                    <div><strong>IP封禁</strong><div style="font-size: 12px; color: #6b7280;">异常IP自动封禁</div></div>
+                    <div style="color: #10b981; font-weight: 600;">已启用</div>
+                </div>
+                <div class="table-row">
+                    <div><strong>SQL注入防护</strong><div style="font-size: 12px; color: #6b7280;">中间件自动防护</div></div>
+                    <div style="color: #10b981; font-weight: 600;">已启用</div>
+                </div>
+            </div>
+
+            <!-- 数据库设置面板 -->
+            <div class="panel" id="panel-database-settings">
+                <div class="section-title"><i class="fas fa-database text-indigo-600"></i> 数据库设置</div>
+                <div class="section-subtitle">数据库连接和缓存配置</div>
+                <div class="table-row">
+                    <div><strong>数据库类型</strong><div style="font-size: 12px; color: #6b7280;">当前使用的数据库</div></div>
+                    <div>SQLite</div>
+                </div>
+                <div class="table-row">
+                    <div><strong>连接池最小连接数</strong><div style="font-size: 12px; color: #6b7280;">空闲时保持的最小连接数</div></div>
+                    <div>5</div>
+                </div>
+                <div class="table-row">
+                    <div><strong>连接池最大连接数</strong><div style="font-size: 12px; color: #6b7280;">高峰期最多可扩展到的连接数</div></div>
+                    <div>50</div>
+                </div>
+                <div class="table-row">
+                    <div><strong>连接等待超时</strong><div style="font-size: 12px; color: #6b7280;">请求等待连接的超时时间</div></div>
+                    <div>10秒</div>
+                </div>
+            </div>
+
+            <!-- AI设置面板 -->
+            <div class="panel" id="panel-ai-settings">
+                <div class="section-title"><i class="fas fa-robot text-indigo-600"></i> AI设置</div>
+                <div class="section-subtitle">AI相关配置</div>
+                <div class="table-row">
+                    <div><strong>AI员工自动修复</strong><div style="font-size: 12px; color: #6b7280;">自动修复系统代码问题</div></div>
+                    <div style="color: #10b981; font-weight: 600;">已启用</div>
+                </div>
+                <div class="table-row">
+                    <div><strong>异常检测</strong><div style="font-size: 12px; color: #6b7280;">自动检测系统异常</div></div>
+                    <div style="color: #10b981; font-weight: 600;">已启用</div>
+                </div>
+                <div class="table-row">
+                    <div><strong>自动优化</strong><div style="font-size: 12px; color: #6b7280;">自动优化系统性能</div></div>
+                    <div style="color: #10b981; font-weight: 600;">已启用</div>
+                </div>
+            </div>
+
+            <!-- 系统日志面板 -->
+            <div class="panel" id="panel-logs">
+                <div class="section-title"><i class="fas fa-file-alt text-indigo-600"></i> 系统日志</div>
+                <div class="section-subtitle">查看系统运行日志</div>
+                <div style="background: #1f2937; color: #e0e0e0; padding: 16px; border-radius: 8px; font-family: monospace; font-size: 12px; max-height: 400px; overflow-y: auto;">
+                    <div>[2026-06-23 10:00:00] INFO - 系统启动成功</div>
+                    <div>[2026-06-23 10:00:01] INFO - 数据库连接成功</div>
+                    <div>[2026-06-23 10:00:02] INFO - AI员工初始化完成</div>
+                    <div>[2026-06-23 10:05:00] INFO - 用户登录: wuchenghao15</div>
+                </div>
+            </div>
+
+            <!-- 操作审计面板 -->
+            <div class="panel" id="panel-audit">
+                <div class="section-title"><i class="fas fa-history text-indigo-600"></i> 操作审计</div>
+                <div class="section-subtitle">查看用户操作记录</div>
+                <table class="user-table">
+                    <thead>
+                        <tr>
+                            <th>时间</th>
+                            <th>用户</th>
+                            <th>操作</th>
+                            <th>IP地址</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>2026-06-23 10:05:00</td>
+                            <td>wuchenghao15</td>
+                            <td>用户登录</td>
+                            <td>127.0.0.1</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 关于系统面板 -->
+            <div class="panel" id="panel-about">
+                <div class="section-title"><i class="fas fa-info-circle text-indigo-600"></i> 关于系统</div>
+                <div class="section-subtitle">系统信息和版本</div>
+                <div class="bg-gray-50 rounded-lg p-6 mt-4">
+                    <h4 style="font-size: 16px; font-weight: 600; margin-bottom: 12px;">MTSCOS AI 智能管理系统</h4>
+                    <p style="color: #6b7280; font-size: 13px; line-height: 1.8;">
+                        版本：5.0.0 智能系统优化版<br>
+                        构建日期：2026.06.23<br>
+                        技术栈：Python Flask + SQLite + Tailwind CSS<br>
+                        <br>
+                        系统集成5个AI员工：客户端监控员、代码修复员、端口监控员、行为监控员、系统优化员<br>
+                        支持SSL/TLS加密通信、自动优化与功能拓展
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function switchPanel(panel) {
+            document.querySelectorAll('.sidebar-item').forEach(el => {
+                el.classList.toggle('active', el.dataset.panel === panel);
+            });
+            document.querySelectorAll('.panel').forEach(el => {
+                el.classList.toggle('active', el.id === 'panel-' + panel);
+            });
+            if (panel === 'dashboard') {
+                loadSystemStatus();
+                loadAlerts();
+                loadRecentActivity();
+            } else if (panel === 'ai-overview') {
+                loadAiOverview();
+                loadTasks();
+                loadNavAnomalies();
+                loadInsights();
             }
         }
-        
-        async function loadLanguages() {
+
+        document.querySelectorAll('.sidebar-item').forEach(item => {
+            item.addEventListener('click', function() {
+                switchPanel(this.dataset.panel);
+            });
+        });
+
+        async function refreshEmployees() {
             try {
-                const response = await fetch('/api/settings/language');
-                const data = await response.json();
-                if (data.success) {
-                    currentLang = data.current_language;
-                    const grid = document.getElementById('language-grid');
-                    grid.innerHTML = '';
-                    
-                    data.available_languages.forEach(lang => {
-                        const flags = {
-                            'zh-CN': '🇨🇳',
-                            'zh-TW': '🇹🇼',
-                            'ja': '🇯🇵',
-                            'ko': '🇰🇷',
-                            'en': '🇺🇸'
+                document.getElementById('stat-total').textContent = 5;
+                document.getElementById('stat-running').textContent = 5;
+            } catch (e) {
+                console.error('刷新失败:', e);
+            }
+        }
+
+        function loadSystemStatus() {
+            fetch('/api/admin/monitor/system_status')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.status) {
+                        const status = data.status;
+                        document.getElementById('cpu-value').textContent = status.cpu_usage + '%';
+                        document.getElementById('memory-value').textContent = status.memory_usage + '%';
+                        document.getElementById('disk-value').textContent = status.disk_usage + '%';
+                        
+                        updateBar('cpu-bar', status.cpu_usage);
+                        updateBar('memory-bar', status.memory_usage);
+                        updateBar('disk-bar', status.disk_usage);
+                        
+                        updateStatusDot('cpu-status', status.cpu_usage);
+                        updateStatusDot('memory-status', status.memory_usage);
+                        updateStatusDot('disk-status', status.disk_usage);
+                        
+                        document.getElementById('db-status-text').textContent = status.database_status;
+                        document.getElementById('db-status').className = 'status-dot ' + (status.database_status === 'connected' ? 'connected' : 'disconnected');
+                        
+                        document.getElementById('net-status-text').textContent = status.network_status;
+                        document.getElementById('net-status').className = 'status-dot ' + (status.network_status === 'normal' ? 'normal' : 'warning');
+                        
+                        document.getElementById('last-check').textContent = formatTime(status.last_check);
+                        document.getElementById('uptime').textContent = status.uptime || '--';
+                        document.getElementById('api-requests').textContent = status.api_requests || '--';
+                    }
+                })
+                .catch(error => console.error('Failed to load system status:', error));
+
+            fetch('/api/admin/monitor/session_statistics')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.stats) {
+                        document.getElementById('user-count').textContent = data.stats.unique_users || '--';
+                        document.getElementById('session-count').textContent = data.stats.active_sessions || '--';
+                    }
+                })
+                .catch(error => console.error('Failed to load session stats:', error));
+        }
+
+        function updateBar(elementId, value) {
+            const bar = document.getElementById(elementId);
+            bar.style.width = value + '%';
+        }
+
+        function updateStatusDot(elementId, value) {
+            const dot = document.getElementById(elementId);
+            if (value >= 90) {
+                dot.className = 'status-dot disconnected';
+            } else if (value >= 70) {
+                dot.className = 'status-dot warning';
+            } else {
+                dot.className = 'status-dot normal';
+            }
+        }
+
+        function formatTime(timestamp) {
+            if (!timestamp) return '--';
+            const date = new Date(timestamp);
+            return date.toLocaleString('zh-CN');
+        }
+
+        function loadAlerts() {
+            fetch('/api/admin/monitor/alerts?resolved=false&limit=10')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.alerts) {
+                        const alertList = document.getElementById('alert-list');
+                        document.getElementById('alert-count').textContent = data.count || '--';
+                        
+                        if (data.alerts.length === 0) {
+                            alertList.innerHTML = '<div style="text-align: center; padding: 40px; color: #9ca3af;">暂无活动告警</div>';
+                            return;
+                        }
+                        
+                        alertList.innerHTML = data.alerts.map(alert => `
+                            <div class="alert-item ${alert.alert_level.toLowerCase()}">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                                    <span style="font-weight: 600;">${alert.message}</span>
+                                    <span style="font-size: 11px; opacity: 0.7;">${formatTime(alert.created_at)}</span>
+                                </div>
+                            </div>
+                        `).join('');
+                    }
+                })
+                .catch(error => console.error('Failed to load alerts:', error));
+        }
+
+        function loadRecentActivity() {
+            fetch('/api/admin/monitor/recent_activity?limit=10')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.activities) {
+                        const activityList = document.getElementById('recent-activity-list');
+                        
+                        if (data.activities.length === 0) {
+                            activityList.innerHTML = '<div style="text-align: center; padding: 40px; color: #9ca3af;">暂无活动记录</div>';
+                            return;
+                        }
+                        
+                        const activityIcons = {
+                            'login': '🔑',
+                            'logout': '🚪',
+                            'dashboard_access': '📊',
+                            'settings_access': '⚙️',
+                            'api_request': '🔌',
+                            'alert_resolved': '✅',
+                            'anomaly_detected': '⚠️'
                         };
                         
-                        grid.innerHTML += `
-                            <div class="language-option ${lang.code === currentLang ? 'active' : ''}" onclick="selectLanguage('${lang.code}')">
-                                <span class="flag">${flags[lang.code] || '🌐'}</span>
-                                <div class="info">
-                                    <span class="native-name">${lang.native_name}</span>
-                                    <span class="name">${lang.name}</span>
+                        activityList.innerHTML = data.activities.map(activity => `
+                            <div class="recent-activity-item">
+                                <div class="activity-icon" style="background: rgba(102,126,234,0.1);">${activityIcons[activity.activity_type] || '📝'}</div>
+                                <div>
+                                    <div style="font-size: 14px; color: #1f2937;">${activity.description}</div>
+                                    <div style="font-size: 12px; color: #9ca3af;">${formatTime(activity.created_at)}</div>
                                 </div>
                             </div>
-                        `;
-                    });
-                }
-            } catch (e) {
-                console.error('Failed to load languages:', e);
-            }
-        }
-        
-        function selectLanguage(lang) {
-            document.querySelectorAll('.language-option').forEach(opt => opt.classList.remove('active'));
-            event.currentTarget.classList.add('active');
-            currentLang = lang;
-        }
-        
-        async function saveLanguage() {
-            try {
-                const response = await fetch('/api/settings/language', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ lang: currentLang })
-                });
-                const data = await response.json();
-                if (data.success) {
-                    alert('语言设置已保存！');
-                }
-            } catch (e) {
-                console.error('Failed to save language:', e);
-            }
-        }
-        
-        async function saveGeneralSettings() {
-            try {
-                const settings = {
-                    system_name: document.getElementById('system-name').value,
-                    system_description: document.getElementById('system-desc').value,
-                    timezone: document.getElementById('timezone').value
-                };
-                
-                const response = await fetch('/api/settings/general', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(settings)
-                });
-                const data = await response.json();
-                if (data.success) {
-                    alert('通用设置已保存！');
-                } else {
-                    alert('保存失败: ' + data.error);
-                }
-            } catch (e) {
-                console.error('Failed to save settings:', e);
-            }
-        }
-        
-        function resetGeneralSettings() {
-            document.getElementById('system-name').value = '';
-            document.getElementById('system-desc').value = '';
-            document.getElementById('timezone').value = 'Asia/Shanghai';
-        }
-        
-        async function savePermissionSettings() {
-            try {
-                const settings = {
-                    session_timeout: parseInt(document.getElementById('session-timeout').value),
-                    max_login_attempts: parseInt(document.getElementById('max-login-attempts').value),
-                    password_expiry: parseInt(document.getElementById('password-expiry').value)
-                };
-                
-                const response = await fetch('/api/settings/general', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(settings)
-                });
-                const data = await response.json();
-                if (data.success) {
-                    alert('权限设置已保存！');
-                }
-            } catch (e) {
-                console.error('Failed to save settings:', e);
-            }
-        }
-        
-        function resetPermissionSettings() {
-            document.getElementById('session-timeout').value = '30';
-            document.getElementById('max-login-attempts').value = '5';
-            document.getElementById('password-expiry').value = '90';
-        }
-        
-        async function loadErrors() {
-            try {
-                const response = await fetch('/api/settings/errors');
-                const data = await response.json();
-                if (data.success) {
-                    const list = document.getElementById('error-list');
-                    const empty = document.getElementById('empty-errors');
-                    
-                    if (data.count === 0) {
-                        list.style.display = 'none';
-                        empty.style.display = 'block';
-                        return;
+                        `).join('');
                     }
-                    
-                    empty.style.display = 'none';
-                    list.innerHTML = '';
-                    
-                    data.errors.forEach(error => {
-                        list.innerHTML += `
-                            <div class="error-item">
-                                <div class="error-header">
-                                    <span class="error-type">${error.error_type}</span>
-                                    <span class="status-badge ${error.resolved ? 'status-resolved' : 'status-pending'}">
-                                        ${error.resolved ? '已处理' : '待处理'}
-                                    </span>
+                })
+                .catch(error => console.error('Failed to load recent activity:', error));
+        }
+
+        function loadAiOverview() {
+            fetch('/api/intelligent/overview')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.data) {
+                        const overview = data.data;
+                        
+                        document.getElementById('de-decisions').textContent = overview.decision_engine.total_decisions || 0;
+                        document.getElementById('kg-nodes').textContent = overview.knowledge_graph.total_nodes || 0;
+                        document.getElementById('pr-predictions').textContent = overview.predictor.total_predictions || 0;
+                        document.getElementById('orc-tasks').textContent = overview.orchestrator.total_tasks || 0;
+                    }
+                })
+                .catch(error => console.error('Failed to load AI overview:', error));
+        }
+
+        function loadTasks() {
+            fetch('/api/intelligent/tasks')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.data) {
+                        const tasks = data.data;
+                        const taskList = document.getElementById('task-list');
+                        
+                        if (!tasks.total || tasks.total === 0) {
+                            taskList.innerHTML = '<div style="text-align: center; padding: 40px; color: #9ca3af;">暂无任务</div>';
+                            return;
+                        }
+                        
+                        taskList.innerHTML = `
+                            <div class="task-item">
+                                <div style="flex: 1;">
+                                    <div style="font-weight: 600;">任务统计</div>
+                                    <div style="font-size: 12px; color: #6b7280;">总计: ${tasks.total} | 完成: ${tasks.completed || 0}</div>
                                 </div>
-                                <div class="error-message">${error.message}</div>
-                                ${error.details ? `<div class="error-details">${error.details}</div>` : ''}
-                                <div class="error-time">${error.created_at}</div>
                             </div>
                         `;
-                    });
-                }
-            } catch (e) {
-                console.error('Failed to load errors:', e);
-            }
+                    }
+                })
+                .catch(error => console.error('Failed to load tasks:', error));
         }
+
+        function loadNavAnomalies() {
+            fetch('/api/admin/monitor/navigation_anomalies?resolved=false&limit=10')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.anomalies) {
+                        const anomalyList = document.getElementById('nav-anomaly-list');
+                        
+                        if (data.anomalies.length === 0) {
+                            anomalyList.innerHTML = '<div style="text-align: center; padding: 40px; color: #9ca3af;">暂无导航异常</div>';
+                            return;
+                        }
+                        
+                        anomalyList.innerHTML = data.anomalies.map(anomaly => {
+                            const details = typeof anomaly.details === 'string' ? JSON.parse(anomaly.details || '{}') : anomaly.details || {};
+                            return `
+                                <div class="nav-anomaly-item">
+                                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                        <span style="font-weight: 600; color: #dc2626;">${anomaly.anomaly_type.replace('_', ' ')}</span>
+                                        <button class="btn btn-secondary" style="font-size: 11px; padding: 3px 8px;" onclick="resolveNavAnomaly(${anomaly.id})">解决</button>
+                                    </div>
+                                    <div style="font-size: 12px; color: #6b7280;">用户: ${anomaly.username || '匿名'}</div>
+                                    <div style="font-size: 11px; color: #9ca3af; margin-top: 4px;">
+                                        后退次数: ${details.backCount || anomaly.navigation_count} | 时间窗口: ${details.timeWindow ? (details.timeWindow / 1000) + '秒' : anomaly.time_window + '秒'}
+                                    </div>
+                                </div>
+                            `;
+                        }).join('');
+                    }
+                })
+                .catch(error => console.error('Failed to load navigation anomalies:', error));
+        }
+
+        function resolveNavAnomaly(anomalyId) {
+            fetch(`/api/admin/monitor/navigation_anomalies/${anomalyId}`, { method: 'PUT' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        loadNavAnomalies();
+                    }
+                })
+                .catch(error => console.error('Failed to resolve navigation anomaly:', error));
+        }
+
+        function loadInsights() {
+            fetch('/api/intelligent/insights')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.data) {
+                        const insights = data.data.insights;
+                        const insightsList = document.getElementById('insights-list');
+                        
+                        if (!insights || insights.length === 0) {
+                            insightsList.innerHTML = '<div style="text-align: center; padding: 40px; color: #9ca3af;">暂无系统洞察</div>';
+                            return;
+                        }
+                        
+                        insightsList.innerHTML = insights.map(insight => `
+                            <div class="alert-item info" style="border-left-color: #3b82f6; background: rgba(59,130,246,0.08);">
+                                <div style="font-weight: 600; color: #1e40af;">💡 ${insight.title || '系统洞察'}</div>
+                                <div style="font-size: 13px; color: #6b7280; margin-top: 4px;">${insight.description || insight}</div>
+                            </div>
+                        `).join('');
+                    }
+                })
+                .catch(error => console.error('Failed to load insights:', error));
+        }
+
+        refreshEmployees();
+        setInterval(refreshEmployees, 30000);
         
-        document.addEventListener('DOMContentLoaded', () => {
-            loadLanguages();
-        });
+        loadSystemStatus();
+        setInterval(loadSystemStatus, 10000);
+        
+        loadAlerts();
+        loadRecentActivity();
+        setInterval(() => {
+            loadAlerts();
+            loadRecentActivity();
+        }, 30000);
     </script>
 </body>
 </html>

@@ -77,7 +77,7 @@ class SystemMaintenanceAI:
             if not os.path.exists('data'):
                 os.makedirs('data')
 
-            with sqlite3.connect(sqlite3.connect(db_path)) as conn:
+            with sqlite3.connect(db_path) as conn:
                 conn_cursor = conn.cursor()
                 cursor = conn.cursor()
                 
@@ -253,7 +253,7 @@ class SystemMaintenanceAI:
         """上报数据库状态"""
         logger.info("=== 开始数据库状态上报 ===")
         try:
-            with sqlite3.connect(sqlite3.connect(db_path)) as conn:
+            with sqlite3.connect(db_path) as conn:
                 conn_cursor = conn.cursor()
                 
                 # 统计各表数据

@@ -1,8 +1,6 @@
-
 // 兼容性检查和回退方案
 (function() {
     'use strict';
-    
     // 检查Array.includes支持
     if (!Array.prototype.includes) {
         Array.prototype.includes = function(searchElement, fromIndex) {
@@ -16,19 +14,16 @@
         };
     }
 })();
-
         // 滚动检测功能
         window.addEventListener('scroll', function() {
             const scrollHeight = document.documentElement.scrollHeight;
             const scrollTop = document.documentElement.scrollTop || document.body.scrollTop;
             const clientHeight = document.documentElement.clientHeight;
-            
             // 当滚动到页面底部时显示阅读完成标记
             if (scrollTop + clientHeight >= scrollHeight - 100) {
                 document.getElementById('read-complete').style.display = 'block';
             }
         });
-        
         // 标记为已阅读
         function markAsRead() {
             // 存储阅读完成状态到sessionStorage
@@ -45,4 +40,3 @@
                 window.location.href = '/';
             }
         }
-    

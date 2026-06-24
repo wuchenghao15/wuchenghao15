@@ -152,7 +152,7 @@ class AIAndDatabaseSystemEnhancer:
         try:
             logger.info("开始检查数据库")
             # 连接数据库
-            with sqlite3.connect(sqlite3.connect(self.db_path)) as conn:
+            with sqlite3.connect(self.db_path) as conn:
                 conn_cursor = conn.cursor()
                 cursor = conn.cursor()
                 
@@ -191,7 +191,7 @@ class AIAndDatabaseSystemEnhancer:
         try:
             logger.info("开始添加新的AI类型")
 
-            with sqlite3.connect(sqlite3.connect(self.db_path)) as conn:
+            with sqlite3.connect(self.db_path) as conn:
                 conn_cursor = conn.cursor()
                 cursor = conn.cursor()
                 
@@ -245,7 +245,7 @@ class AIAndDatabaseSystemEnhancer:
         try:
             logger.info("开始优化数据库系统配置")
 
-            with sqlite3.connect(sqlite3.connect(self.db_path)) as conn:
+            with sqlite3.connect(self.db_path) as conn:
                 conn_cursor = conn.cursor()
                 cursor = conn.cursor()
                 

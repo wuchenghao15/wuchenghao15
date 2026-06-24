@@ -291,11 +291,22 @@ def init_api_routes():
         from app.api.self_learning_api import self_learning_api
         route_manager.register_api_blueprint(
             self_learning_api,
-            url_prefix="",
+            url_prefix="/api/self-learning",
             description="AI自学习系统API"
         )
     except Exception as e:
         logger.error(f"初始化AI自学习系统API路由失败: {str(e)}")
+
+    # 智能仪表盘API
+    try:
+        from app.routes.intelligent_dashboard_api import intelligent_dashboard_bp
+        route_manager.register_api_blueprint(
+            intelligent_dashboard_bp,
+            url_prefix="",
+            description="智能仪表盘API"
+        )
+    except Exception as e:
+        logger.error(f"初始化智能仪表盘API路由失败: {str(e)}")
 
     # AI线程进程管理器API
     try:
@@ -474,7 +485,7 @@ def init_view_routes():
         from app.blueprints.integrated_settings import integrated_settings_bp
         route_manager.register_view_blueprint(
             integrated_settings_bp,
-            url_prefix="",
+            url_prefix="/settings",
             description="集成设置视图"
         )
     except Exception as e:

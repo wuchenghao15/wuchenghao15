@@ -347,7 +347,7 @@ class AIAndPermissionSystemEnhancer:
         try:
             logger.info("获取权限规则策略约束系统状态")
 
-            with sqlite3.connect(sqlite3.connect(self.db_path)) as conn:
+            with sqlite3.connect(self.db_path) as conn:
                 conn_cursor = conn.cursor()
                 cursor = conn.cursor()
                 

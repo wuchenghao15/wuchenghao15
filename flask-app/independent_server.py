@@ -91,7 +91,7 @@ class AIDatabaseProtector:
     def _connect_db(self, db_path=DATABASE_PATH):
         """连接数据库,带有AI保护"""
         try:
-            with sqlite3.connect(sqlite3.connect(db_path)) as conn:
+            with sqlite3.connect(db_path) as conn:
                 conn_cursor = conn.cursor()
                 return conn
         except sqlite3.Error as e:
@@ -135,7 +135,7 @@ class AIDatabaseProtector:
             return False
 
         try:
-            with sqlite3.connect(sqlite3.connect(DATABASE_PATH)) as conn:
+            with sqlite3.connect(DATABASE_PATH) as conn:
                 conn_cursor = conn.cursor()
                 backup_conn = sqlite3.connect(self.db_backup_path)
                 conn.backup(backup_conn)

@@ -18,7 +18,7 @@ class LearningGroupService:
     
     def _init_tables(self):
         """初始化数据库表"""
-        with sqlite3.connect(sqlite3.connect(DATABASE_PATH)) as conn:
+        with sqlite3.connect(DATABASE_PATH) as conn:
             conn_cursor = conn.cursor()
             cursor = conn.cursor()
             
@@ -71,7 +71,7 @@ class LearningGroupService:
         group_id = str(uuid.uuid4())[:16]
         now = datetime.now().isoformat()
         
-        with sqlite3.connect(sqlite3.connect(DATABASE_PATH)) as conn:
+        with sqlite3.connect(DATABASE_PATH) as conn:
             conn_cursor = conn.cursor()
             cursor = conn.cursor()
             

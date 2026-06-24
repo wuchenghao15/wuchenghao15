@@ -88,7 +88,7 @@ class JsonToDbMigrationAI:
             logger.info("迁移AI引擎配置...")
             # 创建AI引擎配置表
             db_path = 'data/mtscos_ai_project.db'
-            with sqlite3.connect(sqlite3.connect(db_path)) as conn:
+            with sqlite3.connect(db_path) as conn:
                 conn_cursor = conn.cursor()
                 cursor = conn.cursor()
                 
@@ -120,7 +120,7 @@ class JsonToDbMigrationAI:
             logger.info("迁移系统配置...")
             # 创建系统配置表
             db_path = 'data/mtscos_ai_project.db'
-            with sqlite3.connect(sqlite3.connect(db_path)) as conn:
+            with sqlite3.connect(db_path) as conn:
                 conn_cursor = conn.cursor()
                 cursor = conn.cursor()
                 

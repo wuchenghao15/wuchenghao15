@@ -2,21 +2,21 @@
 """
 数据库工具模块,封装通用的数据库操作方法
 支持本地数据库和云端数据库,支持多种数据库类型
+优化连接池管理,防止池干涸
 """
 
 from contextlib import contextmanager
 import threading
 import logging
-# JSON import removed - using database
 import os
 import shutil
 import time
+import queue
 from datetime import datetime
 from app.config import load_config
 from app.utils.logging import logger
 from app.utils.table_encryption import table_encryption
 
-# 尝试导入SQLCipher
 try:
     from pysqlcipher3 import dbapi2 as sqlite3
     SQLCIPHER_AVAILABLE = True
@@ -30,7 +30,6 @@ except ImportError:
     else:
         logger.debug("SQLCipher驱动未安装,开发环境使用普通SQLite数据库")
 
-# 尝试导入不同数据库的驱动
 try:
     from mysql.connector.pooling import MySQLConnectionPool
     MYSQL_AVAILABLE = True
@@ -53,12 +52,10 @@ class DatabaseManager:
     _instance = None
     _lock = threading.Lock()
 
-    # 表级别的锁字典
     _table_locks = {}
     _table_lock_creation_lock = threading.Lock()
 
     def __new__(cls):
-        """单例模式"""
         if not cls._instance:
             with cls._lock:
                 if not cls._instance:
@@ -70,12 +67,9 @@ class DatabaseManager:
         """初始化数据库连接管理"""
         config = load_config()
         
-        # 检查是否启用云端数据库
         self.cloud_enabled = config.get('CLOUD_DATABASE_ENABLED', False)
 
-        # 获取数据库配置
         if self.cloud_enabled:
-            # 使用云端数据库配置
             self.db_type = config.get('CLOUD_DATABASE_TYPE', 'postgresql')
             self.db_host = config.get('CLOUD_DATABASE_HOST', '')
             self.db_port = config.get('CLOUD_DATABASE_PORT', '')
@@ -84,51 +78,68 @@ class DatabaseManager:
             self.db_name = config.get('CLOUD_DATABASE_NAME', '')
             logger.info(f"启用云端数据库: {self.db_type} @ {self.db_host}:{self.db_port}/{self.db_name}")
         else:
-            # 使用本地数据库配置
             self.db_type = config.get('DATABASE_TYPE', 'sqlite')
-            # 使用绝对路径确保连接到正确的数据库文件
             import os
             self.db_name = config.get('DATABASE_NAME', 'app.db')
             self.db_path = os.path.abspath(self.db_name)
             logger.info(f"使用本地数据库: {self.db_type} @ {self.db_path}")
 
-        # 连接池配置
+        # 连接池配置 - 优化版本
         self._connection_pool = []
-        self._max_connections = 20  # 增加最大连接数
+        self._min_connections = config.get('DB_MIN_CONNECTIONS', 5)
+        self._max_connections = config.get('DB_MAX_CONNECTIONS', 50)
+        self._initial_connections = config.get('DB_INITIAL_CONNECTIONS', 10)
         self._connection_lock = threading.Lock()
-        self._connection_timeout = 30  # 连接超时时间(秒)
-        self._connection_keepalive = 60  # 连接保持活跃时间(秒)
-
-        # 连接元数据字典,用于存储连接的创建时间和最后使用时间
+        self._connection_timeout = config.get('DB_CONNECTION_TIMEOUT', 30)
+        self._connection_keepalive = config.get('DB_CONNECTION_KEEPALIVE', 300)
+        
+        # 动态扩容配置
+        self._pool_expansion_factor = config.get('DB_POOL_EXPANSION_FACTOR', 0.5)
+        self._pool_shrink_threshold = config.get('DB_POOL_SHRINK_THRESHOLD', 0.2)
+        self._pool_maintenance_interval = config.get('DB_POOL_MAINTENANCE_INTERVAL', 30)
+        
+        # 连接等待队列
+        self._wait_queue = queue.Queue(maxsize=100)
+        self._wait_timeout = config.get('DB_WAIT_TIMEOUT', 10)
+        
+        # 连接元数据字典
         self._connection_metadata = {}
+        
+        # 连接池统计
+        self._stats = {
+            'total_connections': 0,
+            'active_connections': 0,
+            'pool_hits': 0,
+            'pool_misses': 0,
+            'pool_dry_events': 0,
+            'wait_queue_length': 0,
+            'expansions': 0,
+            'shrinks': 0
+        }
+        self._stats_lock = threading.Lock()
 
-        # 线程本地存储,用于SQLite
         self._thread_local = threading.local()
 
-        # 查询缓存
         self._query_cache = {}
         self._cache_lock = threading.RLock()
-        self._cache_size = 1000  # 缓存大小
-        self._cache_ttl = 300  # 缓存过期时间(秒)
+        self._cache_size = 1000
+        self._cache_ttl = 300
 
-        # 缓存策略:OLFU (One-Lookahead Frequency)
-        self._cache_access_count = {}  # 访问次数
-        self._cache_last_access = {}  # 最后访问时间
+        self._cache_access_count = {}
+        self._cache_last_access = {}
 
-        # 令牌桶限制
         self._token_bucket = {
-            'capacity': 100,  # 桶容量
-            'tokens': 100,  # 当前令牌数
-            'refill_rate': 10,  # 每秒 refill 令牌数
-            'last_refill': time.time()  # 上次 refill 时间
+            'capacity': 100,
+            'tokens': 100,
+            'refill_rate': 10,
+            'last_refill': time.time()
         }
         self._token_bucket_lock = threading.RLock()
 
-        # 缓存预热
         self._cache_warming = False
         self._cache_warming_lock = threading.RLock()
 
-        # 初始化连接池
+        # 初始化连接池到初始大小
         self._init_connection_pool()
 
         # 启动连接池维护线程
@@ -142,76 +153,205 @@ class DatabaseManager:
         logger.info("数据库缓存预热线程启动成功")
 
     def _init_connection_pool(self):
-        """初始化连接池"""
+        """初始化连接池到初始大小"""
+        target_size = min(self._initial_connections, self._max_connections)
+        created = 0
+        
         with self._connection_lock:
-            for _ in range(self._max_connections):
+            for _ in range(target_size):
                 conn = self._create_connection()
                 if conn:
-                    # 使用连接对象的id作为键,存储连接的元数据
                     conn_id = id(conn)
                     self._connection_metadata[conn_id] = {
                         'created_at': time.time(),
-                        'last_used': time.time()
+                        'last_used': time.time(),
+                        'uses': 0
                     }
                     self._connection_pool.append(conn)
-            logger.info(f"数据库连接池初始化完成,创建了 {len(self._connection_pool)} 个连接")
+                    created += 1
+        
+        with self._stats_lock:
+            self._stats['total_connections'] = created
+        
+        logger.info(f"数据库连接池初始化完成,创建了 {created} 个连接 (最小:{self._min_connections}, 最大:{self._max_connections})")
+
+    def _expand_pool(self):
+        """动态扩容连接池"""
+        with self._connection_lock:
+            current_size = len(self._connection_pool)
+            if current_size >= self._max_connections:
+                return 0
+            
+            new_size = int(current_size * (1 + self._pool_expansion_factor))
+            new_size = min(new_size, self._max_connections)
+            to_add = new_size - current_size
+            
+            added = 0
+            for _ in range(to_add):
+                conn = self._create_connection()
+                if conn:
+                    conn_id = id(conn)
+                    self._connection_metadata[conn_id] = {
+                        'created_at': time.time(),
+                        'last_used': time.time(),
+                        'uses': 0
+                    }
+                    self._connection_pool.append(conn)
+                    added += 1
+            
+            if added > 0:
+                with self._stats_lock:
+                    self._stats['expansions'] += 1
+                    self._stats['total_connections'] += added
+                logger.info(f"连接池扩容: {current_size} -> {current_size + added}")
+            
+            return added
+
+    def _shrink_pool(self):
+        """动态收缩连接池"""
+        with self._connection_lock:
+            current_size = len(self._connection_pool)
+            if current_size <= self._min_connections:
+                return 0
+            
+            target_size = max(self._min_connections, int(current_size * (1 - self._pool_shrink_threshold)))
+            to_remove = current_size - target_size
+            
+            removed = 0
+            # 移除最久未使用的连接
+            sorted_conns = sorted(
+                self._connection_pool,
+                key=lambda c: self._connection_metadata.get(id(c), {}).get('last_used', 0)
+            )
+            
+            for conn in sorted_conns[:to_remove]:
+                try:
+                    conn.close()
+                    conn_id = id(conn)
+                    if conn_id in self._connection_metadata:
+                        del self._connection_metadata[conn_id]
+                    removed += 1
+                except Exception:
+                    pass
+            
+            self._connection_pool = sorted_conns[to_remove:]
+            
+            if removed > 0:
+                with self._stats_lock:
+                    self._stats['shrinks'] += 1
+                    self._stats['total_connections'] -= removed
+                logger.info(f"连接池收缩: {current_size} -> {current_size - removed}")
+            
+            return removed
 
     def _maintain_connection_pool(self):
-        """维护连接池,定期清理过期连接"""
+        """维护连接池,定期清理过期连接并智能调整大小"""
         while True:
-            time.sleep(30)  # 每30秒检查一次
+            time.sleep(self._pool_maintenance_interval)
             try:
                 with self._connection_lock:
                     current_time = time.time()
                     valid_connections = []
-
+                    
                     for conn in self._connection_pool:
-                        # 检查连接是否过期
                         conn_id = id(conn)
                         last_used = self._connection_metadata.get(conn_id, {}).get('last_used', 0)
+                        
+                        # 检查连接是否过期
                         if current_time - last_used < self._connection_keepalive:
-                            valid_connections.append(conn)
+                            # 检查连接是否仍然有效
+                            if self._is_connection_valid(conn):
+                                valid_connections.append(conn)
+                            else:
+                                try:
+                                    conn.close()
+                                    if conn_id in self._connection_metadata:
+                                        del self._connection_metadata[conn_id]
+                                except Exception:
+                                    pass
                         else:
-                            # 关闭过期连接
                             try:
                                 conn.close()
                                 if conn_id in self._connection_metadata:
                                     del self._connection_metadata[conn_id]
-                            except Exception as e:
+                            except Exception:
                                 pass
-
-                    # 更新连接池
+                    
                     self._connection_pool = valid_connections
 
-                    # 补充连接到最大数量
-                    while len(self._connection_pool) < self._max_connections:
+                    # 补充连接到最小数量
+                    while len(self._connection_pool) < self._min_connections:
                         conn = self._create_connection()
                         if conn:
-                            # 存储连接的元数据
                             conn_id = id(conn)
                             self._connection_metadata[conn_id] = {
                                 'created_at': time.time(),
-                                'last_used': time.time()
+                                'last_used': time.time(),
+                                'uses': 0
                             }
                             self._connection_pool.append(conn)
-                            logger.info("补充数据库连接池")
+                            logger.info("补充数据库连接池(低于最小连接数)")
+                
+                # 智能调整连接池大小
+                self._smart_resize_pool()
+                
             except Exception as e:
                 logger.error(f"维护连接池失败: {str(e)}")
+
+    def _is_connection_valid(self, conn):
+        """检查连接是否有效"""
+        try:
+            if self.db_type == 'mysql':
+                conn.ping(reconnect=False)
+            elif self.db_type == 'postgresql':
+                cursor = conn.cursor()
+                cursor.execute("SELECT 1")
+                cursor.fetchone()
+                cursor.close()
+            elif self.db_type == 'sqlite':
+                cursor = conn.cursor()
+                cursor.execute("SELECT 1")
+                cursor.fetchone()
+                cursor.close()
+            return True
+        except Exception:
+            return False
+
+    def _smart_resize_pool(self):
+        """根据池使用率智能调整连接池大小"""
+        with self._connection_lock:
+            current_size = len(self._connection_pool)
+        
+        with self._stats_lock:
+            wait_queue_len = self._stats.get('wait_queue_length', 0)
+            pool_hits = self._stats.get('pool_hits', 0)
+            pool_misses = self._stats.get('pool_misses', 0)
+        
+        total_requests = pool_hits + pool_misses
+        if total_requests == 0:
+            return
+        
+        hit_rate = pool_hits / total_requests
+        
+        # 如果等待队列较长且命中率低,则扩容
+        if wait_queue_len > 5 and hit_rate < 0.7 and current_size < self._max_connections:
+            self._expand_pool()
+        
+        # 如果池使用率很低,则收缩
+        elif hit_rate > 0.95 and wait_queue_len == 0 and current_size > self._min_connections:
+            self._shrink_pool()
 
     def _create_connection(self):
         try:
             if self.db_type == 'sqlite':
-                conn = sqlite3.connect(self.db_path)
-                # 如果使用SQLCipher,设置加密密钥
+                conn = sqlite3.connect(self.db_path, check_same_thread=False)
                 if SQLCIPHER_AVAILABLE:
                     encryption_key = getattr(Config, 'DATABASE_ENCRYPTION_KEY', None)
                     if not encryption_key:
-                        # 生成一个默认密钥,实际部署时应该从环境变量或配置文件中获取
                         logger.warning("未找到数据库加密密钥,使用默认密钥")
                         encryption_key = "default_key_for_development_only"
 
                     conn.execute(f"PRAGMA key = '{encryption_key}';")
-                    # 启用加密
                     conn.execute("PRAGMA cipher_compatibility = 4;")
                     logger.info("SQLCipher加密已启用")
 
@@ -234,7 +374,6 @@ class DatabaseManager:
                     password=self.db_password,
                     dbname=self.db_name
                 )
-                # 设置自动提交
                 conn.autocommit = True
                 return conn
             else:
@@ -247,44 +386,100 @@ class DatabaseManager:
     def get_connection(self):
         """获取数据库连接"""
         if self.db_type == 'sqlite':
-            # SQLite使用线程本地连接
             if hasattr(self._thread_local, 'connection') and self._thread_local.connection:
                 conn = self._thread_local.connection
                 conn_id = id(conn)
-                self._connection_metadata[conn_id]['last_used'] = time.time()
+                if conn_id in self._connection_metadata:
+                    self._connection_metadata[conn_id]['last_used'] = time.time()
+                    self._connection_metadata[conn_id]['uses'] = self._connection_metadata[conn_id].get('uses', 0) + 1
                 return conn
             else:
-                # 创建新连接
                 conn = self._create_connection()
                 if conn:
                     conn_id = id(conn)
                     self._connection_metadata[conn_id] = {
-                        'last_used': time.time()
+                        'last_used': time.time(),
+                        'uses': 1
                     }
                     self._thread_local.connection = conn
                 return conn
         else:
-            # 对于其他数据库,从连接池获取连接
             with self._connection_lock:
                 if self._connection_pool:
                     conn = self._connection_pool.pop(0)
                     conn_id = id(conn)
                     self._connection_metadata[conn_id]['last_used'] = time.time()
+                    self._connection_metadata[conn_id]['uses'] = self._connection_metadata[conn_id].get('uses', 0) + 1
+                    
+                    with self._stats_lock:
+                        self._stats['active_connections'] += 1
+                        self._stats['pool_hits'] += 1
+                    
                     return conn
                 else:
-                    conn = self._create_connection()
-                    if conn:
+                    with self._stats_lock:
+                        self._stats['pool_misses'] += 1
+                        self._stats['pool_dry_events'] += 1
+                    
+                    logger.warning("连接池已干涸,尝试创建新连接")
+                    
+                    # 尝试扩容
+                    if len(self._connection_pool) < self._max_connections:
+                        self._expand_pool()
+                        if self._connection_pool:
+                            conn = self._connection_pool.pop(0)
+                            conn_id = id(conn)
+                            self._connection_metadata[conn_id]['last_used'] = time.time()
+                            self._connection_metadata[conn_id]['uses'] = self._connection_metadata[conn_id].get('uses', 0) + 1
+                            
+                            with self._stats_lock:
+                                self._stats['active_connections'] += 1
+                            
+                            return conn
+                
+                # 如果仍然没有连接,使用等待队列
+                return self._wait_for_connection()
+
+    def _wait_for_connection(self):
+        """等待可用连接"""
+        start_time = time.time()
+        request_id = id(threading.current_thread())
+        
+        try:
+            self._wait_queue.put(request_id, timeout=self._wait_timeout)
+            
+            while time.time() - start_time < self._wait_timeout:
+                with self._connection_lock:
+                    if self._connection_pool:
+                        conn = self._connection_pool.pop(0)
                         conn_id = id(conn)
-                        self._connection_metadata[conn_id] = {
-                            'last_used': time.time()
-                        }
-                    return conn
+                        self._connection_metadata[conn_id]['last_used'] = time.time()
+                        self._connection_metadata[conn_id]['uses'] = self._connection_metadata[conn_id].get('uses', 0) + 1
+                        
+                        with self._stats_lock:
+                            self._stats['active_connections'] += 1
+                        
+                        return conn
+                
+                time.sleep(0.1)
+            
+            logger.error("等待连接超时")
+            return None
+            
+        except queue.Full:
+            logger.error("等待队列已满")
+            return None
+        finally:
+            # 清理等待队列中的请求
+            try:
+                with self._stats_lock:
+                    self._stats['wait_queue_length'] = self._wait_queue.qsize()
+            except Exception:
+                pass
 
     def return_connection(self, conn):
         """将连接返回连接池或处理SQLite连接"""
         if self.db_type == 'sqlite':
-            # 对于SQLite,每个线程使用自己的连接,不返回连接池
-            # 只需更新最后使用时间
             try:
                 if conn:
                     conn_id = id(conn)
@@ -300,48 +495,76 @@ class DatabaseManager:
                     self._thread_local.connection = None
                 return False
         else:
-            # 对于其他数据库,将连接返回连接池
             with self._connection_lock:
                 if conn and len(self._connection_pool) < self._max_connections:
                     try:
-                        conn_id = id(conn)
-                        self._connection_metadata[conn_id]['last_used'] = time.time()
-                        self._connection_pool.append(conn)
-                        return True
+                        if self._is_connection_valid(conn):
+                            conn_id = id(conn)
+                            self._connection_metadata[conn_id]['last_used'] = time.time()
+                            self._connection_pool.append(conn)
+                            
+                            with self._stats_lock:
+                                self._stats['active_connections'] -= 1
+                            
+                            return True
+                        else:
+                            conn.close()
+                            conn_id = id(conn)
+                            if conn_id in self._connection_metadata:
+                                del self._connection_metadata[conn_id]
                     except Exception as e:
-                        conn_id = id(conn)
                         conn.close()
-                        return False
+                        conn_id = id(conn)
+                        if conn_id in self._connection_metadata:
+                            del self._connection_metadata[conn_id]
                 elif conn:
+                    conn.close()
                     conn_id = id(conn)
                     if conn_id in self._connection_metadata:
                         del self._connection_metadata[conn_id]
-                    conn.close()
-                return False
+                
+                with self._stats_lock:
+                    self._stats['active_connections'] = max(0, self._stats['active_connections'] - 1)
+            
+            return False
+
+    def get_pool_stats(self):
+        """获取连接池统计信息"""
+        with self._stats_lock:
+            with self._connection_lock:
+                pool_size = len(self._connection_pool)
+            
+            return {
+                'min_connections': self._min_connections,
+                'max_connections': self._max_connections,
+                'current_pool_size': pool_size,
+                'active_connections': self._stats.get('active_connections', 0),
+                'pool_hits': self._stats.get('pool_hits', 0),
+                'pool_misses': self._stats.get('pool_misses', 0),
+                'pool_dry_events': self._stats.get('pool_dry_events', 0),
+                'wait_queue_length': self._wait_queue.qsize(),
+                'expansions': self._stats.get('expansions', 0),
+                'shrinks': self._stats.get('shrinks', 0),
+                'total_connections': self._stats.get('total_connections', 0)
+            }
 
     def _generate_cache_key(self, query, params):
-        """生成查询缓存键"""
         return f"{query}:{params}"
 
     def _get_from_cache(self, query, params):
-        """从缓存获取查询结果"""
         cache_key = self._generate_cache_key(query, params)
         if cache_key in self._query_cache:
             cached_data = self._query_cache[cache_key]
             if cached_data['expire_at'] > time.time():
-                # 更新访问计数和最后访问时间
                 self._cache_access_count[cache_key] = self._cache_access_count.get(cache_key, 0) + 1
                 return cached_data['result']
             else:
-                # 缓存过期,删除
                 del self._query_cache[cache_key]
         return None
 
     def _set_cache(self, query, params, result):
-        """设置查询缓存"""
         with self._cache_lock:
             if len(self._query_cache) >= self._cache_size:
-                # 使用LRU策略删除最久未访问的缓存项
                 oldest_key = None
                 oldest_time = float('inf')
                 for key in self._query_cache:
@@ -361,13 +584,11 @@ class DatabaseManager:
             self._cache_access_count[cache_key] = 1
 
     def _clear_cache(self):
-        """清除所有缓存"""
         with self._cache_lock:
             self._query_cache.clear()
             self._cache_access_count.clear()
 
     def _warmup_cache(self):
-        """缓存预热"""
         with self._cache_warming_lock:
             if self._cache_warming:
                 return
@@ -376,7 +597,6 @@ class DatabaseManager:
             logger.info("开始缓存预热...")
 
             try:
-                # 预热常用查询
                 warmup_queries = [
                     ('SELECT * FROM users LIMIT 10', ()),
                     ('SELECT * FROM courses LIMIT 10', ()),
@@ -396,7 +616,6 @@ class DatabaseManager:
                 self._cache_warming = False
 
     def _refill_tokens(self):
-        """令牌桶 refill"""
         with self._token_bucket_lock:
             now = time.time()
             time_passed = now - self._token_bucket['last_refill']
@@ -410,34 +629,30 @@ class DatabaseManager:
                 self._token_bucket['last_refill'] = now
 
     def _consume_token(self):
-        """消费令牌"""
         self._refill_tokens()
 
         with self._token_bucket_lock:
             if self._token_bucket['tokens'] >= 1:
                 self._token_bucket['tokens'] -= 1
                 return True
+        return False
+
     def _calculate_olfu_score(self, key):
-        """计算OLFU分数"""
         access_count = self._cache_access_count.get(key, 0)
         last_access = self._cache_last_access.get(key, 0)
         now = time.time()
-
-        # 计算分数:访问次数 * 时间衰减因子
-        time_factor = 1.0 / (1.0 + (now - last_access) / 3600)  # 每小时衰减
+        time_factor = 1.0 / (1.0 + (now - last_access) / 3600)
         return access_count * time_factor
 
     def execute(self, query, params=None):
-        """执行SQL查询,自动管理连接"""
-        # 检查令牌桶限制
         if not self._consume_token():
-            # 令牌不足,返回错误
             class ErrorCursor:
                 def fetchone(self):
                     return None
 
                 def fetchall(self):
                     return []
+
                 def fetchscalar(self):
                     return None
 
@@ -447,7 +662,6 @@ class DatabaseManager:
             logger.warning("数据库查询令牌不足,请求被限制")
             return ErrorCursor(), False
         
-        # 使用表名加密处理SQL语句
         encrypted_query = query
         try:
             encrypted_query = table_encryption.encrypt_table_names(query)
@@ -455,11 +669,9 @@ class DatabaseManager:
             logger.debug(f"表名加密失败,使用原始查询: {str(e)}")
             encrypted_query = query
 
-        # 对于SELECT查询,尝试从缓存获取结果
         if encrypted_query.strip().upper().startswith('SELECT'):
             cached_result = self._get_from_cache(encrypted_query, params)
             if cached_result is not None:
-                # 对于缓存的结果,返回一个模拟的cursor
                 class MockCursor:
                     def __init__(self, result):
                         self._result = result
@@ -492,11 +704,9 @@ class DatabaseManager:
             cursor = conn.cursor()
             cursor.execute(encrypted_query, params or ())
 
-            # 所有数据库都需要手动提交
             if self.db_type != 'postgresql':
                 conn.commit()
 
-            # 对于SELECT查询,缓存结果
             if encrypted_query.strip().upper().startswith('SELECT'):
                 result = cursor.fetchall()
                 if self.db_type == 'sqlite':
@@ -513,18 +723,14 @@ class DatabaseManager:
             self.return_connection(conn)
 
     def fetch_one(self, query, params=None):
-        """执行查询,返回单行结果"""
         cursor, success = self.execute(query, params)
         if success and cursor:
             result = cursor.fetchone()
             if not result:
                 return None
-            # 检查是否是模拟的cursor(缓存结果)
             if hasattr(cursor, '_result'):
-                # 对于缓存结果,直接返回
                 return result
 
-            # 对于真实的cursor,转换为字典
             if self.db_type == 'mysql' or self.db_type == 'postgresql':
                 if hasattr(cursor, 'description') and cursor.description:
                     columns = [desc[0] for desc in cursor.description]
@@ -533,19 +739,15 @@ class DatabaseManager:
         return None
 
     def fetch_all(self, query, params=None):
-        """执行查询,返回所有结果"""
         cursor, success = self.execute(query, params)
         if success and cursor:
             results = cursor.fetchall()
             if not results:
                 return []
 
-            # 检查是否是模拟的cursor(缓存结果)
             if hasattr(cursor, '_result'):
-                # 对于缓存结果,直接返回
                 return results
 
-            # 对于真实的cursor,转换为字典列表
             if self.db_type == 'mysql' or self.db_type == 'postgresql':
                 if hasattr(cursor, 'description') and cursor.description:
                     columns = [desc[0] for desc in cursor.description]
@@ -554,36 +756,29 @@ class DatabaseManager:
         return []
 
     def fetch_scalar(self, query, params=None):
-        """执行查询,返回单个值"""
         result = self.fetch_one(query, params)
         if result:
             if isinstance(result, dict):
                 return list(result.values())[0]
-                return result[0]
-            return result
+            return result[0] if isinstance(result, (list, tuple)) else result
         return None
 
     def insert(self, table, data):
-        """插入数据"""
         columns = ', '.join(data.keys())
-        # 根据数据库类型选择占位符
         if self.db_type == 'mysql':
             placeholders = ', '.join(['%s'] * len(data))
-        else:  # sqlite/postgresql
+        else:
             placeholders = ', '.join(['?'] * len(data))
         query = f"INSERT INTO {table} ({columns}) VALUES ({placeholders})"
         values = tuple(data.values())
         cursor, success = self.execute(query, values)
 
-        # 清空与该表相关的缓存
         self._clear_table_cache(table)
 
         if success and cursor:
             if self.db_type == 'mysql':
                 return cursor.lastrowid
             elif self.db_type == 'postgresql':
-                # PostgreSQL需要使用RETURNING子句获取插入的ID
-                # 重新执行带有RETURNING子句的查询
                 query_with_returning = f"{query} RETURNING id"
                 cursor, success = self.execute(query_with_returning, values)
                 if success and cursor:
@@ -594,12 +789,13 @@ class DatabaseManager:
         return None
 
     def update(self, table, data, where_clause, where_params=None):
-        set_clause = ', '.join([f"{col} = ?" if self.db_type == 'sqlite' else f"{col} = %s" for col in data.keys()])
-
+        placeholders = ', '.join([f"{col} = ?" if self.db_type == 'sqlite' else f"{col} = %s" for col in data.keys()])
+        values = tuple(data.values())
+        
         if where_params:
             values += tuple(where_params)
 
-        query = f"UPDATE {table} SET {set_clause} WHERE {where_clause}"
+        query = f"UPDATE {table} SET {placeholders} WHERE {where_clause}"
         _, success = self.execute(query, values)
 
         self._clear_table_cache(table)
@@ -607,21 +803,17 @@ class DatabaseManager:
         return success
 
     def delete(self, table, where_clause, where_params=None):
-        """删除数据"""
         query = f"DELETE FROM {table} WHERE {where_clause}"
+        _, success = self.execute(query, where_params)
 
-        # 清空与该表相关的缓存
         self._clear_table_cache(table)
 
         return success
 
     def _clear_table_cache(self, table):
-        """清空与指定表相关的缓存"""
-        # 加密表名
         encrypted_table = table_encryption.encrypt_table_name(table)
 
         with self._cache_lock:
-            # 找出与该表相关的缓存项并删除
             keys_to_delete = []
             for key in self._query_cache:
                 if f"FROM {table}" in key or f"from {table}" in key or f"FROM {encrypted_table}" in key or f"from {encrypted_table}" in key:
@@ -634,7 +826,6 @@ class DatabaseManager:
                 logger.info(f"清除了 {len(keys_to_delete)} 个与表 {table} 相关的缓存")
 
     def count(self, table, where_clause=None, where_params=None):
-        """统计记录数量"""
         encrypted_table = table_encryption.encrypt_table_name(table)
         query = f"SELECT COUNT(*) FROM {encrypted_table}"
         if where_clause:
@@ -642,7 +833,6 @@ class DatabaseManager:
         return self.fetch_scalar(query, where_params)
 
     def begin_transaction(self):
-        """开始事务"""
         try:
             conn = self.get_connection()
             if conn:
@@ -657,7 +847,6 @@ class DatabaseManager:
         return None
 
     def commit_transaction(self, conn):
-        """提交事务"""
         try:
             if conn:
                 conn.commit()
@@ -676,7 +865,6 @@ class DatabaseManager:
                 self.return_connection(conn)
 
     def rollback_transaction(self, conn):
-        """回滚事务"""
         try:
             if conn:
                 conn.rollback()
@@ -691,7 +879,6 @@ class DatabaseManager:
                 self.return_connection(conn)
 
     def execute_in_transaction(self, func):
-        """在事务中执行函数"""
         conn = self.begin_transaction()
         if not conn:
             return False
@@ -706,7 +893,6 @@ class DatabaseManager:
             return False
 
     def create_table(self, table_name, columns):
-        """创建表"""
         encrypted_table_name = table_encryption.encrypt_table_name(table_name)
 
         columns_sql = []
@@ -725,7 +911,6 @@ class DatabaseManager:
         return success
 
     def add_column(self, table_name, column_name, column_type):
-        """添加列"""
         encrypted_table_name = table_encryption.encrypt_table_name(table_name)
         query = f"ALTER TABLE {encrypted_table_name} ADD COLUMN {column_name} {column_type}"
         _, success = self.execute(query)
@@ -734,9 +919,7 @@ class DatabaseManager:
         return success
 
     def drop_table(self, table_name):
-        # 加密表名
         encrypted_table_name = table_encryption.encrypt_table_name(table_name)
-
         query = f"DROP TABLE {encrypted_table_name}"
         _, success = self.execute(query)
         if success:
@@ -744,7 +927,6 @@ class DatabaseManager:
         return success
 
     def vacuum(self):
-        """优化数据库"""
         success = False
         if self.db_type == 'sqlite':
             _, success = self.execute("VACUUM")
@@ -761,14 +943,12 @@ class DatabaseManager:
         return success
 
     def get_table_lock(self, table_name):
-        """获取表级锁"""
         with self._table_lock_creation_lock:
             if table_name not in self._table_locks:
                 self._table_locks[table_name] = threading.Lock()
         return self._table_locks.get(table_name)
 
     def create_snapshot(self, snapshot_dir=None):
-        """创建数据库快照"""
         try:
             if snapshot_dir is None:
                 snapshot_dir = os.path.join(os.path.dirname(self.db_path), 'snapshots')
@@ -791,7 +971,6 @@ class DatabaseManager:
             return None
 
     def backup_database(self, backup_dir=None):
-        """备份数据库"""
         try:
             if not backup_dir:
                 backup_dir = os.path.join(os.path.dirname(self.db_path), 'backups')
@@ -817,7 +996,6 @@ class DatabaseManager:
             return None
 
     def import_json_to_database(self, table_name, json_data):
-        """将JSON数据导入数据库"""
         try:
             conn = self.begin_transaction()
             if not conn:
@@ -860,7 +1038,6 @@ class DatabaseManager:
             return False
 
     def export_table_to_json(self, table_name):
-        """将数据库表导出为JSON"""
         try:
             query = f"SELECT * FROM {table_name}"
             results = self.fetch_all(query)
@@ -870,6 +1047,7 @@ class DatabaseManager:
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             json_file = os.path.join(export_dir, f'{table_name}_{timestamp}.json')
 
+            import json
             with open(json_file, 'w', encoding='utf-8') as f:
                 json.dump(results, f, ensure_ascii=False, indent=2, default=str)
 
@@ -879,5 +1057,5 @@ class DatabaseManager:
             logger.error(f"导出JSON数据失败: {str(e)}")
             return None
 
-# 创建数据库管理器实例
+
 db_manager = DatabaseManager()

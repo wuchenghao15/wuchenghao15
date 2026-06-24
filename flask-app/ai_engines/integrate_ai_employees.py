@@ -53,7 +53,7 @@ class AIEmployeeIntegrator:
 
             # 修复日语等级表
             import sqlite3
-            with sqlite3.connect(sqlite3.connect(Config.DATABASE_PATH)) as conn:
+            with sqlite3.connect(Config.DATABASE_PATH) as conn:
                 conn_cursor = conn.cursor()
                 cursor = conn.cursor()
                 

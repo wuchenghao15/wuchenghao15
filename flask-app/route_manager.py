@@ -25,7 +25,7 @@ class RouteManager:
 
     def _init_database(self):
         """Initialize database, create route rules table"""
-        with sqlite3.connect(sqlite3.connect(self.db_path)) as conn:
+        with sqlite3.connect(self.db_path) as conn:
             conn_cursor = conn.cursor()
             cursor = conn.cursor()
             

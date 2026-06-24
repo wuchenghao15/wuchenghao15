@@ -15,7 +15,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 def create_system_config_table():
     """创建系统配置表"""
     # 连接到数据库
-    with sqlite3.connect(sqlite3.connect('app.db')) as conn:
+    with sqlite3.connect('app.db') as conn:
         conn_cursor = conn.cursor()
         cursor = conn.cursor()
         

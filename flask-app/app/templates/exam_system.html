@@ -431,16 +431,13 @@
                     {% for exam in exams %}
                     <div class="exam-item" data-exam-id="{{ exam.id }}">
                         <div class="exam-info">
-                            <h3>{{ exam.name }}</h3>
-                            <p>时长: {{ exam.duration }}分钟 | 题目: {{ exam.total_questions }}道 | 难度: {{ exam.difficulty_level }}</p>
-                            {% if exam.audio_type %}
-                            <p style="font-size: 0.85rem; color: #94a3b8;">发音类型: {{ exam.audio_type }}</p>
-                            {% endif %}
+                            <h3>{{ exam.title if exam.title else exam.name }}</h3>
+                            <p>时长: {{ exam.duration }}分钟 | 题目: {{ exam.question_count if exam.question_count else exam.total_questions }}道 | 难度: {{ exam.level if exam.level else exam.difficulty_level }}</p>
                         </div>
                         <div class="exam-actions">
-                            <button class="btn btn-primary" onclick="startExam({{ exam.id }})">开始考试</button>
-                            <button class="btn btn-secondary" onclick="showExamDetail({{ exam.id }})">详情</button>
-                            <button class="btn btn-danger" onclick="confirmDeleteExam({{ exam.id }}, '{{ exam.name }}')">删除</button>
+                            <button class="btn btn-primary" onclick="startExam('{{ exam.id }}')">开始考试</button>
+                            <button class="btn btn-secondary" onclick="showExamDetail('{{ exam.id }}')">详情</button>
+                            <button class="btn btn-danger" onclick="confirmDeleteExam('{{ exam.id }}', '{{ exam.title if exam.title else exam.name }}')">删除</button>
                         </div>
                     </div>
                     {% endfor %}
@@ -802,12 +799,11 @@
                                 <div class="exam-info">
                                     <h3>${exam.name}</h3>
                                     <p>时长: ${exam.duration}分钟 | 题目: ${exam.total_questions}道 | 难度: ${exam.difficulty_level}</p>
-                                    ${exam.audio_type ? `<p style="font-size: 0.85rem; color: #94a3b8;">发音类型: ${exam.audio_type}</p>` : ''}
                                 </div>
                                 <div class="exam-actions">
-                                    <button class="btn btn-primary" onclick="startExam(${exam.id})">开始考试</button>
-                                    <button class="btn btn-secondary" onclick="showExamDetail(${exam.id})">详情</button>
-                                    <button class="btn btn-danger" onclick="confirmDeleteExam(${exam.id}, '${exam.name}')">删除</button>
+                                    <button class="btn btn-primary" onclick="startExam('${exam.id}')">开始考试</button>
+                                    <button class="btn btn-secondary" onclick="showExamDetail('${exam.id}')">详情</button>
+                                    <button class="btn btn-danger" onclick="confirmDeleteExam('${exam.id}', '${exam.name}')">删除</button>
                                 </div>
                             `;
                             examList.appendChild(examItem);

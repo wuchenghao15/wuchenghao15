@@ -44,7 +44,7 @@ def save_config_to_db(config: Dict[str, Any]):
     将配置保存到数据库
     try:
         # 连接数据库
-        with sqlite3.connect(sqlite3.connect('app.db')) as conn:
+        with sqlite3.connect('app.db') as conn:
             conn_cursor = conn.cursor()
             cursor = conn.cursor()
             
@@ -94,7 +94,7 @@ def verify_config_in_db():
     验证配置是否已正确保存到数据库
     try:
         # 连接数据库
-        with sqlite3.connect(sqlite3.connect('app.db')) as conn:
+        with sqlite3.connect('app.db') as conn:
             conn_cursor = conn.cursor()
             cursor = conn.cursor()
             

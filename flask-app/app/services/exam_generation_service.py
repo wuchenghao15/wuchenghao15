@@ -80,7 +80,7 @@ class ExamGenerationService:
             estimated_time INTEGER,
             quality_score REAL,
             created_at TEXT,
-            FOREIGN KEY (exam_id) REFERENCES t_a4394fa841fb07b4(id)
+            FOREIGN KEY (exam_id) REFERENCES exams(id)
         )''')
 
         conn.commit()

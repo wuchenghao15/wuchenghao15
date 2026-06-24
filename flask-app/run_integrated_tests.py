@@ -111,7 +111,7 @@ class IntegratedTestRunner:
         self.log('INFO', '数据库检查', '开始数据库连接检查')
         
         try:
-            with sqlite3.connect(sqlite3.connect(self.db_path)) as conn:
+            with sqlite3.connect(self.db_path) as conn:
                 conn_cursor = conn.cursor()
                 cursor = conn.cursor()
                 cursor.execute('SELECT name FROM sqlite_master WHERE type="table"')
@@ -220,7 +220,7 @@ class IntegratedTestRunner:
         self.log('INFO', '安全检查', '开始安全功能检查')
         
         try:
-            with sqlite3.connect(sqlite3.connect(self.db_path)) as conn:
+            with sqlite3.connect(self.db_path) as conn:
                 conn_cursor = conn.cursor()
                 cursor = conn.cursor()
                 

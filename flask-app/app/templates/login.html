@@ -333,6 +333,7 @@
         async function handleLogin() {
             const username = document.getElementById('username').value.trim();
             const password = document.getElementById('password').value.trim();
+            const remember = document.getElementById('remember')?.checked || false;
             
             if (!username || !password) {
                 showMessage('error', '用户名和密码不能为空');
@@ -345,15 +346,19 @@
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ username, password })
+                    body: JSON.stringify({ username, password, remember })
                 });
                 
                 const data = await response.json();
                 
                 if (data.success) {
-                    showMessage('success', '登录成功！正在跳转...');
+                    const expiresText = data.remember_me 
+                        ? '登录成功！已开启30天免登录。正在跳转...' 
+                        : '登录成功！正在跳转...';
+                    showMessage('success', expiresText);
                     setTimeout(() => {
-                        window.location.href = '/';
+                        // 使用服务器返回的重定向URL
+                        window.location.href = data.redirect || '/';
                     }, 1500);
                 } else {
                     showMessage('error', data.message || '登录失败');

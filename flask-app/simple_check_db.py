@@ -16,7 +16,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 try:
     # 直接连接SQLite数据库
     db_path = 'app.db'
-    with sqlite3.connect(sqlite3.connect(db_path)) as conn:
+    with sqlite3.connect(db_path) as conn:
         conn_cursor = conn.cursor()
         cursor = conn.cursor()
         

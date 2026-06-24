@@ -2,7 +2,6 @@
  * MTSCOS AI 系统版本管理模块
  * 功能：读取系统版本配置，绑定版本数据到页面元素
  */
-
 class SystemVersionManager {
     constructor() {
         this.versionConfig = null;
@@ -10,19 +9,16 @@ class SystemVersionManager {
         this.versionDisplayElement = null;
         this.init();
     }
-    
     async init() {
         this.versionElement = document.getElementById('project-version');
         this.versionDisplayElement = document.getElementById('version-display');
-        
         await this.loadVersionConfig();
         this.bindVersionData();
         this.setupAutoRefresh();
     }
-    
     async loadVersionConfig() {
         try {
-            const response = await fetch('config/system-version.json');
+            const response = await fetch('/assets/config/system-version.json');
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
@@ -33,7 +29,6 @@ class SystemVersionManager {
             this.versionConfig = this.getDefaultConfig();
         }
     }
-    
     getDefaultConfig() {
         return {
             system: {
@@ -56,17 +51,14 @@ class SystemVersionManager {
             }
         };
     }
-    
     bindVersionData() {
         if (!this.versionConfig) {
             console.warn('版本配置未加载');
             return;
         }
-        
         const system = this.versionConfig.system;
         const features = this.versionConfig.features;
         const status = this.versionConfig.status;
-        
         // 绑定版本信息到导航栏元素
         if (this.versionElement) {
             const statusBadge = status.stable ? '稳定版' : (status.beta ? '测试版' : '开发版');
@@ -75,17 +67,14 @@ class SystemVersionManager {
             this.versionElement.setAttribute('data-build', system.build);
             this.versionElement.setAttribute('data-codename', system.codename);
         }
-        
         // 绑定版本信息到卡片显示元素
         if (this.versionDisplayElement) {
             const statusBadge = status.stable ? '稳定版' : (status.beta ? '测试版' : '开发版');
             this.versionDisplayElement.textContent = `v${system.version} - ${system.codename}`;
             this.versionDisplayElement.setAttribute('data-version', system.version);
         }
-        
         // 更新页面标题
         document.title = `${system.name} - v${system.version}`;
-        
         // 触发版本加载完成事件
         document.dispatchEvent(new CustomEvent('version-loaded', {
             detail: {
@@ -96,10 +85,8 @@ class SystemVersionManager {
                 status: status
             }
         }));
-        
         console.log('版本数据绑定完成');
     }
-    
     setupAutoRefresh() {
         // 每5分钟自动刷新版本配置
         setInterval(async () => {
@@ -107,30 +94,23 @@ class SystemVersionManager {
             this.bindVersionData();
         }, 5 * 60 * 1000);
     }
-    
     getVersion() {
         return this.versionConfig?.system?.version || '未知';
     }
-    
     getBuild() {
         return this.versionConfig?.system?.build || '未知';
     }
-    
     getCodename() {
         return this.versionConfig?.system?.codename || '未知';
     }
-    
     getFeatures() {
         return this.versionConfig?.features || {};
     }
-    
     getStatus() {
         return this.versionConfig?.status || {};
     }
-    
     getFullVersionInfo() {
         if (!this.versionConfig) return null;
-        
         return {
             version: this.getVersion(),
             build: this.getBuild(),
@@ -140,13 +120,11 @@ class SystemVersionManager {
             fullVersion: `v${this.getVersion()} (${this.getCodename()})`
         };
     }
-    
     // 检查是否有新版本
     async checkForUpdates() {
         try {
-            const response = await fetch('config/system-version.json');
+            const response = await fetch('/assets/config/system-version.json');
             const newConfig = await response.json();
-            
             if (newConfig.system.version !== this.versionConfig.system.version) {
                 console.log('发现新版本:', newConfig.system.version);
                 document.dispatchEvent(new CustomEvent('version-update-available', {
@@ -158,7 +136,6 @@ class SystemVersionManager {
                 }));
                 return true;
             }
-            
             return false;
         } catch (error) {
             console.error('检查更新失败:', error);
@@ -166,12 +143,10 @@ class SystemVersionManager {
         }
     }
 }
-
 // 初始化版本管理器
 document.addEventListener('DOMContentLoaded', () => {
     window.systemVersionManager = new SystemVersionManager();
 });
-
 // 导出模块
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = SystemVersionManager;

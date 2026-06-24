@@ -151,7 +151,7 @@ class AIAndVersionSystemEnhancer:
         try:
 
             # 连接数据库
-            with sqlite3.connect(sqlite3.connect(self.db_path)) as conn:
+            with sqlite3.connect(self.db_path) as conn:
                 conn_cursor = conn.cursor()
                 cursor = conn.cursor()
                 
@@ -407,7 +407,7 @@ class AIAndVersionSystemEnhancer:
     def get_version_system_status(self) -> Dict[str, Any]:
         try:
 
-            with sqlite3.connect(sqlite3.connect(self.db_path)) as conn:
+            with sqlite3.connect(self.db_path) as conn:
                 conn_cursor = conn.cursor()
                 cursor = conn.cursor()
                 
