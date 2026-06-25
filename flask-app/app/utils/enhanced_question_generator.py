@@ -1,3 +1,6 @@
+import logging
+logger = logging.getLogger(__name__)
+
 # -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 import sqlite3
@@ -556,4 +559,4 @@ class EnhancedQuestionGenerator:
 if __name__ == '__main__':
     generator = EnhancedQuestionGenerator()
     result = generator.generate_mass_questions(target_count=50000)
-    print("\n📊 结果:", result)
+    logger.info("\n📊 结果:", result)

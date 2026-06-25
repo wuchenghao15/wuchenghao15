@@ -1,3 +1,6 @@
+import logging
+logger = logging.getLogger(__name__)
+
 # -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """硬件管理员路由 - 设备管理和系统设置"""
@@ -792,7 +795,7 @@ def init_hardware_keys_table(conn):
         ''')
         conn.commit()
     except Exception as e:
-        print(f"初始化密钥表失败: {e}")
+        logger.info(f"初始化密钥表失败: {e}")
 
 
 @hardware_bp.route('/hardware/devices')

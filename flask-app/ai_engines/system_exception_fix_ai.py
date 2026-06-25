@@ -122,7 +122,7 @@ class SystemExceptionFixAI:
             try:
                 import urllib.request
                 urllib.request.urlopen('http://localhost:5000', timeout=2)
-            except:
+            except Exception:
                 exceptions.append({
                     'type': 'services',
                     'severity': 'medium',
@@ -419,7 +419,7 @@ APP_PORT = 5000
                 with open(brain_file, 'r', encoding='utf-8') as f:
                     try:
                         existing_cases = json.load(f)
-                    except:
+                    except Exception:
                         existing_cases = []
 
             all_cases = existing_cases + error_cases

@@ -1,3 +1,6 @@
+import logging
+logger = logging.getLogger(__name__)
+
 #!/usr/bin/env python3
 """
 系统优化服务 - AI员工模块
@@ -162,7 +165,7 @@ def optimize_database():
             try:
                 conn.execute(f'ANALYZE {table_name}')
                 optimizations.append(f'分析表: {table_name}')
-            except:
+            except Exception:
                 pass
         
         indexes = conn.execute("SELECT name FROM sqlite_master WHERE type='index'").fetchall()
@@ -465,4 +468,4 @@ def init_system_optimizer():
 
 if __name__ == '__main__':
     init_system_optimizer()
-    print("系统优化服务初始化完成")
+    logger.info("系统优化服务初始化完成")

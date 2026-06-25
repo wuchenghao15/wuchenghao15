@@ -1,7 +1,13 @@
 # -*- coding: utf-8 -*-
 """AI自动学习升级API"""
 from flask import Blueprint, request, jsonify
-from app.ai.auto_learning_upgrade import ai_auto_learning_system
+try:
+    from app.ai.auto_learning_upgrade import ai_auto_learning_system
+except ImportError:
+    try:
+        from ai_engines.auto_learning_upgrade import ai_auto_learning_system
+    except ImportError:
+        ai_auto_learning_system = None
 import json
 import sys
 

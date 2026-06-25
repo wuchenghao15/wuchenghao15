@@ -1,3 +1,6 @@
+import logging
+logger = logging.getLogger(__name__)
+
 # -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
@@ -259,7 +262,7 @@ class SmartQuestionTagger:
             q.last_used = time.time()
         
         self._save()
-        print(f"生成试卷: {len(selected)} 道题目")
+        logger.info(f"生成试卷: {len(selected)} 道题目")
         return selected[:count]
 
     def get_stats(self) -> Dict:

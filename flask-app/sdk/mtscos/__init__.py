@@ -1,3 +1,6 @@
+import logging
+logger = logging.getLogger(__name__)
+
 # -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
@@ -99,7 +102,7 @@ class BaseSDK:
         
         except requests.exceptions.RequestException as e:
             if self.parent.config.debug:
-                print(f"API请求失败: {e}")
+                logger.info(f"API请求失败: {e}")
             return {'success': False, 'error': str(e)}
 
 

@@ -324,7 +324,7 @@ class SystemMaintenanceAI:
                 with open(brain_file, 'r', encoding='utf-8') as f:
                     try:
                         existing_cases = json.load(f)
-                    except:
+                    except Exception:
                         existing_cases = []
 
             # 合并案例

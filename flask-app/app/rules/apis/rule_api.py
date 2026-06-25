@@ -1,3 +1,6 @@
+import logging
+logger = logging.getLogger(__name__)
+
 # -*- coding: utf-8 -*-
 """
 规则管理API - 提供完整的CRUD操作
@@ -17,7 +20,7 @@ try:
 except ImportError:
     rule_manager = None
     rule_engine = None
-    print("警告: 规则模块未找到")
+    logger.info("警告: 规则模块未找到")
 
 @rule_api.route('/', methods=['GET'])
 def get_rules():

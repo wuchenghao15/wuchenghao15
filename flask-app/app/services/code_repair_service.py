@@ -415,14 +415,14 @@ def fix_json_syntax(content):
     try:
         json.loads(content)
         return content
-    except:
+    except Exception:
         content = content.replace("'", '"')
         content = re.sub(r',\s*}', '}', content)
         content = re.sub(r',\s*]', ']', content)
         try:
             json.loads(content)
             return content
-        except:
+        except Exception:
             return content
 
 

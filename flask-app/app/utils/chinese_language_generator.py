@@ -1,3 +1,6 @@
+import logging
+logger = logging.getLogger(__name__)
+
 # -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
@@ -581,4 +584,4 @@ class ChineseLanguageGenerator:
 if __name__ == "__main__":
     generator = ChineseLanguageGenerator()
     result = generator.generate_mass_questions(target_count=2000)
-    print("\n📊 结果:", result)
+    logger.info("\n📊 结果:", result)

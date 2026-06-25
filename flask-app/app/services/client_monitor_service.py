@@ -1,3 +1,6 @@
+import logging
+logger = logging.getLogger(__name__)
+
 #!/usr/bin/env python3
 """
 客户端监控服务 - AI员工模块
@@ -425,4 +428,4 @@ def get_monitor_employee():
 if __name__ == '__main__':
     init_monitor_tables()
     create_monitor_employee()
-    print("客户端监控服务初始化完成")
+    logger.info("客户端监控服务初始化完成")

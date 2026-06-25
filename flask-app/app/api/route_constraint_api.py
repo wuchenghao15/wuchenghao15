@@ -101,7 +101,7 @@ def get_constraint_summary():
         """)
         try:
             recent_executions = cursor.fetchone()[0]
-        except:
+        except Exception:
             recent_executions = 0
 
         conn.close()
@@ -155,7 +155,7 @@ def detect_conflicts():
                         try:
                             m1 = set(json.loads(r1['allowed_methods'] or '[]'))
                             m2 = set(json.loads(r2['allowed_methods'] or '[]'))
-                        except:
+                        except Exception:
                             continue
                         if m1 != m2:
                             conflicts.append({
@@ -284,7 +284,7 @@ def get_interaction_matrix():
                 if r:
                     try:
                         methods = json.loads(r['allowed_methods'] or '[]')
-                    except:
+                    except Exception:
                         methods = []
                     row['roles'][role] = {
                         'allowed': True,

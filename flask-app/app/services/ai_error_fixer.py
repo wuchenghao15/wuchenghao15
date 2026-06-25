@@ -1,3 +1,6 @@
+import logging
+logger = logging.getLogger(__name__)
+
 # -*- coding: utf-8 -*-
 """
 AI错误检测和修复服务
@@ -599,7 +602,7 @@ with open('data.txt') as file:
             if 'open' in op:
                 code = re.sub(
                     r'(\w+)\s*=\s*open\s*\(\s*([^)]+)\s*\)',
-                    r'try:\n    \1 = open(\2)\nexcept FileNotFoundError:\n    print("文件未找到")\n    \1 = None\nexcept PermissionError:\n    print("权限不足")\n    \1 = None',
+                    r'try:\n    \1 = open(\2)\nexcept FileNotFoundError:\n    \1 = None',
                     code
                 )
         

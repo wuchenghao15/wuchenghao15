@@ -1,3 +1,6 @@
+import logging
+logger = logging.getLogger(__name__)
+
 # -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """家长监控服务 - 家长查看孩子学习情况"""
@@ -172,5 +175,5 @@ class ParentMonitorService:
                 conn.commit()
                 return True
             except Exception as e:
-                print(f"标记已读失败: {str(e)}")
+                logger.info(f"标记已读失败: {str(e)}")
                 return False

@@ -1,3 +1,6 @@
+import logging
+logger = logging.getLogger(__name__)
+
 # -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
@@ -322,4 +325,4 @@ if __name__ == "__main__":
     logs = manager.get_logs(10)
     print("\n最近的SSL日志:")
     for log in logs:
-        print(f"  [{log['level']}] {log['message']}")
+        logger.info(f"  [{log['level']}] {log['message']}")

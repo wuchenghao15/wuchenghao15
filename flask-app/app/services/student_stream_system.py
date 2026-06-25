@@ -1,3 +1,6 @@
+import logging
+logger = logging.getLogger(__name__)
+
 # -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
@@ -395,4 +398,4 @@ if __name__ == "__main__":
         print(f"  置信度: {recommendation['confidence']:.1f}%")
         print(f"  推荐因素: {recommendation['factors']}")
     
-    print("\n == 测试完成 ===")
+    logger.info("\n == 测试完成 ===")

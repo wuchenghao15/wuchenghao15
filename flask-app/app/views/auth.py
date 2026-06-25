@@ -25,7 +25,7 @@ def verify_password(stored_password, provided_password):
             stored_hash = stored_bytes[16:]
             provided_hash = hashlib.pbkdf2_hmac('sha256', provided_password.encode(), salt, 100000)
             return stored_hash == provided_hash
-    except:
+    except Exception:
         pass
     return stored_password == provided_password
 
@@ -39,7 +39,7 @@ def get_user_by_username(username):
         if user:
             columns = ['id', 'username', 'email', 'password', 'role', 'created_at', 'updated_at', 'is_active', 'super_admin_approved', 'hardware_admin_approved', 'avatar']
             return dict(zip(columns, user))
-    except:
+    except Exception:
         pass
     return None
 
@@ -52,7 +52,7 @@ def login():
             json_data = request.get_json(force=False, silent=True)
             if json_data:
                 data.update(json_data)
-        except:
+        except Exception:
             pass
         if not data:
             form_data = request.form.to_dict()
@@ -66,7 +66,7 @@ def login():
             try:
                 import json
                 data = json.loads(request.data.decode('utf-8'))
-            except:
+            except Exception:
                 pass
 
         if not data or 'username' not in data or 'password' not in data:
@@ -124,7 +124,7 @@ def register():
             json_data = request.get_json(force=False, silent=True)
             if json_data:
                 data.update(json_data)
-        except:
+        except Exception:
             pass
         if not data:
             form_data = request.form.to_dict()
@@ -134,7 +134,7 @@ def register():
             try:
                 import json
                 data = json.loads(request.data.decode('utf-8'))
-            except:
+            except Exception:
                 pass
 
         if not data or 'username' not in data or 'password' not in data or 'email' not in data:

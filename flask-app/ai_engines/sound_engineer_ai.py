@@ -1,3 +1,6 @@
+import logging
+logger = logging.getLogger(__name__)
+
 # -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
@@ -48,7 +51,7 @@ class SoundEngineerAI:
             
             conn.close()
         except Exception as e:
-            print(f"加载缓存失败: {e}")
+            logger.info(f"加载缓存失败: {e}")
     
     def get_pronunciation(self, language, content, accent='standard', voice='female'):
         """获取发音素材路径"""

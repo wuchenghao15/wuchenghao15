@@ -15,7 +15,13 @@ from typing import Dict, List, Any, Optional
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.utils.logging import logger
-from app.ai.self_upgrading_system import AISelfUpgradingSystem
+try:
+    from app.ai.self_upgrading_system import AISelfUpgradingSystem
+except ImportError:
+    try:
+        from ai_engines.self_upgrading_system import AISelfUpgradingSystem
+    except ImportError:
+        AISelfUpgradingSystem = None
 
 class AIAutoUpdateManager:
     """AI自动更新管理器 - 负责协调和管理系统的自动更新功能"""

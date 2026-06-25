@@ -1,3 +1,6 @@
+import logging
+logger = logging.getLogger(__name__)
+
 #!/usr/bin/env python3
 """
 教授系统服务
@@ -1619,4 +1622,4 @@ if __name__ == "__main__":
         for suggestion in summary['suggestions']:
             print(f"    💡 {suggestion}")
     
-    print("\n=== 测试完成 ===")
+    logger.info("\n=== 测试完成 ===")

@@ -1,3 +1,6 @@
+import logging
+logger = logging.getLogger(__name__)
+
 #!/usr/bin/env python3
 """
 用户行为记录系统 - AI员工模块
@@ -631,4 +634,4 @@ def init_behavior_monitor():
 
 if __name__ == '__main__':
     init_behavior_monitor()
-    print("用户行为监控服务初始化完成")
+    logger.info("用户行为监控服务初始化完成")

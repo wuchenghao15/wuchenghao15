@@ -151,7 +151,7 @@ class RouteConstraintEngine:
                         # 检查方法匹配
                         try:
                             allowed_methods = json.loads(rule['allowed_methods'] or '[]')
-                        except:
+                        except Exception:
                             allowed_methods = []
                         if not allowed_methods or method.upper() in [m.upper() for m in allowed_methods]:
                             matched_rule = rule
@@ -424,7 +424,7 @@ class RouteConstraintEngine:
 
             try:
                 limit = int(row['rule_value'])
-            except:
+            except Exception:
                 return {'allowed': True, 'reason': 'invalid_limit'}
 
             # 简单的滑动窗口检查

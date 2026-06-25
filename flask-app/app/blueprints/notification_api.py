@@ -1,3 +1,6 @@
+import logging
+logger = logging.getLogger(__name__)
+
 # -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
@@ -29,7 +32,7 @@ def log_notification_action(notification_id, action, user_id, details=None):
         conn.commit()
         conn.close()
     except Exception as e:
-        print(f"日志记录失败: {e}")
+        logger.info(f"日志记录失败: {e}")
 
 
 @notification_api.route('/', methods=['GET'])

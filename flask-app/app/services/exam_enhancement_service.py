@@ -1,3 +1,6 @@
+import logging
+logger = logging.getLogger(__name__)
+
 # -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
@@ -523,4 +526,4 @@ def get_exam_enhancement_service():
 if __name__ == "__main__":
     service = ExamEnhancementService()
     service.init_database()
-    print("考试增强服务初始化完成")
+    logger.info("考试增强服务初始化完成")

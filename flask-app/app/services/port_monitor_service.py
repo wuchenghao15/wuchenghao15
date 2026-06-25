@@ -1,3 +1,6 @@
+import logging
+logger = logging.getLogger(__name__)
+
 #!/usr/bin/env python3
 """
 端口监控服务 - AI员工模块
@@ -170,7 +173,7 @@ def check_port_config_params(port):
                         param['match_status'] = 'validated'
                     else:
                         param['match_status'] = 'invalid'
-                except:
+                except Exception:
                     pass
             
             params.append(param)
@@ -579,4 +582,4 @@ def init_port_monitor():
 
 if __name__ == '__main__':
     init_port_monitor()
-    print("端口监控服务初始化完成")
+    logger.info("端口监控服务初始化完成")

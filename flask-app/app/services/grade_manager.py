@@ -304,4 +304,4 @@ if __name__ == "__main__":
     
     # 测试升级功能(模拟9月份)
     result = manager.upgrade_grades()
-    print(f"升级结果: {result}")
+    logger.info(f"升级结果: {result}")

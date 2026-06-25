@@ -1,3 +1,6 @@
+import logging
+logger = logging.getLogger(__name__)
+
 # -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 import sqlite3
@@ -477,4 +480,4 @@ education_alignment = EducationAlignment()
 if __name__ == '__main__':
     aligner = EducationAlignment()
     result = aligner.update_question_bank_with_alignment()
-    print(f"\n📊 更新完成: {result}")
+    logger.info(f"\n📊 更新完成: {result}")

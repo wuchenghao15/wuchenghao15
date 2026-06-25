@@ -9,11 +9,23 @@ import logging
 from flask import Blueprint, request, jsonify
 from typing import Dict, List, Any
 
-from app.ai.auto_upgrade_test_system import (
-    smart_auto_upgrade_test_system,
-    ErrorType,
-    ErrorSeverity
-)
+try:
+    from app.ai.auto_upgrade_test_system import (
+        smart_auto_upgrade_test_system,
+        ErrorType,
+        ErrorSeverity
+    )
+except ImportError:
+    try:
+        from ai_engines.auto_upgrade_test_system import (
+            smart_auto_upgrade_test_system,
+            ErrorType,
+            ErrorSeverity
+        )
+    except ImportError:
+        smart_auto_upgrade_test_system = None
+        ErrorType = None
+        ErrorSeverity = None
 
 logger = logging.getLogger('smart_auto_upgrade_api')
 

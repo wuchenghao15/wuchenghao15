@@ -1,3 +1,6 @@
+import logging
+logger = logging.getLogger(__name__)
+
 # -*- coding: utf-8 -*-
 """AI驱动的自动计划调度系统"""
 import os
@@ -235,7 +238,7 @@ class AutoScheduler:
     
     def _task_generate_exams(self):
         """生成每日考试任务"""
-        print("[任务] 生成每日考试...")
+        logger.info("[任务] 生成每日考试...")
         # 模拟考试生成
         time.sleep(3)
     

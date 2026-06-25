@@ -8,9 +8,19 @@ import uuid
 import time
 import json
 from app.utils.logging import logger
-from app.models.ai import AIInstance, AICollection
-from app.models.enhanced_ai_employee import EnhancedAIEmployee
-from app.ai.instances import ai_instance_manager
+try:
+    from app.models.ai import AIInstance, AICollection
+except ImportError:
+    AIInstance = None
+    AICollection = None
+try:
+    from app.models.enhanced_ai_employee import EnhancedAIEmployee
+except ImportError:
+    EnhancedAIEmployee = None
+try:
+    from app.ai.instances import ai_instance_manager
+except ImportError:
+    ai_instance_manager = None
 
 class AIAutomationManager:
     """AI自动化管理器: 负责协调和管理AI管家,AI集,AI员工和AI计划表"""

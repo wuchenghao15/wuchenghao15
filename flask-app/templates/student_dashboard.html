@@ -658,7 +658,7 @@
                     </button>
                     
                     <p class="text-center text-xs text-gray-500 mt-3">
-                        今日剩余机会：<span class="text-yellow-400 font-bold">{{ stats.daily_chances }}</span> 次
+                        今日剩余机会：<span id="daily-chances" data-chances="{{ stats.daily_chances }}" class="text-yellow-400 font-bold">{{ stats.daily_chances }}</span> 次
                     </p>
                 </div>
                 
@@ -676,7 +676,7 @@
                                 <span class="text-blue-400">{{ stats.overall_progress }}%</span>
                             </div>
                             <div class="progress-bar">
-                                <div class="progress-fill bg-gradient-to-r from-blue-500 to-blue-400" style="width: {{ stats.overall_progress }}%"></div>
+                                <div class="progress-fill bg-gradient-to-r from-blue-500 to-blue-400" id="overall-progress" data-progress="{{ stats.overall_progress }}"></div>
                             </div>
                         </div>
                         <div>
@@ -685,7 +685,7 @@
                                 <span class="text-green-400">{{ stats.weekly_progress }}%</span>
                             </div>
                             <div class="progress-bar">
-                                <div class="progress-fill bg-gradient-to-r from-green-500 to-green-400" style="width: {{ stats.weekly_progress }}%"></div>
+                                <div class="progress-fill bg-gradient-to-r from-green-500 to-green-400" id="weekly-progress" data-progress="{{ stats.weekly_progress }}"></div>
                             </div>
                         </div>
                     </div>
@@ -739,19 +739,30 @@
     <script>
         // 随机有奖测试
         function startRandomTest() {
-            const chances = {{ stats.daily_chances|default(3) }};
+            var chancesElement = document.getElementById('daily-chances');
+            var chances = chancesElement ? parseInt(chancesElement.dataset.chances) : 3;
             if (chances <= 0) {
                 alert('今日挑战次数已用完，请明天再来！');
                 return;
             }
-            
+
             if (confirm('确定要开始随机有奖测试吗？答对可获得积分奖励！')) {
                 window.location.href = '/exam/random_challenge';
             }
         }
-        
+
         // 页面加载动画
         document.addEventListener('DOMContentLoaded', function() {
+            // 设置进度条宽度
+            var overallProgress = document.getElementById('overall-progress');
+            var weeklyProgress = document.getElementById('weekly-progress');
+            if (overallProgress) {
+                overallProgress.style.width = overallProgress.dataset.progress + '%';
+            }
+            if (weeklyProgress) {
+                weeklyProgress.style.width = weeklyProgress.dataset.progress + '%';
+            }
+
             const cards = document.querySelectorAll('.animate-slide-up');
             cards.forEach((card, index) => {
                 card.style.opacity = '0';

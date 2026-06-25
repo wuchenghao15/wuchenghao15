@@ -282,6 +282,46 @@ try:
 except ImportError:
     logger.warning("[路由] 角色路由跳转API未找到，跳过注册")
 
+# 导入并注册AI增强修复API
+try:
+    from app.api.enhancement_repair_api import enhancement_repair_api
+    app.register_blueprint(enhancement_repair_api)
+    logger.info("[路由] AI增强修复API注册成功")
+except ImportError:
+    logger.warning("[路由] AI增强修复API未找到，跳过注册")
+
+# 导入并注册统一Auto API
+try:
+    from app.api.auto_api import auto_api
+    app.register_blueprint(auto_api)
+    logger.info("[路由] 统一Auto API注册成功")
+except ImportError:
+    logger.warning("[路由] 统一Auto API未找到，跳过注册")
+
+# 导入并注册Listening API
+try:
+    from app.api.listening_api import listening_api
+    app.register_blueprint(listening_api)
+    logger.info("[路由] Listening API注册成功")
+except ImportError:
+    logger.warning("[路由] Listening API未找到，跳过注册")
+
+# 导入并注册架构工程师API
+try:
+    from app.api.architecture_api import architecture_api
+    app.register_blueprint(architecture_api)
+    logger.info("[路由] 架构工程师API注册成功")
+except ImportError:
+    logger.warning("[路由] 架构工程师API未找到，跳过注册")
+
+# 导入并注册异常登录Blueprint
+try:
+    from app.views.exception_login import exception_bp
+    app.register_blueprint(exception_bp)
+    logger.info("[路由] 异常登录Blueprint注册成功")
+except ImportError:
+    logger.warning("[路由] 异常登录Blueprint未找到，跳过注册")
+
 DATABASE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'app.db')
 
 @contextmanager
@@ -410,7 +450,7 @@ def get_system_settings():
                     elif isinstance(settings[key], int):
                         try:
                             settings[key] = int(value)
-                        except:
+                        except Exception:
                             pass
                     else:
                         settings[key] = value
@@ -445,7 +485,7 @@ def get_security_settings():
                     elif isinstance(settings[key], int):
                         try:
                             settings[key] = int(value)
-                        except:
+                        except Exception:
                             pass
                     else:
                         settings[key] = value
@@ -590,7 +630,7 @@ def handle_login_exception(e: Exception, username: str = None) -> tuple:
                 VALUES (?, ?, ?, ?)
             ''', ('ERROR', 'login', f"登录异常 - {error_code}: {error_message}", request.remote_addr))
             conn.commit()
-    except:
+    except Exception:
         pass
     
     return jsonify({
@@ -675,7 +715,7 @@ def login():
                 try:
                     import json
                     data = json.loads(request.data.decode('utf-8'))
-                except:
+                except Exception:
                     pass
             
             logger.info(f"登录请求数据: {data}")
@@ -859,7 +899,7 @@ def register():
             json_data = request.get_json(force=False, silent=True)
             if json_data:
                 data.update(json_data)
-        except:
+        except Exception:
             pass
         
         if not data:
@@ -1233,7 +1273,7 @@ def get_user_stats(user_id):
             try:
                 cursor.execute('SELECT COUNT(*) FROM wrong_questions WHERE user_id = ?', (user_id,))
                 stats['wrong_questions'] = cursor.fetchone()[0] or 0
-            except:
+            except Exception:
                 pass
             
             # 学习积分
@@ -1241,7 +1281,7 @@ def get_user_stats(user_id):
                 cursor.execute('SELECT points FROM user_points WHERE user_id = ?', (user_id,))
                 result = cursor.fetchone()
                 stats['points'] = result[0] if result else 100
-            except:
+            except Exception:
                 stats['points'] = 100
                 
     except Exception as e:
@@ -1973,7 +2013,7 @@ def get_fix_recommendations():
     for row in rows:
         try:
             details = json.loads(row['details']) if row['details'] else {}
-        except:
+        except Exception:
             details = {'raw': row['details']}
         recommendations.append({
             'type': row['type'],
@@ -2151,7 +2191,7 @@ def set_grade():
                     from app.services.grade_bank_service import get_grade_bank_service
                     banks = get_grade_bank_service().get_banks_for_grade(grade)
                     logger.info(f"年级 {grade} 绑定了 {len(banks)} 个题库")
-                except:
+                except Exception:
                     pass
                 return redirect('/exam/placement_test')
             else:
