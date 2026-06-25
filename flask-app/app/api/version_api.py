@@ -6,11 +6,13 @@
 
 from flask import Blueprint, jsonify, request
 from app.version import (
-    VERSION, VERSION_INFO, CHANGELOG,
+    VERSION, VERSION_INFO, CHANGELOG, RELEASE_DATE,
     get_version, get_version_info, get_changelog,
-    get_latest_version, get_changelog_by_version, check_for_updates
+    get_latest_version, get_changelog_by_version, check_for_updates,
+    get_version_range, get_major_versions, get_version_stats
 )
 from app.models.database_version_manager import db_version_manager
+from app.services.version_manager import version_manager
 from app.utils.logging import logger
 
 version_api = Blueprint('version_api', __name__)
@@ -29,9 +31,22 @@ def get_version_endpoint():
 @version_api.route('/version/changelog')
 def get_changelog_endpoint():
     """获取更新日志"""
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 10, type=int)
+    
+    start = (page - 1) * per_page
+    end = start + per_page
+    paginated = CHANGELOG[start:end]
+    
     return jsonify({
         'success': True,
-        'changelog': CHANGELOG
+        'changelog': paginated,
+        'pagination': {
+            'page': page,
+            'per_page': per_page,
+            'total': len(CHANGELOG),
+            'total_pages': (len(CHANGELOG) + per_page - 1) // per_page
+        }
     })
 
 
@@ -105,7 +120,7 @@ def get_version_summary():
             'latest_version': 'N/A'
         },
         'api_status': 'operational',
-        'last_updated': '2024-04-30'
+        'last_updated': RELEASE_DATE
     }
     
     try:
@@ -154,6 +169,226 @@ def export_version_history():
     
     except Exception as e:
         logger.error(f"导出版本历史失败: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@version_api.route('/version/compare')
+def compare_versions():
+    """比较两个版本"""
+    v1 = request.args.get('v1')
+    v2 = request.args.get('v2')
+    
+    if not v1 or not v2:
+        return jsonify({
+            'success': False,
+            'error': '请提供两个版本号 v1 和 v2'
+        }), 400
+    
+    try:
+        result = version_manager.compare_versions_detail(v1, v2)
+        return jsonify({
+            'success': True,
+            'comparison': result
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@version_api.route('/version/diff')
+def get_version_diff():
+    """获取两个版本之间的差异"""
+    v1 = request.args.get('v1')
+    v2 = request.args.get('v2')
+    
+    if not v1 or not v2:
+        return jsonify({
+            'success': False,
+            'error': '请提供两个版本号 v1 和 v2'
+        }), 400
+    
+    try:
+        result = version_manager.get_version_diff(v1, v2)
+        return jsonify({
+            'success': True,
+            'diff': result
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@version_api.route('/version/tree')
+def get_version_tree():
+    """获取版本树结构"""
+    try:
+        tree = version_manager.get_version_tree()
+        return jsonify({
+            'success': True,
+            'tree': tree
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@version_api.route('/version/stats')
+def get_version_statistics():
+    """获取版本统计信息"""
+    try:
+        changelog_stats = get_version_stats()
+        db_stats = version_manager.get_version_statistics()
+        
+        return jsonify({
+            'success': True,
+            'stats': {
+                'changelog': changelog_stats,
+                'database': db_stats
+            }
+        })
+    except Exception as e:
+        logger.error(f"获取版本统计失败: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@version_api.route('/version/major')
+def get_major_version_list():
+    """获取主版本列表"""
+    try:
+        majors = get_major_versions()
+        return jsonify({
+            'success': True,
+            'major_versions': majors
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@version_api.route('/version/range')
+def get_version_range_endpoint():
+    """获取版本范围内的更新记录"""
+    start = request.args.get('start')
+    end = request.args.get('end')
+    
+    if not start:
+        return jsonify({
+            'success': False,
+            'error': '请提供起始版本 start'
+        }), 400
+    
+    try:
+        versions = get_version_range(start, end)
+        return jsonify({
+            'success': True,
+            'versions': versions,
+            'count': len(versions)
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@version_api.route('/version/history')
+def get_version_history():
+    """获取版本历史记录"""
+    limit = request.args.get('limit', 20, type=int)
+    
+    try:
+        history = version_manager.get_version_history(limit=limit)
+        return jsonify({
+            'success': True,
+            'history': history
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@version_api.route('/version/upgrade', methods=['POST'])
+def upgrade_version():
+    """升级版本号"""
+    try:
+        data = request.get_json() or {}
+        level = data.get('level', 'patch')
+        description = data.get('description')
+        
+        new_version = version_manager.upgrade_version(level=level, description=description)
+        
+        return jsonify({
+            'success': True,
+            'new_version': new_version,
+            'message': f'版本升级成功: {new_version}'
+        })
+    except Exception as e:
+        logger.error(f"版本升级失败: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@version_api.route('/version/init-changelog', methods=['POST'])
+def init_from_changelog():
+    """从changelog初始化版本历史"""
+    try:
+        success = version_manager.initialize_from_changelog()
+        
+        if success:
+            return jsonify({
+                'success': True,
+                'message': '从changelog初始化版本历史完成'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': '初始化失败'
+            }), 500
+    except Exception as e:
+        logger.error(f"初始化版本历史失败: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@version_api.route('/version/<version>')
+def get_version_detail(version):
+    """获取版本详细信息"""
+    try:
+        info = version_manager.get_version_info(version)
+        changelog = get_changelog_by_version(version)
+        
+        if info or changelog:
+            return jsonify({
+                'success': True,
+                'version_info': info,
+                'changelog': changelog
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': f'版本 {version} 不存在'
+            }), 404
+    except Exception as e:
         return jsonify({
             'success': False,
             'error': str(e)
