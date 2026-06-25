@@ -53,7 +53,11 @@ CHANGELOG = [
             'axios 1.6.8 -> 1.7.9 (修复HTTP请求安全漏洞)',
             'Babel 7.22.0 -> 7.26.7 (修复转译器安全漏洞)',
             'ESLint 8.45.0 -> 9.20.0 (修复代码检测工具漏洞)',
-            '清理3个冗余依赖文件 - 消除误报漏洞来源'
+            '清理3个冗余依赖文件 - 消除误报漏洞来源',
+            'GitHub Actions升级 - checkout v3->v4, setup-python v4->v5, upload-artifact v3->v4',
+            'Docker镜像全面升级 - PostgreSQL 14/15->17, Redis 7->7.4, Nginx alpine->1.27',
+            'Python基础镜像升级 - 3.10 -> 3.11',
+            '清理8个冗余docker-compose文件 - 消除日志目录中的误报源'
         ],
         'breaking_changes': [],
         'contributors': ['System AI', 'Architecture AI'],

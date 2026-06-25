@@ -1,9 +1,9 @@
 
 # MTSCOS AI Project - Dockerfile
-# 基于Python 3.10构建的Flask应用容器
+# 基于Python 3.11构建的Flask应用容器
 
 # 第一阶段：构建依赖
-FROM python:3.10-slim AS builder
+FROM python:3.11-slim AS builder
 
 WORKDIR /app
 
@@ -23,7 +23,7 @@ RUN pip install --upgrade pip && \
     pip install --prefix=/install -r requirements.txt
 
 # 第二阶段：运行时镜像
-FROM python:3.10-slim AS runtime
+FROM python:3.11-slim AS runtime
 
 WORKDIR /app
 
