@@ -514,22 +514,25 @@ class RuleManager:
     
     def validate_access(self, path: str, user_role: str) -> bool:
         """验证用户对路径的访问权限"""
-        # 获取路径对应的权限规则
         path_rule_map = {
             '/dashboard': 'PERM_VIEW_DASHBOARD',
             '/settings': 'PERM_VIEW_SETTINGS',
+            '/settings/system': 'PERM_VIEW_SETTINGS',
+            '/settings/security': 'PERM_VIEW_SETTINGS',
             '/admin_center': 'PERM_MANAGE_USERS',
             '/super_admin_dashboard': 'PERM_DELETE_USER'
         }
         
-        if path not in path_rule_map:
-            return True  # 默认允许
+        if path in path_rule_map:
+            rule_code = path_rule_map[path]
+            allowed_roles = self.get_rule(rule_code)
+            if isinstance(allowed_roles, list):
+                return user_role in allowed_roles
         
-        rule_code = path_rule_map[path]
-        allowed_roles = self.get_rule(rule_code)
-        
-        if isinstance(allowed_roles, list):
-            return user_role in allowed_roles
+        if path.startswith('/settings/'):
+            allowed_roles = self.get_rule('PERM_VIEW_SETTINGS')
+            if isinstance(allowed_roles, list):
+                return user_role in allowed_roles
         
         return True
     

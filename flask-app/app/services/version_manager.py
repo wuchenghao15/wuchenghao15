@@ -28,7 +28,8 @@ class VersionManager:
     
     def _initialize(self):
         """初始化版本管理器"""
-        self.db_path = 'flask-app/app.db'
+        import os
+        self.db_path = os.path.join(os.path.dirname(__file__), '..', '..', 'app.db')
         self._create_version_table()
         self._current_version = self._get_highest_version()
         logger.info(f"版本管理器初始化完成,当前版本: {self._current_version}")

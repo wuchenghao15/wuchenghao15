@@ -286,6 +286,17 @@ def init_api_routes():
     except Exception as e:
         logger.error(f"初始化题库管理API路由失败: {str(e)}")
 
+    # 物理引擎和数学模型API
+    try:
+        from app.api.physics_api import physics_api_bp
+        route_manager.register_api_blueprint(
+            physics_api_bp,
+            url_prefix="",
+            description="物理引擎和数学模型API"
+        )
+    except Exception as e:
+        logger.error(f"初始化物理引擎API路由失败: {str(e)}")
+
     # AI自学习系统API
     try:
         from app.api.self_learning_api import self_learning_api
@@ -340,6 +351,28 @@ def init_api_routes():
         )
     except Exception as e:
         logger.error(f"初始化考试测试系统API路由失败: {str(e)}")
+
+    # 考试超时锁定系统API
+    try:
+        from app.api.timeout_lock_api import timeout_lock_api
+        route_manager.register_api_blueprint(
+            timeout_lock_api,
+            url_prefix="",
+            description="考试超时锁定系统API"
+        )
+    except Exception as e:
+        logger.error(f"初始化考试超时锁定系统API路由失败: {str(e)}")
+
+    # 智能考试助手AI API
+    try:
+        from app.api.exam_ai_api import exam_ai_api
+        route_manager.register_api_blueprint(
+            exam_ai_api,
+            url_prefix="",
+            description="智能考试助手AI API"
+        )
+    except Exception as e:
+        logger.error(f"初始化智能考试助手AI API路由失败: {str(e)}")
 
     # 考试系统优化API
     try:
@@ -490,6 +523,40 @@ def init_view_routes():
         )
     except Exception as e:
         logger.error(f"初始化集成设置路由失败: {str(e)}")
+
+    # 物理引擎视图蓝图
+    try:
+        from app.views.physics_engine import physics_engine_bp, init_physics_permissions
+        route_manager.register_view_blueprint(
+            physics_engine_bp,
+            url_prefix="/physics-engine",
+            description="物理引擎与粒子系统视图"
+        )
+        init_physics_permissions()
+    except Exception as e:
+        logger.error(f"初始化物理引擎视图路由失败: {str(e)}")
+
+    # 考试系统视图蓝图
+    try:
+        from app.views.exam_system import exam_system_bp
+        route_manager.register_view_blueprint(
+            exam_system_bp,
+            url_prefix="",
+            description="考试系统视图"
+        )
+    except Exception as e:
+        logger.error(f"初始化考试系统视图路由失败: {str(e)}")
+
+    # 教师系统视图蓝图
+    try:
+        from app.views.teacher import teacher_bp
+        route_manager.register_view_blueprint(
+            teacher_bp,
+            url_prefix="",
+            description="教师系统视图"
+        )
+    except Exception as e:
+        logger.error(f"初始化教师系统视图路由失败: {str(e)}")
 
 
 def init_routes():

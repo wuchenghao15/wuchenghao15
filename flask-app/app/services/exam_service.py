@@ -310,6 +310,123 @@ class ExamService:
             logger.error(f"获取考试失败: {str(e)}")
             return None
 
+    def get_exam_list(self) -> List[Dict]:
+        """获取考试列表"""
+        try:
+            query = "SELECT * FROM exams ORDER BY created_at DESC"
+            results = db_manager.fetch_all(query)
+            exams = []
+            for result in results:
+                if isinstance(result, dict):
+                    exams.append({
+                        'id': result['id'],
+                        'title': result['title'],
+                        'description': result.get('description', ''),
+                        'language': result.get('language', 'zh'),
+                        'level': result.get('level', 'intermediate'),
+                        'duration': result.get('duration', 60),
+                        'question_count': result.get('question_count', 20),
+                        'total_points': result.get('total_points', 100.0),
+                        'passing_score': result.get('passing_score', 60.0),
+                        'status': result.get('status', 'draft'),
+                        'created_by': result.get('created_by'),
+                        'created_at': result.get('created_at'),
+                        'updated_at': result.get('updated_at')
+                    })
+                else:
+                    exams.append({
+                        'id': result[0],
+                        'title': result[1],
+                        'description': result[2] if result[2] else '',
+                        'language': result[3] if result[3] else 'zh',
+                        'level': result[4] if result[4] else 'intermediate',
+                        'duration': result[5] if result[5] else 60,
+                        'question_count': result[6] if result[6] else 20,
+                        'total_points': result[7] if result[7] else 100.0,
+                        'passing_score': result[8] if result[8] else 60.0,
+                        'status': result[9] if result[9] else 'draft',
+                        'created_by': result[15],
+                        'created_at': result[16],
+                        'updated_at': result[17]
+                    })
+            return exams
+        except Exception as e:
+            logger.error(f"获取考试列表失败: {str(e)}")
+            return []
+
+    def get_status(self) -> Dict:
+        """获取服务状态"""
+        try:
+            query = "SELECT COUNT(*) FROM exams"
+            exam_count = db_manager.fetch_one(query)
+            exam_count = exam_count[0] if isinstance(exam_count, (tuple, list)) else 0
+            
+            query = "SELECT COUNT(*) FROM questions"
+            question_count = db_manager.fetch_one(query)
+            question_count = question_count[0] if isinstance(question_count, (tuple, list)) else 0
+            
+            return {
+                'status': 'healthy',
+                'exams_count': exam_count,
+                'questions_count': question_count
+            }
+        except Exception as e:
+            logger.error(f"获取服务状态失败: {str(e)}")
+            return {
+                'status': 'error',
+                'exams_count': 0,
+                'questions_count': 0
+            }
+
+    def get_questions(self, exam_id: Optional[str] = None) -> List[Dict]:
+        """获取题目列表"""
+        try:
+            if exam_id:
+                query = "SELECT * FROM questions WHERE exam_id = ? ORDER BY id"
+                results = db_manager.fetch_all(query, (exam_id,))
+            else:
+                query = "SELECT * FROM questions ORDER BY id LIMIT 50"
+                results = db_manager.fetch_all(query)
+            
+            questions = []
+            for result in results:
+                if isinstance(result, dict):
+                    questions.append({
+                        'id': result['id'],
+                        'exam_id': result.get('exam_id'),
+                        'type': result.get('type', 'single_choice'),
+                        'content': result.get('content', ''),
+                        'options': json.loads(result.get('options', '[]')),
+                        'correct_answer': result.get('correct_answer', ''),
+                        'difficulty': result.get('difficulty', 1),
+                        'points': result.get('points', 1.0),
+                        'audio_url': result.get('audio_url'),
+                        'tags': json.loads(result.get('tags', '[]')),
+                        'explanation': result.get('explanation', ''),
+                        'created_at': result.get('created_at'),
+                        'updated_at': result.get('updated_at')
+                    })
+                else:
+                    questions.append({
+                        'id': result[0],
+                        'exam_id': result[1],
+                        'type': result[2] if result[2] else 'single_choice',
+                        'content': result[3] if result[3] else '',
+                        'options': json.loads(result[4] if result[4] else '[]'),
+                        'correct_answer': result[5] if result[5] else '',
+                        'difficulty': result[6] if result[6] else 1,
+                        'points': result[7] if result[7] else 1.0,
+                        'audio_url': result[8],
+                        'tags': json.loads(result[9] if result[9] else '[]'),
+                        'explanation': result[10] if result[10] else '',
+                        'created_at': result[11],
+                        'updated_at': result[12]
+                    })
+            return questions
+        except Exception as e:
+            logger.error(f"获取题目列表失败: {str(e)}")
+            return []
+
     @synchronized(resource='exam_update', lock_type=LockType.WRITE)
     def update_exam(self, exam_id: str, exam_data: Dict) -> bool:
         """更新考试"""

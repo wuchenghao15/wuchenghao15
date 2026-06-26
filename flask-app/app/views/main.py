@@ -3,7 +3,6 @@ from flask import Blueprint, render_template, redirect, url_for
 from flask import session
 import os
 
-# 获取flask-app根目录
 APP_ROOT = os.path.dirname(os.path.abspath(__file__))
 
 main_bp = Blueprint('main', __name__, template_folder=os.path.join(APP_ROOT, 'templates'))
@@ -20,5 +19,20 @@ def home():
 
 @main_bp.route('/dashboard')
 def dashboard():
-    """仪表板 - 重定向到设置页面（仪表盘已整合到设置页面中）"""
-    return redirect('/settings')
+    """仪表板 - 根据角色重定向到对应页面"""
+    role = session.get('role', 'guest')
+    
+    role_redirect_map = {
+        'student': '/exam_system',
+        'designer': '/arduino',
+        'teacher': '/teacher',
+        'researcher': '/researcher',
+        'admin': '/settings',
+        'super_admin': '/settings',
+        'hardware_admin': '/settings',
+        'hardware_vikey_admin': '/settings',
+        'guest': '/'
+    }
+    
+    redirect_path = role_redirect_map.get(role, '/')
+    return redirect(redirect_path)

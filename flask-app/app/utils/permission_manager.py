@@ -30,7 +30,11 @@ ROLES = {
         'name': '学生',
         'description': '学生用户',
         'level': 1,
-        'permissions': ['view_profile', 'change_language', 'view_exams', 'take_exam']
+        'permissions': [
+            'view_profile', 'change_language', 'view_exams', 'take_exam',
+            'view_results', 'view_learning_records',
+            'view_student_dashboard', 'view_my_grades', 'view_exam_history'
+        ]
     },
     'designer': {
         'name': '设计师',
@@ -70,7 +74,7 @@ PAGE_PERMISSIONS = {
     '/admin_center': ['admin', 'super_admin', 'hardware_admin'],
     '/super_admin_dashboard': ['super_admin', 'hardware_admin'],
     '/exam': ['student', 'designer', 'admin', 'super_admin', 'hardware_admin'],
-    '/exam_system': ['admin', 'super_admin', 'hardware_admin'],
+    '/exam_system': ['student', 'designer', 'admin', 'super_admin', 'hardware_admin'],
     '/api/admin/users': ['admin', 'super_admin', 'hardware_admin'],
     '/api/admin/system': ['admin', 'super_admin', 'hardware_admin'],
     '/api/admin/monitor': ['admin', 'super_admin', 'hardware_admin'],

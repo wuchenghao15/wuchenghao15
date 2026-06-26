@@ -4,9 +4,16 @@
 from flask import jsonify, request
 from app.api import api_bp
 from app.services.rule_management import rule_management_service
-from app.services.ai_brain_service import ai_brain_service
 from app.services.exam_service import exam_service
 from app.utils.logging import logger
+
+try:
+    from app.services.ai_brain_service import ai_brain_service
+except ImportError:
+    class FakeAIBrainService:
+        def get_status(self):
+            return {'status': 'not_available', 'knowledge_count': 0}
+    ai_brain_service = FakeAIBrainService()
 
 API_VERSION = "v1"
 

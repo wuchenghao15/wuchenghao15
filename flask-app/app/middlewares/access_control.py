@@ -34,6 +34,12 @@ ADMIN_REQUIRED_PAGES = [
     '/admin/tournament'
 ]
 
+SETTINGS_PAGES = [
+    '/settings',
+    '/settings/system',
+    '/settings/security'
+]
+
 SUPER_ADMIN_REQUIRED_PAGES = [
     '/super_admin_dashboard',
     '/api/admin/database',
@@ -132,6 +138,15 @@ def access_control_middleware(app):
                 }), 403
 
         if path in ADMIN_REQUIRED_PAGES:
+            if role not in ['admin', 'super_admin', 'hardware_admin', 'hardware_vikey_admin']:
+                log_access(path, user_id, username, role, 'forbidden')
+                return jsonify({
+                    'success': False,
+                    'error': 'Forbidden',
+                    'message': '需要管理员权限'
+                }), 403
+
+        if path in SETTINGS_PAGES or path.startswith('/settings/'):
             if role not in ['admin', 'super_admin', 'hardware_admin', 'hardware_vikey_admin']:
                 log_access(path, user_id, username, role, 'forbidden')
                 return jsonify({

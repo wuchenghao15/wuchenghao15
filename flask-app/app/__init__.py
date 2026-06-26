@@ -69,6 +69,7 @@ def register_routes(app_instance):
 
 def register_api_blueprint(app_instance):
     """注册API蓝图"""
+    # 注册主API蓝图
     try:
         from app.api import api_bp
         from app.api.middleware import APIMiddleware
@@ -76,16 +77,24 @@ def register_api_blueprint(app_instance):
         app_instance.register_blueprint(api_bp)
         APIMiddleware(app_instance)
         logger.info("[API] API蓝图和中间件注册完成")
-        
-        # 注册AI员工API蓝图
-        try:
-            from app.routes.ai_employee_api import ai_employee_bp
-            app_instance.register_blueprint(ai_employee_bp)
-            logger.info("[API] AI员工API蓝图注册完成")
-        except Exception as e:
-            logger.warning(f"[API] 注册AI员工API蓝图失败(非致命): {str(e)}")
     except Exception as e:
         logger.warning(f"[API] 注册API蓝图和中间件失败(非致命): {str(e)}")
+    
+    # 注册AI员工API蓝图
+    try:
+        from app.routes.ai_employee_api import ai_employee_bp
+        app_instance.register_blueprint(ai_employee_bp)
+        logger.info("[API] AI员工API蓝图注册完成")
+    except Exception as e:
+        logger.warning(f"[API] 注册AI员工API蓝图失败(非致命): {str(e)}")
+    
+    # 注册错误反馈API蓝图
+    try:
+        from app.api.error_feedback_api import error_feedback_bp
+        app_instance.register_blueprint(error_feedback_bp)
+        logger.info("[API] 错误反馈API蓝图注册完成")
+    except Exception as e:
+        logger.warning(f"[API] 注册错误反馈API蓝图失败(非致命): {str(e)}")
 
 def register_protection_middlewares(app_instance):
     """注册安全防护中间件"""
