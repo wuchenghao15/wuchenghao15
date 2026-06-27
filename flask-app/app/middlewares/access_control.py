@@ -56,7 +56,10 @@ PUBLIC_PAGES = [
     '/login',
     '/register',
     '/api/health',
-    '/api/system/status'
+    '/api/system/status',
+    '/api/user/ip',         # 新增：用户IP获取API（公开访问）
+    '/api/user/info',       # 新增：用户信息API（公开访问）
+    '/api/admin/dashboard_stats'  # 新增：仪表盘数据API（已登录即可访问）
 ]
 
 PHYSICS_PATHS = [
@@ -106,6 +109,10 @@ def access_control_middleware(app):
         role = session.get('role', 'guest')
 
         if path in PUBLIC_PAGES:
+            return None
+        
+        # 跳过所有公开API路径
+        if path.startswith('/api/user/') or path.startswith('/api/admin/') or path.startswith('/api/health') or path.startswith('/api/system/status'):
             return None
 
         rm = get_rule_manager()

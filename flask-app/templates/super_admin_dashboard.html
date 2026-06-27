@@ -5,67 +5,296 @@
 {% block breadcrumb %}超级管理员仪表盘{% endblock %}
 
 {% block content %}
+<style>
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    @keyframes slideInLeft {
+        from {
+            opacity: 0;
+            transform: translateX(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+    
+    @keyframes pulse {
+        0%, 100% {
+            opacity: 1;
+        }
+        50% {
+            opacity: 0.7;
+        }
+    }
+    
+    @keyframes bounceIn {
+        0% {
+            opacity: 0;
+            transform: scale(0.3);
+        }
+        50% {
+            transform: scale(1.05);
+        }
+        70% {
+            transform: scale(0.9);
+        }
+        100% {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+    
+    .animate-fadeInUp {
+        animation: fadeInUp 0.6s ease-out forwards;
+    }
+    
+    .animate-slideInLeft {
+        animation: slideInLeft 0.5s ease-out forwards;
+    }
+    
+    .animate-pulse-slow {
+        animation: pulse 2s ease-in-out infinite;
+    }
+    
+    .animate-bounceIn {
+        animation: bounceIn 0.8s ease-out forwards;
+    }
+    
+    .stats-card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .stats-card:hover {
+        transform: translateY(-5px) scale(1.02);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    }
+    
+    .feature-card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .feature-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+    }
+    
+    .feature-item {
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .feature-item::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+        transition: left 0.5s ease;
+    }
+    
+    .feature-item:hover::before {
+        left: 100%;
+    }
+    
+    .feature-item:hover {
+        transform: translateX(5px);
+        background: rgba(255, 255, 255, 0.8);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+    
+    .btn-action {
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .btn-action::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 0;
+        height: 0;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        transition: width 0.3s ease, height 0.3s ease;
+    }
+    
+    .btn-action:hover::after {
+        width: 300px;
+        height: 300px;
+    }
+    
+    .btn-action:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+    }
+    
+    .icon-svg {
+        transition: transform 0.3s ease;
+    }
+    
+    .feature-item:hover .icon-svg {
+        transform: scale(1.1);
+    }
+    
+    .page-header h1 {
+        position: relative;
+    }
+    
+    .page-header h1::after {
+        content: '';
+        position: absolute;
+        bottom: -8px;
+        left: 0;
+        width: 60px;
+        height: 3px;
+        background: linear-gradient(90deg, #4f46e5, #7c3aed);
+        border-radius: 2px;
+    }
+    
+    .grid-item:nth-child(1) { animation-delay: 0.1s; }
+    .grid-item:nth-child(2) { animation-delay: 0.2s; }
+    .grid-item:nth-child(3) { animation-delay: 0.3s; }
+    .grid-item:nth-child(4) { animation-delay: 0.4s; }
+    .grid-item:nth-child(5) { animation-delay: 0.5s; }
+    .grid-item:nth-child(6) { animation-delay: 0.6s; }
+    .grid-item:nth-child(7) { animation-delay: 0.7s; }
+    .grid-item:nth-child(8) { animation-delay: 0.8s; }
+    .grid-item:nth-child(9) { animation-delay: 0.9s; }
+</style>
 <div class="super-admin-dashboard">
     <!-- 页面头部 -->
     <div class="page-header mb-8">
         <div class="flex items-center justify-between">
             <div>
                 <h1 class="text-3xl font-bold text-gray-800 flex items-center gap-3">
-                    <i class="fas fa-crown text-yellow-500"></i>
+                    <svg class="w-8 h-8 text-yellow-500" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
                     超级管理员控制台
                 </h1>
                 <p class="text-gray-600 mt-2">欢迎，{{ user.username }} | 角色：{{ user.role }} | 最高权限</p>
             </div>
             <div class="flex gap-3">
                 <a href="/api/routes/reload" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
-                    <i class="fas fa-sync-alt mr-2"></i>刷新路由
+                    <svg class="w-4 h-4 inline mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/></svg>
+                    刷新路由
                 </a>
                 <a href="/auth/logout" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition">
-                    <i class="fas fa-sign-out-alt mr-2"></i>退出登录
+                    <svg class="w-4 h-4 inline mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6"/><path d="M21 3l-7 7-7-7"/><path d="M9 21H3v-6"/><path d="M3 21l7-7 7 7"/></svg>
+                    退出登录
                 </a>
             </div>
         </div>
     </div>
 
     <!-- 统计卡片 -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div class="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="stats-card bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white animate-fadeInUp">
             <div class="flex items-center justify-between">
                 <div>
                     <h3 class="text-sm font-medium opacity-90">用户总数</h3>
-                    <p class="text-3xl font-bold mt-2">--</p>
+                    <p class="text-3xl font-bold mt-2" id="user-count">加载中...</p>
+                    <p class="text-sm opacity-75 mt-1" id="active-users">今日活跃: --</p>
                 </div>
-                <i class="fas fa-users text-4xl opacity-80"></i>
+                <svg class="w-12 h-12 opacity-80 icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
             </div>
         </div>
         
-        <div class="bg-gradient-to-r from-green-500 to-green-600 rounded-xl shadow-lg p-6 text-white">
+        <div class="stats-card bg-gradient-to-r from-green-500 to-green-600 rounded-xl shadow-lg p-6 text-white animate-fadeInUp">
             <div class="flex items-center justify-between">
                 <div>
                     <h3 class="text-sm font-medium opacity-90">系统状态</h3>
-                    <p class="text-3xl font-bold mt-2">正常</p>
+                    <p class="text-3xl font-bold mt-2" id="system-status">检测中...</p>
+                    <p class="text-sm opacity-75 mt-1" id="uptime">运行时间: --</p>
                 </div>
-                <i class="fas fa-heartbeat text-4xl opacity-80"></i>
+                <svg class="w-12 h-12 opacity-80 icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
             </div>
         </div>
         
-        <div class="bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
+        <div class="stats-card bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl shadow-lg p-6 text-white animate-fadeInUp">
             <div class="flex items-center justify-between">
                 <div>
                     <h3 class="text-sm font-medium opacity-90">路由总数</h3>
-                    <p class="text-3xl font-bold mt-2">--</p>
+                    <p class="text-3xl font-bold mt-2" id="route-count">加载中...</p>
+                    <p class="text-sm opacity-75 mt-1">动态路由已启用</p>
                 </div>
-                <i class="fas fa-route text-4xl opacity-80"></i>
+                <svg class="w-12 h-12 opacity-80 icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
             </div>
         </div>
         
-        <div class="bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl shadow-lg p-6 text-white">
+        <div class="stats-card bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl shadow-lg p-6 text-white animate-fadeInUp">
             <div class="flex items-center justify-between">
                 <div>
                     <h3 class="text-sm font-medium opacity-90">权限等级</h3>
-                    <p class="text-3xl font-bold mt-2">L12</p>
+                    <p class="text-3xl font-bold mt-2">L{{ user_level }}</p>
+                    <p class="text-sm opacity-75 mt-1">最高权限</p>
                 </div>
-                <i class="fas fa-shield-alt text-4xl opacity-80"></i>
+                <svg class="w-12 h-12 opacity-80 icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 第二行统计卡片 -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="stats-card bg-white rounded-xl shadow-lg p-6 border-l-4 border-indigo-500 animate-fadeInUp" style="animation-delay: 0.1s;">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-sm font-medium text-gray-500">考试总数</h3>
+                    <p class="text-2xl font-bold text-gray-800 mt-1" id="exams-count">--</p>
+                </div>
+                <div class="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center">
+                    <svg class="w-6 h-6 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                </div>
+            </div>
+        </div>
+        
+        <div class="stats-card bg-white rounded-xl shadow-lg p-6 border-l-4 border-yellow-500 animate-fadeInUp" style="animation-delay: 0.2s;">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-sm font-medium text-gray-500">题目总数</h3>
+                    <p class="text-2xl font-bold text-gray-800 mt-1" id="questions-count">--</p>
+                </div>
+                <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                    <svg class="w-6 h-6 text-yellow-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                </div>
+            </div>
+        </div>
+        
+        <div class="stats-card bg-white rounded-xl shadow-lg p-6 border-l-4 border-green-500 animate-fadeInUp" style="animation-delay: 0.3s;">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-sm font-medium text-gray-500">今日登录</h3>
+                    <p class="text-2xl font-bold text-gray-800 mt-1" id="today-logins">--</p>
+                </div>
+                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                    <svg class="w-6 h-6 text-green-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+                </div>
+            </div>
+        </div>
+        
+        <div class="stats-card bg-white rounded-xl shadow-lg p-6 border-l-4 border-pink-500 animate-fadeInUp" style="animation-delay: 0.4s;">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-sm font-medium text-gray-500">今日注册</h3>
+                    <p class="text-2xl font-bold text-gray-800 mt-1" id="today-registers">--</p>
+                </div>
+                <div class="w-12 h-12 bg-pink-100 rounded-lg flex items-center justify-center">
+                    <svg class="w-6 h-6 text-pink-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+                </div>
             </div>
         </div>
     </div>
@@ -74,38 +303,38 @@
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         <!-- 系统监控区域 -->
-        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+        <div class="feature-card grid-item bg-white rounded-xl shadow-lg overflow-hidden animate-slideInLeft">
             <div class="bg-red-500 px-6 py-4">
                 <h2 class="text-xl font-bold text-white flex items-center gap-2">
-                    <i class="fas fa-tachometer-alt"></i>
+                    <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
                     系统监控
                 </h2>
             </div>
             <div class="p-6">
                 <div class="grid grid-cols-2 gap-4">
-                    <a href="/admin_app/monitor" class="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                        <i class="fas fa-desktop text-2xl text-red-500"></i>
+                    <a href="/admin_app/monitor" class="feature-item flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                        <svg class="w-8 h-8 text-red-500 icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
                         <div>
                             <h3 class="font-medium text-gray-800">监控台</h3>
                             <p class="text-sm text-gray-500">实时监控</p>
                         </div>
                     </a>
-                    <a href="/api/system/status" class="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                        <i class="fas fa-heartbeat text-2xl text-green-500"></i>
+                    <a href="/api/system/status" class="feature-item flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                        <svg class="w-8 h-8 text-green-500 icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
                         <div>
                             <h3 class="font-medium text-gray-800">系统状态</h3>
                             <p class="text-sm text-gray-500">健康检查</p>
                         </div>
                     </a>
-                    <a href="/settings/logs" class="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                        <i class="fas fa-file-alt text-2xl text-blue-500"></i>
+                    <a href="/settings/logs" class="feature-item flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                        <svg class="w-8 h-8 text-blue-500 icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
                         <div>
                             <h3 class="font-medium text-gray-800">系统日志</h3>
                             <p class="text-sm text-gray-500">日志查看</p>
                         </div>
                     </a>
-                    <a href="/api/routes/list" class="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                        <i class="fas fa-route text-2xl text-purple-500"></i>
+                    <a href="/api/routes/list" class="feature-item flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                        <svg class="w-8 h-8 text-purple-500 icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
                         <div>
                             <h3 class="font-medium text-gray-800">路由列表</h3>
                             <p class="text-sm text-gray-500">所有路由</p>
@@ -116,38 +345,38 @@
         </div>
 
         <!-- 用户管理区域 -->
-        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+        <div class="feature-card grid-item bg-white rounded-xl shadow-lg overflow-hidden animate-slideInLeft">
             <div class="bg-blue-500 px-6 py-4">
                 <h2 class="text-xl font-bold text-white flex items-center gap-2">
-                    <i class="fas fa-users"></i>
+                    <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                     用户管理
                 </h2>
             </div>
             <div class="p-6">
                 <div class="grid grid-cols-2 gap-4">
-                    <a href="/admin_app/users" class="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                        <i class="fas fa-users-cog text-2xl text-blue-500"></i>
+                    <a href="/admin_app/users" class="feature-item flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                        <svg class="w-8 h-8 text-blue-500 icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M12 14v6"/></svg>
                         <div>
                             <h3 class="font-medium text-gray-800">用户列表</h3>
                             <p class="text-sm text-gray-500">管理用户</p>
                         </div>
                     </a>
-                    <a href="/settings/permissions" class="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                        <i class="fas fa-lock text-2xl text-indigo-500"></i>
+                    <a href="/settings/permissions" class="feature-item flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                        <svg class="w-8 h-8 text-indigo-500 icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                         <div>
                             <h3 class="font-medium text-gray-800">角色权限</h3>
                             <p class="text-sm text-gray-500">权限配置</p>
                         </div>
                     </a>
-                    <a href="/auth/register" class="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                        <i class="fas fa-user-plus text-2xl text-green-500"></i>
+                    <a href="/auth/register" class="feature-item flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                        <svg class="w-8 h-8 text-green-500 icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><line x1="20" y1="15" x2="16" y2="19"/><line x1="16" y1="15" x2="20" y2="19"/></svg>
                         <div>
                             <h3 class="font-medium text-gray-800">添加用户</h3>
                             <p class="text-sm text-gray-500">新建用户</p>
                         </div>
                     </a>
-                    <a href="/settings/security" class="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                        <i class="fas fa-shield-alt text-2xl text-red-500"></i>
+                    <a href="/settings/security" class="feature-item flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                        <svg class="w-8 h-8 text-red-500 icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                         <div>
                             <h3 class="font-medium text-gray-800">安全设置</h3>
                             <p class="text-sm text-gray-500">安全配置</p>
@@ -158,38 +387,38 @@
         </div>
 
         <!-- 考试系统后台 -->
-        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+        <div class="feature-card grid-item bg-white rounded-xl shadow-lg overflow-hidden animate-slideInLeft">
             <div class="bg-indigo-500 px-6 py-4">
                 <h2 class="text-xl font-bold text-white flex items-center gap-2">
-                    <i class="fas fa-file-alt"></i>
+                    <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
                     考试系统后台
                 </h2>
             </div>
             <div class="p-6">
                 <div class="grid grid-cols-2 gap-4">
-                    <a href="/admin_app/exams" class="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                        <i class="fas fa-clipboard-list text-2xl text-indigo-500"></i>
+                    <a href="/admin_app/exams" class="feature-item flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                        <svg class="w-8 h-8 text-indigo-500 icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/><line x1="12" y1="13" x2="12" y2="17"/></svg>
                         <div>
                             <h3 class="font-medium text-gray-800">考试管理</h3>
                             <p class="text-sm text-gray-500">管理考试</p>
                         </div>
                     </a>
-                    <a href="/admin_app/questions" class="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                        <i class="fas fa-question-circle text-2xl text-yellow-500"></i>
+                    <a href="/admin_app/questions" class="feature-item flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                        <svg class="w-8 h-8 text-yellow-500 icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
                         <div>
                             <h3 class="font-medium text-gray-800">题库管理</h3>
                             <p class="text-sm text-gray-500">管理题目</p>
                         </div>
                     </a>
-                    <a href="/admin_app/grades" class="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                        <i class="fas fa-chart-bar text-2xl text-green-500"></i>
+                    <a href="/admin_app/grades" class="feature-item flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                        <svg class="w-8 h-8 text-green-500 icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><bar x1="12" y1="20" width="20" height="4"/><bar x1="12" y1="10" width="14" height="4"/><bar x1="12" y1="2" width="8" height="4"/></svg>
                         <div>
                             <h3 class="font-medium text-gray-800">成绩分析</h3>
                             <p class="text-sm text-gray-500">成绩统计</p>
                         </div>
                     </a>
-                    <a href="/exam_system" class="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                        <i class="fas fa-user-graduate text-2xl text-blue-500"></i>
+                    <a href="/exam_system" class="feature-item flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                        <svg class="w-8 h-8 text-blue-500 icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M12 20V10M2 10v6M18 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z"/></svg>
                         <div>
                             <h3 class="font-medium text-gray-800">学生后台</h3>
                             <p class="text-sm text-gray-500">测试入口</p>
@@ -200,38 +429,38 @@
         </div>
 
         <!-- 学习系统后台 -->
-        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+        <div class="feature-card grid-item bg-white rounded-xl shadow-lg overflow-hidden animate-slideInLeft">
             <div class="bg-green-500 px-6 py-4">
                 <h2 class="text-xl font-bold text-white flex items-center gap-2">
-                    <i class="fas fa-book"></i>
+                    <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="12 22 12 13"/><line x1="18" y1="22" x2="18" y2="13"/><line x1="6" y1="22" x2="6" y2="13"/><line x1="12" y1="2" x2="12" y2="3"/></svg>
                     学习系统后台
                 </h2>
             </div>
             <div class="p-6">
                 <div class="grid grid-cols-2 gap-4">
-                    <a href="/learning_system" class="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                        <i class="fas fa-graduation-cap text-2xl text-green-500"></i>
+                    <a href="/learning_system" class="feature-item flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                        <svg class="w-8 h-8 text-green-500 icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M12 20V10M2 10v6M18 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z"/></svg>
                         <div>
                             <h3 class="font-medium text-gray-800">学习系统</h3>
                             <p class="text-sm text-gray-500">学习首页</p>
                         </div>
                     </a>
-                    <a href="/learning/history" class="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                        <i class="fas fa-history text-2xl text-blue-500"></i>
+                    <a href="/learning/history" class="feature-item flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                        <svg class="w-8 h-8 text-blue-500 icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                         <div>
                             <h3 class="font-medium text-gray-800">学习记录</h3>
                             <p class="text-sm text-gray-500">历史记录</p>
                         </div>
                     </a>
-                    <a href="/learning/wrong_questions" class="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                        <i class="fas fa-times-circle text-2xl text-red-500"></i>
+                    <a href="/learning/wrong_questions" class="feature-item flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                        <svg class="w-8 h-8 text-red-500 icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
                         <div>
                             <h3 class="font-medium text-gray-800">错题本</h3>
                             <p class="text-sm text-gray-500">错题分析</p>
                         </div>
                     </a>
-                    <a href="/learning/analysis" class="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                        <i class="fas fa-chart-line text-2xl text-purple-500"></i>
+                    <a href="/learning/analysis" class="feature-item flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                        <svg class="w-8 h-8 text-purple-500 icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
                         <div>
                             <h3 class="font-medium text-gray-800">学习分析</h3>
                             <p class="text-sm text-gray-500">数据分析</p>
@@ -242,38 +471,38 @@
         </div>
 
         <!-- 教师后台 -->
-        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+        <div class="feature-card grid-item bg-white rounded-xl shadow-lg overflow-hidden animate-slideInLeft">
             <div class="bg-teal-500 px-6 py-4">
                 <h2 class="text-xl font-bold text-white flex items-center gap-2">
-                    <i class="fas fa-chalkboard-teacher"></i>
+                    <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="12 22 12 13"/><line x1="18" y1="22" x2="18" y2="13"/><line x1="6" y1="22" x2="6" y2="13"/><line x1="12" y1="2" x2="12" y2="3"/><line x1="8" y1="22" x2="8" y2="15"/><line x1="16" y1="22" x2="16" y2="15"/></svg>
                     教师后台
                 </h2>
             </div>
             <div class="p-6">
                 <div class="grid grid-cols-2 gap-4">
-                    <a href="/teacher" class="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                        <i class="fas fa-chalkboard text-2xl text-teal-500"></i>
+                    <a href="/teacher" class="feature-item flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                        <svg class="w-8 h-8 text-teal-500 icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/><line x1="4" y1="10" x2="20" y2="10"/></svg>
                         <div>
                             <h3 class="font-medium text-gray-800">教师首页</h3>
                             <p class="text-sm text-gray-500">教师控制台</p>
                         </div>
                     </a>
-                    <a href="/teacher/students" class="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                        <i class="fas fa-users text-2xl text-blue-500"></i>
+                    <a href="/teacher/students" class="feature-item flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                        <svg class="w-8 h-8 text-blue-500 icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                         <div>
                             <h3 class="font-medium text-gray-800">学生管理</h3>
                             <p class="text-sm text-gray-500">管理学生</p>
                         </div>
                     </a>
-                    <a href="/teacher/exams" class="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                        <i class="fas fa-file-alt text-2xl text-indigo-500"></i>
+                    <a href="/teacher/exams" class="feature-item flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                        <svg class="w-8 h-8 text-indigo-500 icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
                         <div>
                             <h3 class="font-medium text-gray-800">考试管理</h3>
                             <p class="text-sm text-gray-500">考试配置</p>
                         </div>
                     </a>
-                    <a href="/teacher/questions" class="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                        <i class="fas fa-question-circle text-2xl text-yellow-500"></i>
+                    <a href="/teacher/questions" class="feature-item flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                        <svg class="w-8 h-8 text-yellow-500 icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
                         <div>
                             <h3 class="font-medium text-gray-800">题库管理</h3>
                             <p class="text-sm text-gray-500">题目配置</p>
@@ -284,38 +513,38 @@
         </div>
 
         <!-- 教研员后台 -->
-        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+        <div class="feature-card grid-item bg-white rounded-xl shadow-lg overflow-hidden animate-slideInLeft">
             <div class="bg-purple-500 px-6 py-4">
                 <h2 class="text-xl font-bold text-white flex items-center gap-2">
-                    <i class="fas fa-search"></i>
+                    <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
                     教研员后台
                 </h2>
             </div>
             <div class="p-6">
                 <div class="grid grid-cols-2 gap-4">
-                    <a href="/researcher" class="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                        <i class="fas fa-flask text-2xl text-purple-500"></i>
+                    <a href="/researcher" class="feature-item flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                        <svg class="w-8 h-8 text-purple-500 icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
                         <div>
                             <h3 class="font-medium text-gray-800">教研首页</h3>
                             <p class="text-sm text-gray-500">教研控制台</p>
                         </div>
                     </a>
-                    <a href="/researcher/analysis" class="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                        <i class="fas fa-chart-pie text-2xl text-blue-500"></i>
+                    <a href="/researcher/analysis" class="feature-item flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                        <svg class="w-8 h-8 text-blue-500 icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21a9 9 0 1 1 0-18 9 9 0 0 1 0 18z"/><path d="M12 10a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/><path d="M12 7a6 6 0 0 0-6 6"/><path d="M18 13a6 6 0 0 0-6-6"/></svg>
                         <div>
                             <h3 class="font-medium text-gray-800">教研分析</h3>
                             <p class="text-sm text-gray-500">数据分析</p>
                         </div>
                     </a>
-                    <a href="/researcher/reports" class="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                        <i class="fas fa-file-chart-line text-2xl text-green-500"></i>
+                    <a href="/researcher/reports" class="feature-item flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                        <svg class="w-8 h-8 text-green-500 icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/><path d="M13 17h2"/></svg>
                         <div>
                             <h3 class="font-medium text-gray-800">数据报表</h3>
                             <p class="text-sm text-gray-500">报表生成</p>
                         </div>
                     </a>
-                    <a href="/researcher/questions" class="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                        <i class="fas fa-database text-2xl text-yellow-500"></i>
+                    <a href="/researcher/questions" class="feature-item flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                        <svg class="w-8 h-8 text-yellow-500 icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="12 22 12 13"/><line x1="18" y1="22" x2="18" y2="13"/><line x1="6" y1="22" x2="6" y2="13"/><line x1="12" y1="2" x2="12" y2="3"/><line x1="8" y1="22" x2="8" y2="15"/><line x1="16" y1="22" x2="16" y2="15"/><circle cx="12" cy="6" r="1"/></svg>
                         <div>
                             <h3 class="font-medium text-gray-800">题库分析</h3>
                             <p class="text-sm text-gray-500">题目统计</p>
@@ -326,38 +555,38 @@
         </div>
 
         <!-- 系统设置 -->
-        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+        <div class="feature-card grid-item bg-white rounded-xl shadow-lg overflow-hidden animate-slideInLeft">
             <div class="bg-gray-700 px-6 py-4">
                 <h2 class="text-xl font-bold text-white flex items-center gap-2">
-                    <i class="fas fa-cog"></i>
+                    <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
                     系统设置
                 </h2>
             </div>
             <div class="p-6">
                 <div class="grid grid-cols-2 gap-4">
-                    <a href="/admin_app/settings" class="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                        <i class="fas fa-sliders-h text-2xl text-gray-600"></i>
+                    <a href="/admin_app/settings" class="feature-item flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                        <svg class="w-8 h-8 text-gray-600 icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
                         <div>
                             <h3 class="font-medium text-gray-800">系统设置</h3>
                             <p class="text-sm text-gray-500">配置参数</p>
                         </div>
                     </a>
-                    <a href="/settings/database-settings" class="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                        <i class="fas fa-database text-2xl text-blue-500"></i>
+                    <a href="/settings/database-settings" class="feature-item flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                        <svg class="w-8 h-8 text-blue-500 icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="12 22 12 13"/><line x1="18" y1="22" x2="18" y2="13"/><line x1="6" y1="22" x2="6" y2="13"/><line x1="12" y1="2" x2="12" y2="3"/><line x1="8" y1="22" x2="8" y2="15"/><line x1="16" y1="22" x2="16" y2="15"/></svg>
                         <div>
                             <h3 class="font-medium text-gray-800">数据库管理</h3>
                             <p class="text-sm text-gray-500">数据库配置</p>
                         </div>
                     </a>
-                    <a href="/settings/rules" class="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                        <i class="fas fa-gavel text-2xl text-red-500"></i>
+                    <a href="/settings/rules" class="feature-item flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                        <svg class="w-8 h-8 text-red-500 icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="12 22 12 13"/><line x1="18" y1="22" x2="18" y2="13"/><line x1="6" y1="22" x2="6" y2="13"/><line x1="12" y1="2" x2="12" y2="3"/><line x1="8" y1="22" x2="8" y2="15"/><line x1="16" y1="22" x2="16" y2="15"/><path d="M12 15l-2 2 2 2"/><path d="M12 15l2 2-2 2"/></svg>
                         <div>
                             <h3 class="font-medium text-gray-800">规则管理</h3>
                             <p class="text-sm text-gray-500">规则配置</p>
                         </div>
                     </a>
-                    <a href="/settings/hardware" class="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                        <i class="fas fa-key text-2xl text-yellow-500"></i>
+                    <a href="/settings/hardware" class="feature-item flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                        <svg class="w-8 h-8 text-yellow-500 icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                         <div>
                             <h3 class="font-medium text-gray-800">硬件认证</h3>
                             <p class="text-sm text-gray-500">硬件配置</p>
@@ -368,38 +597,38 @@
         </div>
 
         <!-- 备份与通知 -->
-        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+        <div class="feature-card grid-item bg-white rounded-xl shadow-lg overflow-hidden animate-slideInLeft">
             <div class="bg-orange-500 px-6 py-4">
                 <h2 class="text-xl font-bold text-white flex items-center gap-2">
-                    <i class="fas fa-archive"></i>
+                    <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="12 22 12 13"/><line x1="18" y1="22" x2="18" y2="13"/><line x1="6" y1="22" x2="6" y2="13"/><line x1="12" y1="2" x2="12" y2="3"/><line x1="8" y1="22" x2="8" y2="15"/><line x1="16" y1="22" x2="16" y2="15"/><path d="M12 15l-2 2 2 2"/><path d="M12 15l2 2-2 2"/><circle cx="12" cy="9" r="1"/></svg>
                     备份与通知
                 </h2>
             </div>
             <div class="p-6">
                 <div class="grid grid-cols-2 gap-4">
-                    <a href="/backup_manager" class="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                        <i class="fas fa-save text-2xl text-green-500"></i>
+                    <a href="/backup_manager" class="feature-item flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                        <svg class="w-8 h-8 text-green-500 icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                         <div>
                             <h3 class="font-medium text-gray-800">备份管理</h3>
                             <p class="text-sm text-gray-500">数据备份</p>
                         </div>
                     </a>
-                    <a href="/api/backup/create" class="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                        <i class="fas fa-download text-2xl text-blue-500"></i>
+                    <a href="/api/backup/create" class="feature-item flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                        <svg class="w-8 h-8 text-blue-500 icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                         <div>
                             <h3 class="font-medium text-gray-800">创建备份</h3>
                             <p class="text-sm text-gray-500">立即备份</p>
                         </div>
                     </a>
-                    <a href="/notification_admin" class="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                        <i class="fas fa-bell text-2xl text-yellow-500"></i>
+                    <a href="/notification_admin" class="feature-item flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                        <svg class="w-8 h-8 text-yellow-500 icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
                         <div>
                             <h3 class="font-medium text-gray-800">通知中心</h3>
                             <p class="text-sm text-gray-500">通知管理</p>
                         </div>
                     </a>
-                    <a href="/notification_center" class="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                        <i class="fas fa-envelope text-2xl text-purple-500"></i>
+                    <a href="/notification_center" class="feature-item flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                        <svg class="w-8 h-8 text-purple-500 icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
                         <div>
                             <h3 class="font-medium text-gray-800">通知列表</h3>
                             <p class="text-sm text-gray-500">查看通知</p>
@@ -410,38 +639,38 @@
         </div>
 
         <!-- 测试系统入口 -->
-        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+        <div class="feature-card grid-item bg-white rounded-xl shadow-lg overflow-hidden animate-slideInLeft">
             <div class="bg-pink-500 px-6 py-4">
                 <h2 class="text-xl font-bold text-white flex items-center gap-2">
-                    <i class="fas fa-vial"></i>
+                    <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
                     测试系统入口
                 </h2>
             </div>
             <div class="p-6">
                 <div class="grid grid-cols-2 gap-4">
-                    <a href="/exam_system" class="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                        <i class="fas fa-user-graduate text-2xl text-pink-500"></i>
+                    <a href="/exam_system" class="feature-item flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                        <svg class="w-8 h-8 text-pink-500 icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M12 20V10M2 10v6M18 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z"/></svg>
                         <div>
                             <h3 class="font-medium text-gray-800">学生后台</h3>
                             <p class="text-sm text-gray-500">学生视角</p>
                         </div>
                     </a>
-                    <a href="/test_system" class="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                        <i class="fas fa-clipboard-check text-2xl text-blue-500"></i>
+                    <a href="/test_system" class="feature-item flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                        <svg class="w-8 h-8 text-blue-500 icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/><path d="M9 17h6"/><path d="M11 13h2"/></svg>
                         <div>
                             <h3 class="font-medium text-gray-800">测试系统</h3>
                             <p class="text-sm text-gray-500">测试入口</p>
                         </div>
                     </a>
-                    <a href="/exam/placement_test" class="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                        <i class="fas fa-pen text-2xl text-green-500"></i>
+                    <a href="/exam/placement_test" class="feature-item flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                        <svg class="w-8 h-8 text-green-500 icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
                         <div>
                             <h3 class="font-medium text-gray-800">摸底测试</h3>
                             <p class="text-sm text-gray-500">测试功能</p>
                         </div>
                     </a>
-                    <a href="/user_system" class="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                        <i class="fas fa-user-cog text-2xl text-indigo-500"></i>
+                    <a href="/user_system" class="feature-item flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                        <svg class="w-8 h-8 text-indigo-500 icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M12 14v6"/><circle cx="12" cy="14" r="3"/></svg>
                         <div>
                             <h3 class="font-medium text-gray-800">用户系统</h3>
                             <p class="text-sm text-gray-500">用户信息</p>
@@ -453,51 +682,390 @@
 
     </div>
 
+    <!-- 用户角色分布 + 通知统计 -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
+        <!-- 用户角色分布 -->
+        <div class="feature-card bg-white rounded-xl shadow-lg overflow-hidden animate-fadeInUp">
+            <div class="bg-gradient-to-r from-indigo-500 to-purple-500 px-6 py-4">
+                <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                    <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    用户角色分布
+                </h2>
+            </div>
+            <div class="p-6">
+                <div id="role-distribution" class="space-y-3">
+                    <p class="text-gray-400 text-center py-4">加载中...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 通知统计 -->
+        <div class="feature-card bg-white rounded-xl shadow-lg overflow-hidden animate-fadeInUp" style="animation-delay: 0.1s;">
+            <div class="bg-gradient-to-r from-yellow-500 to-orange-500 px-6 py-4">
+                <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                    <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                    通知统计
+                </h2>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="text-center p-4 bg-yellow-50 rounded-lg">
+                        <p class="text-3xl font-bold text-yellow-600" id="notification-count">--</p>
+                        <p class="text-sm text-gray-500 mt-1">通知总数</p>
+                    </div>
+                    <div class="text-center p-4 bg-red-50 rounded-lg">
+                        <p class="text-3xl font-bold text-red-600" id="unread-notifications">--</p>
+                        <p class="text-sm text-gray-500 mt-1">未读通知</p>
+                    </div>
+                </div>
+                <div class="mt-4 pt-4 border-t border-gray-100">
+                    <a href="/notification_admin" class="flex items-center justify-center gap-2 text-yellow-600 hover:text-yellow-700 transition">
+                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                        管理通知
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 快捷统计 -->
+        <div class="feature-card bg-white rounded-xl shadow-lg overflow-hidden animate-fadeInUp" style="animation-delay: 0.2s;">
+            <div class="bg-gradient-to-r from-teal-500 to-cyan-500 px-6 py-4">
+                <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                    <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                    数据概览
+                </h2>
+            </div>
+            <div class="p-6 space-y-3">
+                <div class="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg transition">
+                    <span class="text-sm text-gray-600">用户总数</span>
+                    <span class="font-bold text-gray-800" id="overview-users">--</span>
+                </div>
+                <div class="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg transition">
+                    <span class="text-sm text-gray-600">考试总数</span>
+                    <span class="font-bold text-gray-800" id="overview-exams">--</span>
+                </div>
+                <div class="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg transition">
+                    <span class="text-sm text-gray-600">题目总数</span>
+                    <span class="font-bold text-gray-800" id="overview-questions">--</span>
+                </div>
+                <div class="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg transition">
+                    <span class="text-sm text-gray-600">备份数量</span>
+                    <span class="font-bold text-gray-800" id="overview-backups">--</span>
+                </div>
+                <div class="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg transition">
+                    <span class="text-sm text-gray-600">路由总数</span>
+                    <span class="font-bold text-gray-800" id="overview-routes">--</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 系统资源监控 + 最近活动 -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
+        <!-- 系统资源监控 -->
+        <div class="feature-card bg-white rounded-xl shadow-lg overflow-hidden animate-fadeInUp">
+            <div class="bg-gradient-to-r from-cyan-500 to-blue-500 px-6 py-4">
+                <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                    <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                    系统资源监控
+                </h2>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <div class="flex justify-between mb-1">
+                        <span class="text-sm font-medium text-gray-600">CPU 使用率</span>
+                        <span class="text-sm font-medium text-gray-800" id="cpu-percent">--%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2.5">
+                        <div id="cpu-bar" class="bg-gradient-to-r from-blue-400 to-blue-600 h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div>
+                    <div class="flex justify-between mb-1">
+                        <span class="text-sm font-medium text-gray-600">内存使用率</span>
+                        <span class="text-sm font-medium text-gray-800" id="memory-percent">--%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2.5">
+                        <div id="memory-bar" class="bg-gradient-to-r from-green-400 to-green-600 h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div>
+                    <div class="flex justify-between mb-1">
+                        <span class="text-sm font-medium text-gray-600">磁盘使用率</span>
+                        <span class="text-sm font-medium text-gray-800" id="disk-percent">--%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2.5">
+                        <div id="disk-bar" class="bg-gradient-to-r from-purple-400 to-purple-600 h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div class="pt-4 border-t border-gray-100">
+                    <div class="grid grid-cols-3 gap-4 text-center">
+                        <div>
+                            <p class="text-2xl font-bold text-gray-800" id="active-users-count">--</p>
+                            <p class="text-xs text-gray-500 mt-1">在线用户</p>
+                        </div>
+                        <div>
+                            <p class="text-2xl font-bold text-gray-800" id="completed-exams">--</p>
+                            <p class="text-xs text-gray-500 mt-1">完成考试</p>
+                        </div>
+                        <div>
+                            <p class="text-2xl font-bold text-gray-800" id="backup-count">--</p>
+                            <p class="text-xs text-gray-500 mt-1">备份数量</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 最近活动 -->
+        <div class="feature-card bg-white rounded-xl shadow-lg overflow-hidden animate-fadeInUp" style="animation-delay: 0.1s;">
+            <div class="bg-gradient-to-r from-orange-500 to-red-500 px-6 py-4">
+                <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                    <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    最近活动
+                </h2>
+            </div>
+            <div class="p-6">
+                <div id="recent-logs" class="space-y-3 max-h-64 overflow-y-auto">
+                    <p class="text-gray-400 text-center py-8">加载中...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- 快速操作栏 -->
     <div class="mt-8 bg-white rounded-xl shadow-lg p-6">
         <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-            <i class="fas fa-bolt text-yellow-500"></i>
+            <svg class="w-6 h-6 text-yellow-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
             快速操作
         </h2>
         <div class="flex flex-wrap gap-3">
-            <button onclick="reloadRoutes()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
-                <i class="fas fa-sync-alt mr-2"></i>刷新路由规则
+            <button onclick="reloadRoutes()" class="btn-action px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
+                <svg class="w-4 h-4 inline mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/></svg>
+                刷新路由规则
             </button>
-            <button onclick="checkAllRoutes()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
-                <i class="fas fa-check-circle mr-2"></i>检查所有路由
+            <button onclick="checkAllRoutes()" class="btn-action px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+                <svg class="w-4 h-4 inline mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                检查所有路由
             </button>
-            <button onclick="viewSystemStatus()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
-                <i class="fas fa-info-circle mr-2"></i>查看系统状态
+            <button onclick="viewSystemStatus()" class="btn-action px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                <svg class="w-4 h-4 inline mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                查看系统状态
             </button>
-            <a href="/debug/routes" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">
-                <i class="fas fa-code mr-2"></i>调试路由
+            <button onclick="createBackup()" class="btn-action px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+                <svg class="w-4 h-4 inline mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                立即备份
+            </button>
+            <a href="/debug/routes" class="btn-action px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">
+                <svg class="w-4 h-4 inline mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                调试路由
             </a>
+            <button onclick="clearCache()" class="btn-action px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition">
+                <svg class="w-4 h-4 inline mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                清除缓存
+            </button>
         </div>
     </div>
 </div>
 
 <script>
-// 刷新路由规则
+let refreshInterval = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadDashboardData();
+    startAutoRefresh();
+});
+
+function startAutoRefresh() {
+    if (refreshInterval) clearInterval(refreshInterval);
+    refreshInterval = setInterval(loadDashboardData, 30000);
+}
+
+function loadDashboardData() {
+    fetch('/api/admin/dashboard_stats')
+        .then(r => r.json())
+        .then(data => {
+            if (data.success && data.data) {
+                const d = data.data;
+                
+                // 第一行统计卡片
+                document.getElementById('user-count').textContent = d.user_count || 0;
+                document.getElementById('active-users').textContent = '今日活跃: ' + (d.active_users || 0);
+                document.getElementById('route-count').textContent = d.route_count || 0;
+                document.getElementById('system-status').textContent = d.system_status || '正常';
+                document.getElementById('uptime').textContent = '更新时间: ' + new Date(d.timestamp).toLocaleTimeString();
+                
+                // 第二行统计卡片
+                document.getElementById('exams-count').textContent = formatNumber(d.exams_count || 0);
+                document.getElementById('questions-count').textContent = formatNumber(d.questions_count || 0);
+                document.getElementById('today-logins').textContent = d.today_logins || 0;
+                document.getElementById('today-registers').textContent = d.today_registers || 0;
+                
+                // 系统资源监控
+                if (d.system_resources) {
+                    document.getElementById('cpu-percent').textContent = d.system_resources.cpu_percent + '%';
+                    document.getElementById('cpu-bar').style.width = d.system_resources.cpu_percent + '%';
+                    document.getElementById('memory-percent').textContent = d.system_resources.memory_percent + '%';
+                    document.getElementById('memory-bar').style.width = d.system_resources.memory_percent + '%';
+                    document.getElementById('disk-percent').textContent = d.system_resources.disk_percent + '%';
+                    document.getElementById('disk-bar').style.width = d.system_resources.disk_percent + '%';
+                    
+                    updateProgressBarColor('cpu-bar', d.system_resources.cpu_percent);
+                    updateProgressBarColor('memory-bar', d.system_resources.memory_percent);
+                    updateProgressBarColor('disk-bar', d.system_resources.disk_percent);
+                }
+                
+                // 系统资源统计
+                document.getElementById('active-users-count').textContent = d.active_users || 0;
+                document.getElementById('completed-exams').textContent = d.completed_exams || 0;
+                document.getElementById('backup-count').textContent = formatNumber(d.backup_count || 0);
+                
+                // 通知统计
+                document.getElementById('notification-count').textContent = d.notification_count || 0;
+                document.getElementById('unread-notifications').textContent = d.unread_notifications || 0;
+                
+                // 数据概览
+                document.getElementById('overview-users').textContent = d.user_count || 0;
+                document.getElementById('overview-exams').textContent = d.exams_count || 0;
+                document.getElementById('overview-questions').textContent = formatNumber(d.questions_count || 0);
+                document.getElementById('overview-backups').textContent = formatNumber(d.backup_count || 0);
+                document.getElementById('overview-routes').textContent = d.route_count || 0;
+                
+                // 渲染角色分布
+                renderRoleDistribution(d.role_distribution || []);
+                
+                // 渲染最近活动
+                renderRecentLogs(d.recent_logs || []);
+            }
+        })
+        .catch(err => {
+            console.warn('统计数据加载失败:', err);
+        });
+}
+
+function formatNumber(num) {
+    if (num >= 10000) {
+        return (num / 10000).toFixed(1) + '万';
+    }
+    return num.toLocaleString();
+}
+
+function updateProgressBarColor(barId, percent) {
+    const bar = document.getElementById(barId);
+    if (!bar) return;
+    
+    if (percent >= 90) {
+        bar.className = 'bg-gradient-to-r from-red-400 to-red-600 h-2.5 rounded-full transition-all duration-500';
+    } else if (percent >= 70) {
+        bar.className = 'bg-gradient-to-r from-yellow-400 to-orange-500 h-2.5 rounded-full transition-all duration-500';
+    }
+}
+
+function getRoleColor(role) {
+    const colors = {
+        'super_admin': 'bg-red-500',
+        'admin': 'bg-purple-500',
+        'hardware_admin': 'bg-blue-500',
+        'teacher': 'bg-green-500',
+        'student': 'bg-blue-400',
+        'researcher': 'bg-yellow-500',
+        'designer': 'bg-orange-500',
+        'user': 'bg-gray-500',
+        'guest': 'bg-gray-400'
+    };
+    return colors[role] || 'bg-gray-500';
+}
+
+function getRoleName(role) {
+    const names = {
+        'super_admin': '超级管理员',
+        'admin': '管理员',
+        'hardware_admin': '硬件管理员',
+        'teacher': '教师',
+        'student': '学生',
+        'researcher': '研究员',
+        'designer': '设计师',
+        'user': '用户',
+        'guest': '访客'
+    };
+    return names[role] || role;
+}
+
+function renderRoleDistribution(roles) {
+    const container = document.getElementById('role-distribution');
+    if (!roles || roles.length === 0) {
+        container.innerHTML = '<p class="text-gray-400 text-center py-4">暂无数据</p>';
+        return;
+    }
+    
+    const total = roles.reduce((sum, r) => sum + r.count, 0);
+    
+    container.innerHTML = roles.map(role => {
+        const percent = total > 0 ? ((role.count / total) * 100).toFixed(1) : 0;
+        const colorClass = getRoleColor(role.role);
+        const roleName = getRoleName(role.role);
+        
+        return `
+            <div class="space-y-1">
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-700 flex items-center gap-2">
+                        <span class="w-3 h-3 ${colorClass} rounded-full"></span>
+                        ${roleName}
+                    </span>
+                    <span class="font-medium text-gray-800">${role.count} (${percent}%)</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2">
+                    <div class="${colorClass} h-2 rounded-full transition-all duration-500" style="width: ${percent}%"></div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function renderRecentLogs(logs) {
+    const container = document.getElementById('recent-logs');
+    if (!logs || logs.length === 0) {
+        container.innerHTML = '<p class="text-gray-400 text-center py-8">暂无活动记录</p>';
+        return;
+    }
+    
+    container.innerHTML = logs.slice(0, 8).map(log => {
+        const time = log.created_at ? new Date(log.created_at).toLocaleString() : '';
+        return `
+            <div class="flex items-start gap-3 p-2 rounded-lg hover:bg-gray-50 transition">
+                <div class="w-2 h-2 mt-2 bg-blue-500 rounded-full flex-shrink-0"></div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-gray-800 truncate">${log.username || '未知用户'}</p>
+                    <p class="text-xs text-gray-500 truncate">${log.action || log.path || ''}</p>
+                    <p class="text-xs text-gray-400 mt-0.5">${time}</p>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
 function reloadRoutes() {
+    if (!confirm('确定要刷新路由规则吗？')) return;
     fetch('/api/routes/reload', {method: 'POST'})
         .then(r => r.json())
         .then(data => {
             alert(data.message || '路由规则已更新');
+            loadDashboardData();
         })
         .catch(err => alert('刷新失败: ' + err));
 }
 
-// 检查所有路由
 function checkAllRoutes() {
     fetch('/api/routes/list')
         .then(r => r.json())
         .then(data => {
-            alert('共有 ' + data.routes.length + ' 个路由');
+            const routes = Array.isArray(data) ? data : (data.routes || []);
+            alert('共有 ' + routes.length + ' 个路由');
+            loadDashboardData();
         })
         .catch(err => alert('获取失败: ' + err));
 }
 
-// 查看系统状态
 function viewSystemStatus() {
     fetch('/api/system/status')
         .then(r => r.json())
@@ -505,6 +1073,31 @@ function viewSystemStatus() {
             alert('系统状态: ' + JSON.stringify(data, null, 2));
         })
         .catch(err => alert('获取失败: ' + err));
+}
+
+function createBackup() {
+    if (!confirm('确定要立即创建备份吗？')) return;
+    fetch('/api/backup/create', {method: 'POST'})
+        .then(r => r.json())
+        .then(data => {
+            alert(data.message || '备份创建成功');
+            loadDashboardData();
+        })
+        .catch(err => alert('备份失败: ' + err));
+}
+
+function clearCache() {
+    if (!confirm('确定要清除系统缓存吗？')) return;
+    fetch('/api/admin/clear_cache', {method: 'POST'})
+        .then(r => r.json())
+        .then(data => {
+            alert(data.message || '缓存已清除');
+            loadDashboardData();
+        })
+        .catch(err => {
+            alert('清除缓存API暂未实现，已刷新页面数据');
+            loadDashboardData();
+        });
 }
 </script>
 

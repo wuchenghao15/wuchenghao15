@@ -92,11 +92,20 @@ ASSETS_FOLDER = app.static_folder
 def custom_static(filename):
     return send_from_directory(ASSETS_FOLDER, filename)
 
+STATIC_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
+
+@app.route('/static/<path:filename>')
+def static_files(filename):
+    return send_from_directory(STATIC_FOLDER, filename)
+
 # 处理 Font Awesome 字体文件请求（/webfonts/ -> /assets/webfonts/）
 @app.route('/webfonts/<path:filename>')
 def webfonts(filename):
-    webfonts_folder = os.path.join(ASSETS_FOLDER, 'webfonts')
-    return send_from_directory(webfonts_folder, filename)
+    webfonts_folder = os.path.join(STATIC_FOLDER, 'webfonts')
+    if os.path.exists(os.path.join(webfonts_folder, filename)):
+        return send_from_directory(webfonts_folder, filename)
+    webfonts_folder_assets = os.path.join(ASSETS_FOLDER, 'webfonts')
+    return send_from_directory(webfonts_folder_assets, filename)
 
 @app.after_request
 def add_security_headers(response):
@@ -171,6 +180,55 @@ try:
     logger.info("[AI员工] AI员工批量修复API注册成功")
 except ImportError as e:
     logger.warning(f"[AI员工] AI员工批量修复API未找到，跳过注册: {e}")
+
+# 注册用户信息API
+try:
+    from app.api.user_info_api import user_info_api
+    app.register_blueprint(user_info_api)
+    logger.info("[用户API] 用户信息API注册成功")
+except ImportError as e:
+    logger.warning(f"[用户API] 用户信息API未找到，跳过注册: {e}")
+
+# 注册超级管理员数据API
+try:
+    from app.api.super_admin_data_api import super_admin_data_api
+    app.register_blueprint(super_admin_data_api, url_prefix='/api')
+    logger.info("[超级管理员] 超级管理员数据API注册成功")
+except ImportError as e:
+    logger.warning(f"[超级管理员] 超级管理员数据API未找到，跳过注册: {e}")
+
+# 注册AI员工增强系统API
+try:
+    from app.api.ai_employee_enhanced_api import ai_employee_enhanced_api, init_enhanced_system
+    app.register_blueprint(ai_employee_enhanced_api, url_prefix='/api')
+    init_enhanced_system()
+    logger.info("[AI员工增强] AI员工增强系统API注册成功")
+except ImportError as e:
+    logger.warning(f"[AI员工增强] AI员工增强系统API未找到，跳过注册: {e}")
+
+# 注册数据完整性与并发控制API
+try:
+    from app.api.data_integrity_api import data_integrity_api
+    app.register_blueprint(data_integrity_api, url_prefix='/api')
+    logger.info("[数据完整性] 数据完整性与并发控制API注册成功")
+except ImportError as e:
+    logger.warning(f"[数据完整性] 数据完整性与并发控制API未找到，跳过注册: {e}")
+
+# 注册AI员工主动运作系统API
+try:
+    from app.api.proactive_ai_api import proactive_ai_api
+    app.register_blueprint(proactive_ai_api, url_prefix='/api')
+    logger.info("[主动AI] AI员工主动运作系统API注册成功")
+except ImportError as e:
+    logger.warning(f"[主动AI] AI员工主动运作系统API未找到，跳过注册: {e}")
+
+# 注册AI脑库系统API
+try:
+    from app.api.brain_bank_api import brain_bank_api
+    app.register_blueprint(brain_bank_api, url_prefix='/api')
+    logger.info("[AI脑库] AI脑库系统API注册成功")
+except ImportError as e:
+    logger.warning(f"[AI脑库] AI脑库系统API未找到，跳过注册: {e}")
 
 DATABASE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'app.db')
 
@@ -1343,11 +1401,20 @@ def dashboard():
     return redirect('/settings')
 
 
-# 超级管理员仪表板 - 需要超级管理员权限
+# 超级管理员控制台 - 最高权限管理员专用
 @app.route('/super_admin_dashboard')
 @require_super_admin
 def super_admin_dashboard():
-    return render_template('super_admin_dashboard.html')
+    role = session.get('role', 'guest')
+    username = session.get('username', '')
+    
+    # 获取权限等级
+    from app.config.unified_rules import get_role_level
+    user_level = get_role_level(role)
+    
+    return render_template('super_admin_dashboard.html', 
+                           user={'username': username, 'role': role},
+                           user_level=user_level)
 
 # 管理员控制台 - admin角色专用（只读权限）
 @app.route('/admin_dashboard')
@@ -1525,14 +1592,190 @@ def smart_dashboard():
 def health():
     return jsonify({'status': 'healthy', 'timestamp': datetime.now().isoformat()})
 
+# 用户IP获取API（公开访问）
+@app.route('/api/user/ip', methods=['GET'])
+def get_user_ip_public():
+    """获取用户IP地址"""
+    try:
+        if request.headers.get('X-Forwarded-For'):
+            ip = request.headers.get('X-Forwarded-For').split(',')[0].strip()
+        elif request.headers.get('X-Real-IP'):
+            ip = request.headers.get('X-Real-IP').strip()
+        else:
+            ip = request.remote_addr or '127.0.0.1'
+        
+        if ip in ['127.0.0.1', '::1', 'localhost', '::ffff:127.0.0.1', None, '']:
+            ip = '127.0.0.1 (本地开发)'
+        
+        return jsonify({'success': True, 'ip': ip, 'message': 'IP地址获取成功'})
+    except Exception as e:
+        logger.error(f"获取IP失败: {e}")
+        return jsonify({'success': True, 'ip': '127.0.0.1 (默认)', 'message': '获取失败，使用默认值'})
+
+# 仪表盘统计数据API（公开访问）
+@app.route('/api/admin/dashboard_stats', methods=['GET'])
+def get_dashboard_stats_public():
+    """获取仪表盘统计数据"""
+    try:
+        conn = sqlite3.connect(DATABASE_PATH)
+        cursor = conn.cursor()
+        
+        cursor.execute('SELECT COUNT(*) FROM users')
+        user_count = cursor.fetchone()[0]
+        
+        route_count = len([r for r in app.url_map.iter_rules()])
+        
+        try:
+            cursor.execute('SELECT COUNT(DISTINCT user_id) FROM access_logs WHERE DATE(access_time) = DATE("now")')
+            active_users = cursor.fetchone()[0]
+        except:
+            active_users = 0
+        
+        exams_count = 0
+        questions_count = 0
+        completed_exams = 0
+        try:
+            cursor.execute('SELECT COUNT(*) FROM exams')
+            exams_count = cursor.fetchone()[0]
+            cursor.execute('SELECT COUNT(*) FROM questions')
+            questions_count = cursor.fetchone()[0]
+            try:
+                cursor.execute('SELECT COUNT(*) FROM exam_results WHERE completed = 1')
+                completed_exams = cursor.fetchone()[0]
+            except:
+                completed_exams = 0
+        except:
+            pass
+        
+        learning_records = 0
+        wrong_questions = 0
+        try:
+            cursor.execute('SELECT COUNT(*) FROM learning_records')
+            learning_records = cursor.fetchone()[0]
+        except:
+            pass
+        try:
+            cursor.execute('SELECT COUNT(*) FROM wrong_questions')
+            wrong_questions = cursor.fetchone()[0]
+        except:
+            pass
+        
+        backup_count = 0
+        try:
+            cursor.execute('SELECT COUNT(*) FROM backups')
+            backup_count = cursor.fetchone()[0]
+        except:
+            pass
+        
+        notification_count = 0
+        try:
+            cursor.execute('SELECT COUNT(*) FROM notifications')
+            notification_count = cursor.fetchone()[0]
+        except:
+            pass
+        
+        today_logins = 0
+        today_registers = 0
+        try:
+            cursor.execute("SELECT COUNT(*) FROM users WHERE DATE(last_login) = DATE('now')")
+            today_logins = cursor.fetchone()[0]
+            cursor.execute("SELECT COUNT(*) FROM users WHERE DATE(created_at) = DATE('now')")
+            today_registers = cursor.fetchone()[0]
+        except:
+            pass
+        
+        recent_users = []
+        try:
+            cursor.execute('SELECT id, username, role, created_at FROM users ORDER BY created_at DESC LIMIT 5')
+            for row in cursor.fetchall():
+                recent_users.append({
+                    'id': row[0],
+                    'username': row[1],
+                    'role': row[2],
+                    'created_at': row[3]
+                })
+        except:
+            pass
+        
+        recent_logs = []
+        try:
+            cursor.execute('SELECT id, user_id, username, action, ip_address, created_at FROM system_logs ORDER BY created_at DESC LIMIT 10')
+            for row in cursor.fetchall():
+                recent_logs.append({
+                    'id': row[0],
+                    'user_id': row[1],
+                    'username': row[2],
+                    'action': row[3],
+                    'ip_address': row[4],
+                    'created_at': row[5]
+                })
+        except:
+            try:
+                cursor.execute('SELECT id, user_id, path, ip_address, access_time FROM access_logs ORDER BY access_time DESC LIMIT 10')
+                for row in cursor.fetchall():
+                    recent_logs.append({
+                        'id': row[0],
+                        'user_id': row[1],
+                        'username': '用户' + str(row[1]),
+                        'action': row[2],
+                        'ip_address': row[3],
+                        'created_at': row[4]
+                    })
+            except:
+                pass
+        
+        conn.close()
+        
+        import psutil
+        try:
+            cpu_percent = psutil.cpu_percent(interval=0.1)
+            memory = psutil.virtual_memory()
+            memory_percent = memory.percent
+            disk = psutil.disk_usage('/')
+            disk_percent = disk.percent
+        except:
+            cpu_percent = 0
+            memory_percent = 0
+            disk_percent = 0
+        
+        return jsonify({
+            'success': True,
+            'data': {
+                'user_count': user_count,
+                'route_count': route_count,
+                'system_status': '正常运行',
+                'active_users': active_users,
+                'exams_count': exams_count,
+                'questions_count': questions_count,
+                'completed_exams': completed_exams,
+                'learning_records': learning_records,
+                'wrong_questions': wrong_questions,
+                'backup_count': backup_count,
+                'notification_count': notification_count,
+                'today_logins': today_logins,
+                'today_registers': today_registers,
+                'recent_users': recent_users,
+                'recent_logs': recent_logs,
+                'system_resources': {
+                    'cpu_percent': cpu_percent,
+                    'memory_percent': memory_percent,
+                    'disk_percent': disk_percent
+                },
+                'timestamp': datetime.now().isoformat()
+            }
+        })
+    except Exception as e:
+        logger.error(f"获取统计数据失败: {e}")
+        return jsonify({'success': False, 'message': str(e), 'data': {'user_count': 0, 'route_count': 0, 'system_status': '获取失败', 'active_users': 0}})
+
 # 系统状态
 @app.route('/api/system/status')
 def system_status():
     return jsonify({'status': 'running', 'version': "3.1.0", 'timestamp': datetime.now().isoformat()})
 
-# 用户信息API
-@app.route('/api/user/<username>')
-def get_user(username):
+# 用户信息API - 改用/api/users/info避免路由冲突
+@app.route('/api/users/info/<username>')
+def get_user_info_api(username):
     user = get_user_by_username(username)
     if user:
         # 不返回密码

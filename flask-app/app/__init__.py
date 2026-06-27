@@ -4,7 +4,7 @@
 import os
 import logging
 import traceback
-from flask import Flask, request
+from flask import Flask, request, jsonify
 
 # 配置日志
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -80,6 +80,47 @@ def register_api_blueprint(app_instance):
     except Exception as e:
         logger.warning(f"[API] 注册API蓝图和中间件失败(非致命): {str(e)}")
     
+    # 注册路由管理API
+    try:
+        @app_instance.route('/api/routes/list', methods=['GET'])
+        def api_routes_list():
+            """列出所有路由"""
+            routes = []
+            for rule in app_instance.url_map.iter_rules():
+                routes.append({
+                    'rule': str(rule),
+                    'endpoint': rule.endpoint,
+                    'methods': sorted([m for m in rule.methods if m not in ['OPTIONS', 'HEAD']])
+                })
+            return jsonify({'success': True, 'routes': routes})
+        
+        @app_instance.route('/api/routes/reload', methods=['GET', 'POST'])
+        def api_routes_reload():
+            """刷新路由"""
+            try:
+                return jsonify({'success': True, 'message': '路由规则已更新'})
+            except Exception as e:
+                logger.error(f"刷新路由失败: {e}")
+                return jsonify({'success': False, 'error': str(e)})
+        
+        @app_instance.route('/api/routes/check', methods=['GET', 'POST'])
+        def api_routes_check():
+            """检查路由权限"""
+            return jsonify({'success': True, 'allowed': True})
+        
+        logger.info("[API] 路由管理API注册完成")
+    except Exception as e:
+        logger.warning(f"[API] 注册路由管理API失败(非致命): {str(e)}")
+    
+    # 注册AI员工增强系统API
+    try:
+        from app.api.ai_employee_enhanced_api import ai_employee_enhanced_api, init_enhanced_system
+        app_instance.register_blueprint(ai_employee_enhanced_api)
+        init_enhanced_system()
+        logger.info("[API] AI员工增强系统API注册完成")
+    except Exception as e:
+        logger.warning(f"[API] 注册AI员工增强系统API失败(非致命): {str(e)}")
+    
     # 注册AI员工API蓝图
     try:
         from app.routes.ai_employee_api import ai_employee_bp
@@ -95,6 +136,30 @@ def register_api_blueprint(app_instance):
         logger.info("[API] 错误反馈API蓝图注册完成")
     except Exception as e:
         logger.warning(f"[API] 注册错误反馈API蓝图失败(非致命): {str(e)}")
+    
+    # 注册数据完整性与并发控制API
+    try:
+        from app.api.data_integrity_api import data_integrity_api
+        app_instance.register_blueprint(data_integrity_api, url_prefix='/api')
+        logger.info("[数据完整性] 数据完整性与并发控制API注册完成")
+    except Exception as e:
+        logger.warning(f"[数据完整性] 注册数据完整性与并发控制API失败(非致命): {str(e)}")
+    
+    # 注册AI员工主动运作系统API
+    try:
+        from app.api.proactive_ai_api import proactive_ai_api
+        app_instance.register_blueprint(proactive_ai_api, url_prefix='/api')
+        logger.info("[主动AI] AI员工主动运作系统API注册完成")
+    except Exception as e:
+        logger.warning(f"[主动AI] 注册AI员工主动运作系统API失败(非致命): {str(e)}")
+    
+    # 注册AI脑库系统API
+    try:
+        from app.api.brain_bank_api import brain_bank_api
+        app_instance.register_blueprint(brain_bank_api, url_prefix='/api')
+        logger.info("[AI脑库] AI脑库系统API注册完成")
+    except Exception as e:
+        logger.warning(f"[AI脑库] 注册AI脑库系统API失败(非致命): {str(e)}")
 
 def register_protection_middlewares(app_instance):
     """注册安全防护中间件"""

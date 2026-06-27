@@ -48,6 +48,11 @@ try:
 except ImportError:
     exam_api = None
 
+try:
+    from app.api.super_admin_data_api import super_admin_data_api
+except ImportError:
+    super_admin_data_api = None
+
 # 创建主API蓝图
 api_bp = Blueprint('api', __name__, url_prefix='/api')
 
@@ -75,6 +80,9 @@ if config_api:
 
 if exam_api:
     api_bp.register_blueprint(exam_api)
+
+if super_admin_data_api:
+    api_bp.register_blueprint(super_admin_data_api)
 
 # 导入API路由
 try:

@@ -8,7 +8,9 @@ import logging
 logger = logging.getLogger(__name__)
 
 import os
+import json
 import importlib
+from datetime import datetime
 from flask import Flask, request, redirect, jsonify, session, render_template, abort
 from functools import wraps
 from typing import Dict, List, Tuple, Optional, Callable
@@ -252,20 +254,77 @@ class DynamicRouteManager:
         return template_map.get(route_path)
     
     def reload_routes(self):
-        """热更新路由规则"""
-        logger.info("开始热更新路由规则...")
+        """热更新路由规则（仅更新配置和权限缓存，不修改Flask路由）"""
+        logger.info("开始热更新路由配置...")
         
-        # 重新导入统一规则配置（强制重新加载）
-        import app.config.unified_rules as unified_rules_module
-        importlib.reload(unified_rules_module)
-        
-        # 清除旧路由
-        self._clear_dynamic_routes()
-        
-        # 重新加载路由规则
-        self.load_routes_from_rules()
-        
-        logger.info(f"路由热更新完成，共注册 {len(self.registered_routes)} 条动态路由")
+        try:
+            # 重新导入统一规则配置（强制重新加载）
+            import app.config.unified_rules as unified_rules_module
+            importlib.reload(unified_rules_module)
+            
+            # 更新registered_routes配置（用于权限检查）
+            all_routes = {}
+            try:
+                all_routes.update(unified_rules_module.EXAM_SYSTEM_ROUTES)
+                all_routes.update(unified_rules_module.TEST_SYSTEM_ROUTES)
+                all_routes.update(unified_rules_module.LEARNING_SYSTEM_ROUTES)
+                all_routes.update(unified_rules_module.USER_SYSTEM_ROUTES)
+                all_routes.update(unified_rules_module.ADMIN_SYSTEM_ROUTES)
+            except AttributeError as e:
+                logger.warning(f"部分路由规则未加载: {e}")
+            
+            for route_path, route_config in all_routes.items():
+                self.registered_routes[route_path] = route_config
+            
+            # 更新数据库中的路由规则缓存
+            self._update_route_cache_in_db(all_routes)
+            
+            logger.info(f"路由配置热更新完成，共更新 {len(self.registered_routes)} 条路由规则配置")
+            return True
+            
+        except Exception as e:
+            logger.error(f"热更新路由配置失败: {e}")
+            return False
+    
+    def _update_route_cache_in_db(self, routes_dict):
+        """更新数据库中的路由规则缓存"""
+        try:
+            import sqlite3
+            db_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'app.db')
+            conn = sqlite3.connect(db_path)
+            cursor = conn.cursor()
+            
+            # 确保表存在
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS route_config_cache (
+                    route_path TEXT PRIMARY KEY,
+                    allowed_roles TEXT,
+                    require_login INTEGER,
+                    description TEXT,
+                    updated_at TEXT
+                )
+            ''')
+            
+            # 更新路由配置
+            for route_path, route_config in routes_dict.items():
+                cursor.execute('''
+                    INSERT OR REPLACE INTO route_config_cache 
+                    (route_path, allowed_roles, require_login, description, updated_at)
+                    VALUES (?, ?, ?, ?, ?)
+                ''', (
+                    route_path,
+                    json.dumps(route_config.get('allowed_roles', [])),
+                    route_config.get('require_login', 1),
+                    route_config.get('description', ''),
+                    datetime.now().isoformat()
+                ))
+            
+            conn.commit()
+            conn.close()
+            logger.info("路由配置缓存已更新到数据库")
+            
+        except Exception as e:
+            logger.warning(f"更新路由配置缓存失败: {e}")
     
     def _clear_dynamic_routes(self):
         """清除所有动态注册的路由"""
