@@ -208,10 +208,12 @@
             border-color: var(--primary-color);
         }
 
-        .option-item input[type="radio"] {
+        .option-item input[type="radio"],
+        .option-item input[type="checkbox"] {
             width: 20px;
             height: 20px;
             cursor: pointer;
+            flex-shrink: 0;
         }
 
         .option-label {
@@ -239,6 +241,9 @@
             font-size: 1.5rem;
             cursor: pointer;
             transition: transform 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .audio-btn:hover {
@@ -455,28 +460,42 @@
 
     <script>
         let examData = null;
+        let questions = [];
         let currentQuestionIndex = 0;
         let answers = {};
         let flagged = new Set();
         let timerInterval = null;
         let totalSeconds = 0;
         let audioElement = null;
+        let speechSynthesis = null;
+        let paperId = null;
+
+        const TYPE_MAP = {
+            'single_choice': '单选题',
+            'multiple_choice': '多选题',
+            'true_false': '判断题',
+            'fill_blank': '填空题',
+            'short_answer': '简答题',
+            'essay': '论述题',
+            'listening': '听力题',
+            'reading': '阅读题'
+        };
 
         async function loadExam(examId) {
             try {
-                const examResponse = await fetch(`/api/exams/${examId}`);
+                const examResponse = await fetch(`/api/exam/exams/${examId}`);
                 const examResult = await examResponse.json();
                 
                 if (examResult.success && examResult.data) {
                     examData = examResult.data;
                     totalSeconds = examData.duration * 60;
                     
-                    const questionsResponse = await fetch(`/api/exams/${examId}/questions`);
+                    const questionsResponse = await fetch(`/api/exam/exams/${examId}/questions`);
                     const questionsResult = await questionsResponse.json();
                     
                     if (questionsResult.success && questionsResult.data) {
-                        window.sampleQuestions = questionsResult.data;
-                        initExam();
+                        questions = questionsResult.data;
+                        await createPaper(examId);
                     } else {
                         throw new Error('加载题目失败');
                     }
@@ -487,8 +506,45 @@
             }
         }
 
+        async function createPaper(examId) {
+            try {
+                const response = await fetch(`/api/exam/exams/${examId}/papers`, {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    paperId = result.paper_id;
+                    await startPaper(paperId);
+                } else {
+                    throw new Error('创建试卷失败');
+                }
+            } catch (error) {
+                console.error('创建试卷失败:', error);
+                alert('创建试卷失败: ' + error.message);
+            }
+        }
+
+        async function startPaper(paperId) {
+            try {
+                const response = await fetch(`/api/exam/papers/${paperId}/start`, {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    initExam();
+                } else {
+                    throw new Error('开始考试失败');
+                }
+            } catch (error) {
+                console.error('开始考试失败:', error);
+                alert('开始考试失败: ' + error.message);
+            }
+        }
+
         function initExam() {
-            document.getElementById('exam-title').textContent = examData.name;
+            document.getElementById('exam-title').textContent = examData.title;
             document.getElementById('exam-desc').textContent = examData.description || '暂无描述';
             document.getElementById('exam-duration').textContent = examData.duration;
             document.getElementById('passing-score').textContent = examData.passing_score;
@@ -502,7 +558,7 @@
             const nav = document.getElementById('question-nav');
             nav.innerHTML = '';
             
-            const totalQuestions = window.sampleQuestions.length;
+            const totalQuestions = questions.length;
             for (let i = 1; i <= totalQuestions; i++) {
                 const btn = document.createElement('button');
                 btn.className = 'nav-btn';
@@ -513,49 +569,74 @@
         }
 
         function displayQuestion(index) {
-            if (!window.sampleQuestions || index >= window.sampleQuestions.length) return;
+            if (!questions || index >= questions.length) return;
             
             currentQuestionIndex = index;
-            const question = window.sampleQuestions[index];
+            const question = questions[index];
             
-            document.getElementById('question-number').textContent = question.id || (index + 1);
-            document.getElementById('question-type').textContent = question.type || '单选题';
+            document.getElementById('question-number').textContent = index + 1;
+            document.getElementById('question-type').textContent = TYPE_MAP[question.type] || question.type;
             document.getElementById('question-content').textContent = question.content;
-            document.getElementById('question-count').textContent = `${index + 1}/${window.sampleQuestions.length}`;
+            document.getElementById('question-count').textContent = `${index + 1}/${questions.length}`;
             
             updateProgress();
             updateNavButtons();
             
-            if (question.audio_available) {
+            if (question.audio_url) {
                 document.getElementById('audio-section').style.display = 'block';
             } else {
                 document.getElementById('audio-section').style.display = 'none';
             }
             
-            displayOptions(question.options);
+            displayOptions(question);
         }
 
-        function displayOptions(options) {
+        function displayOptions(question) {
             const list = document.getElementById('options-list');
             list.innerHTML = '';
             
-            options.forEach(option => {
+            if (!question.options || question.options.length === 0) {
+                list.innerHTML = '<li style="padding: 20px; color: var(--text-secondary);">暂无选项</li>';
+                return;
+            }
+
+            const isMultiple = question.type === 'multiple_choice';
+            const optionType = isMultiple ? 'checkbox' : 'radio';
+            
+            question.options.forEach((option, idx) => {
                 const li = document.createElement('li');
-                li.className = `option-item ${answers[currentQuestionIndex] === option.key ? 'selected' : ''}`;
+                const optionKey = option.key || String.fromCharCode(65 + idx);
+                const optionValue = option.value || option.text || option;
+                
+                li.className = `option-item ${answers[question.id] === optionKey || 
+                    (Array.isArray(answers[question.id]) && answers[question.id].includes(optionKey)) ? 'selected' : ''}`;
                 
                 li.innerHTML = `
-                    <input type="radio" name="answer" value="${option.key}" 
-                           ${answers[currentQuestionIndex] === option.key ? 'checked' : ''}
-                           onclick="selectAnswer('${option.key}')">
-                    <span class="option-label"><strong>${option.key}.</strong> ${option.text}</span>
+                    <input type="${optionType}" name="answer" value="${optionKey}" 
+                           ${answers[question.id] === optionKey || 
+                             (Array.isArray(answers[question.id]) && answers[question.id].includes(optionKey)) ? 'checked' : ''}
+                           onclick="selectAnswer('${question.id}', '${optionKey}', ${isMultiple})">
+                    <span class="option-label"><strong>${optionKey}.</strong> ${optionValue}</span>
                 `;
                 
                 list.appendChild(li);
             });
         }
 
-        function selectAnswer(key) {
-            answers[currentQuestionIndex] = key;
+        function selectAnswer(questionId, key, isMultiple) {
+            if (isMultiple) {
+                if (!answers[questionId]) {
+                    answers[questionId] = [];
+                }
+                const idx = answers[questionId].indexOf(key);
+                if (idx > -1) {
+                    answers[questionId].splice(idx, 1);
+                } else {
+                    answers[questionId].push(key);
+                }
+            } else {
+                answers[questionId] = key;
+            }
             updateNavButtons();
         }
 
@@ -569,7 +650,7 @@
                     btn.classList.add('current');
                 }
                 
-                if (answers[index]) {
+                if (answers[questions[index]?.id]) {
                     btn.classList.add('answered');
                 }
                 
@@ -582,7 +663,7 @@
         }
 
         function updateProgress() {
-            const progress = ((currentQuestionIndex + 1) / window.sampleQuestions.length) * 100;
+            const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
             document.getElementById('progress-fill').style.width = `${progress}%`;
         }
 
@@ -593,7 +674,7 @@
         }
 
         function nextQuestion() {
-            if (currentQuestionIndex < window.sampleQuestions.length - 1) {
+            if (currentQuestionIndex < questions.length - 1) {
                 displayQuestion(currentQuestionIndex + 1);
             }
         }
@@ -643,7 +724,7 @@
 
         function toggleAudio() {
             const btn = document.getElementById('audio-play-btn');
-            const question = window.sampleQuestions[currentQuestionIndex];
+            const question = questions[currentQuestionIndex];
             
             if (!question) return;
             
@@ -656,22 +737,38 @@
             }
         }
 
-        let speechSynthesis = null;
-        let audioElement = null;
-        
         function playQuestionAudio(question) {
             if (question.audio_url) {
                 stopAudio();
                 audioElement = new Audio(question.audio_url);
+                audioElement.onloadedmetadata = function() {
+                    document.getElementById('audio-duration').textContent = formatTime(audioElement.duration);
+                };
+                audioElement.ontimeupdate = function() {
+                    const progress = (audioElement.currentTime / audioElement.duration) * 100;
+                    document.getElementById('audio-progress-fill').style.width = `${progress}%`;
+                    document.getElementById('audio-duration').textContent = 
+                        formatTime(audioElement.currentTime) + ' / ' + formatTime(audioElement.duration);
+                };
                 audioElement.onended = function() {
                     document.getElementById('audio-play-btn').textContent = '▶️';
+                    document.getElementById('audio-progress-fill').style.width = '0%';
+                    document.getElementById('audio-duration').textContent = formatTime(audioElement.duration);
                 };
-                audioElement.play().catch(function() {
+                audioElement.play().catch(function(err) {
+                    console.warn('音频播放失败，尝试备用语音:', err);
                     fallbackSpeech(question);
                 });
             } else {
                 fallbackSpeech(question);
             }
+        }
+
+        function formatTime(seconds) {
+            if (isNaN(seconds)) return '00:00';
+            const m = Math.floor(seconds / 60);
+            const s = Math.floor(seconds % 60);
+            return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
         }
 
         function fallbackSpeech(question) {
@@ -682,9 +779,9 @@
                 const utterance = new SpeechSynthesisUtterance(question.content);
                 
                 let lang = 'zh-CN';
-                if (examData && examData.language === '日语') {
+                if (examData && examData.language === 'ja') {
                     lang = 'ja-JP';
-                } else if (examData && examData.language === '英语') {
+                } else if (examData && examData.language === 'en') {
                     lang = 'en-US';
                 }
                 
@@ -712,7 +809,7 @@
 
         function showSubmitConfirm() {
             const answered = Object.keys(answers).length;
-            const total = window.sampleQuestions.length;
+            const total = questions.length;
             const flaggedCount = flagged.size;
             
             document.getElementById('submit-summary').textContent = 
@@ -724,26 +821,49 @@
             document.getElementById('submit-confirm').style.display = 'none';
         }
 
-        function submitExam() {
+        async function submitExam() {
             clearInterval(timerInterval);
+            stopAudio();
             
-            const result = {
-                examId: examData.id,
-                answers: answers,
-                submittedAt: new Date().toISOString(),
-                totalQuestions: window.sampleQuestions.length,
-                answeredCount: Object.keys(answers).length
-            };
-            
-            console.log('提交结果:', result);
-            alert(`试卷提交成功！\n\n已答: ${result.answeredCount}/${result.totalQuestions}\n提交时间: ${new Date().toLocaleString()}`);
-            
-            window.location.href = '/exam_system';
+            if (!paperId) {
+                alert('试卷ID不存在');
+                return;
+            }
+
+            for (const [questionId, answer] of Object.entries(answers)) {
+                try {
+                    await fetch(`/api/exam/papers/${paperId}/answer`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ question_id: questionId, answer: answer })
+                    });
+                } catch (e) {
+                    console.error('保存答案失败:', e);
+                }
+            }
+
+            try {
+                const response = await fetch(`/api/exam/papers/${paperId}/submit`, {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert(`试卷提交成功！\n\n得分: ${result.data.total_score}\n正确率: ${(result.data.accuracy * 100).toFixed(1)}%\n用时: ${Math.floor(result.data.time_taken / 60)}分${result.data.time_taken % 60}秒`);
+                    window.location.href = '/exam_system';
+                } else {
+                    alert('提交失败: ' + (result.error || '未知错误'));
+                }
+            } catch (error) {
+                console.error('提交试卷失败:', error);
+                alert('提交试卷失败: ' + error.message);
+            }
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            const urlParams = new URLSearchParams(window.location.search);
-            const examId = urlParams.get('exam_id');
+            const examId = '{{ exam_id }}';
             
             if (examId) {
                 loadExam(examId);

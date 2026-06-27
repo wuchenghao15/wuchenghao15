@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # 安全中间件,用于增强系统安全性
-from flask import request, response, g
+from flask import request, g
 from app.utils.logging import logger
 from datetime import datetime
 

@@ -1,0 +1,365 @@
+{% extends "base_layout.html" %}
+
+{% block title %}管理员控制台 - MTSCOS AI 系统{% endblock %}
+{% block description %}管理员控制面板 - 只读权限{% endblock %}
+{% block breadcrumb %}管理员仪表盘{% endblock %}
+
+{% block content %}
+<div class="admin-dashboard">
+    <!-- 页面头部 -->
+    <div class="page-header mb-8">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-800 flex items-center gap-3">
+                    <i class="fas fa-user-shield text-blue-500"></i>
+                    管理员控制台
+                </h1>
+                <p class="text-gray-600 mt-2">欢迎，{{ user.username }} | 角色：{{ user.role }} | <span class="text-yellow-600 font-medium">只读权限</span></p>
+            </div>
+            <div class="flex gap-3">
+                <span class="px-4 py-2 bg-yellow-100 text-yellow-800 rounded-lg border border-yellow-300">
+                    <i class="fas fa-eye mr-2"></i>查看模式
+                </span>
+                <a href="/auth/logout" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition">
+                    <i class="fas fa-sign-out-alt mr-2"></i>退出登录
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 只读提示 -->
+    <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-8">
+        <div class="flex items-start gap-3">
+            <i class="fas fa-info-circle text-yellow-600 text-xl mt-1"></i>
+            <div>
+                <h3 class="font-medium text-yellow-800">查看权限说明</h3>
+                <p class="text-yellow-700 text-sm mt-1">
+                    您当前为管理员身份，拥有系统查看权限。敏感数据（安全配置、数据库配置、规则配置、硬件配置、路由配置）仅供查看，修改权限仅限超级管理员。
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 统计卡片 -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-sm font-medium opacity-90">用户总数</h3>
+                    <p class="text-3xl font-bold mt-2">--</p>
+                </div>
+                <i class="fas fa-users text-4xl opacity-80"></i>
+            </div>
+        </div>
+        
+        <div class="bg-gradient-to-r from-green-500 to-green-600 rounded-xl shadow-lg p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-sm font-medium opacity-90">系统状态</h3>
+                    <p class="text-3xl font-bold mt-2">正常</p>
+                </div>
+                <i class="fas fa-heartbeat text-4xl opacity-80"></i>
+            </div>
+        </div>
+        
+        <div class="bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-sm font-medium opacity-90">考试总数</h3>
+                    <p class="text-3xl font-bold mt-2">--</p>
+                </div>
+                <i class="fas fa-file-alt text-4xl opacity-80"></i>
+            </div>
+        </div>
+        
+        <div class="bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl shadow-lg p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-sm font-medium opacity-90">权限等级</h3>
+                    <p class="text-3xl font-bold mt-2">L9</p>
+                </div>
+                <i class="fas fa-eye text-4xl opacity-80"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- 功能区域 -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- 系统概览 -->
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+            <div class="bg-blue-500 px-6 py-4">
+                <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                    <i class="fas fa-tachometer-alt"></i>
+                    系统概览
+                </h2>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-2 gap-4">
+                    <a href="/admin_dashboard" class="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                        <i class="fas fa-home text-2xl text-blue-500"></i>
+                        <div>
+                            <h3 class="font-medium text-gray-800">系统概览</h3>
+                            <p class="text-sm text-gray-500">总览页面</p>
+                        </div>
+                    </a>
+                    <a href="/api/system/status" class="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                        <i class="fas fa-heartbeat text-2xl text-green-500"></i>
+                        <div>
+                            <h3 class="font-medium text-gray-800">实时状态</h3>
+                            <p class="text-sm text-gray-500">健康检查</p>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 用户管理（只读） -->
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+            <div class="bg-indigo-500 px-6 py-4">
+                <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                    <i class="fas fa-users"></i>
+                    用户管理 <span class="text-xs bg-white/20 px-2 py-1 rounded">只读</span>
+                </h2>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-2 gap-4">
+                    <a href="/admin_app/users" class="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                        <i class="fas fa-list text-2xl text-indigo-500"></i>
+                        <div>
+                            <h3 class="font-medium text-gray-800">用户列表</h3>
+                            <p class="text-sm text-gray-500">查看用户</p>
+                        </div>
+                    </a>
+                    <a href="/admin_app/users/stats" class="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                        <i class="fas fa-chart-pie text-2xl text-blue-500"></i>
+                        <div>
+                            <h3 class="font-medium text-gray-800">用户统计</h3>
+                            <p class="text-sm text-gray-500">数据分析</p>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 考试系统（只读） -->
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+            <div class="bg-teal-500 px-6 py-4">
+                <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                    <i class="fas fa-file-alt"></i>
+                    考试系统 <span class="text-xs bg-white/20 px-2 py-1 rounded">只读</span>
+                </h2>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-2 gap-4">
+                    <a href="/admin_app/exams" class="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                        <i class="fas fa-clipboard-list text-2xl text-teal-500"></i>
+                        <div>
+                            <h3 class="font-medium text-gray-800">考试列表</h3>
+                            <p class="text-sm text-gray-500">查看考试</p>
+                        </div>
+                    </a>
+                    <a href="/admin_app/grades" class="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                        <i class="fas fa-chart-bar text-2xl text-green-500"></i>
+                        <div>
+                            <h3 class="font-medium text-gray-800">成绩统计</h3>
+                            <p class="text-sm text-gray-500">数据分析</p>
+                        </div>
+                    </a>
+                    <div class="col-span-2">
+                        <a href="/admin_app/questions" class="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                            <i class="fas fa-database text-2xl text-yellow-500"></i>
+                            <div>
+                                <h3 class="font-medium text-gray-800">题库浏览</h3>
+                                <p class="text-sm text-gray-500">查看题目</p>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 学习系统 -->
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+            <div class="bg-green-500 px-6 py-4">
+                <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                    <i class="fas fa-book"></i>
+                    学习系统
+                </h2>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-2 gap-4">
+                    <a href="/learning/stats" class="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                        <i class="fas fa-chart-line text-2xl text-green-500"></i>
+                        <div>
+                            <h3 class="font-medium text-gray-800">学习统计</h3>
+                            <p class="text-sm text-gray-500">数据分析</p>
+                        </div>
+                    </a>
+                    <a href="/learning/history" class="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                        <i class="fas fa-history text-2xl text-blue-500"></i>
+                        <div>
+                            <h3 class="font-medium text-gray-800">学习记录</h3>
+                            <p class="text-sm text-gray-500">历史记录</p>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 日志查看（只读） -->
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+            <div class="bg-gray-600 px-6 py-4">
+                <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                    <i class="fas fa-file-alt"></i>
+                    日志查看 <span class="text-xs bg-white/20 px-2 py-1 rounded">只读</span>
+                </h2>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-2 gap-4">
+                    <a href="/settings/logs" class="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                        <i class="fas fa-file-code text-2xl text-gray-600"></i>
+                        <div>
+                            <h3 class="font-medium text-gray-800">系统日志</h3>
+                            <p class="text-sm text-gray-500">查看日志</p>
+                        </div>
+                    </a>
+                    <a href="/settings/logs/operations" class="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                        <i class="fas fa-history text-2xl text-blue-500"></i>
+                        <div>
+                            <h3 class="font-medium text-gray-800">操作记录</h3>
+                            <p class="text-sm text-gray-500">审计追踪</p>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 敏感数据（只读） -->
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+            <div class="bg-red-600 px-6 py-4">
+                <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                    <i class="fas fa-lock"></i>
+                    敏感配置 <span class="text-xs bg-white/20 px-2 py-1 rounded">只读</span>
+                </h2>
+            </div>
+            <div class="p-6">
+                <div class="space-y-3">
+                    <a href="/settings/security" class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                        <i class="fas fa-shield-alt text-xl text-red-500"></i>
+                        <div class="flex-1">
+                            <h3 class="font-medium text-gray-800">安全配置</h3>
+                            <p class="text-xs text-red-500">仅限查看，修改需超级管理员</p>
+                        </div>
+                        <i class="fas fa-lock text-gray-400"></i>
+                    </a>
+                    <a href="/settings/database-settings" class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                        <i class="fas fa-database text-xl text-blue-500"></i>
+                        <div class="flex-1">
+                            <h3 class="font-medium text-gray-800">数据库配置</h3>
+                            <p class="text-xs text-red-500">仅限查看，修改需超级管理员</p>
+                        </div>
+                        <i class="fas fa-lock text-gray-400"></i>
+                    </a>
+                    <a href="/settings/rules" class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                        <i class="fas fa-gavel text-xl text-purple-500"></i>
+                        <div class="flex-1">
+                            <h3 class="font-medium text-gray-800">规则配置</h3>
+                            <p class="text-xs text-red-500">仅限查看，修改需超级管理员</p>
+                        </div>
+                        <i class="fas fa-lock text-gray-400"></i>
+                    </a>
+                    <a href="/settings/hardware" class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                        <i class="fas fa-key text-xl text-yellow-500"></i>
+                        <div class="flex-1">
+                            <h3 class="font-medium text-gray-800">硬件配置</h3>
+                            <p class="text-xs text-red-500">仅限查看，修改需超级管理员</p>
+                        </div>
+                        <i class="fas fa-lock text-gray-400"></i>
+                    </a>
+                    <a href="/api/routes/list" class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                        <i class="fas fa-route text-xl text-indigo-500"></i>
+                        <div class="flex-1">
+                            <h3 class="font-medium text-gray-800">路由配置</h3>
+                            <p class="text-xs text-red-500">仅限查看，修改需超级管理员</p>
+                        </div>
+                        <i class="fas fa-lock text-gray-400"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- 权限对比说明 -->
+    <div class="mt-8 bg-white rounded-xl shadow-lg p-6">
+        <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <i class="fas fa-balance-scale text-blue-500"></i>
+            管理员与超级管理员权限对比
+        </h2>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="bg-gray-50">
+                        <th class="px-4 py-3 text-left font-medium text-gray-700">功能模块</th>
+                        <th class="px-4 py-3 text-center font-medium text-blue-600">管理员</th>
+                        <th class="px-4 py-3 text-center font-medium text-red-600">超级管理员</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    <tr>
+                        <td class="px-4 py-3">系统概览</td>
+                        <td class="px-4 py-3 text-center"><i class="fas fa-check text-green-500"></i> 查看</td>
+                        <td class="px-4 py-3 text-center"><i class="fas fa-check text-green-500"></i> 查看/修改</td>
+                    </tr>
+                    <tr class="bg-gray-50">
+                        <td class="px-4 py-3">用户管理</td>
+                        <td class="px-4 py-3 text-center"><i class="fas fa-eye text-blue-500"></i> 查看</td>
+                        <td class="px-4 py-3 text-center"><i class="fas fa-check text-green-500"></i> 查看/修改</td>
+                    </tr>
+                    <tr>
+                        <td class="px-4 py-3">考试系统</td>
+                        <td class="px-4 py-3 text-center"><i class="fas fa-eye text-blue-500"></i> 查看</td>
+                        <td class="px-4 py-3 text-center"><i class="fas fa-check text-green-500"></i> 查看/修改</td>
+                    </tr>
+                    <tr class="bg-gray-50">
+                        <td class="px-4 py-3">学习系统</td>
+                        <td class="px-4 py-3 text-center"><i class="fas fa-check text-green-500"></i> 查看</td>
+                        <td class="px-4 py-3 text-center"><i class="fas fa-check text-green-500"></i> 查看/修改</td>
+                    </tr>
+                    <tr>
+                        <td class="px-4 py-3">系统日志</td>
+                        <td class="px-4 py-3 text-center"><i class="fas fa-eye text-blue-500"></i> 查看</td>
+                        <td class="px-4 py-3 text-center"><i class="fas fa-check text-green-500"></i> 查看/修改</td>
+                    </tr>
+                    <tr class="bg-red-50">
+                        <td class="px-4 py-3 font-medium">安全配置</td>
+                        <td class="px-4 py-3 text-center"><i class="fas fa-lock text-yellow-500"></i> 仅查看</td>
+                        <td class="px-4 py-3 text-center"><i class="fas fa-check text-green-500"></i> 查看/修改</td>
+                    </tr>
+                    <tr class="bg-red-50">
+                        <td class="px-4 py-3 font-medium">数据库配置</td>
+                        <td class="px-4 py-3 text-center"><i class="fas fa-lock text-yellow-500"></i> 仅查看</td>
+                        <td class="px-4 py-3 text-center"><i class="fas fa-check text-green-500"></i> 查看/修改</td>
+                    </tr>
+                    <tr class="bg-red-50">
+                        <td class="px-4 py-3 font-medium">规则配置</td>
+                        <td class="px-4 py-3 text-center"><i class="fas fa-lock text-yellow-500"></i> 仅查看</td>
+                        <td class="px-4 py-3 text-center"><i class="fas fa-check text-green-500"></i> 查看/修改</td>
+                    </tr>
+                    <tr class="bg-red-50">
+                        <td class="px-4 py-3 font-medium">硬件配置</td>
+                        <td class="px-4 py-3 text-center"><i class="fas fa-lock text-yellow-500"></i> 仅查看</td>
+                        <td class="px-4 py-3 text-center"><i class="fas fa-check text-green-500"></i> 查看/修改</td>
+                    </tr>
+                    <tr class="bg-red-50">
+                        <td class="px-4 py-3 font-medium">路由配置</td>
+                        <td class="px-4 py-3 text-center"><i class="fas fa-lock text-yellow-500"></i> 仅查看</td>
+                        <td class="px-4 py-3 text-center"><i class="fas fa-check text-green-500"></i> 查看/修改</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

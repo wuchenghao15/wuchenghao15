@@ -3,7 +3,7 @@
 系统版本管理模块
 """
 
-VERSION = "1.7.0"
+VERSION = "1.8.0"
 BUILD_NUMBER = "20260626"
 RELEASE_DATE = "2026-06-26"
 
@@ -12,11 +12,32 @@ VERSION_INFO = {
     'build_number': BUILD_NUMBER,
     'release_date': RELEASE_DATE,
     'api_version': 'v1',
-    'codename': 'MTSCOS Phoenix Enhanced',
+    'codename': 'MTSCOS Maintenance AI',
     'status': 'stable'
 }
 
 CHANGELOG = [
+    {
+        'version': '1.8.0',
+        'date': '2026-06-26',
+        'title': 'AI维护员工与系统说明书版',
+        'changes': [
+            '新增AI维护员工 - 负责系统例行维护、健康检查、数据清理和版本升级',
+            '新增数据库清理器 - 清理旧日志、旧会话、未验证用户，压缩和分析数据库',
+            '新增日志清理器 - 定期清理过期日志文件，提供日志统计信息',
+            '新增备份管理器 - 自动创建、管理和恢复数据库备份',
+            '新增系统健康检查器 - 监控数据库、磁盘空间、日志和备份状态',
+            '新增系统说明书页面 - 详细介绍系统功能和架构',
+            '新增使用说明书页面 - 指导用户如何使用系统各项功能',
+            '新增初次登录引导功能 - 非管理员用户首次登录时显示引导（可跳过）',
+            '新增维护API接口 - 提供维护操作、健康检查、版本升级等接口',
+            '优化版本升级流程 - 支持自动升级和手动升级两种模式'
+        ],
+        'security_fixes': [],
+        'breaking_changes': [],
+        'contributors': ['Maintenance AI'],
+        'highlights': ['AI维护员工', '系统说明书', '初次登录引导']
+    },
     {
         'version': '1.7.0',
         'date': '2026-06-26',

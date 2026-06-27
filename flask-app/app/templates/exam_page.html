@@ -463,8 +463,9 @@
         let audioElement = null;
 
         async function loadExam(examId) {
+            showLoading(true);
             try {
-                const examResponse = await fetch(`/api/exams/${examId}`);
+                const examResponse = await fetch(`/api/exam/exams/${examId}`);
                 const examResult = await examResponse.json();
                 
                 if (examResult.success && examResult.data) {
@@ -476,6 +477,12 @@
                     
                     if (questionsResult.success && questionsResult.data) {
                         window.sampleQuestions = questionsResult.data;
+                        
+                        if (window.sampleQuestions.length === 0) {
+                            showEmptyState();
+                            return;
+                        }
+                        
                         initExam();
                     } else {
                         throw new Error('加载题目失败');
@@ -484,11 +491,43 @@
             } catch (error) {
                 console.error('加载考试失败:', error);
                 alert('加载考试失败: ' + error.message);
+            } finally {
+                showLoading(false);
             }
         }
 
+        function showLoading(show) {
+            const container = document.querySelector('.container');
+            const questionCard = document.getElementById('question-card');
+            
+            if (show) {
+                container.style.opacity = '0.5';
+                questionCard.innerHTML = `
+                    <div style="text-align: center; padding: 60px 20px;">
+                        <div style="font-size: 3rem; margin-bottom: 20px;">⏳</div>
+                        <div style="font-size: 1.2rem; color: var(--text-secondary);">正在生成题目，请稍候...</div>
+                        <div style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 10px;">AI正在筛选、匹配和校验题目</div>
+                    </div>
+                `;
+            } else {
+                container.style.opacity = '1';
+            }
+        }
+
+        function showEmptyState() {
+            const questionCard = document.getElementById('question-card');
+            questionCard.innerHTML = `
+                <div style="text-align: center; padding: 60px 20px;">
+                    <div style="font-size: 3rem; margin-bottom: 20px;">📝</div>
+                    <div style="font-size: 1.2rem; color: var(--text-secondary);">暂无题目</div>
+                    <div style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 10px;">请联系管理员添加题目</div>
+                    <button class="btn btn-primary" style="margin-top: 20px;" onclick="loadExam('${examData.id}')">重新加载</button>
+                </div>
+            `;
+        }
+
         function initExam() {
-            document.getElementById('exam-title').textContent = examData.name;
+            document.getElementById('exam-title').textContent = examData.title || examData.name;
             document.getElementById('exam-desc').textContent = examData.description || '暂无描述';
             document.getElementById('exam-duration').textContent = examData.duration;
             document.getElementById('passing-score').textContent = examData.passing_score;
@@ -519,15 +558,27 @@
             const question = window.sampleQuestions[index];
             
             document.getElementById('question-number').textContent = question.id || (index + 1);
-            document.getElementById('question-type').textContent = question.type || '单选题';
+            
+            const typeMap = {
+                'single_choice': '单选题',
+                'multiple_choice': '多选题',
+                'true_false': '判断题',
+                'fill_blank': '填空题',
+                'short_answer': '简答题',
+                'essay': '论述题',
+                'listening': '听力题',
+                'reading': '阅读题'
+            };
+            document.getElementById('question-type').textContent = typeMap[question.type] || question.type || '单选题';
             document.getElementById('question-content').textContent = question.content;
             document.getElementById('question-count').textContent = `${index + 1}/${window.sampleQuestions.length}`;
             
             updateProgress();
             updateNavButtons();
             
-            if (question.audio_available) {
+            if (question.type === 'listening' || question.audio_url) {
                 document.getElementById('audio-section').style.display = 'block';
+                document.getElementById('audio-play-btn').textContent = '▶️';
             } else {
                 document.getElementById('audio-section').style.display = 'none';
             }
@@ -662,15 +713,33 @@
             if (question.audio_url) {
                 stopAudio();
                 audioElement = new Audio(question.audio_url);
+                audioElement.onloadedmetadata = function() {
+                    document.getElementById('audio-duration').textContent = formatTime(audioElement.duration);
+                };
+                audioElement.ontimeupdate = function() {
+                    const progress = (audioElement.currentTime / audioElement.duration) * 100;
+                    document.getElementById('audio-progress-fill').style.width = `${progress}%`;
+                    document.getElementById('audio-duration').textContent = formatTime(audioElement.currentTime) + ' / ' + formatTime(audioElement.duration);
+                };
                 audioElement.onended = function() {
                     document.getElementById('audio-play-btn').textContent = '▶️';
+                    document.getElementById('audio-progress-fill').style.width = '0%';
+                    document.getElementById('audio-duration').textContent = formatTime(audioElement.duration);
                 };
-                audioElement.play().catch(function() {
+                audioElement.play().catch(function(err) {
+                    console.warn('音频播放失败，尝试备用语音:', err);
                     fallbackSpeech(question);
                 });
             } else {
                 fallbackSpeech(question);
             }
+        }
+
+        function formatTime(seconds) {
+            if (isNaN(seconds) || seconds === Infinity) return '00:00';
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
         }
 
         function fallbackSpeech(question) {
@@ -681,21 +750,40 @@
                 const utterance = new SpeechSynthesisUtterance(question.content);
                 
                 let lang = 'zh-CN';
-                if (examData && examData.language === '日语') {
+                let voiceName = '';
+                
+                if (examData && examData.language === 'ja') {
                     lang = 'ja-JP';
-                } else if (examData && examData.language === '英语') {
+                } else if (examData && examData.language === 'japanese') {
+                    lang = 'ja-JP';
+                } else if (examData && examData.language === 'en') {
+                    lang = 'en-US';
+                } else if (examData && examData.language === 'english') {
                     lang = 'en-US';
                 }
                 
                 utterance.lang = lang;
                 utterance.rate = 0.8;
+                utterance.pitch = 1;
+                
+                const voices = speechSynthesis.getVoices();
+                const matchedVoice = voices.find(v => v.lang.startsWith(lang.split('-')[0]));
+                if (matchedVoice) {
+                    utterance.voice = matchedVoice;
+                }
+                
                 utterance.onend = function() {
+                    document.getElementById('audio-play-btn').textContent = '▶️';
+                    document.getElementById('audio-progress-fill').style.width = '0%';
+                };
+                
+                utterance.onerror = function() {
                     document.getElementById('audio-play-btn').textContent = '▶️';
                 };
                 
                 speechSynthesis.speak(utterance);
             } else {
-                alert('您的浏览器不支持语音播放功能');
+                alert('您的浏览器不支持语音播放功能，请使用支持Web Speech API的浏览器');
             }
         }
 
@@ -723,19 +811,65 @@
             document.getElementById('submit-confirm').style.display = 'none';
         }
 
-        function submitExam() {
+        async function submitExam() {
             clearInterval(timerInterval);
             
-            const result = {
-                examId: examData.id,
-                answers: answers,
-                submittedAt: new Date().toISOString(),
-                totalQuestions: window.sampleQuestions.length,
-                answeredCount: Object.keys(answers).length
-            };
-            
-            console.log('提交结果:', result);
-            alert(`试卷提交成功！\n\n已答: ${result.answeredCount}/${result.totalQuestions}\n提交时间: ${new Date().toLocaleString()}`);
+            try {
+                const paperResponse = await fetch(`/api/exam/exams/${examData.id}/papers`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({})
+                });
+                const paperResult = await paperResponse.json();
+                
+                if (paperResult.success && paperResult.paper_id) {
+                    await fetch(`/api/exam/papers/${paperResult.paper_id}/start`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    for (const [index, answer] of Object.entries(answers)) {
+                        const question = window.sampleQuestions[index];
+                        if (question) {
+                            await fetch(`/api/exam/papers/${paperResult.paper_id}/answer`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    question_id: question.id,
+                                    answer: answer
+                                })
+                            });
+                        }
+                    }
+                    
+                    const submitResponse = await fetch(`/api/exam/papers/${paperResult.paper_id}/submit`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({answers: answers})
+                    });
+                    const submitResult = await submitResponse.json();
+                    
+                    if (submitResult.success && submitResult.data) {
+                        const resultData = submitResult.data;
+                        alert(`试卷提交成功！\n\n得分: ${resultData.total_score}\n正确率: ${(resultData.accuracy * 100).toFixed(1)}%\n用时: ${Math.floor(resultData.time_taken / 60)}分${resultData.time_taken % 60}秒`);
+                    } else {
+                        alert('提交失败: ' + submitResult.error);
+                    }
+                } else {
+                    alert('生成试卷失败');
+                }
+            } catch (error) {
+                console.error('提交试卷失败:', error);
+                alert('提交试卷失败: ' + error.message);
+            }
             
             window.location.href = '/exam_system';
         }

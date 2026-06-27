@@ -229,13 +229,16 @@
         .logo-icon {
             width: 70px;
             height: 70px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 18px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             margin-bottom: 16px;
-            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+        .logo-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            filter: drop-shadow(0 10px 25px rgba(102, 126, 234, 0.3));
         }
         .system-title {
             font-size: 22px;
@@ -440,7 +443,7 @@
         <!-- Logo区域 -->
         <div class="logo-area">
             <div class="logo-icon">
-                <i class="fas fa-brain text-white" style="font-size: 32px;"></i>
+                <img src="/assets/images/mtscos_logo.svg" alt="MTSCOS Logo">
             </div>
             <div class="system-title">MTSCOS AI 智能管理系统</div>
             <div class="system-version">v5.0.0 智能系统优化版</div>
@@ -716,7 +719,7 @@
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 登录中...';
 
             try {
-                const res = await fetch(API_BASE + '/api/auth/login', {
+                const res = await fetch(API_BASE + '/auth/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username, password })
@@ -730,7 +733,8 @@
                     if (data.user) localStorage.setItem('user', JSON.stringify(data.user));
 
                     setTimeout(() => {
-                        window.location.href = '/dashboard';
+                        const redirectUrl = data.redirect || data.redirect_url || '/';
+                        window.location.href = redirectUrl;
                     }, 1000);
                 } else {
                     showAlert(data.message || '登录失败，请检查用户名和密码', 'error');

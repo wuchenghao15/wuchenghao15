@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>更新日志 - MTSCOS AI 系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f5f7fa;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .changelog-item {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            border-left: 4px solid #667eea;
+        }
+
+        .changelog-item.version-1-8-0 {
+            border-left-color: #667eea;
+        }
+
+        .changelog-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .version-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .version-badge {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .version-date {
+            color: #888;
+            font-size: 0.9rem;
+        }
+
+        .changelog-item h2 {
+            font-size: 1.5rem;
+            margin-bottom: 16px;
+            color: #333;
+        }
+
+        .highlights {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .highlight-tag {
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
+            padding: 6px 14px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .changes-list {
+            list-style: none;
+        }
+
+        .changes-list li {
+            padding: 10px 0;
+            padding-left: 28px;
+            position: relative;
+            color: #555;
+            line-height: 1.6;
+        }
+
+        .changes-list li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: #28a745;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        .current-version {
+            background: linear-gradient(135deg, #e8f5e9 0%, #f3e5f5 100%);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+            text-align: center;
+            border: 1px solid #e0e0e0;
+        }
+
+        .current-version h3 {
+            color: #28a745;
+            margin-bottom: 8px;
+        }
+
+        .current-version p {
+            color: #666;
+            font-size: 0.95rem;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-top: 30px;
+            padding: 12px 24px;
+            background: white;
+            color: #667eea;
+            text-decoration: none;
+            border-radius: 25px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border: 2px solid #667eea;
+        }
+
+        .back-link:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        @media (max-width: 600px) {
+            .header h1 {
+                font-size: 1.8rem;
+            }
+
+            .container {
+                padding: 20px;
+            }
+
+            .changelog-item {
+                padding: 20px;
+            }
+
+            .changelog-header {
+                flex-direction: column;
+            }
+
+            .version-info {
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📋 更新日志</h1>
+        <p>记录系统的每一次进步</p>
+    </div>
+
+    <div class="container">
+        <div class="current-version">
+            <h3>当前版本</h3>
+            <p>版本号: <strong>{{ version }}</strong></p>
+        </div>
+
+        {% for entry in changelog %}
+        <div class="changelog-item version-{{ entry.version | replace('.', '-') }}">
+            <div class="changelog-header">
+                <div class="version-info">
+                    <span class="version-badge">{{ entry.version }}</span>
+                    <span class="version-date">{{ entry.date }}</span>
+                </div>
+            </div>
+            
+            <h2>{{ entry.title }}</h2>
+            
+            {% if entry.highlights %}
+            <div class="highlights">
+                {% for highlight in entry.highlights %}
+                <span class="highlight-tag">{{ highlight }}</span>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            <ul class="changes-list">
+                {% for change in entry.changes %}
+                <li>{{ change }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endfor %}
+
+        <div style="text-align: center;">
+            <a href="/" class="back-link">返回首页</a>
+        </div>
+    </div>
+</body>
+</html>

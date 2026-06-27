@@ -81,7 +81,8 @@ class DatabaseManager:
             self.db_type = config.get('DATABASE_TYPE', 'sqlite')
             import os
             self.db_name = config.get('DATABASE_NAME', 'app.db')
-            self.db_path = os.path.abspath(self.db_name)
+            self.db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', self.db_name)
+            self.db_path = os.path.abspath(self.db_path)
             logger.info(f"使用本地数据库: {self.db_type} @ {self.db_path}")
 
         # 连接池配置 - 优化版本

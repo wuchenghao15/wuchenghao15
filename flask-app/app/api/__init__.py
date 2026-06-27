@@ -38,6 +38,16 @@ try:
 except ImportError:
     version_api = None
 
+try:
+    from app.api.config_api import config_api
+except ImportError:
+    config_api = None
+
+try:
+    from app.api.exam_api import exam_api
+except ImportError:
+    exam_api = None
+
 # 创建主API蓝图
 api_bp = Blueprint('api', __name__, url_prefix='/api')
 
@@ -59,6 +69,12 @@ if student_learning_api:
 
 if version_api:
     api_bp.register_blueprint(version_api, url_prefix='/version')
+
+if config_api:
+    api_bp.register_blueprint(config_api)
+
+if exam_api:
+    api_bp.register_blueprint(exam_api)
 
 # 导入API路由
 try:

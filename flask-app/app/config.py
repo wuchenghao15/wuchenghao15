@@ -2,6 +2,7 @@
 # Configuration Management System - 支持多数据库分离
 """
 统一管理系统配置,支持从多种来源加载配置
+优先从数据库读取配置,数据库中不存在的配置使用默认值
 """
 
 import os
@@ -14,10 +15,10 @@ logger = logging.getLogger(__name__)
 BASE_CONFIG = {
     'ENV': 'development',
     'DEBUG': True,
-    'SECRET_KEY': 'dev-secret-key',
-    'VERSION': '3.0.0',
-    'BUILD_NUMBER': 5678,
-    'BUILD_DATE': '2026-03-03',
+    'SECRET_KEY': 'mtscos_ai_secret_key_2026',
+    'VERSION': '3.1.0',
+    'BUILD_NUMBER': 5679,
+    'BUILD_DATE': '2026-06-26',
 }
 
 # ==================== 服务器配置 ====================
@@ -83,19 +84,16 @@ CACHE_CONFIG = {
     'CACHE_AUTO_PROMOTE': True,
     'CACHE_AUTO_DEMOTE': True,
     
-    # L1 内存缓存
     'CACHE_L1_ENABLED': True,
     'CACHE_L1_MAX_SIZE': 1000,
     'CACHE_L1_TTL': 300,
     'CACHE_L1_POLICY': 'lru',
     
-    # L2 文件缓存
     'CACHE_L2_ENABLED': True,
     'CACHE_L2_DIR': '/Users/wuchenghao/Library/CloudStorage/OneDrive-个人/文档/MTSCOS_AI_Project/cache/l2',
     'CACHE_L2_MAX_SIZE': 100 * 1024 * 1024,
     'CACHE_L2_TTL': 3600,
     
-    # L3 数据库缓存
     'CACHE_L3_ENABLED': True,
     'CACHE_L3_DB_PATH': '/Users/wuchenghao/Library/CloudStorage/OneDrive-个人/文档/MTSCOS_AI_Project/cache/l3/cache.db',
     'CACHE_L3_TTL': 86400,
@@ -174,6 +172,23 @@ DEFAULT_CONFIG = {
     **HA_CONFIG,
 }
 
+# 全局数据库配置管理器实例
+_db_config_manager = None
+
+def get_db_config_manager():
+    """获取数据库配置管理器实例"""
+    global _db_config_manager
+    if _db_config_manager is None:
+        try:
+            from app.services.db_config_manager import db_config_manager
+            _db_config_manager = db_config_manager
+            logger.info("[配置] 数据库配置管理器加载成功")
+        except ImportError as e:
+            logger.warning(f"[配置] 数据库配置管理器加载失败，使用默认配置: {str(e)}")
+            _db_config_manager = None
+    return _db_config_manager
+
+
 class ConfigValidator:
     """配置验证器"""
     
@@ -182,18 +197,15 @@ class ConfigValidator:
         """验证配置的完整性和正确性"""
         errors = []
         
-        # 验证必要配置项
         required_keys = ['SECRET_KEY', 'SERVER_HOST', 'SERVER_PORT', 'DATABASE_DIR']
         for key in required_keys:
             if key not in config or not config[key]:
                 errors.append(f"缺少必要配置项: {key}")
         
-        # 验证端口范围
         port = config.get('SERVER_PORT', 0)
         if not (1 <= port <= 65535):
             errors.append(f"无效的端口号: {port}")
         
-        # 验证缓存目录
         if config.get('CACHE_L2_ENABLED'):
             cache_dir = config.get('CACHE_L2_DIR', '')
             if cache_dir and not os.path.isdir(cache_dir):
@@ -203,7 +215,6 @@ class ConfigValidator:
                 except Exception as e:
                     errors.append(f"无法创建缓存目录: {cache_dir}, 错误: {str(e)}")
         
-        # 验证数据库目录
         db_dir = config.get('DATABASE_DIR', '')
         if db_dir and not os.path.isdir(db_dir):
             try:
@@ -225,7 +236,6 @@ class ConfigValidator:
         """验证运行环境"""
         errors = []
         
-        # 验证Python版本
         import sys
         if sys.version_info < (3, 8):
             errors.append("Python版本需要3.8或更高")
@@ -238,25 +248,50 @@ class ConfigValidator:
         logger.info("环境验证通过")
         return True
 
+
+def init_database_config():
+    """初始化数据库配置（将默认配置写入数据库）"""
+    db_manager = get_db_config_manager()
+    if db_manager:
+        db_manager.init_defaults(BASE_CONFIG, 'base')
+        db_manager.init_defaults(SERVER_CONFIG, 'server')
+        db_manager.init_defaults(DATABASE_CONFIG, 'database')
+        db_manager.init_defaults(CLUSTER_CONFIG, 'cluster')
+        db_manager.init_defaults(LOAD_BALANCER_CONFIG, 'load_balancer')
+        db_manager.init_defaults(CACHE_CONFIG, 'cache')
+        db_manager.init_defaults(DISTRIBUTED_DB_CONFIG, 'distributed_db')
+        db_manager.init_defaults(SECURITY_CONFIG, 'security')
+        db_manager.init_defaults(API_CONFIG, 'api')
+        db_manager.init_defaults(AI_CONFIG, 'ai')
+        db_manager.init_defaults(LOG_CONFIG, 'log')
+        db_manager.init_defaults(HA_CONFIG, 'ha')
+        logger.info("[配置] 默认配置已初始化到数据库")
+
+
 def get_database_path(db_name: str) -> Optional[str]:
     """获取数据库路径"""
-    db_dir = DEFAULT_CONFIG.get('DATABASE_DIR')
-    db_info = DEFAULT_CONFIG.get('DATABASES', {}).get(db_name)
+    db_config = get_config_value('DATABASE_CONFIG', DATABASE_CONFIG)
+    db_dir = db_config.get('DATABASE_DIR')
+    db_info = db_config.get('DATABASES', {}).get(db_name)
     if db_dir and db_info:
         return os.path.join(db_dir, db_info.get('file', ''))
     return None
 
+
 def get_database_role(db_name: str) -> str:
     """获取数据库角色"""
-    db_info = DEFAULT_CONFIG.get('DATABASES', {}).get(db_name)
+    db_config = get_config_value('DATABASE_CONFIG', DATABASE_CONFIG)
+    db_info = db_config.get('DATABASES', {}).get(db_name)
     if db_info:
         return db_info.get('role', 'slave')
     return 'slave'
 
+
 def load_config(config_type: Optional[str] = None) -> Dict[str, Any]:
     """
     加载配置
-    支持从环境变量和配置文件覆盖默认配置
+    优先从数据库读取配置,数据库中不存在的配置使用默认值
+    支持从环境变量覆盖配置
     
     Args:
         config_type: 配置类型: 'production', 'development', 'test'
@@ -266,10 +301,19 @@ def load_config(config_type: Optional[str] = None) -> Dict[str, Any]:
     """
     logger.info(f"加载配置类型: {config_type or '默认'}")
     
-    # 从环境变量加载配置
     config = DEFAULT_CONFIG.copy()
     
-    # 环境变量覆盖
+    db_manager = get_db_config_manager()
+    if db_manager:
+        try:
+            db_settings = db_manager.get_all()
+            for key, value in db_settings.items():
+                if key in config:
+                    config[key] = value
+                    logger.debug(f"[配置] 从数据库加载配置: {key}")
+        except Exception as e:
+            logger.warning(f"[配置] 从数据库加载配置失败: {str(e)}")
+    
     env_overrides = [
         ('ENV', 'MTSCOS_ENV'),
         ('DEBUG', 'MTSCOS_DEBUG', bool),
@@ -289,9 +333,8 @@ def load_config(config_type: Optional[str] = None) -> Dict[str, Any]:
                     logger.warning(f"无法转换环境变量 {env_key} 的值: {value}")
                     continue
             config[config_key] = value
-            logger.debug(f"环境变量 {env_key} 覆盖配置 {config_key}")
+            logger.debug(f"[配置] 环境变量 {env_key} 覆盖配置 {config_key}")
     
-    # 根据配置类型调整配置
     if config_type == 'production':
         config['DEBUG'] = False
         config['ENV'] = 'production'
@@ -304,17 +347,105 @@ def load_config(config_type: Optional[str] = None) -> Dict[str, Any]:
         config['LOG_LEVEL'] = 'DEBUG'
         logger.info("已切换到测试环境配置")
     
-    # 验证配置
     ConfigValidator.validate_config(config)
     ConfigValidator.validate_environment()
     
     return config
 
+
 def get_config_value(key: str, default: Any = None) -> Any:
-    """获取配置值"""
+    """
+    获取配置值
+    优先从数据库读取,数据库中不存在则使用默认值
+    """
+    db_manager = get_db_config_manager()
+    if db_manager:
+        try:
+            value = db_manager.get(key)
+            if value is not None:
+                return value
+        except Exception as e:
+            logger.debug(f"[配置] 从数据库获取 {key} 失败: {str(e)}")
+    
     return DEFAULT_CONFIG.get(key, default)
 
-def update_config(key: str, value: Any) -> None:
-    """更新配置值"""
+
+def get_config_category(category: str) -> Dict[str, Any]:
+    """获取指定分类的所有配置"""
+    db_manager = get_db_config_manager()
+    if db_manager:
+        try:
+            return db_manager.get_category(category)
+        except Exception as e:
+            logger.error(f"[配置] 获取分类 {category} 配置失败: {str(e)}")
+    return {}
+
+
+def update_config(key: str, value: Any, category: str = 'general', description: str = '') -> bool:
+    """
+    更新配置值
+    同时更新数据库和内存中的配置
+    """
+    db_manager = get_db_config_manager()
+    if db_manager:
+        try:
+            success = db_manager.set(key, value, category, description)
+            if success:
+                DEFAULT_CONFIG[key] = value
+                logger.info(f"[配置] 更新配置: {key} = {value}")
+            return success
+        except Exception as e:
+            logger.error(f"[配置] 更新配置 {key} 失败: {str(e)}")
+            return False
+    
     DEFAULT_CONFIG[key] = value
-    logger.info(f"配置更新: {key} = {value}")
+    logger.info(f"[配置] 更新配置(内存): {key} = {value}")
+    return True
+
+
+def delete_config(key: str) -> bool:
+    """删除配置"""
+    db_manager = get_db_config_manager()
+    if db_manager:
+        try:
+            success = db_manager.delete(key)
+            if success and key in DEFAULT_CONFIG:
+                del DEFAULT_CONFIG[key]
+            return success
+        except Exception as e:
+            logger.error(f"[配置] 删除配置 {key} 失败: {str(e)}")
+            return False
+    return False
+
+
+def get_all_configs() -> Dict[str, Any]:
+    """获取所有配置（包含数据库和默认配置）"""
+    config = DEFAULT_CONFIG.copy()
+    db_manager = get_db_config_manager()
+    if db_manager:
+        try:
+            db_settings = db_manager.get_all()
+            config.update(db_settings)
+        except Exception as e:
+            logger.warning(f"[配置] 获取数据库配置失败: {str(e)}")
+    return config
+
+
+def get_all_configs_with_category() -> Dict[str, Dict[str, Any]]:
+    """获取所有配置，按分类分组"""
+    db_manager = get_db_config_manager()
+    if db_manager:
+        try:
+            return db_manager.get_all_with_category()
+        except Exception as e:
+            logger.error(f"[配置] 获取所有配置失败: {str(e)}")
+            return {}
+    return {}
+
+
+def refresh_config():
+    """刷新配置（重新从数据库加载）"""
+    db_manager = get_db_config_manager()
+    if db_manager:
+        db_manager.refresh_cache()
+        logger.info("[配置] 配置已从数据库刷新")

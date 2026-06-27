@@ -71,14 +71,34 @@ class RoleRouter:
                 ]
             },
             'admin': {
-                'name': '管理员',
-                'redirect': '/settings',
-                'description': '系统设置',
-                'permissions': ['user_manage', 'role_manage', 'system_view', 'logs_view'],
+                'name': '管理员（查看权限）',
+                'redirect': '/admin_dashboard',
+                'description': '管理员控制台（只读权限）',
+                'permissions': ['user_view', 'system_view', 'logs_view', 'exam_view', 'readonly'],
+                'sensitive_data': 'readonly',
                 'sidebar_items': [
-                    {'name': '用户管理', 'icon': 'fas fa-users', 'path': '/settings/users'},
-                    {'name': '角色管理', 'icon': 'fas fa-lock', 'path': '/settings/permissions'},
-                    {'name': '系统日志', 'icon': 'fas fa-file-log', 'path': '/settings/logs'}
+                    # 系统概览
+                    {'name': '系统概览', 'icon': 'fas fa-tachometer-alt', 'path': '/admin_dashboard'},
+                    {'name': '实时状态', 'icon': 'fas fa-heartbeat', 'path': '/api/system/status'},
+                    # 用户管理（只读）
+                    {'name': '用户列表', 'icon': 'fas fa-users', 'path': '/admin_app/users', 'readonly': True},
+                    {'name': '用户统计', 'icon': 'fas fa-chart-pie', 'path': '/admin_app/users/stats'},
+                    # 考试系统（只读）
+                    {'name': '考试列表', 'icon': 'fas fa-file-alt', 'path': '/admin_app/exams', 'readonly': True},
+                    {'name': '成绩统计', 'icon': 'fas fa-chart-bar', 'path': '/admin_app/grades'},
+                    {'name': '题库浏览', 'icon': 'fas fa-database', 'path': '/admin_app/questions', 'readonly': True},
+                    # 日志查看（只读）
+                    {'name': '系统日志', 'icon': 'fas fa-file-alt', 'path': '/settings/logs', 'readonly': True},
+                    {'name': '操作记录', 'icon': 'fas fa-history', 'path': '/settings/logs/operations'},
+                    # 学习系统（只读）
+                    {'name': '学习统计', 'icon': 'fas fa-book', 'path': '/learning/stats'},
+                    {'name': '学习记录', 'icon': 'fas fa-history', 'path': '/learning/history'},
+                    # 敏感数据（只读）
+                    {'name': '安全配置（只读）', 'icon': 'fas fa-shield-alt', 'path': '/settings/security', 'readonly': True},
+                    {'name': '数据库配置（只读）', 'icon': 'fas fa-database', 'path': '/settings/database-settings', 'readonly': True},
+                    {'name': '规则配置（只读）', 'icon': 'fas fa-gavel', 'path': '/settings/rules', 'readonly': True},
+                    {'name': '硬件配置（只读）', 'icon': 'fas fa-key', 'path': '/settings/hardware', 'readonly': True},
+                    {'name': '路由配置（只读）', 'icon': 'fas fa-route', 'path': '/api/routes/list', 'readonly': True}
                 ]
             },
             'super_admin': {
@@ -95,31 +115,74 @@ class RoleRouter:
                 ]
             },
             'hardware_admin': {
-                'name': '硬件管理员',
-                'redirect': '/settings',
-                'description': '系统设置（最高权限）',
-                'permissions': ['full_access'],
+                'name': '硬件管理员（最高权限）',
+                'redirect': '/super_admin_dashboard',
+                'description': '超级管理员控制台（全部系统管理）',
+                'permissions': ['full_access', 'super_admin'],
                 'sidebar_items': [
-                    {'name': '用户管理', 'icon': 'fas fa-users', 'path': '/settings/users'},
-                    {'name': '角色管理', 'icon': 'fas fa-lock', 'path': '/settings/permissions'},
-                    {'name': '系统日志', 'icon': 'fas fa-file-log', 'path': '/settings/logs'},
+                    # 系统监控
+                    {'name': '系统监控台', 'icon': 'fas fa-tachometer-alt', 'path': '/admin_app/monitor'},
+                    {'name': '实时状态', 'icon': 'fas fa-heartbeat', 'path': '/api/system/status'},
+                    # 用户管理
+                    {'name': '用户管理', 'icon': 'fas fa-users', 'path': '/admin_app/users'},
+                    {'name': '角色权限', 'icon': 'fas fa-lock', 'path': '/settings/permissions'},
+                    # 考试系统后台
+                    {'name': '考试管理', 'icon': 'fas fa-file-alt', 'path': '/admin_app/exams'},
+                    {'name': '题库管理', 'icon': 'fas fa-question-circle', 'path': '/admin_app/questions'},
+                    {'name': '成绩分析', 'icon': 'fas fa-chart-bar', 'path': '/admin_app/grades'},
+                    # 学习系统后台
+                    {'name': '学习记录', 'icon': 'fas fa-book', 'path': '/learning/history'},
+                    {'name': '错题分析', 'icon': 'fas fa-times-circle', 'path': '/learning/wrong_questions'},
+                    # 教师后台
+                    {'name': '教师后台', 'icon': 'fas fa-chalkboard-teacher', 'path': '/teacher'},
+                    # 教研员后台
+                    {'name': '教研员后台', 'icon': 'fas fa-search', 'path': '/researcher'},
+                    # 系统设置
+                    {'name': '系统设置', 'icon': 'fas fa-cog', 'path': '/admin_app/settings'},
                     {'name': '数据库管理', 'icon': 'fas fa-database', 'path': '/settings/database-settings'},
                     {'name': '安全设置', 'icon': 'fas fa-shield-alt', 'path': '/settings/security'},
-                    {'name': '硬件管理', 'icon': 'fas fa-key', 'path': '/settings/hardware'}
+                    {'name': '路由管理', 'icon': 'fas fa-route', 'path': '/api/routes/list'},
+                    {'name': '规则管理', 'icon': 'fas fa-gavel', 'path': '/settings/rules'},
+                    # 硬件管理
+                    {'name': '硬件认证', 'icon': 'fas fa-key', 'path': '/settings/hardware'},
+                    # 备份管理
+                    {'name': '备份管理', 'icon': 'fas fa-save', 'path': '/backup_manager'},
+                    # 通知管理
+                    {'name': '通知中心', 'icon': 'fas fa-bell', 'path': '/notification_admin'},
+                    # 学生后台（测试）
+                    {'name': '学生后台（测试）', 'icon': 'fas fa-user-graduate', 'path': '/exam_system'},
+                    # 日志
+                    {'name': '系统日志', 'icon': 'fas fa-file-alt', 'path': '/settings/logs'}
                 ]
             },
             'hardware_vikey_admin': {
-                'name': '硬件管理员',
-                'redirect': '/settings',
-                'description': '系统设置（最高权限）',
-                'permissions': ['full_access'],
+                'name': '硬件管理员（最高权限）',
+                'redirect': '/super_admin_dashboard',
+                'description': '硬件管理员控制台（全部系统管理）',
+                'permissions': ['full_access', 'super_admin'],
                 'sidebar_items': [
-                    {'name': '用户管理', 'icon': 'fas fa-users', 'path': '/settings/users'},
-                    {'name': '角色管理', 'icon': 'fas fa-lock', 'path': '/settings/permissions'},
-                    {'name': '系统日志', 'icon': 'fas fa-file-log', 'path': '/settings/logs'},
+                    # 与 hardware_admin 相同
+                    {'name': '系统监控台', 'icon': 'fas fa-tachometer-alt', 'path': '/admin_app/monitor'},
+                    {'name': '实时状态', 'icon': 'fas fa-heartbeat', 'path': '/api/system/status'},
+                    {'name': '用户管理', 'icon': 'fas fa-users', 'path': '/admin_app/users'},
+                    {'name': '角色权限', 'icon': 'fas fa-lock', 'path': '/settings/permissions'},
+                    {'name': '考试管理', 'icon': 'fas fa-file-alt', 'path': '/admin_app/exams'},
+                    {'name': '题库管理', 'icon': 'fas fa-question-circle', 'path': '/admin_app/questions'},
+                    {'name': '成绩分析', 'icon': 'fas fa-chart-bar', 'path': '/admin_app/grades'},
+                    {'name': '学习记录', 'icon': 'fas fa-book', 'path': '/learning/history'},
+                    {'name': '错题分析', 'icon': 'fas fa-times-circle', 'path': '/learning/wrong_questions'},
+                    {'name': '教师后台', 'icon': 'fas fa-chalkboard-teacher', 'path': '/teacher'},
+                    {'name': '教研员后台', 'icon': 'fas fa-search', 'path': '/researcher'},
+                    {'name': '系统设置', 'icon': 'fas fa-cog', 'path': '/admin_app/settings'},
                     {'name': '数据库管理', 'icon': 'fas fa-database', 'path': '/settings/database-settings'},
                     {'name': '安全设置', 'icon': 'fas fa-shield-alt', 'path': '/settings/security'},
-                    {'name': '硬件管理', 'icon': 'fas fa-key', 'path': '/settings/hardware'}
+                    {'name': '路由管理', 'icon': 'fas fa-route', 'path': '/api/routes/list'},
+                    {'name': '规则管理', 'icon': 'fas fa-gavel', 'path': '/settings/rules'},
+                    {'name': '硬件认证', 'icon': 'fas fa-key', 'path': '/settings/hardware'},
+                    {'name': '备份管理', 'icon': 'fas fa-save', 'path': '/backup_manager'},
+                    {'name': '通知中心', 'icon': 'fas fa-bell', 'path': '/notification_admin'},
+                    {'name': '学生后台（测试）', 'icon': 'fas fa-user-graduate', 'path': '/exam_system'},
+                    {'name': '系统日志', 'icon': 'fas fa-file-alt', 'path': '/settings/logs'}
                 ]
             },
             'guest': {

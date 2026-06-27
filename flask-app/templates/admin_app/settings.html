@@ -1,0 +1,192 @@
+{% extends "admin_app/base.html" %}
+
+{% block title %}系统设置 - MTSCOS 管理端{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <div class="user-profile-card">
+        <div class="user-avatar">{{ user.username[:1].upper() if user else 'A' }}</div>
+        <div class="user-info">
+            <div class="user-name">{{ user.username if user else '管理员' }}</div>
+            <span class="user-role">
+                <i class="fas fa-shield-halved"></i>
+                {{ get_role_name(user.role) if user else '管理员' }}
+            </span>
+        </div>
+    </div>
+
+    <div class="section-title" style="margin-top: 0;">
+        <i class="fas fa-sliders" style="color: #f59e0b;"></i>
+        系统设置
+    </div>
+
+    <div class="settings-group">
+        <div class="settings-group-title">通用设置</div>
+        <div class="settings-item" onclick="showToast('站点设置')">
+            <div class="settings-icon" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa;">
+                <i class="fas fa-globe"></i>
+            </div>
+            <div class="settings-content">
+                <div class="settings-label">站点设置</div>
+                <div class="settings-desc">站点名称、描述、Logo等</div>
+            </div>
+            <i class="fas fa-chevron-right arrow"></i>
+        </div>
+        <div class="settings-item" onclick="showToast('安全设置')">
+            <div class="settings-icon" style="background: rgba(239, 68, 68, 0.15); color: #f87171;">
+                <i class="fas fa-shield-alt"></i>
+            </div>
+            <div class="settings-content">
+                <div class="settings-label">安全设置</div>
+                <div class="settings-desc">密码策略、登录限制等</div>
+            </div>
+            <i class="fas fa-chevron-right arrow"></i>
+        </div>
+        <div class="settings-item" onclick="toggleSetting(this)">
+            <div class="settings-icon" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">
+                <i class="fas fa-envelope"></i>
+            </div>
+            <div class="settings-content">
+                <div class="settings-label">邮件通知</div>
+                <div class="settings-desc">系统邮件提醒功能</div>
+            </div>
+            <div class="toggle active" onclick="event.stopPropagation(); this.classList.toggle('active')"></div>
+        </div>
+        <div class="settings-item" onclick="toggleSetting(this)">
+            <div class="settings-icon" style="background: rgba(139, 92, 246, 0.15); color: #a78bfa;">
+                <i class="fas fa-bell"></i>
+            </div>
+            <div class="settings-content">
+                <div class="settings-label">系统通知</div>
+                <div class="settings-desc">推送系统通知消息</div>
+            </div>
+            <div class="toggle active" onclick="event.stopPropagation(); this.classList.toggle('active')"></div>
+        </div>
+    </div>
+
+    <div class="settings-group">
+        <div class="settings-group-title">用户管理</div>
+        <div class="settings-item" onclick="location.href='/admin_app/users'">
+            <div class="settings-icon" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa;">
+                <i class="fas fa-users-cog"></i>
+            </div>
+            <div class="settings-content">
+                <div class="settings-label">用户管理</div>
+                <div class="settings-desc">管理所有用户账号</div>
+            </div>
+            <i class="fas fa-chevron-right arrow"></i>
+        </div>
+        <div class="settings-item" onclick="showToast('角色权限管理')">
+            <div class="settings-icon" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24;">
+                <i class="fas fa-user-shield"></i>
+            </div>
+            <div class="settings-content">
+                <div class="settings-label">角色权限</div>
+                <div class="settings-desc">管理角色和权限配置</div>
+            </div>
+            <i class="fas fa-chevron-right arrow"></i>
+        </div>
+        <div class="settings-item" onclick="showToast('用户组管理')">
+            <div class="settings-icon" style="background: rgba(6, 182, 212, 0.15); color: #22d3ee;">
+                <i class="fas fa-layer-group"></i>
+            </div>
+            <div class="settings-content">
+                <div class="settings-label">用户组管理</div>
+                <div class="settings-desc">用户分组和批量管理</div>
+            </div>
+            <i class="fas fa-chevron-right arrow"></i>
+        </div>
+    </div>
+
+    <div class="settings-group">
+        <div class="settings-group-title">数据管理</div>
+        <div class="settings-item" onclick="showToast('数据备份')">
+            <div class="settings-icon" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">
+                <i class="fas fa-database"></i>
+            </div>
+            <div class="settings-content">
+                <div class="settings-label">数据备份</div>
+                <div class="settings-desc">手动备份系统数据</div>
+            </div>
+            <i class="fas fa-chevron-right arrow"></i>
+        </div>
+        <div class="settings-item" onclick="showToast('数据恢复')">
+            <div class="settings-icon" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa;">
+                <i class="fas fa-undo"></i>
+            </div>
+            <div class="settings-content">
+                <div class="settings-label">数据恢复</div>
+                <div class="settings-desc">从备份中恢复数据</div>
+            </div>
+            <i class="fas fa-chevron-right arrow"></i>
+        </div>
+        <div class="settings-item" onclick="showToast('日志管理')">
+            <div class="settings-icon" style="background: rgba(139, 92, 246, 0.15); color: #a78bfa;">
+                <i class="fas fa-file-lines"></i>
+            </div>
+            <div class="settings-content">
+                <div class="settings-label">日志管理</div>
+                <div class="settings-desc">查看和导出系统日志</div>
+            </div>
+            <i class="fas fa-chevron-right arrow"></i>
+        </div>
+    </div>
+
+    <div class="settings-group">
+        <div class="settings-group-title">关于</div>
+        <div class="settings-item">
+            <div class="settings-icon" style="background: rgba(100, 116, 139, 0.15); color: #94a3b8;">
+                <i class="fas fa-info-circle"></i>
+            </div>
+            <div class="settings-content">
+                <div class="settings-label">系统版本</div>
+                <div class="settings-desc">MTSCOS AI System</div>
+            </div>
+            <span class="settings-value">v2.0.0</span>
+        </div>
+        <div class="settings-item" onclick="showToast('检查更新')">
+            <div class="settings-icon" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">
+                <i class="fas fa-sync-alt"></i>
+            </div>
+            <div class="settings-content">
+                <div class="settings-label">检查更新</div>
+                <div class="settings-desc">当前已是最新版本</div>
+            </div>
+            <i class="fas fa-chevron-right arrow"></i>
+        </div>
+    </div>
+
+    <button class="btn btn-danger" style="width: 100%; margin-top: 20px;" onclick="logout()">
+        <i class="fas fa-right-from-bracket"></i>
+        退出登录
+    </button>
+
+    <div style="height: 20px;"></div>
+</div>
+
+<script>
+    function get_role_name(role) {
+        var roles = {
+            'super_admin': '超级管理员',
+            'admin': '管理员',
+            'hardware_admin': '硬件管理员'
+        };
+        return roles[role] || role;
+    }
+
+    function toggleSetting(el) {
+        var toggle = el.querySelector('.toggle');
+        if (toggle) {
+            toggle.classList.toggle('active');
+        }
+    }
+
+    function logout() {
+        showModal('确认退出', '<div style="text-align: center; color: var(--text-secondary);">确定要退出登录吗？</div>', {
+            onConfirm: function(modal) {
+                window.location.href = '/admin_app/logout';
+            }
+        });
+    }
+</script>
+{% endblock %}

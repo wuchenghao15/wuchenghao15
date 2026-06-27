@@ -1,0 +1,229 @@
+{% extends "base.html" %}
+
+{% block title %}用户信息管理 - MTSCOS AI{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="dashboard-header">
+        <h1>👤 用户信息管理</h1>
+        <p>欢迎, {{ user.username }}! 管理您的个人信息</p>
+    </div>
+    
+    <div class="system-grid">
+        <div class="system-card" onclick="window.location.href='/user/profile'">
+            <div class="card-icon">👨‍💼</div>
+            <div class="card-content">
+                <h3>个人资料</h3>
+                <p>查看和编辑个人信息</p>
+            </div>
+        </div>
+        
+        <div class="system-card" onclick="window.location.href='/user/settings'">
+            <div class="card-icon">⚙️</div>
+            <div class="card-content">
+                <h3>系统设置</h3>
+                <p>配置系统选项</p>
+            </div>
+        </div>
+        
+        <div class="system-card" onclick="showChangePassword()">
+            <div class="card-icon">🔒</div>
+            <div class="card-content">
+                <h3>修改密码</h3>
+                <p>安全更新您的密码</p>
+            </div>
+        </div>
+    </div>
+    
+    <div id="password-modal" style="display: none;" class="modal-overlay">
+        <div class="modal-container">
+            <h3>修改密码</h3>
+            <form id="change-password-form">
+                <div class="form-group">
+                    <label>原密码</label>
+                    <input type="password" id="old-password" required>
+                </div>
+                <div class="form-group">
+                    <label>新密码</label>
+                    <input type="password" id="new-password" required>
+                </div>
+                <div class="form-group">
+                    <label>确认新密码</label>
+                    <input type="password" id="confirm-password" required>
+                </div>
+                <button type="submit">确认修改</button>
+                <button type="button" onclick="hideChangePassword()">取消</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    .dashboard-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 40px 20px;
+    }
+    
+    .dashboard-header {
+        text-align: center;
+        margin-bottom: 40px;
+    }
+    
+    .dashboard-header h1 {
+        font-size: 36px;
+        color: #333;
+        margin-bottom: 10px;
+    }
+    
+    .dashboard-header p {
+        font-size: 18px;
+        color: #666;
+    }
+    
+    .system-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 24px;
+    }
+    
+    .system-card {
+        background: white;
+        border-radius: 16px;
+        padding: 30px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: 2px solid transparent;
+    }
+    
+    .system-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+        border-color: #667eea;
+    }
+    
+    .card-icon {
+        font-size: 48px;
+        margin-bottom: 16px;
+    }
+    
+    .card-content h3 {
+        font-size: 20px;
+        color: #333;
+        margin-bottom: 8px;
+    }
+    
+    .card-content p {
+        font-size: 14px;
+        color: #666;
+    }
+    
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+    }
+    
+    .modal-container {
+        background: white;
+        padding: 30px;
+        border-radius: 16px;
+        width: 90%;
+        max-width: 400px;
+    }
+    
+    .modal-container h3 {
+        margin-bottom: 20px;
+        text-align: center;
+    }
+    
+    .form-group {
+        margin-bottom: 15px;
+    }
+    
+    .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: 500;
+    }
+    
+    .form-group input {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-size: 14px;
+    }
+    
+    .form-group input:focus {
+        outline: none;
+        border-color: #667eea;
+    }
+    
+    .modal-container button {
+        width: 100%;
+        padding: 12px;
+        margin-bottom: 10px;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+    
+    .modal-container button[type="submit"] {
+        background: #667eea;
+        color: white;
+    }
+    
+    .modal-container button[type="button"] {
+        background: #eee;
+        color: #666;
+    }
+</style>
+
+<script>
+    function showChangePassword() {
+        document.getElementById('password-modal').style.display = 'flex';
+    }
+    
+    function hideChangePassword() {
+        document.getElementById('password-modal').style.display = 'none';
+    }
+    
+    document.getElementById('change-password-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const oldPassword = document.getElementById('old-password').value;
+        const newPassword = document.getElementById('new-password').value;
+        const confirmPassword = document.getElementById('confirm-password').value;
+        
+        if (newPassword !== confirmPassword) {
+            alert('两次输入的新密码不一致');
+            return;
+        }
+        
+        const response = await fetch('/api/user/change_password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ old_password: oldPassword, new_password: newPassword })
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+            alert('密码修改成功');
+            hideChangePassword();
+            document.getElementById('change-password-form').reset();
+        } else {
+            alert('修改失败: ' + result.error);
+        }
+    });
+</script>
+{% endblock %}

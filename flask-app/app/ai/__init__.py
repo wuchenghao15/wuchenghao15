@@ -21,6 +21,15 @@ from .student_learning_optimizer import (
     student_learning_optimizer
 )
 
+from .maintenance_ai import (
+    MaintenanceAIEmployee,
+    DatabaseCleaner,
+    LogCleaner,
+    BackupManager,
+    SystemHealthChecker,
+    maintenance_ai
+)
+
 __all__ = [
     # 题库优化
     'QuestionBankAIEmployee',
@@ -35,5 +44,13 @@ __all__ = [
     'KnowledgeGapIdentifier',
     'LearningPathOptimizer',
     'ExamStrategyAdvisor',
-    'student_learning_optimizer'
+    'student_learning_optimizer',
+    
+    # 系统维护
+    'MaintenanceAIEmployee',
+    'DatabaseCleaner',
+    'LogCleaner',
+    'BackupManager',
+    'SystemHealthChecker',
+    'maintenance_ai'
 ]

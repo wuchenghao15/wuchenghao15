@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block title %}错题本 - MTSCOS AI{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="dashboard-header">
+        <h1>❌ 错题本</h1>
+        <p>复习错题，巩固知识</p>
+    </div>
+    
+    <div class="content-card">
+        <h3>错题列表</h3>
+        <div id="wrong-questions-list">
+            <div class="loading">加载中...</div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .dashboard-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 40px 20px;
+    }
+    
+    .dashboard-header {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+    
+    .dashboard-header h1 {
+        font-size: 28px;
+        color: #333;
+        margin-bottom: 10px;
+    }
+    
+    .dashboard-header p {
+        font-size: 16px;
+        color: #666;
+    }
+    
+    .content-card {
+        background: white;
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    }
+    
+    .content-card h3 {
+        font-size: 18px;
+        color: #333;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .loading {
+        text-align: center;
+        padding: 40px;
+        color: #999;
+    }
+    
+    .wrong-item {
+        padding: 16px;
+        border-bottom: 1px solid #eee;
+        border-left: 4px solid #dc3545;
+        margin-bottom: 8px;
+        background: #fff5f5;
+        border-radius: 0 8px 8px 0;
+    }
+    
+    .wrong-item:last-child {
+        border-bottom: none;
+    }
+    
+    .wrong-content {
+        font-size: 15px;
+        color: #333;
+        margin-bottom: 8px;
+        line-height: 1.5;
+    }
+    
+    .wrong-meta {
+        display: flex;
+        gap: 16px;
+        font-size: 12px;
+        color: #999;
+    }
+    
+    .wrong-count {
+        background: #dc3545;
+        color: white;
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-size: 11px;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 40px;
+        color: #999;
+    }
+    
+    .empty-state svg {
+        width: 64px;
+        height: 64px;
+        margin-bottom: 16px;
+        opacity: 0.5;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', async function() {
+        const response = await fetch('/api/learning/wrong_questions');
+        const result = await response.json();
+        
+        const listContainer = document.getElementById('wrong-questions-list');
+        
+        if (result.success && result.data.length > 0) {
+            listContainer.innerHTML = result.data.map(item => `
+                <div class="wrong-item">
+                    <div class="wrong-content">${item.content || '暂无题目内容'}</div>
+                    <div class="wrong-meta">
+                        <span class="wrong-count">错误 ${item.wrong_count || 0} 次</span>
+                        <span>最后错误: ${item.last_wrong_at || '未知'}</span>
+                    </div>
+                </div>
+            `).join('');
+        } else {
+            listContainer.innerHTML = `
+                <div class="empty-state">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <p>暂无错题记录</p>
+                </div>
+            `;
+        }
+    });
+</script>
+{% endblock %}

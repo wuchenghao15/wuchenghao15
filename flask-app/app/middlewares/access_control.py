@@ -4,7 +4,7 @@ Access Control Middleware for MTSCOS AI System
 页面访问校验中间件 - 硬件管理员最高权限体系
 """
 
-from flask import request, session, redirect, url_for, jsonify, make_response
+from flask import request, session, redirect, url_for, jsonify, make_response, render_template
 import logging
 logger = logging.getLogger(__name__)
 import time
@@ -57,6 +57,11 @@ PUBLIC_PAGES = [
     '/register',
     '/api/health',
     '/api/system/status'
+]
+
+PHYSICS_PATHS = [
+    '/physics-engine/',
+    '/api/physics/'
 ]
 
 STATIC_PATHS = [
@@ -117,6 +122,7 @@ def access_control_middleware(app):
             if not user_id:
                 log_access(path, None, None, 'guest', 'unauthorized')
                 accept_header = request.headers.get('Accept', '')
+                # API请求返回JSON，页面请求返回美化的HTML
                 if 'application/json' in accept_header or request.path.startswith('/api/'):
                     return jsonify({
                         'success': False,
@@ -124,7 +130,8 @@ def access_control_middleware(app):
                         'message': '请先登录'
                     }), 401
                 else:
-                    return redirect('/login')
+                    # 返回美化的登录提示页面
+                    return render_template('login_required.html', request_path=path), 401
 
         if user_id and role:
             validation_result = validate_access(path, role)
@@ -181,6 +188,17 @@ def access_control_middleware(app):
                         'error': 'HardwareRequired',
                         'message': '需要硬件加密狗才能使用此权限'
                     }), 403
+
+        for physics_path in PHYSICS_PATHS:
+            if path.startswith(physics_path):
+                if role == 'student':
+                    log_access(path, user_id, username, role, 'forbidden')
+                    return jsonify({
+                        'success': False,
+                        'error': 'Forbidden',
+                        'message': '学生角色不允许访问物理引擎'
+                    }), 403
+                break
 
         log_access(path, user_id, username, role, 'allowed')
         rm.apply_rule('ACCESS_' + path.strip('/').upper(), user_id, username, request.remote_addr)

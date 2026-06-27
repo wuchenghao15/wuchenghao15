@@ -11,9 +11,12 @@ import argparse
 import sqlite3
 import hashlib
 import time
+import json
+import random
 from contextlib import contextmanager
 from datetime import datetime
-from flask import jsonify, render_template, request, redirect, session, make_response
+from functools import wraps
+from flask import jsonify, render_template, request, redirect, session, make_response, url_for
 
 # 设置日志
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -42,6 +45,44 @@ app.static_url_path = '/assets'
 app.config['JSON_AS_ASCII'] = False
 app.secret_key = 'mtscos_ai_secret_key_2026'  # 设置session密钥
 
+# 注册Jinja2模板全局函数
+def get_role_name(role):
+    """获取角色中文名"""
+    role_names = {
+        'super_admin': '超级管理员',
+        'admin': '管理员',
+        'hardware_admin': '硬件管理员',
+        'hardware_vikey_admin': '硬件维凯管理员',
+        'teacher': '教师',
+        'student': '学生',
+        'researcher': '研究员',
+        'designer': '设计师',
+        'user': '用户',
+        'guest': '访客'
+    }
+    return role_names.get(role, role)
+
+def get_role_tag_class(role):
+    """获取角色标签样式类"""
+    tag_classes = {
+        'super_admin': 'tag-red',
+        'admin': 'tag-purple',
+        'hardware_admin': 'tag-blue',
+        'hardware_vikey_admin': 'tag-blue',
+        'teacher': 'tag-green',
+        'student': 'tag-blue',
+        'researcher': 'tag-yellow',
+        'designer': 'tag-orange',
+        'user': 'tag-gray',
+        'guest': 'tag-gray'
+    }
+    return tag_classes.get(role, 'tag-gray')
+
+app.jinja_env.globals['get_role_name'] = get_role_name
+app.jinja_env.globals['getRoleName'] = get_role_name
+app.jinja_env.globals['get_role_tag_class'] = get_role_tag_class
+app.jinja_env.globals['getRoleTagClass'] = get_role_tag_class
+
 # 配置CORS支持
 CORS(app, resources={r"/*": {"origins": "*"}})
 
@@ -68,212 +109,16 @@ def add_security_headers(response):
     response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
     return response
 
-# 导入并注册硬件管理路由蓝图
+# 自动路由发现 - 扫描所有API和路由模块
 try:
-    from app.routes.hardware_routes import hardware_bp
-    app.register_blueprint(hardware_bp)
-except ImportError:
-    logger.warning("[路由] 硬件管理路由蓝图未找到，跳过注册")
+    from app.routes.auto_discover import init_auto_routes
+    route_result = init_auto_routes(app)
+    logger.info(f"[路由] 自动路由发现完成: 注册 {route_result['registered']} 个蓝图, "
+                f"失败 {route_result['failed']} 个, 总路由数 {route_result['total_routes']}")
+except Exception as e:
+    logger.error(f"[路由] 自动路由发现失败: {str(e)}")
 
-# 导入并注册认证API路由蓝图
-try:
-    from app.api.auth_api import auth_api
-    app.register_blueprint(auth_api)
-    logger.info("[路由] 认证API路由蓝图注册成功")
-except ImportError:
-    logger.warning("[路由] 认证API路由蓝图未找到，跳过注册")
-
-# 导入并注册OAuth路由蓝图
-try:
-    from app.routes.oauth_routes import oauth_bp
-    app.register_blueprint(oauth_bp)
-except ImportError:
-    logger.warning("[路由] OAuth路由蓝图未找到，跳过注册")
-
-# 导入并注册设置路由蓝图
-try:
-    from app.routes.settings_routes import settings_bp
-    app.register_blueprint(settings_bp)
-except ImportError:
-    logger.warning("[路由] 设置路由蓝图未找到，跳过注册")
-
-# 导入并注册管理员API路由蓝图
-try:
-    from app.routes.admin_api import admin_api_bp
-    app.register_blueprint(admin_api_bp)
-except ImportError:
-    logger.warning("[路由] 管理员API路由蓝图未找到，跳过注册")
-
-# 导入并注册摸底测试API路由蓝图
-try:
-    from app.blueprints.placement_test_api import placement_test_api
-    app.register_blueprint(placement_test_api)
-except ImportError:
-    logger.warning("[路由] 摸底测试API路由蓝图未找到，跳过注册")
-
-# 导入并注册配置API路由蓝图
-try:
-    from app.api.config_api import config_api_bp
-    app.register_blueprint(config_api_bp)
-except ImportError:
-    logger.warning("[路由] 配置API路由蓝图未找到，跳过注册")
-
-# 导入并注册数学公式API路由蓝图
-try:
-    from app.api.formula_api import formula_api_bp
-    app.register_blueprint(formula_api_bp)
-except ImportError:
-    logger.warning("[路由] 数学公式API路由蓝图未找到，跳过注册")
-
-# 导入并注册监考API路由蓝图
-try:
-    from app.blueprints.proctor_api import proctor_api
-    app.register_blueprint(proctor_api)
-except ImportError:
-    logger.warning("[路由] 监考API路由蓝图未找到，跳过注册")
-
-# 导入并注册音频API路由蓝图
-try:
-    from app.blueprints.audio_api import audio_api
-    app.register_blueprint(audio_api)
-except ImportError:
-    logger.warning("[路由] 音频API路由蓝图未找到，跳过注册")
-
-# 导入并注册音频字库API路由蓝图
-try:
-    from app.blueprints.pronunciation_api import pronunciation_api
-    app.register_blueprint(pronunciation_api)
-except ImportError:
-    logger.warning("[路由] 音频字库API路由蓝图未找到，跳过注册")
-
-# 导入并注册矩阵题库API路由蓝图
-try:
-    from app.blueprints.matrix_bp import matrix_bp
-    app.register_blueprint(matrix_bp)
-except ImportError:
-    logger.warning("[路由] 矩阵题库API路由蓝图未找到，跳过注册")
-
-# 导入并注册审批API路由蓝图
-try:
-    from app.blueprints.approval_api import approval_api
-    app.register_blueprint(approval_api)
-except ImportError:
-    logger.warning("[路由] 审批API路由蓝图未找到，跳过注册")
-
-# 导入并注册通知API路由蓝图
-try:
-    from app.blueprints.notification_api import notification_api
-    app.register_blueprint(notification_api)
-except ImportError:
-    logger.warning("[路由] 通知API路由蓝图未找到，跳过注册")
-
-# 导入并注册学生行为管理API路由蓝图
-try:
-    from app.routes.student_behavior_api import student_behavior_bp
-    app.register_blueprint(student_behavior_bp)
-except ImportError:
-    logger.warning("[路由] 学生行为管理API路由蓝图未找到，跳过注册")
-
-# 导入并注册超时锁定API路由蓝图
-try:
-    from app.api.timeout_lock_api import timeout_lock_api
-    app.register_blueprint(timeout_lock_api)
-except ImportError:
-    logger.warning("[路由] 超时锁定API路由蓝图未找到，跳过注册")
-
-# 导入并注册锦标赛API路由蓝图
-try:
-    from app.routes.tournament_api import tournament_bp
-    app.register_blueprint(tournament_bp)
-except ImportError:
-    logger.warning("[路由] 锦标赛API路由蓝图未找到，跳过注册")
-
-# 导入并注册版本管理API路由蓝图
-try:
-    from app.api.version_api import version_api
-    app.register_blueprint(version_api)
-except ImportError:
-    logger.warning("[路由] 版本管理API路由蓝图未找到，跳过注册")
-
-# 导入并注册考试判断API路由蓝图
-try:
-    from app.api.exam_judge_api import exam_judge_api
-    app.register_blueprint(exam_judge_api)
-except ImportError:
-    logger.warning("[路由] 考试判断API路由蓝图未找到，跳过注册")
-
-# 导入并注册高危敏感设置路由蓝图
-try:
-    from app.routes.sensitive_settings_routes import sensitive_settings_bp
-    app.register_blueprint(sensitive_settings_bp)
-except ImportError:
-    logger.warning("[路由] 高危敏感设置路由蓝图未找到，跳过注册")
-
-# 导入并注册客户端监控API路由蓝图
-try:
-    from app.routes.monitor_routes import monitor_bp
-    app.register_blueprint(monitor_bp)
-    logger.info("[路由] 客户端监控API路由蓝图注册成功")
-except ImportError:
-    logger.warning("[路由] 客户端监控API路由蓝图未找到，跳过注册")
-
-# 导入并注册代码修复API路由蓝图
-try:
-    from app.routes.code_repair_routes import repair_bp
-    app.register_blueprint(repair_bp)
-    logger.info("[路由] 代码修复API路由蓝图注册成功")
-except ImportError:
-    logger.warning("[路由] 代码修复API路由蓝图未找到，跳过注册")
-
-# 导入并注册端口监控API路由蓝图
-try:
-    from app.routes.port_monitor_routes import port_monitor_bp
-    app.register_blueprint(port_monitor_bp)
-    logger.info("[路由] 端口监控API路由蓝图注册成功")
-except ImportError:
-    logger.warning("[路由] 端口监控API路由蓝图未找到，跳过注册")
-
-# 导入并注册用户行为监控API路由蓝图
-try:
-    from app.routes.user_behavior_routes import behavior_bp
-    app.register_blueprint(behavior_bp)
-    logger.info("[路由] 用户行为监控API路由蓝图注册成功")
-except ImportError:
-    logger.warning("[路由] 用户行为监控API路由蓝图未找到，跳过注册")
-
-# 导入并注册系统优化API路由蓝图
-try:
-    from app.routes.system_optimization_routes import optimizer_bp
-    app.register_blueprint(optimizer_bp)
-    logger.info("[路由] 系统优化API路由蓝图注册成功")
-except ImportError:
-    logger.warning("[路由] 系统优化API路由蓝图未找到，跳过注册")
-
-# 导入并注册智能仪表盘API路由蓝图
-try:
-    from app.routes.intelligent_dashboard_api import intelligent_dashboard_bp
-    app.register_blueprint(intelligent_dashboard_bp)
-    logger.info("[路由] 智能仪表盘API路由蓝图注册成功")
-except ImportError:
-    logger.warning("[路由] 智能仪表盘API路由蓝图未找到，跳过注册")
-
-# 导入并注册设置页面数据API路由蓝图
-try:
-    from app.api.settings_data_api import settings_data_bp
-    app.register_blueprint(settings_data_bp)
-    logger.info("[路由] 设置页面数据API路由蓝图注册成功")
-except ImportError:
-    logger.warning("[路由] 设置页面数据API路由蓝图未找到，跳过注册")
-
-# 导入并注册路由约束引擎API
-try:
-    from app.api.route_constraint_api import constraint_api_bp
-    app.register_blueprint(constraint_api_bp)
-    logger.info("[路由] 路由约束引擎API注册成功")
-except ImportError:
-    logger.warning("[路由] 路由约束引擎API未找到，跳过注册")
-
-# 导入并注册角色路由跳转API
+# 角色路由跳转API(需要特殊处理)
 try:
     from app.utils.role_router import role_router_bp, create_role_routes
     app.register_blueprint(role_router_bp)
@@ -282,45 +127,50 @@ try:
 except ImportError:
     logger.warning("[路由] 角色路由跳转API未找到，跳过注册")
 
-# 导入并注册AI增强修复API
+# 注册拆分后的系统蓝图
 try:
-    from app.api.enhancement_repair_api import enhancement_repair_api
-    app.register_blueprint(enhancement_repair_api)
-    logger.info("[路由] AI增强修复API注册成功")
+    from app.views.exam_system import exam_system_bp
+    app.register_blueprint(exam_system_bp)
+    logger.info("[路由] 考试系统蓝图注册成功")
 except ImportError:
-    logger.warning("[路由] AI增强修复API未找到，跳过注册")
+    logger.warning("[路由] 考试系统蓝图未找到，跳过注册")
 
-# 导入并注册统一Auto API
 try:
-    from app.api.auto_api import auto_api
-    app.register_blueprint(auto_api)
-    logger.info("[路由] 统一Auto API注册成功")
+    from app.views.test_system import test_system_bp
+    app.register_blueprint(test_system_bp)
+    logger.info("[路由] 测试系统蓝图注册成功")
 except ImportError:
-    logger.warning("[路由] 统一Auto API未找到，跳过注册")
+    logger.warning("[路由] 测试系统蓝图未找到，跳过注册")
 
-# 导入并注册Listening API
 try:
-    from app.api.listening_api import listening_api
-    app.register_blueprint(listening_api)
-    logger.info("[路由] Listening API注册成功")
+    from app.views.learning_system import learning_system_bp
+    app.register_blueprint(learning_system_bp)
+    logger.info("[路由] 学习系统蓝图注册成功")
 except ImportError:
-    logger.warning("[路由] Listening API未找到，跳过注册")
+    logger.warning("[路由] 学习系统蓝图未找到，跳过注册")
 
-# 导入并注册架构工程师API
 try:
-    from app.api.architecture_api import architecture_api
-    app.register_blueprint(architecture_api)
-    logger.info("[路由] 架构工程师API注册成功")
+    from app.views.user_system import user_system_bp
+    app.register_blueprint(user_system_bp)
+    logger.info("[路由] 用户信息管理系统蓝图注册成功")
 except ImportError:
-    logger.warning("[路由] 架构工程师API未找到，跳过注册")
+    logger.warning("[路由] 用户信息管理系统蓝图未找到，跳过注册")
 
-# 导入并注册异常登录Blueprint
+# 初始化动态路由管理器
 try:
-    from app.views.exception_login import exception_bp
-    app.register_blueprint(exception_bp)
-    logger.info("[路由] 异常登录Blueprint注册成功")
-except ImportError:
-    logger.warning("[路由] 异常登录Blueprint未找到，跳过注册")
+    from app.utils.dynamic_route_manager import init_dynamic_routes
+    init_dynamic_routes(app)
+    logger.info("[动态路由] 动态路由管理器初始化成功")
+except ImportError as e:
+    logger.warning(f"[动态路由] 动态路由管理器未找到，跳过初始化: {e}")
+
+# 注册AI员工批量修复API
+try:
+    from app.api.ai_fixer_api import ai_fixer_api
+    app.register_blueprint(ai_fixer_api)
+    logger.info("[AI员工] AI员工批量修复API注册成功")
+except ImportError as e:
+    logger.warning(f"[AI员工] AI员工批量修复API未找到，跳过注册: {e}")
 
 DATABASE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'app.db')
 
@@ -342,6 +192,9 @@ from app.utils.monitor_manager import init_monitor_manager
 from app.utils.backup_manager import init_backup_manager
 from app.middlewares.access_control import access_control_middleware
 
+# 导入统一规则配置中心
+from app.config.unified_rules import init_unified_rules, check_route_permission, check_permission_by_rule
+
 # 初始化权限管理器
 init_permission_manager(DATABASE_PATH)
 
@@ -350,6 +203,9 @@ init_session_manager(DATABASE_PATH, timeout_minutes=30)
 
 # 初始化规则管理器(深度绑定系统规则数据库)
 init_rule_manager(DATABASE_PATH)
+
+# 初始化统一规则配置中心
+init_unified_rules(DATABASE_PATH)
 
 # 初始化配置管理器(实时配置加载,30秒自动重载)
 init_config_manager(DATABASE_PATH, auto_reload_interval=30)
@@ -431,7 +287,7 @@ def get_system_settings():
     """获取系统设置"""
     settings = {
         'system_name': 'MTSCOS AI 智能学习评估系统',
-        'version': "1.4.0",
+        'version': "3.1.0",
         'description': '基于AI的智能学习评估系统,提供个性化学习体验和智能评估功能.',
         'admin_email': 'admin@example.com',
         'maintenance_mode': False,
@@ -544,15 +400,559 @@ def get_server_time():
         'weekday': weekday_str
     })
 
+# ============================================================
+# HTTPS强制重定向中间件 - 安全配置（仅SSL模式启用）
+# ============================================================
+
+@app.before_request
+def force_https_redirect():
+    """强制HTTPS重定向 - 仅在SSL模式下启用"""
+    # 仅在SSL模式下强制HTTPS重定向
+    # HTTP模式下跳过此检查
+    pass
+    
+    # 添加安全响应头
+    # HSTS - 强制浏览器使用HTTPS
+    # CSP - 内容安全策略
+    # X-Frame-Options - 防止iframe嵌入
+    # X-Content-Type-Options - 防止MIME类型嗅探
+    # X-XSS-Protection - XSS过滤器
+
+# 添加安全响应头到所有响应
+@app.after_request
+def add_security_headers(response):
+    """添加安全响应头"""
+    # HSTS - 强制HTTPS（仅在SSL模式下）
+    if request.is_secure:
+        response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains; preload'
+    
+    # 防止iframe嵌入（点击劫持防护）
+    response.headers['X-Frame-Options'] = 'SAMEORIGIN'
+    
+    # 防止MIME类型嗅探
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    
+    # XSS防护
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    
+    # 内容安全策略
+    response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https:; frame-ancestors 'self';"
+    
+    # Referrer策略
+    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    
+    # 权限策略
+    response.headers['Permissions-Policy'] = 'geolocation=(), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()'
+    
+    return response
+
 # Vite客户端请求处理(开发环境)
 @app.route('/@vite/client')
 def vite_client():
     return '', 204
 
+def is_mobile_device():
+    user_agent = request.headers.get('User-Agent', '').lower()
+    mobile_keywords = ['mobile', 'android', 'iphone', 'ipad', 'ipod', 'tablet', 'touch', 'opera mini', 'windows phone']
+    desktop_keywords = ['windows nt', 'macintosh', 'linux x86_64']
+    
+    has_mobile = any(keyword in user_agent for keyword in mobile_keywords)
+    has_desktop = any(keyword in user_agent for keyword in desktop_keywords)
+    
+    if has_desktop and not has_mobile:
+        return False
+    return has_mobile
+
+@app.route('/mobile')
+def mobile_index():
+    if 'user_id' not in session:
+        return render_template('mobile/login.html')
+    return render_template('mobile/home.html')
+
+@app.route('/mobile/login', methods=['GET', 'POST'])
+def mobile_login():
+    if request.method == 'POST':
+        data = request.get_json() or {}
+        username = data.get('username', '').strip()
+        password = data.get('password', '').strip()
+        
+        if not username or not password:
+            return jsonify({"success": False, "error": "请输入用户名和密码"}), 400
+        
+        user = get_user_by_username(username)
+        
+        if not user:
+            return jsonify({"success": False, "error": "用户名或密码错误"}), 401
+        
+        if not verify_password(user['password'], password):
+            return jsonify({"success": False, "error": "用户名或密码错误"}), 401
+        
+        session['user_id'] = user['id']
+        session['username'] = user['username']
+        session['role'] = user['role']
+        
+        try:
+            with sqlite3.connect(DATABASE_PATH) as conn:
+                conn.execute("INSERT INTO login_logs (user_id, login_time, login_ip, user_agent) VALUES (?, ?, ?, ?)",
+                          (user['id'], datetime.now().isoformat(), request.remote_addr, request.headers.get('User-Agent', '')))
+                conn.commit()
+        except Exception:
+            pass
+        
+        return jsonify({"success": True, "redirect": "/mobile/home"})
+    
+    return render_template('mobile/login.html')
+
+@app.route('/mobile/home')
+def mobile_home():
+    if 'user_id' not in session:
+        return redirect('/mobile/login')
+    user = {
+        'id': session.get('user_id'),
+        'username': session.get('username'),
+        'role': session.get('role')
+    }
+    return render_template('mobile/home.html', user=user, current_page='home')
+
+@app.route('/mobile/exam')
+def mobile_exam():
+    if 'user_id' not in session:
+        return redirect('/mobile/login')
+    user = {
+        'id': session.get('user_id'),
+        'username': session.get('username'),
+        'role': session.get('role')
+    }
+    return render_template('mobile/exam.html', user=user, current_page='exam')
+
+@app.route('/mobile/training')
+def mobile_training():
+    if 'user_id' not in session:
+        return redirect('/mobile/login')
+    user = {
+        'id': session.get('user_id'),
+        'username': session.get('username'),
+        'role': session.get('role')
+    }
+    return render_template('mobile/training.html', user=user, current_page='training')
+
+@app.route('/mobile/profile')
+def mobile_profile():
+    if 'user_id' not in session:
+        return redirect('/mobile/login')
+    user = {
+        'id': session.get('user_id'),
+        'username': session.get('username'),
+        'role': session.get('role')
+    }
+    return render_template('mobile/profile.html', user=user, current_page='profile')
+
+@app.route('/mobile/logout')
+def mobile_logout():
+    session.clear()
+    return redirect('/mobile/login')
+
+# ============================================================
+# 管理员App路由 - 仅限管理员和超级管理员访问
+# ============================================================
+def require_admin_app_access():
+    """管理员App权限检查"""
+    if 'user_id' not in session:
+        return False, 'login'
+    role = session.get('role', 'guest')
+    if role not in ['admin', 'super_admin', 'hardware_admin']:
+        return False, 'forbidden'
+    return True, None
+
+@app.route('/admin_app')
+def admin_app_index():
+    """管理员App入口"""
+    has_access, redirect_to = require_admin_app_access()
+    if not has_access:
+        if redirect_to == 'login':
+            return redirect('/admin_app/login')
+        return "无权访问", 403
+    return redirect('/admin_app/dashboard')
+
+@app.route('/admin_app/login', methods=['GET', 'POST'])
+def admin_app_login():
+    """管理员App登录页面"""
+    if request.method == 'POST':
+        data = request.get_json() or {}
+        username = data.get('username', '').strip()
+        password = data.get('password', '').strip()
+        
+        if not username or not password:
+            return jsonify({"success": False, "error": "请输入用户名和密码"}), 400
+        
+        user = get_user_by_username(username)
+        
+        if not user:
+            return jsonify({"success": False, "error": "用户名或密码错误"}), 401
+        
+        if not verify_password(user['password'], password):
+            return jsonify({"success": False, "error": "用户名或密码错误"}), 401
+        
+        if user['role'] not in ['admin', 'super_admin', 'hardware_admin']:
+            return jsonify({"success": False, "error": "您没有管理员权限"}), 403
+        
+        session['user_id'] = user['id']
+        session['username'] = user['username']
+        session['role'] = user['role']
+        
+        try:
+            with sqlite3.connect(DATABASE_PATH) as conn:
+                conn.execute("INSERT INTO login_logs (user_id, login_time, login_ip, user_agent) VALUES (?, ?, ?, ?)",
+                          (user['id'], datetime.now().isoformat(), request.remote_addr, request.headers.get('User-Agent', '')))
+                conn.commit()
+        except Exception:
+            pass
+        
+        return jsonify({"success": True, "redirect": "/admin_app/dashboard"})
+    
+    return render_template('admin_app/login.html')
+
+@app.route('/admin_app/dashboard')
+def admin_app_dashboard():
+    """管理员App - 数据概览"""
+    has_access, redirect_to = require_admin_app_access()
+    if not has_access:
+        if redirect_to == 'login':
+            return redirect('/admin_app/login')
+        return "无权访问", 403
+    
+    user_id = session.get('user_id')
+    user = {
+        'id': user_id,
+        'username': session.get('username'),
+        'role': session.get('role')
+    }
+    
+    stats = {}
+    notification_count = 0
+    activities = []
+    try:
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            cursor = conn.cursor()
+            
+            cursor.execute('SELECT COUNT(*) FROM users')
+            stats['total_users'] = cursor.fetchone()[0]
+            
+            cursor.execute('SELECT COUNT(*) FROM users WHERE is_active = 1')
+            stats['active_users'] = cursor.fetchone()[0]
+            
+            cursor.execute('SELECT COUNT(*) FROM exams')
+            stats['exams_count'] = cursor.fetchone()[0]
+            
+            cursor.execute('SELECT COUNT(*) FROM questions')
+            stats['questions_count'] = cursor.fetchone()[0]
+            
+            cursor.execute('SELECT COUNT(*) FROM exam_papers')
+            stats['papers_count'] = cursor.fetchone()[0]
+            
+            cursor.execute("SELECT COUNT(*) FROM exam_results WHERE status = 'completed'")
+            stats['completed_exams'] = cursor.fetchone()[0]
+            
+            # Today's logins (from session_manager or last_login)
+            cursor.execute("SELECT COUNT(*) FROM users WHERE last_login >= date('now')")
+            stats['today_logins'] = cursor.fetchone()[0]
+            
+            # Today's registrations
+            cursor.execute("SELECT COUNT(*) FROM users WHERE created_at >= date('now')")
+            stats['today_registers'] = cursor.fetchone()[0]
+            
+            # Get unread notifications count
+            if user_id:
+                cursor.execute('SELECT COUNT(*) FROM notifications WHERE (recipient_id = ? OR recipient_id IS NULL) AND status = ?', (user_id, 'unread'))
+                notification_count = cursor.fetchone()[0]
+            
+            # Get recent activities from multiple sources
+            cursor.execute('''
+                SELECT 'exam_result' as type, er.user_id as user_id, er.exam_id, er.score, er.completed_at as time, u.username
+                FROM exam_results er
+                LEFT JOIN users u ON er.user_id = u.id
+                ORDER BY er.completed_at DESC LIMIT 5
+            ''')
+            for row in cursor.fetchall():
+                activities.append({
+                    'type': 'exam_result',
+                    'user': row[5] or f'用户{row[1]}',
+                    'action': f'完成考试，得分 {row[3]}分',
+                    'time': row[4]
+                })
+            
+            cursor.execute('''
+                SELECT 'user_register' as type, u.id, u.username, u.created_at
+                FROM users u ORDER BY u.created_at DESC LIMIT 3
+            ''')
+            for row in cursor.fetchall():
+                activities.append({
+                    'type': 'user_register',
+                    'user': row[2],
+                    'action': '新用户注册',
+                    'time': row[3]
+                })
+            
+            cursor.execute('''
+                SELECT 'exam_paper' as type, ep.user_id, ep.exam_id, ep.status, ep.started_at, u.username
+                FROM exam_papers ep
+                LEFT JOIN users u ON ep.user_id = u.id
+                ORDER BY ep.started_at DESC LIMIT 3
+            ''')
+            for row in cursor.fetchall():
+                if row[3] == 'in_progress':
+                    activities.append({
+                        'type': 'exam_paper',
+                        'user': row[5] or f'用户{row[1]}',
+                        'action': '开始考试',
+                        'time': row[4]
+                    })
+            
+            # Sort activities by time
+            activities.sort(key=lambda x: x['time'] if x['time'] else '', reverse=True)
+            activities = activities[:8]
+            
+            # Get system alerts from error_logs
+            alerts = []
+            cursor.execute('''
+                SELECT id, error_type, error_message, created_at, status
+                FROM error_logs
+                WHERE status = 'pending'
+                ORDER BY created_at DESC LIMIT 5
+            ''')
+            for row in cursor.fetchall():
+                alerts.append({
+                    'type': row[1] or 'error',
+                    'message': row[2],
+                    'time': row[3],
+                    'level': '紧急' if 'critical' in str(row[1]).lower() else '警告'
+                })
+            
+            # If no pending errors, show resolved count
+            cursor.execute('SELECT COUNT(*) FROM error_logs WHERE status = \'resolved\'')
+            resolved_count = cursor.fetchone()[0]
+    except Exception as e:
+        import logging
+        logging.error(f"Dashboard stats error: {e}")
+        stats = {'total_users': 0, 'active_users': 0, 'exams_count': 0, 'questions_count': 0, 'papers_count': 0, 'completed_exams': 0, 'today_logins': 0, 'today_registers': 0}
+        alerts = []
+        resolved_count = 0
+    
+    return render_template('admin_app/dashboard.html', user=user, stats=stats, notification_count=notification_count, activities=activities, alerts=alerts, resolved_count=resolved_count, current_page='dashboard')
+
+@app.route('/admin_app/users')
+def admin_app_users():
+    """管理员App - 用户管理"""
+    has_access, redirect_to = require_admin_app_access()
+    if not has_access:
+        if redirect_to == 'login':
+            return redirect('/admin_app/login')
+        return "无权访问", 403
+    
+    user_id = session.get('user_id')
+    user = {
+        'id': user_id,
+        'username': session.get('username'),
+        'role': session.get('role')
+    }
+    
+    users = []
+    notification_count = 0
+    try:
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT id, username, email, role, is_active, created_at FROM users ORDER BY created_at DESC LIMIT 50')
+            columns = ['id', 'username', 'email', 'role', 'is_active', 'created_at']
+            for row in cursor.fetchall():
+                users.append(dict(zip(columns, row)))
+            
+            if user_id:
+                cursor.execute('SELECT COUNT(*) FROM notifications WHERE (recipient_id = ? OR recipient_id IS NULL) AND status = ?', (user_id, 'unread'))
+                notification_count = cursor.fetchone()[0]
+    except Exception as e:
+        import logging
+        logging.error(f"Users list error: {e}")
+    
+    return render_template('admin_app/users.html', user=user, users=users, notification_count=notification_count, current_page='users')
+
+@app.route('/admin_app/exams')
+def admin_app_exams():
+    """管理员App - 考试管理"""
+    has_access, redirect_to = require_admin_app_access()
+    if not has_access:
+        if redirect_to == 'login':
+            return redirect('/admin_app/login')
+        return "无权访问", 403
+    
+    user_id = session.get('user_id')
+    user = {
+        'id': user_id,
+        'username': session.get('username'),
+        'role': session.get('role')
+    }
+    
+    exams = []
+    notification_count = 0
+    try:
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT id, title, language_level, duration, total_score, status, created_at FROM exams ORDER BY created_at DESC LIMIT 20')
+            columns = ['id', 'exam_name', 'exam_type', 'duration', 'total_score', 'status', 'created_at']
+            for row in cursor.fetchall():
+                exam = dict(zip(columns, row))
+                exams.append(exam)
+            
+            if user_id:
+                cursor.execute('SELECT COUNT(*) FROM notifications WHERE (recipient_id = ? OR recipient_id IS NULL) AND status = ?', (user_id, 'unread'))
+                notification_count = cursor.fetchone()[0]
+    except Exception as e:
+        import logging
+        logging.error(f"Exams list error: {e}")
+    
+    return render_template('admin_app/exams.html', user=user, exams=exams, notification_count=notification_count, current_page='exams')
+
+@app.route('/admin_app/monitor')
+def admin_app_monitor():
+    """管理员App - 系统监控"""
+    has_access, redirect_to = require_admin_app_access()
+    if not has_access:
+        if redirect_to == 'login':
+            return redirect('/admin_app/login')
+        return "无权访问", 403
+    
+    user_id = session.get('user_id')
+    user = {
+        'id': user_id,
+        'username': session.get('username'),
+        'role': session.get('role')
+    }
+    
+    logs = []
+    notification_count = 0
+    # System stats
+    uptime = '99.9'
+    cpu_usage = 0
+    memory_usage = 0
+    db_size = '170'
+    db_queries = 0
+    total_users = 0
+    total_exams = 0
+    total_papers = 0
+    total_questions = 0
+    completed_exams = 0
+    active_users = 0
+    
+    try:
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            cursor = conn.cursor()
+            
+            # Get basic stats
+            cursor.execute('SELECT COUNT(*) FROM users')
+            total_users = cursor.fetchone()[0]
+            
+            cursor.execute('SELECT COUNT(*) FROM users WHERE is_active = 1')
+            active_users = cursor.fetchone()[0]
+            
+            cursor.execute('SELECT COUNT(*) FROM exams')
+            total_exams = cursor.fetchone()[0]
+            
+            cursor.execute('SELECT COUNT(*) FROM questions')
+            total_questions = cursor.fetchone()[0]
+            
+            cursor.execute('SELECT COUNT(*) FROM exam_papers')
+            total_papers = cursor.fetchone()[0]
+            
+            cursor.execute("SELECT COUNT(*) FROM exam_results WHERE status = 'completed'")
+            completed_exams = cursor.fetchone()[0]
+            
+            # Try access_logs first, fallback to system_logs
+            try:
+                cursor.execute('SELECT id, path, username, ip_address, access_time, method FROM access_logs ORDER BY id DESC LIMIT 20')
+                columns = ['id', 'path', 'username', 'ip_address', 'access_time', 'method']
+            except:
+                cursor.execute('SELECT id, action as path, user_id as username, ip_address, created_at as access_time, \'GET\' as method FROM system_operation_logs ORDER BY id DESC LIMIT 20')
+                columns = ['id', 'path', 'username', 'ip_address', 'access_time', 'method']
+            
+            for row in cursor.fetchall():
+                log = dict(zip(columns, row))
+                logs.append(log)
+            
+            if user_id:
+                cursor.execute('SELECT COUNT(*) FROM notifications WHERE (recipient_id = ? OR recipient_id IS NULL) AND status = ?', (user_id, 'unread'))
+                notification_count = cursor.fetchone()[0]
+    except Exception as e:
+        import logging
+        logging.error(f"Monitor logs error: {e}")
+    
+    return render_template('admin_app/monitor.html', user=user, logs=logs, notification_count=notification_count, 
+                          uptime=uptime, cpu_usage=cpu_usage, memory_usage=memory_usage,
+                          db_size=db_size, db_queries=db_queries, total_users=total_users,
+                          total_exams=total_exams, total_papers=total_papers, 
+                          total_questions=total_questions, completed_exams=completed_exams,
+                          active_users=active_users, current_page='monitor')
+
+@app.route('/admin_app/settings')
+def admin_app_settings():
+    """管理员App - 系统设置"""
+    has_access, redirect_to = require_admin_app_access()
+    if not has_access:
+        if redirect_to == 'login':
+            return redirect('/admin_app/login')
+        return "无权访问", 403
+    
+    user_id = session.get('user_id')
+    user = {
+        'id': user_id,
+        'username': session.get('username'),
+        'role': session.get('role')
+    }
+    
+    notification_count = 0
+    try:
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            cursor = conn.cursor()
+            if user_id:
+                cursor.execute('SELECT COUNT(*) FROM notifications WHERE (recipient_id = ? OR recipient_id IS NULL) AND status = ?', (user_id, 'unread'))
+                notification_count = cursor.fetchone()[0]
+    except Exception as e:
+        import logging
+        logging.error(f"Settings error: {e}")
+    
+    return render_template('admin_app/settings.html', user=user, notification_count=notification_count, current_page='settings')
+
+@app.route('/admin_app/logout')
+def admin_app_logout():
+    """管理员App登出"""
+    session.clear()
+    return redirect('/admin_app/login')
+
 # 主页路由
 @app.route('/')
 def index():
     return render_template('index.html')
+
+# 增强版听力测试路由
+@app.route('/listen_enhanced')
+def listen_enhanced_page():
+    from flask import send_file
+    template_path = os.path.join(os.path.dirname(__file__), 'app', 'templates', 'listen_enhanced.html')
+    return send_file(template_path)
+
+@app.route('/listen_test.html')
+def listen_test_page():
+    from flask import send_file
+    template_path = os.path.join(os.path.dirname(__file__), 'app', 'templates', 'listen_test.html')
+    return send_file(template_path)
+
+@app.route('/audio/<path:filename>')
+def audio_files(filename):
+    from flask import send_from_directory
+    audio_dir = os.path.join(os.path.dirname(__file__), 'app', 'static', 'audio')
+    response = send_from_directory(audio_dir, filename, mimetype='audio/mpeg')
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
 
 def detect_direct_access() -> dict:
     """检测用户是否绕过首页直接访问登录页面"""
@@ -644,16 +1044,16 @@ def get_redirect_url_by_role(role: str) -> str:
     """根据用户角色返回登录后重定向的URL"""
     role_redirect_map = {
         # 学生角色 - 直接进入考试系统
-        'student': '/exam/exam_center',
-        'student_vip': '/exam/exam_center',
+        'student': '/exam_system',
+        'student_vip': '/exam_system',
         
         # 教师角色 - 进入教师管理中心
-        'teacher': '/teacher/dashboard',
-        'teacher_admin': '/teacher/dashboard',
+        'teacher': '/teacher',
+        'teacher_admin': '/teacher',
         
         # 管理员角色 - 进入管理中心
-        'admin': '/admin_center',
-        'system_admin': '/admin_center',
+        'admin': '/settings',
+        'system_admin': '/settings',
         
         # 超级管理员角色 - 进入超级管理面板
         'super_admin': '/super_admin_dashboard',
@@ -662,15 +1062,18 @@ def get_redirect_url_by_role(role: str) -> str:
         'hardware_admin': '/hardware/dashboard',
         
         # 考试专家角色 - 进入考试系统
-        'exam_expert': '/exam/exam_center',
+        'exam_expert': '/exam_system',
+        
+        # 设计师角色 - 进入Arduino设计页面
+        'designer': '/arduino',
         
         # 默认角色 - 进入考试系统(普通用户默认进入考试系统)
-        'user': '/exam/exam_center',
+        'user': '/exam_system',
         'guest': '/',
     }
     
     # 如果角色不在映射中,返回考试系统作为默认
-    return role_redirect_map.get(role, '/exam/exam_center')
+    return role_redirect_map.get(role, '/exam_system')
 
 
 # 登录路由 - 后台API接口,不直接显示给用户
@@ -946,6 +1349,25 @@ def dashboard():
 def super_admin_dashboard():
     return render_template('super_admin_dashboard.html')
 
+# 管理员控制台 - admin角色专用（只读权限）
+@app.route('/admin_dashboard')
+@require_login
+def admin_dashboard():
+    role = session.get('role', 'guest')
+    if role != 'admin':
+        return redirect('/dashboard')
+    return render_template('admin_dashboard.html')
+
+# 硬件管理员仪表盘 - 重定向到超级管理员控制台
+@app.route('/hardware/dashboard')
+@require_login
+def hardware_dashboard():
+    role = session.get('role', 'guest')
+    # 硬件管理员角色跳转到超级管理员控制台
+    if role in ['hardware_admin', 'hardware_vikey_admin', 'super_admin', 'system_admin']:
+        return redirect('/super_admin_dashboard')
+    return redirect('/dashboard')
+
 # 管理员中心 - 需要登录权限(根据角色显示不同内容)
 @app.route('/admin_center')
 @require_login
@@ -1106,7 +1528,7 @@ def health():
 # 系统状态
 @app.route('/api/system/status')
 def system_status():
-    return jsonify({'status': 'running', 'version': "1.3.0", 'timestamp': datetime.now().isoformat()})
+    return jsonify({'status': 'running', 'version': "3.1.0", 'timestamp': datetime.now().isoformat()})
 
 # 用户信息API
 @app.route('/api/user/<username>')
@@ -1137,6 +1559,39 @@ def exam_page():
     if role not in ['student', 'teacher', 'researcher', 'admin', 'super_admin', 'hardware_admin', 'hardware_vikey_admin']:
         return redirect('/')
     response = make_response(render_template('exam_page.html'))
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    return response
+
+
+@app.route('/exam/start/<exam_id>')
+def exam_start_page(exam_id):
+    """开始考试页面"""
+    user_id = session.get('user_id')
+    if not user_id:
+        return redirect('/auth/login')
+    
+    role = session.get('role')
+    if role not in ['student', 'teacher', 'researcher', 'admin', 'super_admin', 'hardware_admin', 'hardware_vikey_admin']:
+        return redirect('/')
+    
+    # 获取考试信息
+    try:
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute('SELECT * FROM exams WHERE id = ?', (exam_id,))
+            exam = cursor.fetchone()
+            
+            if not exam:
+                return "考试不存在", 404
+            
+            exam_dict = dict(exam)
+    except Exception as e:
+        logger.error(f"获取考试信息失败: {e}")
+        return "考试加载失败", 500
+    
+    response = make_response(render_template('exam_page.html', exam_id=exam_id))
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
     response.headers['Pragma'] = 'no-cache'
     return response
@@ -1181,16 +1636,23 @@ def get_user_education_type(user_id: int) -> str:
 # 考试系统路由 - 学生仪表盘
 @app.route('/exam_system')
 def exam_system():
+    ALLOWED_EXAM_ROLES = ['student']
+    
     user_id = session.get('user_id')
     
-    # 未登录用户，跳转到登录页
+    # 未登录用户，显示美化的登录提示页面
     if not user_id:
-        return redirect('/auth/login')
+        return render_template('login_required.html', request_path='/exam_system'), 401
+    
+    # 检查角色权限
+    role = session.get('role')
+    if role not in ALLOWED_EXAM_ROLES:
+        return render_template('403.html', current_role=role, required_role='student', request_path='/exam_system'), 403
     
     # 获取用户信息
     user_info = get_user_info(user_id)
     if not user_info:
-        return redirect('/auth/login')
+        return render_template('login_required.html', request_path='/exam_system'), 401
     
     # 获取教育类型
     education_type = get_user_education_type(user_id)
@@ -1531,9 +1993,25 @@ def dashboard_page():
     router = get_role_router()
     return redirect(router.get_redirect_path(role))
 
+def check_exam_permission():
+    """检查考试系统访问权限"""
+    ALLOWED_EXAM_ROLES = ['student']
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({'success': False, 'error': '未登录'}), 401
+    
+    role = session.get('role')
+    if role not in ALLOWED_EXAM_ROLES:
+        return jsonify({'success': False, 'error': '没有权限访问考试系统'}), 403
+    return None
+
 # 获取考试列表API
 @app.route('/api/exams', methods=['GET'])
 def get_exams():
+    result = check_exam_permission()
+    if result:
+        return result
+    
     with sqlite3.connect(DATABASE_PATH) as conn:
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
@@ -1542,6 +2020,7 @@ def get_exams():
         
         exam_list = []
         for exam in exams:
+            exam_type = exam.get('exam_type', 'simulation')
             exam_list.append({
                 'id': exam['id'],
                 'name': exam['title'],
@@ -1551,7 +2030,8 @@ def get_exams():
                 'passing_score': exam['passing_score'],
                 'language': exam['language'],
                 'difficulty_level': exam['level'],
-                'exam_type': 'standard',
+                'exam_type': exam_type,
+                'exam_type_label': '历年真题' if exam_type == 'real' else '拟真试题',
                 'audio_type': None
             })
     
@@ -1682,28 +2162,31 @@ def generate_test_questions(language, difficulty, count):
 # 获取考试题目API
 @app.route('/api/exams/<exam_id>/questions', methods=['GET'])
 def get_exam_questions(exam_id):
-    with sqlite3.connect(DATABASE_PATH) as conn:
-        conn.row_factory = sqlite3.Row
-        cursor = conn.cursor()
-        cursor.execute('SELECT * FROM exams WHERE id = ?', (exam_id,))
-        exam = cursor.fetchone()
+    result = check_exam_permission()
+    if result:
+        return result
     
-    if not exam:
-        return jsonify({'success': False, 'message': '考试不存在'}), 404
-    
-    language = exam['language'] if exam['language'] else 'japanese'
-    difficulty = exam['level'] if exam['level'] else 'intermediate'
-    exam_type = 'standard'
-    total_questions = exam['question_count'] if exam['question_count'] else 10
-    voice_type = 'standard'
-    
-    questions = generate_test_questions(language, difficulty, total_questions)
-    
-    return jsonify({'success': True, 'data': questions})
+    try:
+        from app.services.exam_service import ExamService
+        exam_service = ExamService()
+        
+        questions = exam_service.get_questions(exam_id)
+        
+        if not questions:
+            return jsonify({'success': False, 'message': '考试不存在或没有题目'}), 404
+        
+        return jsonify({'success': True, 'data': questions})
+    except Exception as e:
+        logger.error(f"获取考试题目失败: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 # 获取单个考试详情API
 @app.route('/api/exams/<exam_id>', methods=['GET'])
 def get_exam(exam_id):
+    result = check_exam_permission()
+    if result:
+        return result
+    
     with sqlite3.connect(DATABASE_PATH) as conn:
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
@@ -1737,14 +2220,15 @@ def create_exam():
     
     import uuid
     exam_id = str(uuid.uuid4())
+    exam_type = data.get('exam_type', 'simulation')
     
     with sqlite3.connect(DATABASE_PATH) as conn:
         cursor = conn.cursor()
         
         cursor.execute('''
         INSERT INTO exams 
-        (id, title, description, duration, question_count, total_points, passing_score, status, language, level, shuffle_questions, shuffle_options, allow_retake, max_retakes, created_by, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (id, title, description, duration, question_count, total_points, passing_score, status, language, level, shuffle_questions, shuffle_options, allow_retake, max_retakes, created_by, created_at, updated_at, exam_type)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
         exam_id,
         data.get('name'),
@@ -1762,7 +2246,8 @@ def create_exam():
         3,
         'admin',
         int(time.time()),
-        int(time.time())
+        int(time.time()),
+        exam_type
         ))
         
         conn.commit()
@@ -2099,12 +2584,21 @@ def placement_test_page():
     except Exception as e:
         logger.error(f"检查摸底测试状态失败: {e}")
     
+    test_info = {
+        'title': '智能摸底测试',
+        'description': '通过综合测试评估您的知识水平，为您推荐合适的学习路径',
+        'duration': '30分钟',
+        'questions': '30道',
+        'subjects': ['数学', '物理', '英语', '化学']
+    }
+    
     return render_template('placement_test.html', 
                            username=username, 
                            role=role,
                            user_id=user_id,
                            has_completed=has_completed,
-                           current_level=current_level)
+                           current_level=current_level,
+                           test_info=test_info)
 
 # 摸底测试答题页面
 @app.route('/exam/placement_test/take/<test_id>')
@@ -2492,6 +2986,250 @@ def get_exam_history_api(user_id):
     except Exception as e:
         return jsonify({'success': False, 'message': f'获取历史失败: {str(e)}'}), 500
 
+# ============================================
+# 考试页面需要的API (exam_page.html)
+# ============================================
+
+@app.route('/api/exam/exams/<exam_id>', methods=['GET'])
+def get_exam_detail(exam_id):
+    """获取考试详情"""
+    try:
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute('SELECT * FROM exams WHERE id = ?', (exam_id,))
+            exam = cursor.fetchone()
+            
+            if not exam:
+                return jsonify({'success': False, 'error': '考试不存在'}), 404
+            
+            exam_data = dict(exam)
+            exam_type = exam_data.get('exam_type', 'simulation')
+            exam_data['exam_type_label'] = '历年真题' if exam_type == 'real' else '拟真试题'
+            
+            return jsonify({'success': True, 'data': exam_data})
+    except Exception as e:
+        logger.error(f"获取考试详情失败: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/exam/exams/<exam_id>/questions', methods=['GET'])
+def get_exam_questions_v2(exam_id):
+    """获取考试题目"""
+    try:
+        import json
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute('SELECT * FROM questions WHERE exam_id = ?', (exam_id,))
+            questions = cursor.fetchall()
+            
+            result = []
+            for q in questions:
+                q_dict = dict(q)
+                # 解析 options JSON 字符串
+                if isinstance(q_dict.get('options'), str):
+                    try:
+                        q_dict['options'] = json.loads(q_dict['options'])
+                    except:
+                        q_dict['options'] = []
+                # 解析 tags JSON 字符串
+                if isinstance(q_dict.get('tags'), str):
+                    try:
+                        q_dict['tags'] = json.loads(q_dict['tags'])
+                    except:
+                        q_dict['tags'] = []
+                result.append(q_dict)
+            
+            return jsonify({'success': True, 'data': result})
+    except Exception as e:
+        logger.error(f"获取题目失败: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/exam/exams/<exam_id>/papers', methods=['POST'])
+def create_exam_paper(exam_id):
+    """创建考试试卷"""
+    try:
+        user_id = session.get('user_id', 1)
+        
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            
+            # 检查考试是否存在
+            cursor.execute('SELECT * FROM exams WHERE id = ?', (exam_id,))
+            exam = cursor.fetchone()
+            
+            if not exam:
+                return jsonify({'success': False, 'error': '考试不存在'}), 404
+            
+            # 获取题目
+            cursor.execute('SELECT * FROM questions WHERE exam_id = ?', (exam_id,))
+            questions = cursor.fetchall()
+            
+            if not questions:
+                return jsonify({'success': False, 'error': '考试没有题目'}), 400
+            
+            # 创建试卷记录
+            import uuid
+            paper_id = str(uuid.uuid4())
+            cursor.execute('''
+                INSERT INTO exam_papers (id, exam_id, user_id, status, created_at, updated_at)
+                VALUES (?, ?, ?, 'in_progress', datetime('now'), datetime('now'))
+            ''', (paper_id, exam_id, user_id))
+            conn.commit()
+            
+            return jsonify({'success': True, 'paper_id': paper_id})
+    except Exception as e:
+        logger.error(f"创建试卷失败: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/exam/papers/<paper_id>/questions', methods=['GET'])
+def get_paper_questions(paper_id):
+    """获取试卷题目"""
+    try:
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            
+            # 获取试卷信息
+            cursor.execute('SELECT exam_id FROM exam_papers WHERE id = ?', (paper_id,))
+            paper = cursor.fetchone()
+            
+            if not paper:
+                return jsonify({'success': False, 'error': '试卷不存在'}), 404
+            
+            # 获取题目
+            cursor.execute('SELECT * FROM questions WHERE exam_id = ?', (paper['exam_id'],))
+            questions = cursor.fetchall()
+            
+            return jsonify({'success': True, 'data': [dict(q) for q in questions]})
+    except Exception as e:
+        logger.error(f"获取试卷题目失败: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/exam/papers/<paper_id>/start', methods=['POST'])
+def start_exam_paper(paper_id):
+    """开始考试"""
+    try:
+        user_id = session.get('user_id', 1)
+        
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            cursor = conn.cursor()
+            
+            # 更新试卷状态
+            cursor.execute('''
+                UPDATE exam_papers 
+                SET status = 'in_progress', start_time = datetime('now')
+                WHERE id = ? AND user_id = ?
+            ''', (paper_id, user_id))
+            conn.commit()
+            
+            if cursor.rowcount == 0:
+                return jsonify({'success': False, 'error': '试卷不存在'}), 404
+            
+            return jsonify({'success': True, 'message': '考试已开始'})
+    except Exception as e:
+        logger.error(f"开始考试失败: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/exam/papers/<paper_id>/answer', methods=['POST'])
+def save_exam_answer(paper_id):
+    """保存答题答案"""
+    try:
+        user_id = session.get('user_id', 1)
+        data = request.get_json()
+        question_id = data.get('question_id')
+        answer = data.get('answer')
+        
+        if not question_id:
+            return jsonify({'success': False, 'error': '缺少题目ID'}), 400
+        
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            cursor = conn.cursor()
+            
+            # 获取现有答案
+            cursor.execute('SELECT answers FROM exam_papers WHERE id = ? AND user_id = ?', (paper_id, user_id))
+            row = cursor.fetchone()
+            
+            if not row:
+                return jsonify({'success': False, 'error': '试卷不存在'}), 404
+            
+            answers = json.loads(row[0]) if row[0] else {}
+            answers[question_id] = answer
+            
+            cursor.execute('UPDATE exam_papers SET answers = ? WHERE id = ?', (json.dumps(answers), paper_id))
+            conn.commit()
+            
+            return jsonify({'success': True})
+    except Exception as e:
+        logger.error(f"保存答案失败: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/exam/papers/<paper_id>/submit', methods=['POST'])
+def submit_exam_paper(paper_id):
+    """提交试卷"""
+    try:
+        user_id = session.get('user_id', 1)
+        data = request.get_json(silent=True) or {}
+        answers = data.get('answers', {})
+        
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            cursor = conn.cursor()
+            
+            # 获取试卷信息
+            cursor.execute('SELECT exam_id FROM exam_papers WHERE id = ? AND user_id = ?', (paper_id, user_id))
+            paper = cursor.fetchone()
+            
+            if not paper:
+                return jsonify({'success': False, 'error': '试卷不存在'}), 404
+            
+            # 计算分数
+            exam_id = paper[0]
+            cursor.execute('SELECT id, correct_answer, points FROM questions WHERE exam_id = ?', (exam_id,))
+            questions = cursor.fetchall()
+            
+            total_score = 0
+            total_points = 0
+            
+            for q in questions:
+                q_id, correct, pts = q
+                total_points += pts
+                if q_id in answers and answers[q_id] == correct:
+                    total_score += pts
+            
+            # 更新试卷
+            cursor.execute('''
+                UPDATE exam_papers 
+                SET status = 'completed', 
+                    answers = ?, 
+                    scores = ?,
+                    end_time = datetime('now'),
+                    submitted_at = datetime('now')
+                WHERE id = ?
+            ''', (json.dumps(answers), json.dumps({'total': total_score, 'max': total_points}), paper_id))
+            conn.commit()
+            
+            accuracy = (total_score / total_points * 100) if total_points > 0 else 0
+            
+            return jsonify({
+                'success': True, 
+                'data': {
+                    'total_score': total_score,
+                    'max_score': total_points,
+                    'accuracy': accuracy / 100,
+                    'time_taken': 0
+                }
+            })
+    except Exception as e:
+        logger.error(f"提交试卷失败: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 # AI生成题目测试
 @app.route('/api/test-ai-questions', methods=['GET'])
 def test_ai_questions_api():
@@ -2521,6 +3259,55 @@ def serve_audio(language, accent, voice, filename):
 @app.route('/test/audio')
 def audio_test():
     return render_template('audio_test.html')
+
+@app.route('/api/exam/submit', methods=['POST'])
+def submit_exam():
+    """提交考试结果（增强版听力测试）"""
+    try:
+        user_id = session.get('user_id', 1)
+        data = request.get_json()
+        answers = data.get('answers', {})
+        score = data.get('score', 0)
+        correct = data.get('correct', 0)
+        total = data.get('total', 0)
+        speed = data.get('speed', 1.0)
+        voice = data.get('voice', 'aria')
+        topic = data.get('topic', 'daily')
+        difficulty = data.get('difficulty', '中级')
+        
+        accuracy = (correct / total * 100) if total > 0 else 0
+        
+        import uuid
+        exam_paper_id = str(uuid.uuid4())
+        exam_id = f"listen_test_{int(time.time())}"
+        
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            cursor = conn.cursor()
+            
+            cursor.execute('''
+                INSERT INTO exam_results (exam_paper_id, exam_id, user_id, total_score, correct_count, total_count, 
+                                        accuracy, analysis, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+            ''', (exam_paper_id, exam_id, str(user_id), score, correct, total, accuracy, 
+                  json.dumps({'answers': answers, 'speed': speed, 'voice': voice, 
+                             'topic': topic, 'difficulty': difficulty})))
+            conn.commit()
+        
+        return jsonify({
+            'success': True,
+            'data': {
+                'score': score,
+                'correct': correct,
+                'total': total,
+                'accuracy': accuracy / 100,
+                'difficulty': difficulty,
+                'speed': speed
+            },
+            'message': '提交成功'
+        })
+    except Exception as e:
+        logger.error(f"提交考试失败: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 # ============================================================
@@ -2867,6 +3654,802 @@ def api_jptest_questions():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+# ============================================================
+# 听力训练系统API
+# ============================================================
+
+def require_listening_access(f):
+    """听力训练访问装饰器 - 必须登录且是成人制教育学生"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        # 检查登录状态
+        if 'user_id' not in session:
+            logger.warning(f"[听力训练] 未登录用户尝试访问")
+            return jsonify({'success': False, 'error': '请先登录', 'require_login': True}), 401
+        
+        # 检查是否是学生角色
+        user_role = session.get('role', '')
+        if user_role != 'student':
+            logger.warning(f"[听力训练] 非学生用户尝试访问: role={user_role}")
+            return jsonify({'success': False, 'error': '只有学生用户才能使用听力训练'}), 403
+        
+        # 检查是否是成人制教育学生
+        user_id = session.get('user_id')
+        try:
+            with sqlite3.connect(DATABASE_PATH) as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT education_system FROM users WHERE id = ?", (user_id,))
+                result = cursor.fetchone()
+                if not result:
+                    return jsonify({'success': False, 'error': '用户不存在'}), 404
+                
+                education_system = result[0] if result[0] else 'regular'
+                if education_system != 'adult':
+                    logger.warning(f"[听力训练] 非成人制学生尝试访问: user_id={user_id}, education_system={education_system}")
+                    return jsonify({'success': False, 'error': '听力训练仅对成人制教育学生开放'}), 403
+        except Exception as e:
+            logger.error(f"[听力训练] 权限验证失败: {e}")
+            return jsonify({'success': False, 'error': '权限验证失败'}), 500
+        
+        return f(*args, **kwargs)
+    return decorated_function
+
+@app.route('/listening_training')
+def listening_training_page():
+    """听力训练页面 - 需要登录且是成人制教育学生"""
+    # 检查登录状态
+    if 'user_id' not in session:
+        return redirect('/auth/login?redirect=/listening_training')
+    
+    # 检查是否是学生角色
+    user_role = session.get('role', '')
+    if user_role != 'student':
+        return "听力训练仅对学生开放", 403
+    
+    # 检查是否是成人制教育学生
+    user_id = session.get('user_id')
+    try:
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT education_system FROM users WHERE id = ?", (user_id,))
+            result = cursor.fetchone()
+            if not result:
+                return redirect('/auth/login?redirect=/listening_training')
+            
+            education_system = result[0] if result[0] else 'regular'
+            if education_system != 'adult':
+                return "听力训练仅对成人制教育学生开放", 403
+    except Exception as e:
+        logger.error(f"[听力训练] 权限验证失败: {e}")
+        return "权限验证失败", 500
+    
+    try:
+        # app.py在flask-app根目录，模板在app/templates
+        template_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'app', 'templates', 'listening_training.html')
+        if os.path.exists(template_file):
+            with open(template_file, 'r', encoding='utf-8') as f:
+                content = f.read()
+            return content, 200, {'Content-Type': 'text/html; charset=utf-8'}
+        else:
+            logger.error(f"模板文件不存在: {template_file}")
+            return "模板文件不存在", 404
+    except Exception as e:
+        logger.error(f"加载听力训练页面失败: {e}")
+        return f"页面加载失败: {str(e)}", 500
+
+@app.route('/api/listening/questions', methods=['GET'])
+@require_listening_access
+def get_listening_questions():
+    """获取听力题列表 - 智能调取：先查数据库，不足则AI生成并入库"""
+    try:
+        language = request.args.get('language', 'all')
+        difficulty = request.args.get('difficulty', 'all')
+        topic = request.args.get('topic', 'all')
+        limit = int(request.args.get('limit', 20))
+
+        logger.info(f"[听力训练] 获取题目 - language={language}, difficulty={difficulty}, topic={topic}, limit={limit}")
+
+        try:
+            from ai_engines.listening_question_generator import get_listening_question_generator
+            generator = get_listening_question_generator(DATABASE_PATH)
+            result = generator.get_or_generate_questions(
+                language=language,
+                difficulty=difficulty,
+                topic=topic,
+                limit=limit
+            )
+            if result.get('success'):
+                logger.info(f"[听力训练] 返回{result['total']}题（来自数据库:{result['from_db']}, AI生成:{result['generated']}）")
+                return jsonify({
+                    'success': True,
+                    'data': result['data'],
+                    'total': result['total'],
+                    'from_db': result['from_db'],
+                    'generated': result['generated']
+                })
+        except Exception as gen_e:
+            logger.warning(f"[听力训练] AI生成器调用失败，回退到纯数据库查询: {gen_e}")
+
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+
+            query = "SELECT * FROM listening_questions WHERE 1=1"
+            params = []
+
+            if language != 'all':
+                query += " AND language = ?"
+                params.append(language)
+            if difficulty != 'all':
+                query += " AND difficulty = ?"
+                params.append(int(difficulty))
+            if topic != 'all':
+                query += " AND topic = ?"
+                params.append(topic)
+
+            query += f" ORDER BY difficulty ASC LIMIT {limit}"
+
+            cursor.execute(query, tuple(params))
+            questions = cursor.fetchall()
+
+            result = []
+            for q in questions:
+                result.append({
+                    'id': q['id'],
+                    'language': q['language'],
+                    'difficulty': q['difficulty'],
+                    'topic': q['topic'],
+                    'accent': q['accent'],
+                    'content': q['content'],
+                    'options': json.loads(q['options']) if q['options'] else [],
+                    'correct_answer': q['correct_answer'],
+                    'audio_url': q['audio_url'],
+                    'transcript': q['transcript'],
+                    'explanation': q['explanation'],
+                    'duration': q['duration']
+                })
+
+            return jsonify({'success': True, 'data': result, 'total': len(result), 'from_db': len(result), 'generated': 0})
+    except Exception as e:
+        logger.error(f"获取听力题失败: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/listening/question/<question_id>', methods=['GET'])
+@require_listening_access
+def get_listening_question(question_id):
+    """获取单个听力题详情"""
+    try:
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM listening_questions WHERE id = ?", (question_id,))
+            q = cursor.fetchone()
+            
+            if not q:
+                return jsonify({'success': False, 'error': '题目不存在'}), 404
+            
+            return jsonify({
+                'success': True,
+                'data': {
+                    'id': q['id'],
+                    'language': q['language'],
+                    'difficulty': q['difficulty'],
+                    'topic': q['topic'],
+                    'accent': q['accent'],
+                    'content': q['content'],
+                    'options': json.loads(q['options']) if q['options'] else [],
+                    'correct_answer': q['correct_answer'],
+                    'audio_url': q['audio_url'],
+                    'transcript': q['transcript'],
+                    'explanation': q['explanation'],
+                    'duration': q['duration']
+                }
+            })
+    except Exception as e:
+        logger.error(f"获取听力题详情失败: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/listening/submit', methods=['POST'])
+@require_listening_access
+def submit_listening_answer():
+    """提交听力答案"""
+    try:
+        user_id = session.get('user_id', 'guest')
+        data = request.get_json()
+        question_id = data.get('question_id')
+        answer = data.get('answer')
+        time_spent = data.get('time_spent', 0)
+        speed_used = data.get('speed_used', 1.0)
+        voice_used = data.get('voice_used', 'aria')
+        
+        import uuid
+        record_id = str(uuid.uuid4())
+        
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            
+            # 获取正确答案
+            cursor.execute("SELECT correct_answer FROM listening_questions WHERE id = ?", (question_id,))
+            q = cursor.fetchone()
+            
+            if not q:
+                return jsonify({'success': False, 'error': '题目不存在'}), 404
+            
+            is_correct = 1 if answer == q['correct_answer'] else 0
+            
+            # 记录答题
+            cursor.execute("""
+                INSERT INTO listening_training_records 
+                (id, user_id, question_id, is_correct, time_spent, speed_used, voice_used, attempts, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, 1, datetime('now'))
+            """, (record_id, str(user_id), question_id, is_correct, time_spent, speed_used, voice_used))
+            
+            # 更新统计
+            cursor.execute("""
+                INSERT INTO listening_training_stats (user_id, total_questions, correct_count, total_time, avg_speed, preferred_voice, last_training, updated_at)
+                VALUES (?, 1, ?, ?, ?, ?, datetime('now'), datetime('now'))
+                ON CONFLICT(user_id) DO UPDATE SET
+                    total_questions = total_questions + 1,
+                    correct_count = correct_count + ?,
+                    total_time = total_time + ?,
+                    avg_speed = (avg_speed * total_questions + ?) / (total_questions + 1),
+                    last_training = datetime('now'),
+                    updated_at = datetime('now')
+            """, (str(user_id), is_correct, time_spent, speed_used, voice_used, is_correct, time_spent, speed_used))
+            
+            conn.commit()
+        
+        return jsonify({
+            'success': True,
+            'data': {
+                'is_correct': is_correct,
+                'correct_answer': q['correct_answer']
+            },
+            'message': '答案提交成功'
+        })
+    except Exception as e:
+        logger.error(f"提交听力答案失败: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/listening/stats', methods=['GET'])
+@require_listening_access
+def get_listening_stats():
+    """获取听力训练统计"""
+    try:
+        user_id = request.args.get('user_id') or session.get('user_id', 'guest')
+        
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            
+            cursor.execute("SELECT * FROM listening_training_stats WHERE user_id = ?", (str(user_id),))
+            stats = cursor.fetchone()
+            
+            if not stats:
+                return jsonify({
+                    'success': True,
+                    'data': {
+                        'total_questions': 0,
+                        'correct_count': 0,
+                        'accuracy': 0,
+                        'total_time': 0,
+                        'avg_speed': 1.0,
+                        'preferred_voice': 'aria'
+                    }
+                })
+            
+            accuracy = (stats['correct_count'] / stats['total_questions'] * 100) if stats['total_questions'] > 0 else 0
+            
+            return jsonify({
+                'success': True,
+                'data': {
+                    'total_questions': stats['total_questions'],
+                    'correct_count': stats['correct_count'],
+                    'accuracy': accuracy,
+                    'total_time': stats['total_time'],
+                    'avg_speed': stats['avg_speed'],
+                    'preferred_voice': stats['preferred_voice'],
+                    'last_training': stats['last_training']
+                }
+            })
+    except Exception as e:
+        logger.error(f"获取听力统计失败: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/listening/history', methods=['GET'])
+@require_listening_access
+def get_listening_history():
+    """获取听力训练历史"""
+    try:
+        user_id = request.args.get('user_id') or session.get('user_id', 'guest')
+        limit = int(request.args.get('limit', 50))
+        
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            
+            cursor.execute("""
+                SELECT r.*, q.content, q.language, q.difficulty, q.topic
+                FROM listening_training_records r
+                LEFT JOIN listening_questions q ON r.question_id = q.id
+                WHERE r.user_id = ?
+                ORDER BY r.created_at DESC
+                LIMIT ?
+            """, (str(user_id), limit))
+            
+            records = cursor.fetchall()
+            
+            result = []
+            for r in records:
+                result.append({
+                    'id': r['id'],
+                    'question_id': r['question_id'],
+                    'content': r['content'],
+                    'language': r['language'],
+                    'difficulty': r['difficulty'],
+                    'topic': r['topic'],
+                    'is_correct': r['is_correct'],
+                    'time_spent': r['time_spent'],
+                    'speed_used': r['speed_used'],
+                    'voice_used': r['voice_used'],
+                    'created_at': r['created_at']
+                })
+            
+            return jsonify({'success': True, 'data': result, 'total': len(result)})
+    except Exception as e:
+        logger.error(f"获取听力历史失败: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+# ============================================================
+# 数学模型与解题系统API
+# ============================================================
+
+def _get_math_service():
+    """获取数学模型服务实例"""
+    from app.services.problem_solving_service import get_math_model_service
+    return get_math_model_service(DATABASE_PATH)
+
+def _get_math_generator():
+    """获取数学题生成器实例"""
+    from ai_engines.math_solver_engine import get_math_problem_generator
+    return get_math_problem_generator(DATABASE_PATH)
+
+def _get_math_solver():
+    """获取数学解题引擎实例"""
+    from ai_engines.math_solver_engine import get_math_solver
+    return get_math_solver()
+
+# ============================================================
+# 数学模型与解题系统API - 访问权限控制
+# ============================================================
+
+def require_math_training_access(f):
+    """数学训练访问装饰器 - 必须登录且是成人制教育学生"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        # 检查登录状态
+        if 'user_id' not in session:
+            logger.warning(f"[数学训练] 未登录用户尝试访问")
+            return jsonify({'success': False, 'error': '请先登录', 'require_login': True}), 401
+        
+        # 检查是否是学生角色
+        user_role = session.get('role', '')
+        if user_role != 'student':
+            logger.warning(f"[数学训练] 非学生用户尝试访问: role={user_role}")
+            return jsonify({'success': False, 'error': '只有学生用户才能使用数学训练'}), 403
+        
+        # 检查是否是成人制教育学生
+        user_id = session.get('user_id')
+        try:
+            with sqlite3.connect(DATABASE_PATH) as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT education_system FROM users WHERE id = ?", (user_id,))
+                result = cursor.fetchone()
+                if not result:
+                    return jsonify({'success': False, 'error': '用户不存在'}), 404
+                
+                education_system = result[0] if result[0] else 'regular'
+                if education_system != 'adult':
+                    logger.warning(f"[数学训练] 非成人制学生尝试访问: user_id={user_id}, education_system={education_system}")
+                    return jsonify({'success': False, 'error': '数学训练仅对成人制教育学生开放'}), 403
+        except Exception as e:
+            logger.error(f"[数学训练] 权限验证失败: {e}")
+            return jsonify({'success': False, 'error': '权限验证失败'}), 500
+        
+        return f(*args, **kwargs)
+    return decorated_function
+
+@app.route('/math_training')
+def math_training_page():
+    """数学训练页面 - 需要登录且是成人制教育学生"""
+    # 检查登录状态
+    if 'user_id' not in session:
+        return redirect('/auth/login?redirect=/math_training')
+    
+    # 检查是否是学生角色
+    user_role = session.get('role', '')
+    if user_role != 'student':
+        return "数学训练仅对学生开放", 403
+    
+    # 检查是否是成人制教育学生
+    user_id = session.get('user_id')
+    try:
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT education_system FROM users WHERE id = ?", (user_id,))
+            result = cursor.fetchone()
+            if not result:
+                return redirect('/auth/login?redirect=/math_training')
+            
+            education_system = result[0] if result[0] else 'regular'
+            if education_system != 'adult':
+                return "数学训练仅对成人制教育学生开放", 403
+    except Exception as e:
+        logger.error(f"[数学训练] 权限验证失败: {e}")
+        return "权限验证失败", 500
+    
+    try:
+        template_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'app', 'templates', 'math_training.html')
+        if os.path.exists(template_file):
+            with open(template_file, 'r', encoding='utf-8') as f:
+                content = f.read()
+            return content, 200, {'Content-Type': 'text/html; charset=utf-8'}
+        else:
+            logger.error(f"数学训练模板文件不存在: {template_file}")
+            return "页面开发中...", 404
+    except Exception as e:
+        logger.error(f"加载数学训练页面失败: {e}")
+        return f"页面加载失败: {str(e)}", 500
+
+@app.route('/api/math/stats', methods=['GET'])
+@require_math_training_access
+def math_get_stats():
+    """获取数学系统统计"""
+    try:
+        user_id = session.get('user_id', '')
+        service = _get_math_service()
+        result = service.get_stats(user_id)
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"获取数学统计失败: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/math/categories', methods=['GET'])
+@require_math_training_access
+def math_get_categories():
+    """获取数学分类"""
+    try:
+        service = _get_math_service()
+        result = service.get_categories()
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"获取数学分类失败: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/math/concepts', methods=['GET'])
+@require_math_training_access
+def math_get_concepts():
+    """获取数学概念列表"""
+    try:
+        category = request.args.get('category', '')
+        difficulty = request.args.get('difficulty')
+        keyword = request.args.get('keyword', '')
+        limit = int(request.args.get('limit', 50))
+        offset = int(request.args.get('offset', 0))
+
+        service = _get_math_service()
+        result = service.get_concepts(
+            category=category,
+            difficulty=int(difficulty) if difficulty else None,
+            keyword=keyword,
+            limit=limit,
+            offset=offset
+        )
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"获取数学概念失败: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/math/methods', methods=['GET'])
+@require_math_training_access
+def math_get_methods():
+    """获取解题方法列表"""
+    try:
+        category = request.args.get('category', '')
+        method_type = request.args.get('method_type', '')
+        keyword = request.args.get('keyword', '')
+        limit = int(request.args.get('limit', 50))
+        offset = int(request.args.get('offset', 0))
+
+        service = _get_math_service()
+        result = service.get_solution_methods(
+            category=category,
+            method_type=method_type,
+            keyword=keyword,
+            limit=limit,
+            offset=offset
+        )
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"获取解题方法失败: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/math/problems', methods=['GET'])
+@require_math_training_access
+def math_get_problems():
+    """获取数学题目列表 - 优先调取数据库，不足时AI生成补充"""
+    try:
+        category = request.args.get('category', 'all')
+        difficulty = request.args.get('difficulty')
+        problem_type = request.args.get('problem_type', '')
+        keyword = request.args.get('keyword', '')
+        limit = int(request.args.get('limit', 10))
+        offset = int(request.args.get('offset', 0))
+        auto_generate = request.args.get('auto_generate', 'true').lower() == 'true'
+
+        service = _get_math_service()
+
+        if category == 'all':
+            categories = ['algebra', 'geometry', 'probability']
+            db_problems = []
+            total_from_db = 0
+            per_cat = max(1, limit // len(categories))
+            for cat in categories:
+                result = service.get_problems(
+                    category=cat,
+                    difficulty=int(difficulty) if difficulty else None,
+                    problem_type=problem_type,
+                    keyword=keyword,
+                    limit=per_cat,
+                    offset=0
+                )
+                if result['success']:
+                    db_problems.extend(result['data'])
+                    total_from_db += result['total']
+            db_problems = db_problems[:limit]
+        else:
+            result = service.get_problems(
+                category=category,
+                difficulty=int(difficulty) if difficulty else None,
+                problem_type=problem_type,
+                keyword=keyword,
+                limit=limit,
+                offset=offset
+            )
+            db_problems = result['data'] if result['success'] else []
+            total_from_db = result.get('total', 0)
+
+        generated_count = 0
+        if auto_generate and len(db_problems) < limit:
+            need = limit - len(db_problems)
+            gen_category = category if category != 'all' else random.choice(['algebra', 'geometry', 'probability'])
+            gen_difficulty = int(difficulty) if difficulty else 2
+
+            generator = _get_math_generator()
+            generated = generator.generate_problems(need, gen_category, gen_difficulty)
+
+            for prob in generated:
+                service.add_problem(prob)
+                generated_count += 1
+
+            db_problems.extend(generated)
+            db_problems = db_problems[:limit]
+
+        return jsonify({
+            'success': True,
+            'data': db_problems,
+            'total': total_from_db + generated_count,
+            'from_db': len(db_problems) - generated_count,
+            'generated': generated_count
+        })
+    except Exception as e:
+        logger.error(f"获取数学题目失败: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/math/problems/<problem_id>', methods=['GET'])
+@require_math_training_access
+def math_get_problem_detail(problem_id):
+    """获取题目详情"""
+    try:
+        service = _get_math_service()
+        problem = service.get_problem(problem_id)
+        if problem:
+            return jsonify({'success': True, 'data': problem})
+        else:
+            return jsonify({'success': False, 'error': '题目不存在'}), 404
+    except Exception as e:
+        logger.error(f"获取题目详情失败: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/math/solve', methods=['POST'])
+@require_math_training_access
+def math_solve_problem():
+    """AI解题"""
+    try:
+        data = request.get_json(silent=True) or {}
+        problem = data.get('problem', {})
+        problem_id = data.get('problem_id', '')
+
+        service = _get_math_service()
+        if problem_id:
+            problem_data = service.get_problem(problem_id)
+            if problem_data:
+                problem = problem_data
+
+        if not problem:
+            return jsonify({'success': False, 'error': '请提供题目'}), 400
+
+        solver = _get_math_solver()
+        result = solver.solve(problem)
+
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"解题失败: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/math/submit', methods=['POST'])
+@require_math_training_access
+def math_submit_answer():
+    """提交答案并记录"""
+    try:
+        data = request.get_json(silent=True) or {}
+        problem_id = data.get('problem_id', '')
+        user_answer = data.get('user_answer', '')
+        time_spent = float(data.get('time_spent', 0))
+        attempts = int(data.get('attempts', 1))
+        hint_used = int(data.get('hint_used', 0))
+
+        service = _get_math_service()
+        problem = service.get_problem(problem_id)
+
+        if not problem:
+            return jsonify({'success': False, 'error': '题目不存在'}), 404
+
+        correct_answer = problem.get('correct_answer', '')
+        is_correct = str(user_answer).strip() == str(correct_answer).strip() or \
+                     str(correct_answer).strip() in str(user_answer).strip()
+
+        user_id = session.get('user_id', '')
+        solution_data = {
+            'problem_id': problem_id,
+            'problem_content': problem.get('content', ''),
+            'problem_type': problem.get('problem_type', ''),
+            'difficulty': problem.get('difficulty', 1),
+            'final_answer': str(user_answer),
+            'is_correct': is_correct,
+            'user_id': user_id,
+            'time_spent': time_spent,
+            'attempts': attempts,
+            'hint_used': hint_used,
+            'related_concepts': problem.get('related_concepts', []),
+            'related_formulas': problem.get('related_formulas', [])
+        }
+        service.save_solution(solution_data)
+
+        return jsonify({
+            'success': True,
+            'is_correct': is_correct,
+            'correct_answer': correct_answer,
+            'explanation': problem.get('answer_explanation', ''),
+            'solution_steps': problem.get('solution_steps', [])
+        })
+    except Exception as e:
+        logger.error(f"提交答案失败: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/math/generate', methods=['POST'])
+@require_math_training_access
+def math_generate_problems():
+    """生成数学题目并入库"""
+    try:
+        data = request.get_json(silent=True) or {}
+        count = int(data.get('count', 5))
+        category = data.get('category', 'algebra')
+        difficulty = int(data.get('difficulty', 2))
+        save_to_db = data.get('save_to_db', True)
+
+        generator = _get_math_generator()
+        problems = generator.generate_problems(count, category, difficulty)
+
+        if save_to_db:
+            service = _get_math_service()
+            for prob in problems:
+                service.add_problem(prob)
+
+        return jsonify({
+            'success': True,
+            'data': problems,
+            'count': len(problems),
+            'saved': save_to_db
+        })
+    except Exception as e:
+        logger.error(f"生成题目失败: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/math/user/history', methods=['GET'])
+@require_math_training_access
+def math_user_history():
+    """获取用户解题历史"""
+    try:
+        user_id = session.get('user_id', '')
+        if not user_id:
+            return jsonify({'success': False, 'error': '请先登录'}), 401
+
+        limit = int(request.args.get('limit', 20))
+        offset = int(request.args.get('offset', 0))
+
+        service = _get_math_service()
+        result = service.get_user_solutions(user_id, limit, offset)
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"获取解题历史失败: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+# ============================================
+# 友好错误页面处理
+# ============================================
+
+@app.errorhandler(400)
+def handle_400_error(e):
+    """处理400错误 - 请求格式错误"""
+    logger.warning(f"[错误页面] 400错误: {e}")
+    return render_template('400.html'), 400
+
+@app.errorhandler(401)
+def handle_401_error(e):
+    """处理401错误 - 需要登录"""
+    logger.warning(f"[错误页面] 401错误: {e}")
+    return render_template('401.html'), 401
+
+@app.errorhandler(403)
+def handle_403_error(e):
+    """处理403错误 - 权限不足"""
+    logger.warning(f"[错误页面] 403错误: {e}")
+    return render_template('403.html', 
+                          current_role=session.get('role', '未登录'),
+                          request_path=request.path), 403
+
+@app.errorhandler(404)
+def handle_404_error(e):
+    """处理404错误 - 页面未找到"""
+    logger.warning(f"[错误页面] 404错误: {request.path}")
+    return render_template('404.html'), 404
+
+@app.errorhandler(500)
+def handle_500_error(e):
+    """处理500错误 - 服务器内部错误"""
+    logger.error(f"[错误页面] 500错误: {e}")
+    return render_template('500.html'), 500
+
+@app.errorhandler(Exception)
+def handle_generic_error(e):
+    """处理所有未捕获的异常"""
+    logger.error(f"[错误页面] 未捕获异常: {type(e).__name__}: {e}")
+    # 如果是API请求，返回JSON错误
+    if request.path.startswith('/api/'):
+        return jsonify({
+            'success': False,
+            'error': '服务器内部错误',
+            'message': str(e),
+            'status': 'error'
+        }), 500
+    # 否则返回友好的错误页面
+    return render_template('error.html',
+                          error_code=500,
+                          error_title='服务器内部错误',
+                          error_message='抱歉，服务器遇到了一些问题，请稍后再试',
+                          error_suggestion='如果问题持续存在，请联系管理员或提交反馈',
+                          error_id=str(uuid.uuid4()),
+                          timestamp=datetime.now().strftime('%Y-%m-%d %H:%M:%S')), 500
+
+
 if __name__ == '__main__':
     try:
         from app.services.client_monitor_service import init_monitor_tables, create_monitor_employee
@@ -2915,7 +4498,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--port', type=int, default=8888, help='端口号')
     parser.add_argument('--ssl', action='store_true', help='启用SSL/TLS加密')
-    parser.add_argument('--ssl-port', type=int, default=8443, help='SSL端口号')
+    parser.add_argument('--ssl-port', type=int, default=8888, help='SSL端口号')
     parser.add_argument('--ssl-cert', type=str, default=os.path.join(os.path.dirname(os.path.abspath(__file__)), 'ssl', 'mtscos.crt'), help='SSL证书路径')
     parser.add_argument('--ssl-key', type=str, default=os.path.join(os.path.dirname(os.path.abspath(__file__)), 'ssl', 'mtscos.key'), help='SSL密钥路径')
     args = parser.parse_args()
@@ -2928,15 +4511,39 @@ if __name__ == '__main__':
             print(f"[INFO] 🔒 启用SSL/TLS加密")
             print(f"[INFO] SSL证书: {args.ssl_cert}")
             print(f"[INFO] SSL密钥: {args.ssl_key}")
-            print(f"[INFO] 服务器运行在 https://0.0.0.0:{args.ssl_port}")
-            app.run(host='0.0.0.0', port=args.ssl_port, debug=False, use_reloader=False, ssl_context=(args.ssl_cert, args.ssl_key))
+            print(f"[INFO] HTTPS服务器运行在 https://0.0.0.0:{args.ssl_port}")
+            
+            http_port = args.port
+            if http_port == args.ssl_port:
+                http_port = 8080
+            
+            import threading
+            
+            def start_http_redirect_server():
+                from flask import Flask, request, redirect
+                redirect_app = Flask('redirect_server')
+                
+                @redirect_app.route('/', defaults={'path': ''})
+                @redirect_app.route('/<path:path>')
+                def http_to_https_redirect(path):
+                    host = request.host.split(':')[0]
+                    https_url = f"https://{host}:{args.ssl_port}/{path}"
+                    return redirect(https_url, code=301)
+                
+                print(f"[INFO] HTTP重定向服务器运行在 http://0.0.0.0:{http_port}")
+                redirect_app.run(host='::', port=http_port, debug=False, use_reloader=False)
+            
+            http_thread = threading.Thread(target=start_http_redirect_server, daemon=True)
+            http_thread.start()
+            
+            app.run(host='::', port=args.ssl_port, debug=False, use_reloader=False, ssl_context=(args.ssl_cert, args.ssl_key))
         else:
             print(f"[ERROR] SSL证书或密钥文件不存在")
             print(f"[ERROR] 证书: {args.ssl_cert}")
             print(f"[ERROR] 密钥: {args.ssl_key}")
             print(f"[INFO] 回退到HTTP模式")
             print(f"[INFO] 服务器运行在 http://0.0.0.0:{args.port}")
-            app.run(host='0.0.0.0', port=args.port, debug=False, use_reloader=False)
+            app.run(host='::', port=args.port, debug=False, use_reloader=False)
     else:
         print(f"[INFO] 服务器运行在 http://0.0.0.0:{args.port}")
-        app.run(host='0.0.0.0', port=args.port, debug=False, use_reloader=False)
+        app.run(host='::', port=args.port, debug=False, use_reloader=False)

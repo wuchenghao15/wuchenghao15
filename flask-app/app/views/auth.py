@@ -97,6 +97,16 @@ def login():
         session.permanent = True
         session['login_attempts'] = 0
 
+        role_redirects = {
+            'student': '/exam_system',
+            'designer': '/arduino',
+            'teacher': '/teacher',
+            'admin': '/settings',
+            'super_admin': '/super_admin_dashboard',
+            'hardware_admin': '/admin_center'
+        }
+        redirect_url = role_redirects.get(user['role'], '/dashboard')
+
         return jsonify({
             'success': True,
             'message': '登录成功',
@@ -105,7 +115,8 @@ def login():
                 'username': user['username'],
                 'role': user['role'],
                 'email': user['email']
-            }
+            },
+            'redirect_url': redirect_url
         }), 200
 
     return render_template('login.html')

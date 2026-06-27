@@ -374,6 +374,39 @@ def init_api_routes():
     except Exception as e:
         logger.error(f"初始化智能考试助手AI API路由失败: {str(e)}")
 
+    # 本地AI对话API
+    try:
+        from app.api.ai_chat_api import ai_chat_bp
+        route_manager.register_api_blueprint(
+            ai_chat_bp,
+            url_prefix="",
+            description="本地AI对话API"
+        )
+    except Exception as e:
+        logger.error(f"初始化本地AI对话API路由失败: {str(e)}")
+
+    # 用户中心API
+    try:
+        from app.api.user_center_api import user_center_bp
+        route_manager.register_api_blueprint(
+            user_center_bp,
+            url_prefix="",
+            description="用户中心API（个人资料、通知、消息）"
+        )
+    except Exception as e:
+        logger.error(f"初始化用户中心API路由失败: {str(e)}")
+
+    # 系统增强API
+    try:
+        from app.api.system_enhancement_api import system_enhancement_bp
+        route_manager.register_api_blueprint(
+            system_enhancement_bp,
+            url_prefix="",
+            description="系统增强API（文件、搜索、导出）"
+        )
+    except Exception as e:
+        logger.error(f"初始化系统增强API路由失败: {str(e)}")
+
     # 考试系统优化API
     try:
         from app.blueprints.exam_optimization_api import exam_optimization_api
@@ -557,6 +590,22 @@ def init_view_routes():
         )
     except Exception as e:
         logger.error(f"初始化教师系统视图路由失败: {str(e)}")
+
+    # 系统维护路由
+    try:
+        from app.routes.maintenance_routes import maintenance_bp, docs_bp
+        route_manager.register_view_blueprint(
+            maintenance_bp,
+            url_prefix="/maintenance",
+            description="系统维护路由"
+        )
+        route_manager.register_view_blueprint(
+            docs_bp,
+            url_prefix="/docs",
+            description="文档路由"
+        )
+    except Exception as e:
+        logger.error(f"初始化系统维护路由失败: {str(e)}")
 
 
 def init_routes():

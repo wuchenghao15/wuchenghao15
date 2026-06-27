@@ -17,7 +17,7 @@ from typing import Dict, List, Optional, Tuple
 from flask import session, request
 import sys
 
-ROLE_HIERARCHY = ['guest', 'student', 'designer', 'admin', 'super_admin', 'hardware_admin']
+ROLE_HIERARCHY = ['guest', 'student', 'designer', 'teacher', 'admin', 'super_admin', 'hardware_admin']
 
 ROLES = {
     'guest': {
@@ -33,14 +33,30 @@ ROLES = {
         'permissions': [
             'view_profile', 'change_language', 'view_exams', 'take_exam',
             'view_results', 'view_learning_records',
-            'view_student_dashboard', 'view_my_grades', 'view_exam_history'
+            'view_student_dashboard', 'view_my_grades', 'view_exam_history',
+            'use_ai_chat', 'view_ai_chat_history', 'manage_ai_chat_settings'
+        ]
+    },
+    'teacher': {
+        'name': '教师',
+        'description': '教师用户',
+        'level': 2,
+        'permissions': [
+            'view_profile', 'change_language', 'view_exams', 'take_exam',
+            'view_results', 'view_learning_records',
+            'view_teacher_dashboard', 'manage_students', 'manage_homework',
+            'manage_teacher_exams', 'view_teacher_grades', 'manage_question_bank',
+            'view_teacher_reports', 'view_teacher_papers',
+            'use_ai_chat', 'view_ai_chat_history', 'manage_ai_chat_settings',
+            'ai_chat_advanced', 'ai_chat_export'
         ]
     },
     'designer': {
         'name': '设计师',
         'description': '设计人员',
         'level': 1,
-        'permissions': ['view_profile', 'change_language', 'view_exams', 'design_questions']
+        'permissions': ['view_profile', 'change_language', 'view_exams', 'design_questions',
+                       'use_ai_chat', 'view_ai_chat_history', 'manage_ai_chat_settings']
     },
     'admin': {
         'name': '管理员',
@@ -48,7 +64,9 @@ ROLES = {
         'level': 3,
         'permissions': ['view_profile', 'change_language', 'view_exams', 'take_exam',
                        'create_exam', 'manage_questions', 'view_settings', 'manage_settings',
-                       'manage_users', 'view_logs', 'manage_system', 'manage_exams']
+                       'manage_users', 'view_logs', 'manage_system', 'manage_exams',
+                       'use_ai_chat', 'view_ai_chat_history', 'manage_ai_chat_settings',
+                       'ai_chat_advanced', 'ai_chat_export', 'ai_chat_admin']
     },
     'super_admin': {
         'name': '超级管理员',
@@ -75,6 +93,9 @@ PAGE_PERMISSIONS = {
     '/super_admin_dashboard': ['super_admin', 'hardware_admin'],
     '/exam': ['student', 'designer', 'admin', 'super_admin', 'hardware_admin'],
     '/exam_system': ['student', 'designer', 'admin', 'super_admin', 'hardware_admin'],
+    '/ai-chat': ['student', 'designer', 'teacher', 'admin', 'super_admin', 'hardware_admin'],
+    '/profile': ['student', 'designer', 'teacher', 'admin', 'super_admin', 'hardware_admin'],
+    '/notifications': ['student', 'designer', 'teacher', 'admin', 'super_admin', 'hardware_admin'],
     '/api/admin/users': ['admin', 'super_admin', 'hardware_admin'],
     '/api/admin/system': ['admin', 'super_admin', 'hardware_admin'],
     '/api/admin/monitor': ['admin', 'super_admin', 'hardware_admin'],

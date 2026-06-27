@@ -1,0 +1,149 @@
+{% extends "admin_app/base.html" %}
+
+{% block title %}用户管理 - MTSCOS 管理端{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <div class="section-title" style="margin-top: 0;">
+        <i class="fas fa-users" style="color: #3b82f6;"></i>
+        用户管理
+        <span class="tag tag-blue" style="margin-left: auto;">{{ users|length }} 人</span>
+    </div>
+
+    <div class="search-bar">
+        <i class="fas fa-search"></i>
+        <input type="text" id="search-input" placeholder="搜索用户名、邮箱..." oninput="filterUsers()">
+    </div>
+
+    <div class="filter-tabs">
+        <div class="filter-tab active" onclick="setFilter(this, 'all')">全部</div>
+        <div class="filter-tab" onclick="setFilter(this, 'student')">学生</div>
+        <div class="filter-tab" onclick="setFilter(this, 'teacher')">教师</div>
+        <div class="filter-tab" onclick="setFilter(this, 'admin')">管理员</div>
+        <div class="filter-tab" onclick="setFilter(this, 'designer')">设计师</div>
+    </div>
+
+    <div id="user-list">
+        {% if users %}
+            {% for u in users %}
+            <div class="card user-card" data-role="{{ u.role }}" data-username="{{ u.username }}" data-email="{{ u.email }}">
+                <div class="list-item" style="padding: 0; border: none;">
+                    <div class="list-avatar" style="background: linear-gradient(135deg, 
+                        {% if u.role == 'super_admin' %}#ef4444, #dc2626
+                        {% elif u.role == 'admin' %}#8b5cf6, #7c3aed
+                        {% elif u.role == 'hardware_admin' %}#3b82f6, #2563eb
+                        {% elif u.role == 'teacher' %}#10b981, #059669
+                        {% elif u.role == 'student' %}#3b82f6, #2563eb
+                        {% elif u.role == 'designer' %}#f59e0b, #d97706
+                        {% else %}#64748b, #475569
+                        {% endif %});">
+                        {{ u.username[:1].upper() }}
+                    </div>
+                    <div class="list-content">
+                        <div class="list-title">
+                            {{ u.username }}
+                            {% if u.is_active == 1 %}
+                            <span class="tag tag-green" style="margin-left: 8px;">正常</span>
+                            {% else %}
+                            <span class="tag tag-red" style="margin-left: 8px;">禁用</span>
+                            {% endif %}
+                        </div>
+                        <div class="list-desc">
+                            <span class="tag {{ getRoleTagClass(u.role) }}" style="margin-right: 8px;">
+                                {{ getRoleName(u.role) }}
+                            </span>
+                            {{ u.email or '未设置邮箱' }}
+                        </div>
+                    </div>
+                    <div class="list-action">
+                        <i class="fas fa-chevron-right arrow"></i>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                <div class="empty-state-icon">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="empty-state-text">暂无用户数据</div>
+            </div>
+        {% endif %}
+    </div>
+
+    <div style="height: 20px;"></div>
+</div>
+
+<script>
+    var currentFilter = 'all';
+
+    function setFilter(el, filter) {
+        currentFilter = filter;
+        document.querySelectorAll('.filter-tab').forEach(function(tab) {
+            tab.classList.remove('active');
+        });
+        el.classList.add('active');
+        filterUsers();
+    }
+
+    function filterUsers() {
+        var search = document.getElementById('search-input').value.toLowerCase();
+        var cards = document.querySelectorAll('.user-card');
+        
+        cards.forEach(function(card) {
+            var role = card.getAttribute('data-role');
+            var username = card.getAttribute('data-username').toLowerCase();
+            var email = (card.getAttribute('data-email') || '').toLowerCase();
+            
+            var matchRole = currentFilter === 'all' || role === currentFilter;
+            var matchSearch = !search || username.includes(search) || email.includes(search);
+            
+            card.style.display = (matchRole && matchSearch) ? 'block' : 'none';
+        });
+    }
+
+    function showUserDetail(user) {
+        var statusColor = user.is_active == 1 ? '#34d399' : '#f87171';
+        var statusText = user.is_active == 1 ? '正常' : '已禁用';
+        var createdAt = user.created_at ? user.created_at.split('T')[0] : '-';
+        var emailText = user.email || '未设置邮箱';
+        var initial = user.username.charAt(0).toUpperCase();
+        
+        var contentHtml = '<div style="text-align: center; margin-bottom: 20px;">' +
+            '<div style="width: 72px; height: 72px; border-radius: 20px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 700; color: white; margin: 0 auto 16px;">' +
+            initial + '</div>' +
+            '<div style="font-size: 20px; font-weight: 700; margin-bottom: 4px;">' + user.username + '</div>' +
+            '<div style="font-size: 13px; color: var(--text-muted);">' + emailText + '</div></div>' +
+            '<div class="stat-row" style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border);">' +
+            '<span style="color: var(--text-secondary); font-size: 14px;">用户ID</span>' +
+            '<span style="font-weight: 600; font-size: 14px;">' + user.id + '</span></div>' +
+            '<div class="stat-row" style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border);">' +
+            '<span style="color: var(--text-secondary); font-size: 14px;">角色</span>' +
+            '<span style="font-weight: 600; font-size: 14px;">' + getRoleName(user.role) + '</span></div>' +
+            '<div class="stat-row" style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border);">' +
+            '<span style="color: var(--text-secondary); font-size: 14px;">状态</span>' +
+            '<span style="font-weight: 600; font-size: 14px; color: ' + statusColor + ';">' + statusText + '</span></div>' +
+            '<div class="stat-row" style="display: flex; justify-content: space-between; padding: 12px 0;">' +
+            '<span style="color: var(--text-secondary); font-size: 14px;">注册时间</span>' +
+            '<span style="font-weight: 600; font-size: 14px;">' + createdAt + '</span></div>';
+        
+        showModal('用户详情', contentHtml, {
+            showFooter: false
+        });
+    }
+
+    document.querySelectorAll('.user-card').forEach(function(card) {
+        card.addEventListener('click', function() {
+            var user = {
+                id: this.getAttribute('data-username'),
+                username: this.getAttribute('data-username'),
+                email: this.getAttribute('data-email'),
+                role: this.getAttribute('data-role'),
+                is_active: 1,
+                created_at: '2024-01-01'
+            };
+            showUserDetail(user);
+        });
+    });
+</script>
+{% endblock %}

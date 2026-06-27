@@ -223,6 +223,12 @@
             transform: translateY(-2px);
         }
 
+        .btn-primary.disabled {
+            background: #64748b;
+            cursor: not-allowed;
+            transform: none;
+        }
+
         .btn-secondary {
             background: rgba(255, 255, 255, 0.1);
             color: var(--text-primary);
@@ -322,7 +328,8 @@
         }
 
         .form-group input,
-        .form-group select {
+        .form-group select,
+        .form-group textarea {
             width: 100%;
             padding: 12px;
             background: rgba(255, 255, 255, 0.1);
@@ -332,10 +339,48 @@
             font-size: 1rem;
         }
 
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
         .form-group input:focus,
-        .form-group select:focus {
+        .form-group select:focus,
+        .form-group textarea:focus {
             outline: none;
             border-color: var(--primary-color);
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .status-active {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+        }
+
+        .status-draft {
+            background: rgba(245, 158, 11, 0.2);
+            color: #f59e0b;
+        }
+
+        .status-ended {
+            background: rgba(148, 163, 184, 0.2);
+            color: #94a3b8;
+        }
+
+        .language-badge {
+            padding: 4px 10px;
+            background: rgba(139, 92, 246, 0.2);
+            border: 1px solid var(--accent-color);
+            border-radius: 8px;
+            font-size: 0.8rem;
+            margin-right: 8px;
         }
 
         @media (max-width: 768px) {
@@ -350,6 +395,17 @@
             .nav-btn {
                 padding: 10px 16px;
                 font-size: 0.9rem;
+            }
+
+            .exam-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+
+            .exam-actions {
+                width: 100%;
+                flex-wrap: wrap;
             }
         }
     </style>
@@ -377,20 +433,20 @@
             
             <div class="stats-grid">
                 <div class="stat-card">
-                    <div class="stat-value">100,000+</div>
-                    <div class="stat-label">题库总量</div>
+                    <div class="stat-value" id="stat-exams">0</div>
+                    <div class="stat-label">考试总数</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-value">500+</div>
-                    <div class="stat-label">考试场次</div>
+                    <div class="stat-value" id="stat-questions">0</div>
+                    <div class="stat-label">题目总数</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-value">10,000+</div>
-                    <div class="stat-label">考生人数</div>
+                    <div class="stat-value" id="stat-papers">0</div>
+                    <div class="stat-label">试卷数量</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-value">98%</div>
-                    <div class="stat-label">系统可用性</div>
+                    <div class="stat-value" id="stat-active">0</div>
+                    <div class="stat-label">进行中考试</div>
                 </div>
             </div>
 
@@ -399,7 +455,7 @@
                     <h3 class="card-title">
                         <i>🌐</i> 多语言支持
                     </h3>
-                    <p class="card-content">支持日语（关西腔/关东腔）、英语（美式/英式/澳式）发音题库，覆盖多种语言考试需求。</p>
+                    <p class="card-content">支持日语（关西腔/关东腔）、英语（美式/英式/非洲英语/印度英语）发音题库，覆盖多种语言考试需求。</p>
                     <div class="language-tags">
                         <span class="lang-tag">日语</span>
                         <span class="lang-tag">英语</span>
@@ -426,29 +482,10 @@
         <section id="exams" class="section" style="display: none;">
             <h2 class="section-title">📝 考试列表</h2>
             
-            <div class="exam-list">
-                {% if exams %}
-                    {% for exam in exams %}
-                    <div class="exam-item" data-exam-id="{{ exam.id }}">
-                        <div class="exam-info">
-                            <h3>{{ exam.name }}</h3>
-                            <p>时长: {{ exam.duration }}分钟 | 题目: {{ exam.total_questions }}道 | 难度: {{ exam.difficulty_level }}</p>
-                            {% if exam.audio_type %}
-                            <p style="font-size: 0.85rem; color: #94a3b8;">发音类型: {{ exam.audio_type }}</p>
-                            {% endif %}
-                        </div>
-                        <div class="exam-actions">
-                            <button class="btn btn-primary" onclick="startExam({{ exam.id }})">开始考试</button>
-                            <button class="btn btn-secondary" onclick="showExamDetail({{ exam.id }})">详情</button>
-                            <button class="btn btn-danger" onclick="confirmDeleteExam({{ exam.id }}, '{{ exam.name }}')">删除</button>
-                        </div>
-                    </div>
-                    {% endfor %}
-                {% else %}
-                    <div style="text-align: center; padding: 40px; color: #94a3b8;">
-                        <p>暂无考试数据</p>
-                    </div>
-                {% endif %}
+            <div class="exam-list" id="exam-list-container">
+                <div style="text-align: center; padding: 40px; color: #94a3b8;">
+                    <p>加载中...</p>
+                </div>
             </div>
         </section>
 
@@ -475,11 +512,12 @@
                         <i>🌍</i> 语言分类
                     </h3>
                     <ul class="feature-list">
-                        <li><i>✓</i> 日语 - 关西腔发音</li>
                         <li><i>✓</i> 日语 - 关东腔发音</li>
+                        <li><i>✓</i> 日语 - 关西腔发音</li>
                         <li><i>✓</i> 英语 - 美式发音</li>
                         <li><i>✓</i> 英语 - 英式发音</li>
-                        <li><i>✓</i> 英语 - 澳式发音</li>
+                        <li><i>✓</i> 英语 - 非洲英语</li>
+                        <li><i>✓</i> 英语 - 印度英语</li>
                         <li><i>✓</i> 中文普通话</li>
                     </ul>
                 </div>
@@ -489,12 +527,10 @@
                         <i>📊</i> 难度等级
                     </h3>
                     <ul class="feature-list">
-                        <li><i>✓</i> 初级 (N5/N4)</li>
-                        <li><i>✓</i> 中级 (N3/N2)</li>
-                        <li><i>✓</i> 高级 (N1)</li>
-                        <li><i>✓</i> 专业级</li>
-                        <li><i>✓</i> 专家级</li>
-                        <li><i>✓</i> 自适应难度</li>
+                        <li><i>✓</i> 初级 (beginner)</li>
+                        <li><i>✓</i> 中级 (intermediate)</li>
+                        <li><i>✓</i> 高级 (advanced)</li>
+                        <li><i>✓</i> 专家级 (expert)</li>
                     </ul>
                 </div>
             </div>
@@ -510,12 +546,12 @@
                     </h3>
                     <div class="stats-grid" style="grid-template-columns: 1fr 1fr;">
                         <div>
-                            <div class="stat-value" style="font-size: 2rem;">85%</div>
+                            <div class="stat-value" style="font-size: 2rem;" id="result-avg-score">0%</div>
                             <div class="stat-label">平均正确率</div>
                         </div>
                         <div>
-                            <div class="stat-value" style="font-size: 2rem;">45分钟</div>
-                            <div class="stat-label">平均用时</div>
+                            <div class="stat-value" style="font-size: 2rem;" id="result-pass-rate">0%</div>
+                            <div class="stat-label">通过率</div>
                         </div>
                     </div>
                 </div>
@@ -582,27 +618,30 @@
         <p>© 2026 MTSCOS AI Project | 智能考试系统</p>
     </div>
 
-    <!-- 创建考试模态框 -->
     <div id="createExamModal" class="modal">
         <div class="modal-content">
             <span class="close-btn" onclick="closeModal()">&times;</span>
             <h2>创建新考试</h2>
             <form id="createExamForm">
                 <div class="form-group">
-                    <label>考试名称</label>
-                    <input type="text" id="examTitle" placeholder="请输入考试名称">
+                    <label>考试名称 *</label>
+                    <input type="text" id="examTitle" placeholder="请输入考试名称" required>
                 </div>
                 <div class="form-group">
-                    <label>语言类型</label>
-                    <select id="examLanguage">
-                        <option value="japanese">日语</option>
-                        <option value="english">英语</option>
-                        <option value="chinese">中文</option>
+                    <label>描述</label>
+                    <textarea id="examDescription" placeholder="请输入考试描述"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>语言类型 *</label>
+                    <select id="examLanguage" required>
+                        <option value="zh">中文</option>
+                        <option value="ja">日语</option>
+                        <option value="en">英语</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>难度等级</label>
-                    <select id="examLevel">
+                    <label>难度等级 *</label>
+                    <select id="examLevel" required>
                         <option value="beginner">初级</option>
                         <option value="intermediate">中级</option>
                         <option value="advanced">高级</option>
@@ -610,19 +649,26 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>考试时长（分钟）</label>
-                    <input type="number" id="examDuration" placeholder="60" value="60">
+                    <label>考试时长（分钟）*</label>
+                    <input type="number" id="examDuration" placeholder="60" value="60" min="5" max="300" required>
                 </div>
                 <div class="form-group">
-                    <label>题目数量</label>
-                    <input type="number" id="examQuestions" placeholder="50" value="50">
+                    <label>题目数量 *</label>
+                    <input type="number" id="examQuestions" placeholder="20" value="20" min="1" max="100" required>
+                </div>
+                <div class="form-group">
+                    <label>总分 *</label>
+                    <input type="number" id="examTotalPoints" placeholder="100" value="100" min="1" max="1000" required>
+                </div>
+                <div class="form-group">
+                    <label>及格分数 *</label>
+                    <input type="number" id="examPassingScore" placeholder="60" value="60" min="0" max="100" required>
                 </div>
                 <button type="submit" class="btn btn-primary" style="width: 100%;">创建考试</button>
             </form>
         </div>
     </div>
 
-    <!-- 考试详情模态框 -->
     <div id="examDetailModal" class="modal">
         <div class="modal-content">
             <span class="close-btn" onclick="closeDetailModal()">&times;</span>
@@ -637,18 +683,6 @@
                     <div id="detailDesc" style="padding: 12px; background: rgba(255,255,255,0.1); border-radius: 8px;"></div>
                 </div>
                 <div class="form-group">
-                    <label>时长</label>
-                    <div id="detailDuration" style="padding: 12px; background: rgba(255,255,255,0.1); border-radius: 8px;"></div>
-                </div>
-                <div class="form-group">
-                    <label>题目数量</label>
-                    <div id="detailQuestions" style="padding: 12px; background: rgba(255,255,255,0.1); border-radius: 8px;"></div>
-                </div>
-                <div class="form-group">
-                    <label>及格分数</label>
-                    <div id="detailScore" style="padding: 12px; background: rgba(255,255,255,0.1); border-radius: 8px;"></div>
-                </div>
-                <div class="form-group">
                     <label>语言</label>
                     <div id="detailLanguage" style="padding: 12px; background: rgba(255,255,255,0.1); border-radius: 8px;"></div>
                 </div>
@@ -657,8 +691,20 @@
                     <div id="detailLevel" style="padding: 12px; background: rgba(255,255,255,0.1); border-radius: 8px;"></div>
                 </div>
                 <div class="form-group">
-                    <label>发音类型</label>
-                    <div id="detailAudio" style="padding: 12px; background: rgba(255,255,255,0.1); border-radius: 8px;"></div>
+                    <label>考试时长</label>
+                    <div id="detailDuration" style="padding: 12px; background: rgba(255,255,255,0.1); border-radius: 8px;"></div>
+                </div>
+                <div class="form-group">
+                    <label>题目数量</label>
+                    <div id="detailQuestions" style="padding: 12px; background: rgba(255,255,255,0.1); border-radius: 8px;"></div>
+                </div>
+                <div class="form-group">
+                    <label>总分 / 及格分数</label>
+                    <div id="detailScore" style="padding: 12px; background: rgba(255,255,255,0.1); border-radius: 8px;"></div>
+                </div>
+                <div class="form-group">
+                    <label>状态</label>
+                    <div id="detailStatus" style="padding: 12px; background: rgba(255,255,255,0.1); border-radius: 8px;"></div>
                 </div>
             </div>
             <button class="btn btn-primary" style="width: 100%; margin-top: 20px;" onclick="startExamFromDetail()">开始考试</button>
@@ -667,12 +713,34 @@
 
     <script>
         let currentExamId = null;
+        const LANGUAGE_MAP = {
+            'zh': '中文',
+            'ja': '日语',
+            'en': '英语',
+            'chinese': '中文',
+            'japanese': '日语',
+            'english': '英语'
+        };
+
+        const LEVEL_MAP = {
+            'beginner': '初级',
+            'intermediate': '中级',
+            'advanced': '高级',
+            'expert': '专家级'
+        };
 
         function showSection(sectionId) {
             document.querySelectorAll('.section').forEach(section => {
                 section.style.display = 'none';
             });
             document.getElementById(sectionId).style.display = 'block';
+            
+            if (sectionId === 'exams') {
+                loadExams();
+            }
+            if (sectionId === 'dashboard') {
+                loadStats();
+            }
         }
 
         function showCreateExam() {
@@ -689,24 +757,27 @@
 
         function startExam(examId) {
             currentExamId = examId;
-            window.location.href = `/exam?exam_id=${examId}`;
+            window.location.href = `/exam_page/${examId}`;
         }
 
         function showExamDetail(examId) {
             currentExamId = examId;
-            fetch(`/api/exams/${examId}`)
+            fetch(`/api/exam/exams/${examId}`)
                 .then(response => response.json())
                 .then(data => {
                     if (data.success && data.data) {
                         const exam = data.data;
-                        document.getElementById('detailName').textContent = exam.name;
+                        document.getElementById('detailName').textContent = exam.title;
                         document.getElementById('detailDesc').textContent = exam.description || '暂无描述';
+                        document.getElementById('detailLanguage').textContent = LANGUAGE_MAP[exam.language] || exam.language;
+                        document.getElementById('detailLevel').textContent = LEVEL_MAP[exam.level] || exam.level;
                         document.getElementById('detailDuration').textContent = `${exam.duration} 分钟`;
-                        document.getElementById('detailQuestions').textContent = `${exam.total_questions} 道`;
-                        document.getElementById('detailScore').textContent = `${exam.passing_score} 分`;
-                        document.getElementById('detailLanguage').textContent = exam.language;
-                        document.getElementById('detailLevel').textContent = exam.difficulty_level;
-                        document.getElementById('detailAudio').textContent = exam.audio_type || '无';
+                        document.getElementById('detailQuestions').textContent = `${exam.question_count} 道`;
+                        document.getElementById('detailScore').textContent = `${exam.total_points} / ${exam.passing_score}`;
+                        
+                        const statusMap = {'active': '进行中', 'draft': '草稿', 'ended': '已结束'};
+                        const statusClass = `status-${exam.status}`;
+                        document.getElementById('detailStatus').innerHTML = `<span class="status-badge ${statusClass}">${statusMap[exam.status] || exam.status}</span>`;
                     }
                 })
                 .catch(error => {
@@ -727,16 +798,16 @@
         }
 
         function deleteExam(examId) {
-            fetch(`/api/exams/${examId}`, {
+            fetch(`/api/exam/exams/${examId}`, {
                 method: 'DELETE'
             })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
                     alert('考试删除成功！');
-                    location.reload();
+                    loadExams();
                 } else {
-                    alert('删除失败: ' + data.message);
+                    alert('删除失败: ' + (data.error || '未知错误'));
                 }
             })
             .catch(error => {
@@ -749,15 +820,22 @@
             e.preventDefault();
             
             const examData = {
-                name: document.getElementById('examTitle').value,
+                title: document.getElementById('examTitle').value,
+                description: document.getElementById('examDescription').value,
                 language: document.getElementById('examLanguage').value,
-                difficulty_level: document.getElementById('examLevel').value,
+                level: document.getElementById('examLevel').value,
                 duration: parseInt(document.getElementById('examDuration').value),
-                total_questions: parseInt(document.getElementById('examQuestions').value),
-                description: '通过考试系统创建'
+                question_count: parseInt(document.getElementById('examQuestions').value),
+                total_points: parseFloat(document.getElementById('examTotalPoints').value),
+                passing_score: parseFloat(document.getElementById('examPassingScore').value),
+                status: 'draft',
+                shuffle_questions: true,
+                shuffle_options: true,
+                allow_retake: false,
+                max_retakes: 3
             };
 
-            fetch('/api/exams', {
+            fetch('/api/exam/exams', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -769,9 +847,10 @@
                 if (data.success) {
                     alert('考试创建成功！');
                     closeModal();
-                    location.reload();
+                    document.getElementById('createExamForm').reset();
+                    loadExams();
                 } else {
-                    alert('创建失败: ' + data.message);
+                    alert('创建失败: ' + (data.error || '未知错误'));
                 }
             })
             .catch(error => {
@@ -788,38 +867,90 @@
         }
 
         function loadExams() {
-            fetch('/api/exams')
+            const container = document.getElementById('exam-list-container');
+            container.innerHTML = '<div style="text-align: center; padding: 40px; color: #94a3b8;"><p>加载中...</p></div>';
+            
+            fetch('/api/exam/exams')
                 .then(response => response.json())
                 .then(data => {
                     if (data.success && data.data) {
-                        const examList = document.querySelector('.exam-list');
-                        examList.innerHTML = '';
-                        data.data.forEach(exam => {
-                            const examItem = document.createElement('div');
-                            examItem.className = 'exam-item';
-                            examItem.dataset.examId = exam.id;
-                            examItem.innerHTML = `
-                                <div class="exam-info">
-                                    <h3>${exam.name}</h3>
-                                    <p>时长: ${exam.duration}分钟 | 题目: ${exam.total_questions}道 | 难度: ${exam.difficulty_level}</p>
-                                    ${exam.audio_type ? `<p style="font-size: 0.85rem; color: #94a3b8;">发音类型: ${exam.audio_type}</p>` : ''}
-                                </div>
-                                <div class="exam-actions">
-                                    <button class="btn btn-primary" onclick="startExam(${exam.id})">开始考试</button>
-                                    <button class="btn btn-secondary" onclick="showExamDetail(${exam.id})">详情</button>
-                                    <button class="btn btn-danger" onclick="confirmDeleteExam(${exam.id}, '${exam.name}')">删除</button>
+                        if (data.data.length === 0) {
+                            container.innerHTML = `
+                                <div style="text-align: center; padding: 40px; color: #94a3b8;">
+                                    <p>暂无考试数据</p>
+                                    <button class="btn btn-primary" onclick="showCreateExam()" style="margin-top: 20px;">创建考试</button>
                                 </div>
                             `;
-                            examList.appendChild(examItem);
-                        });
+                            return;
+                        }
+                        
+                        container.innerHTML = data.data.map(exam => {
+                            const statusMap = {'active': '进行中', 'draft': '草稿', 'ended': '已结束'};
+                            const statusClass = `status-${exam.status}`;
+                            const isActive = exam.status === 'active';
+                            
+                            return `
+                                <div class="exam-item" data-exam-id="${exam.id}">
+                                    <div class="exam-info">
+                                        <h3>
+                                            <span class="language-badge">${LANGUAGE_MAP[exam.language] || exam.language}</span>
+                                            ${exam.title}
+                                            <span class="status-badge ${statusClass}">${statusMap[exam.status] || exam.status}</span>
+                                        </h3>
+                                        <p>时长: ${exam.duration}分钟 | 题目: ${exam.question_count}道 | 总分: ${exam.total_points}分</p>
+                                        <p style="font-size: 0.85rem; color: #64748b;">难度: ${LEVEL_MAP[exam.level] || exam.level} | 及格: ${exam.passing_score}分</p>
+                                    </div>
+                                    <div class="exam-actions">
+                                        <button class="btn btn-secondary" onclick="showExamDetail('${exam.id}')">详情</button>
+                                        <button class="btn btn-primary ${isActive ? '' : 'disabled'}" 
+                                                onclick="event.stopPropagation(); ${isActive ? `window.location.href='/exam_page/${exam.id}'` : ''}">
+                                            ${isActive ? '开始考试' : '暂不可用'}
+                                        </button>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('');
+                    } else {
+                        container.innerHTML = `
+                            <div style="text-align: center; padding: 40px; color: #94a3b8;">
+                                <p>加载考试列表失败</p>
+                            </div>
+                        `;
                     }
                 })
                 .catch(error => {
                     console.error('加载考试列表失败:', error);
+                    container.innerHTML = `
+                        <div style="text-align: center; padding: 40px; color: #94a3b8;">
+                            <p>加载考试列表失败</p>
+                        </div>
+                    `;
                 });
         }
 
-        document.addEventListener('DOMContentLoaded', loadExams);
+        function loadStats() {
+            fetch('/api/exam/stats/exam/system')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.data) {
+                        const stats = data.data;
+                        document.getElementById('stat-exams').textContent = stats.total_exams || 0;
+                        document.getElementById('stat-questions').textContent = stats.total_questions || 0;
+                        document.getElementById('stat-papers').textContent = stats.total_papers || 0;
+                        document.getElementById('stat-active').textContent = stats.active_exams || 0;
+                        
+                        document.getElementById('result-avg-score').textContent = Math.round((stats.average_score || 0) / 10) + '%';
+                        document.getElementById('result-pass-rate').textContent = Math.round((stats.pass_rate || 0) * 100) + '%';
+                    }
+                })
+                .catch(error => {
+                    console.error('加载统计数据失败:', error);
+                });
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadStats();
+        });
     </script>
 </body>
 </html>

@@ -94,6 +94,7 @@ class Exam:
     allow_retake: bool = False
     max_retakes: int = 3
     time_between_retakes: int = 0  # 分钟
+    exam_type: str = "simulation"  # simulation: 拟真试题, real: 历年真题
     created_by: Optional[str] = None
     created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
@@ -115,6 +116,8 @@ class Exam:
             'allow_retake': self.allow_retake,
             'max_retakes': self.max_retakes,
             'time_between_retakes': self.time_between_retakes,
+            'exam_type': self.exam_type,
+            'exam_type_label': '历年真题' if self.exam_type == 'real' else '拟真试题',
             'created_by': self.created_by,
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat()
