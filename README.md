@@ -379,16 +379,6 @@ admin (L9) > teacher (L5) > designer (L4) > student (L2) > guest (L0)
 ---
 
 ## 📋 使用说明 | User Guide
-
-### 登录凭据 | Login Credentials
-
-| 角色 | 用户名 | 密码 | 权限等级 |
-|-----|--------|------|---------|
-| 超级管理员 | admin | password | L11 |
-| 硬件管理员 | wuchenghao15 | LoghinMe.1988 | L12 |
-| 教师 | teacher | password | L5 |
-| 学生 | student | password | L2 |
-
 ### 角色权限对照表 | Role Permission Matrix
 
 ```
