@@ -2,126 +2,131 @@
 """
 学习系统视图模块
 负责学习记录、错题本、学习分析等功能
+使用统一权限装饰器进行权限控制
+包含学习路径规划、错题智能推荐、知识图谱可视化等增强功能
 """
 from flask import Blueprint, render_template, jsonify, request, session, redirect, url_for
+from app.middlewares.permission_decorators import require_student_or_vip, get_permission_info, require_login
 import logging
+import sqlite3
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
 learning_system_bp = Blueprint('learning_system', __name__)
 
-ALLOWED_ROLES = ['student']
+# 数据库路径配置
+DB_PATH = '/Users/wuchenghao/Library/CloudStorage/OneDrive-个人/文档/MTSCOS_AI_Project/flask-app/app.db'
 
 
-def require_login():
-    if 'user_id' not in session:
-        logger.warning("[学习系统] 未登录用户尝试访问")
-        return redirect(url_for('auth.login'))
-    return None
-
-
-def require_allowed_role():
-    result = require_login()
-    if result:
-        return result
-    
-    role = session.get('role')
-    if role not in ALLOWED_ROLES:
-        logger.warning(f"[学习系统] 用户 {session.get('username')} ({role}) 权限不足")
-        return jsonify({'success': False, 'error': '没有权限访问学习系统'}), 403
-    return None
+def get_user_info():
+    """获取当前用户信息"""
+    return get_permission_info()
 
 
 @learning_system_bp.route('/learning_system')
+@require_student_or_vip
 def learning_system_index():
     """学习系统首页"""
-    result = require_allowed_role()
-    if result:
-        return result
+    user_info = get_user_info()
+    logger.info(f"[学习系统] 用户 {user_info['username']} ({user_info['role']}) 访问学习系统")
     
-    user = {
-        'username': session.get('username', ''),
-        'role': session.get('role', ''),
-        'user_id': session.get('user_id', '')
-    }
-    
-    logger.info(f"[学习系统] 用户 {user['username']} ({user['role']}) 访问学习系统")
-    return render_template('learning_system.html', user=user)
+    return render_template('learning_system.html', user=user_info)
 
 
 @learning_system_bp.route('/learning/history')
+@require_student_or_vip
 def learning_history():
     """学习历史记录页面"""
-    result = require_allowed_role()
-    if result:
-        return result
+    user_info = get_user_info()
+    logger.info(f"[学习系统] 用户 {user_info['username']} ({user_info['role']}) 访问学习历史")
     
-    user = {
-        'username': session.get('username', ''),
-        'role': session.get('role', ''),
-        'user_id': session.get('user_id', '')
-    }
-    
-    return render_template('learning_history.html', user=user)
+    return render_template('learning_history.html', user=user_info)
 
 
 @learning_system_bp.route('/learning/wrong_questions')
+@require_student_or_vip
 def wrong_questions():
     """错题本页面"""
-    result = require_allowed_role()
-    if result:
-        return result
+    user_info = get_user_info()
+    logger.info(f"[学习系统] 用户 {user_info['username']} ({user_info['role']}) 访问错题本")
     
-    user = {
-        'username': session.get('username', ''),
-        'role': session.get('role', ''),
-        'user_id': session.get('user_id', '')
-    }
-    
-    return render_template('wrong_questions.html', user=user)
+    return render_template('wrong_questions.html', user=user_info)
 
 
 @learning_system_bp.route('/learning/analysis')
+@require_student_or_vip
 def learning_analysis():
     """学习分析页面"""
-    result = require_allowed_role()
-    if result:
-        return result
+    user_info = get_user_info()
+    logger.info(f"[学习系统] 用户 {user_info['username']} ({user_info['role']}) 访问学习分析")
     
-    user = {
-        'username': session.get('username', ''),
-        'role': session.get('role', ''),
-        'user_id': session.get('user_id', '')
-    }
+    return render_template('learning_analysis.html', user=user_info)
+
+
+# ==================== 学习增强功能页面 ====================
+
+@learning_system_bp.route('/learning/path')
+@require_student_or_vip
+def learning_path_page():
+    """学习路径规划页面"""
+    user_info = get_user_info()
+    logger.info(f"[学习系统] 用户 {user_info['username']} ({user_info['role']}) 访问学习路径规划")
     
-    return render_template('learning_analysis.html', user=user)
+    return render_template('learning_path.html', user=user_info)
+
+
+@learning_system_bp.route('/learning/wrong_recommend')
+@require_student_or_vip
+def wrong_question_recommend_page():
+    """错题智能推荐页面"""
+    user_info = get_user_info()
+    logger.info(f"[学习系统] 用户 {user_info['username']} ({user_info['role']}) 访问错题智能推荐")
+    
+    return render_template('wrong_question_recommend.html', user=user_info)
+
+
+@learning_system_bp.route('/learning/knowledge_graph')
+@require_student_or_vip
+def knowledge_graph_page():
+    """知识图谱可视化页面"""
+    user_info = get_user_info()
+    logger.info(f"[学习系统] 用户 {user_info['username']} ({user_info['role']}) 访问知识图谱")
+    
+    return render_template('knowledge_graph.html', user=user_info)
+
+
+@learning_system_bp.route('/learning/comprehensive')
+@require_student_or_vip
+def comprehensive_analysis_page():
+    """综合学习分析页面"""
+    user_info = get_user_info()
+    logger.info(f"[学习系统] 用户 {user_info['username']} ({user_info['role']}) 访问综合分析")
+    
+    return render_template('learning_comprehensive.html', user=user_info)
 
 
 @learning_system_bp.route('/api/learning/user_info')
-def get_user_info():
+@require_login
+def api_get_user_info():
     """获取当前用户信息"""
-    user_id = session.get('user_id')
-    if not user_id:
-        return jsonify({'success': False, 'error': '未登录'}), 401
+    user_info = get_permission_info()
     
     return jsonify({
         'success': True,
         'data': {
-            'user_id': session.get('user_id'),
-            'username': session.get('username', ''),
-            'role': session.get('role', ''),
+            'user_id': user_info['user_id'],
+            'username': user_info['username'],
+            'role': user_info['role'],
             'email': session.get('email', '')
         }
     })
 
 
 @learning_system_bp.route('/api/learning/history', methods=['GET'])
+@require_student_or_vip
 def get_learning_history():
     """获取学习历史记录"""
-    result = require_allowed_role()
-    if result:
-        return result
-    
     user_id = session.get('user_id')
     try:
         import sqlite3
@@ -153,12 +158,9 @@ def get_learning_history():
 
 
 @learning_system_bp.route('/api/learning/wrong_questions', methods=['GET'])
+@require_student_or_vip
 def get_wrong_questions():
     """获取错题列表"""
-    result = require_allowed_role()
-    if result:
-        return result
-    
     user_id = session.get('user_id')
     try:
         import sqlite3

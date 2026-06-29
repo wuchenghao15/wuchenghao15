@@ -118,118 +118,6 @@ def add_security_headers(response):
     response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
     return response
 
-# 自动路由发现 - 扫描所有API和路由模块
-try:
-    from app.routes.auto_discover import init_auto_routes
-    route_result = init_auto_routes(app)
-    logger.info(f"[路由] 自动路由发现完成: 注册 {route_result['registered']} 个蓝图, "
-                f"失败 {route_result['failed']} 个, 总路由数 {route_result['total_routes']}")
-except Exception as e:
-    logger.error(f"[路由] 自动路由发现失败: {str(e)}")
-
-# 角色路由跳转API(需要特殊处理)
-try:
-    from app.utils.role_router import role_router_bp, create_role_routes
-    app.register_blueprint(role_router_bp)
-    app = create_role_routes(app)
-    logger.info("[路由] 角色路由跳转API注册成功")
-except ImportError:
-    logger.warning("[路由] 角色路由跳转API未找到，跳过注册")
-
-# 注册拆分后的系统蓝图
-try:
-    from app.views.exam_system import exam_system_bp
-    app.register_blueprint(exam_system_bp)
-    logger.info("[路由] 考试系统蓝图注册成功")
-except ImportError:
-    logger.warning("[路由] 考试系统蓝图未找到，跳过注册")
-
-try:
-    from app.views.test_system import test_system_bp
-    app.register_blueprint(test_system_bp)
-    logger.info("[路由] 测试系统蓝图注册成功")
-except ImportError:
-    logger.warning("[路由] 测试系统蓝图未找到，跳过注册")
-
-try:
-    from app.views.learning_system import learning_system_bp
-    app.register_blueprint(learning_system_bp)
-    logger.info("[路由] 学习系统蓝图注册成功")
-except ImportError:
-    logger.warning("[路由] 学习系统蓝图未找到，跳过注册")
-
-try:
-    from app.views.user_system import user_system_bp
-    app.register_blueprint(user_system_bp)
-    logger.info("[路由] 用户信息管理系统蓝图注册成功")
-except ImportError:
-    logger.warning("[路由] 用户信息管理系统蓝图未找到，跳过注册")
-
-# 初始化动态路由管理器
-try:
-    from app.utils.dynamic_route_manager import init_dynamic_routes
-    init_dynamic_routes(app)
-    logger.info("[动态路由] 动态路由管理器初始化成功")
-except ImportError as e:
-    logger.warning(f"[动态路由] 动态路由管理器未找到，跳过初始化: {e}")
-
-# 注册AI员工批量修复API
-try:
-    from app.api.ai_fixer_api import ai_fixer_api
-    app.register_blueprint(ai_fixer_api)
-    logger.info("[AI员工] AI员工批量修复API注册成功")
-except ImportError as e:
-    logger.warning(f"[AI员工] AI员工批量修复API未找到，跳过注册: {e}")
-
-# 注册用户信息API
-try:
-    from app.api.user_info_api import user_info_api
-    app.register_blueprint(user_info_api)
-    logger.info("[用户API] 用户信息API注册成功")
-except ImportError as e:
-    logger.warning(f"[用户API] 用户信息API未找到，跳过注册: {e}")
-
-# 注册超级管理员数据API
-try:
-    from app.api.super_admin_data_api import super_admin_data_api
-    app.register_blueprint(super_admin_data_api, url_prefix='/api')
-    logger.info("[超级管理员] 超级管理员数据API注册成功")
-except ImportError as e:
-    logger.warning(f"[超级管理员] 超级管理员数据API未找到，跳过注册: {e}")
-
-# 注册AI员工增强系统API
-try:
-    from app.api.ai_employee_enhanced_api import ai_employee_enhanced_api, init_enhanced_system
-    app.register_blueprint(ai_employee_enhanced_api, url_prefix='/api')
-    init_enhanced_system()
-    logger.info("[AI员工增强] AI员工增强系统API注册成功")
-except ImportError as e:
-    logger.warning(f"[AI员工增强] AI员工增强系统API未找到，跳过注册: {e}")
-
-# 注册数据完整性与并发控制API
-try:
-    from app.api.data_integrity_api import data_integrity_api
-    app.register_blueprint(data_integrity_api, url_prefix='/api')
-    logger.info("[数据完整性] 数据完整性与并发控制API注册成功")
-except ImportError as e:
-    logger.warning(f"[数据完整性] 数据完整性与并发控制API未找到，跳过注册: {e}")
-
-# 注册AI员工主动运作系统API
-try:
-    from app.api.proactive_ai_api import proactive_ai_api
-    app.register_blueprint(proactive_ai_api, url_prefix='/api')
-    logger.info("[主动AI] AI员工主动运作系统API注册成功")
-except ImportError as e:
-    logger.warning(f"[主动AI] AI员工主动运作系统API未找到，跳过注册: {e}")
-
-# 注册AI脑库系统API
-try:
-    from app.api.brain_bank_api import brain_bank_api
-    app.register_blueprint(brain_bank_api, url_prefix='/api')
-    logger.info("[AI脑库] AI脑库系统API注册成功")
-except ImportError as e:
-    logger.warning(f"[AI脑库] AI脑库系统API未找到，跳过注册: {e}")
-
 DATABASE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'app.db')
 
 @contextmanager
@@ -240,60 +128,6 @@ def get_db_connection():
         yield conn
     finally:
         conn.close()
-
-# 初始化权限管理器和会话管理器
-from app.utils.permission_manager import init_permission_manager
-from app.utils.session_manager import init_session_manager
-from app.utils.rule_manager import init_rule_manager
-from app.utils.config_manager import init_config_manager
-from app.utils.monitor_manager import init_monitor_manager
-from app.utils.backup_manager import init_backup_manager
-from app.middlewares.access_control import access_control_middleware
-
-# 导入统一规则配置中心
-from app.config.unified_rules import init_unified_rules, check_route_permission, check_permission_by_rule
-
-# 初始化权限管理器
-init_permission_manager(DATABASE_PATH)
-
-# 初始化会话管理器(超时时间30分钟)
-init_session_manager(DATABASE_PATH, timeout_minutes=30)
-
-# 初始化规则管理器(深度绑定系统规则数据库)
-init_rule_manager(DATABASE_PATH)
-
-# 初始化统一规则配置中心
-init_unified_rules(DATABASE_PATH)
-
-# 初始化配置管理器(实时配置加载,30秒自动重载)
-init_config_manager(DATABASE_PATH, auto_reload_interval=30)
-
-# 初始化监控管理器(10秒检查间隔)
-init_monitor_manager(DATABASE_PATH, check_interval=10)
-
-# 初始化备份管理器(实时双备份,5分钟自动备份)
-init_backup_manager(DATABASE_PATH, auto_backup_interval=300)
-
-# 导入装饰器
-try:
-    from app.middlewares.access_control import require_login, require_admin, require_super_admin, require_hardware_admin
-except ImportError:
-    logger.warning("[中间件] 访问控制装饰器未找到，跳过导入")
-    require_login = require_admin = require_super_admin = require_hardware_admin = lambda f: f
-
-# 应用访问控制中间件
-try:
-    app = access_control_middleware(app)
-except Exception:
-    logger.warning("[中间件] 访问控制中间件应用失败，跳过")
-
-# 导入并应用全局认证中间件
-try:
-    from app.middlewares.authentication import authentication_middleware, login_user, logout_user, get_redirect_url
-    app = authentication_middleware(app)
-except ImportError:
-    logger.warning("[中间件] 认证中间件未找到，跳过")
-    login_user = logout_user = get_redirect_url = lambda *args, **kwargs: None
 
 def verify_password(stored_password, provided_password):
     """验证密码 - 支持多种哈希方式"""
@@ -989,19 +823,6 @@ def admin_app_logout():
 def index():
     return render_template('index.html')
 
-# 增强版听力测试路由
-@app.route('/listen_enhanced')
-def listen_enhanced_page():
-    from flask import send_file
-    template_path = os.path.join(os.path.dirname(__file__), 'app', 'templates', 'listen_enhanced.html')
-    return send_file(template_path)
-
-@app.route('/listen_test.html')
-def listen_test_page():
-    from flask import send_file
-    template_path = os.path.join(os.path.dirname(__file__), 'app', 'templates', 'listen_test.html')
-    return send_file(template_path)
-
 @app.route('/audio/<path:filename>')
 def audio_files(filename):
     from flask import send_from_directory
@@ -1099,39 +920,27 @@ def handle_login_exception(e: Exception, username: str = None) -> tuple:
 
 
 def get_redirect_url_by_role(role: str) -> str:
-    """根据用户角色返回登录后重定向的URL"""
-    role_redirect_map = {
-        # 学生角色 - 直接进入考试系统
-        'student': '/exam_system',
-        'student_vip': '/exam_system',
-        
-        # 教师角色 - 进入教师管理中心
-        'teacher': '/teacher',
-        'teacher_admin': '/teacher',
-        
-        # 管理员角色 - 进入管理中心
-        'admin': '/settings',
-        'system_admin': '/settings',
-        
-        # 超级管理员角色 - 进入超级管理面板
-        'super_admin': '/super_admin_dashboard',
-        
-        # 硬件管理员角色
-        'hardware_admin': '/hardware/dashboard',
-        
-        # 考试专家角色 - 进入考试系统
-        'exam_expert': '/exam_system',
-        
-        # 设计师角色 - 进入Arduino设计页面
-        'designer': '/arduino',
-        
-        # 默认角色 - 进入考试系统(普通用户默认进入考试系统)
-        'user': '/exam_system',
-        'guest': '/',
-    }
-    
-    # 如果角色不在映射中,返回考试系统作为默认
-    return role_redirect_map.get(role, '/exam_system')
+    """根据用户角色返回登录后重定向的URL - 使用统一权限中间件"""
+    try:
+        from app.middlewares.unified_permission import get_redirect_url_for_role
+        return get_redirect_url_for_role(role)
+    except ImportError:
+        role_redirect_map = {
+            'student': '/exam_system',
+            'student_vip': '/exam_system',
+            'teacher': '/teacher',
+            'teacher_admin': '/teacher',
+            'admin': '/settings',
+            'system_admin': '/settings',
+            'super_admin': '/super_admin_dashboard',
+            'hardware_admin': '/hardware/dashboard',
+            'hardware_vikey_admin': '/hardware/dashboard',
+            'exam_expert': '/exam_system',
+            'designer': '/arduino',
+            'user': '/exam_system',
+            'guest': '/',
+        }
+        return role_redirect_map.get(role, '/exam_system')
 
 
 # 登录路由 - 后台API接口,不直接显示给用户
@@ -3498,60 +3307,6 @@ def serve_audio(language, accent, voice, filename):
     audio_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'audio', language, accent, voice)
     return send_from_directory(audio_dir, filename)
 
-# 音频测试页面路由
-@app.route('/test/audio')
-def audio_test():
-    return render_template('audio_test.html')
-
-@app.route('/api/exam/submit', methods=['POST'])
-def submit_exam():
-    """提交考试结果（增强版听力测试）"""
-    try:
-        user_id = session.get('user_id', 1)
-        data = request.get_json()
-        answers = data.get('answers', {})
-        score = data.get('score', 0)
-        correct = data.get('correct', 0)
-        total = data.get('total', 0)
-        speed = data.get('speed', 1.0)
-        voice = data.get('voice', 'aria')
-        topic = data.get('topic', 'daily')
-        difficulty = data.get('difficulty', '中级')
-        
-        accuracy = (correct / total * 100) if total > 0 else 0
-        
-        import uuid
-        exam_paper_id = str(uuid.uuid4())
-        exam_id = f"listen_test_{int(time.time())}"
-        
-        with sqlite3.connect(DATABASE_PATH) as conn:
-            cursor = conn.cursor()
-            
-            cursor.execute('''
-                INSERT INTO exam_results (exam_paper_id, exam_id, user_id, total_score, correct_count, total_count, 
-                                        accuracy, analysis, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
-            ''', (exam_paper_id, exam_id, str(user_id), score, correct, total, accuracy, 
-                  json.dumps({'answers': answers, 'speed': speed, 'voice': voice, 
-                             'topic': topic, 'difficulty': difficulty})))
-            conn.commit()
-        
-        return jsonify({
-            'success': True,
-            'data': {
-                'score': score,
-                'correct': correct,
-                'total': total,
-                'accuracy': accuracy / 100,
-                'difficulty': difficulty,
-                'speed': speed
-            },
-            'message': '提交成功'
-        })
-    except Exception as e:
-        logger.error(f"提交考试失败: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
-
 
 # ============================================================
 # 前端API路由补充 - 用户数据相关
@@ -3894,356 +3649,6 @@ def api_jptest_questions():
         return jsonify({'success': True, 'questions': []})
     except Exception as e:
         logger.error(f"API /api/jptest/questions error: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-
-# ============================================================
-# 听力训练系统API
-# ============================================================
-
-def require_listening_access(f):
-    """听力训练访问装饰器 - 必须登录且是成人制教育学生"""
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        # 检查登录状态
-        if 'user_id' not in session:
-            logger.warning(f"[听力训练] 未登录用户尝试访问")
-            return jsonify({'success': False, 'error': '请先登录', 'require_login': True}), 401
-        
-        # 检查是否是学生角色
-        user_role = session.get('role', '')
-        if user_role != 'student':
-            logger.warning(f"[听力训练] 非学生用户尝试访问: role={user_role}")
-            return jsonify({'success': False, 'error': '只有学生用户才能使用听力训练'}), 403
-        
-        # 检查是否是成人制教育学生
-        user_id = session.get('user_id')
-        try:
-            with sqlite3.connect(DATABASE_PATH) as conn:
-                cursor = conn.cursor()
-                cursor.execute("SELECT education_system FROM users WHERE id = ?", (user_id,))
-                result = cursor.fetchone()
-                if not result:
-                    return jsonify({'success': False, 'error': '用户不存在'}), 404
-                
-                education_system = result[0] if result[0] else 'regular'
-                if education_system != 'adult':
-                    logger.warning(f"[听力训练] 非成人制学生尝试访问: user_id={user_id}, education_system={education_system}")
-                    return jsonify({'success': False, 'error': '听力训练仅对成人制教育学生开放'}), 403
-        except Exception as e:
-            logger.error(f"[听力训练] 权限验证失败: {e}")
-            return jsonify({'success': False, 'error': '权限验证失败'}), 500
-        
-        return f(*args, **kwargs)
-    return decorated_function
-
-@app.route('/listening_training')
-def listening_training_page():
-    """听力训练页面 - 需要登录且是成人制教育学生"""
-    # 检查登录状态
-    if 'user_id' not in session:
-        return redirect('/auth/login?redirect=/listening_training')
-    
-    # 检查是否是学生角色
-    user_role = session.get('role', '')
-    if user_role != 'student':
-        return "听力训练仅对学生开放", 403
-    
-    # 检查是否是成人制教育学生
-    user_id = session.get('user_id')
-    try:
-        with sqlite3.connect(DATABASE_PATH) as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT education_system FROM users WHERE id = ?", (user_id,))
-            result = cursor.fetchone()
-            if not result:
-                return redirect('/auth/login?redirect=/listening_training')
-            
-            education_system = result[0] if result[0] else 'regular'
-            if education_system != 'adult':
-                return "听力训练仅对成人制教育学生开放", 403
-    except Exception as e:
-        logger.error(f"[听力训练] 权限验证失败: {e}")
-        return "权限验证失败", 500
-    
-    try:
-        # app.py在flask-app根目录，模板在app/templates
-        template_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'app', 'templates', 'listening_training.html')
-        if os.path.exists(template_file):
-            with open(template_file, 'r', encoding='utf-8') as f:
-                content = f.read()
-            return content, 200, {'Content-Type': 'text/html; charset=utf-8'}
-        else:
-            logger.error(f"模板文件不存在: {template_file}")
-            return "模板文件不存在", 404
-    except Exception as e:
-        logger.error(f"加载听力训练页面失败: {e}")
-        return f"页面加载失败: {str(e)}", 500
-
-@app.route('/api/listening/questions', methods=['GET'])
-@require_listening_access
-def get_listening_questions():
-    """获取听力题列表 - 智能调取：先查数据库，不足则AI生成并入库"""
-    try:
-        language = request.args.get('language', 'all')
-        difficulty = request.args.get('difficulty', 'all')
-        topic = request.args.get('topic', 'all')
-        limit = int(request.args.get('limit', 20))
-
-        logger.info(f"[听力训练] 获取题目 - language={language}, difficulty={difficulty}, topic={topic}, limit={limit}")
-
-        try:
-            from ai_engines.listening_question_generator import get_listening_question_generator
-            generator = get_listening_question_generator(DATABASE_PATH)
-            result = generator.get_or_generate_questions(
-                language=language,
-                difficulty=difficulty,
-                topic=topic,
-                limit=limit
-            )
-            if result.get('success'):
-                logger.info(f"[听力训练] 返回{result['total']}题（来自数据库:{result['from_db']}, AI生成:{result['generated']}）")
-                return jsonify({
-                    'success': True,
-                    'data': result['data'],
-                    'total': result['total'],
-                    'from_db': result['from_db'],
-                    'generated': result['generated']
-                })
-        except Exception as gen_e:
-            logger.warning(f"[听力训练] AI生成器调用失败，回退到纯数据库查询: {gen_e}")
-
-        with sqlite3.connect(DATABASE_PATH) as conn:
-            conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
-
-            query = "SELECT * FROM listening_questions WHERE 1=1"
-            params = []
-
-            if language != 'all':
-                query += " AND language = ?"
-                params.append(language)
-            if difficulty != 'all':
-                query += " AND difficulty = ?"
-                params.append(int(difficulty))
-            if topic != 'all':
-                query += " AND topic = ?"
-                params.append(topic)
-
-            query += f" ORDER BY difficulty ASC LIMIT {limit}"
-
-            cursor.execute(query, tuple(params))
-            questions = cursor.fetchall()
-
-            result = []
-            for q in questions:
-                result.append({
-                    'id': q['id'],
-                    'language': q['language'],
-                    'difficulty': q['difficulty'],
-                    'topic': q['topic'],
-                    'accent': q['accent'],
-                    'content': q['content'],
-                    'options': json.loads(q['options']) if q['options'] else [],
-                    'correct_answer': q['correct_answer'],
-                    'audio_url': q['audio_url'],
-                    'transcript': q['transcript'],
-                    'explanation': q['explanation'],
-                    'duration': q['duration']
-                })
-
-            return jsonify({'success': True, 'data': result, 'total': len(result), 'from_db': len(result), 'generated': 0})
-    except Exception as e:
-        logger.error(f"获取听力题失败: {e}")
-        import traceback
-        logger.error(traceback.format_exc())
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-@app.route('/api/listening/question/<question_id>', methods=['GET'])
-@require_listening_access
-def get_listening_question(question_id):
-    """获取单个听力题详情"""
-    try:
-        with sqlite3.connect(DATABASE_PATH) as conn:
-            conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
-            cursor.execute("SELECT * FROM listening_questions WHERE id = ?", (question_id,))
-            q = cursor.fetchone()
-            
-            if not q:
-                return jsonify({'success': False, 'error': '题目不存在'}), 404
-            
-            return jsonify({
-                'success': True,
-                'data': {
-                    'id': q['id'],
-                    'language': q['language'],
-                    'difficulty': q['difficulty'],
-                    'topic': q['topic'],
-                    'accent': q['accent'],
-                    'content': q['content'],
-                    'options': json.loads(q['options']) if q['options'] else [],
-                    'correct_answer': q['correct_answer'],
-                    'audio_url': q['audio_url'],
-                    'transcript': q['transcript'],
-                    'explanation': q['explanation'],
-                    'duration': q['duration']
-                }
-            })
-    except Exception as e:
-        logger.error(f"获取听力题详情失败: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-@app.route('/api/listening/submit', methods=['POST'])
-@require_listening_access
-def submit_listening_answer():
-    """提交听力答案"""
-    try:
-        user_id = session.get('user_id', 'guest')
-        data = request.get_json()
-        question_id = data.get('question_id')
-        answer = data.get('answer')
-        time_spent = data.get('time_spent', 0)
-        speed_used = data.get('speed_used', 1.0)
-        voice_used = data.get('voice_used', 'aria')
-        
-        import uuid
-        record_id = str(uuid.uuid4())
-        
-        with sqlite3.connect(DATABASE_PATH) as conn:
-            conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
-            
-            # 获取正确答案
-            cursor.execute("SELECT correct_answer FROM listening_questions WHERE id = ?", (question_id,))
-            q = cursor.fetchone()
-            
-            if not q:
-                return jsonify({'success': False, 'error': '题目不存在'}), 404
-            
-            is_correct = 1 if answer == q['correct_answer'] else 0
-            
-            # 记录答题
-            cursor.execute("""
-                INSERT INTO listening_training_records 
-                (id, user_id, question_id, is_correct, time_spent, speed_used, voice_used, attempts, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, 1, datetime('now'))
-            """, (record_id, str(user_id), question_id, is_correct, time_spent, speed_used, voice_used))
-            
-            # 更新统计
-            cursor.execute("""
-                INSERT INTO listening_training_stats (user_id, total_questions, correct_count, total_time, avg_speed, preferred_voice, last_training, updated_at)
-                VALUES (?, 1, ?, ?, ?, ?, datetime('now'), datetime('now'))
-                ON CONFLICT(user_id) DO UPDATE SET
-                    total_questions = total_questions + 1,
-                    correct_count = correct_count + ?,
-                    total_time = total_time + ?,
-                    avg_speed = (avg_speed * total_questions + ?) / (total_questions + 1),
-                    last_training = datetime('now'),
-                    updated_at = datetime('now')
-            """, (str(user_id), is_correct, time_spent, speed_used, voice_used, is_correct, time_spent, speed_used))
-            
-            conn.commit()
-        
-        return jsonify({
-            'success': True,
-            'data': {
-                'is_correct': is_correct,
-                'correct_answer': q['correct_answer']
-            },
-            'message': '答案提交成功'
-        })
-    except Exception as e:
-        logger.error(f"提交听力答案失败: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-@app.route('/api/listening/stats', methods=['GET'])
-@require_listening_access
-def get_listening_stats():
-    """获取听力训练统计"""
-    try:
-        user_id = request.args.get('user_id') or session.get('user_id', 'guest')
-        
-        with sqlite3.connect(DATABASE_PATH) as conn:
-            conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
-            
-            cursor.execute("SELECT * FROM listening_training_stats WHERE user_id = ?", (str(user_id),))
-            stats = cursor.fetchone()
-            
-            if not stats:
-                return jsonify({
-                    'success': True,
-                    'data': {
-                        'total_questions': 0,
-                        'correct_count': 0,
-                        'accuracy': 0,
-                        'total_time': 0,
-                        'avg_speed': 1.0,
-                        'preferred_voice': 'aria'
-                    }
-                })
-            
-            accuracy = (stats['correct_count'] / stats['total_questions'] * 100) if stats['total_questions'] > 0 else 0
-            
-            return jsonify({
-                'success': True,
-                'data': {
-                    'total_questions': stats['total_questions'],
-                    'correct_count': stats['correct_count'],
-                    'accuracy': accuracy,
-                    'total_time': stats['total_time'],
-                    'avg_speed': stats['avg_speed'],
-                    'preferred_voice': stats['preferred_voice'],
-                    'last_training': stats['last_training']
-                }
-            })
-    except Exception as e:
-        logger.error(f"获取听力统计失败: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-@app.route('/api/listening/history', methods=['GET'])
-@require_listening_access
-def get_listening_history():
-    """获取听力训练历史"""
-    try:
-        user_id = request.args.get('user_id') or session.get('user_id', 'guest')
-        limit = int(request.args.get('limit', 50))
-        
-        with sqlite3.connect(DATABASE_PATH) as conn:
-            conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
-            
-            cursor.execute("""
-                SELECT r.*, q.content, q.language, q.difficulty, q.topic
-                FROM listening_training_records r
-                LEFT JOIN listening_questions q ON r.question_id = q.id
-                WHERE r.user_id = ?
-                ORDER BY r.created_at DESC
-                LIMIT ?
-            """, (str(user_id), limit))
-            
-            records = cursor.fetchall()
-            
-            result = []
-            for r in records:
-                result.append({
-                    'id': r['id'],
-                    'question_id': r['question_id'],
-                    'content': r['content'],
-                    'language': r['language'],
-                    'difficulty': r['difficulty'],
-                    'topic': r['topic'],
-                    'is_correct': r['is_correct'],
-                    'time_spent': r['time_spent'],
-                    'speed_used': r['speed_used'],
-                    'voice_used': r['voice_used'],
-                    'created_at': r['created_at']
-                })
-            
-            return jsonify({'success': True, 'data': result, 'total': len(result)})
-    except Exception as e:
-        logger.error(f"获取听力历史失败: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
@@ -4695,48 +4100,11 @@ def handle_generic_error(e):
 
 if __name__ == '__main__':
     try:
-        from app.services.client_monitor_service import init_monitor_tables, create_monitor_employee
-        init_monitor_tables()
-        create_monitor_employee()
-        print("[INFO] 客户端监控服务初始化完成")
+        from app import run_full_initialization
+        init_results, app = run_full_initialization(app)
     except Exception as e:
-        print(f"[WARNING] 客户端监控服务初始化失败: {e}")
-    
-    try:
-        from app.middleware.monitor_middleware import ClientMonitorMiddleware
-        monitor_middleware = ClientMonitorMiddleware(app)
-        print("[INFO] 客户端监控中间件注册成功")
-    except Exception as e:
-        print(f"[WARNING] 客户端监控中间件注册失败: {e}")
-    
-    try:
-        from app.services.code_repair_service import init_repair_tables, create_repair_employee
-        init_repair_tables()
-        create_repair_employee()
-        print("[INFO] 代码修复服务初始化完成")
-    except Exception as e:
-        print(f"[WARNING] 代码修复服务初始化失败: {e}")
-    
-    try:
-        from app.services.port_monitor_service import init_port_monitor
-        init_port_monitor()
-        print("[INFO] 端口监控服务初始化完成")
-    except Exception as e:
-        print(f"[WARNING] 端口监控服务初始化失败: {e}")
-    
-    try:
-        from app.services.user_behavior_service import init_behavior_monitor
-        init_behavior_monitor()
-        print("[INFO] 用户行为监控服务初始化完成")
-    except Exception as e:
-        print(f"[WARNING] 用户行为监控服务初始化失败: {e}")
-    
-    try:
-        from app.services.system_optimization_service import init_system_optimizer
-        init_system_optimizer()
-        print("[INFO] 系统优化服务初始化完成")
-    except Exception as e:
-        print(f"[WARNING] 系统优化服务初始化失败: {e}")
+        logger.error(f"[初始化] 统一初始化失败: {e}")
+        print(f"[ERROR] 统一初始化失败: {e}")
     
     parser = argparse.ArgumentParser()
     parser.add_argument('--port', type=int, default=8888, help='端口号')

@@ -701,7 +701,7 @@ class AIEmployeeAutoGenerator:
             'employee_id': employee_id,
             'template_key': template_key,
             'generated_at': datetime.now().isoformat(),
-            'reason': custom_config.get('reason', '系统需求')
+            'reason': custom_config.get('reason', '系统需求') if custom_config else '系统需求'
         })
         
         self.generated_employees[employee_id] = employee

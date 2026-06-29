@@ -1,278 +1,417 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
-角色路由跳转规则系统
-根据用户组别自动跳转至对应页面
+Role Router Manager for MTSCOS AI System
+角色路由管理器 - 统一管理角色与页面的匹配关系
+确保登录后根据角色正确跳转
 """
-import sqlite3
-import json
+
+from flask import Blueprint, session, redirect, url_for, jsonify, request
+from app.middlewares.system_constraints import get_user_education_system, get_user_education_info
 import logging
-from flask import Blueprint, jsonify, request, session, redirect, url_for
 
-logger = logging.getLogger('role_router')
+logger = logging.getLogger(__name__)
 
-DB_PATH = '/Users/wuchenghao/Library/CloudStorage/OneDrive-个人/文档/MTSCOS_AI_Project/flask-app/app.db'
+role_router_bp = Blueprint('role_router', __name__)
 
+ROLE_PAGE_MAPPING = {
+    'student': {
+        'default': '/exam_system',
+        'pages': ['/exam_system', '/dashboard', '/profile', '/ai-chat', '/learning_system', '/math_training', '/k12'],
+        'description': '学生用户',
+        'icon': 'graduation-cap'
+    },
+    'student_vip': {
+        'default': '/exam_system',
+        'pages': ['/exam_system', '/dashboard', '/profile', '/ai-chat', '/learning_system', '/math_training', '/k12'],
+        'description': 'VIP学生用户',
+        'icon': 'crown'
+    },
+    'teacher': {
+        'default': '/teacher',
+        'pages': ['/teacher', '/dashboard', '/profile', '/ai-chat', '/k12'],
+        'description': '教师用户',
+        'icon': 'chalkboard-teacher'
+    },
+    'designer': {
+        'default': '/arduino',
+        'pages': ['/arduino', '/dashboard', '/profile', '/ai-chat'],
+        'description': '设计师用户',
+        'icon': 'palette'
+    },
+    'admin': {
+        'default': '/settings',
+        'pages': ['/settings', '/admin_center', '/dashboard', '/profile', '/ai-chat'],
+        'description': '管理员用户',
+        'icon': 'shield'
+    },
+    'super_admin': {
+        'default': '/super_admin_dashboard',
+        'pages': ['/super_admin_dashboard', '/admin_center', '/settings', '/dashboard', '/profile', '/ai-chat'],
+        'description': '超级管理员',
+        'icon': 'shield-alt'
+    },
+    'hardware_admin': {
+        'default': '/hardware/dashboard',
+        'pages': ['/hardware/dashboard', '/super_admin_dashboard', '/admin_center', '/settings', '/dashboard', '/profile', '/ai-chat'],
+        'description': '硬件管理员',
+        'icon': 'key'
+    },
+    'hardware_vikey_admin': {
+        'default': '/hardware/dashboard',
+        'pages': ['/hardware/dashboard', '/super_admin_dashboard', '/admin_center', '/settings', '/dashboard', '/profile', '/ai-chat'],
+        'description': '硬件维凯管理员',
+        'icon': 'key'
+    },
+    'user': {
+        'default': '/',
+        'pages': ['/', '/dashboard', '/profile', '/ai-chat'],
+        'description': '普通用户',
+        'icon': 'user'
+    },
+    'guest': {
+        'default': '/',
+        'pages': ['/', '/login', '/register'],
+        'description': '访客',
+        'icon': 'user-circle'
+    },
+}
 
-class RoleRouter:
-    """角色路由跳转管理器"""
+SPECIAL_ROUTE_RULES = {
+    '/exam_system': {
+        'allowed_roles': ['student', 'student_vip'],
+        'student_only': True,
+        'adult_only': True,
+        'redirect_if_denied': '/'
+    },
+    '/learning_system': {
+        'allowed_roles': ['student', 'student_vip'],
+        'student_only': True,
+        'adult_only': True,
+        'redirect_if_denied': '/'
+    },
+    '/math_training': {
+        'allowed_roles': ['student', 'student_vip'],
+        'student_only': True,
+        'adult_only': True,
+        'redirect_if_denied': '/'
+    },
+    '/exam_center': {
+        'allowed_roles': ['student', 'student_vip'],
+        'student_only': True,
+        'redirect_if_denied': '/'
+    },
+    '/exam_page/': {
+        'allowed_roles': ['student', 'student_vip'],
+        'student_only': True,
+        'redirect_if_denied': '/'
+    },
+    '/exam_results': {
+        'allowed_roles': ['student', 'student_vip'],
+        'student_only': True,
+        'redirect_if_denied': '/'
+    },
+    '/exam_history': {
+        'allowed_roles': ['student', 'student_vip'],
+        'student_only': True,
+        'redirect_if_denied': '/'
+    },
+    '/learning/': {
+        'allowed_roles': ['student', 'student_vip', 'teacher', 'admin', 'super_admin', 'hardware_admin', 'hardware_vikey_admin'],
+        'student_only': False,
+        'redirect_if_denied': '/'
+    },
+    '/settings': {
+        'allowed_roles': ['admin', 'super_admin', 'hardware_admin', 'hardware_vikey_admin'],
+        'student_only': False,
+        'redirect_if_denied': '/'
+    },
+    '/super_admin_dashboard': {
+        'allowed_roles': ['super_admin', 'hardware_admin', 'hardware_vikey_admin'],
+        'student_only': False,
+        'redirect_if_denied': '/'
+    },
+    '/hardware/dashboard': {
+        'allowed_roles': ['hardware_admin', 'hardware_vikey_admin'],
+        'student_only': False,
+        'redirect_if_denied': '/'
+    },
+    '/admin_center': {
+        'allowed_roles': ['admin', 'super_admin', 'hardware_admin', 'hardware_vikey_admin'],
+        'student_only': False,
+        'redirect_if_denied': '/'
+    },
+    '/admin_app': {
+        'allowed_roles': ['admin', 'super_admin', 'hardware_admin'],
+        'student_only': False,
+        'redirect_if_denied': '/'
+    },
+    '/ai-chat': {
+        'allowed_roles': ['student', 'student_vip', 'designer', 'teacher', 'admin', 'super_admin', 'hardware_admin', 'hardware_vikey_admin'],
+        'student_only': False,
+        'redirect_if_denied': '/'
+    },
+    '/physics-engine/': {
+        'allowed_roles': ['admin', 'super_admin', 'hardware_admin', 'hardware_vikey_admin', 'teacher', 'designer'],
+        'student_only': False,
+        'redirect_if_denied': '/'
+    },
+    '/arduino': {
+        'allowed_roles': ['designer', 'admin', 'super_admin', 'hardware_admin', 'hardware_vikey_admin'],
+        'student_only': False,
+        'redirect_if_denied': '/'
+    },
+    '/teacher': {
+        'allowed_roles': ['teacher', 'admin', 'super_admin', 'hardware_admin', 'hardware_vikey_admin'],
+        'student_only': False,
+        'redirect_if_denied': '/'
+    },
+    '/k12': {
+        'allowed_roles': ['student', 'student_vip', 'teacher'],
+        'student_only': False,
+        'k12_only': True,
+        'redirect_if_denied': '/'
+    },
+    '/k12/subject/': {
+        'allowed_roles': ['student', 'student_vip', 'teacher'],
+        'student_only': False,
+        'k12_only': True,
+        'require_grade': True,
+        'redirect_if_denied': '/'
+    },
+    '/k12/exam': {
+        'allowed_roles': ['student', 'student_vip'],
+        'student_only': True,
+        'k12_only': True,
+        'require_grade': True,
+        'redirect_if_denied': '/'
+    },
+    '/k12/report': {
+        'allowed_roles': ['student', 'student_vip'],
+        'student_only': True,
+        'k12_only': True,
+        'require_grade': True,
+        'redirect_if_denied': '/'
+    },
+    '/k12/practice': {
+        'allowed_roles': ['student', 'student_vip', 'teacher'],
+        'student_only': False,
+        'k12_only': True,
+        'redirect_if_denied': '/'
+    },
+}
 
-    def __init__(self):
-        self.rules = self._load_rules()
-
-    def _load_rules(self) -> dict:
-        """加载角色跳转规则"""
-        rules = {
-            'student': {
-                'name': '学生',
-                'redirect': '/exam_system',
-                'description': '考试系统首页',
-                'permissions': ['exam_view', 'exam_take', 'results_view'],
-                'sidebar_items': [
-                    {'name': '考试系统首页', 'icon': 'fas fa-graduation-cap', 'path': '/exam_system'},
-                    {'name': '考试中心', 'icon': 'fas fa-file-alt', 'path': '/exam'},
-                    {'name': '我的成绩', 'icon': 'fas fa-chart-line', 'path': '/exam/results'},
-                    {'name': '学习记录', 'icon': 'fas fa-book', 'path': '/exam/history'}
-                ]
-            },
-            'designer': {
-                'name': '设计师',
-                'redirect': '/arduino',
-                'description': 'Arduino设计页面',
-                'permissions': ['arduino_view', 'project_create', 'component_access'],
-                'sidebar_items': [
-                    {'name': 'Arduino设计', 'icon': 'fas fa-microchip', 'path': '/arduino'},
-                    {'name': '项目管理', 'icon': 'fas fa-folder', 'path': '/arduino/projects'},
-                    {'name': '组件库', 'icon': 'fas fa-box', 'path': '/arduino/components'}
-                ]
-            },
-            'teacher': {
-                'name': '教师',
-                'redirect': '/teacher',
-                'description': '教师管理后台',
-                'permissions': ['exam_manage', 'questions_manage', 'students_view', 'grade_view'],
-                'sidebar_items': [
-                    {'name': '考试管理', 'icon': 'fas fa-file-alt', 'path': '/teacher/exams'},
-                    {'name': '题库管理', 'icon': 'fas fa-question-circle', 'path': '/teacher/questions'},
-                    {'name': '学生管理', 'icon': 'fas fa-users', 'path': '/teacher/students'},
-                    {'name': '成绩分析', 'icon': 'fas fa-chart-bar', 'path': '/teacher/grades'}
-                ]
-            },
-            'researcher': {
-                'name': '教研员',
-                'redirect': '/researcher',
-                'description': '教研员专属页面',
-                'permissions': ['research_analysis', 'data_export', 'report_generate', 'system_config'],
-                'sidebar_items': [
-                    {'name': '教研分析', 'icon': 'fas fa-search', 'path': '/researcher/analysis'},
-                    {'name': '数据报表', 'icon': 'fas fa-table', 'path': '/researcher/reports'},
-                    {'name': '题库分析', 'icon': 'fas fa-database', 'path': '/researcher/questions'},
-                    {'name': '系统配置', 'icon': 'fas fa-cog', 'path': '/researcher/config'}
-                ]
-            },
-            'admin': {
-                'name': '管理员（查看权限）',
-                'redirect': '/admin_dashboard',
-                'description': '管理员控制台（只读权限）',
-                'permissions': ['user_view', 'system_view', 'logs_view', 'exam_view', 'readonly'],
-                'sensitive_data': 'readonly',
-                'sidebar_items': [
-                    # 系统概览
-                    {'name': '系统概览', 'icon': 'fas fa-tachometer-alt', 'path': '/admin_dashboard'},
-                    {'name': '实时状态', 'icon': 'fas fa-heartbeat', 'path': '/api/system/status'},
-                    # 用户管理（只读）
-                    {'name': '用户列表', 'icon': 'fas fa-users', 'path': '/admin_app/users', 'readonly': True},
-                    {'name': '用户统计', 'icon': 'fas fa-chart-pie', 'path': '/admin_app/users/stats'},
-                    # 考试系统（只读）
-                    {'name': '考试列表', 'icon': 'fas fa-file-alt', 'path': '/admin_app/exams', 'readonly': True},
-                    {'name': '成绩统计', 'icon': 'fas fa-chart-bar', 'path': '/admin_app/grades'},
-                    {'name': '题库浏览', 'icon': 'fas fa-database', 'path': '/admin_app/questions', 'readonly': True},
-                    # 日志查看（只读）
-                    {'name': '系统日志', 'icon': 'fas fa-file-alt', 'path': '/settings/logs', 'readonly': True},
-                    {'name': '操作记录', 'icon': 'fas fa-history', 'path': '/settings/logs/operations'},
-                    # 学习系统（只读）
-                    {'name': '学习统计', 'icon': 'fas fa-book', 'path': '/learning/stats'},
-                    {'name': '学习记录', 'icon': 'fas fa-history', 'path': '/learning/history'},
-                    # 敏感数据（只读）
-                    {'name': '安全配置（只读）', 'icon': 'fas fa-shield-alt', 'path': '/settings/security', 'readonly': True},
-                    {'name': '数据库配置（只读）', 'icon': 'fas fa-database', 'path': '/settings/database-settings', 'readonly': True},
-                    {'name': '规则配置（只读）', 'icon': 'fas fa-gavel', 'path': '/settings/rules', 'readonly': True},
-                    {'name': '硬件配置（只读）', 'icon': 'fas fa-key', 'path': '/settings/hardware', 'readonly': True},
-                    {'name': '路由配置（只读）', 'icon': 'fas fa-route', 'path': '/api/routes/list', 'readonly': True}
-                ]
-            },
-            'super_admin': {
-                'name': '超级管理员',
-                'redirect': '/settings',
-                'description': '系统设置（全部权限）',
-                'permissions': ['full_access'],
-                'sidebar_items': [
-                    {'name': '用户管理', 'icon': 'fas fa-users', 'path': '/settings/users'},
-                    {'name': '角色管理', 'icon': 'fas fa-lock', 'path': '/settings/permissions'},
-                    {'name': '系统日志', 'icon': 'fas fa-file-log', 'path': '/settings/logs'},
-                    {'name': '数据库管理', 'icon': 'fas fa-database', 'path': '/settings/database-settings'},
-                    {'name': '安全设置', 'icon': 'fas fa-shield-alt', 'path': '/settings/security'}
-                ]
-            },
-            'hardware_admin': {
-                'name': '硬件管理员（最高权限）',
-                'redirect': '/super_admin_dashboard',
-                'description': '超级管理员控制台（全部系统管理）',
-                'permissions': ['full_access', 'super_admin'],
-                'sidebar_items': [
-                    # 系统监控
-                    {'name': '系统监控台', 'icon': 'fas fa-tachometer-alt', 'path': '/admin_app/monitor'},
-                    {'name': '实时状态', 'icon': 'fas fa-heartbeat', 'path': '/api/system/status'},
-                    # 用户管理
-                    {'name': '用户管理', 'icon': 'fas fa-users', 'path': '/admin_app/users'},
-                    {'name': '角色权限', 'icon': 'fas fa-lock', 'path': '/settings/permissions'},
-                    # 考试系统后台
-                    {'name': '考试管理', 'icon': 'fas fa-file-alt', 'path': '/admin_app/exams'},
-                    {'name': '题库管理', 'icon': 'fas fa-question-circle', 'path': '/admin_app/questions'},
-                    {'name': '成绩分析', 'icon': 'fas fa-chart-bar', 'path': '/admin_app/grades'},
-                    # 学习系统后台
-                    {'name': '学习记录', 'icon': 'fas fa-book', 'path': '/learning/history'},
-                    {'name': '错题分析', 'icon': 'fas fa-times-circle', 'path': '/learning/wrong_questions'},
-                    # 教师后台
-                    {'name': '教师后台', 'icon': 'fas fa-chalkboard-teacher', 'path': '/teacher'},
-                    # 教研员后台
-                    {'name': '教研员后台', 'icon': 'fas fa-search', 'path': '/researcher'},
-                    # 系统设置
-                    {'name': '系统设置', 'icon': 'fas fa-cog', 'path': '/admin_app/settings'},
-                    {'name': '数据库管理', 'icon': 'fas fa-database', 'path': '/settings/database-settings'},
-                    {'name': '安全设置', 'icon': 'fas fa-shield-alt', 'path': '/settings/security'},
-                    {'name': '路由管理', 'icon': 'fas fa-route', 'path': '/api/routes/list'},
-                    {'name': '规则管理', 'icon': 'fas fa-gavel', 'path': '/settings/rules'},
-                    # 硬件管理
-                    {'name': '硬件认证', 'icon': 'fas fa-key', 'path': '/settings/hardware'},
-                    # 备份管理
-                    {'name': '备份管理', 'icon': 'fas fa-save', 'path': '/backup_manager'},
-                    # 通知管理
-                    {'name': '通知中心', 'icon': 'fas fa-bell', 'path': '/notification_admin'},
-                    # 学生后台（测试）
-                    {'name': '学生后台（测试）', 'icon': 'fas fa-user-graduate', 'path': '/exam_system'},
-                    # 日志
-                    {'name': '系统日志', 'icon': 'fas fa-file-alt', 'path': '/settings/logs'}
-                ]
-            },
-            'hardware_vikey_admin': {
-                'name': '硬件管理员（最高权限）',
-                'redirect': '/super_admin_dashboard',
-                'description': '硬件管理员控制台（全部系统管理）',
-                'permissions': ['full_access', 'super_admin'],
-                'sidebar_items': [
-                    # 与 hardware_admin 相同
-                    {'name': '系统监控台', 'icon': 'fas fa-tachometer-alt', 'path': '/admin_app/monitor'},
-                    {'name': '实时状态', 'icon': 'fas fa-heartbeat', 'path': '/api/system/status'},
-                    {'name': '用户管理', 'icon': 'fas fa-users', 'path': '/admin_app/users'},
-                    {'name': '角色权限', 'icon': 'fas fa-lock', 'path': '/settings/permissions'},
-                    {'name': '考试管理', 'icon': 'fas fa-file-alt', 'path': '/admin_app/exams'},
-                    {'name': '题库管理', 'icon': 'fas fa-question-circle', 'path': '/admin_app/questions'},
-                    {'name': '成绩分析', 'icon': 'fas fa-chart-bar', 'path': '/admin_app/grades'},
-                    {'name': '学习记录', 'icon': 'fas fa-book', 'path': '/learning/history'},
-                    {'name': '错题分析', 'icon': 'fas fa-times-circle', 'path': '/learning/wrong_questions'},
-                    {'name': '教师后台', 'icon': 'fas fa-chalkboard-teacher', 'path': '/teacher'},
-                    {'name': '教研员后台', 'icon': 'fas fa-search', 'path': '/researcher'},
-                    {'name': '系统设置', 'icon': 'fas fa-cog', 'path': '/admin_app/settings'},
-                    {'name': '数据库管理', 'icon': 'fas fa-database', 'path': '/settings/database-settings'},
-                    {'name': '安全设置', 'icon': 'fas fa-shield-alt', 'path': '/settings/security'},
-                    {'name': '路由管理', 'icon': 'fas fa-route', 'path': '/api/routes/list'},
-                    {'name': '规则管理', 'icon': 'fas fa-gavel', 'path': '/settings/rules'},
-                    {'name': '硬件认证', 'icon': 'fas fa-key', 'path': '/settings/hardware'},
-                    {'name': '备份管理', 'icon': 'fas fa-save', 'path': '/backup_manager'},
-                    {'name': '通知中心', 'icon': 'fas fa-bell', 'path': '/notification_admin'},
-                    {'name': '学生后台（测试）', 'icon': 'fas fa-user-graduate', 'path': '/exam_system'},
-                    {'name': '系统日志', 'icon': 'fas fa-file-alt', 'path': '/settings/logs'}
-                ]
-            },
-            'guest': {
-                'name': '访客',
-                'redirect': '/',
-                'description': '首页',
-                'permissions': [],
-                'sidebar_items': []
-            }
-        }
-        return rules
-
-    def get_redirect_path(self, role: str) -> str:
-        """获取角色对应的跳转路径"""
-        return self.rules.get(role, self.rules['guest'])['redirect']
-
-    def get_role_info(self, role: str) -> dict:
-        """获取角色完整信息"""
-        return self.rules.get(role, self.rules['guest'])
-
-    def get_sidebar_items(self, role: str) -> list:
-        """获取角色的侧边栏菜单"""
-        return self.rules.get(role, self.rules['guest'])['sidebar_items']
-
-    def get_role_list(self) -> list:
-        """获取所有角色列表"""
-        return [{'role': k, 'name': v['name'], 'description': v['description']} 
-                for k, v in self.rules.items()]
-
-
-# ==================== 全局实例 ====================
-
-_router_instance = None
-
-def get_role_router() -> RoleRouter:
-    global _router_instance
-    if _router_instance is None:
-        _router_instance = RoleRouter()
-    return _router_instance
-
-
-# ==================== API Blueprint ====================
-
-role_router_bp = Blueprint('role_router', __name__, url_prefix='/api/role-router')
-
-
-@role_router_bp.route('/rules', methods=['GET'])
-def get_rules():
-    """获取所有角色跳转规则"""
-    router = get_role_router()
-    return jsonify({
-        'success': True,
-        'rules': router.get_role_list()
+def get_role_info(role: str) -> dict:
+    """获取角色详细信息"""
+    return ROLE_PAGE_MAPPING.get(role, {
+        'default': '/',
+        'pages': ['/', '/login', '/register'],
+        'description': '未知角色',
+        'icon': 'question-circle'
     })
 
+def get_default_redirect(role: str) -> str:
+    """获取角色默认重定向URL"""
+    return get_role_info(role)['default']
 
-@role_router_bp.route('/redirect', methods=['GET'])
-def get_redirect():
-    """获取当前用户的跳转路径"""
+def is_page_allowed(path: str, role: str) -> bool:
+    """检查角色是否允许访问页面"""
+    if role in ['hardware_admin', 'hardware_vikey_admin']:
+        return True
+    
+    if role == 'super_admin':
+        if path.startswith('/hardware/dashboard') or path.startswith('/api/hardware/'):
+            return False
+        return True
+    
+    if path in SPECIAL_ROUTE_RULES:
+        return role in SPECIAL_ROUTE_RULES[path]['allowed_roles']
+    
+    for rule_path, rules in SPECIAL_ROUTE_RULES.items():
+        if path.startswith(rule_path):
+            return role in rules['allowed_roles']
+    
+    role_info = get_role_info(role)
+    for allowed_path in role_info['pages']:
+        if path.startswith(allowed_path):
+            return True
+    
+    return False
+
+def get_redirect_for_denied(path: str) -> str:
+    """获取被拒绝访问时的重定向URL"""
+    if path in SPECIAL_ROUTE_RULES:
+        return SPECIAL_ROUTE_RULES[path]['redirect_if_denied']
+    
+    for rule_path, rules in SPECIAL_ROUTE_RULES.items():
+        if path.startswith(rule_path):
+            return rules['redirect_if_denied']
+    
+    return '/'
+
+def validate_and_redirect(path: str) -> tuple:
+    """验证访问权限并返回重定向结果"""
+    user_id = session.get('user_id')
     role = session.get('role', 'guest')
-    router = get_role_router()
-    info = router.get_role_info(role)
+    
+    if not user_id:
+        return False, '/login?next=' + path, 'NOT_LOGGED_IN'
+    
+    if role == 'guest':
+        return False, '/login?next=' + path, 'ROLE_IS_GUEST'
+    
+    if not is_page_allowed(path, role):
+        default_redirect = get_default_redirect(role)
+        return False, default_redirect, 'INSUFFICIENT_PERMISSIONS'
+    
+    return True, path, 'ALLOWED'
+
+def get_redirect_url_by_education(role: str, education: str) -> str:
+    """根据教育体系获取重定向URL"""
+    if education == 'k12':
+        if role in ['student', 'student_vip']:
+            return '/k12'
+        elif role == 'teacher':
+            return '/teacher'
+    
+    return get_default_redirect(role)
+
+def get_smart_redirect_url(role: str) -> str:
+    """智能获取重定向URL，考虑教育体系"""
+    user_id = session.get('user_id')
+    
+    if not user_id:
+        return get_default_redirect(role)
+    
+    try:
+        education = get_user_education_system(user_id)
+        if education:
+            return get_redirect_url_by_education(role, education)
+    except Exception as e:
+        logger.warning(f"获取教育体系失败: {e}")
+    
+    return get_default_redirect(role)
+
+@role_router_bp.route('/api/role/info')
+def api_role_info():
+    """获取当前用户角色信息"""
+    role = session.get('role', 'guest')
+    role_info = get_role_info(role)
+    education_info = get_user_education_info()
+    
     return jsonify({
         'success': True,
         'role': role,
-        'redirect': info['redirect'],
-        'name': info['name'],
-        'description': info['description'],
-        'sidebar_items': info['sidebar_items']
+        'default_redirect': role_info['default'],
+        'smart_redirect': get_smart_redirect_url(role),
+        'allowed_pages': role_info['pages'],
+        'description': role_info['description'],
+        'icon': role_info['icon'],
+        'is_logged_in': 'user_id' in session,
+        'education_info': education_info
     })
 
-
-@role_router_bp.route('/role-info/<role>', methods=['GET'])
-def get_role_info(role):
-    """获取指定角色的信息"""
-    router = get_role_router()
-    info = router.get_role_info(role)
+@role_router_bp.route('/api/role/check_access')
+def api_check_access():
+    """检查当前用户对指定路径的访问权限"""
+    path = request.args.get('path', '')
+    
+    if not path:
+        return jsonify({'success': False, 'error': '未指定路径'}), 400
+    
+    allowed, redirect_url, reason = validate_and_redirect(path)
+    
     return jsonify({
         'success': True,
-        'role': role,
-        **info
+        'path': path,
+        'allowed': allowed,
+        'redirect_url': redirect_url,
+        'reason': reason,
+        'role': session.get('role', 'guest'),
+        'education_info': get_user_education_info()
     })
 
+@role_router_bp.route('/api/role/list')
+def api_list_roles():
+    """获取所有角色列表"""
+    roles = []
+    for role_code, role_info in ROLE_PAGE_MAPPING.items():
+        roles.append({
+            'role': role_code,
+            'description': role_info['description'],
+            'icon': role_info['icon'],
+            'default_page': role_info['default'],
+            'page_count': len(role_info['pages'])
+        })
+    
+    return jsonify({
+        'success': True,
+        'roles': roles
+    })
 
-# ==================== 登录后自动跳转路由 ====================
+@role_router_bp.route('/api/role/validate')
+def api_validate_role():
+    """验证角色有效性"""
+    role = request.args.get('role', '')
+    
+    if role in ROLE_PAGE_MAPPING:
+        role_info = get_role_info(role)
+        return jsonify({
+            'success': True,
+            'valid': True,
+            'role': role,
+            'description': role_info['description']
+        })
+    else:
+        return jsonify({
+            'success': True,
+            'valid': False,
+            'role': role,
+            'error': '角色不存在'
+        })
+
+@role_router_bp.route('/api/role/route_rules')
+def api_get_route_rules():
+    """获取所有路由规则"""
+    return jsonify({
+        'success': True,
+        'role_page_mapping': ROLE_PAGE_MAPPING,
+        'special_route_rules': SPECIAL_ROUTE_RULES
+    })
 
 def create_role_routes(app):
-    """注册角色路由API（路由本身已在app.py中定义）"""
-    if hasattr(app, '_role_routes_created') and app._role_routes_created:
-        return app
-
-    app._role_routes_created = True
+    """创建角色路由"""
+    @app.route('/role/redirect')
+    def role_redirect():
+        """根据角色重定向到默认页面"""
+        role = session.get('role', 'guest')
+        redirect_url = get_smart_redirect_url(role)
+        logger.info(f"[角色路由] 用户角色: {role}, 智能重定向到: {redirect_url}")
+        return redirect(redirect_url)
+    
+    @app.route('/role/switch/<new_role>')
+    def role_switch(new_role):
+        """切换角色（仅开发测试用）"""
+        if new_role in ROLE_PAGE_MAPPING:
+            session['role'] = new_role
+            logger.info(f"[角色切换] 角色切换为: {new_role}")
+            return redirect(get_smart_redirect_url(new_role))
+        else:
+            return jsonify({'success': False, 'error': '无效的角色'}), 400
+    
+    @app.route('/role/validate_and_redirect')
+    def role_validate_and_redirect():
+        """验证权限并重定向"""
+        target_path = request.args.get('path', '/')
+        allowed, redirect_url, reason = validate_and_redirect(target_path)
+        
+        if allowed:
+            return redirect(target_path)
+        else:
+            logger.info(f"[角色路由] 权限验证失败 - 目标: {target_path}, 重定向: {redirect_url}, 原因: {reason}")
+            return redirect(redirect_url)
+    
     return app
+
+def validate_login_redirect(role: str) -> str:
+    """验证登录后的重定向URL"""
+    return get_smart_redirect_url(role)

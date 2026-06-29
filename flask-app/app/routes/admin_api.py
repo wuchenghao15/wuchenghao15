@@ -5,6 +5,7 @@ Admin API Routes for MTSCOS AI System
 后台交互API路由
 """
 
+import os
 from flask import Blueprint, request, jsonify, session
 import logging
 logger = logging.getLogger(__name__)
@@ -22,6 +23,9 @@ from app.utils.monitor_manager import (
 from app.middlewares.access_control import require_admin, require_super_admin, require_login
 import sys
 
+app_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+DATABASE_PATH = os.path.join(app_root, 'app.db')
+
 admin_api_bp = Blueprint('admin_api', __name__)
 
 
@@ -30,7 +34,7 @@ admin_api_bp = Blueprint('admin_api', __name__)
 def get_users():
     """获取用户列表 - 需要管理员权限"""
     try:
-        with sqlite3.connect('/Users/wuchenghao/Library/CloudStorage/OneDrive-个人/文档/MTSCOS_AI_Project/flask-app/app.db') as conn:
+        with sqlite3.connect(DATABASE_PATH) as conn:
             cursor = conn.cursor()
             
             cursor.execute('SELECT id, username, email, role, created_at FROM users ORDER BY created_at DESC')
@@ -61,7 +65,7 @@ def get_users():
 def get_user_details(user_id):
     """获取用户详情 - 需要管理员权限"""
     try:
-        with sqlite3.connect('/Users/wuchenghao/Library/CloudStorage/OneDrive-个人/文档/MTSCOS_AI_Project/flask-app/app.db') as conn:
+        with sqlite3.connect(DATABASE_PATH) as conn:
             
             cursor = conn.cursor()
             
@@ -107,7 +111,7 @@ def change_user_role(user_id):
                 'error': 'Invalid role'
             }), 400
         
-        with sqlite3.connect('/Users/wuchenghao/Library/CloudStorage/OneDrive-个人/文档/MTSCOS_AI_Project/flask-app/app.db') as conn:
+        with sqlite3.connect(DATABASE_PATH) as conn:
             
             cursor = conn.cursor()
             
@@ -131,7 +135,7 @@ def change_user_role(user_id):
 def delete_user(user_id):
     """删除用户 - 需要超级管理员权限"""
     try:
-        with sqlite3.connect('/Users/wuchenghao/Library/CloudStorage/OneDrive-个人/文档/MTSCOS_AI_Project/flask-app/app.db') as conn:
+        with sqlite3.connect(DATABASE_PATH) as conn:
             
             cursor = conn.cursor()
             
@@ -212,7 +216,7 @@ def terminate_user_sessions(user_id):
 def get_access_logs():
     """获取访问日志 - 需要管理员权限"""
     try:
-        with sqlite3.connect('/Users/wuchenghao/Library/CloudStorage/OneDrive-个人/文档/MTSCOS_AI_Project/flask-app/app.db') as conn:
+        with sqlite3.connect(DATABASE_PATH) as conn:
             
             cursor = conn.cursor()
             
@@ -239,7 +243,7 @@ def get_access_logs():
 def get_system_logs():
     """获取系统日志 - 需要管理员权限"""
     try:
-        with sqlite3.connect('/Users/wuchenghao/Library/CloudStorage/OneDrive-个人/文档/MTSCOS_AI_Project/flask-app/app.db') as conn:
+        with sqlite3.connect(DATABASE_PATH) as conn:
             
             cursor = conn.cursor()
             
@@ -266,7 +270,7 @@ def get_system_logs():
 def get_login_attempts():
     """获取登录尝试记录 - 需要管理员权限"""
     try:
-        with sqlite3.connect('/Users/wuchenghao/Library/CloudStorage/OneDrive-个人/文档/MTSCOS_AI_Project/flask-app/app.db') as conn:
+        with sqlite3.connect(DATABASE_PATH) as conn:
             
             cursor = conn.cursor()
             
@@ -293,7 +297,7 @@ def get_login_attempts():
 def get_locked_users():
     """获取被锁定用户列表 - 需要管理员权限"""
     try:
-        with sqlite3.connect('/Users/wuchenghao/Library/CloudStorage/OneDrive-个人/文档/MTSCOS_AI_Project/flask-app/app.db') as conn:
+        with sqlite3.connect(DATABASE_PATH) as conn:
             
             cursor = conn.cursor()
             
@@ -377,7 +381,7 @@ def get_all_permissions():
 def get_system_status():
     """获取系统状态 - 需要登录"""
     try:
-        with sqlite3.connect('/Users/wuchenghao/Library/CloudStorage/OneDrive-个人/文档/MTSCOS_AI_Project/flask-app/app.db') as conn:
+        with sqlite3.connect(DATABASE_PATH) as conn:
             
             cursor = conn.cursor()
             
@@ -421,7 +425,7 @@ def get_system_status():
 def cleanup_system():
     """清理系统数据 - 需要超级管理员权限"""
     try:
-        with sqlite3.connect('/Users/wuchenghao/Library/CloudStorage/OneDrive-个人/文档/MTSCOS_AI_Project/flask-app/app.db') as conn:
+        with sqlite3.connect(DATABASE_PATH) as conn:
             
             cursor = conn.cursor()
             
@@ -472,7 +476,7 @@ def receive_monitor_log():
             anomaly_type = data.get('anomalyType', '')
             details = data.get('details', {})
             
-            with sqlite3.connect('/Users/wuchenghao/Library/CloudStorage/OneDrive-个人/文档/MTSCOS_AI_Project/flask-app/app.db') as conn:
+            with sqlite3.connect(DATABASE_PATH) as conn:
                 
                 cursor = conn.cursor()
                 
@@ -492,7 +496,7 @@ def receive_monitor_log():
             error_type = data.get('errorType', '')
             error_details = data.get('details', {})
             
-            with sqlite3.connect('/Users/wuchenghao/Library/CloudStorage/OneDrive-个人/文档/MTSCOS_AI_Project/flask-app/app.db') as conn:
+            with sqlite3.connect(DATABASE_PATH) as conn:
                 
                 cursor = conn.cursor()
                 

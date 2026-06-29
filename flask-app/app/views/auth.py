@@ -97,15 +97,21 @@ def login():
         session.permanent = True
         session['login_attempts'] = 0
 
-        role_redirects = {
-            'student': '/exam_system',
-            'designer': '/arduino',
-            'teacher': '/teacher',
-            'admin': '/settings',
-            'super_admin': '/super_admin_dashboard',
-            'hardware_admin': '/admin_center'
-        }
-        redirect_url = role_redirects.get(user['role'], '/dashboard')
+        try:
+            from app.utils.role_router import get_smart_redirect_url
+            redirect_url = get_smart_redirect_url(user['role'])
+        except ImportError:
+            role_redirects = {
+                'student': '/exam_system',
+                'student_vip': '/exam_system',
+                'designer': '/arduino',
+                'teacher': '/teacher',
+                'admin': '/settings',
+                'super_admin': '/super_admin_dashboard',
+                'hardware_admin': '/hardware/dashboard',
+                'hardware_vikey_admin': '/hardware/dashboard'
+            }
+            redirect_url = role_redirects.get(user['role'], '/dashboard')
 
         return jsonify({
             'success': True,

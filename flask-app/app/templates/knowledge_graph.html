@@ -1,0 +1,412 @@
+{% extends "base.html" %}
+
+{% block title %}知识图谱可视化 - MTSCOS AI{% endblock %}
+
+{% block content %}
+<div class="knowledge-graph-container">
+    <div class="page-header">
+        <h1>🗺️ 知识图谱可视化</h1>
+        <p>展示知识点之间的关联关系和您的掌握程度</p>
+    </div>
+    
+    <!-- 图谱概览 -->
+    <div class="graph-overview card">
+        <h2>知识掌握概览</h2>
+        <button onclick="loadKnowledgeGraph()" class="btn-primary">生成知识图谱</button>
+        <div id="overviewContent" class="overview-content"></div>
+    </div>
+    
+    <!-- 知识图谱可视化 -->
+    <div id="graphVisualization" class="graph-visualization card" style="display: none;">
+        <h2>知识点关联图谱</h2>
+        <div id="graphCanvas" class="graph-canvas"></div>
+        <div class="legend">
+            <div class="legend-item"><span class="color-box" style="background:#4CAF50"></span>已掌握 (≥80%)</div>
+            <div class="legend-item"><span class="color-box" style="background:#8BC34A"></span>基本掌握 (60-80%)</div>
+            <div class="legend-item"><span class="color-box" style="background:#FFC107"></span>学习中 (40-60%)</div>
+            <div class="legend-item"><span class="color-box" style="background:#F44336"></span>需强化 (<40%)</div>
+        </div>
+    </div>
+    
+    <!-- 学习路径建议 -->
+    <div id="learningPathSection" class="learning-path-section card" style="display: none;">
+        <h2>个性化学习路径建议</h2>
+        <div id="pathRecommendations" class="path-recommendations"></div>
+    </div>
+    
+    <!-- 知识点详情查询 -->
+    <div class="knowledge-details card">
+        <h2>知识点详情查询</h2>
+        <div class="search-form">
+            <select id="knowledgePointSelect">
+                <option value="词汇">词汇</option>
+                <option value="语法">语法</option>
+                <option value="阅读">阅读</option>
+                <option value="听力">听力</option>
+                <option value="写作">写作</option>
+            </select>
+            <button onclick="getKnowledgePointDetails()" class="btn-secondary">查看详情</button>
+        </div>
+        <div id="detailsContent" class="details-content"></div>
+    </div>
+    
+    <!-- 掌握程度统计 -->
+    <div id="masteryStats" class="mastery-stats card" style="display: none;">
+        <h2>掌握程度统计</h2>
+        <div id="statsContent" class="stats-content"></div>
+    </div>
+</div>
+
+<style>
+    .knowledge-graph-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    
+    .page-header {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+    
+    .page-header h1 {
+        font-size: 28px;
+        color: #333;
+    }
+    
+    .card {
+        background: white;
+        border-radius: 12px;
+        padding: 24px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .card h2 {
+        font-size: 20px;
+        color: #333;
+        margin-bottom: 16px;
+        border-bottom: 2px solid #667eea;
+        padding-bottom: 8px;
+    }
+    
+    .btn-primary {
+        background: #667eea;
+        color: white;
+        padding: 12px 24px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 16px;
+        margin-bottom: 16px;
+    }
+    
+    .btn-secondary {
+        background: #48bb78;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+        margin-left: 12px;
+    }
+    
+    .overview-content {
+        margin-top: 16px;
+    }
+    
+    .mastery-summary {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 16px;
+    }
+    
+    .summary-item {
+        background: #f0f4f8;
+        padding: 16px;
+        border-radius: 8px;
+        text-align: center;
+    }
+    
+    .summary-item .value {
+        font-size: 28px;
+        font-weight: bold;
+        color: #667eea;
+    }
+    
+    .graph-canvas {
+        width: 100%;
+        height: 400px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        margin-top: 16px;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .node {
+        position: absolute;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 12px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: transform 0.2s;
+    }
+    
+    .node:hover {
+        transform: scale(1.1);
+    }
+    
+    .legend {
+        display: flex;
+        justify-content: center;
+        gap: 16px;
+        margin-top: 16px;
+    }
+    
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .color-box {
+        width: 20px;
+        height: 20px;
+        border-radius: 4px;
+    }
+    
+    .path-recommendations {
+        display: grid;
+        gap: 12px;
+    }
+    
+    .path-item {
+        background: #e8f5e9;
+        padding: 16px;
+        border-radius: 8px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .path-item .knowledge {
+        font-weight: bold;
+    }
+    
+    .path-item .mastery {
+        color: #666;
+    }
+    
+    .search-form {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+    
+    .search-form select {
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 14px;
+    }
+    
+    .details-content {
+        margin-top: 16px;
+    }
+    
+    .detail-section {
+        background: #f5f5f5;
+        padding: 16px;
+        border-radius: 8px;
+        margin: 8px 0;
+    }
+    
+    .detail-section h3 {
+        color: #667eea;
+        margin-bottom: 8px;
+    }
+    
+    .stats-content {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+    }
+    
+    .stat-card {
+        background: #fff3cd;
+        padding: 12px;
+        border-radius: 8px;
+        text-align: center;
+    }
+    
+    .stat-card .status {
+        font-size: 18px;
+        font-weight: bold;
+        color: #ff9800;
+    }
+    
+    .stat-card .count {
+        font-size: 24px;
+        color: #333;
+    }
+</style>
+
+<script>
+    const userId = {{ user.user_id }};
+    
+    function loadKnowledgeGraph() {
+        fetch(`/api/learning/enhancement/knowledge-graph/generate?user_id=${userId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayGraph(data.data);
+            }
+        });
+    }
+    
+    function displayGraph(graphData) {
+        // 显示掌握概览
+        const summary = graphData.mastery_summary;
+        document.getElementById('overviewContent').innerHTML = `
+            <div class="mastery-summary">
+                <div class="summary-item">
+                    <div class="value">${summary.average_mastery}%</div>
+                    <div class="label">平均掌握程度</div>
+                </div>
+                <div class="summary-item">
+                    <div class="value">${summary.highest_mastery}%</div>
+                    <div class="label">最高掌握程度</div>
+                </div>
+                <div class="summary-item">
+                    <div class="value">${summary.lowest_mastery}%</div>
+                    <div class="label">最低掌握程度</div>
+                </div>
+            </div>
+            <p style="margin-top: 16px;"><strong>建议:</strong> ${summary.recommendation}</p>
+        `;
+        
+        // 显示图谱
+        document.getElementById('graphVisualization').style.display = 'block';
+        renderGraph(graphData.nodes, graphData.edges);
+        
+        // 显示学习路径
+        document.getElementById('learningPathSection').style.display = 'block';
+        let pathHtml = '';
+        graphData.user_learning_path.forEach(path => {
+            pathHtml += `
+                <div class="path-item">
+                    <div>
+                        <span class="knowledge">${path.knowledge_point}</span>
+                        <span class="mastery">(掌握: ${path.current_mastery}%)</span>
+                    </div>
+                    <div>
+                        ${path.can_start ? '✅ 可以开始' : '⚠️ 需要先学前置知识'}
+                    </div>
+                </div>
+            `;
+        });
+        document.getElementById('pathRecommendations').innerHTML = pathHtml;
+        
+        // 显示统计
+        document.getElementById('masteryStats').style.display = 'block';
+        let statsHtml = '';
+        for (const [status, count] of Object.entries(summary.status_distribution)) {
+            statsHtml += `
+                <div class="stat-card">
+                    <div class="status">${status}</div>
+                    <div class="count">${count}</div>
+                    <div class="label">知识点数</div>
+                </div>
+            `;
+        }
+        document.getElementById('statsContent').innerHTML = statsHtml;
+    }
+    
+    function renderGraph(nodes, edges) {
+        const canvas = document.getElementById('graphCanvas');
+        canvas.innerHTML = '';
+        
+        // 简化可视化 - 使用CSS布局
+        const categoryNodes = nodes.filter(n => n.type === 'category');
+        const knowledgeNodes = nodes.filter(n => n.type === 'knowledge_point');
+        
+        // 渲染分类节点
+        categoryNodes.forEach((node, i) => {
+            const div = document.createElement('div');
+            div.className = 'node';
+            div.style.width = node.size + 'px';
+            div.style.height = node.size + 'px';
+            div.style.background = node.color;
+            div.style.left = (50 + i * 150) + 'px';
+            div.style.top = '50px';
+            div.textContent = node.label;
+            canvas.appendChild(div);
+        });
+        
+        // 渲染知识点节点
+        knowledgeNodes.forEach((node, i) => {
+            const div = document.createElement('div');
+            div.className = 'node';
+            div.style.width = node.size + 'px';
+            div.style.height = node.size + 'px';
+            div.style.background = node.color;
+            div.style.left = (30 + (i % 4) * 120) + 'px';
+            div.style.top = (150 + Math.floor(i / 4) * 60) + 'px';
+            div.textContent = node.label;
+            div.title = `${node.label}: ${node.mastery_level}% (${node.status})`;
+            canvas.appendChild(div);
+        });
+    }
+    
+    function getKnowledgePointDetails() {
+        const knowledgePoint = document.getElementById('knowledgePointSelect').value;
+        
+        fetch(`/api/learning/enhancement/knowledge-graph/details/${knowledgePoint}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayDetails(data.data);
+            }
+        });
+    }
+    
+    function displayDetails(details) {
+        document.getElementById('detailsContent').innerHTML = `
+            <div class="detail-section">
+                <h3>${details.knowledge_point}</h3>
+                <p>分类: ${details.category}</p>
+                <p>层级: ${details.level}</p>
+            </div>
+            <div class="detail-section">
+                <h3>子知识点</h3>
+                <p>${details.children.join(', ') || '无'}</p>
+            </div>
+            <div class="detail-section">
+                <h3>关联知识点</h3>
+                <p>${details.related_points.join(', ') || '无'}</p>
+            </div>
+            <div class="detail-section">
+                <h3>前置知识点</h3>
+                <p>${details.prerequisites.join(', ') || '无'}</p>
+            </div>
+            <div class="detail-section">
+                <h3>推荐学习资源</h3>
+                <p>${details.learning_resources.join(', ')}</p>
+            </div>
+            <div class="detail-section">
+                <h3>练习建议</h3>
+                <p>${details.practice_suggestions.join(', ')}</p>
+            </div>
+        `;
+    }
+    
+    // 页面加载时自动生成图谱
+    loadKnowledgeGraph();
+</script>
+{% endblock %}

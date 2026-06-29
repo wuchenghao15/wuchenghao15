@@ -181,6 +181,9 @@ def get_dashboard_stats():
         
         conn.close()
         
+        # AI系统统计
+        ai_stats = get_ai_system_stats()
+        
         return jsonify({
             'success': True,
             'data': {
@@ -200,6 +203,7 @@ def get_dashboard_stats():
                 'recent_logs': recent_logs,
                 'role_distribution': role_distribution,
                 'registration_trend': registration_trend,
+                'ai_system': ai_stats,
                 'timestamp': datetime.now().isoformat()
             }
         })
@@ -245,6 +249,9 @@ def get_action_description(path):
         '/api/routes/reload': '刷新路由',
         '/backup_manager': '访问备份管理',
         '/notification_admin': '访问通知中心',
+        '/api/brain-bank': '访问AI脑库',
+        '/api/proactive-ai': '访问主动AI系统',
+        '/api/data-integrity': '访问数据完整性中心',
     }
     
     for key, desc in action_map.items():
@@ -252,6 +259,121 @@ def get_action_description(path):
             return desc
     
     return f'访问 {path}'
+
+
+def get_ai_system_stats():
+    """获取AI系统统计数据"""
+    stats = {
+        'brain_bank': {
+            'total_knowledge': 0,
+            'total_triggers': 0,
+            'knowledge_types': 10,
+            'knowledge_domains': 11,
+            'trigger_types': 5,
+            'status': 'unknown',
+            'empowerment_rate': 0
+        },
+        'proactive_ai': {
+            'initiative_level': 'PASSIVE',
+            'initiative_level_num': 1,
+            'discovery_modules': 0,
+            'task_executors': 0,
+            'active_tasks': 0,
+            'discoveries_total': 0
+        },
+        'ai_employees': {
+            'total_count': 0,
+            'active_count': 0,
+            'specialties': [],
+            'collaboration_rate': 0
+        },
+        'data_integrity': {
+            'validation_rules': 12,
+            'total_validations': 0,
+            'validation_pass_rate': 0,
+            'active_locks': 0,
+            'audit_logs': 0
+        }
+    }
+    
+    try:
+        from app.ai.knowledge_brain_bank import knowledge_brain_bank
+        brain_stats = knowledge_brain_bank.get_brain_stats()
+        if isinstance(brain_stats, dict):
+            knowledge_data = brain_stats.get('knowledge', brain_stats)
+            trigger_data = brain_stats.get('triggers', brain_stats)
+            stats['brain_bank'] = {
+                'total_knowledge': knowledge_data.get('total_knowledge', knowledge_data.get('count', 0)),
+                'total_triggers': trigger_data.get('total_triggers', trigger_data.get('trigger_count', 0)),
+                'knowledge_types': brain_stats.get('knowledge_types', 10),
+                'knowledge_domains': brain_stats.get('knowledge_domains', 11),
+                'trigger_types': brain_stats.get('trigger_types', 5),
+                'status': brain_stats.get('status', 'active'),
+                'empowerment_rate': brain_stats.get('empowerment_rate', 0)
+            }
+    except Exception as e:
+        logger.debug(f"获取脑库统计失败: {e}")
+    
+    try:
+        from app.ai.proactive_ai_system import proactive_ai_center
+        pro_stats = proactive_ai_center.get_system_status()
+        if isinstance(pro_stats, dict):
+            data = pro_stats.get('data', pro_stats)
+            discovery = data.get('discovery', {})
+            scheduler = data.get('scheduler', {})
+            level = data.get('initiative_level', 'passive').upper()
+            
+            level_map = {
+                'PASSIVE': 1,
+                'REACTIVE': 2,
+                'PROACTIVE': 3,
+                'SELF_DRIVEN': 4,
+                'AUTONOMOUS': 5
+            }
+            level_num = level_map.get(level, 1)
+            
+            stats['proactive_ai'] = {
+                'initiative_level': level,
+                'initiative_level_num': level_num,
+                'discovery_modules': discovery.get('modules_count', len(discovery.get('modules', []))),
+                'task_executors': len(scheduler.get('executors', [])),
+                'active_tasks': scheduler.get('active', 0),
+                'discoveries_total': discovery.get('history_count', 0)
+            }
+    except Exception as e:
+        logger.debug(f"获取主动AI统计失败: {e}")
+    
+    try:
+        from app.ai.ai_employee_enhanced_system import get_enhanced_system
+        emp_sys = get_enhanced_system()
+        emp_stats = emp_sys.get_system_status() if hasattr(emp_sys, 'get_system_status') else {}
+        if isinstance(emp_stats, dict):
+            data = emp_stats.get('data', emp_stats)
+            stats['ai_employees'] = {
+                'total_count': data.get('total_employees', data.get('employee_count', data.get('count', 0))),
+                'active_count': data.get('active_employees', data.get('active_count', 0)),
+                'specialties': data.get('specialties', []),
+                'collaboration_rate': data.get('collaboration_rate', 0)
+            }
+    except Exception as e:
+        logger.debug(f"获取AI员工统计失败: {e}")
+    
+    try:
+        from app.utils.data_integrity_center import data_integrity_center
+        di_stats = data_integrity_center.get_status()
+        if isinstance(di_stats, dict):
+            data = di_stats.get('data', di_stats)
+            stats['data_integrity'] = {
+                'validation_rules': data.get('validation_rules', data.get('rules_count', 12)),
+                'total_validations': data.get('total_validations', data.get('validations', 0)),
+                'validation_pass_rate': data.get('validation_pass_rate', data.get('pass_rate', 0)),
+                'active_locks': data.get('active_locks', data.get('locks', 0)),
+                'audit_logs': data.get('audit_logs', data.get('logs', 0))
+            }
+    except Exception as e:
+        logger.debug(f"获取数据完整性统计失败: {e}")
+    
+    return stats
 
 
 @super_admin_data_api.route('/admin/users_list', methods=['GET'])

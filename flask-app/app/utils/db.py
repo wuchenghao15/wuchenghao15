@@ -130,9 +130,9 @@ class DatabaseManager:
         self._cache_last_access = {}
 
         self._token_bucket = {
-            'capacity': 100,
-            'tokens': 100,
-            'refill_rate': 10,
+            'capacity': 1000,
+            'tokens': 1000,
+            'refill_rate': 100,
             'last_refill': time.time()
         }
         self._token_bucket_lock = threading.RLock()

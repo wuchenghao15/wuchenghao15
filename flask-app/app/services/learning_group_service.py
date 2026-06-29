@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import os
 from flask import Blueprint, jsonify, request
 #!/usr/bin/env python3
 """学习小组服务 - 支持多人协作学习"""
@@ -10,7 +11,8 @@ import json
 from datetime import datetime
 from typing import List, Dict, Optional
 
-DATABASE_PATH = '/Users/wuchenghao/Library/CloudStorage/OneDrive-个人/文档/MTSCOS_AI_Project/flask-app/app.db'
+app_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+DATABASE_PATH = os.path.join(app_root, 'app.db')
 
 class LearningGroupService:
     def __init__(self):

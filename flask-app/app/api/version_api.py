@@ -14,6 +14,7 @@ from app.version import (
 from app.models.database_version_manager import db_version_manager
 from app.services.version_manager import version_manager
 from app.utils.logging import logger
+from app.services.auto_version_updater import get_auto_version_updater
 
 version_api = Blueprint('version_api', __name__)
 
@@ -389,6 +390,91 @@ def get_version_detail(version):
                 'error': f'版本 {version} 不存在'
             }), 404
     except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@version_api.route('/version/auto-update', methods=['POST'])
+def auto_update_version():
+    """自动更新版本"""
+    try:
+        updater = get_auto_version_updater()
+        data = request.get_json() or {}
+        trigger = data.get('trigger', 'manual')
+        
+        result = updater.auto_update(trigger=trigger)
+        
+        return jsonify({
+            'success': result.get('success', False),
+            'data': result
+        })
+    except Exception as e:
+        logger.error(f"自动更新版本失败: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@version_api.route('/version/update', methods=['POST'])
+def manual_update_version():
+    """手动更新版本"""
+    try:
+        updater = get_auto_version_updater()
+        data = request.get_json() or {}
+        
+        level = data.get('level', 'patch')
+        title = data.get('title', '')
+        changes = data.get('changes', [])
+        
+        result = updater.update_version(level=level, changes=changes, title=title)
+        
+        return jsonify({
+            'success': result.get('success', False),
+            'data': result
+        })
+    except Exception as e:
+        logger.error(f"手动更新版本失败: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@version_api.route('/version/git-status')
+def get_git_status():
+    """获取Git状态"""
+    try:
+        updater = get_auto_version_updater()
+        result = updater.check_git_status()
+        
+        return jsonify({
+            'success': result.get('success', False),
+            'data': result
+        })
+    except Exception as e:
+        logger.error(f"获取Git状态失败: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@version_api.route('/version/git-pull', methods=['POST'])
+def git_pull():
+    """拉取最新代码"""
+    try:
+        updater = get_auto_version_updater()
+        result = updater.pull_latest()
+        
+        return jsonify({
+            'success': result.get('success', False),
+            'data': result
+        })
+    except Exception as e:
+        logger.error(f"拉取代码失败: {e}")
         return jsonify({
             'success': False,
             'error': str(e)

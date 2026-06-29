@@ -13,6 +13,22 @@ logger = logging.getLogger(__name__)
 
 exam_api = Blueprint('exam_api', __name__, url_prefix='/exam')
 
+# ==================== 系统统计API（直接路由） ====================
+
+@exam_api.route('/stats/system', methods=['GET'])
+def get_system_stats_direct():
+    """获取系统级考试统计（直接路由）"""
+    try:
+        from app.services.exam_service import ExamService
+        exam_service = ExamService()
+        
+        stats = exam_service.get_system_wide_stats()
+        
+        return jsonify({'success': True, 'data': stats})
+    except Exception as e:
+        logger.error(f"[考试API] 获取系统统计失败: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 # ==================== 考试管理API ====================
 
 @exam_api.route('/exams', methods=['GET'])

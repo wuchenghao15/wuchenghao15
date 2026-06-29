@@ -3,20 +3,45 @@
 系统版本管理模块
 """
 
-VERSION = "1.8.0"
-BUILD_NUMBER = "20260626"
-RELEASE_DATE = "2026-06-26"
+VERSION = "5.1.0"
+BUILD_NUMBER = "20260629"
+RELEASE_DATE = "2026-06-29"
 
 VERSION_INFO = {
     'version': VERSION,
     'build_number': BUILD_NUMBER,
     'release_date': RELEASE_DATE,
     'api_version': 'v1',
-    'codename': 'MTSCOS Maintenance AI',
+    'codename': 'MTSCOS Auto Iteration AI',
     'status': 'stable'
 }
 
 CHANGELOG = [
+    {
+        'version': '5.1.0',
+        'date': '2026-06-29',
+        'title': '自动迭代更新版本',
+        'changes': [
+            '新增版本自动更新服务 - 支持版本号升级、Changelog更新、Git提交与GitHub同步',
+            '新增灰度发布系统 - 支持百分比、用户组、IP范围、Cookie策略的灰度发布',
+            '新增健康检查与自动回滚机制 - CPU/内存/错误率监控，连续3次不健康自动回滚',
+            '新增人机协同审批系统 - 定义NORMAL/IMPORTANT/CRITICAL/DANGEROUS四级操作等级',
+            '新增自动化测试框架 - 单元测试、接口测试、页面测试、压力测试',
+            '新增Git源码自动操作模块 - 分支管理、代码修改、配置调整、安全推送',
+            '新增依赖漏洞扫描器 - 定期扫描依赖包漏洞，高危漏洞自动创建升级任务',
+            '新增主动迭代引擎 - 分析运行数据，自动生成优化需求，编写新功能代码',
+            '新增运维报告生成器 - 每日自动生成运维报告并上传数据库',
+            '新增考试系统拓展功能 - 考试预约、错题重做、考试笔记、考试收藏、成绩对比分析、考试标签',
+            '新增学生仪表盘功能 - AI学习助手、学习计划管理、学习社区、学习成就系统、学习提醒、学习数据分析可视化',
+            '修复硬编码绝对数据库路径问题 - 使用动态相对路径',
+            '优化系统初始化流程 - 统一初始化模块，按依赖顺序加载',
+            '修复Agent运行时数据库连接问题 - 使用项目统一db_manager'
+        ],
+        'security_fixes': [],
+        'breaking_changes': [],
+        'contributors': ['Auto Version Updater'],
+        'highlights': ['版本自动更新', '灰度发布', '自动化测试', '考试系统拓展']
+    },
     {
         'version': '1.8.0',
         'date': '2026-06-26',

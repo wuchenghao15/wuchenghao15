@@ -60,6 +60,22 @@ class TableEncryption:
         self.save_mapping()
 
         return encrypted_name
+    
+    def encrypt_table_names(self, query):
+        """加密SQL查询中的所有表名
+        
+        Args:
+            query: SQL查询字符串
+            
+        Returns:
+            str: 表名已加密的SQL查询
+        """
+        import re
+        
+        for original_name, encrypted_name in self.table_mapping.items():
+            query = re.sub(r'\b' + re.escape(original_name) + r'\b', encrypted_name, query)
+        
+        return query
 
     def decrypt_table_name(self, encrypted_name):
         """解密表名

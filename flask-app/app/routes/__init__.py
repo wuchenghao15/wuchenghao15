@@ -280,11 +280,22 @@ def init_api_routes():
         from app.api.question_bank_api import question_bank_api
         route_manager.register_api_blueprint(
             question_bank_api,
-            url_prefix="/api/question-bank",
-            description="题库管理API"
+            url_prefix="/api/question_bank",
+            description="题库管理API(CRUD、AI智能出题、统计分析、导入导出、智能组卷)"
         )
     except Exception as e:
         logger.error(f"初始化题库管理API路由失败: {str(e)}")
+    
+    # AI题库管理智能助手API（听力题系统）
+    try:
+        from app.api.question_bank_ai_api import question_bank_ai_api
+        route_manager.register_api_blueprint(
+            question_bank_ai_api,
+            url_prefix="/api/question_bank_ai",
+            description="AI题库管理智能助手API(听力题智能生成、多口音多音色、质量分析、智能推荐)"
+        )
+    except Exception as e:
+        logger.error(f"初始化AI题库管理智能助手API路由失败: {str(e)}")
 
     # 物理引擎和数学模型API
     try:

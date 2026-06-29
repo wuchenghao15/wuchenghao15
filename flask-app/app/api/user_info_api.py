@@ -85,6 +85,47 @@ def get_user_info():
         }), 500
 
 
+@user_info_api.route('/api/users/current', methods=['GET'])
+def get_current_user():
+    """获取当前登录用户信息（别名路由）"""
+    from flask import session
+    
+    try:
+        user_id = session.get('user_id')
+        username = session.get('username')
+        role = session.get('role', 'guest')
+        
+        if not user_id:
+            return jsonify({
+                'success': False,
+                'message': '用户未登录'
+            }), 401
+        
+        # 获取IP
+        if request.headers.get('X-Forwarded-For'):
+            ip = request.headers.get('X-Forwarded-For').split(',')[0]
+        else:
+            ip = request.remote_addr
+        
+        return jsonify({
+            'success': True,
+            'data': {
+                'user_id': user_id,
+                'username': username,
+                'role': role,
+                'ip': ip,
+                'logged_in': True
+            }
+        })
+    
+    except Exception as e:
+        logger.error(f"获取当前用户失败: {e}")
+        return jsonify({
+            'success': False,
+            'message': '获取失败'
+        }), 500
+
+
 @user_info_api.route('/api/user/session', methods=['GET'])
 def get_session_info():
     """获取会话信息"""

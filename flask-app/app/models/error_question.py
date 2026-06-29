@@ -4,6 +4,7 @@
 """
 
 import time
+from datetime import datetime, timedelta
 from typing import Dict, List, Any, Optional
 
 from app.utils.db import db_manager
@@ -222,7 +223,7 @@ class ErrorQuestionManager:
 
             # 生成复习计划
             for i, interval in enumerate(intervals):
-                review_time = datetime.datetime.now() + datetime.timedelta(days=interval)
+                review_time = datetime.now() + timedelta(days=interval)
                 db_manager.execute(
                     f'''
                     INSERT INTO {review_plans_table} (user_id, error_question_id, review_time, priority)

@@ -1926,5 +1926,542 @@ class ExamService:
             return []
 
 
+    # ==================== 智能组卷增强方法 ====================
+    
+    def generate_intelligent_paper(
+        self,
+        total_questions: int = 20,
+        total_points: float = 100.0,
+        type_ratio: Optional[Dict] = None,
+        difficulty_distribution: Optional[Dict] = None,
+        required_knowledge_points: Optional[List[str]] = None,
+        min_knowledge_coverage: float = 80.0,
+        exam_id: Optional[str] = None
+    ) -> Dict:
+        """
+        智能组卷方法
+        
+        根据难度分布、知识点覆盖率、题型比例自动生成试卷
+        
+        Args:
+            total_questions: 题目总数
+            total_points: 总分
+            type_ratio: 题型比例配置
+            difficulty_distribution: 难度分布配置
+            required_knowledge_points: 必须覆盖的知识点列表
+            min_knowledge_coverage: 最小知识点覆盖率
+            exam_id: 考试ID（用于指定题目池）
+        
+        Returns:
+            生成的试卷信息
+        """
+        try:
+            from app.services.intelligent_paper_generator import (
+                get_intelligent_paper_generator, PaperGenerationConfig
+            )
+            
+            generator = get_intelligent_paper_generator(db_manager)
+            
+            # 默认配置
+            default_type_ratio = {
+                'single_choice': 0.5,
+                'multiple_choice': 0.2,
+                'true_false': 0.1,
+                'fill_blank': 0.1,
+                'short_answer': 0.1
+            }
+            
+            default_difficulty_distribution = {
+                1: 0.15, 2: 0.25, 3: 0.35, 4: 0.20, 5: 0.05
+            }
+            
+            config = PaperGenerationConfig(
+                total_questions=total_questions,
+                total_points=total_points,
+                type_ratio=type_ratio or default_type_ratio,
+                difficulty_distribution=difficulty_distribution or default_difficulty_distribution,
+                required_knowledge_points=required_knowledge_points or [],
+                min_knowledge_coverage=min_knowledge_coverage,
+                shuffle_questions=True,
+                shuffle_options=True
+            )
+            
+            paper = generator.generate_paper(config, exam_id)
+            
+            logger.info(f"智能组卷完成: {paper.get('paper_id', 'N/A')}")
+            return paper
+            
+        except Exception as e:
+            logger.error(f"智能组卷失败: {str(e)}")
+            return {'error': str(e), 'questions': []}
+    
+    def generate_paper_from_template(self, template_id: str, exam_id: Optional[str] = None) -> Dict:
+        """
+        从模板生成试卷
+        
+        Args:
+            template_id: 模板ID
+            exam_id: 考试ID
+        
+        Returns:
+            生成的试卷信息
+        """
+        try:
+            # 获取模板数据
+            query = "SELECT * FROM exam_templates WHERE id = ?"
+            template = db_manager.fetch_one(query, (template_id,))
+            
+            if not template:
+                logger.error(f"模板不存在: {template_id}")
+                return {'error': '模板不存在'}
+            
+            # 解析模板数据
+            if isinstance(template, dict):
+                template_data = {
+                    'question_count': template.get('question_count', 20),
+                    'total_points': 100.0,
+                    'type_ratio': json.loads(template.get('question_types', '{}')),
+                    'difficulty_distribution': json.loads(template.get('difficulty_distribution', '{}')),
+                    'shuffle_questions': True,
+                    'shuffle_options': True
+                }
+            else:
+                template_data = {
+                    'question_count': template[5] if len(template) > 5 else 20,
+                    'total_points': 100.0,
+                    'type_ratio': json.loads(template[6]) if len(template) > 6 and template[6] else {},
+                    'difficulty_distribution': json.loads(template[7]) if len(template) > 7 and template[7] else {},
+                    'shuffle_questions': True,
+                    'shuffle_options': True
+                }
+            
+            from app.services.intelligent_paper_generator import get_intelligent_paper_generator
+            generator = get_intelligent_paper_generator(db_manager)
+            
+            paper = generator.generate_paper_from_template(template_data, exam_id)
+            
+            logger.info(f"从模板生成试卷完成: {template_id}")
+            return paper
+            
+        except Exception as e:
+            logger.error(f"从模板生成试卷失败: {str(e)}")
+            return {'error': str(e)}
+    
+    def validate_paper_quality(self, paper: Dict) -> Dict:
+        """
+        验证试卷质量
+        
+        Args:
+            paper: 试卷数据
+        
+        Returns:
+            验证结果
+        """
+        try:
+            from app.services.intelligent_paper_generator import get_intelligent_paper_generator
+            generator = get_intelligent_paper_generator()
+            
+            validation = generator.validate_paper_quality(paper)
+            
+            logger.info(f"试卷质量验证完成: 得分 {validation['score']}")
+            return validation
+            
+        except Exception as e:
+            logger.error(f"试卷质量验证失败: {str(e)}")
+            return {'error': str(e), 'is_valid': False, 'score': 0}
+    
+    # ==================== 数据分析方法 ====================
+    
+    def analyze_exam_score_distribution(self, exam_id: str) -> Dict:
+        """
+        分析考试成绩分布
+        
+        Args:
+            exam_id: 考试ID
+        
+        Returns:
+            成绩分布数据
+        """
+        try:
+            from app.services.exam_data_analysis_service import get_exam_data_analysis_service
+            service = get_exam_data_analysis_service()
+            
+            distribution = service.analyze_score_distribution(exam_id)
+            
+            result = {
+                'score_ranges': distribution.score_ranges,
+                'mean': distribution.mean,
+                'median': distribution.median,
+                'std_dev': distribution.std_dev,
+                'min_score': distribution.min_score,
+                'max_score': distribution.max_score,
+                'mode': distribution.mode,
+                'percentile_25': distribution.percentile_25,
+                'percentile_75': distribution.percentile_75
+            }
+            
+            logger.info(f"成绩分布分析完成: 平均分 {distribution.mean:.2f}")
+            return result
+            
+        except Exception as e:
+            logger.error(f"成绩分布分析失败: {str(e)}")
+            return {'error': str(e)}
+    
+    def analyze_question_difficulty(self, exam_id: str) -> List[Dict]:
+        """
+        分析题目难度
+        
+        Args:
+            exam_id: 考试ID
+        
+        Returns:
+            题目难度分析列表
+        """
+        try:
+            from app.services.exam_data_analysis_service import get_exam_data_analysis_service
+            service = get_exam_data_analysis_service()
+            
+            analyses = service.analyze_question_difficulty(exam_id)
+            
+            result = [{
+                'question_id': qa.question_id,
+                'difficulty_level': qa.difficulty_level,
+                'correct_rate': qa.correct_rate,
+                'avg_time_spent': qa.avg_time_spent,
+                'discrimination_index': qa.discrimination_index,
+                'difficulty_index': qa.difficulty_index,
+                'analysis_result': qa.analysis_result
+            } for qa in analyses]
+            
+            logger.info(f"题目难度分析完成: 分析了 {len(result)} 道题目")
+            return result
+            
+        except Exception as e:
+            logger.error(f"题目难度分析失败: {str(e)}")
+            return []
+    
+    def analyze_knowledge_mastery(
+        self,
+        exam_id: str,
+        user_id: Optional[str] = None
+    ) -> List[Dict]:
+        """
+        分析知识点掌握度
+        
+        Args:
+            exam_id: 考试ID
+            user_id: 用户ID（可选，如果不提供则分析整体）
+        
+        Returns:
+            知识点掌握度列表
+        """
+        try:
+            from app.services.exam_data_analysis_service import get_exam_data_analysis_service
+            service = get_exam_data_analysis_service()
+            
+            mastery_list = service.analyze_knowledge_mastery(exam_id, user_id)
+            
+            result = [{
+                'knowledge_point': km.knowledge_point,
+                'total_questions': km.total_questions,
+                'correct_count': km.correct_count,
+                'mastery_rate': km.mastery_rate,
+                'avg_time': km.avg_time,
+                'difficulty_avg': km.difficulty_avg,
+                'mastery_level': km.mastery_level
+            } for km in mastery_list]
+            
+            logger.info(f"知识点掌握度分析完成: 分析了 {len(result)} 个知识点")
+            return result
+            
+        except Exception as e:
+            logger.error(f"知识点掌握度分析失败: {str(e)}")
+            return []
+    
+    def generate_exam_analysis_report(self, exam_id: str) -> Dict:
+        """
+        生成考试分析报告
+        
+        Args:
+            exam_id: 考试ID
+        
+        Returns:
+            考试分析报告
+        """
+        try:
+            from app.services.exam_data_analysis_service import get_exam_data_analysis_service
+            service = get_exam_data_analysis_service()
+            
+            report = service.generate_exam_analysis_report(exam_id)
+            
+            result = {
+                'exam_id': report.exam_id,
+                'total_participants': report.total_participants,
+                'score_distribution': {
+                    'score_ranges': report.score_distribution.score_ranges,
+                    'mean': report.score_distribution.mean,
+                    'median': report.score_distribution.median,
+                    'std_dev': report.score_distribution.std_dev
+                },
+                'question_analyses': [{
+                    'question_id': qa.question_id,
+                    'correct_rate': qa.correct_rate,
+                    'analysis_result': qa.analysis_result
+                } for qa in report.question_analyses],
+                'knowledge_mastery': [{
+                    'knowledge_point': km.knowledge_point,
+                    'mastery_rate': km.mastery_rate,
+                    'mastery_level': km.mastery_level
+                } for km in report.knowledge_mastery],
+                'overall_statistics': report.overall_statistics,
+                'recommendations': report.recommendations,
+                'generated_at': report.generated_at.isoformat()
+            }
+            
+            logger.info(f"考试分析报告生成完成: {exam_id}")
+            return result
+            
+        except Exception as e:
+            logger.error(f"生成考试分析报告失败: {str(e)}")
+            return {'error': str(e)}
+    
+    def analyze_user_performance_history(self, user_id: str, limit: int = 20) -> Dict:
+        """
+        分析用户考试历史
+        
+        Args:
+            user_id: 用户ID
+            limit: 返回记录数量限制
+        
+        Returns:
+            用户考试历史分析
+        """
+        try:
+            from app.services.exam_data_analysis_service import get_exam_data_analysis_service
+            service = get_exam_data_analysis_service()
+            
+            history = service.analyze_user_exam_history(user_id, limit)
+            
+            logger.info(f"用户考试历史分析完成: 用户 {user_id}")
+            return history
+            
+        except Exception as e:
+            logger.error(f"用户考试历史分析失败: {str(e)}")
+            return {'error': str(e)}
+    
+    # ==================== 防作弊检测方法 ====================
+    
+    def perform_cheating_detection(
+        self,
+        session_id: str,
+        user_id: str,
+        exam_id: str
+    ) -> Dict:
+        """
+        执行作弊检测
+        
+        Args:
+            session_id: 会话ID
+            user_id: 用户ID
+            exam_id: 考试ID
+        
+        Returns:
+            作弊检测结果
+        """
+        try:
+            from app.services.anti_cheating_service import get_anti_cheating_service
+            service = get_anti_cheating_service()
+            
+            result = service.perform_comprehensive_detection(session_id, user_id, exam_id)
+            
+            detection_result = {
+                'is_cheating': result.is_cheating,
+                'cheating_type': result.cheating_type,
+                'confidence': result.confidence,
+                'risk_level': result.risk_level,
+                'evidence': result.evidence,
+                'recommendation': result.recommendation
+            }
+            
+            logger.info(f"作弊检测完成: 风险等级 {result.risk_level}")
+            return detection_result
+            
+        except Exception as e:
+            logger.error(f"作弊检测失败: {str(e)}")
+            return {'error': str(e)}
+    
+    def get_cheating_report(self, session_id: str) -> Dict:
+        """
+        获取作弊报告
+        
+        Args:
+            session_id: 会话ID
+        
+        Returns:
+            作弊报告
+        """
+        try:
+            from app.services.anti_cheating_service import get_anti_cheating_service
+            service = get_anti_cheating_service()
+            
+            report = service.get_session_cheating_report(session_id)
+            
+            logger.info(f"作弊报告获取完成: {session_id}")
+            return report
+            
+        except Exception as e:
+            logger.error(f"获取作弊报告失败: {str(e)}")
+            return {'error': str(e)}
+    
+    def record_exam_behavior(
+        self,
+        session_id: str,
+        user_id: str,
+        exam_id: str,
+        event_type: str,
+        question_id: Optional[str] = None,
+        details: Optional[Dict] = None
+    ) -> Dict:
+        """
+        记录考试行为
+        
+        Args:
+            session_id: 会话ID
+            user_id: 用户ID
+            exam_id: 考试ID
+            event_type: 事件类型
+            question_id: 相关题目ID
+            details: 事件详情
+        
+        Returns:
+            记录结果
+        """
+        try:
+            from app.services.anti_cheating_service import get_anti_cheating_service
+            service = get_anti_cheating_service()
+            
+            result = service.record_behavior_event(
+                session_id, user_id, exam_id, event_type, question_id, details
+            )
+            
+            logger.info(f"行为记录完成: {event_type}")
+            return result
+            
+        except Exception as e:
+            logger.error(f"行为记录失败: {str(e)}")
+            return {'error': str(e)}
+    
+    # ==================== 考试模板管理方法 ====================
+    
+    def create_exam_template(
+        self,
+        name: str,
+        question_count: int,
+        description: str = '',
+        language: str = 'zh',
+        level: str = 'intermediate',
+        duration: int = 60,
+        type_ratio: Optional[Dict] = None,
+        difficulty_distribution: Optional[Dict] = None,
+        knowledge_points: Optional[List[str]] = None,
+        created_by: Optional[str] = None
+    ) -> Optional[str]:
+        """
+        创建考试模板
+        
+        Args:
+            name: 模板名称
+            question_count: 题目数量
+            description: 模板描述
+            language: 语言
+            level: 等级
+            duration: 考试时长
+            type_ratio: 题型比例
+            difficulty_distribution: 难度分布
+            knowledge_points: 知识点列表
+            created_by: 创建者
+        
+        Returns:
+            模板ID
+        """
+        try:
+            from uuid import uuid4
+            
+            template_id = str(uuid4())
+            now = datetime.now(timezone.utc).isoformat()
+            
+            query = """INSERT INTO exam_templates 
+                      (id, name, description, language, level, duration, question_count,
+                       question_types, difficulty_distribution, tags, created_by, created_at, updated_at)
+                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
+            
+            db_manager.execute(query, (
+                template_id, name, description, language, level, duration, question_count,
+                json.dumps(type_ratio or {}),
+                json.dumps(difficulty_distribution or {}),
+                json.dumps(knowledge_points or []),
+                created_by, now, now
+            ))
+            
+            logger.info(f"创建考试模板成功: {template_id}")
+            return template_id
+            
+        except Exception as e:
+            logger.error(f"创建考试模板失败: {str(e)}")
+            return None
+    
+    def get_exam_templates(self) -> List[Dict]:
+        """
+        获取考试模板列表
+        
+        Returns:
+            模板列表
+        """
+        try:
+            query = "SELECT * FROM exam_templates ORDER BY created_at DESC"
+            results = db_manager.fetch_all(query)
+            
+            templates = []
+            for result in results:
+                if isinstance(result, dict):
+                    templates.append({
+                        'id': result['id'],
+                        'name': result['name'],
+                        'description': result.get('description', ''),
+                        'language': result.get('language', 'zh'),
+                        'level': result.get('level', 'intermediate'),
+                        'duration': result.get('duration', 60),
+                        'question_count': result.get('question_count', 20),
+                        'question_types': json.loads(result.get('question_types', '{}')),
+                        'difficulty_distribution': json.loads(result.get('difficulty_distribution', '{}')),
+                        'tags': json.loads(result.get('tags', '[]')),
+                        'created_by': result.get('created_by'),
+                        'created_at': result.get('created_at'),
+                        'updated_at': result.get('updated_at')
+                    })
+                else:
+                    templates.append({
+                        'id': result[0],
+                        'name': result[1],
+                        'description': result[2] if result[2] else '',
+                        'language': result[3] if result[3] else 'zh',
+                        'level': result[4] if result[4] else 'intermediate',
+                        'duration': result[5] if result[5] else 60,
+                        'question_count': result[6] if result[6] else 20,
+                        'question_types': json.loads(result[7]) if result[7] else {},
+                        'difficulty_distribution': json.loads(result[8]) if result[8] else {},
+                        'tags': json.loads(result[9]) if result[9] else [],
+                        'created_by': result[10],
+                        'created_at': result[11],
+                        'updated_at': result[12]
+                    })
+            
+            return templates
+            
+        except Exception as e:
+            logger.error(f"获取考试模板列表失败: {str(e)}")
+            return []
+
+
 # 创建全局实例
 exam_service = ExamService()

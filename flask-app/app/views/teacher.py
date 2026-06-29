@@ -11,8 +11,11 @@ teacher_bp = Blueprint('teacher', __name__, template_folder=os.path.join(APP_ROO
 def requires_teacher(func):
     """教师权限装饰器"""
     def decorated(*args, **kwargs):
+        if 'user_id' not in session:
+            return redirect('/login?next=' + request.path)
+        
         role = session.get('role', 'guest')
-        if role not in ['teacher', 'admin', 'super_admin', 'hardware_admin']:
+        if role not in ['teacher', 'admin', 'super_admin', 'hardware_admin', 'hardware_vikey_admin']:
             return render_template('error.html',
                                    error_code=403,
                                    error_title='权限不足',
@@ -21,6 +24,17 @@ def requires_teacher(func):
         return func(*args, **kwargs)
     decorated.__name__ = func.__name__
     return decorated
+
+
+def get_teacher_user_info():
+    """获取教师用户信息"""
+    return {
+        'username': session.get('username', ''),
+        'role': session.get('role', ''),
+        'user_id': session.get('user_id', ''),
+        'is_teacher': session.get('role') == 'teacher',
+        'is_admin': session.get('role') in ['admin', 'super_admin', 'hardware_admin', 'hardware_vikey_admin']
+    }
 
 
 @teacher_bp.route('/teacher')
