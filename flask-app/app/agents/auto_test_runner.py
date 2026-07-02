@@ -42,10 +42,9 @@ class AutoTestRunner:
         
         self._lock = threading.Lock()
         self._test_results: Dict[str, Dict] = {}
-        self._db_path = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-            'app.db'
-        )
+        from app.utils.db import DatabaseManager
+        db = DatabaseManager()
+        self._db_path = db.db_path
         
         self._api_endpoints = [
             '/api/auth/login',

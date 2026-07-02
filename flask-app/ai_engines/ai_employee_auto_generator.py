@@ -42,6 +42,7 @@ class EmployeeRole(Enum):
     KNOWLEDGE_CURATOR = "knowledge_curator"
     PREDICTION_SPECIALIST = "prediction_specialist"
     ERROR_RECOVERY = "error_recovery"
+    DIAGNOSTICS_REPAIR = "diagnostics_repair"
 
 
 class EmployeeStatus(Enum):
@@ -243,6 +244,11 @@ class FeatureAnalyzer:
             "description": "错误恢复功能",
             "required_roles": [EmployeeRole.ERROR_RECOVERY],
             "required_skills": ["error_detection", "auto_healing", "fault_tolerance"]
+        },
+        "diagnostics": {
+            "description": "问题诊断与修复功能",
+            "required_roles": [EmployeeRole.DIAGNOSTICS_REPAIR],
+            "required_skills": ["system_diagnostics", "problem_detection", "auto_repair", "health_monitoring", "report_generation", "root_cause_analysis"]
         },
         "user_support": {
             "description": "用户支持功能",
@@ -623,7 +629,8 @@ class AIEmployeeAutoGenerator:
             EmployeeRole.REPORT_GENERATOR: "报告生成员",
             EmployeeRole.KNOWLEDGE_CURATOR: "知识管理员",
             EmployeeRole.PREDICTION_SPECIALIST: "预测专家",
-            EmployeeRole.ERROR_RECOVERY: "错误恢复员"
+            EmployeeRole.ERROR_RECOVERY: "错误恢复员",
+            EmployeeRole.DIAGNOSTICS_REPAIR: "诊断修复员"
         }
         
         name = role_display_names.get(role, f"{role.value}_employee")

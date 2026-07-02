@@ -557,6 +557,64 @@ class AIMonitorServer:
             return True
         return False
 
+    def log_error(self, error_type: str, error_message: str, component: str = None, error_stack: str = None):
+        """记录错误日志到监控服务器"""
+        try:
+            if error_type not in self.stats["errors"]:
+                self.stats["errors"][error_type] = 0
+            self.stats["errors"][error_type] += 1
+            
+            error_entry = {
+                'timestamp': datetime.now().isoformat(),
+                'type': error_type,
+                'message': error_message,
+                'component': component,
+                'stack': error_stack
+            }
+            
+            self.self_improvement_history.append({
+                'type': 'error_log',
+                'timestamp': datetime.now().isoformat(),
+                'details': error_entry
+            })
+            
+            logger.error(f"[监控错误] [{error_type}] {error_message}")
+            
+        except Exception as e:
+            logger.error(f"记录错误日志失败: {str(e)}")
+
+    def get_error_stats(self) -> Dict:
+        """获取错误统计信息"""
+        try:
+            total_errors = sum(self.stats["errors"].values())
+            total_warnings = sum(self.stats["warnings"].values())
+            
+            return {
+                'total_errors': total_errors,
+                'total_warnings': total_warnings,
+                'error_details': self.stats["errors"].copy(),
+                'warning_details': self.stats["warnings"].copy(),
+                'ai_activity': self.stats["ai_activity"].copy(),
+                'performance': {k: v for k, v in self.stats["performance"].items()}
+            }
+            
+        except Exception as e:
+            logger.error(f"获取错误统计失败: {str(e)}")
+            return {
+                'total_errors': 0,
+                'total_warnings': 0,
+                'error_details': {},
+                'warning_details': {},
+                'ai_activity': {},
+                'performance': {}
+            }
+
+    def clear_error_stats(self):
+        """清除错误统计"""
+        self.stats["errors"] = {}
+        self.stats["warnings"] = {}
+        logger.info("错误统计已清除")
+
 ai_monitor_server = AIMonitorServer()
 
 if __name__ == "__main__":

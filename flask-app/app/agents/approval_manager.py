@@ -52,10 +52,10 @@ class ApprovalManager:
         self._auto_paused = False
         self._pause_reason = ''
         self._admin_notifications = []
-        self._db_path = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-            'app.db'
-        )
+        
+        from app.utils.db import DatabaseManager
+        db = DatabaseManager()
+        self._db_path = db.db_path
         
         self._level_config = {
             OperationLevel.NORMAL.value: {
@@ -235,7 +235,7 @@ class ApprovalManager:
             cursor = conn.cursor()
             
             cursor.execute('''
-                INSERT OR REPLACE INTO approvals VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT OR REPLACE INTO approvals VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
                 approval['approval_id'],
                 approval['operation_type'],

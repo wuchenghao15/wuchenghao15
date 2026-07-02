@@ -221,29 +221,44 @@
     </div>
     
     <script>
-        function startTest() {
-            fetch('/api/placement/test', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ subject: null })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.test_id) {
-                    fetch(`/api/placement/test/${data.test_id}/start`, {
-                        method: 'POST'
-                    })
-                    .then(() => {
-                        window.location.href = `/exam/placement_test/take/${data.test_id}`;
-                    });
+        async function startTest() {
+            try {
+                const response = await fetch('/api/placement/test', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ subject: null })
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('创建测试失败 - HTTP错误:', response.status, errorText);
+                    throw new Error(`HTTP ${response.status}`);
                 }
-            })
-            .catch(error => {
+                
+                const data = await response.json();
+                
+                if (data.success && data.test_id) {
+                    const startResponse = await fetch(`/api/placement/test/${data.test_id}/start`, {
+                        method: 'POST'
+                    });
+                    
+                    if (startResponse.ok) {
+                        await startResponse.json();
+                        setTimeout(() => {
+                            window.location.href = `/exam/placement_test/take/${data.test_id}`;
+                        }, 100);
+                    } else {
+                        throw new Error('开始测试失败');
+                    }
+                } else {
+                    throw new Error(data.error || data.message || '创建测试失败');
+                }
+            } catch (error) {
                 console.error('创建测试失败:', error);
-                alert('创建测试失败，请重试');
-            });
+                alert('创建测试失败: ' + error.message + '，请重试');
+            }
         }
 
         function createNewTest() {

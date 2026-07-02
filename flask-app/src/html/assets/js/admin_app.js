@@ -68,17 +68,33 @@ function showModal(title, content, options) {
     body.style.cssText = 'padding:20px;max-height:50vh;overflow-y:auto;';
     body.innerHTML = content;
     
-    var footer = '';
     if (opts.showFooter) {
-        footer = '<div style="padding:16px 20px;border-top:1px solid var(--border);display:flex;gap:12px;justify-content:flex-end;">' +
-            '<button onclick="document.body.removeChild(document.querySelector(\'.modal-overlay\'));" style="padding:10px 20px;border:1px solid var(--border);background:var(--card-bg);color:var(--text-primary);border-radius:8px;cursor:pointer;">' + opts.cancelText + '</button>' +
-            '<button onclick="if(opts.onConfirm){opts.onConfirm();}document.body.removeChild(document.querySelector(\'.modal-overlay\'));" style="padding:10px 20px;border:none;background:var(--primary);color:#fff;border-radius:8px;cursor:pointer;">' + opts.confirmText + '</button>' +
-            '</div>';
+        var footer = document.createElement('div');
+        footer.style.cssText = 'padding:16px 20px;border-top:1px solid var(--border);display:flex;gap:12px;justify-content:flex-end;';
+        
+        var cancelBtn = document.createElement('button');
+        cancelBtn.style.cssText = 'padding:10px 20px;border:1px solid var(--border);background:var(--card-bg);color:var(--text-primary);border-radius:8px;cursor:pointer;';
+        cancelBtn.textContent = opts.cancelText;
+        cancelBtn.onclick = function() {
+            document.body.removeChild(overlay);
+            if (opts.onCancel) opts.onCancel();
+        };
+        
+        var confirmBtn = document.createElement('button');
+        confirmBtn.style.cssText = 'padding:10px 20px;border:none;background:var(--primary);color:#fff;border-radius:8px;cursor:pointer;';
+        confirmBtn.textContent = opts.confirmText;
+        confirmBtn.onclick = function() {
+            if (opts.onConfirm) opts.onConfirm();
+            document.body.removeChild(overlay);
+        };
+        
+        footer.appendChild(cancelBtn);
+        footer.appendChild(confirmBtn);
+        modal.appendChild(footer);
     }
     
     modal.appendChild(header);
     modal.appendChild(body);
-    if (footer) modal.insertAdjacentHTML('beforeend', footer);
     
     overlay.appendChild(modal);
     document.body.appendChild(overlay);

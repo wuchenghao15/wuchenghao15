@@ -18,7 +18,7 @@ from flask import jsonify
 
 logger = logging.getLogger(__name__)
 
-DATABASE_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'app.db')
+DATABASE_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))), 'app.db')
 
 
 class ThinkingMatrix:
@@ -615,6 +615,83 @@ class AIEmployeeAutoGenerator:
             'capabilities': ['任务分配', '进度跟踪', '资源调度'],
             'thinking_focus': ['systemic', 'practical'],
             'min_level': 'manager'
+        },
+        'version_upgrader': {
+            'name_prefix': '版本升级',
+            'category': 'development',
+            'capabilities': ['版本规划', '升级执行', '回滚操作', '发布管理'],
+            'thinking_focus': ['systemic', 'practical'],
+            'min_level': 'manager'
+        },
+        'dependency_manager': {
+            'name_prefix': '依赖管理',
+            'category': 'maintenance',
+            'capabilities': ['依赖扫描', '安全更新', '兼容性测试', '版本锁定'],
+            'thinking_focus': ['analytical', 'critical'],
+            'min_level': 'specialist'
+        },
+        'frontend_engineer': {
+            'name_prefix': '前端开发',
+            'category': 'development',
+            'capabilities': ['页面开发', '性能优化', '用户体验', '响应式设计'],
+            'thinking_focus': ['creative', 'analytical'],
+            'min_level': 'specialist'
+        },
+        'backend_engineer': {
+            'name_prefix': '后端开发',
+            'category': 'development',
+            'capabilities': ['API开发', '数据库设计', '业务逻辑', '系统架构'],
+            'thinking_focus': ['logical', 'systemic'],
+            'min_level': 'specialist'
+        },
+        'devops_engineer': {
+            'name_prefix': 'DevOps',
+            'category': 'maintenance',
+            'capabilities': ['自动化部署', 'CI/CD', '监控告警', '故障排查'],
+            'thinking_focus': ['systemic', 'practical'],
+            'min_level': 'manager'
+        },
+        'ai_trainer': {
+            'name_prefix': 'AI训练',
+            'category': 'ai',
+            'capabilities': ['模型训练', '参数调优', '模型评估', '知识注入'],
+            'thinking_focus': ['creative', 'analytical'],
+            'min_level': 'specialist'
+        },
+        'git_manager': {
+            'name_prefix': 'Git管理',
+            'category': 'development',
+            'capabilities': ['分支管理', '代码提交', '合并冲突解决', '版本控制'],
+            'thinking_focus': ['systemic', 'logical'],
+            'min_level': 'specialist'
+        },
+        'monitoring_analyst': {
+            'name_prefix': '监控分析',
+            'category': 'maintenance',
+            'capabilities': ['系统监控', '异常检测', '性能分析', '告警处理'],
+            'thinking_focus': ['analytical', 'critical'],
+            'min_level': 'specialist'
+        },
+        'exam_system_expert': {
+            'name_prefix': '考试系统',
+            'category': 'business',
+            'capabilities': ['试卷生成', '考试管理', '成绩分析', '题库优化'],
+            'thinking_focus': ['systemic', 'practical'],
+            'min_level': 'specialist'
+        },
+        'learning_analyst': {
+            'name_prefix': '学习分析',
+            'category': 'business',
+            'capabilities': ['学习路径规划', '知识图谱', '错题分析', '个性化推荐'],
+            'thinking_focus': ['analytical', 'creative'],
+            'min_level': 'specialist'
+        },
+        'diagnostics_repair': {
+            'name_prefix': '诊断修复',
+            'category': 'maintenance',
+            'capabilities': ['系统诊断', '问题检测', '自动修复', '健康监控', '报告生成', '根因分析'],
+            'thinking_focus': ['analytical', 'critical', 'systemic'],
+            'min_level': 'specialist'
         }
     }
     
@@ -632,7 +709,17 @@ class AIEmployeeAutoGenerator:
             'performance': 0,
             'quality_assurance': 0,
             'knowledge_management': 0,
-            'coordination': 0
+            'coordination': 0,
+            'version_upgrade': 0,
+            'dependency_update': 0,
+            'frontend_development': 0,
+            'backend_development': 0,
+            'devops_automation': 0,
+            'ai_training': 0,
+            'git_management': 0,
+            'monitoring_analysis': 0,
+            'exam_system': 0,
+            'learning_analysis': 0
         }
         
         try:
@@ -658,6 +745,21 @@ class AIEmployeeAutoGenerator:
             cursor.execute('SELECT COUNT(*) FROM security_logs WHERE severity >= 3')
             security_events = cursor.fetchone()[0] or 0
             needs['security_level'] = min(security_events / 5, 10)
+            
+            # 分析性能指标
+            cursor.execute('SELECT AVG(response_time) FROM api_metrics')
+            avg_response_time = cursor.fetchone()[0] or 0
+            needs['performance'] = min(avg_response_time / 500, 10)
+            
+            # 分析版本历史
+            cursor.execute('SELECT COUNT(*) FROM version_history')
+            version_count = cursor.fetchone()[0] or 0
+            needs['version_upgrade'] = min(version_count / 10, 10)
+            
+            # 分析考试数据
+            cursor.execute('SELECT COUNT(*) FROM exams')
+            exam_count = cursor.fetchone()[0] or 0
+            needs['exam_system'] = min(exam_count / 50, 10)
             
             conn.close()
             
@@ -780,7 +882,17 @@ class AIEmployeeAutoGenerator:
             'performance': 'performance_optimizer',
             'quality_assurance': 'qa_validator',
             'knowledge_management': 'knowledge_manager',
-            'coordination': 'coordinator'
+            'coordination': 'coordinator',
+            'version_upgrade': 'version_upgrader',
+            'dependency_update': 'dependency_manager',
+            'frontend_development': 'frontend_engineer',
+            'backend_development': 'backend_engineer',
+            'devops_automation': 'devops_engineer',
+            'ai_training': 'ai_trainer',
+            'git_management': 'git_manager',
+            'monitoring_analysis': 'monitoring_analyst',
+            'exam_system': 'exam_system_expert',
+            'learning_analysis': 'learning_analyst'
         }
         
         for need_key, template_key in need_template_mapping.items():

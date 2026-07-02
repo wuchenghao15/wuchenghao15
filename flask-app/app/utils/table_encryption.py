@@ -25,7 +25,7 @@ class TableEncryption:
         self.config_file = config_file
         self.table_mapping = {}
         self.reverse_mapping = {}
-        self.secret_key = self._generate_secret_key()
+        self._secret_key = self._generate_secret_key()
         self.load_mapping()
 
     def _generate_secret_key(self):
@@ -36,9 +36,18 @@ class TableEncryption:
         """
         secret_key = os.environ.get('TABLE_ENCRYPTION_KEY')
         if not secret_key:
-            secret_key = ''.join(random.choices(string.ascii_letters + string.digits, k=32))
-            logger.warning("未找到环境变量 TABLE_ENCRYPTION_KEY,生成随机密钥")
+            secret_key = 'mtscos_default_encryption_key_2026'
+            logger.warning("未找到环境变量 TABLE_ENCRYPTION_KEY,使用默认密钥")
         return secret_key
+
+    def get_secret_key(self):
+        """获取加密密钥"""
+        return self._secret_key
+
+    @property
+    def secret_key(self):
+        """获取加密密钥（延迟生成）"""
+        return self.get_secret_key()
 
     def encrypt_table_name(self, table_name):
         """加密表名
@@ -49,11 +58,17 @@ class TableEncryption:
         Returns:
             str: 加密后的表名
         """
-        if table_name in self.table_mapping:
-            return self.table_mapping[table_name]
-
         hash_obj = hashlib.sha256(f"{table_name}_{self.secret_key}".encode())
         encrypted_name = f"t_{hash_obj.hexdigest()[:16]}"
+
+        if table_name in self.table_mapping:
+            existing = self.table_mapping[table_name]
+            if existing != encrypted_name:
+                del self.reverse_mapping[existing]
+                self.table_mapping[table_name] = encrypted_name
+                self.reverse_mapping[encrypted_name] = table_name
+                self.save_mapping()
+            return self.table_mapping[table_name]
 
         self.table_mapping[table_name] = encrypted_name
         self.reverse_mapping[encrypted_name] = table_name
@@ -61,19 +76,26 @@ class TableEncryption:
 
         return encrypted_name
     
-    def encrypt_table_names(self, query):
+    def encrypt_table_names(self, query, skip_tables=None):
         """加密SQL查询中的所有表名
         
         Args:
             query: SQL查询字符串
+            skip_tables: 需要跳过加密的表名集合
             
         Returns:
             str: 表名已加密的SQL查询
         """
         import re
         
-        for original_name, encrypted_name in self.table_mapping.items():
-            query = re.sub(r'\b' + re.escape(original_name) + r'\b', encrypted_name, query)
+        skip_tables = skip_tables or set()
+        
+        for original_name in list(self.table_mapping.keys()):
+            if original_name in skip_tables:
+                continue
+            encrypted_name = self.encrypt_table_name(original_name)
+            pattern = r'\b' + re.escape(original_name) + r'\b'
+            query = re.sub(pattern, encrypted_name, query)
         
         return query
 

@@ -113,6 +113,7 @@ def _register_blueprints(app) -> Dict[str, bool]:
                 ('app.api.version_api', 'version_api', '/api/version'),
                 ('app.api.parent_api', 'parent_api', None),
                 ('app.api.teacher_k12_api', 'teacher_k12_api', None),
+                ('app.api.iteration_api', 'iteration_api', '/api'),
             ]
         }
     ]
@@ -153,9 +154,13 @@ def _init_auto_dev_components() -> Dict[str, bool]:
         {'name': '自动化测试框架', 'module': 'app.agents.auto_test_runner', 'func': 'init_test_runner', 'desc': '单元测试、API测试、页面测试、压力测试'},
         {'name': 'Git源码自动操作', 'module': 'app.agents.git_auto_ops', 'func': 'init_git_auto_ops', 'desc': '分支管理、代码修改、安全推送'},
         {'name': '被动升级扫描器', 'module': 'app.agents.dependency_scanner', 'func': 'init_dependency_scanner', 'desc': '漏洞扫描、自动升级、兼容性测试'},
+        {'name': '迭代规则引擎', 'module': 'app.agents.iteration_rules', 'func': 'init_iteration_rules', 'desc': '迭代周期、触发条件、AI员工分配、审批规则'},
         {'name': '主动迭代引擎', 'module': 'app.agents.iteration_engine', 'func': 'init_iteration_engine', 'desc': '运行数据分析、需求生成、代码优化'},
         {'name': '运维报告生成器', 'module': 'app.agents.ops_report_generator', 'func': 'init_report_generator', 'desc': '每日报告、智能建议'},
-        {'name': '版本自动更新服务', 'module': 'app.services.auto_version_updater', 'func': 'init_auto_version_updater', 'desc': '版本号自动升级、Git提交、GitHub同步'}
+        {'name': '版本自动更新服务', 'module': 'app.services.auto_version_updater', 'func': 'init_auto_version_updater', 'desc': '版本号自动升级、Git提交、GitHub同步'},
+        {'name': '问题诊断服务', 'module': 'app.services.problems_and_diagnostics', 'func': 'init_problems_and_diagnostics', 'desc': '系统健康检查、问题检测、诊断报告'},
+        {'name': 'AI任务调度器', 'module': 'app.ai.ai_task_scheduler', 'func': 'init_ai_task_scheduler', 'desc': '动态任务调度、AI员工协同、强力修复引擎'},
+        {'name': '题库自动维护调度器', 'module': 'ai_engines.question_bank_auto_scheduler', 'func': 'init_question_bank_auto_scheduler', 'desc': '题库自动扩充、整理、质量检查、AI生成题目'}
     ]
     
     for component in components:

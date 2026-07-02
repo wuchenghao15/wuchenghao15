@@ -665,7 +665,9 @@ class DatabaseManager:
         
         encrypted_query = query
         try:
-            encrypted_query = table_encryption.encrypt_table_names(query)
+            plaintext_tables = self._get_existing_plaintext_tables()
+            
+            encrypted_query = table_encryption.encrypt_table_names(query, skip_tables=plaintext_tables)
         except Exception as e:
             logger.debug(f"表名加密失败,使用原始查询: {str(e)}")
             encrypted_query = query
@@ -893,8 +895,49 @@ class DatabaseManager:
             self.rollback_transaction(conn)
             return False
 
+    def _get_existing_plaintext_tables(self):
+        """获取数据库中实际存在的明文表名"""
+        plaintext_tables = set()
+        
+        if self.db_type != 'sqlite':
+            return plaintext_tables
+        
+        try:
+            conn = self.get_connection()
+            if conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
+                tables = cursor.fetchall()
+                
+                for row in tables:
+                    table_name = row[0]
+                    
+                    if not table_name.startswith('t_'):
+                        plaintext_tables.add(table_name)
+                    else:
+                        decrypted = table_encryption.decrypt_table_name(table_name)
+                        if decrypted != table_name:
+                            if decrypted not in plaintext_tables:
+                                cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (decrypted,))
+                                if cursor.fetchone():
+                                    plaintext_tables.add(decrypted)
+                
+                self.return_connection(conn)
+        except Exception as e:
+            logger.debug(f"获取明文表列表失败: {str(e)}")
+        
+        return plaintext_tables
+
     def create_table(self, table_name, columns):
         encrypted_table_name = table_encryption.encrypt_table_name(table_name)
+
+        query = f"SELECT name FROM sqlite_master WHERE type='table' AND name=?"
+        cursor, _ = self.execute(query, (encrypted_table_name,))
+        encrypted_exists = cursor.fetchone()
+
+        if encrypted_exists:
+            logger.info(f"表 {table_name} 已存在(加密为 {encrypted_table_name}), 跳过创建")
+            return True
 
         columns_sql = []
         for col_name, col_type in columns.items():
@@ -905,26 +948,24 @@ class DatabaseManager:
             columns_sql.append(f"{col_name} {col_type}")
 
         columns_sql = ', '.join(columns_sql)
-        query = f"CREATE TABLE IF NOT EXISTS {encrypted_table_name} ({columns_sql})"
+        query = f"CREATE TABLE IF NOT EXISTS {table_name} ({columns_sql})"
         _, success = self.execute(query)
         if success:
             logger.info(f"表 {table_name} (加密为 {encrypted_table_name}) 创建成功")
         return success
 
     def add_column(self, table_name, column_name, column_type):
-        encrypted_table_name = table_encryption.encrypt_table_name(table_name)
-        query = f"ALTER TABLE {encrypted_table_name} ADD COLUMN {column_name} {column_type}"
+        query = f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_type}"
         _, success = self.execute(query)
         if success:
             logger.info(f"表 {table_name} 添加列 {column_name} 成功")
         return success
 
     def drop_table(self, table_name):
-        encrypted_table_name = table_encryption.encrypt_table_name(table_name)
-        query = f"DROP TABLE {encrypted_table_name}"
+        query = f"DROP TABLE {table_name}"
         _, success = self.execute(query)
         if success:
-            logger.info(f"表 {table_name} (加密为 {encrypted_table_name}) 删除成功")
+            logger.info(f"表 {table_name} 删除成功")
         return success
 
     def vacuum(self):

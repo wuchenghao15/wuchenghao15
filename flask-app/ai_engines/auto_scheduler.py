@@ -82,6 +82,42 @@ class AutoScheduler:
                 "cron": "0 0 * * *",  # 每天午夜
                 "function": "generate_daily_exams",
                 "description": "自动生成每日考试"
+            },
+            "git_sync": {
+                "name": "Git同步",
+                "cron": "*/60 * * * *",  # 每60分钟
+                "function": "git_sync",
+                "description": "自动同步Git和GitHub"
+            },
+            "auto_maintenance": {
+                "name": "自动维护",
+                "cron": "0 3 * * *",  # 每天凌晨3点
+                "function": "auto_maintenance",
+                "description": "执行自动例行升级维护"
+            },
+            "question_bank_maintenance": {
+                "name": "题库增量维护",
+                "cron": "0 2 * * *",  # 每天凌晨2点
+                "function": "question_bank_maintenance",
+                "description": "自动执行题库增量维护，生成新题目"
+            },
+            "question_bank_quality_check": {
+                "name": "题库质量检查",
+                "cron": "0 4 * * *",  # 每天凌晨4点
+                "function": "question_bank_quality_check",
+                "description": "检查题库中题目的质量，标记问题题目"
+            },
+            "question_bank_dedup": {
+                "name": "题库去重",
+                "cron": "0 5 * * 0",  # 每周日凌晨5点
+                "function": "question_bank_dedup",
+                "description": "移除题库中的重复题目"
+            },
+            "listening_question_generation": {
+                "name": "听力题生成",
+                "cron": "0 1 * * *",  # 每天凌晨1点
+                "function": "listening_question_generation",
+                "description": "自动生成听力题目"
             }
         }
         
@@ -98,7 +134,13 @@ class AutoScheduler:
             "brain_synchronization": self._task_brain_sync,
             "performance_monitor": self._task_performance_check,
             "cleanup_logs": self._task_cleanup_logs,
-            "generate_daily_exams": self._task_generate_exams
+            "generate_daily_exams": self._task_generate_exams,
+            "git_sync": self._task_git_sync,
+            "auto_maintenance": self._task_auto_maintenance,
+            "question_bank_maintenance": self._task_question_bank_maintenance,
+            "question_bank_quality_check": self._task_question_bank_quality_check,
+            "question_bank_dedup": self._task_question_bank_dedup,
+            "listening_question_generation": self._task_listening_question_generation
         }
     
     def add_task(self, task_id: str, task_config: Dict[str, Any]):
@@ -108,11 +150,33 @@ class AutoScheduler:
         
         self.scheduled_tasks[task_id] = task_config
         
-        # 使用schedule库添加定时任务
         if "cron" in task_config:
-            schedule.every().day.at(task_config["cron"]).do(
-                self._execute_task, task_id
-            )
+            cron_expr = task_config["cron"]
+            cron_parts = cron_expr.split()
+            if len(cron_parts) >= 2:
+                minute = cron_parts[0]
+                hour = cron_parts[1]
+                
+                if minute.startswith("*/"):
+                    interval = int(minute.split("/")[1])
+                    schedule.every(interval).minutes.do(self._execute_task, task_id)
+                elif hour.startswith("*/"):
+                    interval = int(hour.split("/")[1])
+                    schedule.every(interval).hours.do(self._execute_task, task_id)
+                elif minute == "*" and hour == "*":
+                    schedule.every().hour.do(self._execute_task, task_id)
+                elif minute == "*":
+                    schedule.every().hour.do(self._execute_task, task_id)
+                elif hour == "*":
+                    try:
+                        schedule.every().hour.at(f":{minute}").do(self._execute_task, task_id)
+                    except:
+                        schedule.every(int(minute)).minutes.do(self._execute_task, task_id)
+                else:
+                    try:
+                        schedule.every().day.at(f"{hour}:{minute}").do(self._execute_task, task_id)
+                    except:
+                        schedule.every().hour.do(self._execute_task, task_id)
         elif "interval" in task_config:
             interval = task_config["interval"]
             if interval.get("hours"):
@@ -140,12 +204,32 @@ class AutoScheduler:
         """重新调度所有任务"""
         for task_id, config in self.scheduled_tasks.items():
             if "cron" in config:
-                # 解析cron表达式(简化实现)
-                cron_parts = config["cron"].split()
+                cron_expr = config["cron"]
+                cron_parts = cron_expr.split()
                 if len(cron_parts) >= 2:
-                    schedule.every().day.at(f"{cron_parts[1]}:{cron_parts[0]}").do(
-                        self._execute_task, task_id
-                    )
+                    minute = cron_parts[0]
+                    hour = cron_parts[1]
+                    
+                    if minute.startswith("*/"):
+                        interval = int(minute.split("/")[1])
+                        schedule.every(interval).minutes.do(self._execute_task, task_id)
+                    elif hour.startswith("*/"):
+                        interval = int(hour.split("/")[1])
+                        schedule.every(interval).hours.do(self._execute_task, task_id)
+                    elif minute == "*" and hour == "*":
+                        schedule.every().hour.do(self._execute_task, task_id)
+                    elif minute == "*":
+                        schedule.every().hour.do(self._execute_task, task_id)
+                    elif hour == "*":
+                        try:
+                            schedule.every().hour.at(f":{minute}").do(self._execute_task, task_id)
+                        except:
+                            schedule.every(int(minute)).minutes.do(self._execute_task, task_id)
+                    else:
+                        try:
+                            schedule.every().day.at(f"{hour}:{minute}").do(self._execute_task, task_id)
+                        except:
+                            schedule.every().hour.do(self._execute_task, task_id)
             elif "interval" in config:
                 interval = config["interval"]
                 if interval.get("hours"):
@@ -241,6 +325,71 @@ class AutoScheduler:
         logger.info("[任务] 生成每日考试...")
         # 模拟考试生成
         time.sleep(3)
+    
+    def _task_git_sync(self):
+        """Git同步任务"""
+        logger.info("[任务] 执行Git同步...")
+        from ai_engines.auto_maintenance_upgrade import auto_maintenance_upgrade
+        result = auto_maintenance_upgrade.sync_git()
+        if result['success']:
+            logger.info(f"Git同步成功: {result.get('update_count', 0)} 个更新")
+        else:
+            logger.error(f"Git同步失败: {result['message']}")
+    
+    def _task_auto_maintenance(self):
+        """自动例行维护任务"""
+        logger.info("[任务] 执行自动例行维护...")
+        from ai_engines.auto_maintenance_upgrade import auto_maintenance_upgrade
+        result = auto_maintenance_upgrade.run_auto_maintenance()
+        if result['success']:
+            logger.info("自动维护成功")
+            for detail in result.get('details', []):
+                status = "✅" if detail['success'] else "❌"
+                logger.info(f"  {status} {detail['action']}: {detail['message']}")
+        else:
+            logger.error(f"自动维护失败: {result['message']}")
+    
+    def _task_question_bank_maintenance(self):
+        """题库增量维护任务"""
+        logger.info("[任务] 执行题库增量维护...")
+        from ai_engines.ai_question_maintenance import ai_question_maintenance
+        result = ai_question_maintenance.run_incremental_maintenance(count_per_subject=10)
+        if result.success:
+            logger.info(f"题库增量维护成功")
+            logger.info(f"  生成: {result.total_generated} 道")
+            logger.info(f"  添加: {result.total_added} 道")
+            logger.info(f"  重复: {result.total_duplicates} 道")
+        else:
+            logger.error(f"题库增量维护失败: {result.message}")
+    
+    def _task_question_bank_quality_check(self):
+        """题库质量检查任务"""
+        logger.info("[任务] 执行题库质量检查...")
+        from ai_engines.ai_question_maintenance import ai_question_maintenance
+        result = ai_question_maintenance.run_quality_check()
+        if result.success:
+            logger.info(f"题库质量检查完成")
+            logger.info(f"  发现问题: {result.total_quality_issues} 个")
+        else:
+            logger.error(f"题库质量检查失败: {result.message}")
+    
+    def _task_question_bank_dedup(self):
+        """题库去重任务"""
+        logger.info("[任务] 执行题库去重...")
+        from ai_engines.ai_question_maintenance import ai_question_maintenance
+        result = ai_question_maintenance.run_duplicate_removal()
+        if result.success:
+            logger.info(f"题库去重完成")
+            logger.info(f"  移除重复: {result.total_duplicates} 道")
+        else:
+            logger.error(f"题库去重失败: {result.message}")
+    
+    def _task_listening_question_generation(self):
+        """听力题生成任务"""
+        logger.info("[任务] 执行听力题生成...")
+        from ai_engines.ai_question_maintenance import ai_question_maintenance
+        count = ai_question_maintenance.generate_mass_listening_questions(20)
+        logger.info(f"听力题生成完成，生成 {count} 道听力题")
     
     # ========== AI优化功能 ==========
     

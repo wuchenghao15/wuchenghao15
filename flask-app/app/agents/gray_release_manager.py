@@ -64,10 +64,9 @@ class GrayReleaseManager:
         self._health_status = 'healthy'
         self._unhealthy_count = 0
         self._max_unhealthy_count = 3
-        self._db_path = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-            'app.db'
-        )
+        from app.utils.db import DatabaseManager
+        db = DatabaseManager()
+        self._db_path = db.db_path
         
         self._init_database()
         self._load_releases()

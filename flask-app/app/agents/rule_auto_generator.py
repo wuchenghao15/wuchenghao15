@@ -317,10 +317,9 @@ class RuleAutoGenerator:
     def __init__(self):
         self._lock = threading.Lock()
         self._generated_rules = {}
-        self._db_path = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-            'app.db'
-        )
+        from app.utils.db import DatabaseManager
+        db = DatabaseManager()
+        self._db_path = db.db_path
         self._init_database()
     
     def _init_database(self):

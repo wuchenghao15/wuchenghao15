@@ -400,7 +400,9 @@
                     </div>
                     <div>
                         <p class="font-medium">{{ user.username }}</p>
+                        {% if education_type != 'adult' %}
                         <p class="text-sm text-gray-400">{{ user.grade or '未设置年级' }}</p>
+                        {% endif %}
                     </div>
                 </div>
                 <a href="/auth/logout" class="btn btn-secondary">
@@ -434,7 +436,6 @@
                         </p>
                         <div class="flex gap-3 flex-wrap">
                             <span class="tag tag-blue"><i class="fas fa-user-tag mr-1"></i>{{ user.student_type or '学生' }}</span>
-                            <span class="tag tag-green"><i class="fas fa-calendar-check mr-1"></i>连续学习 {{ stats.streak_days }} 天</span>
                         </div>
                     </div>
                 </div>
@@ -455,6 +456,67 @@
                         摸底测试
                     </a>
                     {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- 学习入口导航 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div class="glass-card p-6 cursor-pointer hover:border-blue-500/30 transition-all" onclick="location.href='/exam_system/exams'">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <div class="w-16 h-16 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+                            <i class="fas fa-file-alt text-white text-2xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold">考试系统</h3>
+                            <p class="text-gray-400 text-sm">正式考试、模拟考试、能力评估</p>
+                        </div>
+                    </div>
+                    <i class="fas fa-arrow-right text-gray-500 text-xl"></i>
+                </div>
+                <div class="mt-4 flex gap-4">
+                    <div class="flex-1 text-center p-3 bg-white/5 rounded-lg">
+                        <div class="text-2xl font-bold text-blue-400">{{ stats.total_exams or 0 }}</div>
+                        <div class="text-xs text-gray-400">可用考试</div>
+                    </div>
+                    <div class="flex-1 text-center p-3 bg-white/5 rounded-lg">
+                        <div class="text-2xl font-bold text-green-400">{{ stats.passed_exams or 0 }}</div>
+                        <div class="text-xs text-gray-400">已通过</div>
+                    </div>
+                    <div class="flex-1 text-center p-3 bg-white/5 rounded-lg">
+                        <div class="text-2xl font-bold text-yellow-400">{{ stats.average_score or 0 }}</div>
+                        <div class="text-xs text-gray-400">平均分</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="glass-card p-6 cursor-pointer hover:border-green-500/30 transition-all" onclick="location.href='/exam_system/tests'">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <div class="w-16 h-16 rounded-xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center">
+                            <i class="fas fa-pencil-alt text-white text-2xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold">测试系统</h3>
+                            <p class="text-gray-400 text-sm">日常练习、专项训练、错题巩固</p>
+                        </div>
+                    </div>
+                    <i class="fas fa-arrow-right text-gray-500 text-xl"></i>
+                </div>
+                <div class="mt-4 flex gap-4">
+                    <div class="flex-1 text-center p-3 bg-white/5 rounded-lg">
+                        <div class="text-2xl font-bold text-green-400">{{ stats.today_practice or 0 }}</div>
+                        <div class="text-xs text-gray-400">今日练习</div>
+                    </div>
+                    <div class="flex-1 text-center p-3 bg-white/5 rounded-lg">
+                        <div class="text-2xl font-bold text-purple-400">{{ stats.wrong_count or 0 }}</div>
+                        <div class="text-xs text-gray-400">错题数量</div>
+                    </div>
+                    <div class="flex-1 text-center p-3 bg-white/5 rounded-lg">
+                        <div class="text-2xl font-bold text-blue-400">{{ stats.streak_days or 0 }}</div>
+                        <div class="text-xs text-gray-400">连续学习</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -708,7 +770,7 @@
                 <div class="glass-card p-5 hover:border-blue-500/30 cursor-pointer" onclick="location.href='/exam/start/{{ exam.id }}'">
                     <div class="flex items-start justify-between mb-3">
                         <span class="tag tag-{{ ['blue', 'green', 'purple', 'yellow'][loop.index0 % 4] }}">
-                            {{ exam.language or '综合' }}
+                            {{ exam.language_label or exam.language or '综合' }}
                         </span>
                         <span class="text-gray-400 text-sm">
                             <i class="fas fa-clock mr-1"></i>{{ exam.duration }}分钟
@@ -721,7 +783,45 @@
                             <i class="fas fa-question-circle mr-1"></i>{{ exam.question_count }}题
                         </span>
                         <span class="text-yellow-400">
-                            <i class="fas fa-star mr-1"></i>{{ exam.level or '初级' }}
+                            <i class="fas fa-star mr-1"></i>{{ exam.level_label or exam.level or '初级' }}
+                        </span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- 推荐测试 -->
+        <div class="glass-card p-6 mb-8 animate-slide-up">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-xl font-bold flex items-center gap-2">
+                    <i class="fas fa-pencil-alt text-green-500"></i>
+                    推荐测试
+                </h3>
+                <a href="/exam_system/tests" class="text-blue-400 text-sm flex items-center gap-1 hover:text-blue-300">
+                    查看全部 <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {% for test in recommended_tests %}
+                <div class="glass-card p-5 hover:border-green-500/30 cursor-pointer" onclick="location.href='/exam/start/{{ test.id }}'">
+                    <div class="flex items-start justify-between mb-3">
+                        <span class="tag tag-green">
+                            {{ test.language_label or test.language or '综合' }}
+                        </span>
+                        <span class="text-gray-400 text-sm">
+                            <i class="fas fa-clock mr-1"></i>{{ test.duration }}分钟
+                        </span>
+                    </div>
+                    <h4 class="font-bold mb-2">{{ test.title }}</h4>
+                    <p class="text-sm text-gray-400 line-clamp-2 mb-3">{{ test.description }}</p>
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="text-gray-400">
+                            <i class="fas fa-question-circle mr-1"></i>{{ test.question_count }}题
+                        </span>
+                        <span class="text-green-400">
+                            <i class="fas fa-check-circle mr-1"></i>{{ test.level_label or test.level or '初级' }}
                         </span>
                     </div>
                 </div>

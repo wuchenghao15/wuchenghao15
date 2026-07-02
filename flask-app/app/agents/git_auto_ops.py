@@ -39,10 +39,9 @@ class GitAutoOps:
         self._max_line_changes = 1000
         self._approval_required_changes = 50
         
-        self._db_path = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-            'app.db'
-        )
+        from app.utils.db import DatabaseManager
+        db = DatabaseManager()
+        self._db_path = db.db_path
         
         self._init_database()
         

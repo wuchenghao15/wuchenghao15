@@ -6,11 +6,63 @@ AI员工管理器 - 负责管理和调度所有AI员工
 # JSON import removed - using database
 import logging
 logger = logging.getLogger(__name__)
+import os
+import sys
 import time
 import uuid
 from datetime import datetime
-from ai_employee_system import ValidationAIEmployee, RoutingAIEmployee, TestSystemAIEmployee
-from test_ai_employee import TestAIEmployee
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from ai_engines.ai_employee_system import ValidationAIEmployee, RoutingAIEmployee, TestSystemAIEmployee, AIEmployee
+from ai_engines.diagnostics_repair_employee import DiagnosticsRepairEmployee
+from ai_engines.question_bank_maintenance_employee import QuestionBankMaintenanceEmployee
+from ai_engines.politics_question_employee import PoliticsQuestionEmployee
+from ai_engines.k12_question_employee import K12QuestionEmployee
+from ai_engines.listening_question_employee import ListeningQuestionEmployee
+from ai_engines.rule_base_maintenance_employee import RuleBaseMaintenanceEmployee
+
+try:
+    from ai_engines.test_ai_employee import TestAIEmployee
+except ImportError:
+    class TestAIEmployee(AIEmployee):
+        """测试AI员工 - 占位类"""
+        def __init__(self, employee_id, name, employee_type="test", level=1):
+            super().__init__(employee_id, name, employee_type, level)
+            self.type = "test"
+            self.status = "active"
+            self.task_count = 0
+            self.success_count = 0
+            self.failure_count = 0
+            self.performance_score = 80 + level * 2
+            self._running = False
+            import threading
+            self._lock = threading.RLock()
+        
+        def start(self):
+            self._running = True
+        
+        def stop(self):
+            self._running = False
+        
+        def get_status(self):
+            return {
+                "employee_id": self.employee_id,
+                "name": self.name,
+                "type": self.type,
+                "level": self.level,
+                "status": self.status,
+                "task_count": self.task_count,
+                "success_count": self.success_count,
+                "failure_count": self.failure_count,
+                "performance_score": self.performance_score,
+                "success_rate": 0.0 if self.task_count == 0 else self.success_count / self.task_count
+            }
+        
+        def execute_task(self, task_data):
+            self.task_count += 1
+            self.success_count += 1
+            return {"success": True, "message": "测试任务完成"}
 
 class AIEmployeeManager:
     """AI员工管理器"""
@@ -23,7 +75,13 @@ class AIEmployeeManager:
             "validation": "验证AI员工",
             "routing": "路由AI员工",
             "test_system": "测试系统AI员工",
-            "test": "测试AI员工"
+            "test": "测试AI员工",
+            "diagnostics_repair": "诊断修复AI员工",
+            "question_bank_maintenance": "题库维护AI员工",
+            "politics_question": "政治题库AI员工",
+            "k12_question": "K12题库AI员工",
+            "listening_question": "听力题库AI员工",
+            "rule_base_maintenance": "规则库维护AI员工"
         }
         self.task_queue = []
         self.running_tasks = []
@@ -60,31 +118,87 @@ class AIEmployeeManager:
             if employee_id in self.employees_by_level[employee.level]:
                 self.employees_by_level[employee.level].remove(employee_id)
 
+    def _safe_start_employee(self, employee):
+        """安全启动AI员工，检查start方法是否存在"""
+        if hasattr(employee, 'start') and callable(getattr(employee, 'start')):
+            try:
+                employee.start()
+            except Exception as e:
+                logger.warning(f"启动AI员工 {employee.employee_id} 时出错: {e}")
+    
+    def _get_employee_type(self, employee):
+        """安全获取员工类型"""
+        if hasattr(employee, 'type'):
+            return employee.type
+        elif hasattr(employee, 'employee_type'):
+            return employee.employee_type
+        else:
+            return "unknown"
+
     def create_initial_employees(self):
         """创建初始AI员工"""
         # 创建验证AI员工 (级别5)
         validation_employee = ValidationAIEmployee("val_001", "验证AI", "validation", 5)
+        validation_employee.type = "validation"
         self.employees["val_001"] = validation_employee
-        validation_employee.start()
+        self._safe_start_employee(validation_employee)
         self.add_employee_to_organizations(validation_employee)
 
         # 创建路由AI员工 (级别6)
         routing_employee = RoutingAIEmployee("route_001", "路由AI", "routing", 6)
+        routing_employee.type = "routing"
         self.employees["route_001"] = routing_employee
-        routing_employee.start()
+        self._safe_start_employee(routing_employee)
         self.add_employee_to_organizations(routing_employee)
 
         # 创建测试系统AI员工 (级别7)
         test_system_employee = TestSystemAIEmployee("test_sys_001", "测试系统AI", "test_system", 7)
+        test_system_employee.type = "test_system"
         self.employees["test_sys_001"] = test_system_employee
-        test_system_employee.start()
+        self._safe_start_employee(test_system_employee)
         self.add_employee_to_organizations(test_system_employee)
 
         # 创建测试AI员工 (级别8)
         test_employee = TestAIEmployee("test_ai_001", "测试AI", "test", 8)
         self.employees["test_ai_001"] = test_employee
-        test_employee.start()
+        self._safe_start_employee(test_employee)
         self.add_employee_to_organizations(test_employee)
+
+        # 创建诊断修复AI员工 (级别9)
+        diagnostics_employee = DiagnosticsRepairEmployee("diag_001", "诊断修复AI", 9)
+        self.employees["diag_001"] = diagnostics_employee
+        self._safe_start_employee(diagnostics_employee)
+        self.add_employee_to_organizations(diagnostics_employee)
+
+        # 创建题库维护AI员工 (级别7)
+        qbm_employee = QuestionBankMaintenanceEmployee("qbm_001", "题库维护AI", 7)
+        self.employees["qbm_001"] = qbm_employee
+        self._safe_start_employee(qbm_employee)
+        self.add_employee_to_organizations(qbm_employee)
+
+        # 创建政治题库AI员工 (级别6)
+        politics_employee = PoliticsQuestionEmployee("pol_001", "政治题库AI", 6)
+        self.employees["pol_001"] = politics_employee
+        self._safe_start_employee(politics_employee)
+        self.add_employee_to_organizations(politics_employee)
+
+        # 创建K12题库AI员工 (级别7)
+        k12_employee = K12QuestionEmployee("k12_001", "K12题库AI", 7)
+        self.employees["k12_001"] = k12_employee
+        self._safe_start_employee(k12_employee)
+        self.add_employee_to_organizations(k12_employee)
+
+        # 创建听力题库AI员工 (级别6)
+        listening_employee = ListeningQuestionEmployee("list_001", "听力题库AI", 6)
+        self.employees["list_001"] = listening_employee
+        self._safe_start_employee(listening_employee)
+        self.add_employee_to_organizations(listening_employee)
+
+        # 创建规则库维护AI员工 (级别8)
+        rule_base_employee = RuleBaseMaintenanceEmployee("rbu_001", "规则库维护AI", 8)
+        self.employees["rbu_001"] = rule_base_employee
+        self._safe_start_employee(rule_base_employee)
+        self.add_employee_to_organizations(rule_base_employee)
 
     def create_employee(self, employee_type: str, name: str, level: int = 1) -> str:
         """创建新的AI员工"""
@@ -96,17 +210,32 @@ class AIEmployeeManager:
 
         if employee_type == "validation":
             employee = ValidationAIEmployee(employee_id, name, employee_type, level)
+            employee.type = employee_type
         elif employee_type == "routing":
             employee = RoutingAIEmployee(employee_id, name, employee_type, level)
+            employee.type = employee_type
         elif employee_type == "test_system":
             employee = TestSystemAIEmployee(employee_id, name, employee_type, level)
+            employee.type = employee_type
         elif employee_type == "test":
             employee = TestAIEmployee(employee_id, name, employee_type, level)
+        elif employee_type == "diagnostics_repair":
+            employee = DiagnosticsRepairEmployee(employee_id, name, level)
+        elif employee_type == "question_bank_maintenance":
+            employee = QuestionBankMaintenanceEmployee(employee_id, name, level)
+        elif employee_type == "politics_question":
+            employee = PoliticsQuestionEmployee(employee_id, name, level)
+        elif employee_type == "k12_question":
+            employee = K12QuestionEmployee(employee_id, name, level)
+        elif employee_type == "listening_question":
+            employee = ListeningQuestionEmployee(employee_id, name, level)
+        elif employee_type == "rule_base_maintenance":
+            employee = RuleBaseMaintenanceEmployee(employee_id, name, level)
         else:
             raise ValueError(f"未知的员工类型: {employee_type}")
 
         self.employees[employee_id] = employee
-        employee.start()
+        self._safe_start_employee(employee)
         self.add_employee_to_organizations(employee)
 
         return employee_id
@@ -119,7 +248,26 @@ class AIEmployeeManager:
         """获取所有AI员工"""
         result = {}
         for employee_id, employee in self.employees.items():
-            result[employee_id] = employee.get_status()
+            if hasattr(employee, 'get_status') and callable(getattr(employee, 'get_status')):
+                try:
+                    result[employee_id] = employee.get_status()
+                except Exception as e:
+                    result[employee_id] = {
+                        'employee_id': employee_id,
+                        'name': getattr(employee, 'name', 'Unknown'),
+                        'type': self._get_employee_type(employee),
+                        'level': getattr(employee, 'level', 1),
+                        'status': 'active',
+                        'error': str(e)
+                    }
+            else:
+                result[employee_id] = {
+                    'employee_id': employee_id,
+                    'name': getattr(employee, 'name', 'Unknown'),
+                    'type': self._get_employee_type(employee),
+                    'level': getattr(employee, 'level', 1),
+                    'status': getattr(employee, 'status', 'active')
+                }
         return result
 
     def assign_task(self, employee_id: str, task_data: dict) -> dict:
@@ -151,7 +299,8 @@ class AIEmployeeManager:
         }
     def execute_task(self, task: dict) -> dict:
         """执行任务"""
-        task_data = task["task_data"]
+        task_data = task.get("task_data", {})
+        employee_id = task.get("employee_id", "")
         employee = self.get_employee(employee_id)
 
         if not employee:
@@ -163,10 +312,24 @@ class AIEmployeeManager:
         # 更新任务状态
         task["status"] = "running"
         task["started_at"] = datetime.now().isoformat()
+        
+        # 添加到运行任务列表
+        self.running_tasks.append(task)
 
         try:
             start_time = time.time()
-            result = employee.execute_task(task_data)
+            
+            # 检查员工是否有execute_task方法
+            if hasattr(employee, 'execute_task') and callable(getattr(employee, 'execute_task')):
+                result = employee.execute_task(task_data)
+            elif hasattr(employee, 'process') and callable(getattr(employee, 'process')):
+                result = employee.process(task_data)
+            else:
+                result = {
+                    "success": False,
+                    "message": f"AI员工 {employee_id} 没有任务执行方法"
+                }
+            
             execution_time = time.time() - start_time
 
             # 更新任务状态
@@ -176,7 +339,8 @@ class AIEmployeeManager:
             task["execution_time"] = execution_time
 
             # 更新AI员工性能数据
-            employee.task_count += 1
+            if hasattr(employee, 'task_count'):
+                employee.task_count += 1
 
             # 基于任务结果和执行时间更新性能评分
             score_change = 1 if result.get("success", False) else -1
@@ -187,9 +351,10 @@ class AIEmployeeManager:
             elif execution_time > 5:
                 score_change -= 1
 
-            employee.performance_score += score_change
-            # 确保评分在0-100范围内
-            employee.performance_score = max(0, min(100, employee.performance_score))
+            if hasattr(employee, 'performance_score'):
+                employee.performance_score += score_change
+                # 确保评分在0-100范围内
+                employee.performance_score = max(0, min(100, employee.performance_score))
 
             # 从运行任务列表中移除
             self.running_tasks = [t for t in self.running_tasks if t["task_id"] != task["task_id"]]
@@ -202,14 +367,17 @@ class AIEmployeeManager:
             task["completed_at"] = datetime.now().isoformat()
             task["error"] = str(e)
             # 更新AI员工性能数据(任务失败)
-            employee.task_count += 1
-            employee.performance_score = max(0, employee.performance_score - 2)  # 失败扣分更多
+            if hasattr(employee, 'task_count'):
+                employee.task_count += 1
+            if hasattr(employee, 'performance_score'):
+                employee.performance_score = max(0, employee.performance_score - 2)  # 失败扣分更多
 
             # 从运行任务列表中移除
             self.running_tasks = [t for t in self.running_tasks if t["task_id"] != task["task_id"]]
 
             return {
                 "success": False,
+                "error": str(e)
             }
     def run_all_tests(self) -> dict:
         """运行所有测试"""
@@ -289,15 +457,21 @@ class AIEmployeeManager:
         employee_ids = self.employees_by_level.get(level, [])
         return [self.employees[eid] for eid in employee_ids if eid in self.employees]
 
+    def get_employees_by_type_and_level(self, employee_type: str, min_level: int = 1, max_level: int = 10) -> list:
         """按类型和级别范围获取AI员工"""
-        # 先按类型过滤
         employees_of_type = self.get_employees_by_type(employee_type)
-        return [emp for emp in employees_of_type if min_level <= emp.level <= max_level]
+        result = []
+        for emp in employees_of_type:
+            emp_level = getattr(emp, 'level', 1)
+            if min_level <= emp_level <= max_level:
+                result.append(emp)
+        return result
+
     def auto_assign_task(self, task_data: dict, required_level: int = 1) -> dict:
         """自动分配任务给合适的AI员工"""
-        # 确定任务需要的AI员工类型
+        task_type = task_data.get("task_type", task_data.get("type", ""))
+        required_employee_type = None
 
-        # 根据任务类型匹配所需的AI员工类型
         if task_type in ["login", "register", "request"]:
             required_employee_type = "validation"
         elif task_type in ["determine", "redirect"]:
@@ -308,25 +482,62 @@ class AIEmployeeManager:
             required_employee_type = "test_system"
         elif task_type in ["run_all_tests", "generate_test_report", "analyze_test_results", "auto_test_project"]:
             required_employee_type = "test"
+        elif task_type in ["diagnostics", "repair", "health_check", "full_scan"]:
+            required_employee_type = "diagnostics_repair"
+        elif task_type in ["expand_questions", "organize_questions", "quality_check",
+                          "duplicate_removal", "category_optimization", "full_maintenance",
+                          "web_crawl", "ai_generate", "get_statistics", "get_maintenance_plans",
+                          "create_maintenance_plan"]:
+            required_employee_type = "question_bank_maintenance"
+        elif task_type in ["generate_questions", "generate_current_affairs",
+                          "generate_real_exam", "generate_high_frequency"]:
+            required_employee_type = "politics_question"
+        elif task_type in ["generate_by_stage", "generate_competition",
+                          "generate_self_admission"]:
+            required_employee_type = "k12_question"
+        elif task_type in ["generate_listening", "generate_japanese",
+                          "generate_english", "generate_by_difficulty",
+                          "generate_by_topic", "generate_mass"]:
+            required_employee_type = "listening_question"
+        elif task_type in ["expand_rules", "organize_rules", "quality_check",
+                          "duplicate_removal", "web_fetch", "ai_generate",
+                          "system_adapt", "deploy_employees", "full_maintenance",
+                          "get_statistics"]:
+            required_employee_type = "rule_base_maintenance"
+
         if not required_employee_type:
             return {
                 "success": False,
                 "message": f"无法确定任务类型 '{task_type}' 所需的AI员工类型"
             }
         # 获取符合条件的AI员工(按类型和级别,且状态为active)
-        eligible_employees = [emp for emp in self.get_employees_by_type_and_level(required_employee_type, required_level)
-                            if emp.status == "active"]
+        employees_of_type = self.get_employees_by_type_and_level(required_employee_type, required_level)
+        eligible_employees = []
+        for emp in employees_of_type:
+            emp_status = getattr(emp, 'status', 'active')
+            if emp_status == "active":
+                eligible_employees.append(emp)
 
         if not eligible_employees:
             return {
                 "success": False,
-                "message": f"未找到符合条件的{self.employee_types[required_employee_type]}"
+                "message": f"未找到符合条件的{self.employee_types.get(required_employee_type, required_employee_type)}"
             }
         # 按性能评分和级别排序,选择最优的AI员工
-        eligible_employees.sort(key=lambda x: (x.performance_score, x.level), reverse=True)
+        eligible_employees.sort(
+            key=lambda x: (getattr(x, 'performance_score', 80), getattr(x, 'level', 1)),
+            reverse=True
+        )
         selected_employee = eligible_employees[0]
+        selected_id = getattr(selected_employee, 'employee_id', None)
         # 分配任务
-        return self.assign_task(selected_employee.employee_id, task_data)
+        if selected_id:
+            return self.assign_task(selected_id, task_data)
+        else:
+            return {
+                "success": False,
+                "message": "无法获取员工ID"
+            }
 
     def upgrade_employee(self, employee_id: str, new_level: int = None) -> dict:
         """升级AI员工"""

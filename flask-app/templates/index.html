@@ -271,6 +271,22 @@
             color: #9ca3af;
             font-size: 14px;
         }
+        .password-toggle {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #9ca3af;
+            cursor: pointer;
+            font-size: 16px;
+            padding: 4px;
+            transition: color 0.2s;
+        }
+        .password-toggle:hover {
+            color: #667eea;
+        }
         .form-input {
             width: 100%;
             padding: 12px 14px 12px 42px;
@@ -446,7 +462,19 @@
                 <img src="/assets/images/mtscos_logo.svg" alt="MTSCOS Logo">
             </div>
             <div class="system-title">MTSCOS AI 智能管理系统</div>
-            <div class="system-version">v5.0.0 智能系统优化版</div>
+            <div class="system-version">
+                v{{ version or '5.0.0' }} 
+                {% if latest_version %}
+                    {{ latest_version.get('title', '智能系统优化版') }}
+                {% else %}
+                    智能系统优化版
+                {% endif %}
+                {% if version_info %}
+                    <span style="font-size: 10px; color: #9ca3af;">
+                        ({{ version_info.get('release_date', '') }} · Build {{ version_info.get('build_number', '') }})
+                    </span>
+                {% endif %}
+            </div>
         </div>
 
         <!-- 登录/注册切换 -->
@@ -473,6 +501,9 @@
                 <div class="input-wrapper">
                     <i class="fas fa-lock input-icon"></i>
                     <input type="password" class="form-input" id="password" placeholder="请输入密码" required autocomplete="current-password">
+                    <button type="button" class="password-toggle" onclick="togglePasswordVisibility()" title="显示/隐藏密码">
+                        <i class="fas fa-eye"></i>
+                    </button>
                 </div>
             </div>
 
@@ -702,6 +733,22 @@
 
         function hideAlert() {
             document.getElementById('alert-message').style.display = 'none';
+        }
+
+        function togglePasswordVisibility() {
+            const passwordInput = document.getElementById('password');
+            const toggleBtn = document.querySelector('.password-toggle');
+            const icon = toggleBtn.querySelector('i');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
         }
 
         async function handleLogin(e) {

@@ -42,10 +42,9 @@ class DependencyScanner:
         
         self._lock = threading.Lock()
         self._scan_results: Dict[str, Dict] = {}
-        self._db_path = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-            'app.db'
-        )
+        from app.utils.db import DatabaseManager
+        db = DatabaseManager()
+        self._db_path = db.db_path
         self._scan_interval = 3600 * 24
         
         self._init_database()
@@ -310,7 +309,7 @@ class DependencyScanner:
             cursor = conn.cursor()
             
             cursor.execute('''
-                INSERT INTO upgrade_tasks VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO upgrade_tasks VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
                 task['task_id'],
                 task['package_name'],

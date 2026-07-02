@@ -15,10 +15,13 @@
             --primary-color: #3b82f6;
             --secondary-color: #10b981;
             --accent-color: #8b5cf6;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
             --dark-bg: #0f172a;
             --card-bg: #1e293b;
             --text-primary: #f1f5f9;
             --text-secondary: #94a3b8;
+            --border-color: rgba(255,255,255,0.1);
         }
 
         body {
@@ -30,44 +33,70 @@
 
         .header {
             background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
-            padding: 20px;
+            padding: 24px;
             text-align: center;
-            box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3);
+            box-shadow: 0 4px 30px rgba(59, 130, 246, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
         }
 
         .header h1 {
             font-size: 2.5rem;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
+            position: relative;
+            z-index: 1;
         }
 
         .header p {
             font-size: 1.1rem;
             opacity: 0.9;
+            position: relative;
+            z-index: 1;
         }
 
         .nav {
             display: flex;
             justify-content: center;
-            gap: 20px;
+            gap: 12px;
             margin: 20px 0;
             flex-wrap: wrap;
+            padding: 0 10px;
         }
 
         .nav-btn {
-            padding: 12px 24px;
+            padding: 12px 20px;
             background: var(--card-bg);
-            border: 2px solid var(--primary-color);
-            border-radius: 8px;
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
             color: var(--text-primary);
-            font-size: 1rem;
+            font-size: 0.95rem;
             cursor: pointer;
             transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .nav-btn:hover {
             background: var(--primary-color);
+            border-color: var(--primary-color);
             transform: translateY(-2px);
             box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+        }
+
+        .nav-btn.active {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
         }
 
         .container {
@@ -85,7 +114,7 @@
 
         .card {
             background: var(--card-bg);
-            border-radius: 12px;
+            border-radius: 16px;
             padding: 24px;
             border-left: 4px solid var(--primary-color);
             transition: transform 0.3s ease, box-shadow 0.3s ease;
@@ -115,28 +144,49 @@
 
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
         }
 
         .stat-card {
             background: linear-gradient(135deg, var(--card-bg), #334155);
-            border-radius: 12px;
+            border-radius: 16px;
             padding: 24px;
             text-align: center;
-            border: 1px solid rgba(59, 130, 246, 0.2);
+            border: 1px solid var(--border-color);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-3px);
+            border-color: var(--primary-color);
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
         }
 
         .stat-value {
-            font-size: 2.5rem;
+            font-size: 2.8rem;
             font-weight: bold;
             color: var(--secondary-color);
             margin-bottom: 5px;
+            font-variant-numeric: tabular-nums;
         }
 
         .stat-label {
             color: var(--text-secondary);
             font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
         .feature-list {
@@ -145,10 +195,16 @@
 
         .feature-list li {
             padding: 12px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid var(--border-color);
             display: flex;
             align-items: center;
             gap: 12px;
+            transition: background 0.2s ease;
+        }
+
+        .feature-list li:hover {
+            background: rgba(59, 130, 246, 0.1);
+            padding-left: 10px;
         }
 
         .feature-list li:last-child {
@@ -165,25 +221,28 @@
             display: flex;
             align-items: center;
             gap: 10px;
+            color: var(--text-primary);
         }
 
         .exam-list {
             background: var(--card-bg);
-            border-radius: 12px;
+            border-radius: 16px;
             overflow: hidden;
+            border: 1px solid var(--border-color);
         }
 
         .exam-item {
             padding: 20px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid var(--border-color);
             display: flex;
             justify-content: space-between;
             align-items: center;
-            transition: background 0.3s ease;
+            transition: all 0.3s ease;
         }
 
         .exam-item:hover {
-            background: rgba(59, 130, 246, 0.1);
+            background: rgba(59, 130, 246, 0.08);
+            padding-left: 25px;
         }
 
         .exam-item:last-child {
@@ -191,12 +250,14 @@
         }
 
         .exam-info h3 {
-            margin-bottom: 5px;
+            margin-bottom: 8px;
+            font-size: 1.2rem;
         }
 
         .exam-info p {
             color: var(--text-secondary);
             font-size: 0.9rem;
+            margin-bottom: 4px;
         }
 
         .exam-actions {
@@ -207,10 +268,13 @@
         .btn {
             padding: 8px 16px;
             border: none;
-            border-radius: 6px;
+            border-radius: 8px;
             cursor: pointer;
             font-size: 0.9rem;
             transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
         }
 
         .btn-primary {
@@ -221,31 +285,47 @@
         .btn-primary:hover {
             background: #2563eb;
             transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
         }
 
         .btn-primary.disabled {
             background: #64748b;
             cursor: not-allowed;
             transform: none;
+            box-shadow: none;
         }
 
         .btn-secondary {
             background: rgba(255, 255, 255, 0.1);
             color: var(--text-primary);
+            border: 1px solid var(--border-color);
         }
 
         .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.15);
+            border-color: var(--primary-color);
         }
 
         .btn-danger {
-            background: #ef4444;
+            background: var(--danger-color);
             color: white;
         }
 
         .btn-danger:hover {
             background: #dc2626;
             transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--primary-color);
+            border: 1px solid var(--primary-color);
+        }
+
+        .btn-outline:hover {
+            background: var(--primary-color);
+            color: white;
         }
 
         .language-tags {
@@ -256,11 +336,17 @@
         }
 
         .lang-tag {
-            padding: 5px 12px;
+            padding: 6px 14px;
             background: rgba(139, 92, 246, 0.2);
             border: 1px solid var(--accent-color);
             border-radius: 20px;
             font-size: 0.85rem;
+            transition: all 0.3s ease;
+        }
+
+        .lang-tag:hover {
+            background: rgba(139, 92, 246, 0.4);
+            transform: scale(1.05);
         }
 
         .footer {
@@ -268,7 +354,7 @@
             padding: 30px;
             background: var(--card-bg);
             margin-top: 50px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            border-top: 1px solid var(--border-color);
         }
 
         @keyframes pulse {
@@ -276,14 +362,25 @@
             50% { opacity: 0.5; }
         }
 
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         .online-indicator {
             display: inline-block;
-            width: 10px;
-            height: 10px;
+            width: 12px;
+            height: 12px;
             background: var(--secondary-color);
             border-radius: 50%;
             animation: pulse 2s infinite;
             margin-right: 8px;
+            box-shadow: 0 0 10px var(--secondary-color);
         }
 
         .modal {
@@ -293,28 +390,45 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(0, 0, 0, 0.85);
             justify-content: center;
             align-items: center;
             z-index: 1000;
+            animation: fadeIn 0.2s ease;
+            backdrop-filter: blur(5px);
         }
 
         .modal-content {
             background: var(--card-bg);
-            border-radius: 12px;
+            border-radius: 16px;
             padding: 30px;
-            max-width: 500px;
+            max-width: 550px;
             width: 90%;
             position: relative;
+            animation: slideUp 0.3s ease;
+            max-height: 90vh;
+            overflow-y: auto;
         }
 
         .close-btn {
             position: absolute;
             top: 15px;
             right: 15px;
-            font-size: 24px;
+            font-size: 28px;
             cursor: pointer;
             color: var(--text-secondary);
+            transition: color 0.3s ease;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+
+        .close-btn:hover {
+            color: var(--text-primary);
+            background: rgba(255,255,255,0.1);
         }
 
         .form-group {
@@ -325,6 +439,7 @@
             display: block;
             margin-bottom: 8px;
             font-weight: 600;
+            color: var(--text-primary);
         }
 
         .form-group input,
@@ -332,11 +447,12 @@
         .form-group textarea {
             width: 100%;
             padding: 12px;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
             color: var(--text-primary);
             font-size: 1rem;
+            transition: border-color 0.3s ease, background 0.3s ease;
         }
 
         .form-group textarea {
@@ -349,38 +465,133 @@
         .form-group textarea:focus {
             outline: none;
             border-color: var(--primary-color);
+            background: rgba(255, 255, 255, 0.08);
         }
 
         .status-badge {
             display: inline-block;
-            padding: 4px 12px;
-            border-radius: 12px;
+            padding: 4px 14px;
+            border-radius: 20px;
             font-size: 0.8rem;
             font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
-        .status-active {
-            background: rgba(34, 197, 94, 0.2);
+        .status-active, .status-published {
+            background: rgba(34, 197, 94, 0.15);
             color: #22c55e;
         }
 
         .status-draft {
-            background: rgba(245, 158, 11, 0.2);
+            background: rgba(245, 158, 11, 0.15);
             color: #f59e0b;
         }
 
-        .status-ended {
-            background: rgba(148, 163, 184, 0.2);
+        .status-ended, .status-closed {
+            background: rgba(148, 163, 184, 0.15);
             color: #94a3b8;
         }
 
         .language-badge {
-            padding: 4px 10px;
+            padding: 5px 12px;
             background: rgba(139, 92, 246, 0.2);
             border: 1px solid var(--accent-color);
             border-radius: 8px;
             font-size: 0.8rem;
             margin-right: 8px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .subject-badge {
+            padding: 5px 12px;
+            background: rgba(59, 130, 246, 0.2);
+            border: 1px solid var(--primary-color);
+            border-radius: 8px;
+            font-size: 0.8rem;
+            margin-right: 8px;
+        }
+
+        .progress-bar {
+            height: 10px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 5px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 5px;
+            transition: width 0.5s ease;
+        }
+
+        .progress-fill.primary { background: var(--primary-color); }
+        .progress-fill.secondary { background: var(--secondary-color); }
+        .progress-fill.accent { background: var(--accent-color); }
+        .progress-fill.warning { background: var(--warning-color); }
+
+        .history-item {
+            padding: 16px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 12px;
+            margin-bottom: 12px;
+            border-left: 4px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+
+        .history-item:hover {
+            background: rgba(255,255,255,0.06);
+            border-left-color: var(--primary-color);
+        }
+
+        .history-item.passed {
+            border-left-color: var(--secondary-color);
+        }
+
+        .history-item.failed {
+            border-left-color: var(--danger-color);
+        }
+
+        .filter-bar {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .filter-bar select,
+        .filter-bar input {
+            padding: 10px 16px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+        }
+
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .number-animate {
+            animation: countUp 1s ease-out;
+        }
+
+        @keyframes countUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         @media (max-width: 768px) {
@@ -389,12 +600,12 @@
             }
             
             .nav {
-                gap: 10px;
+                gap: 8px;
             }
             
             .nav-btn {
-                padding: 10px 16px;
-                font-size: 0.9rem;
+                padding: 10px 14px;
+                font-size: 0.85rem;
             }
 
             .exam-item {
@@ -407,6 +618,14 @@
                 width: 100%;
                 flex-wrap: wrap;
             }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .stat-value {
+                font-size: 2rem;
+            }
         }
     </style>
 </head>
@@ -417,10 +636,11 @@
     </div>
 
     <div class="nav">
-        <button class="nav-btn" onclick="showSection('dashboard')">📊 仪表盘</button>
+        <button class="nav-btn active" onclick="showSection('dashboard')">📊 仪表盘</button>
         <button class="nav-btn" onclick="showSection('exams')">📝 考试列表</button>
         <button class="nav-btn" onclick="showSection('questions')">📚 题库管理</button>
         <button class="nav-btn" onclick="showSection('results')">📈 成绩分析</button>
+        <button class="nav-btn" onclick="showSection('history')">🏆 考试记录</button>
         <button class="nav-btn" onclick="showCreateExam()">➕ 创建考试</button>
     </div>
 
@@ -448,6 +668,14 @@
                     <div class="stat-value" id="stat-active">0</div>
                     <div class="stat-label">进行中考试</div>
                 </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="stat-students">0</div>
+                    <div class="stat-label">学生数量</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="stat-teachers">0</div>
+                    <div class="stat-label">教师数量</div>
+                </div>
             </div>
 
             <div class="grid">
@@ -457,9 +685,9 @@
                     </h3>
                     <p class="card-content">支持日语（关西腔/关东腔）、英语（美式/英式/非洲英语/印度英语）发音题库，覆盖多种语言考试需求。</p>
                     <div class="language-tags">
-                        <span class="lang-tag">日语</span>
-                        <span class="lang-tag">英语</span>
-                        <span class="lang-tag">中文</span>
+                        <span class="lang-tag">🇯🇵 日语</span>
+                        <span class="lang-tag">🇺🇸 英语</span>
+                        <span class="lang-tag">🇨🇳 中文</span>
                     </div>
                 </div>
 
@@ -477,13 +705,64 @@
                     <p class="card-content">自动分析考生答题行为，生成个性化学习报告，精准定位知识薄弱点。</p>
                 </div>
             </div>
+
+            <div class="grid" style="margin-top: 20px;">
+                <div class="card">
+                    <h3 class="card-title">
+                        <i>🎯</i> 我的考试统计
+                    </h3>
+                    <div id="user-stats-content" style="color: var(--text-secondary);">
+                        <div style="padding: 20px; text-align: center;">加载中...</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3 class="card-title">
+                        <i>📉</i> 系统通过率
+                    </h3>
+                    <div style="margin-top: 15px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span style="color: var(--text-secondary);">整体通过率</span>
+                            <span id="system-pass-rate" style="font-weight: bold; color: var(--secondary-color);">0%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div id="progress-pass-rate" class="progress-fill secondary" style="width: 0%;"></div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; margin-top: 15px;">
+                            <span style="color: var(--text-secondary);">平均分数</span>
+                            <span id="system-avg-score" style="font-weight: bold; color: var(--primary-color);">0分</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div id="progress-avg-score" class="progress-fill primary" style="width: 0%;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </section>
 
         <section id="exams" class="section" style="display: none;">
             <h2 class="section-title">📝 考试列表</h2>
             
+            <div class="filter-bar">
+                <select id="exam-status-filter" onchange="loadExams()">
+                    <option value="">全部状态</option>
+                    <option value="active">进行中</option>
+                    <option value="draft">草稿</option>
+                    <option value="ended">已结束</option>
+                </select>
+                <select id="exam-language-filter" onchange="loadExams()">
+                    <option value="">全部语言</option>
+                    <option value="zh">中文</option>
+                    <option value="ja">日语</option>
+                    <option value="en">英语</option>
+                </select>
+                <input type="text" id="exam-search" placeholder="搜索考试名称..." onkeyup="loadExams()">
+                <button class="btn btn-outline" onclick="loadExams()">🔍 搜索</button>
+            </div>
+            
             <div class="exam-list" id="exam-list-container">
-                <div style="text-align: center; padding: 40px; color: #94a3b8;">
+                <div class="empty-state">
+                    <i>📝</i>
                     <p>加载中...</p>
                 </div>
             </div>
@@ -534,6 +813,41 @@
                     </ul>
                 </div>
             </div>
+
+            <div class="card" style="margin-top: 20px;">
+                <h3 class="card-title">
+                    <i>📚</i> 科目分类
+                </h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                    <div style="padding: 15px; background: rgba(59,130,246,0.1); border-radius: 10px;">
+                        <h4 style="margin-bottom: 10px; color: var(--primary-color);">📚 九年制义务教育</h4>
+                        <div class="language-tags">
+                            <span class="lang-tag">语文</span>
+                            <span class="lang-tag">数学</span>
+                            <span class="lang-tag">英语</span>
+                            <span class="lang-tag">物理</span>
+                            <span class="lang-tag">化学</span>
+                            <span class="lang-tag">生物</span>
+                            <span class="lang-tag">历史</span>
+                            <span class="lang-tag">地理</span>
+                            <span class="lang-tag">政治</span>
+                        </div>
+                    </div>
+                    <div style="padding: 15px; background: rgba(139,92,246,0.1); border-radius: 10px;">
+                        <h4 style="margin-bottom: 10px; color: var(--accent-color);">🎓 成人教育</h4>
+                        <div class="language-tags">
+                            <span class="lang-tag">高等数学</span>
+                            <span class="lang-tag">线性代数</span>
+                            <span class="lang-tag">大学物理</span>
+                            <span class="lang-tag">日语</span>
+                            <span class="lang-tag">英语</span>
+                            <span class="lang-tag">德语</span>
+                            <span class="lang-tag">法语</span>
+                            <span class="lang-tag">俄语</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </section>
 
         <section id="results" class="section" style="display: none;">
@@ -561,31 +875,31 @@
                         <i>🎯</i> 知识掌握度
                     </h3>
                     <div style="margin-top: 15px;">
-                        <div style="margin-bottom: 10px;">
+                        <div style="margin-bottom: 15px;">
                             <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
                                 <span>词汇</span>
-                                <span>92%</span>
+                                <span id="label-vocab">0%</span>
                             </div>
-                            <div style="height: 8px; background: rgba(255,255,255,0.2); border-radius: 4px; overflow: hidden;">
-                                <div style="height: 100%; width: 92%; background: var(--secondary-color);"></div>
+                            <div class="progress-bar">
+                                <div id="progress-vocab" class="progress-fill secondary"></div>
                             </div>
                         </div>
-                        <div style="margin-bottom: 10px;">
+                        <div style="margin-bottom: 15px;">
                             <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
                                 <span>语法</span>
-                                <span>78%</span>
+                                <span id="label-grammar">0%</span>
                             </div>
-                            <div style="height: 8px; background: rgba(255,255,255,0.2); border-radius: 4px; overflow: hidden;">
-                                <div style="height: 100%; width: 78%; background: var(--primary-color);"></div>
+                            <div class="progress-bar">
+                                <div id="progress-grammar" class="progress-fill primary"></div>
                             </div>
                         </div>
                         <div>
                             <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
                                 <span>听力</span>
-                                <span>88%</span>
+                                <span id="label-listening">0%</span>
                             </div>
-                            <div style="height: 8px; background: rgba(255,255,255,0.2); border-radius: 4px; overflow: hidden;">
-                                <div style="height: 100%; width: 88%; background: var(--accent-color);"></div>
+                            <div class="progress-bar">
+                                <div id="progress-listening" class="progress-fill accent"></div>
                             </div>
                         </div>
                     </div>
@@ -595,20 +909,45 @@
                     <h3 class="card-title">
                         <i>📉</i> 进步趋势
                     </h3>
-                    <div style="height: 120px; background: rgba(255,255,255,0.05); border-radius: 8px; padding: 10px; margin-top: 15px;">
-                        <svg viewBox="0 0 200 100" style="width: 100%; height: 100%;">
-                            <path d="M 20 80 Q 50 60 80 50 T 140 30 T 180 20" 
+                    <div style="height: 150px; background: rgba(255,255,255,0.03); border-radius: 10px; padding: 15px; margin-top: 15px;">
+                        <svg viewBox="0 0 250 120" style="width: 100%; height: 100%;">
+                            <defs>
+                                <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                    <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
+                                    <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:1" />
+                                </linearGradient>
+                            </defs>
+                            <path d="M 20 100 Q 60 80 100 60 T 180 30 T 230 20" 
                                   fill="none" 
-                                  stroke="#3b82f6" 
+                                  stroke="url(#lineGradient)" 
                                   stroke-width="3"
                                   stroke-linecap="round"/>
-                            <circle cx="20" cy="80" r="4" fill="#3b82f6"/>
-                            <circle cx="80" cy="50" r="4" fill="#3b82f6"/>
-                            <circle cx="140" cy="30" r="4" fill="#3b82f6"/>
-                            <circle cx="180" cy="20" r="4" fill="#3b82f6"/>
+                            <circle cx="20" cy="100" r="5" fill="#3b82f6"/>
+                            <circle cx="60" cy="80" r="5" fill="#3b82f6"/>
+                            <circle cx="100" cy="60" r="5" fill="#3b82f6"/>
+                            <circle cx="140" cy="45" r="5" fill="#3b82f6"/>
+                            <circle cx="180" cy="30" r="5" fill="#3b82f6"/>
+                            <circle cx="230" cy="20" r="5" fill="#3b82f6"/>
+                            <text x="15" y="115" fill="#94a3b8" font-size="10">第1次</text>
+                            <text x="55" y="115" fill="#94a3b8" font-size="10">第2次</text>
+                            <text x="95" y="115" fill="#94a3b8" font-size="10">第3次</text>
+                            <text x="135" y="115" fill="#94a3b8" font-size="10">第4次</text>
+                            <text x="175" y="115" fill="#94a3b8" font-size="10">第5次</text>
+                            <text x="220" y="115" fill="#94a3b8" font-size="10">第6次</text>
                         </svg>
-                        <div style="text-align: center; margin-top: 5px; color: var(--text-secondary); font-size: 0.85rem;">持续进步中</div>
+                        <div style="text-align: center; margin-top: 10px; color: var(--text-secondary); font-size: 0.85rem;">持续进步中</div>
                     </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="history" class="section" style="display: none;">
+            <h2 class="section-title">🏆 我的考试记录</h2>
+            
+            <div id="history-container">
+                <div class="empty-state">
+                    <i>📋</i>
+                    <p>加载中...</p>
                 </div>
             </div>
         </section>
@@ -630,6 +969,32 @@
                 <div class="form-group">
                     <label>描述</label>
                     <textarea id="examDescription" placeholder="请输入考试描述"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>科目 *</label>
+                    <select id="examSubject" required>
+                        <optgroup label="九年制义务教育">
+                            <option value="语文">语文</option>
+                            <option value="数学">数学</option>
+                            <option value="英语">英语</option>
+                            <option value="物理">物理</option>
+                            <option value="化学">化学</option>
+                            <option value="生物">生物</option>
+                            <option value="历史">历史</option>
+                            <option value="地理">地理</option>
+                            <option value="政治">政治</option>
+                        </optgroup>
+                        <optgroup label="成人教育">
+                            <option value="高等数学">高等数学</option>
+                            <option value="线性代数">线性代数</option>
+                            <option value="大学物理">大学物理</option>
+                            <option value="日语">日语</option>
+                            <option value="英语">英语</option>
+                            <option value="德语">德语</option>
+                            <option value="法语">法语</option>
+                            <option value="俄语">俄语</option>
+                        </optgroup>
+                    </select>
                 </div>
                 <div class="form-group">
                     <label>语言类型 *</label>
@@ -676,38 +1041,45 @@
             <div id="examDetailContent">
                 <div class="form-group">
                     <label>考试名称</label>
-                    <div id="detailName" style="padding: 12px; background: rgba(255,255,255,0.1); border-radius: 8px;"></div>
+                    <div id="detailName" style="padding: 12px; background: rgba(255,255,255,0.05); border-radius: 10px;"></div>
+                </div>
+                <div class="form-group">
+                    <label>科目</label>
+                    <div id="detailSubject" style="padding: 12px; background: rgba(255,255,255,0.05); border-radius: 10px;"></div>
                 </div>
                 <div class="form-group">
                     <label>描述</label>
-                    <div id="detailDesc" style="padding: 12px; background: rgba(255,255,255,0.1); border-radius: 8px;"></div>
+                    <div id="detailDesc" style="padding: 12px; background: rgba(255,255,255,0.05); border-radius: 10px;"></div>
                 </div>
                 <div class="form-group">
                     <label>语言</label>
-                    <div id="detailLanguage" style="padding: 12px; background: rgba(255,255,255,0.1); border-radius: 8px;"></div>
+                    <div id="detailLanguage" style="padding: 12px; background: rgba(255,255,255,0.05); border-radius: 10px;"></div>
                 </div>
                 <div class="form-group">
                     <label>难度等级</label>
-                    <div id="detailLevel" style="padding: 12px; background: rgba(255,255,255,0.1); border-radius: 8px;"></div>
+                    <div id="detailLevel" style="padding: 12px; background: rgba(255,255,255,0.05); border-radius: 10px;"></div>
                 </div>
                 <div class="form-group">
                     <label>考试时长</label>
-                    <div id="detailDuration" style="padding: 12px; background: rgba(255,255,255,0.1); border-radius: 8px;"></div>
+                    <div id="detailDuration" style="padding: 12px; background: rgba(255,255,255,0.05); border-radius: 10px;"></div>
                 </div>
                 <div class="form-group">
                     <label>题目数量</label>
-                    <div id="detailQuestions" style="padding: 12px; background: rgba(255,255,255,0.1); border-radius: 8px;"></div>
+                    <div id="detailQuestions" style="padding: 12px; background: rgba(255,255,255,0.05); border-radius: 10px;"></div>
                 </div>
                 <div class="form-group">
                     <label>总分 / 及格分数</label>
-                    <div id="detailScore" style="padding: 12px; background: rgba(255,255,255,0.1); border-radius: 8px;"></div>
+                    <div id="detailScore" style="padding: 12px; background: rgba(255,255,255,0.05); border-radius: 10px;"></div>
                 </div>
                 <div class="form-group">
                     <label>状态</label>
-                    <div id="detailStatus" style="padding: 12px; background: rgba(255,255,255,0.1); border-radius: 8px;"></div>
+                    <div id="detailStatus" style="padding: 12px; background: rgba(255,255,255,0.05); border-radius: 10px;"></div>
                 </div>
             </div>
-            <button class="btn btn-primary" style="width: 100%; margin-top: 20px;" onclick="startExamFromDetail()">开始考试</button>
+            <div style="display: flex; gap: 12px; margin-top: 20px;">
+                <button class="btn btn-secondary" style="flex: 1;" onclick="closeDetailModal()">关闭</button>
+                <button class="btn btn-primary" style="flex: 1;" onclick="startExamFromDetail()">开始考试</button>
+            </div>
         </div>
     </div>
 
@@ -719,7 +1091,23 @@
             'en': '英语',
             'chinese': '中文',
             'japanese': '日语',
-            'english': '英语'
+            'english': '英语',
+            '语文': '语文',
+            '数学': '数学',
+            '英语': '英语',
+            '物理': '物理',
+            '化学': '化学',
+            '生物': '生物',
+            '历史': '历史',
+            '地理': '地理',
+            '政治': '政治',
+            '高等数学': '高等数学',
+            '线性代数': '线性代数',
+            '大学物理': '大学物理',
+            '日语': '日语',
+            '德语': '德语',
+            '法语': '法语',
+            '俄语': '俄语'
         };
 
         const LEVEL_MAP = {
@@ -735,11 +1123,20 @@
             });
             document.getElementById(sectionId).style.display = 'block';
             
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
             if (sectionId === 'exams') {
                 loadExams();
             }
             if (sectionId === 'dashboard') {
                 loadStats();
+                loadUserStats();
+            }
+            if (sectionId === 'history') {
+                loadExamHistory();
             }
         }
 
@@ -767,17 +1164,18 @@
                 .then(data => {
                     if (data.success && data.data) {
                         const exam = data.data;
-                        document.getElementById('detailName').textContent = exam.title;
+                        document.getElementById('detailName').textContent = exam.title || '未命名考试';
+                        document.getElementById('detailSubject').textContent = exam.subject || '未设置科目';
                         document.getElementById('detailDesc').textContent = exam.description || '暂无描述';
-                        document.getElementById('detailLanguage').textContent = LANGUAGE_MAP[exam.language] || exam.language;
-                        document.getElementById('detailLevel').textContent = LEVEL_MAP[exam.level] || exam.level;
-                        document.getElementById('detailDuration').textContent = `${exam.duration} 分钟`;
-                        document.getElementById('detailQuestions').textContent = `${exam.question_count} 道`;
-                        document.getElementById('detailScore').textContent = `${exam.total_points} / ${exam.passing_score}`;
+                        document.getElementById('detailLanguage').textContent = LANGUAGE_MAP[exam.language] || exam.language || '中文';
+                        document.getElementById('detailLevel').textContent = LEVEL_MAP[exam.level] || exam.level || '中级';
+                        document.getElementById('detailDuration').textContent = `${exam.duration || 60} 分钟`;
+                        document.getElementById('detailQuestions').textContent = `${exam.question_count || 20} 道`;
+                        document.getElementById('detailScore').textContent = `${exam.total_points || 100} / ${exam.passing_score || 60}`;
                         
-                        const statusMap = {'active': '进行中', 'draft': '草稿', 'ended': '已结束'};
+                        const statusMap = {'active': '进行中', 'draft': '草稿', 'ended': '已结束', 'published': '进行中', 'closed': '已结束'};
                         const statusClass = `status-${exam.status}`;
-                        document.getElementById('detailStatus').innerHTML = `<span class="status-badge ${statusClass}">${statusMap[exam.status] || exam.status}</span>`;
+                        document.getElementById('detailStatus').innerHTML = `<span class="status-badge ${statusClass}">${statusMap[exam.status] || exam.status || '草稿'}</span>`;
                     }
                 })
                 .catch(error => {
@@ -798,7 +1196,7 @@
         }
 
         function deleteExam(examId) {
-            fetch(`/api/exam/exams/${examId}`, {
+            fetch(`/api/exams/${examId}`, {
                 method: 'DELETE'
             })
             .then(response => response.json())
@@ -807,7 +1205,7 @@
                     alert('考试删除成功！');
                     loadExams();
                 } else {
-                    alert('删除失败: ' + (data.error || '未知错误'));
+                    alert('删除失败: ' + (data.message || data.error || '未知错误'));
                 }
             })
             .catch(error => {
@@ -822,6 +1220,7 @@
             const examData = {
                 title: document.getElementById('examTitle').value,
                 description: document.getElementById('examDescription').value,
+                subject: document.getElementById('examSubject').value,
                 language: document.getElementById('examLanguage').value,
                 level: document.getElementById('examLevel').value,
                 duration: parseInt(document.getElementById('examDuration').value),
@@ -868,15 +1267,25 @@
 
         function loadExams() {
             const container = document.getElementById('exam-list-container');
-            container.innerHTML = '<div style="text-align: center; padding: 40px; color: #94a3b8;"><p>加载中...</p></div>';
+            container.innerHTML = '<div class="empty-state"><i>📝</i><p>加载中...</p></div>';
             
-            fetch('/api/exam/exams')
+            const status = document.getElementById('exam-status-filter').value;
+            const language = document.getElementById('exam-language-filter').value;
+            const search = document.getElementById('exam-search').value;
+            
+            let url = '/api/exam/exams?';
+            if (status) url += `status=${status}&`;
+            if (language) url += `language=${language}&`;
+            if (search) url += `search=${encodeURIComponent(search)}`;
+            
+            fetch(url)
                 .then(response => response.json())
                 .then(data => {
                     if (data.success && data.data) {
                         if (data.data.length === 0) {
                             container.innerHTML = `
-                                <div style="text-align: center; padding: 40px; color: #94a3b8;">
+                                <div class="empty-state">
+                                    <i>📝</i>
                                     <p>暂无考试数据</p>
                                     <button class="btn btn-primary" onclick="showCreateExam()" style="margin-top: 20px;">创建考试</button>
                                 </div>
@@ -885,20 +1294,21 @@
                         }
                         
                         container.innerHTML = data.data.map(exam => {
-                            const statusMap = {'active': '进行中', 'draft': '草稿', 'ended': '已结束'};
+                            const statusMap = {'active': '进行中', 'draft': '草稿', 'ended': '已结束', 'published': '进行中', 'closed': '已结束'};
                             const statusClass = `status-${exam.status}`;
-                            const isActive = exam.status === 'active';
+                            const isActive = exam.status === 'active' || exam.status === 'published';
                             
                             return `
                                 <div class="exam-item" data-exam-id="${exam.id}">
                                     <div class="exam-info">
                                         <h3>
-                                            <span class="language-badge">${LANGUAGE_MAP[exam.language] || exam.language}</span>
-                                            ${exam.title}
-                                            <span class="status-badge ${statusClass}">${statusMap[exam.status] || exam.status}</span>
+                                            <span class="language-badge">${LANGUAGE_MAP[exam.language] || exam.language || '中文'}</span>
+                                            ${exam.title || '未命名考试'}
+                                            <span class="status-badge ${statusClass}">${statusMap[exam.status] || exam.status || '草稿'}</span>
                                         </h3>
-                                        <p>时长: ${exam.duration}分钟 | 题目: ${exam.question_count}道 | 总分: ${exam.total_points}分</p>
-                                        <p style="font-size: 0.85rem; color: #64748b;">难度: ${LEVEL_MAP[exam.level] || exam.level} | 及格: ${exam.passing_score}分</p>
+                                        ${exam.subject ? `<span class="subject-badge">${exam.subject}</span>` : ''}
+                                        <p>时长: ${exam.duration || 60}分钟 | 题目: ${exam.question_count || 20}道 | 总分: ${exam.total_points || 100}分</p>
+                                        <p style="font-size: 0.85rem; color: #64748b;">难度: ${LEVEL_MAP[exam.level] || exam.level || '中级'} | 及格: ${exam.passing_score || 60}分</p>
                                     </div>
                                     <div class="exam-actions">
                                         <button class="btn btn-secondary" onclick="showExamDetail('${exam.id}')">详情</button>
@@ -912,7 +1322,8 @@
                         }).join('');
                     } else {
                         container.innerHTML = `
-                            <div style="text-align: center; padding: 40px; color: #94a3b8;">
+                            <div class="empty-state">
+                                <i>⚠️</i>
                                 <p>加载考试列表失败</p>
                             </div>
                         `;
@@ -921,7 +1332,8 @@
                 .catch(error => {
                     console.error('加载考试列表失败:', error);
                     container.innerHTML = `
-                        <div style="text-align: center; padding: 40px; color: #94a3b8;">
+                        <div class="empty-state">
+                            <i>⚠️</i>
                             <p>加载考试列表失败</p>
                         </div>
                     `;
@@ -934,13 +1346,24 @@
                 .then(data => {
                     if (data.success && data.data) {
                         const stats = data.data;
-                        document.getElementById('stat-exams').textContent = stats.total_exams || 0;
-                        document.getElementById('stat-questions').textContent = stats.total_questions || 0;
-                        document.getElementById('stat-papers').textContent = stats.total_papers || 0;
-                        document.getElementById('stat-active').textContent = stats.active_exams || 0;
                         
-                        document.getElementById('result-avg-score').textContent = Math.round((stats.average_score || 0) / 10) + '%';
-                        document.getElementById('result-pass-rate').textContent = Math.round((stats.pass_rate || 0) * 100) + '%';
+                        animateNumber('stat-exams', stats.total_exams || 0);
+                        animateNumber('stat-questions', stats.total_questions || 0);
+                        animateNumber('stat-papers', stats.total_papers || 0);
+                        animateNumber('stat-active', stats.active_exams || 0);
+                        animateNumber('stat-students', stats.student_count || 0);
+                        animateNumber('stat-teachers', stats.teacher_count || 0);
+                        
+                        document.getElementById('result-avg-score').textContent = Math.round(stats.average_score || 0) + '%';
+                        document.getElementById('result-pass-rate').textContent = Math.round(stats.pass_rate || 0) + '%';
+                        
+                        document.getElementById('system-pass-rate').textContent = Math.round(stats.pass_rate || 0) + '%';
+                        document.getElementById('progress-pass-rate').style.width = (stats.pass_rate || 0) + '%';
+                        
+                        document.getElementById('system-avg-score').textContent = Math.round(stats.average_score || 0) + '分';
+                        document.getElementById('progress-avg-score').style.width = ((stats.average_score || 0) / 100 * 100) + '%';
+                        
+                        updateResultProgress(stats);
                     }
                 })
                 .catch(error => {
@@ -948,8 +1371,164 @@
                 });
         }
 
+        function loadUserStats() {
+            fetch('/api/exam/user/stats')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.data) {
+                        const stats = data.data;
+                        const content = document.getElementById('user-stats-content');
+                        
+                        content.innerHTML = `
+                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
+                                <div style="text-align: center;">
+                                    <div style="font-size: 1.8rem; font-weight: bold; color: var(--primary-color);">${stats.total_exams || 0}</div>
+                                    <div style="font-size: 0.85rem; color: var(--text-secondary);">总考试次数</div>
+                                </div>
+                                <div style="text-align: center;">
+                                    <div style="font-size: 1.8rem; font-weight: bold; color: var(--secondary-color);">${stats.passed_exams || 0}</div>
+                                    <div style="font-size: 0.85rem; color: var(--text-secondary);">通过次数</div>
+                                </div>
+                                <div style="text-align: center;">
+                                    <div style="font-size: 1.8rem; font-weight: bold; color: var(--accent-color);">${Math.round(stats.avg_score || 0)}</div>
+                                    <div style="font-size: 0.85rem; color: var(--text-secondary);">平均分</div>
+                                </div>
+                            </div>
+                            <div style="margin-top: 15px;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                                    <span style="color: var(--text-secondary);">通过率</span>
+                                    <span style="font-weight: bold;">${Math.round(stats.pass_rate || 0)}%</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill secondary" style="width: ${stats.pass_rate || 0}%;"></div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                })
+                .catch(error => {
+                    console.error('加载用户统计失败:', error);
+                });
+        }
+
+        function loadExamHistory() {
+            const container = document.getElementById('history-container');
+            container.innerHTML = '<div class="empty-state"><i>📋</i><p>加载中...</p></div>';
+            
+            fetch('/api/exam/user/history')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.data) {
+                        if (data.data.length === 0) {
+                            container.innerHTML = `
+                                <div class="empty-state">
+                                    <i>📋</i>
+                                    <p>暂无考试记录</p>
+                                    <button class="btn btn-primary" onclick="showSection('exams')" style="margin-top: 20px;">去参加考试</button>
+                                </div>
+                            `;
+                            return;
+                        }
+                        
+                        container.innerHTML = data.data.map(record => {
+                            const isPassed = record.passed;
+                            const date = new Date(record.created_at * 1000 || Date.now());
+                            const dateStr = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')} ${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`;
+                            
+                            return `
+                                <div class="history-item ${isPassed ? 'passed' : 'failed'}">
+                                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                                        <div>
+                                            <h4 style="margin-bottom: 5px;">${record.title || '未命名考试'}</h4>
+                                            <p style="color: var(--text-secondary); font-size: 0.85rem;">${dateStr}</p>
+                                        </div>
+                                        <span class="status-badge ${isPassed ? 'status-active' : 'status-draft'}">${isPassed ? '通过' : '未通过'}</span>
+                                    </div>
+                                    <div style="margin-top: 10px; display: flex; gap: 20px;">
+                                        <div>
+                                            <span style="color: var(--text-secondary); font-size: 0.85rem;">得分</span>
+                                            <div style="font-size: 1.2rem; font-weight: bold; color: ${isPassed ? 'var(--secondary-color)' : 'var(--danger-color)' };">${record.total_score || 0}</div>
+                                        </div>
+                                        <div>
+                                            <span style="color: var(--text-secondary); font-size: 0.85rem;">正确率</span>
+                                            <div style="font-size: 1.2rem; font-weight: bold;">${Math.round((record.accuracy || 0) * 100)}%</div>
+                                        </div>
+                                        <div>
+                                            <span style="color: var(--text-secondary); font-size: 0.85rem;">用时</span>
+                                            <div style="font-size: 1.2rem; font-weight: bold;">${record.time_taken ? formatTime(record.time_taken) : '--'}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('');
+                    } else {
+                        container.innerHTML = `
+                            <div class="empty-state">
+                                <i>⚠️</i>
+                                <p>加载考试记录失败</p>
+                            </div>
+                        `;
+                    }
+                })
+                .catch(error => {
+                    console.error('加载考试历史失败:', error);
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <i>⚠️</i>
+                            <p>加载考试记录失败</p>
+                        </div>
+                    `;
+                });
+        }
+
+        function animateNumber(elementId, targetValue) {
+            const element = document.getElementById(elementId);
+            if (!element) return;
+            
+            const currentValue = parseInt(element.textContent) || 0;
+            if (currentValue === targetValue) {
+                element.textContent = targetValue;
+                return;
+            }
+            
+            element.classList.add('number-animate');
+            element.textContent = targetValue;
+            
+            setTimeout(() => {
+                element.classList.remove('number-animate');
+            }, 1000);
+        }
+
+        function updateResultProgress(stats) {
+            var avgScore = Math.round(stats.average_score || 0);
+            
+            var vocabBar = document.getElementById('progress-vocab');
+            var grammarBar = document.getElementById('progress-grammar');
+            var listeningBar = document.getElementById('progress-listening');
+            
+            if (vocabBar) {
+                vocabBar.style.width = Math.min(100, avgScore + 10) + '%';
+                document.getElementById('label-vocab').textContent = Math.min(100, avgScore + 10) + '%';
+            }
+            if (grammarBar) {
+                grammarBar.style.width = Math.max(0, avgScore - 5) + '%';
+                document.getElementById('label-grammar').textContent = Math.max(0, avgScore - 5) + '%';
+            }
+            if (listeningBar) {
+                listeningBar.style.width = Math.min(100, avgScore + 5) + '%';
+                document.getElementById('label-listening').textContent = Math.min(100, avgScore + 5) + '%';
+            }
+        }
+
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins}分${secs}秒`;
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
             loadStats();
+            loadUserStats();
         });
     </script>
 </body>

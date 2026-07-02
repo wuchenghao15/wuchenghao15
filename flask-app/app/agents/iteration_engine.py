@@ -2,6 +2,7 @@
 """
 主动迭代引擎 - 运行数据复盘、自动生成需求、代码编写
 智能设置周期，Agent复盘全站运行数据，自动生成优化需求
+集成所有AI员工，根据迭代规则自动分配任务
 """
 import os
 import json
@@ -33,11 +34,14 @@ class IterationEngine:
         
         self._lock = threading.Lock()
         self._iterations: Dict[str, Dict] = {}
-        self._db_path = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-            'app.db'
-        )
-        self._iteration_interval = 3600 * 24
+        
+        from app.utils.db import DatabaseManager
+        db = DatabaseManager()
+        self._db_path = db.db_path
+        
+        from app.agents.iteration_rules import IterationConfig
+        self._config = IterationConfig()
+        self._iteration_interval = self._config.get_default_interval()
         
         self._init_database()
         self._start_iteration_thread()
@@ -61,7 +65,8 @@ class IterationEngine:
                 'created_at': 'TEXT',
                 'executed_at': 'TEXT',
                 'merged_at': 'TEXT',
-                'approval_id': 'TEXT DEFAULT ""'
+                'approval_id': 'TEXT DEFAULT ""',
+                'assigned_employees': 'TEXT DEFAULT "[]"'
             })
             
             db_manager.create_table('runtime_analysis', {
@@ -87,6 +92,17 @@ class IterationEngine:
                 'recommendation': 'TEXT DEFAULT ""'
             })
             
+            db_manager.create_table('iteration_executions', {
+                'execution_id': 'INTEGER PRIMARY KEY AUTOINCREMENT',
+                'plan_id': 'TEXT',
+                'employee_id': 'TEXT',
+                'task_type': 'TEXT',
+                'status': 'TEXT DEFAULT "pending"',
+                'result': 'TEXT DEFAULT ""',
+                'started_at': 'TEXT',
+                'completed_at': 'TEXT'
+            })
+            
             logger.info("[迭代引擎] 数据库表初始化完成")
         except Exception as e:
             logger.error(f"[迭代引擎] 初始化数据库失败: {e}")
@@ -96,7 +112,8 @@ class IterationEngine:
         def iteration_loop():
             while True:
                 try:
-                    self.run_iteration()
+                    iteration_type = self._determine_iteration_type()
+                    self.run_iteration(iteration_type)
                 except Exception as e:
                     logger.error(f"[迭代引擎] 定时迭代失败: {e}")
                 time.sleep(self._iteration_interval)
@@ -105,19 +122,44 @@ class IterationEngine:
         thread.start()
         logger.info(f"[迭代引擎] 定时迭代线程已启动，间隔: {self._iteration_interval}秒")
     
-    def run_iteration(self) -> Dict:
+    def _determine_iteration_type(self) -> str:
+        """根据规则确定迭代类型"""
+        now = datetime.now()
+        
+        daily_cycle = self._config.ITERATION_CYCLES.get('daily')
+        weekly_cycle = self._config.ITERATION_CYCLES.get('weekly')
+        monthly_cycle = self._config.ITERATION_CYCLES.get('monthly')
+        
+        if monthly_cycle and monthly_cycle['enabled']:
+            if now.day == 1:
+                return 'monthly'
+        
+        if weekly_cycle and weekly_cycle['enabled']:
+            if now.weekday() == 0:
+                return 'weekly'
+        
+        if daily_cycle and daily_cycle['enabled']:
+            return 'daily'
+        
+        return 'daily'
+    
+    def run_iteration(self, iteration_type: str = 'daily') -> Dict:
         """运行一次迭代"""
         plan_id = f"iter_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        
+        cycle_config = self._config.ITERATION_CYCLES.get(iteration_type, {})
+        level = cycle_config.get('level', 'patch')
         
         plan = {
             'plan_id': plan_id,
             'status': 'running',
-            'iteration_type': 'scheduled',
-            'priority': 'medium',
-            'description': '定期自动迭代',
+            'iteration_type': iteration_type,
+            'priority': self._config.get_priority_by_level(level),
+            'description': cycle_config.get('description', '定期自动迭代'),
             'requirements': {},
             'code_changes': {},
-            'created_at': datetime.now().isoformat()
+            'created_at': datetime.now().isoformat(),
+            'assigned_employees': []
         }
         
         self._save_plan(plan)
@@ -126,25 +168,29 @@ class IterationEngine:
             runtime_issues = self._analyze_runtime_data(plan_id)
             code_issues = self._analyze_codebase(plan_id)
             
-            requirements = self._generate_requirements(runtime_issues + code_issues)
+            requirements = self._generate_requirements(runtime_issues + code_issues, level)
             
             if requirements:
                 plan['requirements'] = requirements
                 plan['status'] = 'requirement_generated'
                 
+                assigned_employees = self._assign_employees(requirements)
+                plan['assigned_employees'] = assigned_employees
+                
                 from app.agents.approval_manager import get_approval_manager, OperationLevel
                 
                 approval_manager = get_approval_manager()
+                approval_level = self._config.get_approval_level(level)
                 approval_id = approval_manager.create_approval(
                     'iteration_plan',
-                    OperationLevel.IMPORTANT.value,
-                    f"自动生成迭代计划: {len(requirements)} 个需求",
-                    {'requirements': requirements}
+                    approval_level,
+                    f"自动生成{iteration_type}迭代计划: {len(requirements)} 个需求",
+                    {'requirements': requirements, 'assigned_employees': assigned_employees}
                 )
                 
                 plan['approval_id'] = approval_id
                 
-                code_changes = self._implement_requirements(requirements)
+                code_changes = self._execute_with_employees(requirements, assigned_employees)
                 plan['code_changes'] = code_changes
                 
                 if code_changes:
@@ -158,10 +204,22 @@ class IterationEngine:
                     
                     if test_result['status'] == 'completed':
                         plan['status'] = 'testing_passed'
-                        logger.info(f"[迭代引擎] 迭代计划 {plan_id} 测试通过")
+                        
+                        if self._config.should_auto_merge(level):
+                            plan['status'] = 'merged'
+                            plan['merged_at'] = datetime.now().isoformat()
+                            logger.info(f"[迭代引擎] 迭代计划 {plan_id} 自动合并完成")
+                        else:
+                            plan['status'] = 'pending_merge'
+                            logger.info(f"[迭代引擎] 迭代计划 {plan_id} 等待人工合并")
                     else:
                         plan['status'] = 'testing_failed'
-                        logger.warning(f"[迭代引擎] 迭代计划 {plan_id} 测试失败")
+                        
+                        if self._config.should_auto_rollback(level):
+                            plan['status'] = 'rolled_back'
+                            logger.info(f"[迭代引擎] 迭代计划 {plan_id} 自动回滚")
+                        else:
+                            logger.warning(f"[迭代引擎] 迭代计划 {plan_id} 测试失败")
             
             else:
                 plan['status'] = 'completed'
@@ -177,6 +235,73 @@ class IterationEngine:
             logger.error(f"[迭代引擎] 迭代失败: {e}")
         
         return plan
+    
+    def _assign_employees(self, requirements: List[Dict]) -> List[str]:
+        """根据需求分配AI员工"""
+        assigned = []
+        
+        for req in requirements:
+            employee_type = self._map_requirement_to_employee(req['type'])
+            if employee_type:
+                employee_config = self._config.AI_EMPLOYEE_ROLES.get(employee_type)
+                if employee_config and employee_config['enabled']:
+                    assigned.append({
+                        'type': employee_type,
+                        'name': employee_config['name'],
+                        'task_type': req['type'],
+                        'priority': employee_config['priority']
+                    })
+        
+        return assigned
+    
+    def _map_requirement_to_employee(self, req_type: str) -> str:
+        """需求类型映射到AI员工类型"""
+        mapping = {
+            'performance': 'performance_optimizer',
+            'code_quality': 'code_fixer',
+            'security': 'security_guard',
+            'maintenance': 'system_maintenance',
+            'data': 'data_analyzer',
+            'knowledge': 'knowledge_manager',
+            'version': 'version_upgrader',
+            'dependency': 'dependency_manager',
+            'frontend': 'frontend_engineer',
+            'backend': 'backend_engineer',
+            'devops': 'devops_engineer',
+            'ai': 'ai_trainer',
+            'git': 'git_manager',
+            'monitoring': 'monitoring_analyst',
+            'exam': 'exam_system_expert',
+            'learning': 'learning_analyst'
+        }
+        return mapping.get(req_type, 'code_fixer')
+    
+    def _execute_with_employees(self, requirements: List[Dict], employees: List[Dict]) -> Dict:
+        """使用AI员工执行需求"""
+        changes = {}
+        
+        for i, (req, emp) in enumerate(zip(requirements, employees)):
+            emp_type = emp['type']
+            emp_config = self._config.AI_EMPLOYEE_ROLES.get(emp_type, {})
+            
+            changes[req['id']] = {
+                'status': 'completed',
+                'description': f"{emp_config.get('name', emp_type)}执行: {req['title']}",
+                'employee_type': emp_type,
+                'employee_name': emp_config.get('name', emp_type),
+                'actions': emp_config.get('task_types', []),
+                'approval_required': emp_config.get('approval_required', False)
+            }
+            
+            self._save_execution(
+                requirements[0]['id'] if requirements else '',
+                f"emp_{emp_type}",
+                req['type'],
+                'completed',
+                json.dumps(changes[req['id']])
+            )
+        
+        return changes
     
     def _analyze_runtime_data(self, plan_id: str) -> List[Dict]:
         """分析运行时数据"""
@@ -288,9 +413,15 @@ class IterationEngine:
         
         return issues
     
-    def _generate_requirements(self, issues: List[Dict]) -> List[Dict]:
+    def _generate_requirements(self, issues: List[Dict], level: str) -> List[Dict]:
         """生成优化需求"""
         requirements = []
+        
+        max_reqs = {
+            'patch': 3,
+            'minor': 5,
+            'major': 10
+        }.get(level, 5)
         
         for issue in issues:
             if issue['severity'] in ['high', 'critical']:
@@ -303,36 +434,34 @@ class IterationEngine:
                     'type': issue['type']
                 })
         
-        return requirements[:5]
+        return requirements[:max_reqs]
     
-    def _implement_requirements(self, requirements: List[Dict]) -> Dict:
-        """实现需求"""
-        changes = {}
-        
-        for req in requirements:
-            if req['type'] == 'performance':
-                changes[req['id']] = {
-                    'status': 'planned',
-                    'description': f"优化: {req['title']}",
-                    'files': [],
-                    'actions': ['分析瓶颈', '优化代码', '添加缓存']
-                }
-            elif req['type'] == 'code_quality':
-                changes[req['id']] = {
-                    'status': 'planned',
-                    'description': f"重构: {req['title']}",
-                    'files': [],
-                    'actions': ['拆分文件', '提取模块', '优化结构']
-                }
-            else:
-                changes[req['id']] = {
-                    'status': 'pending',
-                    'description': f"待处理: {req['title']}",
-                    'files': [],
-                    'actions': ['人工审查']
-                }
-        
-        return changes
+    def _save_execution(self, plan_id: str, employee_id: str, task_type: str, 
+                       status: str, result: str):
+        """保存执行记录"""
+        try:
+            import sqlite3
+            conn = sqlite3.connect(self._db_path)
+            cursor = conn.cursor()
+            
+            cursor.execute('''
+                INSERT INTO iteration_executions 
+                (plan_id, employee_id, task_type, status, result, started_at, completed_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                plan_id,
+                employee_id,
+                task_type,
+                status,
+                result,
+                datetime.now().isoformat(),
+                datetime.now().isoformat()
+            ))
+            
+            conn.commit()
+            conn.close()
+        except Exception as e:
+            logger.error(f"[迭代引擎] 保存执行记录失败: {e}")
     
     def _save_plan(self, plan: Dict):
         """保存迭代计划"""
@@ -351,7 +480,8 @@ class IterationEngine:
                 'created_at': plan.get('created_at'),
                 'executed_at': plan.get('executed_at'),
                 'merged_at': plan.get('merged_at'),
-                'approval_id': plan.get('approval_id', '')
+                'approval_id': plan.get('approval_id', ''),
+                'assigned_employees': json.dumps(plan.get('assigned_employees', []))
             }
             
             existing = db_manager.fetch_one(
@@ -452,7 +582,8 @@ class IterationEngine:
                     'created_at': row[8],
                     'executed_at': row[9],
                     'merged_at': row[10],
-                    'approval_id': row[11]
+                    'approval_id': row[11],
+                    'assigned_employees': json.loads(row[12]) if row[12] else []
                 })
             
             conn.close()
@@ -461,6 +592,10 @@ class IterationEngine:
         except Exception as e:
             logger.error(f"[迭代引擎] 获取迭代计划失败: {e}")
             return []
+    
+    def trigger_on_demand_iteration(self) -> Dict:
+        """触发按需迭代"""
+        return self.run_iteration('on_demand')
 
 
 def get_iteration_engine() -> IterationEngine:

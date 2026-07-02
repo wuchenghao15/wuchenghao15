@@ -23,8 +23,8 @@ logger = logging.getLogger(__name__)
 # 创建蓝图
 admin_monitoring_api = Blueprint('admin_monitoring_api', __name__, url_prefix='/api/admin/monitoring')
 
-# 数据库路径
-DB_PATH = '/Users/wuchenghao/Library/CloudStorage/OneDrive-个人/文档/MTSCOS_AI_Project/flask-app/app.db'
+# 数据库路径 - 动态计算确保正确性
+DB_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'app.db')
 
 # ==================== 权限检查装饰器 ====================
 

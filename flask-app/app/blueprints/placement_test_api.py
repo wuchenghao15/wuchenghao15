@@ -15,17 +15,23 @@ placement_test_api = Blueprint('placement_test_api', __name__)
 @placement_test_api.route('/api/placement/test', methods=['POST'])
 def create_placement_test():
     """创建摸底测试"""
-    user_id = session.get('user_id')
-    if not user_id:
-        return jsonify({'error': 'Unauthorized', 'message': '请先登录'}), 401
-    
-    data = request.get_json()
-    subject = data.get('subject')
-    
-    service = get_placement_test_service()
-    test = service.create_placement_test(user_id, subject)
-    
-    return jsonify(test), 201
+    try:
+        user_id = session.get('user_id')
+        if not user_id:
+            return jsonify({'error': 'Unauthorized', 'message': '请先登录'}), 401
+        
+        data = request.get_json() or {}
+        subject = data.get('subject')
+        
+        service = get_placement_test_service()
+        test = service.create_placement_test(user_id, subject)
+        
+        return jsonify({'success': True, **test}), 201
+    except Exception as e:
+        import traceback
+        print(f"创建摸底测试失败: {type(e).__name__}: {e}")
+        print(f"堆栈:\n{traceback.format_exc()}")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @placement_test_api.route('/api/placement/test/adaptive', methods=['POST'])
 def create_adaptive_test():

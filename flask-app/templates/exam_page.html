@@ -483,22 +483,46 @@
 
         async function loadExam(examId) {
             try {
+                console.log('开始加载考试:', examId);
                 const examResponse = await fetch(`/api/exam/exams/${examId}`);
                 const examResult = await examResponse.json();
+                console.log('考试信息:', examResult);
                 
-                if (examResult.success && examResult.data) {
+                if (examResult.success === true || examResult.success === 'true') {
                     examData = examResult.data;
                     totalSeconds = examData.duration * 60;
+                    console.log('考试数据:', examData);
                     
-                    const questionsResponse = await fetch(`/api/exam/exams/${examId}/questions`);
-                    const questionsResult = await questionsResponse.json();
+                    let questionsResponse = await fetch(`/api/exam/exams/${examId}/questions`);
+                    let questionsResult = await questionsResponse.json();
+                    console.log('题目数据:', questionsResult);
                     
-                    if (questionsResult.success && questionsResult.data) {
+                    if (questionsResult.success === true || questionsResult.success === 'true') {
                         questions = questionsResult.data;
-                        await createPaper(examId);
+                        console.log('题目数量:', questions.length);
+                        
+                        if (questions.length === 0) {
+                            console.log('题目为空，创建试卷生成题目...');
+                            await createPaper(examId);
+                            
+                            questionsResponse = await fetch(`/api/exam/exams/${examId}/questions`);
+                            questionsResult = await questionsResponse.json();
+                            if (questionsResult.success === true || questionsResult.success === 'true') {
+                                questions = questionsResult.data;
+                                console.log('重新获取题目成功，数量:', questions.length);
+                            } else {
+                                throw new Error('重新获取题目失败');
+                            }
+                        } else {
+                            await createPaper(examId);
+                        }
+                        
+                        await startPaper(paperId);
                     } else {
                         throw new Error('加载题目失败');
                     }
+                } else {
+                    throw new Error('加载考试失败');
                 }
             } catch (error) {
                 console.error('加载考试失败:', error);
@@ -511,28 +535,40 @@
                 const response = await fetch(`/api/exam/exams/${examId}/papers`, {
                     method: 'POST'
                 });
-                const result = await response.json();
                 
-                if (result.success) {
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('创建试卷失败 - HTTP错误:', response.status, errorText);
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
+                
+                const result = await response.json();
+                console.log('创建试卷结果:', result);
+                
+                if (result.success === true || result.success === 'true') {
                     paperId = result.paper_id;
-                    await startPaper(paperId);
+                    console.log('试卷创建成功，paper_id:', paperId);
                 } else {
-                    throw new Error('创建试卷失败');
+                    throw new Error(result.error || result.message || '创建试卷失败');
                 }
             } catch (error) {
                 console.error('创建试卷失败:', error);
                 alert('创建试卷失败: ' + error.message);
+                throw error;
             }
         }
 
         async function startPaper(paperId) {
             try {
+                console.log('调用startPaper:', paperId);
                 const response = await fetch(`/api/exam/papers/${paperId}/start`, {
                     method: 'POST'
                 });
                 const result = await response.json();
+                console.log('startPaper结果:', result);
                 
-                if (result.success) {
+                if (result.success === true || result.success === 'true') {
+                    console.log('开始考试成功，初始化考试界面');
                     initExam();
                 } else {
                     throw new Error('开始考试失败');
@@ -544,13 +580,22 @@
         }
 
         function initExam() {
+            console.log('initExam - examData:', examData);
+            console.log('initExam - questions数量:', questions.length);
+            
             document.getElementById('exam-title').textContent = examData.title;
             document.getElementById('exam-desc').textContent = examData.description || '暂无描述';
             document.getElementById('exam-duration').textContent = examData.duration;
             document.getElementById('passing-score').textContent = examData.passing_score;
             
             generateQuestionNav();
-            displayQuestion(0);
+            if (questions && questions.length > 0) {
+                document.getElementById('question-count').textContent = `1/${questions.length}`;
+                displayQuestion(0);
+            } else {
+                console.error('题目数组为空');
+                alert('考试没有题目，请联系管理员');
+            }
             startTimer();
         }
 
@@ -830,23 +875,13 @@
                 return;
             }
 
-            for (const [questionId, answer] of Object.entries(answers)) {
-                try {
-                    await fetch(`/api/exam/papers/${paperId}/answer`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ question_id: questionId, answer: answer })
-                    });
-                } catch (e) {
-                    console.error('保存答案失败:', e);
-                }
-            }
-
             try {
                 const response = await fetch(`/api/exam/papers/${paperId}/submit`, {
-                    method: 'POST'
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ answers: answers })
                 });
                 const result = await response.json();
                 

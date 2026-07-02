@@ -4,6 +4,7 @@
 import logging
 from datetime import datetime
 from flask import Blueprint, render_template, request, jsonify, redirect, url_for
+from app.version import VERSION, VERSION_INFO, get_version_info, get_latest_version
 import json
 import sys
 
@@ -28,7 +29,12 @@ class RouteManager:
 
         @main_bp.route('/')
         def index():
-            return render_template('index.html')
+            version_info = get_version_info()
+            latest_version = get_latest_version()
+            return render_template('index.html', 
+                                version=VERSION,
+                                version_info=version_info,
+                                latest_version=latest_version)
 
         @main_bp.route('/dashboard')
         def dashboard():
