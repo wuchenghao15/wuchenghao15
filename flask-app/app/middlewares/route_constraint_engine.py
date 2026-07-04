@@ -527,3 +527,10 @@ def _get_friendly_message(reason: str) -> str:
         if key in reason.lower():
             return msg
     return reason
+
+
+def init_route_constraint_engine(app):
+    """初始化路由约束引擎中间件"""
+    get_constraint_engine()
+    logger.info("路由约束引擎已初始化")
+    return app

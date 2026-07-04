@@ -198,31 +198,51 @@ SUBJECT_TREE = {
     'nine_year': {
         '小学1-2年级': {
             '语文': ['基础知识', '识字写字', '阅读理解', '口语交际', '看图写话'],
-            '数学': ['加减法', '乘法口诀', '认识图形', '钟表时间', '人民币'],
+            '数学': ['加减法', '乘法口诀', '认识图形', '钟表时间', '人民币', '找规律'],
             '英语': ['字母认识', '基础词汇', '日常对话', '简单句型']
         },
         '小学3-4年级': {
             '语文': ['阅读理解', '作文起步', '古诗词', '修辞手法', '口语表达'],
-            '数学': ['乘除法', '分数', '小数', '面积周长', '应用题'],
+            '数学': ['乘除法', '分数', '小数', '面积周长', '应用题', '和差倍问题', '年龄问题'],
             '英语': ['词汇积累', '语法基础', '阅读理解', '写作入门'],
             '科学': ['自然现象', '动植物', '科学实验', '地球科学']
         },
         '小学5-6年级': {
             '语文': ['阅读理解', '作文写作', '古诗词鉴赏', '文言文入门', '文学常识'],
-            '数学': ['分数运算', '小数运算', '几何图形', '比例', '应用题'],
+            '数学': ['分数运算', '小数运算', '几何图形', '比例', '应用题', '鸡兔同笼', '盈亏问题', '植树问题'],
             '英语': ['语法进阶', '阅读理解', '写作', '口语表达'],
             '科学': ['生命科学', '物质科学', '地球与宇宙', '科学探究']
         },
         '初中1年级': {
             '语文': ['现代文阅读', '文言文', '古诗词', '写作', '口语交际'],
-            '数学': ['有理数', '整式', '方程', '几何入门', '函数基础'],
+            '数学': {
+                '有理数': ['正负数', '绝对值', '有理数运算', '数轴'],
+                '整式': ['单项式', '多项式', '整式加减', '幂的运算'],
+                '方程': ['一元一次方程', '二元一次方程组', '应用题'],
+                '几何入门': ['点线面', '角的认识', '相交线平行线'],
+                '函数基础': ['函数概念', '一次函数', '正比例函数'],
+                '勾股定理': ['定理应用', '逆定理', '勾股数', '实际应用'],
+                '平行线性质': ['同位角', '内错角', '同旁内角', '判定定理'],
+                '角平分线定理': ['角平分线性质', '判定', '作图', '综合应用']
+            },
             '英语': ['词汇语法', '阅读理解', '完形填空', '写作', '听力'],
             '物理': ['力学基础', '声学', '光学', '热学'],
             '生物': ['细胞', '生物多样性', '生态系统']
         },
         '初中2年级': {
             '语文': ['现代文阅读', '文言文', '古诗词', '写作', '名著阅读'],
-            '数学': ['函数', '一元一次方程', '不等式', '几何', '统计'],
+            '数学': {
+                '函数': ['一次函数', '反比例函数', '函数图像', '函数应用'],
+                '一元一次方程': ['解方程', '应用题', '含参方程', '综合题'],
+                '不等式': ['一元一次不等式', '不等式组', '应用', '含参问题'],
+                '几何': ['三角形', '四边形', '圆', '相似三角形'],
+                '统计': ['数据收集', '统计图', '平均数', '概率初步'],
+                '将军饮马': ['最短路径', '对称点', '两线段和最小', '实际应用'],
+                '胡不归问题': ['三角函数转化', '最短时间', '沙漠公路模型', '变式训练'],
+                '中点模型': ['中位线', '中线倍长', '斜边中线', '综合应用'],
+                '相似三角形': ['判定定理', '性质应用', '比例线段', '面积比'],
+                '二次函数': ['基本形式', '图像性质', '解析式求法', '最值问题']
+            },
             '英语': ['词汇语法', '阅读理解', '完形填空', '写作', '听力'],
             '物理': ['力学', '电学', '光学', '热学'],
             '化学': ['物质基础', '化学反应', '酸碱盐'],
@@ -230,14 +250,36 @@ SUBJECT_TREE = {
         },
         '初中3年级': {
             '语文': ['现代文阅读', '文言文', '古诗词', '写作', '名著阅读'],
-            '数学': ['函数', '几何', '概率统计', '综合应用'],
+            '数学': {
+                '函数': ['二次函数', '反比例函数', '函数综合', '应用问题'],
+                '几何': ['圆', '相似三角形', '三角函数', '投影'],
+                '概率统计': ['概率计算', '统计图表', '数据分析', '综合应用'],
+                '综合应用': ['函数几何综合', '方程不等式综合', '实际应用'],
+                '拉窗帘模型': ['对称转化', '最值问题', '矩形模型', '变式训练'],
+                '费马点': ['三线段和最小', '等边三角形构造', '旋转法', '实际应用'],
+                '瓜豆原理': ['主动点从动点', '轨迹问题', '旋转缩放', '综合题'],
+                '阿氏圆': ['比例线段', '圆上最值', '构造相似', '拓展应用'],
+                '隐圆模型': ['定角对定边', '到定点定距', '辅助圆', '综合题'],
+                '二次函数最值': ['顶点式', '配方法', '区间最值', '实际应用']
+            },
             '英语': ['词汇语法', '阅读理解', '完形填空', '写作', '听力'],
             '物理': ['力学', '电学', '光学', '热学'],
             '化学': ['化学反应', '酸碱盐', '有机化学']
         },
         '高中1年级': {
             '语文': ['现代文阅读', '文言文', '古诗词', '写作', '名著阅读'],
-            '数学': ['函数', '三角函数', '数列', '立体几何', '概率'],
+            '数学': {
+                '函数': ['函数概念', '单调性', '奇偶性', '周期性'],
+                '三角函数': ['诱导公式', '三角恒等变换', '三角函数图像', '解三角形'],
+                '数列': ['等差数列', '等比数列', '通项公式', '前n项和'],
+                '立体几何': ['空间几何体', '点线面关系', '体积表面积', '空间角'],
+                '概率': ['古典概型', '几何概型', '概率计算', '随机变量'],
+                '导数入门': ['导数概念', '导数公式', '导数运算', '单调性'],
+                '不等式证明': ['比较法', '综合法', '分析法', '均值不等式'],
+                '向量运算': ['向量概念', '向量运算', '数量积', '向量应用'],
+                '复数': ['复数概念', '复数运算', '复数几何意义', '综合应用'],
+                '排列组合': ['排列', '组合', '二项式定理', '概率应用']
+            },
             '英语': ['词汇语法', '阅读理解', '完形填空', '写作', '听力'],
             '物理': ['力学', '电磁学', '热学'],
             '化学': ['化学反应原理', '有机化学'],
@@ -248,7 +290,17 @@ SUBJECT_TREE = {
         },
         '高中2年级': {
             '语文': ['现代文阅读', '文言文', '古诗词', '写作'],
-            '数学': ['导数', '圆锥曲线', '概率统计'],
+            '数学': {
+                '导数': ['导数应用', '单调性极值', '最值问题', '导数综合'],
+                '圆锥曲线': ['椭圆', '双曲线', '抛物线', '综合应用'],
+                '概率统计': ['随机变量分布', '期望方差', '统计推断', '综合题'],
+                '极值点偏移': ['对称函数', '对数平均不等式', '导数构造', '综合题'],
+                '隐零点问题': ['设而不求', '整体代换', '导数应用', '综合题'],
+                '放缩法': ['裂项放缩', '积分放缩', '均值不等式', '不等式证明'],
+                '数列不等式': ['数学归纳法', '放缩法', '递推数列', '综合题'],
+                '解析几何最值': ['距离最值', '面积最值', '参数法', '综合题'],
+                '立体几何向量法': ['空间向量', '法向量', '空间角', '距离计算']
+            },
             '英语': ['词汇语法', '阅读理解', '写作', '听力'],
             '物理': ['力学', '电磁学'],
             '化学': ['化学反应原理', '有机化学'],
@@ -259,7 +311,16 @@ SUBJECT_TREE = {
         },
         '高中3年级': {
             '语文': ['综合复习', '写作冲刺', '真题练习'],
-            '数学': ['综合复习', '真题练习'],
+            '数学': {
+                '综合复习': ['函数综合', '几何综合', '应用题', '真题演练'],
+                '真题练习': ['全国卷', '地方卷', '模拟题', '押题卷'],
+                '导数综合': ['导数与函数', '导数与不等式', '导数与数列', '压轴题'],
+                '圆锥曲线综合': ['最值问题', '定点定值', '存在性问题', '压轴题'],
+                '概率统计综合': ['统计推断', '概率模型', '综合应用', '压轴题'],
+                '数列综合': ['递推数列', '数列不等式', '数学归纳法', '压轴题'],
+                '立体几何综合': ['空间角距离', '体积计算', '综合应用', '压轴题'],
+                '选填压轴': ['函数题', '几何题', '数列题', '创新题']
+            },
             '英语': ['综合复习', '写作冲刺', '听力'],
             '物理': ['综合复习', '真题练习'],
             '化学': ['综合复习', '真题练习'],
@@ -4511,6 +4572,8 @@ def get_subject_practice_questions(subject, limit=10):
 
 def get_custom_practice_questions(subject, question_types, limit=10, topic=None):
     """按自定义条件获取练习题目"""
+    questions = []
+    
     try:
         with sqlite3.connect(DATABASE_PATH) as conn:
             conn.row_factory = sqlite3.Row
@@ -4539,11 +4602,45 @@ def get_custom_practice_questions(subject, question_types, limit=10, topic=None)
             
             cursor.execute(query, params)
             rows = cursor.fetchall()
-            
-            return [dict(row) for row in rows]
+            questions.extend([dict(row) for row in rows])
     except Exception as e:
-        logger.error(f"获取自定义练习题目失败: {e}")
-        return []
+        logger.error(f"从questions表获取自定义练习题目失败: {e}")
+    
+    if len(questions) < limit:
+        try:
+            with sqlite3.connect(DATABASE_PATH) as conn:
+                conn.row_factory = sqlite3.Row
+                cursor = conn.cursor()
+                
+                remaining = limit - len(questions)
+                
+                query = 'SELECT * FROM knowledge_base_questions WHERE subject = ?'
+                params = [subject]
+                
+                if question_types and len(question_types) > 0:
+                    type_placeholders = ','.join(['?'] * len(question_types))
+                    query += f' AND question_type IN ({type_placeholders})'
+                    params.extend(question_types)
+                
+                if topic:
+                    query += ' AND (topic LIKE ? OR question_text LIKE ?)'
+                    params.extend([f'%{topic}%', f'%{topic}%'])
+                
+                query += ' ORDER BY RANDOM() LIMIT ?'
+                params.append(remaining)
+                
+                cursor.execute(query, params)
+                rows = cursor.fetchall()
+                
+                for row in rows:
+                    row_dict = dict(row)
+                    row_dict['content'] = row_dict.get('question_text', '')
+                    row_dict['type'] = row_dict.get('question_type', 'single_choice')
+                    questions.append(row_dict)
+        except Exception as e:
+            logger.error(f"从knowledge_base_questions表获取自定义练习题目失败: {e}")
+    
+    return questions[:limit]
 
 
 def ai_calculate_duration(question_count, question_types):
@@ -4577,65 +4674,245 @@ def generate_listening_text(subject, topic, sub_topic=None):
         '日语': {
             'N5': [
                 {
-                    'dialogue': 'A: こんにちは。\nB: こんにちは。\nA: あなたは学生ですか。\nB: はい、学生です。',
+                    'dialogue': 'A: こんにちは。\nB: こんにちは。\nA: あなたは学生ですか。\nB: はい、大学生です。',
                     'question': 'Bは何ですか？',
-                    'options': ['学生', '先生', '会社員', '医者'],
+                    'options': ['学生', '会社員', '教師', '医者'],
                     'answer': 'A'
                 },
                 {
-                    'dialogue': 'A: これは何ですか。\nB: りんごです。\nA: どれですか。\nB: 赤いりんごです。',
+                    'dialogue': 'A: これは何ですか。\nB: りんごです。\nA: どれですか。\nB: 一番大きい赤いりんごです。',
                     'question': 'りんごは何色ですか？',
                     'options': ['赤い', '青い', '黄色い', '緑の'],
                     'answer': 'A'
                 },
                 {
-                    'dialogue': 'A: いくらですか。\nB: 100円です。\nA: 二つください。',
-                    'question': 'いくらですか？',
-                    'options': ['100円', '200円', '300円', '50円'],
-                    'answer': 'B'
+                    'dialogue': 'A: いくらですか。\nB: 一個100円です。\nA: 三つください。',
+                    'question': '合計いくらですか？',
+                    'options': ['300円', '200円', '100円', '400円'],
+                    'answer': 'A'
                 },
                 {
-                    'dialogue': 'A: 何時ですか。\nB: 9時です。\nA: ありがとうございます。',
+                    'dialogue': 'A: 何時ですか。\nB: 午前9時です。\nA: ありがとうございます。',
                     'question': '今は何時ですか？',
-                    'options': ['8時', '9時', '10時', '7時'],
-                    'answer': 'B'
+                    'options': ['9時', '10時', '8時', '11時'],
+                    'answer': 'A'
                 },
                 {
-                    'dialogue': 'A: どこへ行きますか。\nB: 学校へ行きます。\nA: 一緒に行きましょう。',
+                    'dialogue': 'A: どこへ行きますか。\nB: 学校へ行きます。\nA: 自転車で行きますか？\nB: はい、毎日自転車で行きます。',
                     'question': 'Bはどこへ行きますか？',
                     'options': ['学校', '会社', '図書館', '病院'],
+                    'answer': 'A'
+                },
+                {
+                    'dialogue': 'A: 何を食べますか。\nB: ラーメンを食べます。\nA: 何味ですか。\nB: 醤油味です。',
+                    'question': 'Bは何を食べますか？',
+                    'options': ['ラーメン', 'うどん', 'そば', 'カレー'],
+                    'answer': 'A'
+                },
+                {
+                    'dialogue': 'A: 今日はいい天気ですね。\nB: はい、とても快適です。\nA: 公園に行きませんか。',
+                    'question': '今日の天気はどうですか？',
+                    'options': ['いい', '悪い', '雨', '曇り'],
+                    'answer': 'A'
+                },
+                {
+                    'dialogue': 'A: 誰と行きますか。\nB: 母と妹と行きます。\nA: 楽しいですね。',
+                    'question': 'Bは誰と行きますか？',
+                    'options': ['家族', '友達', '同僚', '先生'],
+                    'answer': 'A'
+                },
+                {
+                    'dialogue': 'A: 何曜日ですか。\nB: 水曜日です。\nA: 明日は木曜日ですね。\nB: はい、そうです。',
+                    'question': '今日は何曜日ですか？',
+                    'options': ['水曜日', '木曜日', '火曜日', '金曜日'],
+                    'answer': 'A'
+                },
+                {
+                    'dialogue': 'A: どのくらいかかりますか。\nB: バスで30分かかります。\nA: 歩いてはどうですか。\nB: 歩いては1時間半です。',
+                    'question': 'バスでどのくらいかかりますか？',
+                    'options': ['30分', '1時間', '1時間半', '2時間'],
+                    'answer': 'A'
+                },
+                {
+                    'dialogue': 'A: 何を見ましたか。\nB: アニメ映画を見ました。\nA: 面白かったですか？\nB: とても面白かったです。',
+                    'question': 'Bは何を見ましたか？',
+                    'options': ['映画', 'テレビ', '本', 'ゲーム'],
+                    'answer': 'A'
+                },
+                {
+                    'dialogue': 'A: どこに住んでいますか。\nB: 東京の渋谷に住んでいます。\nA: 渋谷はにぎやかですね。',
+                    'question': 'Bはどこに住んでいますか？',
+                    'options': ['東京', '大阪', '京都', '横浜'],
+                    'answer': 'A'
+                },
+                {
+                    'dialogue': 'A: 何歳ですか。\nB: 22歳です。\nA: 大学生ですか。\nB: はい、四年生です。',
+                    'question': 'Bは何歳ですか？',
+                    'options': ['22歳', '20歳', '25歳', '18歳'],
+                    'answer': 'A'
+                },
+                {
+                    'dialogue': 'A: 何をしていますか。\nB: 英語を勉強しています。\nA: なぜ勉強していますか。\nB: 来年海外に行くからです。',
+                    'question': 'Bは何をしていますか？',
+                    'options': ['勉強', '仕事', '旅行', '食事'],
+                    'answer': 'A'
+                },
+                {
+                    'dialogue': 'A: どれをくださいか。\nB: 赤いシャツをください。\nA: はい、承知しました。',
+                    'question': 'Bは何をくださいましたか？',
+                    'options': ['赤いシャツ', '青いシャツ', '白いズボン', '黒い靴'],
+                    'answer': 'A'
+                },
+                {
+                    'dialogue': 'A: 何時からですか。\nB: 午後1時からです。\nA: 何時までですか。\nB: 3時までです。',
+                    'question': '何時からですか？',
+                    'options': ['1時', '2時', '3時', '12時'],
+                    'answer': 'A'
+                },
+                {
+                    'dialogue': 'A: 誰が来ますか。\nB: 中学校の友達が来ます。\nA: 久しぶりですね。',
+                    'question': '誰が来ますか？',
+                    'options': ['友達', '家族', '会社の人', '先生'],
+                    'answer': 'A'
+                },
+                {
+                    'dialogue': 'A: 何を買いましたか。\nB: 小説を買いました。\nA: どんな小説ですか？\nB: 推理小説です。',
+                    'question': 'Bは何を買いましたか？',
+                    'options': ['本', '服', '食べ物', '電子機器'],
+                    'answer': 'A'
+                },
+                {
+                    'dialogue': 'A: どのバスで行きますか。\nB: 3番のバスで行きます。\nA: 何時に来ますか。\nB: 8時に来ます。',
+                    'question': 'どのバスで行きますか？',
+                    'options': ['3番', '5番', '2番', '1番'],
+                    'answer': 'A'
+                },
+                {
+                    'dialogue': 'A: 何を飲みますか。\nB: アイスコーヒーを飲みます。\nA: 私も同じにします。',
+                    'question': 'Bは何を飲みますか？',
+                    'options': ['コーヒー', '紅茶', '水', 'ジュース'],
+                    'answer': 'A'
+                },
+                {
+                    'dialogue': 'A: 今日は何をしますか。\nB: 買い物に行きます。\nA: どこへ行きますか。\nB: デパートへ行きます。',
+                    'question': 'Bは何をしますか？',
+                    'options': ['買い物', '勉強', '仕事', '旅行'],
+                    'answer': 'A'
+                },
+                {
+                    'dialogue': 'A: このカメラはいくらですか。\nB: 3万円です。\nA: 高いですね。安くなりませんか。',
+                    'question': 'カメラはいくらですか？',
+                    'options': ['3万円', '2万円', '4万円', '1万円'],
+                    'answer': 'A'
+                },
+                {
+                    'dialogue': 'A: 明日は何をしますか。\nB: 図書館で勉強します。\nA: 一緒に行きませんか。\nB: いいですね。',
+                    'question': 'Bは明日何をしますか？',
+                    'options': ['勉強', '旅行', '買い物', '遊び'],
+                    'answer': 'A'
+                },
+                {
+                    'dialogue': 'A: このレストランは何時までですか。\nB: 夜10時までです。\nA: ありがとうございます。',
+                    'question': 'レストランは何時までですか？',
+                    'options': ['10時', '9時', '11時', '8時'],
+                    'answer': 'A'
+                },
+                {
+                    'dialogue': 'A: 昨日は何をしましたか。\nB: 映画を見に行きました。\nA: 誰と行きましたか。\nB: 妹と行きました。',
+                    'question': 'Bは昨日何をしましたか？',
+                    'options': ['映画を見た', '買い物をした', '勉強をした', '旅行に行った'],
                     'answer': 'A'
                 }
             ],
             'N4': [
                 {
-                    'dialogue': 'A: 昨日、何をしましたか。\nB: 映画を見に行きました。\nA: 誰と行きましたか。\nB: 友達と行きました。',
+                    'dialogue': 'A: 昨日、何をしましたか。\nB: 映画を見に行きました。\nA: どの映画ですか。\nB: アニメ映画です。\nA: 誰と行きましたか。\nB: 大学の友達と行きました。',
                     'question': 'Bは誰と映画を見に行きましたか？',
-                    'options': ['友達', '家族', '会社の人', '先生'],
+                    'options': ['友達', '家族', '会社の人', '恋人'],
                     'answer': 'A'
                 },
                 {
-                    'dialogue': 'A: この本はどこで買いましたか。\nB: 本屋で買いました。\nA: いくらでしたか。\nB: 1500円でした。',
+                    'dialogue': 'A: この本はどこで買いましたか。\nB: 駅前の本屋で買いました。\nA: いくらでしたか。\nB: 1500円でした。\nA: 割引はありましたか。\nB: 会員割引で10%引きでした。',
                     'question': '本はいくらでしたか？',
-                    'options': ['1500円', '1000円', '2000円', '500円'],
+                    'options': ['1500円', '1350円', '1650円', '1000円'],
                     'answer': 'A'
                 },
                 {
-                    'dialogue': 'A: 明日、天気はどうですか。\nB: 晴れるそうです。\nA: そうですか。よかったです。',
-                    'question': '明日の天気はどうですか？',
+                    'dialogue': 'A: 明日、天気はどうですか。\nB: 朝は曇りですが、午後から晴れるそうです。\nA: そうですか。よかったです。\nB: 公園にピクニックに行きますか。',
+                    'question': '明日の午後の天気はどうですか？',
                     'options': ['晴れ', '雨', '曇り', '雪'],
                     'answer': 'A'
                 },
                 {
-                    'dialogue': 'A: 毎日何時に起きますか。\nB: 7時に起きます。\nA: 早起きですね。',
-                    'question': 'Bは毎日何時に起きますか？',
-                    'options': ['7時', '8時', '6時', '9時'],
+                    'dialogue': 'A: 毎日何時に起きますか。\nB: 平日は7時に起きます。\nA: 週末はどうですか。\nB: 週末は9時くらいまで寝ます。\nA: 早起きですね。',
+                    'question': 'Bは平日何時に起きますか？',
+                    'options': ['7時', '8時', '9時', '6時'],
                     'answer': 'A'
                 },
                 {
-                    'dialogue': 'A: このレストランはおいしいですか。\nB: とてもおいしいですよ。\nA: じゃ、ここで食べましょう。',
+                    'dialogue': 'A: このレストランはおいしいですか。\nB: とてもおいしいですよ。\nA: 値段はどうですか。\nB: 少し高いですが、値段相応です。\nA: じゃ、ここで食べましょう。',
                     'question': 'このレストランはどうですか？',
-                    'options': ['おいしい', 'まずい', '高い', '安い'],
+                    'options': ['おいしい', 'まずい', '安い', '混んでいる'],
+                    'answer': 'A'
+                },
+                {
+                    'dialogue': 'A: いつ日本に来ましたか。\nB: 去年の四月に来ました。\nA: どこに住んでいますか。\nB: 東京に住んでいます。\nA: 仕事は何をしていますか。\nB: 会社で働いています。',
+                    'question': 'Bはいつ日本に来ましたか？',
+                    'options': ['去年の四月', '今年の四月', '去年の五月', '今年の五月'],
+                    'answer': 'A'
+                },
+                {
+                    'dialogue': 'A: 何を勉強していますか。\nB: 日本語を勉強しています。\nA: どのくらい勉強していますか。\nB: 一年半勉強しています。\nA: すごいですね。',
+                    'question': 'Bは何を勉強していますか？',
+                    'options': ['日本語', '英語', '数学', '歴史'],
+                    'answer': 'A'
+                },
+                {
+                    'dialogue': 'A: 休日は何をしますか。\nB: よく図書館に行きます。\nA: 本を読むのが好きですか。\nB: はい、小説を読むのが好きです。\nA: 私も読書が好きです。',
+                    'question': 'Bは休日何をしますか？',
+                    'options': ['図書館に行く', '買い物をする', '旅行に行く', 'テレビを見る'],
+                    'answer': 'A'
+                },
+                {
+                    'dialogue': 'A: このコーヒーは美味しいですね。\nB: はい、ここのコーヒーはとても有名です。\nA: いくらですか。\nB: コーヒー一杯450円です。\nA: ちょっと高いですね。',
+                    'question': 'コーヒーはいくらですか？',
+                    'options': ['450円', '500円', '400円', '350円'],
+                    'answer': 'A'
+                },
+                {
+                    'dialogue': 'A: 明日の予定はありますか。\nB: 午前中は会議があります。\nA: 午後はどうですか。\nB: 午後は自由です。\nA: じゃ、午後にお茶でも飲みませんか。',
+                    'question': 'Bは午後はどうですか？',
+                    'options': ['自由', '会議', '出張', '休み'],
+                    'answer': 'A'
+                },
+                {
+                    'dialogue': 'A: 日本の食べ物は好きですか。\nB: はい、とても好きです。\nA: 何が一番好きですか。\nB: 寿司が一番好きです。\nA: 私も寿司が好きです。',
+                    'question': 'Bは何が一番好きですか？',
+                    'options': ['寿司', 'ラーメン', 'うどん', 'カレー'],
+                    'answer': 'A'
+                },
+                {
+                    'dialogue': 'A: 何時に会社に行きますか。\nB: 8時半に行きます。\nA: 何時に帰りますか。\nB: 6時に帰ります。\nA: 長い時間働きますね。',
+                    'question': 'Bは何時に会社に行きますか？',
+                    'options': ['8時半', '9時', '8時', '9時半'],
+                    'answer': 'A'
+                },
+                {
+                    'dialogue': 'A: このバスはどこまで行きますか。\nB: 駅前まで行きます。\nA: 何時に到着しますか。\nB: 約15分で到着します。\nA: ありがとうございます。',
+                    'question': 'バスはどこまで行きますか？',
+                    'options': ['駅前', '病院前', '学校前', 'デパート前'],
+                    'answer': 'A'
+                },
+                {
+                    'dialogue': 'A: 昨日は遅くまで働きましたか。\nB: はい、夜10時まで働きました。\nA: 疲れましたか。\nB: とても疲れました。\nA: 今日は早く帰って休んでください。',
+                    'question': 'Bは昨日何時まで働きましたか？',
+                    'options': ['10時', '9時', '11時', '8時'],
+                    'answer': 'A'
+                },
+                {
+                    'dialogue': 'A: このシャツはいくらですか。\nB: 3000円です。\nA: セールはありますか。\nB: はい、今週末まで20%オフです。\nA: じゃ、買います。',
+                    'question': 'セールはいつまでですか？',
+                    'options': ['今週末まで', '今月末まで', '今週まで', '明日まで'],
                     'answer': 'A'
                 }
             ],
@@ -4739,33 +5016,93 @@ def generate_listening_text(subject, topic, sub_topic=None):
         '英语': {
             '四级': [
                 {
-                    'dialogue': 'A: Excuse me, where is the library?\nB: Go straight ahead and turn left at the corner.\nA: Thank you very much.\nB: You\'re welcome.',
+                    'dialogue': 'A: Excuse me, could you tell me where the library is?\nB: Sure. Go straight ahead for two blocks and turn left at the traffic light.\nA: Is it near the bookstore?\nB: Yes, it\'s right next to it.\nA: Thank you very much.\nB: You\'re welcome.',
                     'question': 'Where should the man turn?',
-                    'options': ['Left', 'Right', 'Straight', 'Back'],
+                    'options': ['Left at the traffic light', 'Right at the corner', 'Straight ahead', 'Back the same way'],
                     'answer': 'A'
                 },
                 {
-                    'dialogue': 'A: What time is the meeting?\nB: It starts at 2 o\'clock in the afternoon.\nA: Is that correct?\nB: Yes, that\'s right.',
+                    'dialogue': 'A: What time is the meeting scheduled for?\nB: It starts at 2 o\'clock in the afternoon.\nA: Is that in the main conference room?\nB: No, it\'s in room 305 on the third floor.\nA: Okay, I\'ll be there on time.',
                     'question': 'When does the meeting start?',
                     'options': ['2 PM', '2 AM', '12 PM', '3 PM'],
                     'answer': 'A'
                 },
                 {
-                    'dialogue': 'A: How much does this book cost?\nB: It\'s fifteen dollars.\nA: Can I pay with a credit card?\nB: Yes, we accept credit cards.',
-                    'question': 'How much is the book?',
+                    'dialogue': 'A: How much does this dictionary cost?\nB: It\'s fifteen dollars.\nA: Can I pay with a credit card?\nB: Yes, we accept all major credit cards.\nA: Great, I\'ll take it.',
+                    'question': 'How much is the dictionary?',
                     'options': ['$15', '$50', '$5', '$25'],
                     'answer': 'A'
                 },
                 {
-                    'dialogue': 'A: Are you coming to the party tonight?\nB: I\'d love to, but I have to work.\nA: That\'s too bad.\nB: Maybe next time.',
+                    'dialogue': 'A: Are you coming to the birthday party tonight?\nB: I\'d love to, but I have to finish my project report.\nA: That\'s too bad. It\'ll be a lot of fun.\nB: Maybe next time. I really need to get this done.\nA: Okay, good luck with your report.',
                     'question': 'Why can\'t the woman go to the party?',
-                    'options': ['She has to work', 'She is sick', 'She is tired', 'She has no money'],
+                    'options': ['She has to work on a report', 'She is sick', 'She is tired', 'She has another appointment'],
                     'answer': 'A'
                 },
                 {
-                    'dialogue': 'A: What kind of music do you like?\nB: I like classical music.\nA: Really? I prefer pop music.\nB: Everyone has different tastes.',
+                    'dialogue': 'A: What kind of music do you usually listen to?\nB: I like classical music, especially Beethoven.\nA: Really? I prefer pop and rock music.\nB: Everyone has different tastes, I guess.\nA: Yeah, that\'s true.',
                     'question': 'What kind of music does the woman like?',
                     'options': ['Classical', 'Pop', 'Rock', 'Jazz'],
+                    'answer': 'A'
+                },
+                {
+                    'dialogue': 'A: How was your weekend?\nB: It was great! I went hiking in the mountains.\nA: Did you go alone?\nB: No, I went with my friends.\nA: That sounds fun.\nB: It was really beautiful up there.',
+                    'question': 'What did the woman do over the weekend?',
+                    'options': ['Went hiking', 'Went shopping', 'Stayed home', 'Visited family'],
+                    'answer': 'A'
+                },
+                {
+                    'dialogue': 'A: Do you have any plans for summer vacation?\nB: Yes, I\'m planning to travel to Europe.\nA: Which countries are you visiting?\nB: I\'m going to France, Italy, and Spain.\nA: That sounds amazing!\nB: I\'m really looking forward to it.',
+                    'question': 'Where is the woman planning to go?',
+                    'options': ['Europe', 'Asia', 'America', 'Africa'],
+                    'answer': 'A'
+                },
+                {
+                    'dialogue': 'A: What are you doing here?\nB: I\'m waiting for my friend.\nA: Is she coming soon?\nB: She said she\'d be here at 3 o\'clock.\nA: It\'s already 3:15.\nB: She must be stuck in traffic.',
+                    'question': 'Who is the woman waiting for?',
+                    'options': ['Her friend', 'Her sister', 'Her boss', 'Her teacher'],
+                    'answer': 'A'
+                },
+                {
+                    'dialogue': 'A: This coffee is delicious!\nB: I\'m glad you like it. It\'s from Colombia.\nA: How much does it cost?\nB: A cup is $4.50.\nA: That\'s a bit expensive, but it\'s worth it.',
+                    'question': 'How much is a cup of coffee?',
+                    'options': ['$4.50', '$5.00', '$4.00', '$3.50'],
+                    'answer': 'A'
+                },
+                {
+                    'dialogue': 'A: When did you arrive in New York?\nB: I arrived yesterday morning.\nA: How was your flight?\nB: It was long, but comfortable.\nA: Are you staying for business or pleasure?\nB: Business. I have a conference to attend.',
+                    'question': 'When did the woman arrive?',
+                    'options': ['Yesterday morning', 'Yesterday afternoon', 'Today morning', 'Today afternoon'],
+                    'answer': 'A'
+                },
+                {
+                    'dialogue': 'A: What time do you usually get up?\nB: I usually get up at 7 o\'clock.\nA: Do you exercise in the morning?\nB: Yes, I jog for about 30 minutes.\nA: That\'s a good habit.\nB: I feel more energized after exercising.',
+                    'question': 'What time does the woman get up?',
+                    'options': ['7 o\'clock', '8 o\'clock', '6 o\'clock', '9 o\'clock'],
+                    'answer': 'A'
+                },
+                {
+                    'dialogue': 'A: Where did you buy that dress?\nB: I bought it at the mall downtown.\nA: It looks really nice on you.\nB: Thank you! It was on sale for 50% off.\nA: That was a good deal!\nB: I thought so too.',
+                    'question': 'Where did the woman buy the dress?',
+                    'options': ['At the mall', 'Online', 'At a boutique', 'At a thrift store'],
+                    'answer': 'A'
+                },
+                {
+                    'dialogue': 'A: How often do you read books?\nB: I read at least one book a week.\nA: What kind of books do you like?\nB: I enjoy reading novels and biographies.\nA: Me too! Do you have any recommendations?\nB: Sure, I just finished a great mystery novel.',
+                    'question': 'How often does the woman read?',
+                    'options': ['Once a week', 'Twice a week', 'Once a month', 'Every day'],
+                    'answer': 'A'
+                },
+                {
+                    'dialogue': 'A: What are you going to do after class?\nB: I\'m going to the gym.\nA: Do you go there every day?\nB: No, I go three times a week.\nA: That\'s good. I should exercise more.\nB: You should come with me sometime.',
+                    'question': 'What is the woman going to do?',
+                    'options': ['Go to the gym', 'Go to the library', 'Go shopping', 'Go home'],
+                    'answer': 'A'
+                },
+                {
+                    'dialogue': 'A: Did you watch the movie last night?\nB: Yes, I did. It was really interesting.\nA: What was it about?\nB: It was a sci-fi movie about space exploration.\nA: I love sci-fi movies! Was it scary?\nB: No, it was more exciting than scary.',
+                    'question': 'What kind of movie did the woman watch?',
+                    'options': ['Sci-fi', 'Horror', 'Comedy', 'Romance'],
                     'answer': 'A'
                 }
             ],
@@ -4877,8 +5214,8 @@ def generate_listening_text(subject, topic, sub_topic=None):
     return listening_templates.get(subject, {}).get('N5', [])
 
 
-def generate_listening_with_audio(subject, topic=None, question_count=5):
-    """生成听力题并同步生成音频文件"""
+def generate_listening_with_audio(subject, topic=None, question_count=5, accent='standard', voice='female'):
+    """生成听力题并同步生成音频文件，支持多口音和多音色"""
     templates = generate_listening_text(subject, topic)
     
     questions = []
@@ -4892,11 +5229,11 @@ def generate_listening_with_audio(subject, topic=None, question_count=5):
         
         try:
             import asyncio
-            logger.info(f"开始生成听力音频: subject={subject}, index={i}")
-            audio_bytes = asyncio.run(generate_audio(template['dialogue'], subject))
+            logger.info(f"开始生成听力音频: subject={subject}, accent={accent}, index={i}")
+            audio_bytes = asyncio.run(generate_audio(template['dialogue'], subject, accent, voice))
             if audio_bytes:
                 import hashlib
-                filename = hashlib.md5((template['dialogue'] + str(i)).encode()).hexdigest() + '.mp3'
+                filename = hashlib.md5((template['dialogue'] + accent + voice + str(i)).encode()).hexdigest() + '.mp3'
                 filepath = os.path.join(static_dir, 'audio', 'listening', filename)
                 
                 os.makedirs(os.path.dirname(filepath), exist_ok=True)
@@ -4915,32 +5252,89 @@ def generate_listening_with_audio(subject, topic=None, question_count=5):
         question = {
             'id': f'LISTEN_{user_id}_{i}_{int(time.time())}',
             'type': 'listening',
-            'content': f"{template['dialogue']}\n\nQuestion: {template['question']}",
+            'content': template['question'],
             'options': [{'A': template['options'][0]}, {'B': template['options'][1]}, 
                         {'C': template['options'][2]}, {'D': template['options'][3]}],
             'correct_answer': template['answer'],
             'audio_url': audio_url,
             'explanation': f"正确答案: {template['options'][0]}",
-            'points': 2.0,
-            'subject': subject
+            'points': template.get('points', 2.0),
+            'subject': subject,
+            'transcript': template['dialogue'],
+            'accent': accent,
+            'voice': voice
         }
         questions.append(question)
     
     return questions
 
 
-async def generate_audio(text, language='zh-CN', voice=''):
-    """使用edge-tts生成音频"""
+async def generate_audio(text, language='zh-CN', accent='standard', voice=''):
+    """使用edge-tts生成音频，支持多口音"""
     try:
         import edge_tts
         
         voice_map = {
-            '日语': 'ja-JP-NanamiNeural',
-            '英语': 'en-US-JennyNeural',
-            '中文': 'zh-CN-XiaoxiaoNeural'
+            '日语': {
+                'kanto': {
+                    'female': 'ja-JP-NanamiNeural',
+                    'male': 'ja-JP-KeitaNeural'
+                },
+                'kansai': {
+                    'female': 'ja-JP-NanamiNeural',
+                    'male': 'ja-JP-KeitaNeural'
+                },
+                'standard': {
+                    'female': 'ja-JP-NanamiNeural',
+                    'male': 'ja-JP-KeitaNeural'
+                }
+            },
+            '英语': {
+                'us': {
+                    'female': 'en-US-JennyNeural',
+                    'male': 'en-US-GuyNeural'
+                },
+                'uk': {
+                    'female': 'en-GB-SoniaNeural',
+                    'male': 'en-GB-RyanNeural'
+                },
+                'australia': {
+                    'female': 'en-AU-TanyaNeural',
+                    'male': 'en-AU-WilliamNeural'
+                },
+                'canada': {
+                    'female': 'en-CA-ClaraNeural',
+                    'male': 'en-CA-LiamNeural'
+                },
+                'india': {
+                    'female': 'en-IN-PriyaNeural',
+                    'male': 'en-IN-RajNeural'
+                },
+                'standard': {
+                    'female': 'en-US-JennyNeural',
+                    'male': 'en-US-GuyNeural'
+                }
+            },
+            '中文': {
+                'standard': {
+                    'female': 'zh-CN-XiaoxiaoNeural',
+                    'male': 'zh-CN-YunxiNeural'
+                },
+                'cantonese': {
+                    'female': 'zh-HK-HiuMaanNeural',
+                    'male': 'zh-HK-WanLungNeural'
+                },
+                'taiwan': {
+                    'female': 'zh-TW-HsiaoChenNeural',
+                    'male': 'zh-TW-YunJheNeural'
+                }
+            }
         }
         
-        selected_voice = voice_map.get(language, voice_map['中文'])
+        lang_map = voice_map.get(language, voice_map['中文'])
+        accent_map = lang_map.get(accent, lang_map['standard'])
+        
+        selected_voice = accent_map.get('female', list(accent_map.values())[0])
         if voice:
             selected_voice = voice
         
@@ -5009,6 +5403,8 @@ def api_generate_listening():
     topic = data.get('topic')
     sub_topic = data.get('sub_topic')
     question_count = data.get('question_count', 5)
+    accent = data.get('accent', 'standard')
+    voice = data.get('voice', 'female')
     
     if not subject:
         return jsonify({'success': False, 'message': '请选择科目'}), 400
@@ -5024,10 +5420,10 @@ def api_generate_listening():
         audio_url = None
         
         try:
-            audio_bytes = asyncio.run(generate_audio(template['dialogue'], subject))
+            audio_bytes = asyncio.run(generate_audio(template['dialogue'], subject, accent, voice))
             if audio_bytes:
                 import hashlib
-                filename = hashlib.md5((template['dialogue'] + str(i)).encode()).hexdigest() + '.mp3'
+                filename = hashlib.md5((template['dialogue'] + accent + voice + str(i)).encode()).hexdigest() + '.mp3'
                 filepath = os.path.join(static_dir, 'audio', 'listening', filename)
                 
                 os.makedirs(os.path.dirname(filepath), exist_ok=True)
@@ -5041,14 +5437,17 @@ def api_generate_listening():
         question = {
             'id': f'LISTEN_{user_id}_{i}_{int(time.time())}',
             'type': 'listening',
-            'content': f"{template['dialogue']}\n\nQuestion: {template['question']}",
+            'content': template['question'],
             'options': [{'A': template['options'][0]}, {'B': template['options'][1]}, 
                         {'C': template['options'][2]}, {'D': template['options'][3]}],
             'correct_answer': template['answer'],
             'audio_url': audio_url,
             'explanation': f"正确答案: {template['options'][0]}",
-            'points': 2.0,
-            'subject': subject
+            'points': template.get('points', 2.0),
+            'subject': subject,
+            'transcript': template['dialogue'],
+            'accent': accent,
+            'voice': voice
         }
         questions.append(question)
     
@@ -5388,7 +5787,10 @@ def get_user_stats(user_id):
         'streak_days': 1,
         'daily_chances': 3,
         'overall_progress': 35,
-        'weekly_progress': 60
+        'weekly_progress': 60,
+        'daily_completed': 0,
+        'daily_target': 10,
+        'daily_time': 0
     }
     
     try:
@@ -5418,6 +5820,49 @@ def get_user_stats(user_id):
                 stats['points'] = result[0] if result else 100
             except Exception:
                 stats['points'] = 100
+            
+            # 获取今日日期
+            today = datetime.now().strftime('%Y-%m-%d')
+            
+            # 今日已完成练习题数（从daily_practice_records）
+            try:
+                cursor.execute('SELECT SUM(completed_count) FROM daily_practice_records WHERE record_date = ?', (today,))
+                result = cursor.fetchone()[0]
+                stats['daily_completed'] = result if result else 0
+            except Exception:
+                stats['daily_completed'] = 0
+            
+            # 如果daily_practice_records没有数据，从exam_sessions获取今日完成的题目数
+            if stats['daily_completed'] == 0:
+                try:
+                    cursor.execute('''
+                        SELECT COALESCE(SUM(question_count), 0) FROM exam_sessions 
+                        WHERE user_id = ? AND status = "completed" AND DATE(start_time) = ?
+                    ''', (user_id, today))
+                    result = cursor.fetchone()[0]
+                    stats['daily_completed'] = result if result else 0
+                except Exception:
+                    pass
+            
+            # 从learning_progress获取今日学习时间
+            try:
+                cursor.execute('SELECT SUM(total_duration) FROM learning_progress WHERE user_id = ?', (user_id,))
+                result = cursor.fetchone()[0]
+                if result:
+                    stats['daily_time'] = int(result / 60) if result > 60 else 15
+            except Exception:
+                stats['daily_time'] = 15 if stats['daily_completed'] > 0 else 0
+            
+            # 计算连续学习天数
+            try:
+                cursor.execute('''
+                    SELECT COUNT(DISTINCT DATE(start_time)) FROM exam_sessions 
+                    WHERE user_id = ? AND status = "completed" AND start_time >= DATE('now', '-30 days')
+                ''', (user_id,))
+                result = cursor.fetchone()[0]
+                stats['streak_days'] = result if result else 1
+            except Exception:
+                stats['streak_days'] = 1
                 
     except Exception as e:
         logger.error(f"获取用户统计数据失败: {e}")
@@ -7710,12 +8155,14 @@ def submit_exam_paper(paper_id):
             
             total_score = 0
             total_points = 0
+            correct_count = 0
             
             for q in questions:
                 q_id, correct, pts = q
                 total_points += pts
                 if q_id in answers and answers[q_id] == correct:
                     total_score += pts
+                    correct_count += 1
             
             # 更新试卷
             cursor.execute('''
@@ -7727,6 +8174,21 @@ def submit_exam_paper(paper_id):
                     submitted_at = datetime('now')
                 WHERE id = ?
             ''', (json.dumps(answers), json.dumps({'total': total_score, 'max': total_points}), paper_id))
+            
+            # 获取考试信息以记录练习
+            cursor.execute('SELECT title, subject FROM exams WHERE id = ?', (exam_id,))
+            exam_info = cursor.fetchone()
+            exam_title = exam_info[0] if exam_info else '未知考试'
+            exam_subject = exam_info[1] if exam_info else '综合'
+            
+            # 记录每日练习数据
+            today = datetime.now().strftime('%Y-%m-%d')
+            cursor.execute('''
+                INSERT OR REPLACE INTO daily_practice_records 
+                (record_date, subject, completed_count, total_count, accuracy_rate, created_at)
+                VALUES (?, ?, ?, ?, ?, datetime('now'))
+            ''', (today, exam_subject, correct_count, len(questions), (correct_count / len(questions) * 100) if len(questions) > 0 else 0))
+            
             conn.commit()
             
             accuracy = (total_score / total_points * 100) if total_points > 0 else 0
@@ -13616,6 +14078,20 @@ try:
 except Exception as e:
     logger.error(f"✗ 注册蓝图 local_agent_api 失败: {e}")
 
+try:
+    from app.api.version_agent_api import version_agent_api
+    app.register_blueprint(version_agent_api)
+    logger.info("✓ 注册蓝图: version_agent_api")
+except Exception as e:
+    logger.error(f"✗ 注册蓝图 version_agent_api 失败: {e}")
+
+try:
+    from app.api.automation_plan_api import automation_plan_api
+    app.register_blueprint(automation_plan_api)
+    logger.info("✓ 注册蓝图: automation_plan_api")
+except Exception as e:
+    logger.error(f"✗ 注册蓝图 automation_plan_api 失败: {e}")
+
 # ==================== AI布局管理员工模块 ====================
 
 def require_layout_admin():
@@ -13899,6 +14375,24 @@ if __name__ == '__main__':
         logger.error(f"[初始化] 统一初始化失败: {e}")
         print(f"[ERROR] 统一初始化失败: {e}")
     
+    def _init_agents():
+        """初始化AI Agent"""
+        try:
+            from ai_engines.version_agent_ai import version_agent_ai
+            logger.info("[初始化] VersionAgentAI 已启动")
+            print("[INFO] VersionAgentAI 已启动")
+        except Exception as e:
+            logger.error(f"[初始化] VersionAgentAI启动失败: {e}")
+            print(f"[ERROR] VersionAgentAI启动失败: {e}")
+        
+        try:
+            from ai_engines.automation_plan_agent import automation_plan_agent
+            logger.info("[初始化] AutomationPlanAgent 已启动")
+            print("[INFO] AutomationPlanAgent 已启动")
+        except Exception as e:
+            logger.error(f"[初始化] AutomationPlanAgent启动失败: {e}")
+            print(f"[ERROR] AutomationPlanAgent启动失败: {e}")
+    
     parser = argparse.ArgumentParser()
     parser.add_argument('--port', type=int, default=8888, help='端口号')
     parser.add_argument('--ssl', action='store_true', help='启用SSL/TLS加密')
@@ -13947,7 +14441,7 @@ if __name__ == '__main__':
             print(f"[ERROR] 密钥: {args.ssl_key}")
             print(f"[INFO] 回退到HTTP模式")
             print(f"[INFO] 服务器运行在 http://0.0.0.0:{args.port}")
-            app.run(host='::', port=args.port, debug=False, use_reloader=False)
+            app.run(host='0.0.0.0', port=args.port, debug=False, use_reloader=False)
     else:
         print(f"[INFO] 服务器运行在 http://0.0.0.0:{args.port}")
-        app.run(host='::', port=args.port, debug=False, use_reloader=False)
+        app.run(host='0.0.0.0', port=args.port, debug=False, use_reloader=False)

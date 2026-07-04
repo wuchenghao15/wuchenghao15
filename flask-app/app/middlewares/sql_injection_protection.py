@@ -114,3 +114,8 @@ class SQLInjectionProtection:
 
 
 sql_injection_protection = SQLInjectionProtection()
+
+def init_sql_injection_protection(app):
+    """初始化SQL注入防护中间件"""
+    sql_injection_protection.protect(app)
+    return app

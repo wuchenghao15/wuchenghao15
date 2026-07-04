@@ -455,3 +455,9 @@ def get_permission_info() -> dict:
         'education_system': _get_user_education_system(user_id),
         'grade': session.get('grade'),
     }
+
+
+def init_permission_decorators(app):
+    """初始化权限装饰器中间件"""
+    logger.info("权限装饰器中间件已注册")
+    return app

@@ -3,9 +3,9 @@
 系统版本管理模块
 """
 
-VERSION = "5.1.0"
-BUILD_NUMBER = "20260629"
-RELEASE_DATE = "2026-06-29"
+VERSION = "5.2.0"
+BUILD_NUMBER = "20260704"
+RELEASE_DATE = "2026-07-04"
 
 VERSION_INFO = {
     'version': VERSION,
@@ -17,6 +17,35 @@ VERSION_INFO = {
 }
 
 CHANGELOG = [
+    {
+        'version': '5.2.0',
+        'date': '2026-07-04',
+        'title': 'AI智能分散数据库与系统维护版本',
+        'changes': [
+            '新增AI智能分散数据库系统 - 按表类型、功能模块、数据热度三维维度分散数据库',
+            '新增数据分散决策AI员工 - 智能决策数据迁移和分片策略',
+            '新增数据迁移执行AI员工 - 安全分批迁移数据，支持MD5一致性校验',
+            '新增查询路由优化AI员工 - 智能路由查询到最优分片',
+            '新增数据库健康监控AI员工 - 实时监控分片健康状态',
+            '创建独立元数据库ai_distributed_db.db - 管理分片元数据和迁移状态',
+            '创建5个分片数据库 - logs.db、exam_behavior.db、ai_engine.db、knowledge.db、core.db',
+            '迁移6张日志表到logs.db分片 - system_logs、access_logs、error_logs、operation_logs、security_audit_logs、change_logs',
+            '优化SQL查询性能 - 替换COUNT(*)为MAX(rowid)避免全表扫描',
+            '修复SQLite线程安全问题 - 所有连接添加check_same_thread=False',
+            '修复SQL双引号陷阱 - 统一使用单引号作为字符串边界',
+            '完善自动配置系统 - 从7步扩展到8步，整合分散数据库系统',
+            '增强版本Agent AI - 版本规则引擎、触发条件、处罚规则',
+            '增强自动化计划Agent - 功能覆盖分析、自动扩展、计划优化',
+            '新增SQLite线程安全修复 - 版本代理和自动化计划代理添加check_same_thread=False',
+            '新增数据库双备份机制 - primary/secondary路径备份',
+            '更新影子系统和沙盒备份 - 保持与主数据库同步',
+            '例行维护优化 - 数据库清理、日志清理、健康检查'
+        ],
+        'security_fixes': [],
+        'breaking_changes': [],
+        'contributors': ['System AI', 'Database AI'],
+        'highlights': ['AI分散数据库', '分片架构', '数据迁移', '系统维护']
+    },
     {
         'version': '5.1.0',
         'date': '2026-06-29',

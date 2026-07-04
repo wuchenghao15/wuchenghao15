@@ -368,12 +368,9 @@
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div class="form-group">
-                            <label class="form-label">教育类型</label>
-                            <select class="form-select" id="education-type" onchange="updateGradeOptions()">
-                                <option value="">请选择教育类型</option>
-                                <option value="nine_year" {% if education_type == 'nine_year' %}selected{% endif %}>九年制义务教育</option>
-                                <option value="adult" {% if education_type == 'adult' %}selected{% endif %}>成人教育</option>
-                            </select>
+                            <label class="form-label">学生组别</label>
+                            <input type="text" class="form-input" readonly value="{% if education_type == 'nine_year' %}九年制义务教育{% elif education_type == 'adult' %}成人教育{% endif %}">
+                            <input type="hidden" id="education-type" value="{{ education_type }}">
                         </div>
                         
                         <div class="form-group">
@@ -510,10 +507,117 @@
     <script>
         const SUBJECT_TREE = {{ subject_tree|tojson|safe }};
         const DEFAULT_EDUCATION_TYPE = '{{ education_type }}';
+        const USER_GRADE = '{{ grade }}';
+        
+        const SUBJECT_QUESTION_TYPE_RULES = {
+            'listening': ['英语', '日语'],
+            'essay': ['语文', '历史', '地理', '政治'],
+            'short_answer': ['语文', '英语', '物理', '化学', '生物', '历史', '地理', '政治', '日语'],
+            'fill_blank': ['语文', '数学', '英语', '物理', '化学', '生物', '历史', '地理', '政治', '日语'],
+            'true_false': ['数学', '英语', '物理', '化学', '生物', '历史', '地理', '政治'],
+            'multiple_choice': ['数学', '英语', '物理', '化学', '生物', '历史', '地理', '政治', '日语'],
+            'single_choice': ['语文', '数学', '英语', '物理', '化学', '生物', '历史', '地理', '政治', '日语']
+        };
+        
+        const TOPIC_KEYWORD_RULES = {
+            'listening': ['听力'],
+            'reading': ['阅读', '阅读理解'],
+            'writing': ['写作', '作文'],
+            'grammar': ['语法'],
+            'vocabulary': ['词汇'],
+            'speaking': ['口语', '口语交际']
+        };
+        
+        const KEYWORD_TO_QUESTION_TYPE = {
+            '听力': 'listening',
+            '阅读': 'single_choice',
+            '阅读理解': 'short_answer',
+            '写作': 'essay',
+            '作文': 'short_answer',
+            '语法': 'fill_blank',
+            '词汇': 'single_choice',
+            '口语': 'short_answer',
+            '口语交际': 'short_answer'
+        };
+        
+        const GRADE_LEVEL_RULES = {
+            'essay': { 'min_grade': '初中1年级' },
+            'short_answer': { 'min_grade': '小学3-4年级' }
+        };
+        
+        const GRADE_ORDER = ['小学1-2年级', '小学3-4年级', '小学5-6年级', '初中1年级', '初中2年级', '初中3年级', '高中1年级', '高中2年级', '高中3年级'];
+        
+        function getGradeLevel(grade) {
+            const index = GRADE_ORDER.indexOf(grade);
+            return index >= 0 ? index : -1;
+        }
+        
+        function isGradeAllowed(grade, minGrade) {
+            const currentLevel = getGradeLevel(grade);
+            const minLevel = getGradeLevel(minGrade);
+            return currentLevel >= minLevel;
+        }
+        
+        function filterQuestionTypesBySubject(subject, grade) {
+            const checkboxes = document.querySelectorAll('#question-types-group .checkbox-item');
+            
+            checkboxes.forEach(item => {
+                const checkbox = item.querySelector('input[type="checkbox"]');
+                const qType = checkbox.value;
+                
+                if (!subject) {
+                    item.style.display = 'flex';
+                    return;
+                }
+                
+                const allowedSubjects = SUBJECT_QUESTION_TYPE_RULES[qType];
+                if (!allowedSubjects || !allowedSubjects.includes(subject)) {
+                    item.style.display = 'none';
+                    checkbox.checked = false;
+                    return;
+                }
+                
+                if (GRADE_LEVEL_RULES[qType]) {
+                    const minGrade = GRADE_LEVEL_RULES[qType].min_grade;
+                    if (!isGradeAllowed(grade, minGrade)) {
+                        item.style.display = 'none';
+                        checkbox.checked = false;
+                        return;
+                    }
+                }
+                
+                item.style.display = 'flex';
+            });
+        }
+        
+        function recommendQuestionTypes(topic, subTopic) {
+            const text = (topic || '') + ' ' + (subTopic || '');
+            const recommendedTypes = new Set();
+            
+            for (const keyword of Object.keys(KEYWORD_TO_QUESTION_TYPE)) {
+                if (text.includes(keyword)) {
+                    recommendedTypes.add(KEYWORD_TO_QUESTION_TYPE[keyword]);
+                }
+            }
+            
+            if (recommendedTypes.size === 0) {
+                recommendedTypes.add('single_choice');
+                recommendedTypes.add('fill_blank');
+            }
+            
+            const checkboxes = document.querySelectorAll('#question-types-group .checkbox-item');
+            checkboxes.forEach(item => {
+                const checkbox = item.querySelector('input[type="checkbox"]');
+                const qType = checkbox.value;
+                
+                if (item.style.display !== 'none') {
+                    checkbox.checked = recommendedTypes.has(qType);
+                }
+            });
+        }
         
         document.addEventListener('DOMContentLoaded', function() {
             if (DEFAULT_EDUCATION_TYPE) {
-                document.getElementById('education-type').value = DEFAULT_EDUCATION_TYPE;
                 updateGradeOptions();
             }
         });
@@ -529,16 +633,36 @@
             subjectSelect.innerHTML = '<option value="">请选择科目</option>';
             topicSelect.innerHTML = '<option value="">请选择具体方向</option>';
             subTopicSelect.innerHTML = '<option value="">请选择细分专题（可选）</option>';
+            filterQuestionTypesBySubject('', '');
             
             if (!educationType || !SUBJECT_TREE[educationType]) return;
             
-            const grades = Object.keys(SUBJECT_TREE[educationType]);
+            let grades = Object.keys(SUBJECT_TREE[educationType]);
+            
+            if (educationType === 'nine_year' && USER_GRADE) {
+                const userGradeIndex = GRADE_ORDER.indexOf(USER_GRADE);
+                if (userGradeIndex >= 0) {
+                    grades = GRADE_ORDER.filter((grade, index) => index <= userGradeIndex);
+                }
+            }
+            
             grades.forEach(grade => {
                 const option = document.createElement('option');
                 option.value = grade;
                 option.textContent = grade;
+                if (grade === USER_GRADE) {
+                    option.selected = true;
+                }
                 gradeSelect.appendChild(option);
             });
+            
+            if (USER_GRADE && grades.includes(USER_GRADE)) {
+                gradeSelect.value = USER_GRADE;
+                updateSubjectOptions();
+            } else if (grades.length === 1) {
+                gradeSelect.value = grades[0];
+                updateSubjectOptions();
+            }
         }
         
         function updateSubjectOptions() {
@@ -551,6 +675,7 @@
             subjectSelect.innerHTML = '<option value="">请选择科目</option>';
             topicSelect.innerHTML = '<option value="">请选择具体方向</option>';
             subTopicSelect.innerHTML = '<option value="">请选择细分专题（可选）</option>';
+            filterQuestionTypesBySubject('', grade);
             
             if (!educationType || !grade || !SUBJECT_TREE[educationType] || !SUBJECT_TREE[educationType][grade]) return;
             
@@ -561,6 +686,11 @@
                 option.textContent = subject;
                 subjectSelect.appendChild(option);
             });
+            
+            if (subjects.length === 1) {
+                subjectSelect.value = subjects[0];
+                updateTopicOptions();
+            }
         }
         
         function updateTopicOptions() {
@@ -573,14 +703,18 @@
             topicSelect.innerHTML = '<option value="">请选择具体方向</option>';
             subTopicSelect.innerHTML = '<option value="">请选择细分专题（可选）</option>';
             
+            filterQuestionTypesBySubject(subject, grade);
+            
             if (!educationType || !grade || !subject) return;
             
             const gradeData = SUBJECT_TREE[educationType][grade];
             if (!gradeData) return;
             
             const subjectData = gradeData[subject];
+            let topics = [];
+            
             if (typeof subjectData === 'object' && !Array.isArray(subjectData)) {
-                const topics = Object.keys(subjectData);
+                topics = Object.keys(subjectData);
                 topics.forEach(topic => {
                     const option = document.createElement('option');
                     option.value = topic;
@@ -588,12 +722,21 @@
                     topicSelect.appendChild(option);
                 });
             } else if (Array.isArray(subjectData)) {
+                topics = subjectData;
                 subjectData.forEach(topic => {
                     const option = document.createElement('option');
                     option.value = topic;
                     option.textContent = topic;
                     topicSelect.appendChild(option);
                 });
+            }
+            
+            if (topics.length === 1) {
+                topicSelect.value = topics[0];
+                updateSubTopicOptions();
+                recommendQuestionTypes(topics[0], '');
+            } else if (subject) {
+                recommendQuestionTypes(subject, '');
             }
         }
         
@@ -621,6 +764,11 @@
                         option.textContent = subTopic;
                         subTopicSelect.appendChild(option);
                     });
+                    
+                    if (subTopics.length === 1) {
+                        subTopicSelect.value = subTopics[0];
+                        recommendQuestionTypes(topic, subTopics[0]);
+                    }
                 }
             }
         }

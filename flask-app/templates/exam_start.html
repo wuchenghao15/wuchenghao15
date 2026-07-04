@@ -648,8 +648,15 @@
             
             document.getElementById('question-number').textContent = index + 1;
             document.getElementById('question-type').textContent = TYPE_MAP[question.type] || question.type;
-            document.getElementById('question-content').textContent = question.content;
             document.getElementById('question-count').textContent = `${index + 1}/${questions.length}`;
+            
+            if (question.type === 'listening') {
+                document.getElementById('question-content').textContent = '';
+                document.getElementById('question-content').style.display = 'none';
+            } else {
+                document.getElementById('question-content').textContent = question.content;
+                document.getElementById('question-content').style.display = 'block';
+            }
             
             displayAudioPlayer(question);
             updateProgress();
@@ -663,18 +670,23 @@
             
             if (question.type === 'listening') {
                 const hasAudioUrl = question.audio_url && question.audio_url.trim();
+                const accentText = question.accent ? ` (${question.accent === 'us' ? '美式' : question.accent === 'uk' ? '英式' : question.accent === 'kanto' ? '关东腔' : question.accent === 'kansai' ? '关西腔' : question.accent})` : '';
                 container.innerHTML = `
                     <div class="audio-player">
                         <button class="audio-button" id="audio-btn" onclick="toggleAudio()">
                             <i class="fas fa-play"></i>
                         </button>
                         <div class="audio-info">
-                            <div class="audio-title">🎧 ${hasAudioUrl ? 'AI生成音频' : '点击播放音频'}</div>
+                            <div class="audio-title">🎧 听力音频${accentText}</div>
                             <div class="audio-progress">
                                 <div class="audio-progress-fill" id="audio-progress-fill"></div>
                             </div>
                             <div class="audio-time" id="audio-time">00:00 / --:--</div>
                         </div>
+                    </div>
+                    <div style="text-align: center; margin-bottom: 15px; color: var(--text-secondary); font-size: 0.9rem;">
+                        <span style="margin-right: 20px;">📌 点击播放按钮听音频</span>
+                        <span>🔄 可多次播放</span>
                     </div>
                 `;
                 audioButton = document.getElementById('audio-btn');
@@ -756,10 +768,11 @@
             const question = questions[currentQuestionIndex];
             if (!question || question.type !== 'listening') return;
             
-            const text = question.content.replace(/\n/g, ' ').replace(/Question:.*/, '');
+            const text = question.transcript || question.content;
+            const cleanText = text.replace(/\n/g, ' ');
             
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'en-GB';
+            const utterance = new SpeechSynthesisUtterance(cleanText);
+            utterance.lang = question.subject === '日语' ? 'ja-JP' : 'en-GB';
             utterance.rate = 0.85;
             utterance.pitch = 1;
             

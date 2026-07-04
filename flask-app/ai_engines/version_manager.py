@@ -299,6 +299,16 @@ class VersionModel:
         self._load_versions()
         self._sync_to_database()
     
+    def _get_app_version(self):
+        """从app/version.py获取当前版本作为单一来源"""
+        try:
+            import sys
+            sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            from app.version import VERSION, RELEASE_DATE
+            return VERSION, RELEASE_DATE
+        except Exception:
+            return None, None
+    
     def _load_versions(self):
         """加载版本数据"""
         version_definitions = [
@@ -324,13 +334,28 @@ class VersionModel:
             {'version': '3.5.0', 'date': '2026-06-03', 'type': 'minor', 'description': '升级版本管理系统v3.0 + 云端同步支持', 'status': 'stable'},
             {'version': '4.0.0', 'date': '2026-06-03', 'type': 'major', 'description': '重大升级：数据库自动加密系统', 'status': 'stable'},
             {'version': '4.1.0', 'date': '2026-06-03', 'type': 'minor', 'description': '新增HTTPS强制登录功能', 'status': 'stable'},
-            {'version': '4.2.0', 'date': '2026-06-04', 'type': 'minor', 'description': '升级版本管理系统v4.0 + 数据库版本历史记录', 'status': 'stable'}
+            {'version': '4.2.0', 'date': '2026-06-04', 'type': 'minor', 'description': '升级版本管理系统v4.0 + 数据库版本历史记录', 'status': 'stable'},
+            {'version': '5.0.0', 'date': '2026-06-26', 'type': 'major', 'description': 'AI维护员工与系统说明书版', 'status': 'stable'},
+            {'version': '5.1.0', 'date': '2026-06-29', 'type': 'minor', 'description': '自动迭代更新版本', 'status': 'stable'}
         ]
         
         for v in version_definitions:
             self.versions[v['version']] = v
         
-        self.current_version = '4.2.0'
+        app_version, release_date = self._get_app_version()
+        if app_version and app_version in self.versions:
+            self.current_version = app_version
+        elif app_version:
+            self.current_version = app_version
+            self.versions[app_version] = {
+                'version': app_version,
+                'date': release_date or datetime.now().strftime('%Y-%m-%d'),
+                'type': 'minor',
+                'description': '自动迭代更新版本',
+                'status': 'stable'
+            }
+        else:
+            self.current_version = '5.1.0'
     
     def _sync_to_database(self):
         """同步版本数据到数据库"""

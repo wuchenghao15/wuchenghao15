@@ -327,7 +327,7 @@ class AIEmployeeAutoGenerator:
     def _get_db_connection(self):
         """获取数据库连接"""
         db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'app.db')
-        conn = sqlite3.connect(db_path)
+        conn = sqlite3.connect(db_path, timeout=10.0)
         conn.row_factory = sqlite3.Row
         try:
             yield conn
@@ -360,7 +360,7 @@ class AIEmployeeAutoGenerator:
     def _load_employees_from_database(self):
         """从数据库加载所有AI员工"""
         logger.info("开始从数据库加载AI员工...")
-        
+
         try:
             with self._get_db_connection() as conn:
                 cursor = conn.cursor()
@@ -370,6 +370,7 @@ class AIEmployeeAutoGenerator:
                            created_at, updated_at
                     FROM ai_employees
                     ORDER BY id ASC
+                    LIMIT 100
                 """)
                 
                 rows = cursor.fetchall()
