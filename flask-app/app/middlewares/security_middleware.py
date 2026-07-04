@@ -58,9 +58,18 @@ def rate_limiter_middleware(app):
     """简单的速率限制中间件,防止API滥用"""
     # 存储IP地址和请求计数
     rate_limit_store = {}
+    
+    # 本地IP白名单 - 完全跳过速率限制
+    LOCAL_IPS = ['127.0.0.1', 'localhost', '::1']
 
     @app.before_request
     def rate_limit():
+        ip = request.remote_addr
+        
+        # 本地IP完全跳过速率限制
+        if ip in LOCAL_IPS:
+            return None
+        
         current_time = datetime.now().timestamp()
 
         # 初始化IP记录
@@ -70,14 +79,14 @@ def rate_limiter_middleware(app):
                 'last_cleanup': current_time
             }
 
-        # 清理旧的请求记录(保留1小时内的请求)
-        cleanup_time = current_time - 3600
+        # 清理旧的请求记录(保留1分钟内的请求)
+        cleanup_time = current_time - 60
         rate_limit_store[ip]['requests'] = [r for r in rate_limit_store[ip]['requests'] if r > cleanup_time]
 
-        # 检查速率限制(每小时1000个请求)
-        if len(rate_limit_store[ip]['requests']) >= 1000:
+        # 检查速率限制(每分钟最多100个请求)
+        if len(rate_limit_store[ip]['requests']) >= 100:
             logger.warning(f"速率限制: IP {ip} 超过了请求限制")
-            return '请求过于频繁,请稍后再试', 429
+            return '速率限制已达上限,请稍后再试', 429
 
         # 记录当前请求
         rate_limit_store[ip]['requests'].append(current_time)
@@ -89,18 +98,23 @@ def enhanced_csrf_middleware(app):
     """增强的CSRF保护中间件"""
     @app.before_request
     def csrf_protection():
+        if request.path.startswith('/api/'):
+            return None
+        
         if request.method in ['POST', 'PUT', 'DELETE']:
             # 检查CSRF令牌
             csrf_token = request.form.get('_csrf_token') or request.headers.get('X-CSRF-Token')
             if not csrf_token:
                 logger.warning(f"CSRF保护: 缺少CSRF令牌 - IP: {request.remote_addr}, 方法: {request.method}, URL: {request.url}")
-                return 'CSRF令牌缺失', 403
+                from flask import jsonify
+                return jsonify({'status': 'error', 'message': 'CSRF令牌缺失'}), 403
 
             # 验证CSRF令牌
             from app.utils.security import security_utils
             if not security_utils.verify_csrf_token(csrf_token):
                 logger.warning(f"CSRF保护: 无效的CSRF令牌 - IP: {request.remote_addr}, 方法: {request.method}, URL: {request.url}")
-                return 'CSRF令牌无效', 403
+                from flask import jsonify
+                return jsonify({'status': 'error', 'message': 'CSRF令牌无效'}), 403
 
     logger.info("增强的CSRF保护中间件已注册")
 

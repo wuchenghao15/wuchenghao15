@@ -47,6 +47,7 @@ from flask import send_from_directory
 
 # 创建Flask应用
 app = Flask(__name__)
+
 # 模板文件夹：项目根目录下的 templates 文件夹
 app.template_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
 # 启用模板自动重载（开发环境）
@@ -1329,6 +1330,13 @@ def admin_app_logout():
 # 主页路由
 @app.route('/')
 def index():
+    import traceback
+    from flask import session
+    print(f"[DEBUG INDEX] session keys: {list(session.keys())}")
+    print(f"[DEBUG INDEX] session logged_in: {session.get('logged_in')}")
+    print(f"[DEBUG INDEX] session user_id: {session.get('user_id')}")
+    print(f"[DEBUG INDEX] session role: {session.get('role')}")
+    print(f"[DEBUG INDEX] endpoint: {request.endpoint}")
     from app.version import VERSION, get_version_info, get_latest_version
     version_info = get_version_info()
     latest_version = get_latest_version()
@@ -14091,6 +14099,13 @@ try:
     logger.info("✓ 注册蓝图: automation_plan_api")
 except Exception as e:
     logger.error(f"✗ 注册蓝图 automation_plan_api 失败: {e}")
+
+try:
+    from ai_engines.github_auto_upload_agent import github_upload_bp
+    app.register_blueprint(github_upload_bp)
+    logger.info("✓ 注册蓝图: github_upload_bp")
+except Exception as e:
+    logger.error(f"✗ 注册蓝图 github_upload_bp 失败: {e}")
 
 # ==================== AI布局管理员工模块 ====================
 

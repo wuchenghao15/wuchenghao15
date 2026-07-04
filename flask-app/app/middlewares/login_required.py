@@ -19,11 +19,14 @@ def login_required_middleware(app):
         'auth.logout',
         'auth.login_vikey',
         'main.index',
+        'index',
         'main.vikey_driver_status',
         'main.vikey_install_driver',
         'monitoring.health',
         'static',
     ]
+
+    STATIC_PATHS = ['/static/', '/assets/', '/webfonts/', '/audio/']
 
     @app.before_request
     def check_login():
@@ -36,6 +39,10 @@ def login_required_middleware(app):
 
         if path.startswith('/api/'):
             return None
+
+        for static_path in STATIC_PATHS:
+            if path.startswith(static_path):
+                return None
 
         if endpoint in EXCLUDED_ROUTES:
             return None
