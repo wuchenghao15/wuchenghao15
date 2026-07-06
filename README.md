@@ -16,6 +16,7 @@ MTSCOS AI 智能考试系统是一个基于 Flask 的分布式智能考试管理
 - 🔐 **RBAC权限管理** - 完整的角色权限控制体系
 - 📊 **集群管理** - 多维度监控和负载均衡
 - 🔄 **Git自动同步** - 代码自动提交和推送
+- 🎯 **系统综合增强管理器** - 十大功能模块统一管理 (数据库/端口/集群/多维度/权限/题库/AI集群/AI模型库/前端布局/Git同步)
 
 ## 🏗️ 系统架构
 
@@ -69,6 +70,7 @@ python simple_start.py --port 8888
 - 系统首页: http://localhost:8888/
 - 登录页面: http://localhost:8888/login
 - 系统状态API: http://localhost:8888/api/system/status
+- 增强管理器仪表板: http://localhost:8888/enhancement
 
 ## 📚 API文档
 
@@ -85,6 +87,33 @@ python simple_start.py --port 8888
 ### 数据库管理
 - `GET /api/api_database/status` - API数据库状态
 - `GET /api/routes_database/status` - 路由数据库状态
+
+### 系统增强管理器 (v7.0.0+)
+- `GET /api/enhancement/status` - 增强管理器总览状态
+- `GET /api/enhancement/modules` - 所有功能模块列表
+- `GET /api/enhancement/database/health` - 数据库健康检查
+- `GET /api/enhancement/database/structure?db=system.db` - 表结构分析
+- `GET /api/enhancement/database/index-suggestions?db=system.db` - 索引优化建议
+- `GET /api/enhancement/ports/scan?host=127.0.0.1&range=8000-9000` - 端口扫描
+- `GET /api/enhancement/ports/stats` - 端口使用统计
+- `POST /api/enhancement/ports/allocate` - 分配端口
+- `GET /api/enhancement/cluster/monitor` - 集群状态监控
+- `GET /api/enhancement/cluster/load-balance?strategy=round_robin` - 负载均衡
+- `GET /api/enhancement/system/resources` - 系统资源多维度监控
+- `GET /api/enhancement/system/performance` - 性能分析
+- `GET /api/enhancement/permissions/rules` - 权限规则列表
+- `GET /api/enhancement/permissions/matrix` - 角色权限矩阵
+- `GET /api/enhancement/questions/stats` - 题库统计
+- `GET /api/enhancement/questions/quality?limit=100` - 题目质量评估
+- `GET /api/enhancement/ai-cluster/nodes` - AI节点列表
+- `GET /api/enhancement/ai-cluster/load-balance` - AI负载均衡
+- `GET /api/enhancement/ai-models/versions?model_name=GPT-4` - 模型版本管理
+- `GET /api/enhancement/frontend/layouts` - 前端布局配置
+- `GET /api/enhancement/frontend/themes` - 主题管理
+- `GET /api/enhancement/git/changes` - Git变更检测
+- `POST /api/enhancement/git/commit` - 自动提交
+- `POST /api/enhancement/git/push` - 自动推送
+- `POST /api/enhancement/git/sync` - 一键同步 (提交+推送)
 
 ## 📖 版本历史
 

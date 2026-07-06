@@ -231,6 +231,79 @@ def dashboard_page():
     """仪表板页面"""
     return render_template('dashboard.html')
 
+@app.route('/enhancement')
+@require_login
+def enhancement_dashboard_page():
+    """系统增强管理器仪表板"""
+    return render_template('enhancement_dashboard.html')
+
+# ================ 系统增强管理器 ================
+try:
+    from ai_engines.system_enhancement_api import register_enhancement_blueprint
+    if register_enhancement_blueprint(app):
+        print("  ✓ 系统增强管理器蓝图已注册 (/api/enhancement/*)")
+    else:
+        print("  ! 系统增强管理器蓝图注册失败")
+except Exception as e:
+    logger.warning(f"系统增强管理器加载失败: {e}")
+    print(f"  ! 系统增强管理器加载失败: {e}")
+
+# 初始化增强管理器默认数据
+try:
+    from ai_engines.system_enhancement_manager import system_enhancement_manager
+    # 注册默认端口
+    system_enhancement_manager.allocate_port('mtscos_web', preferred=8888)
+    # 注册默认集群节点
+    system_enhancement_manager.manage_db_cluster('add', {
+        'node_id': 'node_local_01',
+        'node_type': 'master',
+        'address': '127.0.0.1:8888',
+        'status': 'online',
+        'load': 0.0
+    })
+    # 注册默认AI节点
+    system_enhancement_manager.manage_ai_nodes('upsert', {
+        'node_id': 'ai_node_01',
+        'node_name': '本地AI节点',
+        'model': 'gpt-4',
+        'status': 'idle',
+        'load': 0.0,
+        'capacity': 10
+    })
+    # 注册默认前端布局
+    system_enhancement_manager.manage_layout_config('upsert', {
+        'layout_id': 'default_layout',
+        'layout_name': '默认布局',
+        'config': {'sidebar': True, 'header': True, 'footer': False},
+        'theme': 'blue',
+        'is_active': 1
+    })
+    # 注册默认权限规则
+    default_rules = [
+        {'rule_id': 'rule_admin_full', 'role': 'admin', 'resource': '*', 'action_name': '*', 'allowed': 1, 'priority': 100},
+        {'rule_id': 'rule_super_admin_full', 'role': 'super_admin', 'resource': '*', 'action_name': '*', 'allowed': 1, 'priority': 200},
+        {'rule_id': 'rule_student_exam', 'role': 'student', 'resource': '/exam_system', 'action_name': 'GET', 'allowed': 1, 'priority': 50},
+        {'rule_id': 'rule_student_test', 'role': 'student', 'resource': '/exam_system/tests', 'action_name': 'GET', 'allowed': 1, 'priority': 50},
+        {'rule_id': 'rule_teacher_manage', 'role': 'teacher', 'resource': '/teacher', 'action_name': 'GET', 'allowed': 1, 'priority': 60},
+    ]
+    for rule in default_rules:
+        system_enhancement_manager.manage_permission_rules('upsert', rule)
+    # 注册默认AI模型
+    default_models = [
+        {'model_id': 'model_gpt4', 'model_name': 'GPT-4', 'version': '1.0.0', 'status': 'registered', 'performance_score': 95.0, 'config': {'provider': 'openai', 'type': 'llm'}},
+        {'model_id': 'model_gpt35', 'model_name': 'GPT-3.5-Turbo', 'version': '1.0.0', 'status': 'registered', 'performance_score': 88.0, 'config': {'provider': 'openai', 'type': 'llm'}},
+        {'model_id': 'model_claude', 'model_name': 'Claude-3', 'version': '1.0.0', 'status': 'registered', 'performance_score': 93.0, 'config': {'provider': 'anthropic', 'type': 'llm'}},
+        {'model_id': 'model_qwen', 'model_name': 'Qwen-72B', 'version': '1.0.0', 'status': 'registered', 'performance_score': 85.0, 'config': {'provider': 'alibaba', 'type': 'llm'}},
+        {'model_id': 'model_embedding', 'model_name': 'text-embedding-ada-002', 'version': '1.0.0', 'status': 'registered', 'performance_score': 90.0, 'config': {'provider': 'openai', 'type': 'embedding'}},
+        {'model_id': 'model_whisper', 'model_name': 'Whisper', 'version': '1.0.0', 'status': 'registered', 'performance_score': 87.0, 'config': {'provider': 'openai', 'type': 'audio'}},
+    ]
+    for model in default_models:
+        system_enhancement_manager.register_model(model)
+    print("  ✓ 增强管理器默认数据已初始化 (端口/集群/AI节点/布局/权限/6个AI模型)")
+except Exception as e:
+    logger.warning(f"增强管理器默认数据初始化失败: {e}")
+    print(f"  ! 增强管理器默认数据初始化失败: {e}")
+
 print("  ✓ 系统状态API已注册")
 print("  ✓ 配置管理API已注册")
 print("  ✓ 模块管理API已注册")
