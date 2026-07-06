@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MTSCOS 功能拓展中心 - MTSCOS</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --dark: #1e293b;
+            --light: #f8fafc;
+        }
+        body { background: #f1f5f9; font-family: 'Segoe UI', system-ui, sans-serif; }
+        .hub-header {
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
+            color: white; padding: 2.5rem 0; margin-bottom: 1.5rem;
+        }
+        .stat-card {
+            background: white; border-radius: 12px; padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: transform 0.2s;
+        }
+        .stat-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .stat-icon { width: 48px; height: 48px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
+        .category-card {
+            background: white; border-radius: 12px; padding: 1.25rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: all 0.2s; cursor: pointer;
+            border-left: 4px solid var(--primary);
+        }
+        .category-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .feature-table { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .feature-table th { background: #f8fafc; font-weight: 600; color: #475569; padding: 0.75rem; border-bottom: 2px solid #e2e8f0; font-size: 0.85rem; }
+        .feature-table td { padding: 0.6rem 0.75rem; border-bottom: 1px solid #f1f5f9; vertical-align: middle; font-size: 0.875rem; }
+        .feature-table tr:hover { background: #f8fafc; }
+        .badge-status { padding: 0.35em 0.65em; border-radius: 6px; font-size: 0.8em; font-weight: 500; }
+        .status-discovered { background: #e0e7ff; color: #3730a3; }
+        .status-extended { background: #d1fae5; color: #065f46; }
+        .status-running { background: #dbeafe; color: #1e40af; }
+        .nav-tabs .nav-link { border: none; color: #64748b; font-weight: 500; padding: 0.75rem 1.5rem; }
+        .nav-tabs .nav-link.active { color: var(--primary); border-bottom: 3px solid var(--primary); background: transparent; }
+        .nav-tabs .nav-link:hover { border: none; color: var(--primary-dark); }
+        .progress { height: 8px; border-radius: 4px; background: #e2e8f0; }
+        .progress-bar { border-radius: 4px; }
+        .loading { text-align: center; padding: 3rem; color: #94a3b8; }
+        .btn-action { padding: 0.4rem 1rem; font-size: 0.875rem; border-radius: 8px; }
+        .matrix-mini-card {
+            background: white; border-radius: 10px; padding: 1rem; margin-bottom: 1rem;
+            border-left: 4px solid var(--primary); box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+        .toast-container { position: fixed; top: 1rem; right: 1rem; z-index: 9999; }
+        .extension-level-bar {
+            display: inline-flex; gap: 2px;
+        }
+        .level-dot { width: 8px; height: 8px; border-radius: 50%; background: #e2e8f0; }
+        .level-dot.filled { background: var(--primary); }
+        .history-item { padding: 0.75rem; border-left: 3px solid var(--primary); background: #f8fafc; border-radius: 0 8px 8px 0; margin-bottom: 0.5rem; }
+        .spinner-border-sm { width: 1rem; height: 1rem; }
+    </style>
+</head>
+<body>
+    <!-- 头部 -->
+    <div class="hub-header">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-1"><i class="bi bi-diagram-3"></i> MTSCOS 功能拓展中心</h1>
+                    <p class="mb-0 opacity-75">自动发现、拓展和监控所有 MTSCOS 功能模块</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="/ai_cluster_matrix" class="btn btn-light btn-action">
+                        <i class="bi bi-grid-3x3"></i> 集群矩阵
+                    </a>
+                    <button onclick="extendAllFeatures()" class="btn btn-warning btn-action">
+                        <i class="bi bi-lightning-charge"></i> 一键拓展全部
+                    </button>
+                    <button onclick="refreshAll()" class="btn btn-light btn-action">
+                        <i class="bi bi-arrow-clockwise"></i> 刷新
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mb-5">
+        <!-- 概览统计卡片 -->
+        <div class="row g-3 mb-4" id="overviewCards">
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="text-muted small">总功能数</div>
+                            <div class="h3 mb-0 mt-1" id="totalFeatures">-</div>
+                        </div>
+                        <div class="stat-icon bg-primary bg-opacity-10 text-primary">
+                            <i class="bi bi-collection"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="text-muted small">已拓展功能</div>
+                            <div class="h3 mb-0 mt-1" id="extendedFeatures">-</div>
+                        </div>
+                        <div class="stat-icon bg-success bg-opacity-10 text-success">
+                            <i class="bi bi-check-circle"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="text-muted small">功能分类</div>
+                            <div class="h3 mb-0 mt-1" id="totalCategories">-</div>
+                        </div>
+                        <div class="stat-icon bg-info bg-opacity-10 text-info">
+                            <i class="bi bi-folder"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="text-muted small">平均拓展等级</div>
+                            <div class="h3 mb-0 mt-1" id="avgLevel">-</div>
+                        </div>
+                        <div class="stat-icon bg-warning bg-opacity-10 text-warning">
+                            <i class="bi bi-bar-chart"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 集群矩阵集成卡片 -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <div class="matrix-mini-card">
+                    <h6 class="mb-2"><i class="bi bi-people text-primary"></i> AI员工集群矩阵</h6>
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="text-muted small">集群数</span>
+                        <span class="fw-bold" id="empClusters">-</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="text-muted small">员工总数</span>
+                        <span class="fw-bold" id="empTotal">-</span>
+                    </div>
+                    <a href="/ai_cluster_matrix" class="btn btn-sm btn-outline-primary mt-2">查看详情 <i class="bi bi-arrow-right"></i></a>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="matrix-mini-card" style="border-left-color: var(--secondary);">
+                    <h6 class="mb-2"><i class="bi bi-cpu text-success"></i> AI Agent集群矩阵</h6>
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="text-muted small">模板数</span>
+                        <span class="fw-bold" id="agentTemplates">-</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="text-muted small">Agent实例</span>
+                        <span class="fw-bold" id="agentTotal">-</span>
+                    </div>
+                    <div class="progress mb-2">
+                        <div class="progress-bar bg-success" id="agentUtilBar" style="width: 0%"></div>
+                    </div>
+                    <small class="text-muted">容量利用率: <span id="agentUtil">0%</span></small>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="matrix-mini-card" style="border-left-color: var(--warning);">
+                    <h6 class="mb-2"><i class="bi bi-gear text-warning"></i> 自动化集群矩阵</h6>
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="text-muted small">进程数</span>
+                        <span class="fw-bold" id="autoProcesses">-</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="text-muted small">系统状态</span>
+                        <span class="badge badge-status" id="systemStatus">未知</span>
+                    </div>
+                    <button onclick="controlSystem('start')" class="btn btn-sm btn-outline-success mt-2"><i class="bi bi-play"></i> 启动</button>
+                    <button onclick="controlSystem('stop')" class="btn btn-sm btn-outline-danger mt-2"><i class="bi bi-stop"></i> 停止</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 标签页 -->
+        <ul class="nav nav-tabs mb-3" id="mainTabs">
+            <li class="nav-item">
+                <a class="nav-link active" data-bs-toggle="tab" href="#categories">功能分类</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-bs-toggle="tab" href="#features">功能列表</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-bs-toggle="tab" href="#history">拓展历史</a>
+            </li>
+        </ul>
+
+        <div class="tab-content">
+            <!-- 功能分类 -->
+            <div class="tab-pane fade show active" id="categories">
+                <div class="row g-3" id="categoriesGrid">
+                    <div class="loading"><i class="bi bi-arrow-repeat"></i> 加载分类中...</div>
+                </div>
+            </div>
+
+            <!-- 功能列表 -->
+            <div class="tab-pane fade" id="features">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <select class="form-select form-select-sm d-inline-block" style="width: auto;" id="categoryFilter" onchange="loadFeatures()">
+                            <option value="">全部分类</option>
+                        </select>
+                        <select class="form-select form-select-sm d-inline-block ms-2" style="width: auto;" id="typeFilter" onchange="loadFeatures()">
+                            <option value="">全部类型</option>
+                            <option value="route">路由</option>
+                            <option value="template">模板</option>
+                            <option value="ai_engine">AI引擎</option>
+                            <option value="blueprint">Blueprint</option>
+                        </select>
+                    </div>
+                    <span class="text-muted small" id="featureCount">-</span>
+                </div>
+                <div class="feature-table">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>功能ID</th>
+                                <th>名称</th>
+                                <th>类型</th>
+                                <th>分类</th>
+                                <th>状态</th>
+                                <th>拓展等级</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="featuresTableBody">
+                            <tr><td colspan="7" class="loading">选择分类查看功能列表</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 拓展历史 -->
+            <div class="tab-pane fade" id="history">
+                <div id="historyList" class="loading"><i class="bi bi-arrow-repeat"></i> 加载历史中...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast 容器 -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const API_BASE = '/api/mtscos_extension';
+
+        function showToast(message, type = 'info') {
+            const colors = { success: 'bg-success', error: 'bg-danger', warning: 'bg-warning', info: 'bg-info' };
+            const toast = document.createElement('div');
+            toast.className = `toast show ${colors[type] || colors.info} text-white`;
+            toast.style.cssText = 'min-width: 280px; border-radius: 8px; margin-bottom: 0.5rem;';
+            toast.innerHTML = `<div class="toast-body">${message}</div>`;
+            document.getElementById('toastContainer').appendChild(toast);
+            setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 3000);
+        }
+
+        async function fetchAPI(url, method = 'GET') {
+            try {
+                const res = await fetch(url, { method });
+                return await res.json();
+            } catch (e) {
+                showToast(`API请求失败: ${e.message}`, 'error');
+                return null;
+            }
+        }
+
+        async function loadOverview() {
+            const data = await fetchAPI(`${API_BASE}/overview`);
+            if (!data || !data.success) return;
+            const o = data.overview;
+            document.getElementById('totalFeatures').textContent = o.total_features;
+            document.getElementById('extendedFeatures').textContent = o.extended_features;
+            document.getElementById('totalCategories').textContent = Object.keys(o.categories).length;
+            document.getElementById('avgLevel').textContent = o.avg_extension_level;
+
+            // 集群矩阵数据
+            const cm = data.cluster_matrix || {};
+            document.getElementById('empClusters').textContent = cm.employee_clusters || 0;
+            document.getElementById('empTotal').textContent = cm.total_employees || 0;
+            document.getElementById('agentTemplates').textContent = cm.agent_templates || 0;
+            document.getElementById('agentTotal').textContent = cm.total_agents || 0;
+            document.getElementById('agentUtil').textContent = (cm.agent_utilization || 0) + '%';
+            document.getElementById('agentUtilBar').style.width = (cm.agent_utilization || 0) + '%';
+            document.getElementById('autoProcesses').textContent = cm.automation_processes || 0;
+
+            const sysStatus = document.getElementById('systemStatus');
+            if (cm.system_running) {
+                sysStatus.textContent = '运行中';
+                sysStatus.className = 'badge badge-status status-running';
+            } else {
+                sysStatus.textContent = '已停止';
+                sysStatus.className = 'badge badge-status status-stopped';
+            }
+        }
+
+        async function loadCategories() {
+            const data = await fetchAPI(`${API_BASE}/categories`);
+            if (!data || !data.success) return;
+            const grid = document.getElementById('categoriesGrid');
+            const filter = document.getElementById('categoryFilter');
+
+            grid.innerHTML = '';
+            filter.innerHTML = '<option value="">全部分类</option>';
+
+            for (const [catId, cat] of Object.entries(data.categories)) {
+                grid.innerHTML += `
+                    <div class="col-md-3 col-sm-6">
+                        <div class="category-card" onclick="loadFeaturesByCategory('${catId}')" style="border-left-color: var(--${cat.color}, var(--primary));">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <div class="text-muted small">${cat.name}</div>
+                                    <div class="h4 mb-0 mt-1">${cat.feature_count}</div>
+                                </div>
+                                <div class="stat-icon bg-${cat.color} bg-opacity-10 text-${cat.color}">
+                                    <i class="bi ${cat.icon}"></i>
+                                </div>
+                            </div>
+                            <button class="btn btn-sm btn-outline-${cat.color} mt-2 w-100" onclick="event.stopPropagation(); extendCategory('${catId}')">
+                                <i class="bi bi-lightning-charge"></i> 拓展此分类
+                            </button>
+                        </div>
+                    </div>
+                `;
+                filter.innerHTML += `<option value="${catId}">${cat.name} (${cat.feature_count})</option>`;
+            }
+        }
+
+        async function loadFeatures() {
+            const cat = document.getElementById('categoryFilter').value;
+            const type = document.getElementById('typeFilter').value;
+            let url = `${API_BASE}/features?`;
+            if (cat) url += `category=${cat}&`;
+            if (type) url += `type=${type}&`;
+
+            const data = await fetchAPI(url);
+            if (!data || !data.success) return;
+
+            document.getElementById('featureCount').textContent = `共 ${data.total} 个功能`;
+            const tbody = document.getElementById('featuresTableBody');
+
+            if (data.features.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="loading">无匹配功能</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = data.features.slice(0, 100).map(f => {
+                const statusClass = f.status === 'extended' ? 'status-extended' : 'status-discovered';
+                const levelDots = Array.from({length: 5}, (_, i) =>
+                    `<span class="level-dot ${i < f.extension_level ? 'filled' : ''}"></span>`
+                ).join('');
+                return `
+                    <tr>
+                        <td><small class="text-muted">${f.feature_id}</small></td>
+                        <td>${f.feature_name}</td>
+                        <td><span class="badge bg-secondary">${f.feature_type}</span></td>
+                        <td>${f.category}</td>
+                        <td><span class="badge badge-status ${statusClass}">${f.status}</span></td>
+                        <td><span class="extension-level-bar">${levelDots}</span></td>
+                        <td><button class="btn btn-sm btn-outline-primary" onclick="extendFeature('${f.feature_id}')"><i class="bi bi-arrow-up-circle"></i></button></td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function loadFeaturesByCategory(catId) {
+            document.getElementById('categoryFilter').value = catId;
+            loadFeatures();
+            document.querySelector('a[href="#features"]').click();
+        }
+
+        async function extendFeature(featureId) {
+            showToast(`正在拓展功能: ${featureId}...`, 'info');
+            const data = await fetchAPI(`${API_BASE}/extend?feature_id=${featureId}&type=auto`, 'POST');
+            if (data && data.success) {
+                showToast(`拓展成功: ${data.message}`, 'success');
+                loadOverview();
+                loadFeatures();
+            } else {
+                showToast('拓展失败', 'error');
+            }
+        }
+
+        async function extendCategory(category) {
+            showToast(`正在拓展分类: ${category}...`, 'info');
+            const data = await fetchAPI(`${API_BASE}/extend_category?category=${category}`, 'POST');
+            if (data && data.success) {
+                showToast(`分类拓展完成: ${data.success_count} 成功, ${data.fail_count} 失败`, 'success');
+                loadOverview();
+            }
+        }
+
+        async function extendAllFeatures() {
+            if (!confirm('确定要拓展所有功能吗？这可能需要一些时间。')) return;
+            showToast('正在拓展所有功能...', 'info');
+            const btn = event.target.closest('button');
+            const orig = btn.innerHTML;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 拓展中...';
+            btn.disabled = true;
+
+            const data = await fetchAPI(`${API_BASE}/extend_all`, 'POST');
+            btn.innerHTML = orig;
+            btn.disabled = false;
+
+            if (data && data.success) {
+                showToast(`全部拓展完成: ${data.success_count} 成功, ${data.fail_count} 失败`, 'success');
+                loadOverview();
+                loadFeatures();
+            } else {
+                showToast('拓展失败', 'error');
+            }
+        }
+
+        async function loadHistory() {
+            const data = await fetchAPI(`${API_BASE}/history?limit=30`);
+            const el = document.getElementById('historyList');
+            if (!data || !data.success) {
+                el.innerHTML = '<div class="loading">加载失败</div>';
+                return;
+            }
+            if (data.history.length === 0) {
+                el.innerHTML = '<div class="loading">暂无拓展历史</div>';
+                return;
+            }
+            el.innerHTML = data.history.map(h => `
+                <div class="history-item">
+                    <div class="d-flex justify-content-between">
+                        <strong>${h.feature_name || h.feature_id}</strong>
+                        <small class="text-muted">${h.timestamp || ''}</small>
+                    </div>
+                    <div class="small text-muted">等级: ${h.previous_level} → ${h.new_level}</div>
+                    <div class="small">${(h.extensions_applied || []).join('、')}</div>
+                </div>
+            `).join('');
+        }
+
+        async function controlSystem(action) {
+            showToast(`正在${action === 'start' ? '启动' : '停止'}系统...`, 'info');
+            const data = await fetchAPI(`/api/cluster_matrix/system/${action}`, 'POST');
+            if (data && data.success) {
+                showToast(`系统${action === 'start' ? '已启动' : '已停止'}`, 'success');
+                loadOverview();
+            }
+        }
+
+        function refreshAll() {
+            loadOverview();
+            loadCategories();
+            loadFeatures();
+            loadHistory();
+            showToast('已刷新', 'info');
+        }
+
+        // 初始化
+        loadOverview();
+        loadCategories();
+        loadHistory();
+        setInterval(loadOverview, 30000);
+    </script>
+</body>
+</html>

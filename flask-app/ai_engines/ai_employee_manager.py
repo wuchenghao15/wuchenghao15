@@ -21,6 +21,7 @@ from ai_engines.politics_question_employee import PoliticsQuestionEmployee
 from ai_engines.k12_question_employee import K12QuestionEmployee
 from ai_engines.listening_question_employee import ListeningQuestionEmployee
 from ai_engines.rule_base_maintenance_employee import RuleBaseMaintenanceEmployee
+from ai_engines.config_manager_employee import ConfigManagerEmployee
 
 try:
     from ai_engines.test_ai_employee import TestAIEmployee
@@ -81,14 +82,15 @@ class AIEmployeeManager:
             "politics_question": "政治题库AI员工",
             "k12_question": "K12题库AI员工",
             "listening_question": "听力题库AI员工",
-            "rule_base_maintenance": "规则库维护AI员工"
+            "rule_base_maintenance": "规则库维护AI员工",
+            "config_manager": "配置管理AI员工"
         }
         self.task_queue = []
         self.running_tasks = []
         self.employee_levels = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]  # AI级别范围
 
-        # 创建初始AI员工
-        self.create_initial_employees()
+        # 从数据库加载员工，如果数据库为空则创建初始员工
+        self._load_employees_from_database()
 
     def add_employee_to_organizations(self, employee):
         """将AI员工添加到组织结构中"""
@@ -200,6 +202,112 @@ class AIEmployeeManager:
         self._safe_start_employee(rule_base_employee)
         self.add_employee_to_organizations(rule_base_employee)
 
+        # 创建配置管理AI员工 (级别8)
+        config_manager_employee = ConfigManagerEmployee("config_mgr_001", "配置管理AI", "config_manager", 8)
+        config_manager_employee.type = "config_manager"
+        self.employees["config_mgr_001"] = config_manager_employee
+        self._safe_start_employee(config_manager_employee)
+        self.add_employee_to_organizations(config_manager_employee)
+
+    def _parse_json_or_text(self, text):
+        """解析JSON或文本，返回列表"""
+        import json
+        import re
+        
+        if not text:
+            return []
+        try:
+            return json.loads(text)
+        except (json.JSONDecodeError, ValueError):
+            lines = [line.strip() for line in text.strip().split('\n') if line.strip()]
+            result = []
+            for line in lines:
+                cleaned = re.sub(r'^[\d\.\-\•\*]+\s*', '', line)
+                if cleaned:
+                    result.append(cleaned)
+            return result if result else [text]
+
+    def _load_employees_from_database(self):
+        """从数据库加载AI员工"""
+        import sqlite3
+        
+        db_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'app.db')
+        
+        try:
+            conn = sqlite3.connect(db_path)
+            cursor = conn.cursor()
+            
+            cursor.execute('SELECT COUNT(*) FROM ai_employees')
+            count = cursor.fetchone()[0]
+            
+            if count > 0:
+                self.create_initial_employees()
+                logger.info(f"从数据库加载 {count} 个业务专家AI员工...")
+                
+                cursor.execute('''
+                    SELECT id, name, employee_code, description, capabilities, specialties, 
+                           status, accuracy, total_tasks, successful_fixes, failed_fixes,
+                           learning_rate, knowledge_base_size, last_training, model_version,
+                           is_enabled, priority, max_concurrent_tasks, skill_level
+                    FROM ai_employees
+                ''')
+                
+                business_count = 0
+                for row in cursor.fetchall():
+                    emp_id = str(row[0])
+                    name = row[1]
+                    employee_code = row[2]
+                    description = row[3]
+                    capabilities = self._parse_json_or_text(row[4])
+                    specialties = self._parse_json_or_text(row[5])
+                    status = row[6]
+                    accuracy = row[7]
+                    total_tasks = row[8]
+                    successful_fixes = row[9]
+                    failed_fixes = row[10]
+                    learning_rate = row[11]
+                    knowledge_base_size = row[12]
+                    last_training = row[13]
+                    model_version = row[14]
+                    is_enabled = row[15]
+                    priority = row[16]
+                    max_concurrent_tasks = row[17]
+                    skill_level = row[18] if row[18] else 1
+                    
+                    employee = AIEmployee(emp_id, name, "business_expert", skill_level)
+                    employee.type = "business_expert"
+                    employee.status = status
+                    employee.employee_code = employee_code
+                    employee.description = description
+                    employee.capabilities = capabilities
+                    employee.specialties = specialties
+                    employee.accuracy = accuracy
+                    employee.total_tasks = total_tasks
+                    employee.successful_fixes = successful_fixes
+                    employee.failed_fixes = failed_fixes
+                    employee.learning_rate = learning_rate
+                    employee.knowledge_base_size = knowledge_base_size
+                    employee.last_training = last_training
+                    employee.model_version = model_version
+                    employee.is_enabled = bool(is_enabled)
+                    employee.priority = priority
+                    employee.max_concurrent_tasks = max_concurrent_tasks
+                    employee.performance_score = int(accuracy * 100) if accuracy else 80
+                    
+                    self.employees[emp_id] = employee
+                    self.add_employee_to_organizations(employee)
+                    business_count += 1
+                
+                logger.info(f"成功加载 {business_count} 个业务专家AI员工")
+            else:
+                logger.info("数据库中没有业务专家员工")
+            
+            conn.close()
+        except Exception as e:
+            logger.error(f"从数据库加载员工失败: {e}")
+            logger.info("使用初始配置创建AI员工...")
+            self.create_initial_employees()
+
     def create_employee(self, employee_type: str, name: str, level: int = 1) -> str:
         """创建新的AI员工"""
         # 验证级别范围
@@ -231,6 +339,9 @@ class AIEmployeeManager:
             employee = ListeningQuestionEmployee(employee_id, name, level)
         elif employee_type == "rule_base_maintenance":
             employee = RuleBaseMaintenanceEmployee(employee_id, name, level)
+        elif employee_type == "config_manager":
+            employee = ConfigManagerEmployee(employee_id, name, employee_type, level)
+            employee.type = employee_type
         else:
             raise ValueError(f"未知的员工类型: {employee_type}")
 
@@ -269,6 +380,63 @@ class AIEmployeeManager:
                     'status': getattr(employee, 'status', 'active')
                 }
         return result
+
+    def list_employees(self, role=None):
+        """列出AI员工 (兼容app.py API)"""
+        all_employees = self.get_all_employees()
+        if role:
+            return [e for e in all_employees.values() if e.get('type') == role or e.get('role') == role]
+        return list(all_employees.values())
+
+    def register_employee(self, employee_id, name, role, capabilities):
+        """注册AI员工 (兼容app.py API)"""
+        if employee_id in self.employees:
+            return False
+        
+        employee = AIEmployee(employee_id, name, role, 1)
+        employee.type = role
+        employee.status = 'active'
+        employee.capabilities = capabilities
+        
+        self.employees[employee_id] = employee
+        self.add_employee_to_organizations(employee)
+        return True
+
+    def update_employee_status(self, employee_id, status):
+        """更新AI员工状态 (兼容app.py API)"""
+        employee = self.get_employee(employee_id)
+        if employee:
+            employee.status = status
+            return True
+        return False
+
+    def list_system_params(self, scope=None):
+        """列出系统参数 (兼容app.py API)"""
+        if not hasattr(self, 'system_params'):
+            self.system_params = {}
+        if scope:
+            return [p for p in self.system_params.values() if p.get('scope') == scope]
+        return list(self.system_params.values())
+
+    def set_system_param(self, key, value, scope='global', description=''):
+        """设置系统参数 (兼容app.py API)"""
+        if not hasattr(self, 'system_params'):
+            self.system_params = {}
+        if not hasattr(self, 'permission_rules'):
+            self.permission_rules = {}
+        
+        self.system_params[key] = {
+            'key': key,
+            'value': value,
+            'scope': scope,
+            'description': description,
+            'updated_at': datetime.now().isoformat()
+        }
+        return True
+
+    def auto_discover_and_extend(self):
+        """自动发现和扩展功能 (兼容app.py API)"""
+        return []
 
     def assign_task(self, employee_id: str, task_data: dict) -> dict:
         """分配任务给AI员工"""

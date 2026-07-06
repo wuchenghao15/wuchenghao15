@@ -111,3 +111,5 @@ class SecurityUtils:
                 return redirect(url_for('main.index'))
             return f(*args, **kwargs)
         return decorated_function
+
+security_utils = SecurityUtils()

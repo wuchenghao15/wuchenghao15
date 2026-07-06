@@ -1,7 +1,7 @@
 <div align="center">
 
   ![MTSCOS AI](https://img.shields.io/badge/MTSCOS-AI_Intelligent_System-blue?style=for-the-badge&logo=ai)
-  ![Version](https://img.shields.io/badge/Version-5.0.0-brightgreen?style=for-the-badge)
+  ![Version](https://img.shields.io/badge/Version-5.3.0-brightgreen?style=for-the-badge)
   ![Python](https://img.shields.io/badge/Python-3.8+-yellow?style=for-the-badge&logo=python)
   ![Flask](https://img.shields.io/badge/Flask-2.3.3-lightgrey?style=for-the-badge&logo=flask)
   ![License](https://img.shields.io/badge/License-MIT-red?style=for-the-badge)
@@ -28,8 +28,8 @@
 
 <div align="center">
 
-### 🌟 最新版本 v5.0.0 - AI脑库版 🧠
-**AI Brain Bank Edition - 知识驱动的智能进化**
+### 🌟 最新版本 v5.3.0 - 权限增强版 🛡️
+**Enhanced Permission Edition - 精细化权限管理与安全审计**
 
 </div>
 
@@ -49,23 +49,150 @@
 
 <table>
   <tr>
-    <td align="center" width="20%">
+    <td align="center" width="16.66%">
       <img src="https://img.shields.io/badge/🧠_AI脑库-知识驱动-blue?style=for-the-badge" width="100%"/>
     </td>
-    <td align="center" width="20%">
+    <td align="center" width="16.66%">
       <img src="https://img.shields.io/badge/🤖_AI员工-自主协作-green?style=for-the-badge" width="100%"/>
     </td>
-    <td align="center" width="20%">
+    <td align="center" width="16.66%">
       <img src="https://img.shields.io/badge/⚡_主动AI-预见未来-orange?style=for-the-badge" width="100%"/>
     </td>
-    <td align="center" width="20%">
+    <td align="center" width="16.66%">
       <img src="https://img.shields.io/badge/🔐_数据完整性-安全可靠-red?style=for-the-badge" width="100%"/>
     </td>
-    <td align="center" width="20%">
+    <td align="center" width="16.66%">
       <img src="https://img.shields.io/badge/📚_K12教育-全学段覆盖-purple?style=for-the-badge" width="100%"/>
+    </td>
+    <td align="center" width="14.28%">
+      <img src="https://img.shields.io/badge/🎓_智能课堂-互动教学-pink?style=for-the-badge" width="100%"/>
+    </td>
+    <td align="center" width="14.28%">
+      <img src="https://img.shields.io/badge/📊_智能评估-个性化-teal?style=for-the-badge" width="100%"/>
     </td>
   </tr>
 </table>
+
+---
+
+### 📊 v5.3.0 新功能 - 权限增强版 ⭐⭐⭐
+
+**权限管理全面升级，新增29项权限规则，实现精细化角色访问控制**
+
+#### 1. 权限管理系统 (Permission Management System) v2.0
+| 特性 | 描述 |
+|------|------|
+| 🛡️ 29项权限规则 | 覆盖AI功能、学习诊断、智能评估、知识库、审计等全功能 |
+| 🎯 14种角色等级 | guest→user→student→teacher→admin→super_admin→hardware_admin |
+| 🔐 6级访问控制 | NONE/VIEW/EDIT/MANAGE/ADMIN/SUPER_ADMIN |
+| 📋 动态权限分配 | 支持角色权限动态绑定与撤销 |
+| 🔗 角色继承体系 | 高级角色自动继承低级角色权限 |
+
+#### 2. 权限分类体系
+| 分类 | 权限项 | 说明 |
+|------|--------|------|
+| 👁️ VIEW_ONLY | 6项 | 仪表盘、设置、日志、监控、学习分析、审计日志查看 |
+| 👥 USER_MANAGEMENT | 2项 | 用户管理、删除用户 |
+| ⚙️ SYSTEM_ADMIN | 5项 | 数据库管理、路由管理、系统配置、安全配置、数据完整性 |
+| 🤖 AI_FEATURES | 7项 | AI聊天、学习诊断、智能评估、学习路径、AI推荐、知识库、课堂互动 |
+| 👨‍💻 AI_ADMIN | 3项 | AI员工管理、脑库管理、主动AI管理 |
+| 📚 EXAM_FEATURES | 4项 | 参加考试、创建考试、管理考试、题库管理 |
+| 📖 LEARNING_FEATURES | 3项 | 学习记录管理、错题本管理、报表生成 |
+
+#### 3. 审计日志系统 (Audit Logging System) v1.0
+| 特性 | 描述 |
+|------|------|
+| 📝 完整操作记录 | 登录/登出/授权/撤销/访问拒绝全记录 |
+| ⏱️ 实时审计 | 操作实时记录，支持实时告警 |
+| 🔍 精准查询 | 支持按用户、操作类型、时间范围筛选 |
+| 📊 可视化分析 | 审计统计报表与趋势分析 |
+| 🔒 安全存储 | 90天日志保留，加密存储 |
+
+#### 4. 安全增强 (Security Enhancements)
+| 特性 | 描述 |
+|------|------|
+| 🔐 强密码策略 | 最小8位、复杂度要求 |
+| 🔑 会话安全 | 30分钟超时、自动锁定 |
+| 📁 数据加密 | 敏感数据AES-256加密 |
+| 🚨 威胁检测 | 异常登录检测、访问拒绝告警 |
+
+---
+
+### 📊 v5.2.0 新功能 - 智能评估版 ⭐⭐⭐
+
+**第9轮AI引擎拓展完成，新增三大核心引擎，实现真正的个性化智能教育**
+
+#### 1. 智能评估分析引擎 (Intelligent Evaluation Engine) v1.0
+| 特性 | 描述 |
+|------|------|
+| 🎯 6维度评估 | 知识掌握 / 能力运用 / 思维品质 / 创新能力 / 实践应用 / 学科素养 |
+| 📊 4级评估等级 | 优秀(A) / 良好(B) / 合格(C) / 待提升(D) |
+| 📈 多层级报告 | 学生报告 / 班级报告 / 年级报告 / 学科报告 |
+| 🔮 AI预测分析 | 基于历史数据预测未来表现，提前预警 |
+| 📉 成长轨迹 | 历次评估对比，可视化成长曲线 |
+
+#### 2. 个性化学习路径引擎 (Personalized Learning Path Engine) v1.0
+| 特性 | 描述 |
+|------|------|
+| 🗺️ 3种路径算法 | 知识图谱 / 能力进阶 / 兴趣驱动 |
+| 🎨 VARK学习风格 | 视觉型 / 听觉型 / 动觉型 / 读写型 |
+| 📏 5级难度自适应 | 入门 / 基础 / 进阶 / 提高 / 挑战 |
+| 🎯 学习目标管理 | 短期 / 中期 / 长期目标设定与追踪 |
+| ⏱️ 进度实时追踪 | 节点完成状态 / 总体进度 / 预计时间 |
+
+#### 3. AI智能推荐引擎 (AI Smart Recommendation Engine) v1.0
+| 特性 | 描述 |
+|------|------|
+| 🎯 5种推荐类型 | 题目 / 课程 / 资源 / 路径 / 同伴推荐 |
+| 🤖 4种推荐算法 | 协同过滤 / 基于内容 / 知识图谱 / 混合推荐 |
+| 👤 用户行为分析 | 学习行为记录 / 偏好画像 / 学习模式识别 |
+| 💡 推荐理由 | 每条推荐附带可解释的理由 |
+| 📊 效果评估 | 点击率 / 完成率 / 满意度统计 |
+
+#### 📚 题库系统升级
+- **新增高中学段** - 高一数学 / 物理 / 化学3大学科
+- **9道高中高质量题目** - 集合函数 / 运动学 / 电解质等知识点
+- **题库总量** - 27题，覆盖初高中全学段
+
+---
+
+### 🎓 v5.1.0 新功能 - 智能课堂版 ⭐⭐⭐
+
+**第8轮AI引擎拓展完成，新增三大核心教学引擎，全面覆盖教学全流程**
+
+#### 1. 智能学习诊断引擎 (Learning Diagnosis Engine) v1.0
+| 特性 | 描述 |
+|------|------|
+| 🎯 掌握度模型 | 4级掌握度 - 完全掌握 / 熟练掌握 / 初步了解 / 薄弱环节 |
+| 📊 能力评估 | 5维能力 - 知识掌握 / 概念理解 / 应用能力 / 解题能力 / 拓展能力 |
+| 🔄 自适应测试 | 根据答题情况动态调整题目难度，精准定位薄弱点 |
+| 📈 提升计划 | 基于诊断结果生成个性化学习路径与建议 |
+| 📑 多维报告 | 个人报告 / 班级报告 / 年级报告 / 学科对比分析 |
+
+#### 2. 智能知识库引擎 (Knowledge Base Engine) v1.0
+| 特性 | 描述 |
+|------|------|
+| 📚 知识类型 | 8种 - 概念 / 公式 / 定理 / 解题方法 / 例题 / 总结 / 实验 / 词汇 |
+| 🗂️ 分类体系 | 学科-年级-章节-小节四级分类，支持多维度检索 |
+| 🔍 语义检索 | 倒排索引 + 关键词提取 + 重要性加权排序 |
+| 🌐 知识图谱 | 节点-边关系模型，支持深度关联查询与知识导航 |
+| 📝 版本管理 | 知识条目变更历史与版本追溯 |
+| 📖 学习追踪 | 学习行为记录 / 理解度评估 / 学习笔记管理 |
+
+#### 3. AI课堂互动引擎 (Classroom Interaction Engine) v1.0
+| 特性 | 描述 |
+|------|------|
+| 🎯 活动类型 | 7种 - 随机点名 / 随堂测验 / 抢答竞赛 / 投票问卷 / 分组讨论 / 头脑风暴 / 课堂小测 |
+| 👥 分组策略 | 5种 - 随机 / 能力均衡 / 同质 / 兴趣 / 自由组合 |
+| ✏️ 实时答题 | 单选 / 多选 / 判断 / 填空，自动判分与统计 |
+| ⚡ 毫秒抢答 | 精确时间戳排名，支持多轮抢答与积分 |
+| 🏆 积分体系 | 奖励激励 / 积分排行 / 历史记录 / 成就徽章 |
+| 📋 模板库 | 可复用活动配置，一键创建标准化课堂活动 |
+
+#### 📚 题库系统升级
+- **6大学科覆盖** - 数学 / 语文 / 英语 / 物理 / 化学 / 历史
+- **高质量种子题目** - 初中学段，含详细解析与知识点标注
+- **结构化管理** - 难度分级 / 知识点标签 / 答案解析 / 分值配置
 
 ---
 
@@ -315,37 +442,45 @@ curl -X POST http://localhost:8888/api/brain-bank/knowledge/search \
 ### 📊 系统统计
 
 ```
-📈 当前版本:      v5.0.0
-🤖 AI员工数量:    7+
+📈 当前版本:      v5.3.0
+🤖 AI员工数量:    10+
 🧠 知识类型:      10种
 📚 知识领域:      11个
 ⚡ 触发类型:      5种
-🔌 API接口:      100+
-📄 模板文件:      80+
-🔀 路由数量:      360+
-📅 历史版本:      20+
+🔌 API接口:      460+
+📄 模板文件:      130+
+🔀 路由数量:      629+
+📅 历史版本:      26+
+🧠 AI引擎矩阵:   30+
+📚 题库总量:      27+
+🛡️ 权限规则:      29项
+👤 角色等级:      14种
+📝 审计日志:      已启用
 ```
 
 ---
 
 ### 🛣 发展路线图
 
-#### ✅ 已完成 (v1.0 - v5.0)
+#### ✅ 已完成 (v1.0 - v5.3)
 - [x] v1.0 - 基础系统搭建
 - [x] v2.0 - 考试系统上线
 - [x] v3.0 - 学习系统集成
 - [x] v3.4 - K12全学段 + 成就系统
 - [x] v4.0 - 数据库加密 + 云端服务
 - [x] v4.3 - 教学内容管理系统
-- [x] **v5.0 - AI脑库 + 主动AI + 数据完整性** ⭐ 当前
+- [x] v5.0 - AI脑库 + 主动AI + 数据完整性
+- [x] v5.1 - 智能课堂版（学习诊断/知识库/课堂互动）
+- [x] v5.2 - 智能评估版（智能评估/个性化路径/AI推荐）
+- [x] **v5.3 - 权限增强版（29项权限规则/审计日志/安全增强）** ⭐ 当前
 
 #### 🔮 未来规划
 
 | 版本 | 时间 | 核心特性 |
 |------|------|----------|
-| v5.1 | 2026 Q3 | 多语言国际化、语音交互 |
-| v5.2 | 2026 Q3 | AI教师助手、智能辅导 |
-| v5.5 | 2026 Q4 | 微服务架构、容器化部署 |
+| v5.4 | 2026 Q3 | 多语言国际化、语音交互 |
+| v5.5 | 2026 Q3 | AI教师助手、智能辅导 |
+| v5.6 | 2026 Q4 | 微服务架构、容器化部署 |
 | v6.0 | 2027 Q1 | 边缘计算、IoT设备管理 |
 | v6.5 | 2027 Q2 | 区块链存证、VR学习 |
 
@@ -520,15 +655,20 @@ HTTPS Enforcement • XSS Protection • CSRF Tokens • SQL Injection Preventio
 ### 📊 Stats
 
 ```
-📈 Current Version:   v5.0.0
-🤖 AI Employees:      7+
+📈 Current Version:   v5.3.0
+🤖 AI Employees:      10+
 🧠 Knowledge Types:   10
 📚 Knowledge Domains: 11
 ⚡ Trigger Types:     5
-🔌 API Endpoints:     100+
-📄 Templates:         80+
-🔀 Routes:            360+
-📅 Versions:          20+
+🔌 API Endpoints:     460+
+📄 Templates:         130+
+🔀 Routes:            629+
+📅 Versions:          26+
+🧠 AI Engines:        30+
+📚 Questions:         27+
+🛡️ Permission Rules:  29
+👤 Roles:             14
+📝 Audit Logging:     Enabled
 ```
 
 ---

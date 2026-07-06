@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI集群矩阵管理 - MTSCOS</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --dark: #1e293b;
+            --light: #f8fafc;
+        }
+        body { background: #f1f5f9; font-family: 'Segoe UI', system-ui, sans-serif; }
+        .matrix-header {
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            color: white; padding: 2rem 0; margin-bottom: 1.5rem;
+        }
+        .stat-card {
+            background: white; border-radius: 12px; padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: transform 0.2s;
+        }
+        .stat-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .stat-icon { width: 48px; height: 48px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
+        .matrix-table { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .matrix-table th { background: #f8fafc; font-weight: 600; color: #475569; padding: 0.75rem; border-bottom: 2px solid #e2e8f0; }
+        .matrix-table td { padding: 0.75rem; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+        .matrix-table tr:hover { background: #f8fafc; }
+        .badge-status { padding: 0.35em 0.65em; border-radius: 6px; font-size: 0.85em; font-weight: 500; }
+        .status-active { background: #d1fae5; color: #065f46; }
+        .status-running { background: #dbeafe; color: #1e40af; }
+        .status-busy { background: #fef3c7; color: #92400e; }
+        .status-error, .status-failed { background: #fee2e2; color: #991b1b; }
+        .status-stopped, .status-not_running { background: #f1f5f9; color: #475569; }
+        .matrix-cell {
+            display: inline-flex; align-items: center; justify-content: center;
+            min-width: 32px; height: 32px; border-radius: 6px; font-weight: 600; font-size: 0.9rem;
+        }
+        .cell-high { background: #dbeafe; color: #1e40af; }
+        .cell-medium { background: #e0e7ff; color: #3730a3; }
+        .cell-low { background: #f1f5f9; color: #64748b; }
+        .cell-zero { background: #f8fafc; color: #cbd5e1; }
+        .nav-tabs .nav-link { border: none; color: #64748b; font-weight: 500; padding: 0.75rem 1.5rem; }
+        .nav-tabs .nav-link.active { color: var(--primary); border-bottom: 3px solid var(--primary); background: transparent; }
+        .nav-tabs .nav-link:hover { border: none; color: var(--primary-dark); }
+        .progress { height: 8px; border-radius: 4px; background: #e2e8f0; }
+        .progress-bar { border-radius: 4px; }
+        .loading { text-align: center; padding: 3rem; color: #94a3b8; }
+        .btn-action { padding: 0.4rem 1rem; font-size: 0.875rem; border-radius: 8px; }
+        .cluster-node { background: white; border-radius: 10px; padding: 1rem; margin-bottom: 1rem; border-left: 4px solid var(--primary); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+        .capability-tag { display: inline-block; background: #ede9fe; color: #5b21b6; padding: 0.2em 0.6em; border-radius: 4px; font-size: 0.75em; margin: 0.1em; }
+        .toast-container { position: fixed; top: 1rem; right: 1rem; z-index: 9999; }
+    </style>
+</head>
+<body>
+    <div class="matrix-header">
+        <div class="container">
+            <h1 class="mb-0"><i class="bi bi-grid-3x3-gap"></i> AI集群矩阵管理</h1>
+            <p class="mb-0 mt-2 opacity-75">AI员工集群矩阵 · AI Agent集群矩阵 · 自动化集群矩阵</p>
+        </div>
+    </div>
+
+    <div class="container mb-4">
+        <div class="toast-container" id="toastContainer"></div>
+
+        <!-- 概览统计卡片 -->
+        <div class="row g-3 mb-4" id="overviewCards">
+            <div class="col-md-3">
+                <div class="stat-card d-flex align-items-center">
+                    <div class="stat-icon" style="background: #dbeafe; color: #2563eb;">
+                        <i class="bi bi-people"></i>
+                    </div>
+                    <div class="ms-3">
+                        <div class="text-muted small">员工集群</div>
+                        <div class="h4 mb-0" id="empClusterCount">-</div>
+                        <div class="small text-muted"><span id="empTotal">-</span> 员工</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card d-flex align-items-center">
+                    <div class="stat-icon" style="background: #ede9fe; color: #7c3aed;">
+                        <i class="bi bi-robot"></i>
+                    </div>
+                    <div class="ms-3">
+                        <div class="text-muted small">Agent模板</div>
+                        <div class="h4 mb-0" id="agentTemplateCount">-</div>
+                        <div class="small text-muted"><span id="agentTotal">-</span> Agent</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card d-flex align-items-center">
+                    <div class="stat-icon" style="background: #d1fae5; color: #059669;">
+                        <i class="bi bi-gear"></i>
+                    </div>
+                    <div class="ms-3">
+                        <div class="text-muted small">自动化进程</div>
+                        <div class="h4 mb-0" id="processCount">-</div>
+                        <div class="small text-muted"><span id="runningProcess">-</span> 运行中</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card d-flex align-items-center">
+                    <div class="stat-icon" style="background: #fef3c7; color: #d97706;">
+                        <i class="bi bi-clock-history"></i>
+                    </div>
+                    <div class="ms-3">
+                        <div class="text-muted small">计划任务</div>
+                        <div class="h4 mb-0" id="planCount">-</div>
+                        <div class="small text-muted">系统: <span id="systemStatus">-</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 系统控制按钮 -->
+        <div class="d-flex gap-2 mb-4 flex-wrap">
+            <button class="btn btn-success btn-action" onclick="startSystem()"><i class="bi bi-play-fill"></i> 启动系统</button>
+            <button class="btn btn-danger btn-action" onclick="stopSystem()"><i class="bi bi-stop-fill"></i> 停止系统</button>
+            <button class="btn btn-primary btn-action" onclick="runDiagnose()"><i class="bi bi-search"></i> 运行诊断</button>
+            <button class="btn btn-warning btn-action" onclick="runRepair()"><i class="bi bi-wrench"></i> 强制修复</button>
+            <button class="btn btn-outline-secondary btn-action" onclick="refreshAll()"><i class="bi bi-arrow-clockwise"></i> 刷新数据</button>
+        </div>
+
+        <!-- 标签页 -->
+        <ul class="nav nav-tabs" id="matrixTabs">
+            <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#employeeMatrix">AI员工集群矩阵</a></li>
+            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#agentMatrix">AI Agent集群矩阵</a></li>
+            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#automationMatrix">自动化集群矩阵</a></li>
+        </ul>
+
+        <div class="tab-content" id="matrixTabContent">
+            <!-- AI员工集群矩阵 -->
+            <div class="tab-pane fade show active" id="employeeMatrix">
+                <div id="employeeMatrixContent">
+                    <div class="loading"><div class="spinner-border text-primary"></div><p class="mt-2">加载员工集群矩阵...</p></div>
+                </div>
+            </div>
+
+            <!-- AI Agent集群矩阵 -->
+            <div class="tab-pane fade" id="agentMatrix">
+                <div id="agentMatrixContent">
+                    <div class="loading"><div class="spinner-border text-primary"></div><p class="mt-2">加载Agent集群矩阵...</p></div>
+                </div>
+            </div>
+
+            <!-- 自动化集群矩阵 -->
+            <div class="tab-pane fade" id="automationMatrix">
+                <div id="automationMatrixContent">
+                    <div class="loading"><div class="spinner-border text-primary"></div><p class="mt-2">加载自动化集群矩阵...</p></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function showToast(message, type = 'info') {
+            const colors = { info: 'bg-info', success: 'bg-success', warning: 'bg-warning', danger: 'bg-danger' };
+            const toast = document.createElement('div');
+            toast.className = `toast show ${colors[type]} text-white`;
+            toast.innerHTML = `<div class="toast-body">${message}</div>`;
+            document.getElementById('toastContainer').appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        async function fetchAPI(url, method = 'GET') {
+            try {
+                const res = await fetch(url, { method });
+                return await res.json();
+            } catch (e) {
+                showToast(`API请求失败: ${e.message}`, 'danger');
+                return null;
+            }
+        }
+
+        function getStatusBadge(status) {
+            const cls = {
+                active: 'status-active', running: 'status-running', busy: 'status-busy',
+                error: 'status-error', failed: 'status-error', stopped: 'status-stopped',
+                not_running: 'status-not_running', '': 'status-stopped'
+            };
+            return `<span class="badge-status ${cls[status] || 'status-not_running'}">${status || 'unknown'}</span>`;
+        }
+
+        function getCellClass(count) {
+            if (count === 0) return 'cell-zero';
+            if (count <= 1) return 'cell-low';
+            if (count <= 3) return 'cell-medium';
+            return 'cell-high';
+        }
+
+        function formatTime(timestamp) {
+            if (!timestamp) return '-';
+            try {
+                const d = new Date(timestamp * 1000);
+                return d.toLocaleString('zh-CN');
+            } catch { return String(timestamp); }
+        }
+
+        // 概览
+        async function loadOverview() {
+            const data = await fetchAPI('/api/cluster_matrix/overview');
+            if (!data || !data.success) return;
+
+            const o = data.overview;
+            document.getElementById('empClusterCount').textContent = o.employee_clusters;
+            document.getElementById('empTotal').textContent = o.total_employees;
+            document.getElementById('agentTemplateCount').textContent = o.agent_templates;
+            document.getElementById('agentTotal').textContent = o.total_agents;
+            document.getElementById('processCount').textContent = o.automation_processes;
+            document.getElementById('runningProcess').textContent = o.running_processes;
+            document.getElementById('planCount').textContent = o.automation_plans;
+            document.getElementById('systemStatus').innerHTML = getStatusBadge(o.system_running ? 'running' : 'stopped');
+        }
+
+        // 员工集群矩阵
+        async function loadEmployeeMatrix() {
+            const data = await fetchAPI('/api/cluster_matrix/employee');
+            const container = document.getElementById('employeeMatrixContent');
+            if (!data || !data.success) {
+                container.innerHTML = '<div class="alert alert-danger">加载失败</div>';
+                return;
+            }
+
+            let html = `
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5><i class="bi bi-people"></i> AI员工集群矩阵</h5>
+                    <div class="text-muted small">
+                        ${data.total_clusters} 集群 · ${data.total_employees} 员工 ·
+                        <span class="text-success">活跃 ${data.summary.active_employees}</span> ·
+                        <span class="text-warning">忙碌 ${data.summary.busy_employees}</span> ·
+                        <span class="text-danger">错误 ${data.summary.error_employees}</span>
+                    </div>
+                </div>
+            `;
+
+            if (data.matrix.length === 0) {
+                html += '<div class="alert alert-info">暂无集群数据</div>';
+            } else {
+                // 矩阵表格
+                html += '<div class="table-responsive"><table class="table matrix-table"><thead><tr><th>集群</th><th>类型</th><th>状态</th><th>员工数</th>';
+                data.employee_types.forEach(t => { html += `<th>${t}</th>`; });
+                html += '</tr></thead><tbody>';
+
+                data.matrix.forEach(row => {
+                    html += `<tr><td><strong>${row.cluster_id}</strong></td><td>${row.cluster_type}</td><td>${getStatusBadge('active')}</td><td>${row.cells.reduce((s,c) => s+c.count, 0)}</td>`;
+                    row.cells.forEach(cell => {
+                        html += `<td><span class="matrix-cell ${getCellClass(cell.count)}" title="${cell.employees.join(', ') || '无'}">${cell.count}</span></td>`;
+                    });
+                    html += '</tr>';
+                });
+                html += '</tbody></table></div>';
+
+                // 集群详情
+                html += '<h6 class="mt-4 mb-3">集群详情</h6><div class="row">';
+                data.clusters.forEach(cluster => {
+                    html += `
+                        <div class="col-md-6 mb-3">
+                            <div class="cluster-node">
+                                <div class="d-flex justify-content-between">
+                                    <strong>${cluster.cluster_id}</strong>
+                                    ${getStatusBadge(cluster.status)}
+                                </div>
+                                <div class="small text-muted mt-1">类型: ${cluster.cluster_type}</div>
+                                <div class="small">员工: ${cluster.employee_count} · 队列: ${cluster.task_queue_length}</div>
+                            </div>
+                        </div>`;
+                });
+                html += '</div>';
+            }
+
+            container.innerHTML = html;
+        }
+
+        // Agent集群矩阵
+        async function loadAgentMatrix() {
+            const data = await fetchAPI('/api/cluster_matrix/agent');
+            const container = document.getElementById('agentMatrixContent');
+            if (!data || !data.success) {
+                container.innerHTML = '<div class="alert alert-danger">加载失败</div>';
+                return;
+            }
+
+            let html = `
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5><i class="bi bi-robot"></i> AI Agent集群矩阵</h5>
+                    <div class="text-muted small">
+                        ${data.total_templates} 模板 · ${data.total_agents} Agent ·
+                        容量 ${data.summary.total_capacity} ·
+                        利用率 ${data.summary.utilization_rate}%
+                    </div>
+                </div>
+            `;
+
+            if (!data.templates || data.templates.length === 0) {
+                html += '<div class="alert alert-info">暂无Agent模板</div>';
+            } else {
+                html += '<div class="table-responsive"><table class="table matrix-table"><thead><tr><th>模板</th><th>类型</th><th>级别</th><th>自动扩缩</th><th>当前/最小/最大</th><th>活跃</th><th>利用率</th><th>能力</th></tr></thead><tbody>';
+                data.templates.forEach(t => {
+                    const utilColor = t.capacity_utilization > 80 ? 'bg-danger' : t.capacity_utilization > 50 ? 'bg-warning' : 'bg-success';
+                    html += `
+                        <tr>
+                            <td><strong>${t.name}</strong><br><small class="text-muted">${t.template_id}</small></td>
+                            <td>${t.type}</td>
+                            <td>L${t.level}</td>
+                            <td>${t.auto_scale ? '<i class="bi bi-check-circle text-success"></i>' : '<i class="bi bi-x-circle text-muted"></i>'}</td>
+                            <td>${t.current_count} / ${t.min_instances} / ${t.max_instances}</td>
+                            <td>${t.active_count}</td>
+                            <td>
+                                <div class="progress" style="min-width:80px;"><div class="progress-bar ${utilColor}" style="width:${t.capacity_utilization}%"></div></div>
+                                <small>${t.capacity_utilization}%</small>
+                            </td>
+                            <td>${t.capabilities.map(c => `<span class="capability-tag">${c}</span>`).join('')}</td>
+                        </tr>`;
+                });
+                html += '</tbody></table></div>';
+            }
+
+            container.innerHTML = html;
+        }
+
+        // 自动化集群矩阵
+        async function loadAutomationMatrix() {
+            const data = await fetchAPI('/api/cluster_matrix/automation');
+            const container = document.getElementById('automationMatrixContent');
+            if (!data || !data.success) {
+                container.innerHTML = '<div class="alert alert-danger">加载失败</div>';
+                return;
+            }
+
+            const s = data.summary;
+            let html = `
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5><i class="bi bi-gear"></i> 自动化集群矩阵</h5>
+                    <div class="text-muted small">
+                        系统状态: ${getStatusBadge(data.system_running ? 'running' : 'stopped')} ·
+                        进程 ${s.total_processes} (${s.running_processes} 运行) ·
+                        计划 ${s.total_plans} · Agent ${s.total_agents}
+                    </div>
+                </div>
+            `;
+
+            // 进程矩阵
+            html += '<h6 class="mb-3"><i class="bi bi-diagram-3"></i> 自动进程</h6>';
+            if (data.processes && data.processes.length > 0) {
+                html += '<div class="table-responsive mb-4"><table class="table matrix-table"><thead><tr><th>进程ID</th><th>名称</th><th>状态</th><th>间隔(秒)</th><th>执行次数</th><th>最后执行</th></tr></thead><tbody>';
+                data.processes.forEach(p => {
+                    html += `<tr><td><code>${p.process_id}</code></td><td>${p.name}</td><td>${getStatusBadge(p.status)}</td><td>${p.interval}</td><td>${p.execution_count}</td><td>${p.last_execution || '-'}</td></tr>`;
+                });
+                html += '</tbody></table></div>';
+            } else {
+                html += '<div class="alert alert-info mb-4">暂无进程数据</div>';
+            }
+
+            // 计划任务矩阵
+            html += '<h6 class="mb-3"><i class="bi bi-calendar-check"></i> 计划任务</h6>';
+            if (data.plans && data.plans.length > 0) {
+                html += '<div class="table-responsive"><table class="table matrix-table"><thead><tr><th>计划ID</th><th>名称</th><th>触发器</th><th>调度</th><th>状态</th></tr></thead><tbody>';
+                data.plans.forEach(p => {
+                    html += `<tr><td><code>${p.plan_id}</code></td><td>${p.name}</td><td><span class="badge bg-secondary">${p.trigger}</span></td><td>${p.schedule_info}</td><td>${p.enabled ? '<i class="bi bi-check-circle text-success"></i> 启用' : '<i class="bi bi-x-circle text-muted"></i> 禁用'}</td></tr>`;
+                });
+                html += '</tbody></table></div>';
+            } else {
+                html += '<div class="alert alert-info">暂无计划任务</div>';
+            }
+
+            container.innerHTML = html;
+        }
+
+        async function startSystem() {
+            showToast('正在启动系统...', 'info');
+            const data = await fetchAPI('/api/cluster_matrix/system/start', 'POST');
+            if (data && data.success) { showToast('系统已启动', 'success'); refreshAll(); }
+            else { showToast(data?.message || '启动失败', 'danger'); }
+        }
+
+        async function stopSystem() {
+            showToast('正在停止系统...', 'info');
+            const data = await fetchAPI('/api/cluster_matrix/system/stop', 'POST');
+            if (data && data.success) { showToast('系统已停止', 'warning'); refreshAll(); }
+            else { showToast(data?.message || '停止失败', 'danger'); }
+        }
+
+        async function runDiagnose() {
+            showToast('正在运行诊断...', 'info');
+            const data = await fetchAPI('/api/cluster_matrix/system/diagnose', 'POST');
+            if (data) {
+                const count = data.problems ? data.problems.length : 0;
+                showToast(`诊断完成: 发现 ${count} 个问题`, count > 0 ? 'warning' : 'success');
+            }
+        }
+
+        async function runRepair() {
+            showToast('正在强制修复...', 'info');
+            const data = await fetchAPI('/api/cluster_matrix/system/repair', 'POST');
+            if (data && data.success) {
+                showToast(`修复完成: ${data.repaired.length} 项已修复`, 'success');
+                refreshAll();
+            } else { showToast('修复失败', 'danger'); }
+        }
+
+        async function refreshAll() {
+            await Promise.all([loadOverview(), loadEmployeeMatrix(), loadAgentMatrix(), loadAutomationMatrix()]);
+            showToast('数据已刷新', 'success');
+        }
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            refreshAll();
+            // 每30秒自动刷新
+            setInterval(loadOverview, 30000);
+        });
+    </script>
+</body>
+</html>

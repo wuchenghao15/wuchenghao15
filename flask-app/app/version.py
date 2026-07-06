@@ -3,20 +3,41 @@
 系统版本管理模块
 """
 
-VERSION = "5.2.0"
-BUILD_NUMBER = "20260704"
-RELEASE_DATE = "2026-07-04"
+VERSION = "5.3.0"
+BUILD_NUMBER = "20260706003"
+RELEASE_DATE = "2026-07-06"
 
 VERSION_INFO = {
     'version': VERSION,
     'build_number': BUILD_NUMBER,
     'release_date': RELEASE_DATE,
     'api_version': 'v1',
-    'codename': 'MTSCOS Auto Iteration AI',
+    'codename': 'Enhanced Permission Edition',
     'status': 'stable'
 }
 
 CHANGELOG = [
+    {
+        'version': '5.3.0',
+        'date': '2026-07-06',
+        'title': '权限增强版',
+        'changes': [
+            '新增29项权限规则 - 覆盖AI功能、学习诊断、智能评估、知识库、审计等全功能',
+            '新增权限常量定义 - VIEW_ONLY、USER_MANAGEMENT、SYSTEM_ADMIN、AI_FEATURES、AI_ADMIN、EXAM_FEATURES、LEARNING_FEATURES',
+            '新增14种角色等级 - guest→user→student→student_vip→teacher→researcher→admin→super_admin→hardware_admin等',
+            '新增6级访问控制 - NONE/VIEW/EDIT/MANAGE/ADMIN/SUPER_ADMIN',
+            '新增审计日志系统 - 完整操作记录、实时审计、精准查询、可视化分析',
+            '新增安全增强 - 强密码策略、会话安全、数据加密、威胁检测',
+            '升级题库系统 - 覆盖初高中全学段，27道高质量题目',
+            '优化前端页面 - 超级管理员仪表盘、学生仪表盘、登录页面、设置页面版本标识更新',
+            '升级权限管理服务 - PermissionManager类增强，缓存机制优化',
+            '同步所有版本文件 - VERSION文件统一更新至v5.3.0'
+        ],
+        'security_fixes': [],
+        'breaking_changes': [],
+        'contributors': ['System AI', 'Permission AI'],
+        'highlights': ['权限管理', '审计日志', '安全增强']
+    },
     {
         'version': '5.2.0',
         'date': '2026-07-04',

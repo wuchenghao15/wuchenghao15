@@ -426,6 +426,173 @@ PERMISSION_RULES = {
         'description': '硬件管理权限 - 最高权限',
         'type': 'permission',
         'priority': 100
+    },
+    
+    # v5.3.0 新增权限规则
+    
+    # 学习诊断权限
+    'PERM_USE_LEARNING_DIAGNOSIS': {
+        'value': ['student', 'student_vip', 'teacher', 'researcher', 'admin', 
+                  'super_admin', 'hardware_admin'],
+        'description': '使用学习诊断功能权限',
+        'type': 'permission',
+        'priority': 15
+    },
+    
+    # 智能评估权限
+    'PERM_USE_INTELLIGENT_EVALUATION': {
+        'value': ['student', 'student_vip', 'teacher', 'researcher', 'admin', 
+                  'super_admin', 'hardware_admin'],
+        'description': '使用智能评估分析功能权限',
+        'type': 'permission',
+        'priority': 15
+    },
+    
+    # 个性化学习路径权限
+    'PERM_USE_LEARNING_PATH': {
+        'value': ['student', 'student_vip', 'teacher', 'researcher'],
+        'description': '使用个性化学习路径功能权限',
+        'type': 'permission',
+        'priority': 15
+    },
+    
+    # AI智能推荐权限
+    'PERM_USE_AI_RECOMMENDATION': {
+        'value': ['student', 'student_vip', 'teacher', 'researcher', 'admin', 
+                  'super_admin', 'hardware_admin'],
+        'description': '使用AI智能推荐功能权限',
+        'type': 'permission',
+        'priority': 15
+    },
+    
+    # 知识库访问权限
+    'PERM_ACCESS_KNOWLEDGE_BASE': {
+        'value': ['student', 'student_vip', 'teacher', 'designer', 'researcher', 
+                  'admin', 'super_admin', 'hardware_admin'],
+        'description': '访问智能知识库权限',
+        'type': 'permission',
+        'priority': 10
+    },
+    
+    # 课堂互动权限
+    'PERM_USE_CLASSROOM_INTERACTION': {
+        'value': ['student', 'student_vip', 'teacher', 'admin', 'super_admin', 'hardware_admin'],
+        'description': '使用课堂互动功能权限',
+        'type': 'permission',
+        'priority': 15
+    },
+    
+    # AI员工管理权限
+    'PERM_MANAGE_AI_EMPLOYEES': {
+        'value': ['admin', 'super_admin', 'hardware_admin'],
+        'description': '管理AI员工权限',
+        'type': 'permission',
+        'priority': 25
+    },
+    
+    # AI脑库管理权限
+    'PERM_MANAGE_BRAIN_BANK': {
+        'value': ['admin', 'super_admin', 'hardware_admin', 'researcher'],
+        'description': '管理AI脑库权限',
+        'type': 'permission',
+        'priority': 25
+    },
+    
+    # 数据完整性管理权限
+    'PERM_MANAGE_DATA_INTEGRITY': {
+        'value': ['super_admin', 'hardware_admin'],
+        'description': '管理数据完整性权限',
+        'type': 'permission',
+        'priority': 30
+    },
+    
+    # 主动AI管理权限
+    'PERM_MANAGE_PROACTIVE_AI': {
+        'value': ['admin', 'super_admin', 'hardware_admin', 'researcher'],
+        'description': '管理主动AI系统权限',
+        'type': 'permission',
+        'priority': 25
+    },
+    
+    # 路由管理权限
+    'PERM_MANAGE_ROUTES': {
+        'value': ['super_admin', 'hardware_admin'],
+        'description': '管理系统路由权限',
+        'type': 'permission',
+        'priority': 30
+    },
+    
+    # 系统监控权限
+    'PERM_VIEW_MONITORING': {
+        'value': ['admin', 'super_admin', 'hardware_admin'],
+        'description': '查看系统监控权限',
+        'type': 'permission',
+        'priority': 20
+    },
+    
+    # 备份管理权限
+    'PERM_MANAGE_BACKUPS': {
+        'value': ['super_admin', 'hardware_admin', 'admin'],
+        'description': '管理系统备份权限',
+        'type': 'permission',
+        'priority': 25
+    },
+    
+    # 报表生成权限
+    'PERM_GENERATE_REPORTS': {
+        'value': ['teacher', 'researcher', 'admin', 'super_admin', 'hardware_admin'],
+        'description': '生成数据报表权限',
+        'type': 'permission',
+        'priority': 20
+    },
+    
+    # 学习记录管理权限
+    'PERM_MANAGE_LEARNING_RECORDS': {
+        'value': ['teacher', 'researcher', 'admin', 'super_admin', 'hardware_admin'],
+        'description': '管理学习记录权限',
+        'type': 'permission',
+        'priority': 20
+    },
+    
+    # 错题本管理权限
+    'PERM_MANAGE_WRONG_QUESTIONS': {
+        'value': ['student', 'student_vip', 'teacher', 'admin', 'super_admin', 'hardware_admin'],
+        'description': '管理错题本权限',
+        'type': 'permission',
+        'priority': 15
+    },
+    
+    # 学习分析权限
+    'PERM_VIEW_LEARNING_ANALYTICS': {
+        'value': ['student', 'student_vip', 'teacher', 'researcher', 'admin', 
+                  'super_admin', 'hardware_admin'],
+        'description': '查看学习分析权限',
+        'type': 'permission',
+        'priority': 15
+    },
+    
+    # 系统配置编辑权限
+    'PERM_EDIT_SYSTEM_CONFIG': {
+        'value': ['super_admin', 'hardware_admin'],
+        'description': '编辑系统配置权限',
+        'type': 'permission',
+        'priority': 35
+    },
+    
+    # 安全配置权限
+    'PERM_MANAGE_SECURITY': {
+        'value': ['super_admin', 'hardware_admin'],
+        'description': '管理安全配置权限',
+        'type': 'permission',
+        'priority': 35
+    },
+    
+    # 审计日志查看权限
+    'PERM_VIEW_AUDIT_LOGS': {
+        'value': ['super_admin', 'hardware_admin', 'admin'],
+        'description': '查看审计日志权限',
+        'type': 'permission',
+        'priority': 25
     }
 }
 
@@ -563,7 +730,28 @@ def init_unified_rules(db_path: str):
         return False
 
 
-# 导出所有规则
+# ==========================================
+# 七、权限常量定义（v5.3.0新增）
+# ==========================================
+
+PERMISSION_CONSTANTS = {
+    'VIEW_ONLY': ['PERM_VIEW_DASHBOARD', 'PERM_VIEW_SETTINGS', 'PERM_VIEW_LOGS', 
+                  'PERM_VIEW_MONITORING', 'PERM_VIEW_LEARNING_ANALYTICS', 'PERM_VIEW_AUDIT_LOGS'],
+    'USER_MANAGEMENT': ['PERM_MANAGE_USERS', 'PERM_DELETE_USER'],
+    'SYSTEM_ADMIN': ['PERM_MANAGE_DATABASE', 'PERM_MANAGE_ROUTES', 'PERM_EDIT_SYSTEM_CONFIG', 
+                     'PERM_MANAGE_SECURITY', 'PERM_MANAGE_DATA_INTEGRITY'],
+    'AI_FEATURES': ['PERM_USE_AI_CHAT', 'PERM_USE_LEARNING_DIAGNOSIS', 'PERM_USE_INTELLIGENT_EVALUATION', 
+                    'PERM_USE_LEARNING_PATH', 'PERM_USE_AI_RECOMMENDATION', 'PERM_ACCESS_KNOWLEDGE_BASE', 
+                    'PERM_USE_CLASSROOM_INTERACTION'],
+    'AI_ADMIN': ['PERM_MANAGE_AI_EMPLOYEES', 'PERM_MANAGE_BRAIN_BANK', 'PERM_MANAGE_PROACTIVE_AI'],
+    'EXAM_FEATURES': ['PERM_TAKE_EXAM', 'PERM_CREATE_EXAM', 'PERM_MANAGE_EXAMS', 'PERM_MANAGE_QUESTION_BANK'],
+    'LEARNING_FEATURES': ['PERM_MANAGE_LEARNING_RECORDS', 'PERM_MANAGE_WRONG_QUESTIONS', 'PERM_GENERATE_REPORTS']
+}
+
+# ==========================================
+# 八、导出所有规则
+# ==========================================
+
 __all__ = [
     'EXAM_SYSTEM_ROUTES',
     'TEST_SYSTEM_ROUTES',
@@ -575,6 +763,7 @@ __all__ = [
     'SYSTEM_RULES',
     'DATA_SECURITY_RULES',
     'PERMISSION_RULES',
+    'PERMISSION_CONSTANTS',
     'check_route_permission',
     'check_permission_by_rule',
     'get_role_level',

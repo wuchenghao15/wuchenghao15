@@ -101,6 +101,9 @@ def enhanced_csrf_middleware(app):
         if request.path.startswith('/api/'):
             return None
         
+        if request.path.startswith('/auth/login') or request.path.startswith('/auth/register'):
+            return None
+        
         if request.method in ['POST', 'PUT', 'DELETE']:
             # 检查CSRF令牌
             csrf_token = request.form.get('_csrf_token') or request.headers.get('X-CSRF-Token')

@@ -3,6 +3,7 @@
 """
 AI Cluster Manager
 Manages AI clusters and employees with unified control, monitoring, and upgrading capabilities
+Supports database persistence for cluster and employee configurations
 """
 
 import os
@@ -11,13 +12,157 @@ import time
 import json
 import threading
 import logging
+import sqlite3
+import typing
+from contextlib import contextmanager
 from typing import Dict, List, Any, Optional
 
 logging.basicConfig(level=logging.INFO,
-                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                    handlers=[logging.FileHandler('ai_cluster_manager.log'),
-                              logging.StreamHandler()])
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[logging.FileHandler('ai_cluster_manager.log'), logging.StreamHandler()])
 logger = logging.getLogger('AI_Cluster_Manager')
+
+DATABASE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'app.db')
+
+@contextmanager
+def get_db_connection():
+    """Database connection context manager"""
+    conn = sqlite3.connect(DATABASE_PATH)
+    try:
+        yield conn
+    finally:
+        conn.close()
+
+DATABASE_VERSION = 2
+
+def init_cluster_database():
+
+    """Initialize database tables for cluster and employee configuration with migration support"""
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            
+            cursor.execute('''
+
+                CREATE TABLE IF NOT EXISTS ai_cluster_config (
+                    cluster_id TEXT PRIMARY KEY,
+                    cluster_type TEXT NOT NULL,
+                    config TEXT DEFAULT '{}',
+                    status TEXT DEFAULT 'active',
+                    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+
+
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS ai_employee_config (
+                    employee_id TEXT PRIMARY KEY,
+                    employee_type TEXT NOT NULL,
+                    capabilities TEXT DEFAULT '[]',
+                    config TEXT DEFAULT '{}',
+                    assigned_cluster TEXT,
+                    status TEXT DEFAULT 'active',
+                    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS ai_cluster_employee (
+                    cluster_id TEXT,
+                    employee_id TEXT,
+                    FOREIGN KEY (cluster_id) REFERENCES ai_cluster_config(cluster_id),
+                    FOREIGN KEY (employee_id) REFERENCES ai_employee_config(employee_id),
+                    PRIMARY KEY (cluster_id, employee_id)
+                )
+            ''')
+
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS ai_config_history (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    config_type TEXT NOT NULL,
+                    config_id TEXT NOT NULL,
+                    action TEXT NOT NULL,
+                    old_value TEXT,
+                    new_value TEXT,
+                    operator TEXT DEFAULT 'system',
+                    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS ai_config_snapshot (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    snapshot_name TEXT NOT NULL,
+                    snapshot_data TEXT NOT NULL,
+                    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                    operator TEXT DEFAULT 'system'
+                )
+            ''')
+
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS ai_database_version (
+                    version INTEGER PRIMARY KEY,
+                    applied_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                    description TEXT
+                )
+            ''')
+
+            cursor.execute('SELECT version FROM ai_database_version ORDER BY version DESC LIMIT 1')
+            row = cursor.fetchone()
+            current_version = row[0] if row else 0
+
+            if current_version < DATABASE_VERSION:
+                logger.info(f"数据库版本升级: {current_version} -> {DATABASE_VERSION}")
+                _run_database_migrations(conn, cursor, current_version)
+
+            conn.commit()
+
+        logger.info("AI集群配置数据库表初始化完成")
+    except Exception as e:
+        logger.error(f"初始化集群配置数据库失败: {str(e)}")
+
+def _run_database_migrations(conn, cursor, current_version):
+    """Run database migrations from current version to latest"""
+    migrations = [
+        {
+            'version': 1,
+            'description': 'Initial schema',
+            'operations': []
+        },
+        {
+            'version': 2,
+            'description': 'Add snapshot table and version tracking',
+            'operations': [
+                '''CREATE TABLE IF NOT EXISTS ai_config_snapshot (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    snapshot_name TEXT NOT NULL,
+                    snapshot_data TEXT NOT NULL,
+                    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                    operator TEXT DEFAULT 'system'
+                )''',
+                '''CREATE TABLE IF NOT EXISTS ai_database_version (
+                    version INTEGER PRIMARY KEY,
+                    applied_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                    description TEXT
+                )'''
+            ]
+        }
+    ]
+
+    for migration in migrations:
+        if migration['version'] > current_version:
+            logger.info(f"应用迁移版本 {migration['version']}: {migration['description']}")
+            for operation in migration['operations']:
+                cursor.execute(operation)
+            
+            cursor.execute('''
+                INSERT OR REPLACE INTO ai_database_version (version, description)
+                VALUES (?, ?)
+            ''', (migration['version'], migration['description']))
+            conn.commit()
+            logger.info(f"迁移版本 {migration['version']} 应用完成")
 
 class AIEmployee:
     """AI Employee class represents an individual AI worker with specific capabilities"""
@@ -118,6 +263,17 @@ class AIEmployee:
             logger.error(f"Failed to upgrade {self.employee_id}: {str(e)}")
             return False
 
+    def to_db_dict(self) -> Dict[str, Any]:
+        """Convert to database dict"""
+        return {
+            'employee_id': self.employee_id,
+            'employee_type': self.employee_type,
+            'capabilities': json.dumps(self.capabilities),
+            'config': json.dumps(self.config),
+            'assigned_cluster': self.assigned_cluster,
+            'status': self.status
+        }
+
 
 class AICluster:
     """AI Cluster class manages a group of AI employees"""
@@ -183,6 +339,7 @@ class AICluster:
             return {
                 'cluster_id': self.cluster_id,
                 'cluster_type': self.cluster_type,
+                'config': self.config,
                 'status': self.status,
                 'created_at': self.created_at,
                 'last_updated': self.last_updated,
@@ -211,11 +368,31 @@ class AICluster:
             logger.info(f"Updated cluster {self.cluster_id} status: {status}")
             return True
 
+    def to_db_dict(self) -> Dict[str, Any]:
+        """Convert to database dict"""
+        return {
+            'cluster_id': self.cluster_id,
+            'cluster_type': self.cluster_type,
+            'config': json.dumps(self.config),
+            'status': self.status
+        }
+
 
 class AIClusterManager:
-    """Main AI Cluster Manager that handles all clusters and employees"""
+    """Main AI Cluster Manager that handles all clusters and employees with database persistence"""
+    
+    _instance = None
+    _initialized = False
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
 
     def __init__(self):
+        if self._initialized:
+            return
+            
         self.clusters: Dict[str, AICluster] = {}
         self.employees: Dict[str, AIEmployee] = {}
         self.lock = threading.RLock()
@@ -228,7 +405,211 @@ class AIClusterManager:
         self.auto_extend_interval = 3600
         self.last_auto_extend_time = time.time()
 
+        init_cluster_database()
+        self._load_from_database()
         self._start_monitoring_thread()
+        
+        self._initialized = True
+
+    def _load_from_database(self):
+        """Load clusters and employees from database"""
+        try:
+            with get_db_connection() as conn:
+                cursor = conn.cursor()
+
+                cursor.execute('SELECT * FROM ai_cluster_config')
+                for row in cursor.fetchall():
+                    cluster_id, cluster_type, config_str, status, created_at, updated_at = row
+                    config = json.loads(config_str) if config_str else {}
+                    cluster = AICluster(cluster_id, cluster_type, config)
+                    cluster.status = status
+                    if created_at:
+                        cluster.created_at = float(created_at) if created_at.replace('.', '').isdigit() else time.time()
+                    if updated_at:
+                        cluster.last_updated = float(updated_at) if updated_at.replace('.', '').isdigit() else time.time()
+                    self.clusters[cluster_id] = cluster
+
+                cursor.execute('SELECT * FROM ai_employee_config')
+                for row in cursor.fetchall():
+                    employee_id, employee_type, capabilities_str, config_str, assigned_cluster, status, created_at, updated_at = row
+                    capabilities = json.loads(capabilities_str) if capabilities_str else []
+                    config = json.loads(config_str) if config_str else {}
+                    employee = AIEmployee(employee_id, employee_type, capabilities, config)
+                    employee.status = status
+                    employee.assigned_cluster = assigned_cluster
+                    self.employees[employee_id] = employee
+
+                    if assigned_cluster and assigned_cluster in self.clusters:
+                        self.clusters[assigned_cluster].add_employee(employee)
+
+            logger.info(f"从数据库加载完成: {len(self.clusters)} 个集群, {len(self.employees)} 个员工")
+            
+            self._ensure_all_employees_assigned()
+            
+            if len(self.clusters) == 0 and len(self.employees) == 0:
+                logger.info("数据库为空，初始化默认集群和员工...")
+                self._initialize_defaults()
+        except Exception as e:
+            logger.error(f"从数据库加载配置失败: {str(e)}")
+            self._initialize_defaults()
+
+    def _save_to_database(self):
+        """Save all clusters and employees to database"""
+        try:
+            with get_db_connection() as conn:
+                cursor = conn.cursor()
+
+                for cluster in self.clusters.values():
+                    data = cluster.to_db_dict()
+                    data['updated_at'] = str(time.time())
+                    cursor.execute('''
+                        INSERT OR REPLACE INTO ai_cluster_config 
+                        (cluster_id, cluster_type, config, status, created_at, updated_at)
+                        VALUES (?, ?, ?, ?, ?, ?)
+                    ''', (data['cluster_id'], data['cluster_type'], data['config'], data['status'], str(cluster.created_at), data['updated_at']))
+
+                for employee in self.employees.values():
+                    data = employee.to_db_dict()
+                    cursor.execute('''
+                        INSERT OR REPLACE INTO ai_employee_config 
+                        (employee_id, employee_type, capabilities, config, assigned_cluster, status, updated_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                    ''', (data['employee_id'], data['employee_type'], data['capabilities'], data['config'], data['assigned_cluster'], data['status'], str(time.time())))
+
+                cursor.execute('DELETE FROM ai_cluster_employee')
+                for cluster in self.clusters.values():
+                    for employee_id in cluster.employees.keys():
+                        cursor.execute('''
+                            INSERT INTO ai_cluster_employee (cluster_id, employee_id)
+                            VALUES (?, ?)
+                        ''', (cluster.cluster_id, employee_id))
+
+                conn.commit()
+
+            logger.info(f"保存到数据库完成: {len(self.clusters)} 个集群, {len(self.employees)} 个员工")
+        except Exception as e:
+            logger.error(f"保存到数据库失败: {str(e)}")
+
+    def _initialize_defaults(self):
+        """Initialize default clusters and employees if database is empty"""
+        logger.info("初始化默认集群和员工...")
+        self._create_default_clusters()
+        self._create_default_employees()
+        self._assign_default_employees()
+        self._save_to_database()
+
+    def _create_default_clusters(self):
+        """Create default clusters"""
+        default_clusters = [
+            ('api_cluster', 'api_management'),
+            ('frontend_cluster', 'frontend_development'),
+            ('backend_cluster', 'backend_development'),
+            ('database_cluster', 'database_management'),
+            ('security_cluster', 'security_management'),
+            ('middleware_cluster', 'middleware_management'),
+            ('logging_cluster', 'log_management'),
+        ]
+
+        for cluster_id, cluster_type in default_clusters:
+            self.create_cluster(cluster_id, cluster_type)
+
+    def _create_default_employees(self):
+        """Create default employees"""
+        employees = [
+            ('api_worker_1', 'api_specialist', ['api_port_management', 'api_monitoring', 'api_optimization']),
+            ('api_worker_2', 'api_specialist', ['api_port_management', 'api_security', 'api_testing']),
+            ('frontend_worker_1', 'frontend_specialist', ['frontend_development', 'ui_ux_design', 'responsive_design']),
+            ('backend_worker_1', 'backend_specialist', ['backend_development', 'server_configuration', 'performance_optimization']),
+            ('database_worker_1', 'database_specialist', ['database_management', 'query_optimization', 'indexing']),
+            ('database_worker_2', 'database_specialist', ['database_management', 'backup_restore', 'security_audit']),
+            ('middleware_worker_1', 'middleware_specialist', ['middleware_management', 'containerization', 'microservices']),
+            ('logging_worker_1', 'logging_specialist', ['log_management', 'log_analysis', 'monitoring']),
+            ('lock_ai_employee', 'lock_manager', ['system_lock_management', 'timeout_management', 'user_activity_tracking', 'security_policies', 'auto_maintenance', 'self_upgrade'])
+        ]
+
+        for employee_id, employee_type, capabilities in employees:
+            self.create_employee(employee_id, employee_type, capabilities)
+
+    def _assign_default_employees(self):
+        """Assign default employees to clusters"""
+        assignments = [
+            ('test_emp', 'test_cluster'),
+            ('api_worker_1', 'api_cluster'),
+            ('api_worker_2', 'api_cluster'),
+            ('frontend_worker_1', 'frontend_cluster'),
+            ('backend_worker_1', 'backend_cluster'),
+            ('database_worker_1', 'database_cluster'),
+            ('database_worker_2', 'database_cluster'),
+            ('middleware_worker_1', 'middleware_cluster'),
+            ('logging_worker_1', 'logging_cluster'),
+            ('lock_ai_employee', 'security_cluster')
+        ]
+
+        for employee_id, cluster_id in assignments:
+            if employee_id in self.employees and cluster_id in self.clusters:
+                self.assign_employee_to_cluster(employee_id, cluster_id)
+
+    def _ensure_all_employees_assigned(self):
+        """Ensure all employees are assigned to a cluster"""
+        unassigned_count = 0
+        for employee_id, employee in self.employees.items():
+            if not employee.assigned_cluster or employee.assigned_cluster not in self.clusters:
+                target_cluster = self._find_appropriate_cluster(employee)
+                if target_cluster:
+                    self.assign_employee_to_cluster(employee_id, target_cluster)
+                    unassigned_count += 1
+                else:
+                    logger.warning(f"无法为员工 {employee_id} 找到合适的集群")
+        
+        if unassigned_count > 0:
+            logger.info(f"已修复 {unassigned_count} 个未分配员工的集群分配")
+            self._save_to_database()
+
+    def _find_appropriate_cluster(self, employee: AIEmployee) -> Optional[str]:
+        """Find an appropriate cluster for an employee based on type"""
+        employee_type = employee.employee_type
+        type_mapping = {
+            'test_type': 'test_cluster',
+            'api_specialist': 'api_cluster',
+            'frontend_specialist': 'frontend_cluster',
+            'backend_specialist': 'backend_cluster',
+            'database_specialist': 'database_cluster',
+            'security_specialist': 'security_cluster',
+            'middleware_specialist': 'middleware_cluster',
+            'logging_specialist': 'logging_cluster',
+            'lock_manager': 'security_cluster'
+        }
+        
+        if employee_type in type_mapping:
+            cluster_id = type_mapping[employee_type]
+            if cluster_id in self.clusters:
+                return cluster_id
+        
+        for cluster_id, cluster in self.clusters.items():
+            if cluster.cluster_type == 'test_type' or cluster.cluster_type == employee_type:
+                return cluster_id
+        
+        if 'test_cluster' in self.clusters:
+            return 'test_cluster'
+        
+        if self.clusters:
+            return next(iter(self.clusters.keys()))
+        
+        return None
+
+    def _log_config_change(self, config_type: str, config_id: str, action: str, old_value: str = None, new_value: str = None, operator: str = 'system'):
+        """Log configuration changes to database"""
+        try:
+            with get_db_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute('''
+                    INSERT INTO ai_config_history 
+                    (config_type, config_id, action, old_value, new_value, operator)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                ''', (config_type, config_id, action, old_value, new_value, operator))
+                conn.commit()
+        except Exception as e:
+            logger.error(f"记录配置变更日志失败: {str(e)}")
 
     def _start_monitoring_thread(self):
         """Start the monitoring thread"""
@@ -262,6 +643,8 @@ class AIClusterManager:
                 self._auto_extend_system()
                 self.last_auto_extend_time = current_time
 
+            self._save_to_database()
+
     def _auto_extend_system(self):
         """Auto extend system features and AI employees"""
         logger.info("Starting auto-extend system...")
@@ -271,6 +654,7 @@ class AIClusterManager:
             self._extend_system_features(system_analysis)
             self._auto_onboard_ai_employees(system_analysis)
 
+            self._save_to_database()
             logger.info("Auto-extend system completed")
         except Exception as e:
             logger.error(f"Auto-extend system failed: {str(e)}")
@@ -279,7 +663,16 @@ class AIClusterManager:
         """Analyze system needs"""
         logger.info("Analyzing system needs...")
 
-        analysis = {
+        analysis = self._build_analysis_base()
+        self._analyze_cluster_needs(analysis)
+        self._analyze_employee_needs(analysis)
+
+        logger.info(f"System analysis completed: {analysis}")
+        return analysis
+
+    def _build_analysis_base(self):
+        """Build base analysis structure"""
+        return {
             'timestamp': time.time(),
             'current_clusters': list(self.clusters.keys()),
             'current_employees': list(self.employees.keys()),
@@ -293,10 +686,8 @@ class AIClusterManager:
             }
         }
 
-        employee_types = {}
-        for employee in self.employees.values():
-            employee_types[employee.employee_type] = employee_types.get(employee.employee_type, 0) + 1
-
+    def _analyze_cluster_needs(self, analysis):
+        """Analyze cluster needs"""
         core_clusters = [
             ('api_cluster', 'api_management'),
             ('frontend_cluster', 'frontend_development'),
@@ -309,6 +700,12 @@ class AIClusterManager:
         for cluster_id, cluster_type in core_clusters:
             if cluster_id not in analysis['current_clusters']:
                 analysis['needs']['new_clusters'].append((cluster_id, cluster_type))
+
+    def _analyze_employee_needs(self, analysis):
+        """Analyze employee needs"""
+        employee_types = {}
+        for employee in self.employees.values():
+            employee_types[employee.employee_type] = employee_types.get(employee.employee_type, 0) + 1
 
         core_employees = [
             {
@@ -342,9 +739,6 @@ class AIClusterManager:
                 'capabilities': ['api_port_management', 'api_monitoring', 'api_optimization', 'api_security', 'api_testing'],
                 'cluster_id': 'api_cluster'
             })
-
-        logger.info(f"System analysis completed: {analysis}")
-        return analysis
 
     def _extend_system_features(self, analysis):
         """Extend system features"""
@@ -381,37 +775,49 @@ class AIClusterManager:
         logger.info("Auto-onboarding AI employees...")
 
         for employee_info in analysis['needs']['new_employees']:
-            employee_id = employee_info['employee_id']
-            employee_type = employee_info['employee_type']
-            capabilities = employee_info['capabilities']
-            cluster_id = employee_info['cluster_id']
+            self._onboard_single_employee(employee_info)
 
-            self.create_employee(employee_id, employee_type, capabilities)
+        self._optimize_existing_employees()
 
-            if cluster_id in self.clusters:
-                self.assign_employee_to_cluster(employee_id, cluster_id)
+    def _onboard_single_employee(self, employee_info):
+        """Onboard a single employee"""
+        employee_id = employee_info['employee_id']
+        employee_type = employee_info['employee_type']
+        capabilities = employee_info['capabilities']
+        cluster_id = employee_info['cluster_id']
 
-            employee = self.employees.get(employee_id)
-            if employee:
-                if employee_id == 'lock_ai_employee':
-                    employee.config['advanced_features'] = {
-                        'auto_optimize': True,
-                        'adaptive_learning': True,
-                        'threat_intelligence': True,
-                        'self_healing': True
-                    }
-                    logger.info(f"Configured advanced features for {employee_id}")
+        self.create_employee(employee_id, employee_type, capabilities)
 
-                if employee_id == 'monitoring_ai_employee':
-                    employee.config['advanced_features'] = {
-                        'predictive_analytics': True,
-                        'performance_tuning': True,
-                        'root_cause_analysis': True
-                    }
-                    logger.info(f"Configured advanced features for {employee_id}")
+        if cluster_id in self.clusters:
+            self.assign_employee_to_cluster(employee_id, cluster_id)
 
-            logger.info(f"AI employee {employee_id} onboarded to {cluster_id}")
+        employee = self.employees.get(employee_id)
+        if employee:
+            self._configure_employee_advanced_features(employee, employee_id)
 
+        logger.info(f"AI employee {employee_id} onboarded to {cluster_id}")
+
+    def _configure_employee_advanced_features(self, employee, employee_id):
+        """Configure advanced features for specific employees"""
+        if employee_id == 'lock_ai_employee':
+            employee.config['advanced_features'] = {
+                'auto_optimize': True,
+                'adaptive_learning': True,
+                'threat_intelligence': True,
+                'self_healing': True
+            }
+            logger.info(f"Configured advanced features for {employee_id}")
+
+        elif employee_id == 'monitoring_ai_employee':
+            employee.config['advanced_features'] = {
+                'predictive_analytics': True,
+                'performance_tuning': True,
+                'root_cause_analysis': True
+            }
+            logger.info(f"Configured advanced features for {employee_id}")
+
+    def _optimize_existing_employees(self):
+        """Optimize configurations for existing employees"""
         logger.info("Optimizing existing employee configurations...")
         for employee_id, employee in self.employees.items():
             if 'auto_upgrade' not in employee.config:
@@ -428,6 +834,8 @@ class AIClusterManager:
                 return False
 
             self.clusters[cluster_id] = AICluster(cluster_id, cluster_type, config)
+            self._log_config_change('cluster', cluster_id, 'create', new_value=json.dumps({'cluster_type': cluster_type, 'config': config or {}}))
+            self._save_to_database()
             logger.info(f"Created cluster: {cluster_id} ({cluster_type})")
             return True
 
@@ -439,10 +847,14 @@ class AIClusterManager:
                 return False
 
             cluster = self.clusters[cluster_id]
+            old_value = json.dumps(cluster.to_db_dict())
+            
             for employee_id in list(cluster.employees.keys()):
                 cluster.remove_employee(employee_id)
 
             del self.clusters[cluster_id]
+            self._log_config_change('cluster', cluster_id, 'delete', old_value=old_value)
+            self._save_to_database()
             logger.info(f"Deleted cluster: {cluster_id}")
             return True
 
@@ -455,6 +867,8 @@ class AIClusterManager:
 
             employee = AIEmployee(employee_id, employee_type, capabilities, config)
             self.employees[employee_id] = employee
+            self._log_config_change('employee', employee_id, 'create', new_value=json.dumps({'employee_type': employee_type, 'capabilities': capabilities, 'config': config or {}}))
+            self._save_to_database()
             logger.info(f"Created employee: {employee_id} ({employee_type})")
             return True
 
@@ -466,12 +880,16 @@ class AIClusterManager:
                 return False
 
             employee = self.employees[employee_id]
+            old_value = json.dumps(employee.to_db_dict())
+            
             if employee.assigned_cluster:
                 cluster = self.clusters.get(employee.assigned_cluster)
                 if cluster:
                     cluster.remove_employee(employee_id)
 
             del self.employees[employee_id]
+            self._log_config_change('employee', employee_id, 'delete', old_value=old_value)
+            self._save_to_database()
             logger.info(f"Deleted employee: {employee_id}")
             return True
 
@@ -487,6 +905,8 @@ class AIClusterManager:
                 return False
 
             employee = self.employees[employee_id]
+            old_cluster = employee.assigned_cluster
+            
             if employee.assigned_cluster:
                 current_cluster = self.clusters.get(employee.assigned_cluster)
                 if current_cluster:
@@ -494,6 +914,48 @@ class AIClusterManager:
 
             cluster = self.clusters[cluster_id]
             cluster.add_employee(employee)
+            
+            self._log_config_change('employee', employee_id, 'assign', 
+                                   old_value=json.dumps({'assigned_cluster': old_cluster}),
+                                   new_value=json.dumps({'assigned_cluster': cluster_id}))
+            self._save_to_database()
+            return True
+
+    def update_cluster_config(self, cluster_id: str, config: Dict) -> bool:
+        """Update cluster configuration"""
+        with self.lock:
+            if cluster_id not in self.clusters:
+                logger.warning(f"Cluster {cluster_id} does not exist")
+                return False
+
+            cluster = self.clusters[cluster_id]
+            old_config = cluster.config.copy()
+            cluster.config.update(config)
+            cluster.last_updated = time.time()
+            
+            self._log_config_change('cluster', cluster_id, 'update_config',
+                                   old_value=json.dumps(old_config),
+                                   new_value=json.dumps(cluster.config))
+            self._save_to_database()
+            logger.info(f"Updated cluster config: {cluster_id}")
+            return True
+
+    def update_employee_config(self, employee_id: str, config: Dict) -> bool:
+        """Update employee configuration"""
+        with self.lock:
+            if employee_id not in self.employees:
+                logger.warning(f"Employee {employee_id} does not exist")
+                return False
+
+            employee = self.employees[employee_id]
+            old_config = employee.config.copy()
+            employee.config.update(config)
+            
+            self._log_config_change('employee', employee_id, 'update_config',
+                                   old_value=json.dumps(old_config),
+                                   new_value=json.dumps(employee.config))
+            self._save_to_database()
+            logger.info(f"Updated employee config: {employee_id}")
             return True
 
     def get_cluster_status(self, cluster_id: Optional[str] = None) -> Dict[str, Any]:
@@ -542,6 +1004,52 @@ class AIClusterManager:
                     'status': all_status
                 }
 
+    def get_config_history(self, config_type: Optional[str] = None, config_id: Optional[str] = None, limit: int = 50) -> Dict[str, Any]:
+        """Get configuration change history"""
+        try:
+            with get_db_connection() as conn:
+                cursor = conn.cursor()
+
+                query = 'SELECT * FROM ai_config_history WHERE 1=1'
+                params = []
+                
+                if config_type:
+                    query += ' AND config_type = ?'
+                    params.append(config_type)
+                
+                if config_id:
+                    query += ' AND config_id = ?'
+                    params.append(config_id)
+                
+                query += ' ORDER BY created_at DESC LIMIT ?'
+                params.append(limit)
+
+                cursor.execute(query, params)
+                rows = cursor.fetchall()
+                
+                history = []
+                for row in rows:
+                    history.append({
+                        'id': row[0],
+                        'config_type': row[1],
+                        'config_id': row[2],
+                        'action': row[3],
+                        'old_value': json.loads(row[4]) if row[4] else None,
+                        'new_value': json.loads(row[5]) if row[5] else None,
+                        'operator': row[6],
+                        'created_at': row[7]
+                    })
+            
+            return {
+                'success': True,
+                'history': history
+            }
+        except Exception as e:
+            return {
+                'success': False,
+                'error': str(e)
+            }
+
     def upgrade_all(self, upgrade_data: Optional[Dict] = None) -> Dict[str, Any]:
         """Upgrade all clusters and employees"""
         with self.lock:
@@ -561,6 +1069,7 @@ class AIClusterManager:
                 if employee_id not in results['employees']:
                     results['employees'][employee_id] = employee.upgrade(upgrade_data)
 
+            self._save_to_database()
             logger.info("Global upgrade completed")
             return {
                 'success': True,
@@ -604,58 +1113,13 @@ class AIClusterManager:
 
             for employee in self.employees.values():
                 employee.update_status("shutdown")
+            
+            self._save_to_database()
             logger.info("AI Cluster Manager shut down successfully")
             return True
 
 
 ai_cluster_manager = AIClusterManager()
-
-def initialize_default_clusters():
-    """Initialize default clusters and employees"""
-    default_clusters = [
-        ('api_cluster', 'api_management'),
-        ('frontend_cluster', 'frontend_development'),
-        ('backend_cluster', 'backend_development'),
-        ('database_cluster', 'database_management'),
-        ('security_cluster', 'security_management'),
-        ('middleware_cluster', 'middleware_management'),
-        ('logging_cluster', 'log_management'),
-    ]
-
-    for cluster_id, cluster_type in default_clusters:
-        ai_cluster_manager.create_cluster(cluster_id, cluster_type)
-
-    employees = [
-        ('api_worker_1', 'api_specialist', ['api_port_management', 'api_monitoring', 'api_optimization']),
-        ('api_worker_2', 'api_specialist', ['api_port_management', 'api_security', 'api_testing']),
-        ('frontend_worker_1', 'frontend_specialist', ['frontend_development', 'ui_ux_design', 'responsive_design']),
-        ('backend_worker_1', 'backend_specialist', ['backend_development', 'server_configuration', 'performance_optimization']),
-        ('database_worker_1', 'database_specialist', ['database_management', 'query_optimization', 'indexing']),
-        ('database_worker_2', 'database_specialist', ['database_management', 'backup_restore', 'security_audit']),
-        ('middleware_worker_1', 'middleware_specialist', ['middleware_management', 'containerization', 'microservices']),
-        ('logging_worker_1', 'logging_specialist', ['log_management', 'log_analysis', 'monitoring']),
-        ('lock_ai_employee', 'lock_manager', ['system_lock_management', 'timeout_management', 'user_activity_tracking', 'security_policies', 'auto_maintenance', 'self_upgrade'])
-    ]
-
-    for employee_id, employee_type, capabilities in employees:
-        ai_cluster_manager.create_employee(employee_id, employee_type, capabilities)
-
-    assignments = [
-        ('api_worker_1', 'api_cluster'),
-        ('api_worker_2', 'api_cluster'),
-        ('frontend_worker_1', 'frontend_cluster'),
-        ('backend_worker_1', 'backend_cluster'),
-        ('database_worker_1', 'database_cluster'),
-        ('database_worker_2', 'database_cluster'),
-        ('middleware_worker_1', 'middleware_cluster'),
-        ('logging_worker_1', 'logging_cluster'),
-        ('lock_ai_employee', 'security_cluster')
-    ]
-
-    for employee_id, cluster_id in assignments:
-        ai_cluster_manager.assign_employee_to_cluster(employee_id, cluster_id)
-
-initialize_default_clusters()
 
 if __name__ == "__main__":
     logger.info("AI Cluster Manager initialized")
@@ -668,5 +1132,8 @@ if __name__ == "__main__":
 
     upgrade_result = ai_cluster_manager.upgrade_all({"capabilities": ["new_feature"]})
     logger.info(f"Upgrade Result: {json.dumps(upgrade_result, indent=2)}")
+
+    config_history = ai_cluster_manager.get_config_history()
+    logger.info(f"Config History: {json.dumps(config_history, indent=2)}")
 
     logger.info("AI Cluster Manager test completed!")

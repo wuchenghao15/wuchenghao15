@@ -688,7 +688,7 @@ def get_system_settings():
     """获取系统设置"""
     settings = {
         'system_name': 'MTSCOS AI 智能学习评估系统',
-        'version': "3.1.0",
+        'version': "5.3.0",
         'description': '基于AI的智能学习评估系统,提供个性化学习体验和智能评估功能.',
         'admin_email': 'admin@example.com',
         'maintenance_mode': False,
@@ -3292,7 +3292,10 @@ def login():
             
             # 判断请求类型,决定返回方式
             accept_header = request.headers.get('Accept', '')
+            logger.info(f"[登录调试] Accept头: '{accept_header}', is_json: {request.is_json}, Content-Type: {request.headers.get('Content-Type')}")
+            
             if 'application/json' in accept_header or request.is_json:
+                logger.info(f"[登录调试] 返回JSON响应")
                 return jsonify({
                     'success': True, 
                     'message': '登录成功', 
@@ -3308,6 +3311,7 @@ def login():
                     'redirect': redirect_url
                 })
             else:
+                logger.info(f"[登录调试] 返回重定向响应")
                 return redirect(redirect_url)
         
         # GET请求显示登录页面
@@ -3799,7 +3803,7 @@ def get_dashboard_stats_public():
 # 系统状态
 @app.route('/api/system/status')
 def system_status():
-    return jsonify({'status': 'running', 'version': "3.1.0", 'timestamp': datetime.now().isoformat()})
+    return jsonify({'status': 'running', 'version': "5.3.0", 'timestamp': datetime.now().isoformat()})
 
 # 用户信息API - 改用/api/users/info避免路由冲突
 @app.route('/api/users/info/<username>')
@@ -6644,9 +6648,8 @@ class AIEmployeeManager:
         return discovered_features
 
 
+from ai_engines.ai_employee_manager import AIEmployeeManager
 ai_employee_manager = AIEmployeeManager()
-
-ai_employee_manager.auto_discover_and_extend()
 
 
 @app.route('/api/ai_employees/list')
@@ -7176,6 +7179,2822 @@ def test():
 @app.route('/matrix_management')
 def matrix_management():
     return render_template('matrix_management.html')
+
+# ==================== 集群矩阵管理 ====================
+
+@app.route('/ai_cluster_matrix')
+def ai_cluster_matrix():
+    """AI集群矩阵管理页面"""
+    return render_template('ai_cluster_matrix.html')
+
+@app.route('/api/cluster_matrix/overview')
+def cluster_matrix_overview():
+    """集群矩阵概览"""
+    from ai_engines.cluster_matrix_manager import cluster_matrix_manager
+    return jsonify(cluster_matrix_manager.get_matrix_overview())
+
+@app.route('/api/cluster_matrix/employee')
+def cluster_matrix_employee():
+    """AI员工集群矩阵"""
+    from ai_engines.cluster_matrix_manager import cluster_matrix_manager
+    return jsonify(cluster_matrix_manager.get_employee_cluster_matrix())
+
+@app.route('/api/cluster_matrix/agent')
+def cluster_matrix_agent():
+    """AI Agent集群矩阵"""
+    from ai_engines.cluster_matrix_manager import cluster_matrix_manager
+    return jsonify(cluster_matrix_manager.get_agent_cluster_matrix())
+
+@app.route('/api/cluster_matrix/automation')
+def cluster_matrix_automation():
+    """自动化集群矩阵"""
+    from ai_engines.cluster_matrix_manager import cluster_matrix_manager
+    return jsonify(cluster_matrix_manager.get_automation_cluster_matrix())
+
+@app.route('/api/cluster_matrix/full')
+def cluster_matrix_full():
+    """完整集群矩阵"""
+    from ai_engines.cluster_matrix_manager import cluster_matrix_manager
+    return jsonify(cluster_matrix_manager.get_full_matrix())
+
+@app.route('/api/cluster_matrix/system/start', methods=['POST'])
+def cluster_matrix_start():
+    """启动自动化系统"""
+    from ai_engines.system_auto_processor import system_auto_processor
+    result = system_auto_processor.start()
+    return jsonify(result)
+
+@app.route('/api/cluster_matrix/system/stop', methods=['POST'])
+def cluster_matrix_stop():
+    """停止自动化系统"""
+    from ai_engines.system_auto_processor import system_auto_processor
+    result = system_auto_processor.stop()
+    return jsonify(result)
+
+@app.route('/api/cluster_matrix/system/diagnose', methods=['POST'])
+def cluster_matrix_diagnose():
+    """运行诊断"""
+    from ai_engines.system_auto_processor import diagnostic_repair_ai
+    result = diagnostic_repair_ai.run_diagnostics()
+    return jsonify(result)
+
+@app.route('/api/cluster_matrix/system/repair', methods=['POST'])
+def cluster_matrix_repair():
+    """强制修复"""
+    from ai_engines.system_auto_processor import diagnostic_repair_ai
+    result = diagnostic_repair_ai.force_repair()
+    return jsonify(result)
+
+# ==================== MTSCOS 功能拓展中心 ====================
+
+@app.route('/mtscos_extension_hub')
+def mtscos_extension_hub():
+    """MTSCOS功能拓展中心页面"""
+    return render_template('mtscos_extension_hub.html')
+
+@app.route('/api/mtscos_extension/overview')
+def mtscos_extension_overview():
+    """获取拓展概览"""
+    from ai_engines.mtscos_extension_manager import mtscos_extension_manager
+    return jsonify(mtscos_extension_manager.get_extension_overview())
+
+@app.route('/api/mtscos_extension/discover')
+def mtscos_extension_discover():
+    """重新发现所有功能"""
+    from ai_engines.mtscos_extension_manager import mtscos_extension_manager
+    return jsonify(mtscos_extension_manager.discover_all_features())
+
+@app.route('/api/mtscos_extension/categories')
+def mtscos_extension_categories():
+    """获取所有分类"""
+    from ai_engines.mtscos_extension_manager import mtscos_extension_manager
+    return jsonify(mtscos_extension_manager.get_all_categories())
+
+@app.route('/api/mtscos_extension/features')
+def mtscos_extension_features():
+    """获取功能列表（支持按分类和类型过滤）"""
+    from ai_engines.mtscos_extension_manager import mtscos_extension_manager
+    from flask import request
+    category = request.args.get('category', '')
+    ftype = request.args.get('type', '')
+
+    if not mtscos_extension_manager.discovered_features:
+        mtscos_extension_manager.discover_all_features()
+
+    features = list(mtscos_extension_manager.discovered_features.values())
+    if category:
+        features = [f for f in features if f.get('category') == category]
+    if ftype:
+        features = [f for f in features if f.get('feature_type') == ftype]
+
+    return jsonify({
+        'success': True,
+        'total': len(features),
+        'features': features[:200]
+    })
+
+@app.route('/api/mtscos_extension/extend', methods=['POST'])
+def mtscos_extension_extend():
+    """拓展单个功能"""
+    from ai_engines.mtscos_extension_manager import mtscos_extension_manager
+    from flask import request
+    feature_id = request.args.get('feature_id', '') or request.form.get('feature_id', '')
+    ext_type = request.args.get('type', 'auto') or request.form.get('type', 'auto')
+    if not feature_id:
+        return jsonify({'success': False, 'message': '缺少 feature_id 参数'})
+    result = mtscos_extension_manager.extend_feature(feature_id, {'extension_type': ext_type})
+    return jsonify(result)
+
+@app.route('/api/mtscos_extension/extend_category', methods=['POST'])
+def mtscos_extension_extend_category():
+    """拓展整个分类的功能"""
+    from ai_engines.mtscos_extension_manager import mtscos_extension_manager
+    from flask import request
+    category = request.args.get('category', '') or request.form.get('category', '')
+    if not category:
+        return jsonify({'success': False, 'message': '缺少 category 参数'})
+
+    if not mtscos_extension_manager.discovered_features:
+        mtscos_extension_manager.discover_all_features()
+
+    features = [f for f in mtscos_extension_manager.discovered_features.values() if f.get('category') == category]
+    success_count = 0
+    fail_count = 0
+    for f in features:
+        try:
+            result = mtscos_extension_manager.extend_feature(f['feature_id'], {'extension_type': 'auto'})
+            if result.get('success'):
+                success_count += 1
+            else:
+                fail_count += 1
+        except Exception:
+            fail_count += 1
+
+    return jsonify({
+        'success': True,
+        'category': category,
+        'total': len(features),
+        'success_count': success_count,
+        'fail_count': fail_count
+    })
+
+@app.route('/api/mtscos_extension/extend_all', methods=['POST'])
+def mtscos_extension_extend_all():
+    """拓展所有功能"""
+    from ai_engines.mtscos_extension_manager import mtscos_extension_manager
+    result = mtscos_extension_manager.extend_all_features()
+    return jsonify(result)
+
+@app.route('/api/mtscos_extension/history')
+def mtscos_extension_history():
+    """获取拓展历史"""
+    from ai_engines.mtscos_extension_manager import mtscos_extension_manager
+    from flask import request
+    limit = request.args.get('limit', 50, type=int)
+    return jsonify(mtscos_extension_manager.get_extension_history(limit))
+
+# ==================== 系统功能拓展（真实功能） ====================
+
+@app.route('/api/system_function/extend_all', methods=['POST'])
+def system_function_extend_all():
+    """执行所有系统功能拓展（添加真实Agent模板/进程/计划/员工类型）"""
+    from ai_engines.system_function_extender import system_function_extender
+    result = system_function_extender.extend_all()
+    return jsonify(result)
+
+@app.route('/api/system_function/extend_agents', methods=['POST'])
+def system_function_extend_agents():
+    """仅拓展 Agent 模板"""
+    from ai_engines.system_function_extender import system_function_extender
+    return jsonify(system_function_extender.extend_agent_templates())
+
+@app.route('/api/system_function/extend_processes', methods=['POST'])
+def system_function_extend_processes():
+    """仅拓展自动化进程"""
+    from ai_engines.system_function_extender import system_function_extender
+    return jsonify(system_function_extender.extend_process_configs())
+
+@app.route('/api/system_function/extend_plans', methods=['POST'])
+def system_function_extend_plans():
+    """仅拓展计划任务"""
+    from ai_engines.system_function_extender import system_function_extender
+    return jsonify(system_function_extender.extend_plan_configs())
+
+@app.route('/api/system_function/extend_employees', methods=['POST'])
+def system_function_extend_employees():
+    """仅拓展 AI 员工类型和集群"""
+    from ai_engines.system_function_extender import system_function_extender
+    return jsonify(system_function_extender.extend_employee_types())
+
+@app.route('/api/system_function/summary')
+def system_function_summary():
+    """获取功能拓展摘要"""
+    from ai_engines.system_function_extender import system_function_extender
+    return jsonify(system_function_extender.get_extension_summary())
+
+# ==================== 系统增强引擎 ====================
+
+@app.route('/api/system_enhancement/overview')
+def system_enhancement_overview():
+    """获取系统增强概览"""
+    from ai_engines.system_enhancement_engine import system_enhancement_engine
+    return jsonify(system_enhancement_engine.get_enhancement_overview())
+
+@app.route('/api/system_enhancement/load_analysis')
+def system_enhancement_load():
+    """获取集群负载分析"""
+    from ai_engines.system_enhancement_engine import system_enhancement_engine
+    return jsonify(system_enhancement_engine.analyze_cluster_load())
+
+@app.route('/api/system_enhancement/employee_evaluation')
+def system_enhancement_evaluation():
+    """获取员工能力评估"""
+    from ai_engines.system_enhancement_engine import system_enhancement_engine
+    return jsonify(system_enhancement_engine.evaluate_all_employees())
+
+@app.route('/api/system_enhancement/assign_task', methods=['POST'])
+def system_enhancement_assign():
+    """智能分配任务"""
+    from ai_engines.system_enhancement_engine import system_enhancement_engine
+    from flask import request
+    data = request.get_json() or {}
+    task_id = data.get('task_id', f"task_{int(time.time())}")
+    task_type = data.get('task_type', 'generic')
+    capability = data.get('required_capability', '')
+    task_data = data.get('task_data', {})
+    priority = data.get('priority', 0)
+    result = system_enhancement_engine.assign_task_intelligently(
+        task_id, task_type, capability, task_data, priority)
+    return jsonify(result)
+
+@app.route('/api/system_enhancement/run_process/<process_id>', methods=['POST'])
+def system_enhancement_run_process(process_id):
+    """手动运行指定进程"""
+    from ai_engines.system_auto_processor import AutoProcessManager
+    pm = AutoProcessManager()
+    try:
+        pm._execute_process(process_id)
+        return jsonify({'success': True, 'message': f'进程 {process_id} 执行完成'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/system_enhancement/run_plan/<plan_id>', methods=['POST'])
+def system_enhancement_run_plan(plan_id):
+    """手动运行指定计划任务"""
+    from ai_engines.system_auto_processor import AutoPlanScheduler
+    ps = AutoPlanScheduler()
+    func_name = ps.default_plans.get(plan_id, {}).get('func', '')
+    if not func_name:
+        return jsonify({'success': False, 'message': f'计划 {plan_id} 不存在'})
+    func = ps.plan_functions.get(func_name)
+    if not func:
+        return jsonify({'success': False, 'message': f'函数 {func_name} 未注册'})
+    try:
+        func()
+        return jsonify({'success': True, 'message': f'计划 {plan_id} 执行完成'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+# ==================== AI 题目生成引擎 ====================
+
+@app.route('/api/question_engine/generate', methods=['POST'])
+def question_engine_generate():
+    """生成题目"""
+    from ai_engines.question_generation_engine import question_generation_engine
+    from flask import request
+    data = request.get_json() or {}
+    result = question_generation_engine.generate_questions(
+        data.get('subject', '数学'),
+        data.get('grade', '初中1年级'),
+        data.get('question_type', 'single_choice'),
+        data.get('count', 5),
+        data.get('difficulty', 3)
+    )
+    return jsonify(result)
+
+@app.route('/api/question_engine/statistics')
+def question_engine_stats():
+    """获取题目生成统计"""
+    from ai_engines.question_generation_engine import question_generation_engine
+    return jsonify(question_generation_engine.get_statistics())
+
+@app.route('/api/question_engine/check_duplicate')
+def question_engine_check_dup():
+    """检查题目重复"""
+    from ai_engines.question_generation_engine import question_generation_engine
+    from flask import request
+    content = request.args.get('content', '')
+    return jsonify(question_generation_engine.check_duplicates(content))
+
+# ==================== 自适应学习引擎 ====================
+
+@app.route('/api/learning_engine/mastery/<user_id>')
+def learning_engine_mastery(user_id):
+    """获取用户知识点掌握度"""
+    from ai_engines.adaptive_learning_engine import adaptive_learning_engine
+    return jsonify(adaptive_learning_engine.get_user_mastery(user_id))
+
+@app.route('/api/learning_engine/update_mastery', methods=['POST'])
+def learning_engine_update():
+    """更新掌握度"""
+    from ai_engines.adaptive_learning_engine import adaptive_learning_engine
+    from flask import request
+    data = request.get_json() or {}
+    return jsonify(adaptive_learning_engine.update_mastery(
+        data.get('user_id', ''),
+        data.get('knowledge_point', ''),
+        data.get('correct', False)
+    ))
+
+@app.route('/api/learning_engine/path/<user_id>', methods=['POST'])
+def learning_engine_path(user_id):
+    """生成学习路径"""
+    from ai_engines.adaptive_learning_engine import adaptive_learning_engine
+    from flask import request
+    data = request.get_json() or {}
+    return jsonify(adaptive_learning_engine.generate_learning_path(
+        user_id,
+        data.get('subject', '数学'),
+        data.get('target_level', 'advanced')
+    ))
+
+@app.route('/api/learning_engine/recommendations/<user_id>')
+def learning_engine_recs(user_id):
+    """获取学习推荐"""
+    from ai_engines.adaptive_learning_engine import adaptive_learning_engine
+    return jsonify(adaptive_learning_engine.get_recommendations(user_id))
+
+@app.route('/api/learning_engine/statistics')
+def learning_engine_stats():
+    """获取学习系统统计"""
+    from ai_engines.adaptive_learning_engine import adaptive_learning_engine
+    return jsonify(adaptive_learning_engine.get_statistics())
+
+# ==================== 智能通知路由 ====================
+
+@app.route('/api/notification_router/route', methods=['POST'])
+def notification_router_route():
+    """智能路由通知"""
+    from ai_engines.smart_notification_router import smart_notification_router
+    from flask import request
+    data = request.get_json() or {}
+    return jsonify(smart_notification_router.route_notification(
+        data.get('user_id', ''),
+        data.get('title', ''),
+        data.get('content', ''),
+        data.get('category', 'general'),
+        data.get('priority', 5)
+    ))
+
+@app.route('/api/notification_router/batch', methods=['POST'])
+def notification_router_batch():
+    """批量路由通知"""
+    from ai_engines.smart_notification_router import smart_notification_router
+    from flask import request
+    data = request.get_json() or {}
+    return jsonify(smart_notification_router.batch_route(data.get('notifications', [])))
+
+@app.route('/api/notification_router/preference', methods=['POST'])
+def notification_router_pref():
+    """设置通知偏好"""
+    from ai_engines.smart_notification_router import smart_notification_router
+    from flask import request
+    data = request.get_json() or {}
+    return jsonify(smart_notification_router.set_user_preference(
+        data.get('user_id', ''),
+        data.get('category', 'general'),
+        data.get('channel', 'web'),
+        data.get('priority_threshold', 3),
+        data.get('quiet_hours_start'),
+        data.get('quiet_hours_end')
+    ))
+
+@app.route('/api/notification_router/statistics')
+def notification_router_stats():
+    """获取通知系统统计"""
+    from ai_engines.smart_notification_router import smart_notification_router
+    return jsonify(smart_notification_router.get_statistics())
+
+# ==================== 知识图谱引擎 API ====================
+
+@app.route('/api/knowledge_graph/search')
+@require_login
+def kg_search():
+    """智能搜索知识点"""
+    from ai_engines.knowledge_graph_engine import knowledge_graph_engine
+    query = request.args.get('q', '')
+    subject = request.args.get('subject')
+    grade = request.args.get('grade')
+    limit = int(request.args.get('limit', 20))
+    user_id = current_user.id if hasattr(current_user, 'id') else None
+    return jsonify(knowledge_graph_engine.search_knowledge(query, subject, grade, limit, str(user_id) if user_id else None))
+
+@app.route('/api/knowledge_graph/related/<node_id>')
+@require_login
+def kg_related(node_id):
+    """获取关联知识点"""
+    from ai_engines.knowledge_graph_engine import knowledge_graph_engine
+    relation_type = request.args.get('type')
+    depth = int(request.args.get('depth', 1))
+    return jsonify(knowledge_graph_engine.get_related_knowledge(node_id, relation_type, depth))
+
+@app.route('/api/knowledge_graph/path')
+@require_login
+def kg_find_path():
+    """寻找学习路径"""
+    from ai_engines.knowledge_graph_engine import knowledge_graph_engine
+    start = request.args.get('start', '')
+    target = request.args.get('target', '')
+    user_id = current_user.id if hasattr(current_user, 'id') else None
+    return jsonify(knowledge_graph_engine.find_learning_path(start, target, str(user_id) if user_id else None))
+
+@app.route('/api/knowledge_graph/tree')
+@require_login
+def kg_tree():
+    """获取知识树"""
+    from ai_engines.knowledge_graph_engine import knowledge_graph_engine
+    subject = request.args.get('subject', '数学')
+    grade = request.args.get('grade')
+    return jsonify(knowledge_graph_engine.get_knowledge_tree(subject, grade))
+
+@app.route('/api/knowledge_graph/init', methods=['POST'])
+@require_admin
+def kg_init():
+    """初始化默认知识点"""
+    from ai_engines.knowledge_graph_engine import knowledge_graph_engine
+    data = request.get_json() or {}
+    subject = data.get('subject')
+    return jsonify(knowledge_graph_engine.init_default_knowledge(subject))
+
+@app.route('/api/knowledge_graph/statistics')
+def kg_stats():
+    """获取知识图谱统计"""
+    from ai_engines.knowledge_graph_engine import knowledge_graph_engine
+    return jsonify(knowledge_graph_engine.get_statistics())
+
+@app.route('/api/knowledge_graph/node', methods=['POST'])
+@require_admin
+def kg_add_node():
+    """添加知识点节点"""
+    from ai_engines.knowledge_graph_engine import knowledge_graph_engine
+    data = request.get_json() or {}
+    return jsonify(knowledge_graph_engine.add_knowledge_node(
+        data.get('subject', ''),
+        data.get('knowledge_point', ''),
+        data.get('grade'),
+        data.get('category'),
+        data.get('difficulty', 3),
+        data.get('importance', 0.5),
+        data.get('description'),
+        data.get('tags', []),
+        data.get('prerequisites', []),
+        data.get('dependents', [])
+    ))
+
+@app.route('/api/knowledge_graph/relation', methods=['POST'])
+@require_admin
+def kg_add_relation():
+    """添加知识点关联"""
+    from ai_engines.knowledge_graph_engine import knowledge_graph_engine
+    data = request.get_json() or {}
+    return jsonify(knowledge_graph_engine.add_relation(
+        data.get('source_node', ''),
+        data.get('target_node', ''),
+        data.get('relation_type', 'related'),
+        data.get('strength', 0.5),
+        data.get('direction', 'undirected'),
+        data.get('description')
+    ))
+
+# ==================== 奖励成就引擎 API ====================
+
+@app.route('/api/reward/points')
+@require_login
+def reward_get_points():
+    """获取用户积分信息"""
+    from ai_engines.reward_achievement_engine import reward_achievement_engine
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    return jsonify(reward_achievement_engine.get_user_points(user_id))
+
+@app.route('/api/reward/points/add', methods=['POST'])
+@require_admin
+def reward_add_points():
+    """添加积分"""
+    from ai_engines.reward_achievement_engine import reward_achievement_engine
+    data = request.get_json() or {}
+    return jsonify(reward_achievement_engine.add_points(
+        data.get('user_id', ''),
+        data.get('points', 0),
+        data.get('reason', ''),
+        data.get('transaction_type', 'earn'),
+        data.get('related_id')
+    ))
+
+@app.route('/api/reward/signin', methods=['POST'])
+@require_login
+def reward_signin():
+    """每日签到"""
+    from ai_engines.reward_achievement_engine import reward_achievement_engine
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    return jsonify(reward_achievement_engine.daily_signin(user_id))
+
+@app.route('/api/reward/badges')
+@require_login
+def reward_get_badges():
+    """获取用户徽章"""
+    from ai_engines.reward_achievement_engine import reward_achievement_engine
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    return jsonify(reward_achievement_engine.get_user_badges(user_id))
+
+@app.route('/api/reward/badges/all')
+def reward_all_badges():
+    """获取所有徽章列表"""
+    from ai_engines.reward_achievement_engine import reward_achievement_engine
+    return jsonify(reward_achievement_engine.get_all_badges())
+
+@app.route('/api/reward/achievements')
+@require_login
+def reward_get_achievements():
+    """获取用户成就"""
+    from ai_engines.reward_achievement_engine import reward_achievement_engine
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    status = request.args.get('status')
+    return jsonify(reward_achievement_engine.get_user_achievements(user_id, status))
+
+@app.route('/api/reward/achievements/all')
+def reward_all_achievements():
+    """获取所有成就列表"""
+    from ai_engines.reward_achievement_engine import reward_achievement_engine
+    return jsonify(reward_achievement_engine.get_all_achievements())
+
+@app.route('/api/reward/achievements/progress', methods=['POST'])
+@require_login
+def reward_update_achievement():
+    """更新成就进度"""
+    from ai_engines.reward_achievement_engine import reward_achievement_engine
+    data = request.get_json() or {}
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    return jsonify(reward_achievement_engine.update_achievement_progress(
+        user_id,
+        data.get('achievement_id', ''),
+        data.get('increment', 1)
+    ))
+
+@app.route('/api/reward/leaderboard')
+def reward_leaderboard():
+    """获取排行榜"""
+    from ai_engines.reward_achievement_engine import reward_achievement_engine
+    board_type = request.args.get('type', 'points')
+    limit = int(request.args.get('limit', 20))
+    return jsonify(reward_achievement_engine.get_leaderboard(board_type, limit))
+
+@app.route('/api/reward/statistics')
+def reward_stats():
+    """获取奖励系统统计"""
+    from ai_engines.reward_achievement_engine import reward_achievement_engine
+    return jsonify(reward_achievement_engine.get_statistics())
+
+# ==================== 错题本引擎 API ====================
+
+@app.route('/api/wrong_book/list')
+@require_login
+def wrong_book_list():
+    """获取错题列表"""
+    from ai_engines.wrong_book_engine import wrong_book_engine
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    subject = request.args.get('subject')
+    status = request.args.get('status')
+    limit = int(request.args.get('limit', 50))
+    sort_by = request.args.get('sort', 'wrong_count')
+    return jsonify(wrong_book_engine.get_user_wrong_questions(user_id, subject, status, limit, sort_by))
+
+@app.route('/api/wrong_book/add', methods=['POST'])
+@require_login
+def wrong_book_add():
+    """添加错题"""
+    from ai_engines.wrong_book_engine import wrong_book_engine
+    data = request.get_json() or {}
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    return jsonify(wrong_book_engine.add_wrong_question(
+        user_id,
+        data.get('question_id', ''),
+        data.get('subject'),
+        data.get('question_type'),
+        data.get('content'),
+        data.get('options', []),
+        data.get('correct_answer'),
+        data.get('user_answer'),
+        data.get('knowledge_points', []),
+        data.get('difficulty', 3),
+        data.get('source'),
+        data.get('source_id'),
+        data.get('wrong_reason')
+    ))
+
+@app.route('/api/wrong_book/review', methods=['POST'])
+@require_login
+def wrong_book_review():
+    """复习错题"""
+    from ai_engines.wrong_book_engine import wrong_book_engine
+    data = request.get_json() or {}
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    return jsonify(wrong_book_engine.review_wrong_question(
+        data.get('wrong_id', 0),
+        user_id,
+        data.get('is_correct', False),
+        data.get('user_answer'),
+        data.get('time_spent'),
+        data.get('notes')
+    ))
+
+@app.route('/api/wrong_book/analyze')
+@require_login
+def wrong_book_analyze():
+    """分析薄弱点"""
+    from ai_engines.wrong_book_engine import wrong_book_engine
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    subject = request.args.get('subject')
+    return jsonify(wrong_book_engine.analyze_weak_points(user_id, subject))
+
+@app.route('/api/wrong_book/predict')
+@require_login
+def wrong_book_predict():
+    """预测潜在薄弱点"""
+    from ai_engines.wrong_book_engine import wrong_book_engine
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    subject = request.args.get('subject')
+    return jsonify(wrong_book_engine.predict_weak_points(user_id, subject))
+
+@app.route('/api/wrong_book/review_plan')
+@require_login
+def wrong_book_plan():
+    """生成复习计划"""
+    from ai_engines.wrong_book_engine import wrong_book_engine
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    subject = request.args.get('subject')
+    plan_type = request.args.get('type', 'smart')
+    count = int(request.args.get('count', 10))
+    return jsonify(wrong_book_engine.generate_review_plan(user_id, subject, plan_type, count))
+
+@app.route('/api/wrong_book/statistics')
+def wrong_book_stats():
+    """获取错题本统计"""
+    from ai_engines.wrong_book_engine import wrong_book_engine
+    return jsonify(wrong_book_engine.get_statistics())
+
+# ==================== 学习预测分析引擎 API ====================
+
+@app.route('/api/prediction/predict_score', methods=['POST'])
+@require_login
+def prediction_predict_score():
+    """预测下次考试成绩"""
+    from ai_engines.learning_prediction_engine import learning_prediction_engine
+    data = request.get_json() or {}
+    user_id = data.get('user_id') or (str(current_user.id) if hasattr(current_user, 'id') else 'test_user')
+    subject = data.get('subject')
+    horizon = data.get('horizon', 'next_exam')
+    return jsonify(learning_prediction_engine.predict_score(user_id, subject, horizon))
+
+@app.route('/api/prediction/dropout_risk')
+@require_login
+def prediction_dropout_risk():
+    """评估退学风险"""
+    from ai_engines.learning_prediction_engine import learning_prediction_engine
+    target_user = request.args.get('user_id')
+    if target_user:
+        # 管理员查看指定用户
+        if not (hasattr(current_user, 'role') and current_user.role in ('admin', 'super_admin', 'hardware_admin')):
+            return jsonify({'success': False, 'message': '无权查看其他用户'}), 403
+        user_id = target_user
+    else:
+        user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    return jsonify(learning_prediction_engine.assess_dropout_risk(user_id))
+
+@app.route('/api/prediction/trend')
+@require_login
+def prediction_trend():
+    """分析学习趋势"""
+    from ai_engines.learning_prediction_engine import learning_prediction_engine
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    subject = request.args.get('subject')
+    metric = request.args.get('metric', 'score')
+    return jsonify(learning_prediction_engine.analyze_trend(user_id, subject, metric))
+
+@app.route('/api/prediction/user_predictions')
+@require_login
+def prediction_user_predictions():
+    """获取用户预测汇总"""
+    from ai_engines.learning_prediction_engine import learning_prediction_engine
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    return jsonify(learning_prediction_engine.get_user_predictions(user_id))
+
+@app.route('/api/prediction/high_risk_users')
+@require_admin
+def prediction_high_risk_users():
+    """获取高风险用户列表（管理员）"""
+    from ai_engines.learning_prediction_engine import learning_prediction_engine
+    threshold = request.args.get('threshold', 'high')
+    return jsonify(learning_prediction_engine.get_high_risk_users(threshold))
+
+@app.route('/api/prediction/statistics')
+def prediction_stats():
+    """获取预测引擎统计"""
+    from ai_engines.learning_prediction_engine import learning_prediction_engine
+    return jsonify(learning_prediction_engine.get_statistics())
+
+# ==================== AI助教答疑引擎 API ====================
+
+@app.route('/api/tutor/start_session', methods=['POST'])
+@require_login
+def tutor_start_session():
+    """开始助教会话"""
+    from ai_engines.ai_tutor_engine import ai_tutor_engine
+    data = request.get_json() or {}
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    subject = data.get('subject')
+    topic = data.get('topic')
+    return jsonify(ai_tutor_engine.start_session(user_id, subject, topic))
+
+@app.route('/api/tutor/ask', methods=['POST'])
+@require_login
+def tutor_ask():
+    """向AI助教提问"""
+    from ai_engines.ai_tutor_engine import ai_tutor_engine
+    data = request.get_json() or {}
+    session_id = data.get('session_id')
+    if not session_id:
+        return jsonify({'success': False, 'message': '缺少 session_id'}), 400
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    question = data.get('question', '').strip()
+    if not question:
+        return jsonify({'success': False, 'message': '问题不能为空'}), 400
+    return jsonify(ai_tutor_engine.ask_question(session_id, user_id, question))
+
+@app.route('/api/tutor/explain', methods=['POST'])
+@require_login
+def tutor_explain():
+    """概念解释"""
+    from ai_engines.ai_tutor_engine import ai_tutor_engine
+    data = request.get_json() or {}
+    concept = data.get('concept', '').strip()
+    if not concept:
+        return jsonify({'success': False, 'message': '概念不能为空'}), 400
+    subject = data.get('subject')
+    return jsonify(ai_tutor_engine.explain_concept(concept, subject))
+
+@app.route('/api/tutor/history/<session_id>')
+@require_login
+def tutor_history(session_id):
+    """获取会话历史"""
+    from ai_engines.ai_tutor_engine import ai_tutor_engine
+    limit = int(request.args.get('limit', 50))
+    return jsonify(ai_tutor_engine.get_session_history(session_id, limit))
+
+@app.route('/api/tutor/end_session/<session_id>', methods=['POST'])
+@require_login
+def tutor_end_session(session_id):
+    """结束助教会话"""
+    from ai_engines.ai_tutor_engine import ai_tutor_engine
+    data = request.get_json() or {}
+    rating = data.get('rating')
+    feedback = data.get('feedback')
+    return jsonify(ai_tutor_engine.end_session(session_id, rating, feedback))
+
+@app.route('/api/tutor/sessions')
+@require_login
+def tutor_sessions():
+    """获取用户会话列表"""
+    from ai_engines.ai_tutor_engine import ai_tutor_engine
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    limit = int(request.args.get('limit', 20))
+    return jsonify(ai_tutor_engine.get_user_sessions(user_id, limit))
+
+@app.route('/api/tutor/faq/add', methods=['POST'])
+@require_admin
+def tutor_faq_add():
+    """添加FAQ（管理员）"""
+    from ai_engines.ai_tutor_engine import ai_tutor_engine
+    data = request.get_json() or {}
+    question_pattern = data.get('question_pattern', '').strip()
+    answer = data.get('answer', '').strip()
+    if not question_pattern or not answer:
+        return jsonify({'success': False, 'message': '问题模板和答案均不能为空'}), 400
+    subject = data.get('subject')
+    confidence = float(data.get('confidence', 0.8))
+    return jsonify(ai_tutor_engine.add_faq(question_pattern, answer, subject, confidence))
+
+@app.route('/api/tutor/statistics')
+def tutor_stats():
+    """获取助教引擎统计"""
+    from ai_engines.ai_tutor_engine import ai_tutor_engine
+    return jsonify(ai_tutor_engine.get_statistics())
+
+# ==================== 协作学习引擎 API ====================
+
+@app.route('/api/collaboration/create_group', methods=['POST'])
+@require_login
+def collaboration_create_group():
+    """创建学习小组"""
+    from ai_engines.collaborative_learning_engine import collaborative_learning_engine
+    data = request.get_json() or {}
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    group_name = data.get('group_name', '').strip()
+    if not group_name:
+        return jsonify({'success': False, 'message': '小组名称不能为空'}), 400
+    return jsonify(collaborative_learning_engine.create_group(
+        user_id, group_name,
+        subject=data.get('subject'),
+        grade=data.get('grade'),
+        description=data.get('description'),
+        max_members=int(data.get('max_members', 10)),
+        privacy=data.get('privacy', 'public'),
+        min_level=int(data.get('min_level', 1)),
+        tags=data.get('tags')
+    ))
+
+@app.route('/api/collaboration/join_group/<group_id>', methods=['POST'])
+@require_login
+def collaboration_join_group(group_id):
+    """加入学习小组"""
+    from ai_engines.collaborative_learning_engine import collaborative_learning_engine
+    data = request.get_json() or {}
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    invite_code = data.get('invite_code')
+    return jsonify(collaborative_learning_engine.join_group(group_id, user_id, invite_code))
+
+@app.route('/api/collaboration/group_info/<group_id>')
+@require_login
+def collaboration_group_info(group_id):
+    """获取小组详情"""
+    from ai_engines.collaborative_learning_engine import collaborative_learning_engine
+    return jsonify(collaborative_learning_engine.get_group_info(group_id))
+
+@app.route('/api/collaboration/share', methods=['POST'])
+@require_login
+def collaboration_share():
+    """分享知识"""
+    from ai_engines.collaborative_learning_engine import collaborative_learning_engine
+    data = request.get_json() or {}
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    title = data.get('title', '').strip()
+    content = data.get('content', '').strip()
+    if not title or not content:
+        return jsonify({'success': False, 'message': '标题和内容不能为空'}), 400
+    return jsonify(collaborative_learning_engine.share_knowledge(
+        user_id, title, content,
+        share_type=data.get('share_type', 'note'),
+        subject=data.get('subject'),
+        group_id=data.get('group_id'),
+        knowledge_points=data.get('knowledge_points')
+    ))
+
+@app.route('/api/collaboration/vote/<int:share_id>', methods=['POST'])
+@require_login
+def collaboration_vote(share_id):
+    """点赞/踩知识分享"""
+    from ai_engines.collaborative_learning_engine import collaborative_learning_engine
+    data = request.get_json() or {}
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    vote_type = data.get('vote_type', 'up')
+    return jsonify(collaborative_learning_engine.vote_share(share_id, user_id, vote_type))
+
+@app.route('/api/collaboration/help_request', methods=['POST'])
+@require_login
+def collaboration_help_request():
+    """创建同伴求助"""
+    from ai_engines.collaborative_learning_engine import collaborative_learning_engine
+    data = request.get_json() or {}
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    title = data.get('title', '').strip()
+    description = data.get('description', '').strip()
+    if not title or not description:
+        return jsonify({'success': False, 'message': '标题和描述不能为空'}), 400
+    return jsonify(collaborative_learning_engine.create_help_request(
+        user_id, title, description,
+        subject=data.get('subject'),
+        difficulty=int(data.get('difficulty', 3)),
+        reward_points=int(data.get('reward_points', 10)),
+        group_id=data.get('group_id')
+    ))
+
+@app.route('/api/collaboration/accept_help/<int:request_id>', methods=['POST'])
+@require_login
+def collaboration_accept_help(request_id):
+    """接受求助"""
+    from ai_engines.collaborative_learning_engine import collaborative_learning_engine
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    return jsonify(collaborative_learning_engine.accept_help_request(request_id, user_id))
+
+@app.route('/api/collaboration/resolve_help/<int:request_id>', methods=['POST'])
+@require_login
+def collaboration_resolve_help(request_id):
+    """完成求助并评分"""
+    from ai_engines.collaborative_learning_engine import collaborative_learning_engine
+    data = request.get_json() or {}
+    rating = int(data.get('rating', 5))
+    return jsonify(collaborative_learning_engine.resolve_help_request(request_id, rating))
+
+@app.route('/api/collaboration/requests')
+@require_login
+def collaboration_requests():
+    """获取开放的求助列表"""
+    from ai_engines.collaborative_learning_engine import collaborative_learning_engine
+    subject = request.args.get('subject')
+    group_id = request.args.get('group_id')
+    limit = int(request.args.get('limit', 20))
+    return jsonify(collaborative_learning_engine.get_open_help_requests(subject, group_id, limit))
+
+@app.route('/api/collaboration/feed')
+@require_login
+def collaboration_feed():
+    """获取知识分享流"""
+    from ai_engines.collaborative_learning_engine import collaborative_learning_engine
+    subject = request.args.get('subject')
+    group_id = request.args.get('group_id')
+    limit = int(request.args.get('limit', 20))
+    return jsonify(collaborative_learning_engine.get_knowledge_feed(subject, group_id, limit))
+
+@app.route('/api/collaboration/my_groups')
+@require_login
+def collaboration_my_groups():
+    """获取用户加入的小组"""
+    from ai_engines.collaborative_learning_engine import collaborative_learning_engine
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    return jsonify(collaborative_learning_engine.get_user_groups(user_id))
+
+@app.route('/api/collaboration/statistics')
+def collaboration_stats():
+    """获取协作学习引擎统计"""
+    from ai_engines.collaborative_learning_engine import collaborative_learning_engine
+    return jsonify(collaborative_learning_engine.get_statistics())
+
+# ==================== 智能监考引擎 API ====================
+
+@app.route('/api/proctor/start', methods=['POST'])
+@require_login
+def proctor_start():
+    """开始考试监控"""
+    from ai_engines.smart_proctoring_engine import smart_proctoring_engine
+    data = request.get_json() or {}
+    session_id = data.get('session_id')
+    exam_id = data.get('exam_id')
+    user_id = data.get('user_id') or (str(current_user.id) if hasattr(current_user, 'id') else 'test_user')
+    if not session_id or not exam_id:
+        return jsonify({'success': False, 'message': '缺少 session_id 或 exam_id'}), 400
+    return jsonify(smart_proctoring_engine.start_monitoring(
+        session_id, exam_id, user_id,
+        ip_address=request.remote_addr,
+        user_agent=request.headers.get('User-Agent')
+    ))
+
+@app.route('/api/proctor/end/<session_id>', methods=['POST'])
+@require_login
+def proctor_end(session_id):
+    """结束考试监控"""
+    from ai_engines.smart_proctoring_engine import smart_proctoring_engine
+    data = request.get_json() or {}
+    auto_submit = bool(data.get('auto_submit', False))
+    return jsonify(smart_proctoring_engine.end_monitoring(session_id, auto_submit))
+
+@app.route('/api/proctor/violation', methods=['POST'])
+@require_login
+def proctor_violation():
+    """记录违规行为"""
+    from ai_engines.smart_proctoring_engine import smart_proctoring_engine
+    data = request.get_json() or {}
+    session_id = data.get('session_id')
+    exam_id = data.get('exam_id')
+    violation_type = data.get('violation_type')
+    if not session_id or not violation_type:
+        return jsonify({'success': False, 'message': '缺少 session_id 或 violation_type'}), 400
+    user_id = data.get('user_id') or (str(current_user.id) if hasattr(current_user, 'id') else 'test_user')
+    return jsonify(smart_proctoring_engine.record_violation(
+        session_id, user_id, exam_id or '', violation_type,
+        data.get('description', ''), data.get('event_data')
+    ))
+
+@app.route('/api/proctor/heartbeat', methods=['POST'])
+@require_login
+def proctor_heartbeat():
+    """记录心跳/活动"""
+    from ai_engines.smart_proctoring_engine import smart_proctoring_engine
+    data = request.get_json() or {}
+    session_id = data.get('session_id')
+    if not session_id:
+        return jsonify({'success': False, 'message': '缺少 session_id'}), 400
+    return jsonify(smart_proctoring_engine.record_heartbeat(
+        session_id, data.get('question_index'), data.get('answer_seconds')
+    ))
+
+@app.route('/api/proctor/session/<session_id>')
+@require_login
+def proctor_session_status(session_id):
+    """获取监控会话状态"""
+    from ai_engines.smart_proctoring_engine import smart_proctoring_engine
+    return jsonify(smart_proctoring_engine.get_session_status(session_id))
+
+@app.route('/api/proctor/integrity_history')
+@require_login
+def proctor_integrity_history():
+    """获取用户诚信历史"""
+    from ai_engines.smart_proctoring_engine import smart_proctoring_engine
+    target_user = request.args.get('user_id')
+    if target_user:
+        if not (hasattr(current_user, 'role') and current_user.role in ('admin', 'super_admin', 'hardware_admin')):
+            return jsonify({'success': False, 'message': '无权查看其他用户'}), 403
+        user_id = target_user
+    else:
+        user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    limit = int(request.args.get('limit', 20))
+    return jsonify(smart_proctoring_engine.get_user_integrity_history(user_id, limit))
+
+@app.route('/api/proctor/alerts')
+@require_admin
+def proctor_alerts():
+    """获取活跃告警列表（管理员）"""
+    from ai_engines.smart_proctoring_engine import smart_proctoring_engine
+    severity = request.args.get('severity')
+    acknowledged = int(request.args.get('acknowledged', 0))
+    return jsonify(smart_proctoring_engine.get_active_alerts(severity, acknowledged))
+
+@app.route('/api/proctor/acknowledge/<int:alert_id>', methods=['POST'])
+@require_admin
+def proctor_acknowledge(alert_id):
+    """确认告警（管理员）"""
+    from ai_engines.smart_proctoring_engine import smart_proctoring_engine
+    admin_id = str(current_user.id) if hasattr(current_user, 'id') else 'admin'
+    return jsonify(smart_proctoring_engine.acknowledge_alert(alert_id, admin_id))
+
+@app.route('/api/proctor/exam_summary/<exam_id>')
+@require_admin
+def proctor_exam_summary(exam_id):
+    """获取单场考试监考汇总（管理员）"""
+    from ai_engines.smart_proctoring_engine import smart_proctoring_engine
+    return jsonify(smart_proctoring_engine.get_exam_proctor_summary(exam_id))
+
+@app.route('/api/proctor/statistics')
+def proctor_stats():
+    """获取监考引擎统计"""
+    from ai_engines.smart_proctoring_engine import smart_proctoring_engine
+    return jsonify(smart_proctoring_engine.get_statistics())
+
+# ==================== 学习分析仪表盘引擎 API ====================
+
+@app.route('/api/analytics/radar')
+@require_login
+def analytics_radar():
+    """获取能力雷达图"""
+    from ai_engines.learning_analytics_engine import learning_analytics_engine
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    return jsonify(learning_analytics_engine.get_radar_chart(user_id))
+
+@app.route('/api/analytics/profile')
+@require_login
+def analytics_profile():
+    """生成完整学习画像"""
+    from ai_engines.learning_analytics_engine import learning_analytics_engine
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    save = request.args.get('save', 'true') != 'false'
+    return jsonify(learning_analytics_engine.generate_profile(user_id, save))
+
+@app.route('/api/analytics/subjects')
+@require_login
+def analytics_subjects():
+    """获取学科能力"""
+    from ai_engines.learning_analytics_engine import learning_analytics_engine
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    return jsonify(learning_analytics_engine.get_subject_proficiencies(user_id))
+
+@app.route('/api/analytics/events')
+@require_login
+def analytics_events():
+    """获取学习事件流"""
+    from ai_engines.learning_analytics_engine import learning_analytics_engine
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    limit = int(request.args.get('limit', 50))
+    event_type = request.args.get('type')
+    return jsonify(learning_analytics_engine.get_event_stream(user_id, limit, event_type))
+
+@app.route('/api/analytics/profile_history')
+@require_login
+def analytics_profile_history():
+    """获取画像历史（趋势分析）"""
+    from ai_engines.learning_analytics_engine import learning_analytics_engine
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    limit = int(request.args.get('limit', 30))
+    return jsonify(learning_analytics_engine.get_profile_history(user_id, limit))
+
+@app.route('/api/analytics/goals', methods=['GET', 'POST'])
+@require_login
+def analytics_goals():
+    """获取/创建学习目标"""
+    from ai_engines.learning_analytics_engine import learning_analytics_engine
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    if request.method == 'POST':
+        data = request.get_json() or {}
+        title = data.get('title', '').strip()
+        if not title:
+            return jsonify({'success': False, 'message': '目标标题不能为空'}), 400
+        return jsonify(learning_analytics_engine.create_goal(
+            user_id, data.get('goal_type', 'score'), title,
+            float(data.get('target_value', 100)), data.get('subject'),
+            data.get('deadline')
+        ))
+    status = request.args.get('status')
+    return jsonify(learning_analytics_engine.get_user_goals(user_id, status))
+
+@app.route('/api/analytics/goals/<int:goal_id>/progress', methods=['POST'])
+@require_login
+def analytics_goal_progress(goal_id):
+    """更新目标进度"""
+    from ai_engines.learning_analytics_engine import learning_analytics_engine
+    data = request.get_json() or {}
+    current_value = float(data.get('current_value', 0))
+    return jsonify(learning_analytics_engine.update_goal_progress(goal_id, current_value))
+
+@app.route('/api/analytics/subject_proficiency', methods=['POST'])
+@require_login
+def analytics_subject_proficiency():
+    """更新学科能力评估（考试完成时调用）"""
+    from ai_engines.learning_analytics_engine import learning_analytics_engine
+    data = request.get_json() or {}
+    user_id = data.get('user_id') or (str(current_user.id) if hasattr(current_user, 'id') else 'test_user')
+    subject = data.get('subject')
+    if not subject:
+        return jsonify({'success': False, 'message': '缺少 subject'}), 400
+    return jsonify(learning_analytics_engine.update_subject_proficiency(
+        user_id, subject, float(data.get('score', 0)),
+        int(data.get('correct', 0)), int(data.get('total', 0))
+    ))
+
+@app.route('/api/analytics/statistics')
+def analytics_stats():
+    """获取分析引擎统计"""
+    from ai_engines.learning_analytics_engine import learning_analytics_engine
+    return jsonify(learning_analytics_engine.get_statistics())
+
+# ==================== 智能日程规划引擎 API ====================
+
+@app.route('/api/schedule/create', methods=['POST'])
+@require_login
+def schedule_create():
+    """创建学习日程"""
+    from ai_engines.smart_schedule_engine import smart_schedule_engine
+    data = request.get_json() or {}
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    title = data.get('title', '').strip()
+    if not title:
+        return jsonify({'success': False, 'message': '日程标题不能为空'}), 400
+    start = data.get('scheduled_start')
+    end = data.get('scheduled_end')
+    if not start or not end:
+        return jsonify({'success': False, 'message': '开始和结束时间不能为空'}), 400
+    return jsonify(smart_schedule_engine.create_schedule(
+        user_id, title, start, end,
+        data.get('task_type', 'daily_practice'),
+        data.get('subject'), data.get('priority'),
+        data.get('notes')
+    ))
+
+@app.route('/api/schedule/complete/<int:schedule_id>', methods=['POST'])
+@require_login
+def schedule_complete(schedule_id):
+    """完成日程"""
+    from ai_engines.smart_schedule_engine import smart_schedule_engine
+    data = request.get_json() or {}
+    return jsonify(smart_schedule_engine.complete_schedule(schedule_id, data.get('performance')))
+
+@app.route('/api/schedule/list')
+@require_login
+def schedule_list():
+    """获取用户日程"""
+    from ai_engines.smart_schedule_engine import smart_schedule_engine
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    date = request.args.get('date')
+    status = request.args.get('status')
+    return jsonify(smart_schedule_engine.get_user_schedule(user_id, date, status))
+
+@app.route('/api/schedule/delete/<int:schedule_id>', methods=['DELETE'])
+@require_login
+def schedule_delete(schedule_id):
+    """删除日程"""
+    from ai_engines.smart_schedule_engine import smart_schedule_engine
+    return jsonify(smart_schedule_engine.delete_schedule(schedule_id))
+
+@app.route('/api/schedule/ai_generate', methods=['POST'])
+@require_login
+def schedule_ai_generate():
+    """AI生成每日学习日程"""
+    from ai_engines.smart_schedule_engine import smart_schedule_engine
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    data = request.get_json() or {}
+    date = data.get('date')
+    return jsonify(smart_schedule_engine.generate_ai_schedule(user_id, date))
+
+@app.route('/api/schedule/countdown', methods=['GET', 'POST'])
+@require_login
+def schedule_countdown():
+    """获取/添加考试倒计时"""
+    from ai_engines.smart_schedule_engine import smart_schedule_engine
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    if request.method == 'POST':
+        data = request.get_json() or {}
+        exam_name = data.get('exam_name', '').strip()
+        exam_date = data.get('exam_date')
+        if not exam_name or not exam_date:
+            return jsonify({'success': False, 'message': '考试名称和日期不能为空'}), 400
+        return jsonify(smart_schedule_engine.add_exam_countdown(
+            user_id, exam_name, exam_date,
+            data.get('exam_subject'), data.get('exam_id'),
+            float(data.get('target_score', 90)), int(data.get('importance', 5)),
+            data.get('notes')
+        ))
+    return jsonify(smart_schedule_engine.get_exam_countdowns(user_id))
+
+@app.route('/api/schedule/countdown/<int:countdown_id>/status', methods=['POST'])
+@require_login
+def schedule_countdown_status(countdown_id):
+    """更新备考状态"""
+    from ai_engines.smart_schedule_engine import smart_schedule_engine
+    data = request.get_json() or {}
+    status = data.get('status')
+    return jsonify(smart_schedule_engine.update_preparation_status(countdown_id, status))
+
+@app.route('/api/schedule/reminders')
+@require_login
+def schedule_reminders():
+    """获取待发送的提醒"""
+    from ai_engines.smart_schedule_engine import smart_schedule_engine
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    return jsonify(smart_schedule_engine.get_pending_reminders(user_id))
+
+@app.route('/api/schedule/statistics')
+def schedule_stats():
+    """获取日程引擎统计"""
+    from ai_engines.smart_schedule_engine import smart_schedule_engine
+    return jsonify(smart_schedule_engine.get_statistics())
+
+
+# ========================================================================
+# 第5轮拓展：智能教学评估引擎 API 路由（10个）
+# ========================================================================
+@app.route('/api/teaching/create_evaluation', methods=['POST'])
+@require_login
+def teaching_create_evaluation():
+    """创建教学评估任务"""
+    from ai_engines.teaching_evaluation_engine import teaching_evaluation_engine
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    data = request.get_json() or {}
+    result = teaching_evaluation_engine.create_evaluation(
+        teacher_id=data.get('teacher_id', user_id),
+        course_id=data.get('course_id'),
+        course_name=data.get('course_name'),
+        subject=data.get('subject'),
+        grade=data.get('grade'),
+        term=data.get('term'),
+        evaluator_id=user_id,
+        evaluator_role=data.get('evaluator_role', 'teacher'),
+        eval_type=data.get('eval_type', 'comprehensive'),
+        eval_period_start=data.get('eval_period_start'),
+        eval_period_end=data.get('eval_period_end')
+    )
+    return jsonify(result)
+
+
+@app.route('/api/teaching/student_feedback', methods=['POST'])
+@require_login
+def teaching_student_feedback():
+    """提交学生反馈"""
+    from ai_engines.teaching_evaluation_engine import teaching_evaluation_engine
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    data = request.get_json() or {}
+    result = teaching_evaluation_engine.submit_student_feedback(
+        teacher_id=data.get('teacher_id', ''),
+        student_id=user_id,
+        ratings=data.get('ratings', {}),
+        comments=data.get('comments'),
+        course_id=data.get('course_id'),
+        anonymous=data.get('anonymous', True),
+        evaluation_id=data.get('evaluation_id')
+    )
+    return jsonify(result)
+
+
+@app.route('/api/teaching/peer_review', methods=['POST'])
+@require_login
+def teaching_peer_review():
+    """提交同行评价"""
+    from ai_engines.teaching_evaluation_engine import teaching_evaluation_engine
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    data = request.get_json() or {}
+    result = teaching_evaluation_engine.submit_peer_review(
+        reviewer_id=user_id,
+        reviewee_id=data.get('reviewee_id', ''),
+        ratings=data.get('ratings', {}),
+        strengths=data.get('strengths'),
+        improvements=data.get('improvements'),
+        overall_comment=data.get('overall_comment'),
+        course_id=data.get('course_id'),
+        evaluation_id=data.get('evaluation_id')
+    )
+    return jsonify(result)
+
+
+@app.route('/api/teaching/compute/<evaluation_id>', methods=['POST'])
+@require_admin
+def teaching_compute_evaluation(evaluation_id):
+    """计算教学评估结果（管理员）"""
+    from ai_engines.teaching_evaluation_engine import teaching_evaluation_engine
+    result = teaching_evaluation_engine.compute_evaluation(evaluation_id)
+    return jsonify(result)
+
+
+@app.route('/api/teaching/evaluation/<evaluation_id>')
+@require_login
+def teaching_get_evaluation(evaluation_id):
+    """获取评估详情"""
+    from ai_engines.teaching_evaluation_engine import teaching_evaluation_engine
+    return jsonify(teaching_evaluation_engine.get_evaluation(evaluation_id))
+
+
+@app.route('/api/teaching/teacher_evaluations')
+@require_login
+def teaching_teacher_evaluations():
+    """获取教师历史评估"""
+    from ai_engines.teaching_evaluation_engine import teaching_evaluation_engine
+    teacher_id = request.args.get('teacher_id') or (
+        str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    )
+    limit = int(request.args.get('limit', 20))
+    return jsonify(teaching_evaluation_engine.get_teacher_evaluations(teacher_id, limit))
+
+
+@app.route('/api/teaching/improvement_plans', methods=['POST'])
+@require_login
+def teaching_create_improvement_plan():
+    """创建教学改进计划"""
+    from ai_engines.teaching_evaluation_engine import teaching_evaluation_engine
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    data = request.get_json() or {}
+    result = teaching_evaluation_engine.create_improvement_plan(
+        teacher_id=user_id,
+        target_dimension=data.get('target_dimension', ''),
+        current_score=float(data.get('current_score', 0)),
+        target_score=float(data.get('target_score', 100)),
+        actions=data.get('actions', []),
+        timeline=data.get('timeline'),
+        evaluation_id=data.get('evaluation_id')
+    )
+    return jsonify(result)
+
+
+@app.route('/api/teaching/improvement_plans/update/<plan_id>', methods=['POST'])
+@require_login
+def teaching_update_plan_progress(plan_id):
+    """更新改进计划进度"""
+    from ai_engines.teaching_evaluation_engine import teaching_evaluation_engine
+    data = request.get_json() or {}
+    result = teaching_evaluation_engine.update_plan_progress(
+        plan_id,
+        float(data.get('progress', 0)),
+        data.get('status')
+    )
+    return jsonify(result)
+
+
+@app.route('/api/teaching/improvement_plans/list')
+@require_login
+def teaching_get_plans():
+    """获取改进计划"""
+    from ai_engines.teaching_evaluation_engine import teaching_evaluation_engine
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    status = request.args.get('status')
+    return jsonify(teaching_evaluation_engine.get_improvement_plans(user_id, status))
+
+
+@app.route('/api/teaching/ranking')
+@require_login
+def teaching_ranking():
+    """获取教师排名"""
+    from ai_engines.teaching_evaluation_engine import teaching_evaluation_engine
+    subject = request.args.get('subject')
+    grade = request.args.get('grade')
+    limit = int(request.args.get('limit', 20))
+    return jsonify(teaching_evaluation_engine.get_teacher_ranking(subject, grade, limit))
+
+
+@app.route('/api/teaching/statistics')
+def teaching_statistics():
+    """获取教学评估引擎统计"""
+    from ai_engines.teaching_evaluation_engine import teaching_evaluation_engine
+    return jsonify(teaching_evaluation_engine.get_statistics())
+
+
+# ========================================================================
+# 第5轮拓展：学习资源推荐引擎 API 路由（9个）
+# ========================================================================
+@app.route('/api/resources/add', methods=['POST'])
+@require_admin
+def resources_add():
+    """添加学习资源"""
+    from ai_engines.resource_recommendation_engine import resource_recommendation_engine
+    data = request.get_json() or {}
+    result = resource_recommendation_engine.add_resource(
+        resource_id=data.get('resource_id', f"res_{int(time.time())}"),
+        title=data.get('title', ''),
+        resource_type=data.get('resource_type', 'article'),
+        subject=data.get('subject'),
+        grade=data.get('grade'),
+        topic=data.get('topic'),
+        difficulty=data.get('difficulty', 'intermediate'),
+        duration_minutes=int(data.get('duration_minutes', 30)),
+        url=data.get('url'),
+        description=data.get('description'),
+        author=data.get('author'),
+        publisher=data.get('publisher'),
+        tags=data.get('tags', []),
+        keywords=data.get('keywords'),
+        thumbnail_url=data.get('thumbnail_url')
+    )
+    return jsonify(result)
+
+
+@app.route('/api/resources/<resource_id>')
+@require_login
+def resources_get(resource_id):
+    """获取资源详情"""
+    from ai_engines.resource_recommendation_engine import resource_recommendation_engine
+    return jsonify(resource_recommendation_engine.get_resource(resource_id))
+
+
+@app.route('/api/resources/interact', methods=['POST'])
+@require_login
+def resources_interact():
+    """记录用户与资源的交互"""
+    from ai_engines.resource_recommendation_engine import resource_recommendation_engine
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    data = request.get_json() or {}
+    result = resource_recommendation_engine.record_interaction(
+        user_id=user_id,
+        resource_id=data.get('resource_id', ''),
+        interaction_type=data.get('interaction_type', 'view'),
+        rating=float(data.get('rating', 0)),
+        duration_spent=int(data.get('duration_spent', 0)),
+        progress=float(data.get('progress', 0)),
+        completed=bool(data.get('completed', False)),
+        bookmarked=bool(data.get('bookmarked', False)),
+        feedback=data.get('feedback')
+    )
+    return jsonify(result)
+
+
+@app.route('/api/resources/recommend')
+@require_login
+def resources_recommend():
+    """生成个性化推荐"""
+    from ai_engines.resource_recommendation_engine import resource_recommendation_engine
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    subject = request.args.get('subject')
+    limit = int(request.args.get('limit', 10))
+    strategy = request.args.get('strategy', 'hybrid')
+    return jsonify(resource_recommendation_engine.recommend(user_id, subject, limit, strategy))
+
+
+@app.route('/api/resources/review', methods=['POST'])
+@require_login
+def resources_review():
+    """添加资源评价"""
+    from ai_engines.resource_recommendation_engine import resource_recommendation_engine
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    data = request.get_json() or {}
+    result = resource_recommendation_engine.add_review(
+        resource_id=data.get('resource_id', ''),
+        user_id=user_id,
+        rating=float(data.get('rating', 0)),
+        review_text=data.get('review_text')
+    )
+    return jsonify(result)
+
+
+@app.route('/api/resources/click/<recommendation_id>', methods=['POST'])
+@require_login
+def resources_click(recommendation_id):
+    """标记推荐为已点击"""
+    from ai_engines.resource_recommendation_engine import resource_recommendation_engine
+    return jsonify(resource_recommendation_engine.mark_clicked(recommendation_id))
+
+
+@app.route('/api/resources/user_recommendations')
+@require_login
+def resources_user_recommendations():
+    """获取用户历史推荐"""
+    from ai_engines.resource_recommendation_engine import resource_recommendation_engine
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    limit = int(request.args.get('limit', 20))
+    return jsonify(resource_recommendation_engine.get_user_recommendations(user_id, limit))
+
+
+@app.route('/api/resources/statistics')
+def resources_statistics():
+    """获取资源推荐引擎统计"""
+    from ai_engines.resource_recommendation_engine import resource_recommendation_engine
+    return jsonify(resource_recommendation_engine.get_statistics())
+
+
+# ========================================================================
+# 第5轮拓展：学情分析报告引擎 API 路由（8个）
+# ========================================================================
+@app.route('/api/report/generate', methods=['POST'])
+@require_login
+def report_generate():
+    """生成学情分析报告"""
+    from ai_engines.learning_report_engine import learning_report_engine
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    data = request.get_json() or {}
+    result = learning_report_engine.generate_report(
+        report_type=data.get('report_type', 'weekly'),
+        scope=data.get('scope', 'student'),
+        target_id=data.get('target_id', user_id),
+        target_name=data.get('target_name'),
+        period_start=data.get('period_start'),
+        period_end=data.get('period_end'),
+        template_id=data.get('template_id'),
+        generated_by=user_id
+    )
+    return jsonify(result)
+
+
+@app.route('/api/report/<report_id>')
+@require_login
+def report_get(report_id):
+    """获取报告详情"""
+    from ai_engines.learning_report_engine import learning_report_engine
+    return jsonify(learning_report_engine.get_report(report_id))
+
+
+@app.route('/api/report/list')
+@require_login
+def report_list():
+    """列出报告"""
+    from ai_engines.learning_report_engine import learning_report_engine
+    scope = request.args.get('scope')
+    target_id = request.args.get('target_id')
+    report_type = request.args.get('report_type')
+    limit = int(request.args.get('limit', 20))
+    return jsonify(learning_report_engine.list_reports(scope, target_id, report_type, limit))
+
+
+@app.route('/api/report/subscribe', methods=['POST'])
+@require_login
+def report_subscribe():
+    """订阅报告"""
+    from ai_engines.learning_report_engine import learning_report_engine
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    data = request.get_json() or {}
+    result = learning_report_engine.subscribe(
+        user_id=user_id,
+        report_type=data.get('report_type', 'weekly'),
+        frequency=data.get('frequency', 'weekly'),
+        scope=data.get('scope', 'student'),
+        target_id=data.get('target_id'),
+        channel=data.get('channel', 'email')
+    )
+    return jsonify(result)
+
+
+@app.route('/api/report/pending_subscriptions')
+@require_admin
+def report_pending_subscriptions():
+    """获取待发送的订阅（管理员）"""
+    from ai_engines.learning_report_engine import learning_report_engine
+    return jsonify(learning_report_engine.get_pending_subscriptions())
+
+
+@app.route('/api/report/export', methods=['POST'])
+@require_login
+def report_export():
+    """创建报告导出任务"""
+    from ai_engines.learning_report_engine import learning_report_engine
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    data = request.get_json() or {}
+    result = learning_report_engine.create_export(
+        report_id=data.get('report_id', ''),
+        export_format=data.get('export_format', 'pdf'),
+        exported_by=user_id
+    )
+    return jsonify(result)
+
+
+@app.route('/api/report/statistics')
+def report_statistics():
+    """获取报告引擎统计"""
+    from ai_engines.learning_report_engine import learning_report_engine
+    return jsonify(learning_report_engine.get_statistics())
+
+
+# ========================================================================
+# 第6轮拓展：智能作业批改引擎 API 路由（8个）
+# ========================================================================
+@app.route('/api/homework/create', methods=['POST'])
+@require_login
+def homework_create():
+    """创建作业"""
+    from ai_engines.homework_grading_engine import homework_grading_engine
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    data = request.get_json() or {}
+    result = homework_grading_engine.create_homework(
+        homework_id=data.get('homework_id', f"hw_{int(time.time())}"),
+        title=data.get('title', ''),
+        teacher_id=user_id,
+        subject=data.get('subject'),
+        grade=data.get('grade'),
+        class_id=data.get('class_id'),
+        description=data.get('description'),
+        total_score=float(data.get('total_score', 100)),
+        deadline=data.get('deadline'),
+        questions=data.get('questions', [])
+    )
+    return jsonify(result)
+
+
+@app.route('/api/homework/submit', methods=['POST'])
+@require_login
+def homework_submit():
+    """提交作业（自动触发批改）"""
+    from ai_engines.homework_grading_engine import homework_grading_engine
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    data = request.get_json() or {}
+    result = homework_grading_engine.submit_homework(
+        homework_id=data.get('homework_id', ''),
+        student_id=user_id,
+        answers=data.get('answers', {}),
+        time_spent=int(data.get('time_spent', 0))
+    )
+    return jsonify(result)
+
+
+@app.route('/api/homework/submission/<submission_id>')
+@require_login
+def homework_get_submission(submission_id):
+    """获取提交详情"""
+    from ai_engines.homework_grading_engine import homework_grading_engine
+    return jsonify(homework_grading_engine.get_submission(submission_id))
+
+
+@app.route('/api/homework/student_submissions')
+@require_login
+def homework_student_submissions():
+    """获取学生历史提交"""
+    from ai_engines.homework_grading_engine import homework_grading_engine
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    limit = int(request.args.get('limit', 20))
+    return jsonify(homework_grading_engine.get_student_submissions(user_id, limit))
+
+
+@app.route('/api/homework/homework_submissions/<homework_id>')
+@require_login
+def homework_homework_submissions(homework_id):
+    """获取作业所有提交"""
+    from ai_engines.homework_grading_engine import homework_grading_engine
+    return jsonify(homework_grading_engine.get_homework_submissions(homework_id))
+
+
+@app.route('/api/homework/report/<homework_id>')
+@require_login
+def homework_report(homework_id):
+    """生成/获取批改报告"""
+    from ai_engines.homework_grading_engine import homework_grading_engine
+    return jsonify(homework_grading_engine.generate_report(homework_id))
+
+
+@app.route('/api/homework/statistics')
+def homework_statistics():
+    """获取作业批改引擎统计"""
+    from ai_engines.homework_grading_engine import homework_grading_engine
+    return jsonify(homework_grading_engine.get_statistics())
+
+
+# ========================================================================
+# 第6轮拓展：家校沟通引擎 API 路由（9个）
+# ========================================================================
+@app.route('/api/home_school/bind_parent', methods=['POST'])
+@require_login
+def home_school_bind_parent():
+    """绑定家长与学生"""
+    from ai_engines.home_school_communication_engine import home_school_communication_engine
+    data = request.get_json() or {}
+    result = home_school_communication_engine.bind_parent(
+        student_id=data.get('student_id', ''),
+        parent_id=data.get('parent_id', ''),
+        parent_name=data.get('parent_name'),
+        parent_role=data.get('parent_role', 'parent'),
+        contact_phone=data.get('contact_phone'),
+        contact_email=data.get('contact_email'),
+        is_primary=bool(data.get('is_primary', False))
+    )
+    return jsonify(result)
+
+
+@app.route('/api/home_school/parent_relations/<student_id>')
+@require_login
+def home_school_parent_relations(student_id):
+    """获取学生的所有家长"""
+    from ai_engines.home_school_communication_engine import home_school_communication_engine
+    return jsonify(home_school_communication_engine.get_parent_relations(student_id))
+
+
+@app.route('/api/home_school/student_relations/<parent_id>')
+@require_login
+def home_school_student_relations(parent_id):
+    """获取家长的所有学生"""
+    from ai_engines.home_school_communication_engine import home_school_communication_engine
+    return jsonify(home_school_communication_engine.get_student_relations(parent_id))
+
+
+@app.route('/api/home_school/send_message', methods=['POST'])
+@require_login
+def home_school_send_message():
+    """发送家校消息"""
+    from ai_engines.home_school_communication_engine import home_school_communication_engine
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    data = request.get_json() or {}
+    result = home_school_communication_engine.send_message(
+        sender_id=user_id,
+        sender_role=data.get('sender_role', 'teacher'),
+        recipient_id=data.get('recipient_id', ''),
+        recipient_role=data.get('recipient_role', 'parent'),
+        content=data.get('content', ''),
+        subject=data.get('subject'),
+        student_id=data.get('student_id'),
+        message_type=data.get('message_type', 'normal'),
+        priority=data.get('priority', 'normal'),
+        attachments=data.get('attachments', [])
+    )
+    return jsonify(result)
+
+
+@app.route('/api/home_school/messages')
+@require_login
+def home_school_messages():
+    """获取用户消息列表"""
+    from ai_engines.home_school_communication_engine import home_school_communication_engine
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    student_id = request.args.get('student_id')
+    unread_only = request.args.get('unread_only', 'false').lower() == 'true'
+    limit = int(request.args.get('limit', 30))
+    return jsonify(home_school_communication_engine.get_messages(user_id, None, student_id, unread_only, limit))
+
+
+@app.route('/api/home_school/mark_read/<message_id>', methods=['POST'])
+@require_login
+def home_school_mark_read(message_id):
+    """标记消息为已读"""
+    from ai_engines.home_school_communication_engine import home_school_communication_engine
+    return jsonify(home_school_communication_engine.mark_message_read(message_id))
+
+
+@app.route('/api/home_school/mark_all_read', methods=['POST'])
+@require_login
+def home_school_mark_all_read():
+    """标记所有消息为已读"""
+    from ai_engines.home_school_communication_engine import home_school_communication_engine
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    return jsonify(home_school_communication_engine.mark_all_read(user_id))
+
+
+@app.route('/api/home_school/create_meeting', methods=['POST'])
+@require_login
+def home_school_create_meeting():
+    """创建家长会"""
+    from ai_engines.home_school_communication_engine import home_school_communication_engine
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    data = request.get_json() or {}
+    result = home_school_communication_engine.create_parent_meeting(
+        teacher_id=user_id,
+        title=data.get('title', ''),
+        meeting_date=data.get('meeting_date', ''),
+        start_time=data.get('start_time', ''),
+        end_time=data.get('end_time', ''),
+        location=data.get('location'),
+        location_url=data.get('location_url'),
+        description=data.get('description'),
+        meeting_type=data.get('meeting_type', 'regular'),
+        max_attendees=int(data.get('max_attendees', 30)),
+        agenda=data.get('agenda', [])
+    )
+    return jsonify(result)
+
+
+@app.route('/api/home_school/upcoming_meetings')
+@require_login
+def home_school_upcoming_meetings():
+    """获取即将到来的家长会"""
+    from ai_engines.home_school_communication_engine import home_school_communication_engine
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    limit = int(request.args.get('limit', 10))
+    return jsonify(home_school_communication_engine.get_upcoming_meetings(parent_id=user_id, limit=limit))
+
+
+@app.route('/api/home_school/statistics')
+def home_school_statistics():
+    """获取家校沟通引擎统计"""
+    from ai_engines.home_school_communication_engine import home_school_communication_engine
+    return jsonify(home_school_communication_engine.get_statistics())
+
+
+# ========================================================================
+# 第6轮拓展：学习游戏化引擎 API 路由（10个）
+# ========================================================================
+@app.route('/api/game/player')
+@require_login
+def game_player():
+    """获取玩家档案"""
+    from ai_engines.gamification_engine import gamification_engine
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    return jsonify(gamification_engine.get_or_create_player(user_id))
+
+
+@app.route('/api/game/level_progress')
+@require_login
+def game_level_progress():
+    """获取等级进度"""
+    from ai_engines.gamification_engine import gamification_engine
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    return jsonify(gamification_engine.get_level_progress(user_id))
+
+
+@app.route('/api/game/add_exp', methods=['POST'])
+@require_admin
+def game_add_exp():
+    """增加经验值（管理员）"""
+    from ai_engines.gamification_engine import gamification_engine
+    data = request.get_json() or {}
+    result = gamification_engine.add_exp(
+        user_id=data.get('user_id', ''),
+        exp=int(data.get('exp', 0)),
+        reason=data.get('reason')
+    )
+    return jsonify(result)
+
+
+@app.route('/api/game/add_coins', methods=['POST'])
+@require_admin
+def game_add_coins():
+    """增加金币（管理员）"""
+    from ai_engines.gamification_engine import gamification_engine
+    data = request.get_json() or {}
+    result = gamification_engine.add_coins(
+        user_id=data.get('user_id', ''),
+        coins=int(data.get('coins', 0)),
+        reason=data.get('reason')
+    )
+    return jsonify(result)
+
+
+@app.route('/api/game/quests')
+@require_login
+def game_quests():
+    """列出可用任务"""
+    from ai_engines.gamification_engine import gamification_engine
+    quest_type = request.args.get('quest_type')
+    category = request.args.get('category')
+    return jsonify(gamification_engine.list_quests(quest_type, category))
+
+
+@app.route('/api/game/accept_quest', methods=['POST'])
+@require_login
+def game_accept_quest():
+    """接受任务"""
+    from ai_engines.gamification_engine import gamification_engine
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    data = request.get_json() or {}
+    return jsonify(gamification_engine.accept_quest(user_id, data.get('quest_id', '')))
+
+
+@app.route('/api/game/update_quest', methods=['POST'])
+@require_login
+def game_update_quest():
+    """更新任务进度"""
+    from ai_engines.gamification_engine import gamification_engine
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    data = request.get_json() or {}
+    return jsonify(gamification_engine.update_quest_progress(
+        user_id, data.get('quest_id', ''), int(data.get('value', 1))))
+
+
+@app.route('/api/game/claim_reward', methods=['POST'])
+@require_login
+def game_claim_reward():
+    """领取任务奖励"""
+    from ai_engines.gamification_engine import gamification_engine
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    data = request.get_json() or {}
+    return jsonify(gamification_engine.claim_quest_reward(user_id, data.get('quest_id', '')))
+
+
+@app.route('/api/game/player_quests')
+@require_login
+def game_player_quests():
+    """获取玩家任务列表"""
+    from ai_engines.gamification_engine import gamification_engine
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    status = request.args.get('status')
+    return jsonify(gamification_engine.get_player_quests(user_id, status))
+
+
+@app.route('/api/game/leaderboard')
+@require_login
+def game_leaderboard():
+    """获取排行榜"""
+    from ai_engines.gamification_engine import gamification_engine
+    category = request.args.get('category', 'exp')
+    limit = int(request.args.get('limit', 50))
+    return jsonify(gamification_engine.get_leaderboard(category, 'global', limit))
+
+
+@app.route('/api/game/shop')
+@require_login
+def game_shop():
+    """列出商店物品"""
+    from ai_engines.gamification_engine import gamification_engine
+    item_type = request.args.get('item_type')
+    return jsonify(gamification_engine.list_items(item_type))
+
+
+@app.route('/api/game/buy_item', methods=['POST'])
+@require_login
+def game_buy_item():
+    """购买物品"""
+    from ai_engines.gamification_engine import gamification_engine
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    data = request.get_json() or {}
+    return jsonify(gamification_engine.buy_item(
+        user_id, data.get('item_id', ''), int(data.get('quantity', 1))))
+
+
+@app.route('/api/game/inventory')
+@require_login
+def game_inventory():
+    """获取玩家库存"""
+    from ai_engines.gamification_engine import gamification_engine
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    return jsonify(gamification_engine.get_inventory(user_id))
+
+
+@app.route('/api/game/use_item', methods=['POST'])
+@require_login
+def game_use_item():
+    """使用消耗品"""
+    from ai_engines.gamification_engine import gamification_engine
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    data = request.get_json() or {}
+    return jsonify(gamification_engine.use_item(user_id, data.get('item_id', '')))
+
+
+@app.route('/api/game/statistics')
+def game_statistics():
+    """获取游戏化引擎统计"""
+    from ai_engines.gamification_engine import gamification_engine
+    return jsonify(gamification_engine.get_statistics())
+
+
+# ==================== 第7轮：智能预警引擎 API ====================
+
+@app.route('/api/warning/assess', methods=['POST'])
+@require_login
+def warning_assess():
+    """评估学生风险"""
+    from ai_engines.intelligent_warning_engine import intelligent_warning_engine
+    data = request.get_json() or {}
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    return jsonify(intelligent_warning_engine.assess_student_risk(
+        student_id=data.get('student_id', user_id),
+        student_name=data.get('student_name'),
+        class_id=data.get('class_id'),
+        grade=data.get('grade')))
+
+
+@app.route('/api/warning/notify', methods=['POST'])
+@require_admin
+def warning_notify():
+    """通知相关方"""
+    from ai_engines.intelligent_warning_engine import intelligent_warning_engine
+    data = request.get_json() or {}
+    return jsonify(intelligent_warning_engine.notify_stakeholders(
+        warning_id=data.get('warning_id'),
+        recipients=data.get('recipients')))
+
+
+@app.route('/api/warning/<warning_id>')
+@require_login
+def warning_detail(warning_id):
+    """获取预警详情"""
+    from ai_engines.intelligent_warning_engine import intelligent_warning_engine
+    return jsonify(intelligent_warning_engine.get_warning(warning_id))
+
+
+@app.route('/api/warning/list')
+@require_login
+def warning_list():
+    """列出预警记录"""
+    from ai_engines.intelligent_warning_engine import intelligent_warning_engine
+    level = request.args.get('level')
+    status = request.args.get('status', 'active')
+    class_id = request.args.get('class_id')
+    limit = int(request.args.get('limit', 50))
+    return jsonify(intelligent_warning_engine.list_warnings(
+        level=level, status=status, class_id=class_id, limit=limit))
+
+
+@app.route('/api/warning/history/<student_id>')
+@require_login
+def warning_history(student_id):
+    """学生风险历史"""
+    from ai_engines.intelligent_warning_engine import intelligent_warning_engine
+    return jsonify(intelligent_warning_engine.get_student_history(student_id))
+
+
+@app.route('/api/warning/resolve', methods=['POST'])
+@require_admin
+def warning_resolve():
+    """解除预警"""
+    from ai_engines.intelligent_warning_engine import intelligent_warning_engine
+    data = request.get_json() or {}
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'admin'
+    return jsonify(intelligent_warning_engine.resolve_warning(
+        warning_id=data.get('warning_id'),
+        resolved_by=user_id,
+        note=data.get('note')))
+
+
+@app.route('/api/warning/statistics')
+@require_login
+def warning_statistics():
+    """预警统计"""
+    from ai_engines.intelligent_warning_engine import intelligent_warning_engine
+    return jsonify(intelligent_warning_engine.get_statistics())
+
+
+# ==================== 第7轮：AI辅助出题引擎 API ====================
+
+@app.route('/api/question_authoring/generate', methods=['POST'])
+@require_admin
+def qa_generate():
+    """生成单道题目"""
+    from ai_engines.ai_question_authoring_engine import ai_question_authoring_engine
+    data = request.get_json() or {}
+    return jsonify(ai_question_authoring_engine.generate_question(
+        subject=data.get('subject', '通用'),
+        question_type=data.get('question_type', 'single_choice'),
+        knowledge_point=data.get('knowledge_point'),
+        chapter=data.get('chapter'),
+        grade=data.get('grade'),
+        difficulty=data.get('difficulty', 'medium'),
+        options_count=data.get('options_count', 4)))
+
+
+@app.route('/api/question_authoring/generate_batch', methods=['POST'])
+@require_admin
+def qa_generate_batch():
+    """批量生成题目"""
+    from ai_engines.ai_question_authoring_engine import ai_question_authoring_engine
+    data = request.get_json() or {}
+    return jsonify(ai_question_authoring_engine.generate_batch(
+        subject=data.get('subject', '通用'),
+        count=data.get('count', 5),
+        question_type=data.get('question_type', 'single_choice'),
+        knowledge_points=data.get('knowledge_points'),
+        difficulty_mix=data.get('difficulty_mix'),
+        grade=data.get('grade'),
+        chapter=data.get('chapter')))
+
+
+@app.route('/api/question_authoring/check_duplicate', methods=['POST'])
+@require_login
+def qa_check_duplicate():
+    """检查题目重复"""
+    from ai_engines.ai_question_authoring_engine import ai_question_authoring_engine
+    data = request.get_json() or {}
+    return jsonify(ai_question_authoring_engine.check_duplicate(
+        content=data.get('content', ''),
+        threshold=data.get('threshold', 0.85)))
+
+
+@app.route('/api/question_authoring/evaluate_quality', methods=['POST'])
+@require_admin
+def qa_evaluate_quality():
+    """评估题目质量"""
+    from ai_engines.ai_question_authoring_engine import ai_question_authoring_engine
+    data = request.get_json() or {}
+    return jsonify(ai_question_authoring_engine.evaluate_quality(
+        question_id=data.get('question_id'),
+        responses=data.get('responses')))
+
+
+@app.route('/api/question_authoring/calibrate_irt', methods=['POST'])
+@require_admin
+def qa_calibrate_irt():
+    """IRT校准"""
+    from ai_engines.ai_question_authoring_engine import ai_question_authoring_engine
+    data = request.get_json() or {}
+    return jsonify(ai_question_authoring_engine.calibrate_irt(
+        question_id=data.get('question_id'),
+        responses=data.get('responses')))
+
+
+@app.route('/api/question_authoring/<question_id>')
+@require_login
+def qa_get_question(question_id):
+    """获取题目详情"""
+    from ai_engines.ai_question_authoring_engine import ai_question_authoring_engine
+    return jsonify(ai_question_authoring_engine.get_question(question_id))
+
+
+@app.route('/api/question_authoring/list')
+@require_login
+def qa_list_questions():
+    """列出题目"""
+    from ai_engines.ai_question_authoring_engine import ai_question_authoring_engine
+    return jsonify(ai_question_authoring_engine.list_questions(
+        subject=request.args.get('subject'),
+        question_type=request.args.get('question_type'),
+        difficulty=request.args.get('difficulty'),
+        status=request.args.get('status'),
+        limit=int(request.args.get('limit', 50))))
+
+
+@app.route('/api/question_authoring/review', methods=['POST'])
+@require_admin
+def qa_review():
+    """审核题目"""
+    from ai_engines.ai_question_authoring_engine import ai_question_authoring_engine
+    data = request.get_json() or {}
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'admin'
+    return jsonify(ai_question_authoring_engine.review_question(
+        question_id=data.get('question_id'),
+        reviewer_id=user_id,
+        action=data.get('action', 'approve'),
+        note=data.get('note')))
+
+
+@app.route('/api/question_authoring/tags')
+@require_login
+def qa_list_tags():
+    """列出标签"""
+    from ai_engines.ai_question_authoring_engine import ai_question_authoring_engine
+    return jsonify(ai_question_authoring_engine.list_tags(
+        category=request.args.get('category')))
+
+
+@app.route('/api/question_authoring/statistics')
+@require_login
+def qa_statistics():
+    """出题引擎统计"""
+    from ai_engines.ai_question_authoring_engine import ai_question_authoring_engine
+    return jsonify(ai_question_authoring_engine.get_statistics())
+
+
+# ==================== 第7轮：学习数据可视化引擎 API ====================
+
+@app.route('/api/visualization/chart_types')
+@require_login
+def viz_chart_types():
+    """获取图表类型"""
+    from ai_engines.learning_visualization_engine import learning_visualization_engine
+    return jsonify(learning_visualization_engine.get_chart_types())
+
+
+@app.route('/api/visualization/data_sources')
+@require_login
+def viz_data_sources():
+    """获取数据源列表"""
+    from ai_engines.learning_visualization_engine import learning_visualization_engine
+    return jsonify(learning_visualization_engine.get_data_sources())
+
+
+@app.route('/api/visualization/create', methods=['POST'])
+@require_login
+def viz_create():
+    """创建可视化图表"""
+    from ai_engines.learning_visualization_engine import learning_visualization_engine
+    data = request.get_json() or {}
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    return jsonify(learning_visualization_engine.create_visualization(
+        name=data.get('name', '未命名'),
+        chart_type=data.get('chart_type', 'bar'),
+        data_source=data.get('data_source'),
+        config=data.get('config'),
+        owner_id=user_id,
+        description=data.get('description'),
+        is_public=data.get('is_public', False)))
+
+
+@app.route('/api/visualization/render/<viz_id>')
+@require_login
+def viz_render(viz_id):
+    """渲染图表"""
+    from ai_engines.learning_visualization_engine import learning_visualization_engine
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    return jsonify(learning_visualization_engine.render_chart(viz_id, user_id))
+
+
+@app.route('/api/visualization/list')
+@require_login
+def viz_list():
+    """列出可视化图表"""
+    from ai_engines.learning_visualization_engine import learning_visualization_engine
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    return jsonify(learning_visualization_engine.list_visualizations(
+        owner_id=user_id,
+        chart_type=request.args.get('chart_type')))
+
+
+@app.route('/api/visualization/dashboard/create', methods=['POST'])
+@require_login
+def viz_dashboard_create():
+    """创建仪表盘"""
+    from ai_engines.learning_visualization_engine import learning_visualization_engine
+    data = request.get_json() or {}
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    return jsonify(learning_visualization_engine.create_dashboard(
+        name=data.get('name', '未命名仪表盘'),
+        description=data.get('description'),
+        target_role=data.get('target_role'),
+        owner_id=user_id,
+        is_public=data.get('is_public', False),
+        widgets=data.get('widgets')))
+
+
+@app.route('/api/visualization/dashboard/<dash_id>')
+@require_login
+def viz_dashboard_get(dash_id):
+    """获取仪表盘"""
+    from ai_engines.learning_visualization_engine import learning_visualization_engine
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    return jsonify(learning_visualization_engine.get_dashboard(dash_id, user_id))
+
+
+@app.route('/api/visualization/dashboards')
+@require_login
+def viz_dashboards_list():
+    """列出仪表盘"""
+    from ai_engines.learning_visualization_engine import learning_visualization_engine
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    role = request.args.get('role')
+    return jsonify(learning_visualization_engine.list_dashboards(
+        target_role=role, owner_id=user_id))
+
+
+@app.route('/api/visualization/dashboard/<dash_id>/widget', methods=['POST'])
+@require_login
+def viz_widget_add(dash_id):
+    """添加组件"""
+    from ai_engines.learning_visualization_engine import learning_visualization_engine
+    data = request.get_json() or {}
+    return jsonify(learning_visualization_engine.add_widget(
+        dashboard_id=dash_id,
+        title=data.get('title', '组件'),
+        chart_type=data.get('chart_type', 'bar'),
+        data_source=data.get('data_source'),
+        config=data.get('config'),
+        position=data.get('position')))
+
+
+@app.route('/api/visualization/export', methods=['POST'])
+@require_login
+def viz_export():
+    """导出报表"""
+    from ai_engines.learning_visualization_engine import learning_visualization_engine
+    data = request.get_json() or {}
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    return jsonify(learning_visualization_engine.export_report(
+        user_id=user_id,
+        source_type=data.get('source_type', 'dashboard'),
+        source_id=data.get('source_id'),
+        export_format=data.get('format', 'csv'),
+        data=data.get('data')))
+
+
+@app.route('/api/visualization/exports')
+@require_login
+def viz_exports():
+    """列出导出记录"""
+    from ai_engines.learning_visualization_engine import learning_visualization_engine
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    return jsonify(learning_visualization_engine.list_exports(user_id))
+
+
+@app.route('/api/visualization/stream/subscribe', methods=['POST'])
+@require_login
+def viz_stream_subscribe():
+    """订阅数据流"""
+    from ai_engines.learning_visualization_engine import learning_visualization_engine
+    data = request.get_json() or {}
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    return jsonify(learning_visualization_engine.subscribe_stream(
+        name=data.get('name', '未命名流'),
+        data_source=data.get('data_source', 'learning_events'),
+        subscriber_id=user_id,
+        aggregation_type=data.get('aggregation_type', 'count'),
+        window_size=data.get('window_size', 60)))
+
+
+@app.route('/api/visualization/stream/<stream_id>')
+@require_login
+def viz_stream_value(stream_id):
+    """获取数据流当前值"""
+    from ai_engines.learning_visualization_engine import learning_visualization_engine
+    return jsonify(learning_visualization_engine.get_stream_value(stream_id))
+
+
+@app.route('/api/visualization/statistics')
+@require_login
+def viz_statistics():
+    """可视化引擎统计"""
+    from ai_engines.learning_visualization_engine import learning_visualization_engine
+    return jsonify(learning_visualization_engine.get_statistics())
+
+
+# ==================== 第8轮：智能学习诊断引擎 API ====================
+
+@app.route('/api/diagnosis/update_mastery', methods=['POST'])
+@require_login
+def diagnosis_update_mastery():
+    """更新知识点掌握度"""
+    from ai_engines.learning_diagnosis_engine import learning_diagnosis_engine
+    data = request.get_json() or {}
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    return jsonify(learning_diagnosis_engine.update_mastery(
+        student_id=data.get('student_id', user_id),
+        subject=data.get('subject', ''),
+        knowledge_point=data.get('knowledge_point', ''),
+        correct=data.get('correct', False),
+        time_spent=data.get('time_spent', 0),
+        chapter=data.get('chapter')))
+
+
+@app.route('/api/diagnosis/mastery/<student_id>')
+@require_login
+def diagnosis_student_mastery(student_id):
+    """获取学生掌握度"""
+    from ai_engines.learning_diagnosis_engine import learning_diagnosis_engine
+    subject = request.args.get('subject')
+    return jsonify(learning_diagnosis_engine.get_student_mastery(student_id, subject))
+
+
+@app.route('/api/diagnosis/create_test', methods=['POST'])
+@require_login
+def diagnosis_create_test():
+    """创建诊断测试"""
+    from ai_engines.learning_diagnosis_engine import learning_diagnosis_engine
+    data = request.get_json() or {}
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    return jsonify(learning_diagnosis_engine.create_diagnosis_test(
+        student_id=data.get('student_id', user_id),
+        subject=data.get('subject', ''),
+        scope=data.get('scope'),
+        test_type=data.get('test_type', 'adaptive'),
+        num_questions=data.get('num_questions', 10)))
+
+
+@app.route('/api/diagnosis/submit_test', methods=['POST'])
+@require_login
+def diagnosis_submit_test():
+    """提交诊断测试"""
+    from ai_engines.learning_diagnosis_engine import learning_diagnosis_engine
+    data = request.get_json() or {}
+    return jsonify(learning_diagnosis_engine.submit_diagnosis_test(
+        test_id=data.get('test_id', ''),
+        answers=data.get('answers', []),
+        duration=data.get('duration', 0)))
+
+
+@app.route('/api/diagnosis/test/<test_id>')
+@require_login
+def diagnosis_get_test(test_id):
+    """获取诊断测试详情"""
+    from ai_engines.learning_diagnosis_engine import learning_diagnosis_engine
+    return jsonify(learning_diagnosis_engine.get_diagnosis_test(test_id))
+
+
+@app.route('/api/diagnosis/generate_report', methods=['POST'])
+@require_login
+def diagnosis_generate_report():
+    """生成诊断报告"""
+    from ai_engines.learning_diagnosis_engine import learning_diagnosis_engine
+    data = request.get_json() or {}
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    return jsonify(learning_diagnosis_engine.generate_student_report(
+        student_id=data.get('student_id', user_id),
+        subject=data.get('subject'),
+        test_id=data.get('test_id')))
+
+
+@app.route('/api/diagnosis/report/<report_id>')
+@require_login
+def diagnosis_get_report(report_id):
+    """获取诊断报告"""
+    from ai_engines.learning_diagnosis_engine import learning_diagnosis_engine
+    return jsonify(learning_diagnosis_engine.get_report(report_id))
+
+
+@app.route('/api/diagnosis/reports/<student_id>')
+@require_login
+def diagnosis_list_reports(student_id):
+    """列出诊断报告"""
+    from ai_engines.learning_diagnosis_engine import learning_diagnosis_engine
+    subject = request.args.get('subject')
+    report_type = request.args.get('report_type')
+    limit = int(request.args.get('limit', 20))
+    return jsonify(learning_diagnosis_engine.list_reports(
+        student_id, subject, report_type, limit))
+
+
+@app.route('/api/diagnosis/class_report', methods=['POST'])
+@require_admin
+def diagnosis_class_report():
+    """生成班级诊断报告"""
+    from ai_engines.learning_diagnosis_engine import learning_diagnosis_engine
+    data = request.get_json() or {}
+    return jsonify(learning_diagnosis_engine.generate_class_report(
+        class_id=data.get('class_id', ''),
+        subject=data.get('subject', ''),
+        period=data.get('period', 'month')))
+
+
+@app.route('/api/diagnosis/statistics')
+@require_login
+def diagnosis_statistics():
+    """诊断引擎统计"""
+    from ai_engines.learning_diagnosis_engine import learning_diagnosis_engine
+    return jsonify(learning_diagnosis_engine.get_statistics())
+
+
+# ==================== 第8轮：智能知识库引擎 API ====================
+
+@app.route('/api/knowledge/entry', methods=['POST'])
+@require_admin
+def knowledge_add_entry():
+    """添加知识条目"""
+    from ai_engines.knowledge_base_engine import knowledge_base_engine
+    data = request.get_json() or {}
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'admin'
+    return jsonify(knowledge_base_engine.add_entry(
+        title=data.get('title', ''),
+        content=data.get('content', ''),
+        knowledge_type=data.get('knowledge_type', 'concept'),
+        subject=data.get('subject', ''),
+        summary=data.get('summary'),
+        grade=data.get('grade'),
+        chapter=data.get('chapter'),
+        section=data.get('section'),
+        importance=data.get('importance', 'general'),
+        difficulty=data.get('difficulty', 'medium'),
+        tags=data.get('tags'),
+        prerequisites=data.get('prerequisites'),
+        related_entries=data.get('related_entries'),
+        examples=data.get('examples'),
+        sources=data.get('sources'),
+        author_id=user_id))
+
+
+@app.route('/api/knowledge/entry/<entry_id>')
+@require_login
+def knowledge_get_entry(entry_id):
+    """获取知识条目"""
+    from ai_engines.knowledge_base_engine import knowledge_base_engine
+    user_id = str(current_user.id) if hasattr(current_user.id, 'id') else 'test_user'
+    return jsonify(knowledge_base_engine.get_entry(entry_id, user_id))
+
+
+@app.route('/api/knowledge/entry/update', methods=['POST'])
+@require_admin
+def knowledge_update_entry():
+    """更新知识条目"""
+    from ai_engines.knowledge_base_engine import knowledge_base_engine
+    data = request.get_json() or {}
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'admin'
+    changes = {k: v for k, v in data.items() if k != 'entry_id' and k != 'change_summary'}
+    return jsonify(knowledge_base_engine.update_entry(
+        entry_id=data.get('entry_id', ''),
+        changed_by=user_id,
+        changes=changes))
+
+
+@app.route('/api/knowledge/list')
+@require_login
+def knowledge_list_entries():
+    """列出知识条目"""
+    from ai_engines.knowledge_base_engine import knowledge_base_engine
+    return jsonify(knowledge_base_engine.list_entries(
+        subject=request.args.get('subject'),
+        knowledge_type=request.args.get('knowledge_type'),
+        importance=request.args.get('importance'),
+        grade=request.args.get('grade'),
+        chapter=request.args.get('chapter'),
+        keyword=request.args.get('keyword'),
+        limit=int(request.args.get('limit', 50)),
+        offset=int(request.args.get('offset', 0))))
+
+
+@app.route('/api/knowledge/search')
+@require_login
+def knowledge_search():
+    """搜索知识库"""
+    from ai_engines.knowledge_base_engine import knowledge_base_engine
+    query = request.args.get('q', '')
+    subject = request.args.get('subject')
+    knowledge_type = request.args.get('knowledge_type')
+    limit = int(request.args.get('limit', 20))
+    return jsonify(knowledge_base_engine.search(query, subject, knowledge_type, limit))
+
+
+@app.route('/api/knowledge/categories')
+@require_login
+def knowledge_categories():
+    """获取知识分类"""
+    from ai_engines.knowledge_base_engine import knowledge_base_engine
+    subject = request.args.get('subject')
+    parent_id = request.args.get('parent_id')
+    return jsonify(knowledge_base_engine.list_categories(subject, parent_id))
+
+
+@app.route('/api/knowledge/category', methods=['POST'])
+@require_admin
+def knowledge_add_category():
+    """添加知识分类"""
+    from ai_engines.knowledge_base_engine import knowledge_base_engine
+    data = request.get_json() or {}
+    return jsonify(knowledge_base_engine.add_category(
+        name=data.get('name', ''),
+        subject=data.get('subject'),
+        parent_id=data.get('parent_id'),
+        description=data.get('description'),
+        grade=data.get('grade'),
+        sort_order=data.get('sort_order', 0)))
+
+
+@app.route('/api/knowledge/learn', methods=['POST'])
+@require_login
+def knowledge_record_learning():
+    """记录学习行为"""
+    from ai_engines.knowledge_base_engine import knowledge_base_engine
+    data = request.get_json() or {}
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'test_user'
+    return jsonify(knowledge_base_engine.record_learning(
+        user_id=user_id,
+        entry_id=data.get('entry_id', ''),
+        action=data.get('action', 'learn'),
+        duration=data.get('duration', 0),
+        understanding_score=data.get('understanding_score'),
+        note=data.get('note')))
+
+
+@app.route('/api/knowledge/progress/<user_id>')
+@require_login
+def knowledge_progress(user_id):
+    """获取学习进度"""
+    from ai_engines.knowledge_base_engine import knowledge_base_engine
+    subject = request.args.get('subject')
+    return jsonify(knowledge_base_engine.get_user_learning_progress(user_id, subject))
+
+
+@app.route('/api/knowledge/graph/<entry_id>')
+@require_login
+def knowledge_graph(entry_id):
+    """获取知识图谱"""
+    from ai_engines.knowledge_base_engine import knowledge_base_engine
+    depth = int(request.args.get('depth', 2))
+    return jsonify(knowledge_base_engine.get_knowledge_graph(entry_id, depth))
+
+
+@app.route('/api/knowledge/types')
+@require_login
+def knowledge_types():
+    """获取知识类型"""
+    from ai_engines.knowledge_base_engine import knowledge_base_engine
+    return jsonify(knowledge_base_engine.get_knowledge_types())
+
+
+@app.route('/api/knowledge/statistics')
+@require_login
+def knowledge_statistics():
+    """知识库统计"""
+    from ai_engines.knowledge_base_engine import knowledge_base_engine
+    return jsonify(knowledge_base_engine.get_statistics())
+
+
+# ==================== 第8轮：AI课堂互动引擎 API ====================
+
+@app.route('/api/classroom/create', methods=['POST'])
+@require_admin
+def classroom_create_activity():
+    """创建课堂活动"""
+    from ai_engines.classroom_interaction_engine import classroom_interaction_engine
+    data = request.get_json() or {}
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'teacher'
+    return jsonify(classroom_interaction_engine.create_activity(
+        teacher_id=user_id,
+        activity_type=data.get('activity_type', 'quiz'),
+        title=data.get('title', ''),
+        class_id=data.get('class_id'),
+        subject=data.get('subject'),
+        description=data.get('description'),
+        config=data.get('config')))
+
+
+@app.route('/api/classroom/start', methods=['POST'])
+@require_admin
+def classroom_start_activity():
+    """开始活动"""
+    from ai_engines.classroom_interaction_engine import classroom_interaction_engine
+    data = request.get_json() or {}
+    return jsonify(classroom_interaction_engine.start_activity(data.get('activity_id', '')))
+
+
+@app.route('/api/classroom/end', methods=['POST'])
+@require_admin
+def classroom_end_activity():
+    """结束活动"""
+    from ai_engines.classroom_interaction_engine import classroom_interaction_engine
+    data = request.get_json() or {}
+    return jsonify(classroom_interaction_engine.end_activity(data.get('activity_id', '')))
+
+
+@app.route('/api/classroom/<activity_id>')
+@require_login
+def classroom_get_activity(activity_id):
+    """获取活动详情"""
+    from ai_engines.classroom_interaction_engine import classroom_interaction_engine
+    return jsonify(classroom_interaction_engine.get_activity(activity_id))
+
+
+@app.route('/api/classroom/list')
+@require_login
+def classroom_list_activities():
+    """列出活动"""
+    from ai_engines.classroom_interaction_engine import classroom_interaction_engine
+    teacher_id = request.args.get('teacher_id')
+    class_id = request.args.get('class_id')
+    status = request.args.get('status')
+    limit = int(request.args.get('limit', 20))
+    return jsonify(classroom_interaction_engine.list_activities(
+        teacher_id, class_id, status, limit))
+
+
+@app.route('/api/classroom/question', methods=['POST'])
+@require_admin
+def classroom_add_question():
+    """添加题目"""
+    from ai_engines.classroom_interaction_engine import classroom_interaction_engine
+    data = request.get_json() or {}
+    return jsonify(classroom_interaction_engine.add_question(
+        activity_id=data.get('activity_id', ''),
+        question_type=data.get('question_type', 'single_choice'),
+        content=data.get('content', ''),
+        options=data.get('options'),
+        correct_answer=data.get('correct_answer'),
+        points=data.get('points', 10),
+        time_limit=data.get('time_limit', 30),
+        sort_order=data.get('sort_order', 0)))
+
+
+@app.route('/api/classroom/answer', methods=['POST'])
+@require_login
+def classroom_submit_answer():
+    """提交答案"""
+    from ai_engines.classroom_interaction_engine import classroom_interaction_engine
+    data = request.get_json() or {}
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'student'
+    return jsonify(classroom_interaction_engine.submit_answer(
+        activity_id=data.get('activity_id', ''),
+        question_id=data.get('question_id', ''),
+        student_id=user_id,
+        answer=data.get('answer', ''),
+        student_name=data.get('student_name')))
+
+
+@app.route('/api/classroom/random_pick', methods=['POST'])
+@require_admin
+def classroom_random_pick():
+    """随机点名"""
+    from ai_engines.classroom_interaction_engine import classroom_interaction_engine
+    data = request.get_json() or {}
+    return jsonify(classroom_interaction_engine.random_pick(
+        activity_id=data.get('activity_id', ''),
+        student_ids=data.get('student_ids', []),
+        exclude_ids=data.get('exclude_ids'),
+        weights=data.get('weights'),
+        count=data.get('count', 1)))
+
+
+@app.route('/api/classroom/rush_submit', methods=['POST'])
+@require_login
+def classroom_rush_submit():
+    """提交抢答"""
+    from ai_engines.classroom_interaction_engine import classroom_interaction_engine
+    data = request.get_json() or {}
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'student'
+    return jsonify(classroom_interaction_engine.submit_rush(
+        activity_id=data.get('activity_id', ''),
+        student_id=user_id,
+        student_name=data.get('student_name')))
+
+
+@app.route('/api/classroom/rush_ranking/<activity_id>')
+@require_login
+def classroom_rush_ranking(activity_id):
+    """抢答排名"""
+    from ai_engines.classroom_interaction_engine import classroom_interaction_engine
+    return jsonify(classroom_interaction_engine.get_rush_ranking(activity_id))
+
+
+@app.route('/api/classroom/groups', methods=['POST'])
+@require_admin
+def classroom_create_groups():
+    """创建分组"""
+    from ai_engines.classroom_interaction_engine import classroom_interaction_engine
+    data = request.get_json() or {}
+    return jsonify(classroom_interaction_engine.create_groups(
+        activity_id=data.get('activity_id', ''),
+        student_ids=data.get('student_ids', []),
+        group_count=data.get('group_count', 4),
+        strategy=data.get('strategy', 'random')))
+
+
+@app.route('/api/classroom/award_points', methods=['POST'])
+@require_admin
+def classroom_award_points():
+    """奖励积分"""
+    from ai_engines.classroom_interaction_engine import classroom_interaction_engine
+    data = request.get_json() or {}
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'teacher'
+    return jsonify(classroom_interaction_engine.award_points(
+        student_id=data.get('student_id', ''),
+        points=data.get('points', 0),
+        reason=data.get('reason'),
+        activity_id=data.get('activity_id'),
+        class_id=data.get('class_id'),
+        awarded_by=user_id))
+
+
+@app.route('/api/classroom/points/<student_id>')
+@require_login
+def classroom_student_points(student_id):
+    """学生积分"""
+    from ai_engines.classroom_interaction_engine import classroom_interaction_engine
+    class_id = request.args.get('class_id')
+    return jsonify(classroom_interaction_engine.get_student_points(student_id, class_id))
+
+
+@app.route('/api/classroom/results/<activity_id>')
+@require_login
+def classroom_activity_results(activity_id):
+    """活动结果统计"""
+    from ai_engines.classroom_interaction_engine import classroom_interaction_engine
+    return jsonify(classroom_interaction_engine.get_activity_results(activity_id))
+
+
+@app.route('/api/classroom/templates')
+@require_login
+def classroom_list_templates():
+    """活动模板列表"""
+    from ai_engines.classroom_interaction_engine import classroom_interaction_engine
+    teacher_id = request.args.get('teacher_id')
+    activity_type = request.args.get('activity_type')
+    return jsonify(classroom_interaction_engine.list_templates(teacher_id, activity_type))
+
+
+@app.route('/api/classroom/template', methods=['POST'])
+@require_admin
+def classroom_save_template():
+    """保存活动模板"""
+    from ai_engines.classroom_interaction_engine import classroom_interaction_engine
+    data = request.get_json() or {}
+    user_id = str(current_user.id) if hasattr(current_user, 'id') else 'teacher'
+    return jsonify(classroom_interaction_engine.save_template(
+        teacher_id=user_id,
+        activity_type=data.get('activity_type', 'quiz'),
+        name=data.get('name', ''),
+        config=data.get('config'),
+        is_public=data.get('is_public', False)))
+
+
+@app.route('/api/classroom/activity_types')
+@require_login
+def classroom_activity_types():
+    """活动类型列表"""
+    from ai_engines.classroom_interaction_engine import classroom_interaction_engine
+    return jsonify(classroom_interaction_engine.get_activity_types())
+
+
+@app.route('/api/classroom/statistics')
+@require_login
+def classroom_statistics():
+    """课堂互动统计"""
+    from ai_engines.classroom_interaction_engine import classroom_interaction_engine
+    return jsonify(classroom_interaction_engine.get_statistics())
+
 
 # 审批管理页面
 @app.route('/approval_management')
@@ -14107,6 +16926,13 @@ try:
 except Exception as e:
     logger.error(f"✗ 注册蓝图 github_upload_bp 失败: {e}")
 
+try:
+    from ai_engines.cluster_array_api import cluster_array_api
+    app.register_blueprint(cluster_array_api)
+    logger.info("✓ 注册蓝图: cluster_array_api")
+except Exception as e:
+    logger.error(f"✗ 注册蓝图 cluster_array_api 失败: {e}")
+
 # ==================== AI布局管理员工模块 ====================
 
 def require_layout_admin():
@@ -14407,6 +17233,22 @@ if __name__ == '__main__':
         except Exception as e:
             logger.error(f"[初始化] AutomationPlanAgent启动失败: {e}")
             print(f"[ERROR] AutomationPlanAgent启动失败: {e}")
+        
+        try:
+            from ai_engines.ai_cluster_manager import ai_cluster_manager
+            logger.info("[初始化] AIClusterManager 已启动")
+            print("[INFO] AIClusterManager 已启动")
+        except Exception as e:
+            logger.error(f"[初始化] AIClusterManager启动失败: {e}")
+            print(f"[ERROR] AIClusterManager启动失败: {e}")
+        
+        try:
+            from ai_engines.cluster_manager import cluster_manager
+            logger.info("[初始化] ClusterManager 已启动")
+            print("[INFO] ClusterManager 已启动")
+        except Exception as e:
+            logger.error(f"[初始化] ClusterManager启动失败: {e}")
+            print(f"[ERROR] ClusterManager启动失败: {e}")
     
     parser = argparse.ArgumentParser()
     parser.add_argument('--port', type=int, default=8888, help='端口号')
