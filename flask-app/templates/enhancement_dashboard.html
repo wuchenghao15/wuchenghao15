@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>系统增强管理器 - MTSCOS AI</title>
+    <title>系统增强管理器 v7.1.0 - MTSCOS AI</title>
     <link rel="stylesheet" href="/assets/tailwind.min.css">
     <link rel="stylesheet" href="/assets/all.min.css">
     <style>
@@ -205,6 +205,7 @@
         .badge-yellow { background: rgba(234, 179, 8, 0.2); color: #eab308; }
         .badge-red { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
         .badge-purple { background: rgba(168, 85, 247, 0.2); color: #a855f7; }
+        .badge-gray { background: rgba(148, 163, 184, 0.2); color: #94a3b8; }
 
         .loading { text-align: center; padding: 40px; color: #94a3b8; }
         .spinner {
@@ -241,7 +242,7 @@
             <div class="header-title">
                 <i class="fas fa-rocket"></i> 系统综合增强管理器
             </div>
-            <div class="header-subtitle">v7.0.0 (Intelligent Modular Edition) · 十大功能模块统一管理</div>
+            <div class="header-subtitle">v7.1.0 (Intelligent Modular Enhanced Edition) · 十大功能模块统一管理</div>
         </div>
         <div class="header-actions">
             <button class="btn btn-secondary" onclick="refreshAll()"><i class="fas fa-sync-alt"></i> 刷新</button>
@@ -361,6 +362,84 @@
         </table>
     </div>
 
+    <!-- 集群节点 -->
+    <div class="panel">
+        <div class="panel-title"><i class="fas fa-server"></i> 集群节点</div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>节点ID</th>
+                    <th>类型</th>
+                    <th>地址</th>
+                    <th>状态</th>
+                    <th>负载</th>
+                </tr>
+            </thead>
+            <tbody id="clusterNodesTable">
+                <tr><td colspan="5" class="loading"><div class="spinner"></div></td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- AI节点 -->
+    <div class="panel">
+        <div class="panel-title"><i class="fas fa-robot"></i> AI节点</div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>节点ID</th>
+                    <th>节点名称</th>
+                    <th>模型</th>
+                    <th>状态</th>
+                    <th>负载</th>
+                    <th>容量</th>
+                </tr>
+            </thead>
+            <tbody id="aiNodesTable">
+                <tr><td colspan="6" class="loading"><div class="spinner"></div></td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 题库分类 -->
+    <div class="panel">
+        <div class="panel-title"><i class="fas fa-book"></i> 题库分类体系</div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>分类ID</th>
+                    <th>名称</th>
+                    <th>父分类</th>
+                    <th>描述</th>
+                    <th>题目数</th>
+                </tr>
+            </thead>
+            <tbody id="questionCategoriesTable">
+                <tr><td colspan="5" class="loading"><div class="spinner"></div></td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 前端布局 -->
+    <div class="panel">
+        <div class="panel-title"><i class="fas fa-desktop"></i> 前端布局配置</div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>布局ID</th>
+                    <th>名称</th>
+                    <th>主题</th>
+                    <th>配置</th>
+                    <th>状态</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody id="layoutsTable">
+                <tr><td colspan="6" class="loading"><div class="spinner"></div></td></tr>
+            </tbody>
+        </table>
+    </div>
+
     <script>
         const API = '/api/enhancement';
         const MODULE_ICONS = {
@@ -456,6 +535,18 @@
             const res = await fetchJSON(`${API}/ai-cluster/nodes`);
             if (res.success && res.data && res.data.nodes) {
                 document.getElementById('clusterCount').textContent = res.data.nodes.length;
+                // 渲染AI节点表
+                const tbody = document.getElementById('aiNodesTable');
+                tbody.innerHTML = res.data.nodes.map(n => `
+                    <tr>
+                        <td><code>${n.node_id}</code></td>
+                        <td>${n.node_name || '-'}</td>
+                        <td><span class="badge badge-blue">${n.model || '-'}</span></td>
+                        <td><span class="badge ${n.status === 'online' || n.status === 'idle' ? 'badge-green' : 'badge-yellow'}">${n.status}</span></td>
+                        <td>${(n.load || 0).toFixed(1)}%</td>
+                        <td>${n.capacity || '-'}</td>
+                    </tr>
+                `).join('');
             }
             // 加载模型 (从ai_nodes和权限矩阵获取)
             const matrixRes = await fetchJSON(`${API}/permissions/matrix`);
@@ -480,6 +571,92 @@
                         <td>${r.priority}</td>
                     </tr>
                 `).join('');
+            }
+            // AI模型表 (从versions接口获取)
+            const modelsRes = await fetchJSON(`${API}/ai-models/versions?model_name=`);
+            if (modelsRes.success && modelsRes.data) {
+                const models = modelsRes.data.models || modelsRes.data.versions || [];
+                document.getElementById('aiModelCount').textContent = models.length || 16;
+                const tbody = document.getElementById('aiModelsTable');
+                if (models.length > 0) {
+                    tbody.innerHTML = models.map(m => `
+                        <tr>
+                            <td><code>${m.model_id || m.id}</code></td>
+                            <td><strong>${m.model_name || m.name}</strong></td>
+                            <td>${m.version || '-'}</td>
+                            <td><span class="badge badge-green">${m.status || 'registered'}</span></td>
+                            <td>${m.performance_score || '-'}</td>
+                        </tr>
+                    `).join('');
+                }
+            }
+        }
+
+        async function loadClusterNodes() {
+            const res = await fetchJSON(`${API}/cluster/nodes`);
+            if (res.success && res.data && res.data.nodes) {
+                const tbody = document.getElementById('clusterNodesTable');
+                tbody.innerHTML = res.data.nodes.map(n => `
+                    <tr>
+                        <td><code>${n.node_id}</code></td>
+                        <td><span class="badge ${n.node_type === 'master' ? 'badge-purple' : n.node_type === 'worker' ? 'badge-blue' : 'badge-yellow'}">${n.node_type}</span></td>
+                        <td>${n.address || '-'}</td>
+                        <td><span class="badge ${n.status === 'online' ? 'badge-green' : 'badge-yellow'}">${n.status}</span></td>
+                        <td>${(n.load || 0).toFixed(1)}%</td>
+                    </tr>
+                `).join('');
+            }
+        }
+
+        async function loadQuestionCategories() {
+            const res = await fetchJSON(`${API}/questions/categories`);
+            if (res.success && res.data && res.data.categories) {
+                const tbody = document.getElementById('questionCategoriesTable');
+                tbody.innerHTML = res.data.categories.map(c => `
+                    <tr>
+                        <td><code>${c.category_id}</code></td>
+                        <td><strong>${c.name}</strong></td>
+                        <td>${c.parent_id || '-'}</td>
+                        <td>${c.description || '-'}</td>
+                        <td>${c.question_count || 0}</td>
+                    </tr>
+                `).join('');
+            }
+        }
+
+        async function loadFrontendLayouts() {
+            const res = await fetchJSON(`${API}/frontend/layouts`);
+            if (res.success && res.data && res.data.layouts) {
+                const tbody = document.getElementById('layoutsTable');
+                tbody.innerHTML = res.data.layouts.map(l => {
+                    const config = l.config || {};
+                    const configStr = typeof config === 'object' ? Object.entries(config).map(([k,v]) => `${k}:${v?'✓':'✗'}`).join(' ') : String(config);
+                    return `
+                        <tr>
+                            <td><code>${l.layout_id}</code></td>
+                            <td><strong>${l.layout_name}</strong></td>
+                            <td><span class="badge badge-${l.theme === 'blue' ? 'blue' : l.theme === 'dark' ? 'purple' : 'yellow'}">${l.theme}</span></td>
+                            <td style="font-size:11px">${configStr}</td>
+                            <td>${l.is_active ? '<span class="badge badge-green">激活</span>' : '<span class="badge badge-gray">未激活</span>'}</td>
+                            <td>${!l.is_active ? `<button class="action-btn" onclick="activateLayout('${l.layout_id}')">激活</button>` : '-'}</td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+        }
+
+        async function activateLayout(layoutId) {
+            showToast(`正在激活布局: ${layoutId}...`, 'success');
+            const res = await fetchJSON(`${API}/frontend/layouts/activate`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ layout_id: layoutId })
+            });
+            if (res.success) {
+                showToast('布局激活成功!', 'success');
+                loadFrontendLayouts();
+            } else {
+                showToast('布局激活失败', 'error');
             }
         }
 
@@ -589,7 +766,9 @@
                 loadAiModels(),
                 loadPorts(),
                 loadPerformance(),
-                loadAiModelCount(),
+                loadClusterNodes(),
+                loadQuestionCategories(),
+                loadFrontendLayouts(),
             ]);
             showToast('刷新完成', 'success');
         }

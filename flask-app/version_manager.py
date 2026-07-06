@@ -7,6 +7,34 @@ from datetime import datetime
 from db_manager import connect
 
 VERSION_DATA = {
+    '7.1.0': {
+        'major': 7,
+        'minor': 1,
+        'patch': 0,
+        'build_number': '20260707a',
+        'build_date': '2026-07-07',
+        'codename': 'Intelligent Modular Enhanced Edition',
+        'status': 'stable',
+        'description': '智能模块化增强版本，深度拓展十大功能模块，丰富AI模型库(15+)，完整权限矩阵(40+规则)，集群节点扩展，题库分类体系，前端仪表板增强',
+        'features': [
+            '系统综合增强管理器深度拓展（十大功能模块完整实现）',
+            '增强管理器API蓝图（32+路由）',
+            '增强管理器可视化仪表板（实时监控/操作面板）',
+            'AI模型库扩展（15+模型：GPT-4/Claude-3/Qwen/Whisper/embedding等）',
+            '完整权限规则矩阵（40+规则，覆盖10+角色）',
+            '集群节点扩展（master/worker/backup多节点）',
+            '题库分类体系（K12+成人教育全科目）',
+            '端口管理强化（多服务端口分配）',
+            '多维度性能监控（CPU/磁盘/内存/进程）',
+            'Git自动同步（变更检测/提交/推送/一键同步）',
+            '登录重定向修复（角色跳转/next参数）',
+            '前端布局主题管理（多主题切换）',
+            '版本历史完整记录（7+版本）',
+            '系统说明书文档（SYSTEM_MANUAL.md）',
+            'GitHub说明文档更新（README.md）'
+        ],
+        'upgrade_notes': '从v7.0.0升级：深度拓展十大功能模块，丰富AI模型库和权限规则矩阵，增强前端仪表板'
+    },
     '7.0.0': {
         'major': 7,
         'minor': 0,
@@ -151,7 +179,7 @@ VERSION_DATA = {
     }
 }
 
-CURRENT_VERSION = '7.0.0'
+CURRENT_VERSION = '7.1.0'
 
 def init_version_table():
     conn = connect('system')

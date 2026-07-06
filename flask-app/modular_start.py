@@ -34,7 +34,7 @@ sys.path.insert(0, BASE_DIR)
 print()
 print("=" * 70)
 print("  MTSCOS AI 智能考试系统 - 模块化启动")
-print("  版本: v7.0.0 (Intelligent Modular Edition)")
+print("  版本: v7.1.0 (Intelligent Modular Enhanced Edition)")
 print("=" * 70)
 print(f"  启动时间: {START_TIME.strftime('%Y-%m-%d %H:%M:%S')}")
 print(f"  项目目录: {BASE_DIR}")
@@ -300,6 +300,19 @@ try:
     for model in default_models:
         system_enhancement_manager.register_model(model)
     print("  ✓ 增强管理器默认数据已初始化 (端口/集群/AI节点/布局/权限/6个AI模型)")
+    # 运行深度数据填充 (幂等，INSERT OR REPLACE)
+    try:
+        from ai_engines.enhancement_data_seeder import run_all_seeds
+        import io
+        import contextlib
+        # 静默运行填充脚本
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            run_all_seeds()
+        print("  ✓ 深度数据填充完成 (39权限+16模型+5集群+5AI节点+24分类+6端口+5布局)")
+    except Exception as e:
+        logger.warning(f"深度数据填充失败: {e}")
+        print(f"  ! 深度数据填充失败: {e}")
 except Exception as e:
     logger.warning(f"增强管理器默认数据初始化失败: {e}")
     print(f"  ! 增强管理器默认数据初始化失败: {e}")

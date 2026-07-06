@@ -127,9 +127,9 @@ class DatabaseConfigLoader:
         logger.info("=" * 60)
 
         base_defaults = {
-            'app_name': 'MTSCOS AI 智能考试系统',
-            'app_version': '7.0.0',
-            'app_code_name': 'Intelligent Modular Edition',
+           'app_name': 'MTSCOS AI 智能考试系统',
+           'app_version': '7.1.0',
+           'app_code_name': 'Intelligent Modular Enhanced Edition',
             'debug': False,
             'timezone': 'Asia/Shanghai',
             'language': 'zh-CN',

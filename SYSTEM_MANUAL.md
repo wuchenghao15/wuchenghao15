@@ -1,6 +1,6 @@
 # MTSCOS AI 智能考试系统 - 系统说明书
 
-> 版本 v7.0.0 - Intelligent Modular Edition
+> 版本 v7.1.0 - Intelligent Modular Enhanced Edition
 > 文档更新日期: 2026-07-07
 
 ## 📖 目录
@@ -23,7 +23,7 @@
 MTSCOS AI 智能考试系统是一个基于 Flask 的分布式智能考试管理平台，专为多层级教育场景设计，支持九年制义务教育和成人制教育。系统集成了完整的AI引擎矩阵、分布式数据库架构、模块化启动系统和综合增强管理器。
 
 ### 核心数据
-- **版本**: v7.0.0 (Intelligent Modular Edition)
+- **版本**: v7.1.0 (Intelligent Modular Enhanced Edition)
 - **构建日期**: 2026-07-07
 - **数据库数量**: 16+ 独立数据库
 - **API路由数量**: 629+ (含32个增强管理器路由)
@@ -31,6 +31,12 @@ MTSCOS AI 智能考试系统是一个基于 Flask 的分布式智能考试管理
 - **AI Agent数量**: 6+
 - **AI检索模型**: 590+
 - **AI引擎数量**: 20+
+- **AI模型库**: 16+模型 (GPT-4/Claude-3/Qwen/Whisper/embedding等)
+- **权限规则**: 39+条 (覆盖10+角色)
+- **集群节点**: 5个 (master/worker/backup)
+- **题库分类**: 24个 (K12+成人教育)
+- **端口分配**: 6个 (web/api/ai_engine/monitor/backup/websocket)
+- **前端布局**: 5种 (默认/暗色/紧凑/全屏/极简)
 
 ---
 
@@ -301,6 +307,7 @@ python modular_start.py --port 8888 --no-ai
 
 | 版本 | 代号 | 日期 | 主要特性 |
 |------|------|------|----------|
+| v7.1.0 | Intelligent Modular Enhanced Edition | 2026-07-07 | 深度拓展十大功能模块，16+AI模型，39+权限规则，24题库分类，5集群节点，5前端布局 |
 | v7.0.0 | Intelligent Modular Edition | 2026-07-07 | 模块化启动、AI智能检索、API/路由数据库管理、系统综合增强管理器 |
 | v6.0.0 | Distributed Database Edition | 2026-07-06 | 分布式数据库架构 (13个独立数据库) |
 | v5.0.0 | AI Integration Edition | 2026-06-01 | AI集成版本 (AI引擎矩阵) |

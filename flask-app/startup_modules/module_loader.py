@@ -135,17 +135,17 @@ class ModuleLoader:
             def _get_index_template_vars():
                 """获取首页模板所需的变量"""
                 vars = {
-                    'version': '7.0.0',
+                    'version': '7.1.0',
                 'system_status': '运行中',
-                'system_notice': '欢迎使用 MTSCOS AI 智能考试系统 v7.0.0 (Intelligent Modular Edition)',
+                'system_notice': '欢迎使用 MTSCOS AI 智能考试系统 v7.1.0 (Intelligent Modular Enhanced Edition)',
                     'user_count': 0,
                     'exam_count': 0,
                     'online_users': 0,
-                    'latest_version': {'title': 'Intelligent Modular Edition'},
+                    'latest_version': {'title': 'Intelligent Modular Enhanced Edition'},
                     'version_info': {
                         'release_date': '2026-07-07',
-                        'build_number': '7000',
-                        'codename': 'Intelligent Modular Edition'
+                        'build_number': '7100',
+                        'codename': 'Intelligent Modular Enhanced Edition'
                     }
                 }
 

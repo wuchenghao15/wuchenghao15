@@ -133,8 +133,8 @@ def register_template_globals(app: Flask) -> Flask:
 
     # 注册全局变量
     app.jinja_env.globals['app_name'] = 'MTSCOS AI 智能考试系统'
-    app.jinja_env.globals['app_version'] = '7.0.0'
-    app.jinja_env.globals['app_code_name'] = 'Intelligent Modular Edition'
+    app.jinja_env.globals['app_version'] = '7.1.0'
+    app.jinja_env.globals['app_code_name'] = 'Intelligent Modular Enhanced Edition'
 
     logger.info("模板全局函数注册完成")
     return app
