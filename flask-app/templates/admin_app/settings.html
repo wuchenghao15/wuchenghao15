@@ -21,6 +21,64 @@
     </div>
 
     <div class="settings-group">
+        <div class="settings-group-title">跑马灯通知管理</div>
+        <div class="settings-item" onclick="toggleMarquee(this)">
+            <div class="settings-icon" style="background: rgba(239, 68, 68, 0.15); color: #f87171;">
+                <i class="fas fa-broadcast-tower"></i>
+            </div>
+            <div class="settings-content">
+                <div class="settings-label">跑马灯通知</div>
+                <div class="settings-desc">首页顶部滚动通知</div>
+            </div>
+            <div class="toggle {% if marquee_enabled %}active{% endif %}" id="marquee-toggle" onclick="event.stopPropagation(); toggleMarqueeSetting()"></div>
+        </div>
+        <div class="settings-item" onclick="editMarquee()">
+            <div class="settings-icon" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa;">
+                <i class="fas fa-edit"></i>
+            </div>
+            <div class="settings-content">
+                <div class="settings-label">编辑通知内容</div>
+                <div class="settings-desc">{{ marquee_content[:20] }}{% if marquee_content|length > 20 %}...{% endif %}</div>
+            </div>
+            <i class="fas fa-chevron-right arrow"></i>
+        </div>
+        <div class="settings-item" onclick="aiGenerateMarquee()">
+            <div class="settings-icon" style="background: rgba(139, 92, 246, 0.15); color: #a78bfa;">
+                <i class="fas fa-robot"></i>
+            </div>
+            <div class="settings-content">
+                <div class="settings-label">AI自动生成</div>
+                <div class="settings-desc">AI智能生成通知内容</div>
+            </div>
+            <i class="fas fa-chevron-right arrow"></i>
+        </div>
+    </div>
+
+    <div class="settings-group">
+        <div class="settings-group-title">灰度推送</div>
+        <div class="settings-item" onclick="toggleGrayRelease(this)">
+            <div class="settings-icon" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa;">
+                <i class="fas fa-cloud"></i>
+            </div>
+            <div class="settings-content">
+                <div class="settings-label">灰度推送</div>
+                <div class="settings-desc">测试环境端口2026，正式端口8888</div>
+            </div>
+            <div class="toggle" id="gray-toggle" onclick="event.stopPropagation(); toggleGrayReleaseSetting()"></div>
+        </div>
+        <div class="settings-item" onclick="editGraySettings()">
+            <div class="settings-icon" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24;">
+                <i class="fas fa-sliders-h"></i>
+            </div>
+            <div class="settings-content">
+                <div class="settings-label">灰度设置</div>
+                <div class="settings-desc">设置端口和灰度比例</div>
+            </div>
+            <i class="fas fa-chevron-right arrow"></i>
+        </div>
+    </div>
+
+    <div class="settings-group">
         <div class="settings-group-title">通用设置</div>
         <div class="settings-item" onclick="showToast('站点设置')">
             <div class="settings-icon" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa;">
@@ -188,5 +246,216 @@
             }
         });
     }
+
+    function toggleMarquee(el) {
+        toggleMarqueeSetting();
+    }
+
+    function toggleMarqueeSetting() {
+        var toggle = document.getElementById('marquee-toggle');
+        var enabled = toggle.classList.toggle('active');
+        
+        fetch('/api/system/notices/marquee/toggle', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ enabled: enabled })
+        }).then(function(res) {
+            return res.json();
+        }).then(function(data) {
+            if (!data.success) {
+                toggle.classList.toggle('active');
+                showToast(data.message || '操作失败', 'error');
+            }
+        }).catch(function() {
+            toggle.classList.toggle('active');
+            showToast('网络错误', 'error');
+        });
+    }
+
+    function editMarquee() {
+        var currentContent = document.querySelector('.settings-desc')?.textContent || '';
+        showModal('编辑通知内容', `
+            <div style="margin-bottom: 16px;">
+                <div class="label">通知内容</div>
+                <textarea id="marquee-content-input" class="input" rows="4" placeholder="请输入跑马灯通知内容..." style="resize: none;">${currentContent.replace('...', '')}</textarea>
+                <div style="font-size: 12px; color: var(--text-muted); margin-top: 8px;">显示必须有内容，默认关闭状态</div>
+            </div>
+        `, {
+            onConfirm: function(modal) {
+                var content = document.getElementById('marquee-content-input').value.trim();
+                if (!content) {
+                    showToast('通知内容不能为空', 'error');
+                    return;
+                }
+                
+                fetch('/api/system/notices/marquee/update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ content: content })
+                }).then(function(res) {
+                    return res.json();
+                }).then(function(data) {
+                    if (data.success) {
+                        showToast('保存成功');
+                        location.reload();
+                    } else {
+                        showToast(data.message || '保存失败', 'error');
+                    }
+                }).catch(function() {
+                    showToast('网络错误', 'error');
+                });
+            }
+        });
+    }
+
+    function aiGenerateMarquee() {
+        showModal('AI自动生成通知', `
+            <div style="text-align: center; padding: 20px;">
+                <i class="fas fa-robot" style="font-size: 48px; color: var(--secondary); margin-bottom: 16px;"></i>
+                <div style="color: var(--text-secondary);">AI将根据系统状态智能生成通知内容</div>
+            </div>
+        `, {
+            onConfirm: function(modal) {
+                var btn = modal.querySelector('.btn-primary');
+                var originalText = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 生成中...';
+                btn.disabled = true;
+                
+                fetch('/api/system/notices/marquee/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                }).then(function(res) {
+                    return res.json();
+                }).then(function(data) {
+                    if (data.success) {
+                        showToast('生成成功');
+                        location.reload();
+                    } else {
+                        showToast(data.message || '生成失败', 'error');
+                    }
+                }).catch(function() {
+                    showToast('网络错误', 'error');
+                }).finally(function() {
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                });
+            }
+        });
+    }
+
+    function loadGrayReleaseStatus() {
+        fetch('/api/system/gray_release/status')
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                if (data.success) {
+                    var toggle = document.getElementById('gray-toggle');
+                    if (toggle) {
+                        toggle.classList.toggle('active', data.status.enabled);
+                    }
+                }
+            }).catch(function() {});
+    }
+
+    function toggleGrayRelease(el) {
+        toggleGrayReleaseSetting();
+    }
+
+    function toggleGrayReleaseSetting() {
+        var toggle = document.getElementById('gray-toggle');
+        var enabled = toggle.classList.toggle('active');
+        
+        fetch('/api/system/gray_release/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ enabled: enabled, test_port: 2026, production_port: 8888, gray_percentage: 0 })
+        }).then(function(res) {
+            return res.json();
+        }).then(function(data) {
+            if (!data.success) {
+                toggle.classList.toggle('active');
+                showToast(data.message || '操作失败', 'error');
+            }
+        }).catch(function() {
+            toggle.classList.toggle('active');
+            showToast('网络错误', 'error');
+        });
+    }
+
+    function editGraySettings() {
+        fetch('/api/system/gray_release/status')
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                if (data.success) {
+                    var status = data.status;
+                    showModal('灰度推送设置', `
+                        <div style="margin-bottom: 16px;">
+                            <div class="label">测试环境端口</div>
+                            <input type="number" id="gray-test-port" class="input" value="${status.test_port}" min="1" max="65535">
+                        </div>
+                        <div style="margin-bottom: 16px;">
+                            <div class="label">正式环境端口</div>
+                            <input type="number" id="gray-prod-port" class="input" value="${status.production_port}" min="1" max="65535">
+                        </div>
+                        <div style="margin-bottom: 16px;">
+                            <div class="label">灰度比例 (%)</div>
+                            <input type="range" id="gray-percentage" min="0" max="100" value="${status.gray_percentage}" 
+                                style="width: 100%; margin-bottom: 8px;">
+                            <div style="text-align: center; color: var(--primary); font-weight: 600;" id="gray-percentage-value">${status.gray_percentage}%</div>
+                        </div>
+                        <div style="font-size: 12px; color: var(--text-muted);">
+                            预计灰度用户数: ${status.estimated_gray_users} / ${status.total_users}
+                        </div>
+                    `, {
+                        onConfirm: function(modal) {
+                            var testPort = parseInt(document.getElementById('gray-test-port').value);
+                            var prodPort = parseInt(document.getElementById('gray-prod-port').value);
+                            var percentage = parseInt(document.getElementById('gray-percentage').value);
+                            
+                            if (!testPort || !prodPort || testPort < 1 || prodPort < 1) {
+                                showToast('端口号必须大于0', 'error');
+                                return;
+                            }
+                            
+                            fetch('/api/system/gray_release/settings', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ 
+                                    enabled: true,
+                                    test_port: testPort, 
+                                    production_port: prodPort, 
+                                    gray_percentage: percentage 
+                                })
+                            }).then(function(res) {
+                                return res.json();
+                            }).then(function(data) {
+                                if (data.success) {
+                                    showToast('保存成功');
+                                } else {
+                                    showToast(data.message || '保存失败', 'error');
+                                }
+                            }).catch(function() {
+                                showToast('网络错误', 'error');
+                            });
+                        }
+                    });
+                    
+                    setTimeout(function() {
+                        var range = document.getElementById('gray-percentage');
+                        var value = document.getElementById('gray-percentage-value');
+                        if (range && value) {
+                            range.addEventListener('input', function() {
+                                value.textContent = this.value + '%';
+                            });
+                        }
+                    }, 100);
+                }
+            }).catch(function() {
+                showToast('获取设置失败', 'error');
+            });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        loadGrayReleaseStatus();
+    });
 </script>
 {% endblock %}

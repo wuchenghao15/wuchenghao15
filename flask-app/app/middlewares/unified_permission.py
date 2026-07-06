@@ -393,8 +393,8 @@ def get_redirect_url_for_role(role: str) -> str:
             'student_vip': '/exam_system',
             'teacher': '/teacher',
             'designer': '/arduino',
-            'admin': '/settings',
-            'super_admin': '/super_admin_dashboard',
+            'admin': '/admin_app/settings',
+            'super_admin': '/admin_app/settings',
             'hardware_admin': '/hardware/dashboard',
             'hardware_vikey_admin': '/hardware/dashboard',
         }

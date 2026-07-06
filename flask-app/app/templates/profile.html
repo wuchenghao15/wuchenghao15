@@ -114,6 +114,94 @@
         color: #333;
     }
     
+    .avatar-section {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+    
+    .avatar-container {
+        position: relative;
+        width: 160px;
+        height: 160px;
+        margin: 0 auto;
+        cursor: pointer;
+    }
+    
+    .avatar-image {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 4px solid white;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        transition: transform 0.3s ease;
+    }
+    
+    .avatar-image:hover {
+        transform: scale(1.05);
+    }
+    
+    .avatar-upload-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+    
+    .avatar-container:hover .avatar-upload-overlay {
+        opacity: 1;
+    }
+    
+    .avatar-upload-icon {
+        color: white;
+        font-size: 28px;
+    }
+    
+    .avatar-input {
+        display: none;
+    }
+    
+    .avatar-upload-btn {
+        margin-top: 15px;
+        padding: 8px 20px;
+        background: rgba(255, 255, 255, 0.2);
+        border: 2px solid white;
+        border-radius: 25px;
+        color: white;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .avatar-upload-btn:hover {
+        background: rgba(255, 255, 255, 0.3);
+    }
+    
+    .avatar-placeholder {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #e0e0e0 0%, #f5f5f5 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 4px solid white;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    }
+    
+    .avatar-placeholder-icon {
+        font-size: 64px;
+        color: #9e9e9e;
+    }
+    
     .action-buttons {
         display: flex;
         gap: 20px;
@@ -178,6 +266,24 @@
 <div class="profile-container">
     <!-- 个人资料头部 -->
     <div class="profile-header">
+        <div class="avatar-section">
+            <div class="avatar-container" onclick="document.getElementById('avatar-file').click()">
+                {% if user.avatar %}
+                    <img src="{{ user.avatar }}" alt="用户头像" class="avatar-image" id="avatar-preview">
+                {% else %}
+                    <div class="avatar-placeholder">
+                        <i class="fas fa-user avatar-placeholder-icon"></i>
+                    </div>
+                {% endif %}
+                <div class="avatar-upload-overlay">
+                    <i class="fas fa-camera avatar-upload-icon"></i>
+                </div>
+            </div>
+            <input type="file" id="avatar-file" class="avatar-input" accept="image/*" onchange="handleAvatarUpload(this)">
+            <button class="avatar-upload-btn" onclick="document.getElementById('avatar-file').click()">
+                <i class="fas fa-upload"></i> 更换头像
+            </button>
+        </div>
         <h1 class="profile-title">
             <svg class="svg-icon" viewBox="0 0 448 512" width="16" height="16"><path d="M224 256c70.7 0 128-57.3 128-128S294.7 0 224 0 96 57.3 96 128s57.3 128 128 128zm89.6 32h-17.2c-11.2 0-21.8 3.4-30.8 9.4-17.1 11.5-36.4 17.6-56.4 17.6s-39.3-6.1-56.4-17.6c-9-6-19.6-9.4-30.8-9.4H22.4C10.1 288 0 298.1 0 310.4V464c0 26.5 21.5 48 48 48h352c26.5 0 48-21.5 48-48V310.4c0-12.3-10.1-22.4-22.4-22.4z"/></svg>
             个人资料
@@ -260,4 +366,88 @@
         </div>
     </div>
 </div>
+
+<script>
+    async function handleAvatarUpload(input) {
+        const file = input.files[0];
+        if (!file) return;
+
+        const API_BASE = window.location.protocol + '//' + window.location.host;
+        
+        const formData = new FormData();
+        formData.append('avatar', file);
+
+        try {
+            const res = await fetch(API_BASE + '/api/user/avatar/upload', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await res.json();
+
+            if (data.success) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.getElementById('avatar-preview');
+                    if (preview) {
+                        preview.src = e.target.result;
+                    } else {
+                        const container = document.querySelector('.avatar-container');
+                        container.innerHTML = `
+                            <img src="${e.target.result}" alt="用户头像" class="avatar-image" id="avatar-preview">
+                            <div class="avatar-upload-overlay">
+                                <i class="fas fa-camera avatar-upload-icon"></i>
+                            </div>
+                        `;
+                    }
+                };
+                reader.readAsDataURL(file);
+                
+                showAvatarToast('头像上传成功');
+            } else {
+                showAvatarToast('上传失败: ' + (data.error || '未知错误'), 'error');
+            }
+        } catch (err) {
+            showAvatarToast('网络错误: ' + err.message, 'error');
+        }
+        
+        input.value = '';
+    }
+
+    function showAvatarToast(message, type = 'success') {
+        const toast = document.createElement('div');
+        toast.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 9999;
+            animation: slideIn 0.3s ease-out;
+            ${type === 'success' ? 'background: #d1fae5; color: #065f46;' : 'background: #fee2e2; color: #b91c1c;'}
+        `;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+
+        setTimeout(() => {
+            toast.style.animation = 'slideOut 0.3s ease-out';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+    const styleSheet = document.createElement('style');
+    styleSheet.textContent = `
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+    `;
+    document.head.appendChild(styleSheet);
+</script>
 {% endblock %}

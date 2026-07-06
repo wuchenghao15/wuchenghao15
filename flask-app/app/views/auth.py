@@ -75,6 +75,9 @@ def login():
         username = data.get('username')
         password = data.get('password')
 
+        if not password or len(password) < 3:
+            return jsonify({'success': False, 'message': '密码长度不足'}), 400
+
         user = get_user_by_username(username)
         if not user:
             return jsonify({'success': False, 'message': '用户名或密码错误'}), 401
@@ -96,6 +99,7 @@ def login():
         session['login_ip'] = request.remote_addr
         session.permanent = True
         session['login_attempts'] = 0
+        session['logged_in'] = True
 
         try:
             from app.utils.role_router import get_smart_redirect_url

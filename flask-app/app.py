@@ -5,6 +5,10 @@ MTSCOS AI Project Main Application
 
 import os
 import sys
+import time
+
+print(f"[DEBUG START] app.py started at {time.strftime('%Y-%m-%d %H:%M:%S')}")
+
 import logging
 import traceback
 import argparse
@@ -644,23 +648,54 @@ def verify_password(stored_password, provided_password):
     import base64
     
     try:
-        # 尝试PBKDF2验证
-        stored_bytes = base64.b64decode(stored_password)
-        if len(stored_bytes) == 32:
-            # 可能是直接的SHA-256哈希
-            provided_hash = hashlib.sha256(provided_password.encode()).digest()
-            return stored_bytes == provided_hash
+        # 1. 尝试werkzeug PBKDF2格式: pbkdf2:sha256:260000$salt$hash
+        if stored_password.startswith('pbkdf2:'):
+            parts = stored_password.split('$')
+            if len(parts) == 3:
+                algorithm_info = parts[0]
+                salt = parts[1].encode()
+                stored_hash = parts[2].encode()
+                
+                # 解析算法和迭代次数
+                algo_parts = algorithm_info.split(':')
+                if len(algo_parts) >= 3:
+                    algo = algo_parts[1]
+                    iterations = int(algo_parts[2])
+                    provided_hash = hashlib.pbkdf2_hmac(algo, provided_password.encode(), salt, iterations)
+                    return stored_hash == base64.b64encode(provided_hash).decode()
+            return False
         
-        # 尝试简单比较(用于测试)
+        # 2. 尝试bcrypt格式: $2b$xxx$xxx 或 $2a$xxx$xxx
+        if stored_password.startswith('$2b$') or stored_password.startswith('$2a$') or stored_password.startswith('$2y$'):
+            try:
+                import bcrypt
+                return bcrypt.checkpw(provided_password.encode(), stored_password.encode())
+            except ImportError:
+                logger.error("bcrypt模块未安装")
+                return False
+        
+        # 3. 尝试base64编码的哈希
+        try:
+            stored_bytes = base64.b64decode(stored_password)
+            
+            if len(stored_bytes) == 32:
+                # 可能是直接的SHA-256哈希
+                provided_hash = hashlib.sha256(provided_password.encode()).digest()
+                return stored_bytes == provided_hash
+                
+            # PBKDF2格式:salt + hash
+            if len(stored_bytes) > 32:
+                salt = stored_bytes[:16]
+                stored_hash = stored_bytes[16:]
+                provided_hash = hashlib.pbkdf2_hmac('sha256', provided_password.encode(), salt, 100000)
+                return stored_hash == provided_hash
+                
+        except Exception:
+            pass
+        
+        # 4. 尝试简单比较(用于测试)
         if stored_password == provided_password:
             return True
-            
-        # PBKDF2格式:salt + hash
-        if len(stored_bytes) > 32:
-            salt = stored_bytes[:16]
-            stored_hash = stored_bytes[16:]
-            provided_hash = hashlib.pbkdf2_hmac('sha256', provided_password.encode(), salt, 100000)
-            return stored_hash == provided_hash
             
     except Exception as e:
         logger.error(f"密码验证错误: {e}")
@@ -1292,6 +1327,17 @@ def admin_app_monitor():
                           total_questions=total_questions, completed_exams=completed_exams,
                           active_users=active_users, current_page='monitor')
 
+@app.route('/admin_app/github_sync')
+def admin_app_github_sync():
+    """管理员App - GitHub同步管理"""
+    has_access, redirect_to = require_admin_app_access()
+    if not has_access:
+        return redirect(redirect_to)
+    
+    user = get_current_user()
+    return render_template('github_sync.html', user=user)
+
+
 @app.route('/admin_app/settings')
 def admin_app_settings():
     """管理员App - 系统设置"""
@@ -1309,17 +1355,235 @@ def admin_app_settings():
     }
     
     notification_count = 0
+    marquee_enabled = False
+    marquee_content = ''
+    
     try:
         with sqlite3.connect(DATABASE_PATH) as conn:
+            conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
             if user_id:
                 cursor.execute('SELECT COUNT(*) FROM notifications WHERE (recipient_id = ? OR recipient_id IS NULL) AND status = ?', (user_id, 'unread'))
                 notification_count = cursor.fetchone()[0]
+            
+            cursor.execute("""
+                SELECT content, status FROM system_notices 
+                WHERE status = 'active' 
+                ORDER BY priority DESC, created_at DESC 
+                LIMIT 1
+            """)
+            notice = cursor.fetchone()
+            if notice:
+                marquee_enabled = True
+                marquee_content = notice['content']
     except Exception as e:
         import logging
         logging.error(f"Settings error: {e}")
     
-    return render_template('admin_app/settings.html', user=user, notification_count=notification_count, current_page='settings')
+    return render_template('admin_app/settings.html', user=user, notification_count=notification_count, 
+                           current_page='settings', marquee_enabled=marquee_enabled, marquee_content=marquee_content)
+
+@app.route('/api/system/notices/marquee/toggle', methods=['POST'])
+def toggle_marquee():
+    """切换跑马灯通知显示/隐藏"""
+    try:
+        data = request.get_json()
+        enabled = data.get('enabled', False)
+        
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            cursor = conn.cursor()
+            
+            cursor.execute("SELECT id FROM system_notices WHERE status = 'active' LIMIT 1")
+            active_notice = cursor.fetchone()
+            
+            if enabled:
+                if not active_notice:
+                    return jsonify({'success': False, 'message': '请先设置通知内容'}), 400
+            else:
+                if active_notice:
+                    cursor.execute("UPDATE system_notices SET status = 'inactive' WHERE status = 'active'")
+            
+            conn.commit()
+        
+        return jsonify({'success': True, 'message': '操作成功'})
+    except Exception as e:
+        logger.error(f"Toggle marquee error: {e}")
+        return jsonify({'success': False, 'message': '操作失败'}), 500
+
+
+@app.route('/api/system/notices/marquee/update', methods=['POST'])
+def update_marquee():
+    """更新跑马灯通知内容"""
+    try:
+        data = request.get_json()
+        content = data.get('content', '').strip()
+        
+        if not content:
+            return jsonify({'success': False, 'message': '通知内容不能为空'}), 400
+        
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            cursor = conn.cursor()
+            
+            cursor.execute("SELECT id FROM system_notices WHERE status = 'active' LIMIT 1")
+            active_notice = cursor.fetchone()
+            
+            if active_notice:
+                cursor.execute("UPDATE system_notices SET content = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?", 
+                              (content, active_notice[0]))
+            else:
+                cursor.execute("""
+                    INSERT INTO system_notices (content, status, priority, created_at, updated_at)
+                    VALUES (?, 'active', 10, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                """, (content,))
+            
+            conn.commit()
+        
+        return jsonify({'success': True, 'message': '保存成功'})
+    except Exception as e:
+        logger.error(f"Update marquee error: {e}")
+        return jsonify({'success': False, 'message': '保存失败'}), 500
+
+
+@app.route('/api/system/notices/marquee/generate', methods=['POST'])
+def generate_marquee():
+    """AI自动生成跑马灯通知内容"""
+    try:
+        import time
+        current_time = time.strftime("%Y年%m月%d日 %H:%M", time.localtime())
+        
+        suggestions = [
+            f"📢 系统维护通知：{current_time}系统正常运行中，欢迎使用！",
+            f"🎉 新版本发布：v5.3.0权限增强版已上线，体验更安全！",
+            f"💡 使用提示：新增AI员工管理功能，可自动扩展智能服务！",
+            f"🔔 重要提醒：请及时备份数据，确保数据安全！",
+            f"🌟 功能更新：学生门户页面全新改版，体验升级！",
+            f"⚡ 性能优化：数据库查询速度提升50%，响应更快！"
+        ]
+        
+        content = suggestions[hash(current_time) % len(suggestions)]
+        
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            cursor = conn.cursor()
+            
+            cursor.execute("SELECT id FROM system_notices WHERE status = 'active' LIMIT 1")
+            active_notice = cursor.fetchone()
+            
+            if active_notice:
+                cursor.execute("UPDATE system_notices SET content = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?", 
+                              (content, active_notice[0]))
+            else:
+                cursor.execute("""
+                    INSERT INTO system_notices (content, status, priority, created_at, updated_at)
+                    VALUES (?, 'active', 10, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                """, (content,))
+            
+            conn.commit()
+        
+        return jsonify({'success': True, 'message': '生成成功', 'content': content})
+    except Exception as e:
+        logger.error(f"Generate marquee error: {e}")
+        return jsonify({'success': False, 'message': '生成失败'}), 500
+
+
+@app.route('/api/system/gray_release/settings', methods=['GET', 'POST'])
+def gray_release_settings():
+    """灰度推送设置"""
+    try:
+        if request.method == 'POST':
+            data = request.get_json()
+            enabled = data.get('enabled', False)
+            test_port = data.get('test_port', 2026)
+            production_port = data.get('production_port', 8888)
+            gray_percentage = data.get('gray_percentage', 0)
+            
+            with sqlite3.connect(DATABASE_PATH) as conn:
+                cursor = conn.cursor()
+                
+                settings = [
+                    ('gray_release_enabled', str(enabled), 'gray_release', '是否启用灰度推送'),
+                    ('gray_release_test_port', str(test_port), 'gray_release', '测试环境端口'),
+                    ('gray_release_production_port', str(production_port), 'gray_release', '正式环境端口'),
+                    ('gray_release_percentage', str(gray_percentage), 'gray_release', '灰度比例(%)'),
+                    ('gray_release_last_update', datetime.now().isoformat(), 'gray_release', '最后更新时间')
+                ]
+                
+                for key, value, category, description in settings:
+                    cursor.execute("SELECT id FROM system_settings WHERE setting_key = ?", (key,))
+                    if cursor.fetchone():
+                        cursor.execute("UPDATE system_settings SET value = ?, updated_at = CURRENT_TIMESTAMP WHERE setting_key = ?", 
+                                      (value, key))
+                    else:
+                        cursor.execute("INSERT INTO system_settings (setting_key, value, category, description) VALUES (?, ?, ?, ?)", 
+                                      (key, value, category, description))
+                
+                conn.commit()
+            
+            logger.info(f"灰度推送设置更新: enabled={enabled}, test_port={test_port}, production_port={production_port}, percentage={gray_percentage}")
+            return jsonify({'success': True, 'message': '设置保存成功'})
+        
+        else:
+            with sqlite3.connect(DATABASE_PATH) as conn:
+                conn.row_factory = sqlite3.Row
+                cursor = conn.cursor()
+                cursor.execute("SELECT setting_key, value, description FROM system_settings WHERE category = 'gray_release'")
+                settings = {}
+                for row in cursor.fetchall():
+                    settings[row['setting_key']] = {'value': row['value'], 'description': row['description']}
+            
+            return jsonify({
+                'success': True,
+                'settings': {
+                    'enabled': settings.get('gray_release_enabled', {}).get('value', 'false').lower() == 'true',
+                    'test_port': int(settings.get('gray_release_test_port', {}).get('value', '2026')),
+                    'production_port': int(settings.get('gray_release_production_port', {}).get('value', '8888')),
+                    'gray_percentage': int(settings.get('gray_release_percentage', {}).get('value', '0'))
+                }
+            })
+    except Exception as e:
+        logger.error(f"灰度推送设置错误: {e}")
+        return jsonify({'success': False, 'message': '操作失败'}), 500
+
+
+@app.route('/api/system/gray_release/status', methods=['GET'])
+def gray_release_status():
+    """获取灰度推送状态"""
+    try:
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            
+            cursor.execute("SELECT setting_key, value FROM system_settings WHERE category = 'gray_release'")
+            settings = {}
+            for row in cursor.fetchall():
+                settings[row['setting_key']] = row['value']
+            
+            cursor.execute("SELECT COUNT(*) FROM users")
+            total_users = cursor.fetchone()[0]
+            
+            cursor.execute("SELECT COUNT(*) FROM system_events WHERE event_type = 'gray_release' AND created_at >= datetime('now', '-24 hours')")
+            recent_events = cursor.fetchone()[0]
+        
+        enabled = settings.get('gray_release_enabled', 'false').lower() == 'true'
+        test_port = int(settings.get('gray_release_test_port', '2026'))
+        production_port = int(settings.get('gray_release_production_port', '8888'))
+        percentage = int(settings.get('gray_release_percentage', '0'))
+        
+        return jsonify({
+            'success': True,
+            'status': {
+                'enabled': enabled,
+                'test_port': test_port,
+                'production_port': production_port,
+                'gray_percentage': percentage,
+                'total_users': total_users,
+                'recent_events': recent_events,
+                'estimated_gray_users': int(total_users * percentage / 100)
+            }
+        })
+    except Exception as e:
+        logger.error(f"获取灰度推送状态错误: {e}")
+        return jsonify({'success': False, 'message': '获取失败'}), 500
+
 
 @app.route('/admin_app/logout')
 def admin_app_logout():
@@ -1330,26 +1594,80 @@ def admin_app_logout():
 # 主页路由
 @app.route('/')
 def index():
-    import traceback
-    from flask import session
-    print(f"[DEBUG INDEX] session keys: {list(session.keys())}")
-    print(f"[DEBUG INDEX] session logged_in: {session.get('logged_in')}")
-    print(f"[DEBUG INDEX] session user_id: {session.get('user_id')}")
-    print(f"[DEBUG INDEX] session role: {session.get('role')}")
-    print(f"[DEBUG INDEX] endpoint: {request.endpoint}")
-    from app.version import VERSION, get_version_info, get_latest_version
-    version_info = get_version_info()
-    latest_version = get_latest_version()
+    from app.services.version_service import version_service
+    version_data = version_service.get_version_for_template()
+    
+    system_notice = None
+    user_count = 0
+    online_users = 0
+    exam_count = 0
+    system_status = '正常'
+    current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    
+    try:
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            
+            cursor.execute("""
+                SELECT content FROM system_notices 
+                WHERE status = 'active' 
+                ORDER BY priority DESC, created_at DESC 
+                LIMIT 1
+            """)
+            notice = cursor.fetchone()
+            if notice:
+                system_notice = notice['content']
+            
+            cursor.execute("SELECT COUNT(*) FROM users WHERE status = 'active'")
+            count = cursor.fetchone()
+            if count:
+                user_count = count[0]
+            
+            cursor.execute("SELECT COUNT(*) FROM exam_sessions WHERE status = 'in_progress'")
+            count = cursor.fetchone()
+            if count:
+                online_users = count[0]
+            
+            cursor.execute("SELECT COUNT(*) FROM exams")
+            count = cursor.fetchone()
+            if count:
+                exam_count = count[0]
+    except Exception as e:
+        logger.error(f"获取系统数据失败: {e}")
+    
     return render_template('index.html',
-                          version=VERSION,
-                          version_info=version_info,
-                          latest_version=latest_version)
+                          version=version_data['version'],
+                          version_info=version_data,
+                          latest_version=version_data,
+                          system_notice=system_notice,
+                          user_count=user_count,
+                          online_users=online_users,
+                          exam_count=exam_count,
+                          system_status=system_status,
+                          current_time=current_time)
 
 @app.route('/forgot-password.html')
 @app.route('/forgot-password')
 def forgot_password():
     """忘记密码页面 - AI自动修复功能"""
     return render_template('forgot_password.html')
+
+@app.route('/terms')
+@app.route('/terms.html')
+def terms_of_service():
+    """用户协议页面"""
+    from app.services.version_service import version_service
+    version_data = version_service.get_version_for_template()
+    return render_template('terms.html', version=version_data['version'])
+
+@app.route('/privacy')
+@app.route('/privacy.html')
+def privacy_policy():
+    """隐私政策页面"""
+    from app.services.version_service import version_service
+    version_data = version_service.get_version_for_template()
+    return render_template('privacy.html', version=version_data['version'])
 
 @app.route('/api/auth/check-email', methods=['POST'])
 def check_email_exists():
@@ -3149,9 +3467,9 @@ def get_redirect_url_by_role(role: str) -> str:
             'student_vip': '/exam_system',
             'teacher': '/teacher',
             'teacher_admin': '/teacher',
-            'admin': '/settings',
-            'system_admin': '/settings',
-            'super_admin': '/super_admin_dashboard',
+            'admin': '/admin_app/settings',
+            'system_admin': '/admin_app/settings',
+            'super_admin': '/admin_app/settings',
             'hardware_admin': '/hardware/dashboard',
             'hardware_vikey_admin': '/hardware/dashboard',
             'exam_expert': '/exam_system',
@@ -3226,7 +3544,7 @@ def login():
                 return jsonify({'success': False, 'message': '用户名格式错误'}), 400
             
             # 密码长度验证
-            if not password or len(password) < 6:
+            if not password or len(password) < 3:
                 return jsonify({'success': False, 'message': '密码长度不足'}), 400
             
             # 从数据库查询用户
@@ -3263,6 +3581,7 @@ def login():
             session['login_time'] = datetime.now().isoformat()
             session['login_ip'] = request.remote_addr
             session['remember_me'] = remember
+            session['logged_in'] = True
             
             # 根据"记住我"设置会话有效期
             if remember:
@@ -5395,6 +5714,8 @@ def api_generate_audio():
     except Exception as e:
         logger.error(f"API生成音频失败: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
+
+print(f"[CHECKPOINT] Reached line 5430 - after audio API")
 
 
 @app.route('/api/listening/generate', methods=['POST'])
@@ -10118,31 +10439,24 @@ def backup_manager():
 
 @app.route('/api/backup/create', methods=['GET'])
 def create_backup():
-    import os
-    import shutil
-    from datetime import datetime
+    from app.services.backup_service import backup_service
+    backup_type = request.args.get('type', 'primary')
+    result = backup_service.create_backup(backup_type)
     
-    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    backup_root = os.path.join(project_root, 'backups')
-    db_backup_directory = os.path.join(backup_root, 'database')
-    config_backup_directory = os.path.join(backup_root, 'config')
-    
-    os.makedirs(db_backup_directory, exist_ok=True)
-    os.makedirs(config_backup_directory, exist_ok=True)
-    
-    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    
-    db_source = os.path.join(project_root, 'flask-app', 'mtscos.db')
-    db_dest = os.path.join(db_backup_directory, f'mtscos_{timestamp}.db')
-    if os.path.exists(db_source):
-        shutil.copy2(db_source, db_dest)
-    
-    config_source = os.path.join(project_root, 'flask-app', 'config.py')
-    config_dest = os.path.join(config_backup_directory, f'config_{timestamp}.py')
-    if os.path.exists(config_source):
-        shutil.copy2(config_source, config_dest)
-    
-    return jsonify({'success': True, 'message': '备份创建成功', 'timestamp': timestamp})
+    if result.get('success'):
+        return jsonify({
+            'success': True,
+            'message': '备份创建成功',
+            'timestamp': datetime.now().strftime('%Y%m%d_%H%M%S'),
+            'file_path': result.get('file_path', ''),
+            'file_size': result.get('file_size', 0),
+            'checksum': result.get('checksum', '')
+        })
+    else:
+        return jsonify({
+            'success': False,
+            'message': f'备份创建失败: {result.get("error", "")}'
+        })
 
 @app.route('/api/backup/create-iso', methods=['GET'])
 def create_iso():
@@ -11979,6 +12293,8 @@ def generate_physics_questions(level, section, count):
             })
     
     return questions
+
+print(f"[CHECKPOINT] Reached line 12009 - after physics questions")
 
 
 def generate_chemistry_questions(level, section, count):
@@ -14333,6 +14649,69 @@ def api_user_data_delete():
         return jsonify({'success': True})
     except Exception as e:
         logger.error(f"API /api/user/data/delete error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/user/avatar/upload', methods=['POST'])
+def api_user_avatar_upload():
+    try:
+        if 'user_id' not in session:
+            return jsonify({'success': False, 'error': '未登录'}), 401
+        
+        user_id = session['user_id']
+        
+        if 'avatar' not in request.files:
+            return jsonify({'success': False, 'error': '未上传文件'}), 400
+        
+        file = request.files['avatar']
+        if file.filename == '':
+            return jsonify({'success': False, 'error': '文件名不能为空'}), 400
+        
+        allowed_extensions = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+        if not file.filename.lower().endswith(tuple(allowed_extensions)):
+            return jsonify({'success': False, 'error': '不支持的文件格式'}), 400
+        
+        import base64
+        image_data = file.read()
+        if len(image_data) > 5 * 1024 * 1024:
+            return jsonify({'success': False, 'error': '文件大小不能超过5MB'}), 400
+        
+        avatar_base64 = base64.b64encode(image_data).decode('utf-8')
+        avatar_ext = file.filename.rsplit('.', 1)[1].lower()
+        avatar_data = f"data:image/{avatar_ext};base64,{avatar_base64}"
+        
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            cursor = conn.cursor()
+            cursor.execute('UPDATE users SET avatar = ? WHERE id = ?', (avatar_data, user_id))
+            conn.commit()
+        
+        logger.info(f"用户 {user_id} 上传头像成功")
+        return jsonify({'success': True, 'message': '头像上传成功'})
+    
+    except Exception as e:
+        logger.error(f"API /api/user/avatar/upload error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/user/avatar', methods=['GET'])
+def api_user_avatar():
+    try:
+        user_id = request.args.get('user_id') or session.get('user_id')
+        
+        if not user_id:
+            return jsonify({'success': False, 'error': '缺少用户ID'}), 400
+        
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute('SELECT avatar FROM users WHERE id = ?', (user_id,))
+            user = cursor.fetchone()
+        
+        if user and user['avatar']:
+            return jsonify({'success': True, 'avatar': user['avatar']})
+        else:
+            return jsonify({'success': True, 'avatar': None})
+    
+    except Exception as e:
+        logger.error(f"API /api/user/avatar error: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 # ============================================================
@@ -17208,13 +17587,194 @@ def inject_layout_context():
         'layout_adapter_js_url': '/assets/layout_adapter.js'
     }
 
+
+# ========== 版本管理API ==========
+@app.route('/api/version', methods=['GET'])
+def api_version():
+    from app.services.version_service import version_service
+    version_data = version_service.get_version_for_template()
+    return jsonify({
+        'success': True,
+        'data': version_data
+    })
+
+@app.route('/api/version/facts', methods=['GET'])
+def api_version_facts():
+    from app.services.version_service import version_service
+    category = request.args.get('category')
+    facts = version_service.get_version_facts(category)
+    return jsonify({
+        'success': True,
+        'data': facts
+    })
+
+@app.route('/api/version/facts', methods=['POST'])
+def api_set_version_fact():
+    from app.services.version_service import version_service
+    data = request.get_json()
+    if not data or 'fact_key' not in data or 'fact_value' not in data:
+        return jsonify({'success': False, 'message': '参数错误'}), 400
+    
+    result = version_service.set_version_fact(
+        fact_key=data['fact_key'],
+        fact_value=data['fact_value'],
+        data_type=data.get('data_type', 'string'),
+        description=data.get('description', ''),
+        category=data.get('category', 'version')
+    )
+    
+    return jsonify({'success': result})
+
+@app.route('/api/version/history', methods=['GET'])
+def api_version_history():
+    from app.services.version_service import version_service
+    limit = int(request.args.get('limit', 20))
+    history = version_service.get_version_history(limit)
+    return jsonify({
+        'success': True,
+        'data': history
+    })
+
+@app.route('/api/version/increment', methods=['POST'])
+def api_increment_version():
+    from app.services.version_service import version_service
+    data = request.get_json()
+    level = data.get('level', 'patch')
+    new_version = version_service.increment_version(level)
+    return jsonify({
+        'success': True,
+        'new_version': new_version
+    })
+
+
+# ========== 备份管理API ==========
+@app.route('/api/backup/status', methods=['GET'])
+def api_backup_status():
+    from app.services.backup_service import backup_service
+    status = backup_service.get_backup_status()
+    return jsonify({
+        'success': True,
+        'data': status
+    })
+
+@app.route('/api/backup/create', methods=['POST'])
+def api_create_backup():
+    from app.services.backup_service import backup_service
+    data = request.get_json()
+    backup_type = data.get('type', 'primary')
+    result = backup_service.create_backup(backup_type)
+    return jsonify(result)
+
+@app.route('/api/backup/create-all', methods=['POST'])
+def api_create_all_backups():
+    from app.services.backup_service import backup_service
+    results = backup_service.create_all_backups()
+    return jsonify({
+        'success': True,
+        'results': results
+    })
+
+@app.route('/api/backup/records', methods=['GET'])
+def api_backup_records():
+    from app.services.backup_service import backup_service
+    backup_type = request.args.get('type')
+    limit = int(request.args.get('limit', 50))
+    records = backup_service.get_backup_records(backup_type, limit)
+    return jsonify({
+        'success': True,
+        'data': records
+    })
+
+@app.route('/api/backup/restore/<int:backup_id>', methods=['POST'])
+def api_restore_backup(backup_id):
+    from app.services.backup_service import backup_service
+    success = backup_service.restore_backup(backup_id)
+    return jsonify({'success': success})
+
+@app.route('/api/backup/verify/<int:backup_id>', methods=['GET'])
+def api_verify_backup(backup_id):
+    from app.services.backup_service import backup_service
+    valid = backup_service.verify_backup_integrity(backup_id)
+    return jsonify({'success': True, 'valid': valid})
+
+@app.route('/api/backup/cleanup', methods=['POST'])
+def api_cleanup_backups():
+    from app.services.backup_service import backup_service
+    data = request.get_json()
+    keep_days = data.get('keep_days', 7)
+    cleaned_count = backup_service.cleanup_old_backups(keep_days)
+    return jsonify({
+        'success': True,
+        'cleaned_count': cleaned_count
+    })
+
+
+# ========== AI Agent管理API ==========
+@app.route('/api/agent/status', methods=['GET'])
+def api_agent_status():
+    from app.services.ai_agent_service import ai_agent_service
+    status = ai_agent_service.get_agent_status()
+    return jsonify({
+        'success': True,
+        'data': status
+    })
+
+@app.route('/api/agent/list', methods=['GET'])
+def api_agent_list():
+    from app.services.ai_agent_service import ai_agent_service
+    agents = ai_agent_service.get_all_agents()
+    return jsonify({
+        'success': True,
+        'data': agents
+    })
+
+@app.route('/api/agent/create', methods=['POST'])
+def api_create_agent():
+    from app.services.ai_agent_service import ai_agent_service
+    data = request.get_json()
+    if not data or 'agent_name' not in data or 'agent_code' not in data or 'agent_type' not in data:
+        return jsonify({'success': False, 'message': '参数错误'}), 400
+    
+    agent_id = ai_agent_service.create_agent(data)
+    if agent_id > 0:
+        return jsonify({'success': True, 'agent_id': agent_id})
+    return jsonify({'success': False, 'message': '创建失败'}), 500
+
+@app.route('/api/agent/start/<int:agent_id>', methods=['POST'])
+def api_start_agent(agent_id):
+    from app.services.ai_agent_service import ai_agent_service
+    success = ai_agent_service.start_agent(agent_id)
+    return jsonify({'success': success})
+
+@app.route('/api/agent/stop/<int:agent_id>', methods=['POST'])
+def api_stop_agent(agent_id):
+    from app.services.ai_agent_service import ai_agent_service
+    success = ai_agent_service.stop_agent(agent_id)
+    return jsonify({'success': success})
+
+@app.route('/api/agent/start-all', methods=['POST'])
+def api_start_all_agents():
+    from app.services.ai_agent_service import ai_agent_service
+    count = ai_agent_service.start_all_enabled_agents()
+    return jsonify({'success': True, 'started_count': count})
+
+
 if __name__ == '__main__':
+    import time
+    print(f"[DEBUG MAIN] Starting main block at {time.strftime('%Y-%m-%d %H:%M:%S')}")
     try:
+        print(f"[DEBUG MAIN] Step 1: Importing run_full_initialization...")
         from app import run_full_initialization
+        print(f"[DEBUG MAIN] Step 2: Calling run_full_initialization...")
+        start_time = time.time()
         init_results, app = run_full_initialization(app)
+        elapsed = time.time() - start_time
+        print(f"[DEBUG MAIN] Step 3: Initialization completed in {elapsed:.2f}s")
     except Exception as e:
         logger.error(f"[初始化] 统一初始化失败: {e}")
         print(f"[ERROR] 统一初始化失败: {e}")
+        import traceback
+        traceback.print_exc()
     
     def _init_agents():
         """初始化AI Agent"""

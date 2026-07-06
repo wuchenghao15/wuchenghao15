@@ -39,14 +39,14 @@ ROLE_PAGE_MAPPING = {
         'icon': 'palette'
     },
     'admin': {
-        'default': '/settings',
-        'pages': ['/settings', '/admin_center', '/dashboard', '/profile', '/ai-chat'],
+        'default': '/admin_app/settings',
+        'pages': ['/admin_app/settings', '/admin_center', '/dashboard', '/profile', '/ai-chat'],
         'description': '管理员用户',
         'icon': 'shield'
     },
     'super_admin': {
-        'default': '/super_admin_dashboard',
-        'pages': ['/super_admin_dashboard', '/admin_center', '/settings', '/dashboard', '/profile', '/ai-chat'],
+        'default': '/admin_app/settings',
+        'pages': ['/admin_app/settings', '/admin_center', '/dashboard', '/profile', '/ai-chat'],
         'description': '超级管理员',
         'icon': 'shield-alt'
     },

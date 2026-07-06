@@ -27,6 +27,8 @@ def login_required_middleware(app):
     ]
 
     STATIC_PATHS = ['/static/', '/assets/', '/webfonts/', '/audio/']
+    
+    AUTH_PATHS = ['/auth/login', '/auth/register', '/auth/logout']
 
     @app.before_request
     def check_login():
@@ -42,6 +44,10 @@ def login_required_middleware(app):
 
         for static_path in STATIC_PATHS:
             if path.startswith(static_path):
+                return None
+        
+        for auth_path in AUTH_PATHS:
+            if path == auth_path:
                 return None
 
         if endpoint in EXCLUDED_ROUTES:

@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub同步管理 - MTSCOS AI</title>
+    <link rel="stylesheet" href="/assets/tailwind.min.css">
+    <link rel="stylesheet" href="/assets/all.min.css">
+    
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+        }
+        
+        .card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+        }
+        
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        
+        .status-online { background: #22c55e; box-shadow: 0 0 8px #22c55e; }
+        .status-offline { background: #ef4444; box-shadow: 0 0 8px #ef4444; }
+        .status-processing { background: #eab308; box-shadow: 0 0 8px #eab308; animation: pulse 1.5s infinite; }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .btn-gradient {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-gradient:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-gradient:disabled {
+            opacity: 0.6;
+            transform: none;
+            cursor: not-allowed;
+        }
+        
+        .table-container {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .scrollbar::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 3px;
+        }
+        
+        .scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+        }
+        
+        .scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 9999;
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        .toast-success { background: #d1fae5; color: #065f46; }
+        .toast-error { background: #fee2e2; color: #b91c1c; }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+    </style>
+</head>
+<body class="p-6">
+    <div class="max-w-6xl mx-auto">
+        <div class="flex items-center justify-between mb-8">
+            <div>
+                <h1 class="text-3xl font-bold text-white mb-2">GitHub同步管理</h1>
+                <p class="text-gray-400">实时监控本地代码变更，自动同步到GitHub仓库</p>
+            </div>
+            <a href="/dashboard" class="text-gray-400 hover:text-white flex items-center gap-2">
+                <i class="fas fa-arrow-left"></i> 返回仪表盘
+            </a>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="card p-5">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="p-2 bg-blue-500/20 rounded-lg">
+                        <i class="fas fa-cloud-upload-alt text-blue-400"></i>
+                    </div>
+                    <span class="text-gray-400 text-sm">上传次数</span>
+                </div>
+                <div class="text-3xl font-bold text-white" id="upload-count">--</div>
+            </div>
+            
+            <div class="card p-5">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="p-2 bg-green-500/20 rounded-lg">
+                        <i class="fas fa-file-code text-green-400"></i>
+                    </div>
+                    <span class="text-gray-400 text-sm">待同步文件</span>
+                </div>
+                <div class="text-3xl font-bold text-white" id="pending-files">--</div>
+            </div>
+            
+            <div class="card p-5">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="p-2 bg-purple-500/20 rounded-lg">
+                        <i class="fas fa-clock text-purple-400"></i>
+                    </div>
+                    <span class="text-gray-400 text-sm">上次同步</span>
+                </div>
+                <div class="text-lg font-semibold text-white" id="last-upload">--</div>
+            </div>
+            
+            <div class="card p-5">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="p-2 bg-yellow-500/20 rounded-lg">
+                        <i class="fas fa-cog text-yellow-400"></i>
+                    </div>
+                    <span class="text-gray-400 text-sm">上传状态</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="status-dot status-offline" id="upload-status-dot"></span>
+                    <span class="text-white font-semibold" id="upload-status-text">空闲</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2">
+                <div class="card p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                            <i class="fas fa-git-alt text-blue-400"></i> Git仓库状态
+                        </h2>
+                        <button onclick="refreshGitStatus()" class="text-gray-400 hover:text-white">
+                            <i class="fas fa-refresh"></i> 刷新
+                        </button>
+                    </div>
+                    
+                    <div id="git-status-content" class="space-y-4">
+                        <div class="flex items-center justify-between p-4 bg-white/5 rounded-lg">
+                            <span class="text-gray-400">当前分支</span>
+                            <span class="text-white font-semibold" id="current-branch">--</span>
+                        </div>
+                        <div class="flex items-center justify-between p-4 bg-white/5 rounded-lg">
+                            <span class="text-gray-400">远程仓库</span>
+                            <span class="text-white font-semibold" id="remote-repo">--</span>
+                        </div>
+                        <div class="grid grid-cols-3 gap-4">
+                            <div class="p-4 bg-green-500/10 rounded-lg text-center">
+                                <div class="text-2xl font-bold text-green-400" id="added-files">0</div>
+                                <div class="text-gray-400 text-sm">新增文件</div>
+                            </div>
+                            <div class="p-4 bg-blue-500/10 rounded-lg text-center">
+                                <div class="text-2xl font-bold text-blue-400" id="modified-files">0</div>
+                                <div class="text-gray-400 text-sm">修改文件</div>
+                            </div>
+                            <div class="p-4 bg-red-500/10 rounded-lg text-center">
+                                <div class="text-2xl font-bold text-red-400" id="deleted-files">0</div>
+                                <div class="text-gray-400 text-sm">删除文件</div>
+                            </div>
+                        </div>
+                        
+                        <div id="changes-list" class="hidden">
+                            <div class="text-gray-400 text-sm mb-2">变更详情:</div>
+                            <div class="bg-white/5 rounded-lg p-4 max-h-48 overflow-y-auto scrollbar">
+                                <ul class="text-sm text-gray-300 space-y-1" id="changes-ul"></ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card p-6 mt-6">
+                    <h2 class="text-xl font-bold text-white flex items-center gap-2 mb-6">
+                        <i class="fas fa-history text-purple-400"></i> 上传历史
+                    </h2>
+                    
+                    <div class="table-container scrollbar">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="text-gray-400 border-b border-white/10">
+                                    <th class="text-left py-3 px-4">时间</th>
+                                    <th class="text-left py-3 px-4">提交信息</th>
+                                    <th class="text-center py-3 px-4">文件数</th>
+                                    <th class="text-center py-3 px-4">状态</th>
+                                    <th class="text-right py-3 px-4">耗时</th>
+                                </tr>
+                            </thead>
+                            <tbody id="history-body">
+                                <tr>
+                                    <td colspan="5" class="text-center py-8 text-gray-500">加载中...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="space-y-6">
+                <div class="card p-6">
+                    <h2 class="text-xl font-bold text-white flex items-center gap-2 mb-6">
+                        <i class="fas fa-play-circle text-green-400"></i> 同步操作
+                    </h2>
+                    
+                    <button id="sync-btn" onclick="executeSync()" class="btn-gradient w-full py-3 px-6 text-white font-semibold rounded-lg flex items-center justify-center gap-2">
+                        <i class="fas fa-cloud-upload-alt"></i> 立即同步到GitHub
+                    </button>
+                    
+                    <div class="mt-4 p-4 bg-white/5 rounded-lg">
+                        <div class="text-gray-400 text-sm mb-2">自定义提交信息</div>
+                        <input type="text" id="commit-message" placeholder="留空则自动生成" class="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500">
+                    </div>
+                    
+                    <div class="mt-4 p-4 bg-blue-500/10 rounded-lg border border-blue-500/30">
+                        <div class="flex items-center gap-2 text-blue-400">
+                            <i class="fas fa-info-circle"></i>
+                            <span class="text-sm">同步将自动执行 git add → git commit → git push</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card p-6">
+                    <h2 class="text-xl font-bold text-white flex items-center gap-2 mb-6">
+                        <i class="fas fa-calendar-check text-orange-400"></i> 定时同步
+                    </h2>
+                    
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="text-gray-400">启用定时同步</span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="scheduler-toggle" class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+                        </label>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="text-gray-400 text-sm block mb-2">同步间隔</label>
+                            <select id="sync-interval" class="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-blue-500">
+                                <option value="15">15分钟</option>
+                                <option value="30">30分钟</option>
+                                <option value="60" selected>1小时</option>
+                                <option value="120">2小时</option>
+                                <option value="1440">24小时</option>
+                            </select>
+                        </div>
+                        
+                        <button id="start-scheduler-btn" onclick="startScheduler()" class="w-full py-2 px-4 bg-green-500/20 border border-green-500/50 text-green-400 rounded-lg hover:bg-green-500/30 transition-colors">
+                            <i class="fas fa-play"></i> 启动定时任务
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.protocol + '//' + window.location.host;
+        
+        async function refreshGitStatus() {
+            try {
+                const res = await fetch(API_BASE + '/api/github/upload/git-status');
+                const data = await res.json();
+                
+                if (data.is_git_repo) {
+                    document.getElementById('current-branch').textContent = data.current_branch;
+                    document.getElementById('remote-repo').textContent = data.remotes.length > 0 ? data.remotes[0].url : '无';
+                    document.getElementById('added-files').textContent = data.added_files;
+                    document.getElementById('modified-files').textContent = data.modified_files;
+                    document.getElementById('deleted-files').textContent = data.deleted_files;
+                    document.getElementById('pending-files').textContent = data.total_files;
+                    
+                    if (data.has_changes) {
+                        const changesList = document.getElementById('changes-list');
+                        const changesUl = document.getElementById('changes-ul');
+                        changesList.classList.remove('hidden');
+                        changesUl.innerHTML = '';
+                        
+                        data.changes_detail.forEach(change => {
+                            const li = document.createElement('li');
+                            const type = change.substring(0, 2).trim();
+                            const path = change.substring(3);
+                            
+                            let color = 'text-gray-300';
+                            if (type === 'A' || type === '??') color = 'text-green-400';
+                            else if (type === 'M' || type === 'MM') color = 'text-blue-400';
+                            else if (type === 'D') color = 'text-red-400';
+                            
+                            li.innerHTML = `<span class="${color}">[${type}]</span> ${path}`;
+                            changesUl.appendChild(li);
+                        });
+                    } else {
+                        document.getElementById('changes-list').classList.add('hidden');
+                    }
+                } else {
+                    showToast('不是Git仓库', 'error');
+                }
+            } catch (err) {
+                showToast('获取Git状态失败: ' + err.message, 'error');
+            }
+        }
+        
+        async function getAgentStatus() {
+            try {
+                const res = await fetch(API_BASE + '/api/github/upload/status');
+                const data = await res.json();
+                
+                document.getElementById('upload-count').textContent = data.upload_count;
+                document.getElementById('last-upload').textContent = data.last_upload_time ? new Date(data.last_upload_time).toLocaleString('zh-CN') : '从未';
+                
+                const statusDot = document.getElementById('upload-status-dot');
+                const statusText = document.getElementById('upload-status-text');
+                
+                if (data.is_uploading) {
+                    statusDot.className = 'status-dot status-processing';
+                    statusText.textContent = '上传中';
+                    statusText.className = 'text-yellow-400 font-semibold';
+                } else {
+                    statusDot.className = 'status-dot status-online';
+                    statusText.textContent = '空闲';
+                    statusText.className = 'text-white font-semibold';
+                }
+            } catch (err) {
+                console.error('获取Agent状态失败:', err);
+            }
+        }
+        
+        async function getUploadHistory() {
+            try {
+                const res = await fetch(API_BASE + '/api/github/upload/history?limit=20');
+                const data = await res.json();
+                
+                const tbody = document.getElementById('history-body');
+                
+                if (data.history && data.history.length > 0) {
+                    tbody.innerHTML = '';
+                    
+                    data.history.forEach(item => {
+                        const tr = document.createElement('tr');
+                        tr.className = 'border-b border-white/5 hover:bg-white/5';
+                        
+                        const statusClass = item.status === 'completed' ? 'text-green-400' : 
+                                          item.status === 'failed' ? 'text-red-400' : 'text-yellow-400';
+                        const statusText = item.status === 'completed' ? '成功' : 
+                                          item.status === 'failed' ? '失败' : '进行中';
+                        
+                        const time = item.start_time ? new Date(item.start_time).toLocaleString('zh-CN') : '--';
+                        const duration = item.duration_seconds ? item.duration_seconds.toFixed(2) + 's' : '--';
+                        
+                        tr.innerHTML = `
+                            <td class="py-3 px-4 text-gray-300">${time}</td>
+                            <td class="py-3 px-4 text-white truncate max-w-xs">${item.commit_message || '--'}</td>
+                            <td class="py-3 px-4 text-center text-gray-300">${item.files.total}</td>
+                            <td class="py-3 px-4 text-center ${statusClass}">${statusText}</td>
+                            <td class="py-3 px-4 text-right text-gray-400">${duration}</td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-gray-500">暂无上传记录</td></tr>';
+                }
+            } catch (err) {
+                console.error('获取上传历史失败:', err);
+            }
+        }
+        
+        async function executeSync() {
+            const btn = document.getElementById('sync-btn');
+            const commitMessage = document.getElementById('commit-message').value.trim();
+            
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 同步中...';
+            
+            try {
+                const res = await fetch(API_BASE + '/api/github/upload/execute', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ commit_message: commitMessage || null })
+                });
+                
+                const data = await res.json();
+                
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    document.getElementById('commit-message').value = '';
+                    refreshGitStatus();
+                    getAgentStatus();
+                    getUploadHistory();
+                } else {
+                    showToast(data.message, 'error');
+                }
+            } catch (err) {
+                showToast('同步失败: ' + err.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> 立即同步到GitHub';
+            }
+        }
+        
+        async function startScheduler() {
+            const interval = document.getElementById('sync-interval').value;
+            const btn = document.getElementById('start-scheduler-btn');
+            
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 启动中...';
+            
+            try {
+                const res = await fetch(API_BASE + '/api/github/upload/start-scheduler', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ interval_minutes: parseInt(interval) })
+                });
+                
+                const data = await res.json();
+                
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    document.getElementById('scheduler-toggle').checked = true;
+                } else {
+                    showToast(data.message, 'error');
+                }
+            } catch (err) {
+                showToast('启动失败: ' + err.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-play"></i> 启动定时任务';
+            }
+        }
+        
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.animation = 'slideOut 0.3s ease-out';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+        
+        document.getElementById('scheduler-toggle').addEventListener('change', function(e) {
+            if (e.target.checked) {
+                startScheduler();
+            }
+        });
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            refreshGitStatus();
+            getAgentStatus();
+            getUploadHistory();
+            
+            setInterval(() => {
+                getAgentStatus();
+            }, 5000);
+        });
+    </script>
+</body>
+</html>
