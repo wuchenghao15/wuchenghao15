@@ -72,7 +72,9 @@ class ModuleLoader:
                     if 'user_id' not in session:
                         if request.path.startswith('/api/'):
                             return jsonify({'success': False, 'message': '请先登录', 'code': 401}), 401
-                        return redirect(url_for('login_page'))
+                        # 携带 next 参数，登录后返回原页面
+                        next_url = request.full_path.rstrip('?') if request.full_path else request.path
+                        return redirect(url_for('login_page', next=next_url))
                     return f(*args, **kwargs)
                 return decorated_function
 
@@ -174,12 +176,32 @@ class ModuleLoader:
 
                 return vars
 
+            # 根据角色获取重定向地址
+            def _get_role_redirect(role):
+                redirect_map = {
+                    'student': '/exam_system',
+                    'student_vip': '/exam_system',
+                    'designer': '/arduino',
+                    'teacher': '/teacher',
+                    'admin': '/settings',
+                    'super_admin': '/super_admin_dashboard',
+                    'hardware_admin': '/super_admin_dashboard',
+                    'hardware_vikey_admin': '/super_admin_dashboard',
+                }
+                return redirect_map.get(role, '/dashboard')
+
             @app.route('/')
             def index_page():
+                # 已登录用户重定向到对应仪表板
+                if 'user_id' in session:
+                    return redirect(_get_role_redirect(session.get('role', 'user')))
                 return render_template('index.html', **_get_index_template_vars())
 
             @app.route('/login')
             def login_page():
+                # 已登录用户重定向到对应仪表板
+                if 'user_id' in session:
+                    return redirect(_get_role_redirect(session.get('role', 'user')))
                 return render_template('login.html')
 
             @app.route('/register')
@@ -263,13 +285,29 @@ class ModuleLoader:
                     session['role'] = user['role']
                     session['login_time'] = datetime.now().isoformat()
 
+                    # 根据角色确定重定向地址 (复用页面路由中定义的函数)
+                    role = user['role']
+                    try:
+                        redirect_url = _get_role_redirect(role)
+                    except NameError:
+                        # 后备重定向映射
+                        redirect_map = {
+                            'student': '/exam_system', 'student_vip': '/exam_system',
+                            'designer': '/arduino', 'teacher': '/teacher',
+                            'admin': '/settings', 'super_admin': '/super_admin_dashboard',
+                            'hardware_admin': '/super_admin_dashboard',
+                        }
+                        redirect_url = redirect_map.get(role, '/dashboard')
+
                     return jsonify({
                         'success': True,
                         'message': '登录成功',
+                        'redirect': redirect_url,
                         'data': {
                             'user_id': user['id'],
                             'username': user['username'],
-                            'role': user['role']
+                            'role': role,
+                            'redirect': redirect_url
                         }
                     })
 

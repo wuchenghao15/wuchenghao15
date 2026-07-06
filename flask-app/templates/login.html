@@ -838,7 +838,10 @@
                 if (data.success) {
                     showMessage('success', '登录成功！正在跳转...');
                     setTimeout(() => {
-                        const redirectUrl = data.redirect || data.redirect_url || '/';
+                        // 优先使用 next 参数（原请求页面），其次使用后端返回的角色重定向地址
+                        const urlParams = new URLSearchParams(window.location.search);
+                        const nextUrl = urlParams.get('next');
+                        const redirectUrl = nextUrl || data.redirect || data.redirect_url || '/';
                         window.location.href = redirectUrl;
                     }, 1500);
                 } else {
