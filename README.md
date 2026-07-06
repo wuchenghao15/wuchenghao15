@@ -1,7 +1,7 @@
 <div align="center">
 
   ![MTSCOS AI](https://img.shields.io/badge/MTSCOS-AI_Intelligent_System-blue?style=for-the-badge&logo=ai)
-  ![Version](https://img.shields.io/badge/Version-5.3.0-brightgreen?style=for-the-badge)
+  ![Version](https://img.shields.io/badge/Version-6.0.0-blue?style=for-the-badge)
   ![Python](https://img.shields.io/badge/Python-3.8+-yellow?style=for-the-badge&logo=python)
   ![Flask](https://img.shields.io/badge/Flask-2.3.3-lightgrey?style=for-the-badge&logo=flask)
   ![License](https://img.shields.io/badge/License-MIT-red?style=for-the-badge)
@@ -28,8 +28,8 @@
 
 <div align="center">
 
-### 🌟 最新版本 v5.3.0 - 权限增强版 🛡️
-**Enhanced Permission Edition - 精细化权限管理与安全审计**
+### 🌟 最新版本 v6.0.0 - 分布式数据库版 🚀
+**Distributed Database Edition - 智能数据库拆分与系统全面升级**
 
 </div>
 
@@ -442,7 +442,7 @@ curl -X POST http://localhost:8888/api/brain-bank/knowledge/search \
 ### 📊 系统统计
 
 ```
-📈 当前版本:      v5.3.0
+📈 当前版本:      v6.0.0
 🤖 AI员工数量:    10+
 🧠 知识类型:      10种
 📚 知识领域:      11个
@@ -450,19 +450,20 @@ curl -X POST http://localhost:8888/api/brain-bank/knowledge/search \
 🔌 API接口:      460+
 📄 模板文件:      130+
 🔀 路由数量:      629+
-📅 历史版本:      26+
+📅 历史版本:      27+
 🧠 AI引擎矩阵:   30+
 📚 题库总量:      27+
-🛡️ 权限规则:      29项
+🛡️ 权限规则:      50+项
 👤 角色等级:      14种
 📝 审计日志:      已启用
+🗄️ 数据库:        13个(分布式)
 ```
 
 ---
 
 ### 🛣 发展路线图
 
-#### ✅ 已完成 (v1.0 - v5.3)
+#### ✅ 已完成 (v1.0 - v6.0)
 - [x] v1.0 - 基础系统搭建
 - [x] v2.0 - 考试系统上线
 - [x] v3.0 - 学习系统集成
@@ -472,17 +473,18 @@ curl -X POST http://localhost:8888/api/brain-bank/knowledge/search \
 - [x] v5.0 - AI脑库 + 主动AI + 数据完整性
 - [x] v5.1 - 智能课堂版（学习诊断/知识库/课堂互动）
 - [x] v5.2 - 智能评估版（智能评估/个性化路径/AI推荐）
-- [x] **v5.3 - 权限增强版（29项权限规则/审计日志/安全增强）** ⭐ 当前
+- [x] v5.3 - 权限增强版（29项权限规则/审计日志/安全增强）
+- [x] **v6.0 - 分布式数据库版（智能分库/权限升级/题库升级）** ⭐ 当前
 
 #### 🔮 未来规划
 
 | 版本 | 时间 | 核心特性 |
 |------|------|----------|
-| v5.4 | 2026 Q3 | 多语言国际化、语音交互 |
-| v5.5 | 2026 Q3 | AI教师助手、智能辅导 |
-| v5.6 | 2026 Q4 | 微服务架构、容器化部署 |
-| v6.0 | 2027 Q1 | 边缘计算、IoT设备管理 |
-| v6.5 | 2027 Q2 | 区块链存证、VR学习 |
+| v6.1 | 2026 Q3 | 多语言国际化、语音交互 |
+| v6.2 | 2026 Q3 | AI教师助手、智能辅导 |
+| v6.3 | 2026 Q4 | 微服务架构、容器化部署 |
+| v7.0 | 2027 Q1 | 边缘计算、IoT设备管理 |
+| v7.5 | 2027 Q2 | 区块链存证、VR学习 |
 
 ---
 

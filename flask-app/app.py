@@ -13,6 +13,7 @@ import logging
 import traceback
 import argparse
 import sqlite3
+import smart_db_router
 import hashlib
 import time
 import json
@@ -135,7 +136,25 @@ def add_security_headers(response):
     response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
     return response
 
-DATABASE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'app.db')
+DATABASE_PATH_LEGACY = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'app.db')
+DATABASE_PATH = 'smart://distributed'
+class DistributedDBHelper:
+    def __init__(self):
+        from db_manager import connect, get_db_for_table, TABLE_TO_DB, build_table_mapping
+        self.connect = connect
+        self.get_db_for_table = get_db_for_table
+        self.TABLE_TO_DB = TABLE_TO_DB
+        build_table_mapping()
+    
+    def get_connection(self, table_name):
+        db_name = self.get_db_for_table(table_name)
+        return self.connect(db_name)
+
+db_helper = DistributedDBHelper()
+
+def smart_connect(table_name):
+    return db_helper.get_connection(table_name)
+
 
 SUBJECT_NAME_MAP = {
     'chinese': '语文',
@@ -3963,82 +3982,85 @@ def get_user_ip_public():
         logger.error(f"获取IP失败: {e}")
         return jsonify({'success': True, 'ip': '127.0.0.1 (默认)', 'message': '获取失败，使用默认值'})
 
-# 仪表盘统计数据API（公开访问）
+# 仪表盘统计数据API（分布式数据库版）
 @app.route('/api/admin/dashboard_stats', methods=['GET'])
 def get_dashboard_stats_public():
-    """获取仪表盘统计数据"""
+    """获取仪表盘统计数据（查询多个分布式数据库）"""
     try:
-        conn = sqlite3.connect(DATABASE_PATH)
-        cursor = conn.cursor()
+        from db_manager import connect, TABLE_TO_DB
         
-        cursor.execute('SELECT COUNT(*) FROM users')
-        user_count = cursor.fetchone()[0]
+        def query_count(db_name, table_name):
+            try:
+                conn = connect(db_name)
+                if conn:
+                    cursor = conn.cursor()
+                    cursor.execute(f'SELECT COUNT(*) FROM {table_name}')
+                    result = cursor.fetchone()[0]
+                    conn.close()
+                    return result
+            except:
+                pass
+            return 0
         
+        def query_sql(db_name, sql, params=None):
+            try:
+                conn = connect(db_name)
+                if conn:
+                    cursor = conn.cursor()
+                    if params:
+                        cursor.execute(sql, params)
+                    else:
+                        cursor.execute(sql)
+                    result = cursor.fetchall()
+                    conn.close()
+                    return result
+            except:
+                pass
+            return []
+        
+        user_count = query_count('auth', 'users')
         route_count = len([r for r in app.url_map.iter_rules()])
         
+        active_users = 0
         try:
-            cursor.execute('SELECT COUNT(DISTINCT user_id) FROM access_logs WHERE DATE(access_time) = DATE("now")')
-            active_users = cursor.fetchone()[0]
+            logs = query_sql('log', 'SELECT COUNT(DISTINCT user_id) FROM access_logs WHERE DATE(access_time) = DATE("now")')
+            if logs:
+                active_users = logs[0][0]
         except:
             active_users = 0
         
-        exams_count = 0
-        questions_count = 0
+        exams_count = query_count('exam', 'exams')
+        questions_count = query_count('question', 'questions')
+        
         completed_exams = 0
         try:
-            cursor.execute('SELECT COUNT(*) FROM exams')
-            exams_count = cursor.fetchone()[0]
-            cursor.execute('SELECT COUNT(*) FROM questions')
-            questions_count = cursor.fetchone()[0]
-            try:
-                cursor.execute('SELECT COUNT(*) FROM exam_results WHERE completed = 1')
-                completed_exams = cursor.fetchone()[0]
-            except:
-                completed_exams = 0
+            results = query_sql('exam', 'SELECT COUNT(*) FROM exam_results WHERE completed = 1')
+            if results:
+                completed_exams = results[0][0]
         except:
-            pass
+            completed_exams = 0
         
-        learning_records = 0
-        wrong_questions = 0
-        try:
-            cursor.execute('SELECT COUNT(*) FROM learning_records')
-            learning_records = cursor.fetchone()[0]
-        except:
-            pass
-        try:
-            cursor.execute('SELECT COUNT(*) FROM wrong_questions')
-            wrong_questions = cursor.fetchone()[0]
-        except:
-            pass
-        
-        backup_count = 0
-        try:
-            cursor.execute('SELECT COUNT(*) FROM backups')
-            backup_count = cursor.fetchone()[0]
-        except:
-            pass
-        
-        notification_count = 0
-        try:
-            cursor.execute('SELECT COUNT(*) FROM notifications')
-            notification_count = cursor.fetchone()[0]
-        except:
-            pass
+        learning_records = query_count('learning', 'learning_records')
+        wrong_questions = query_count('learning', 'wrong_questions')
+        backup_count = query_count('system', 'backups')
+        notification_count = query_count('admin', 'notifications')
         
         today_logins = 0
         today_registers = 0
         try:
-            cursor.execute("SELECT COUNT(*) FROM users WHERE DATE(last_login) = DATE('now')")
-            today_logins = cursor.fetchone()[0]
-            cursor.execute("SELECT COUNT(*) FROM users WHERE DATE(created_at) = DATE('now')")
-            today_registers = cursor.fetchone()[0]
+            results = query_sql('auth', "SELECT COUNT(*) FROM users WHERE DATE(last_login) = DATE('now')")
+            if results:
+                today_logins = results[0][0]
+            results = query_sql('auth', "SELECT COUNT(*) FROM users WHERE DATE(created_at) = DATE('now')")
+            if results:
+                today_registers = results[0][0]
         except:
             pass
         
         recent_users = []
         try:
-            cursor.execute('SELECT id, username, role, created_at FROM users ORDER BY created_at DESC LIMIT 5')
-            for row in cursor.fetchall():
+            results = query_sql('auth', 'SELECT id, username, role, created_at FROM users ORDER BY created_at DESC LIMIT 5')
+            for row in results:
                 recent_users.append({
                     'id': row[0],
                     'username': row[1],
@@ -4050,8 +4072,8 @@ def get_dashboard_stats_public():
         
         recent_logs = []
         try:
-            cursor.execute('SELECT id, user_id, username, action, ip_address, created_at FROM system_logs ORDER BY created_at DESC LIMIT 10')
-            for row in cursor.fetchall():
+            results = query_sql('log', 'SELECT id, user_id, username, action, ip_address, created_at FROM system_logs ORDER BY created_at DESC LIMIT 10')
+            for row in results:
                 recent_logs.append({
                     'id': row[0],
                     'user_id': row[1],
@@ -4062,8 +4084,8 @@ def get_dashboard_stats_public():
                 })
         except:
             try:
-                cursor.execute('SELECT id, user_id, path, ip_address, access_time FROM access_logs ORDER BY access_time DESC LIMIT 10')
-                for row in cursor.fetchall():
+                results = query_sql('log', 'SELECT id, user_id, path, ip_address, access_time FROM access_logs ORDER BY access_time DESC LIMIT 10')
+                for row in results:
                     recent_logs.append({
                         'id': row[0],
                         'user_id': row[1],
@@ -4074,8 +4096,6 @@ def get_dashboard_stats_public():
                     })
             except:
                 pass
-        
-        conn.close()
         
         import psutil
         try:
@@ -4088,6 +4108,14 @@ def get_dashboard_stats_public():
             cpu_percent = 0
             memory_percent = 0
             disk_percent = 0
+        
+        role_distribution = []
+        try:
+            results = query_sql('auth', 'SELECT role, COUNT(*) FROM users GROUP BY role')
+            for row in results:
+                role_distribution.append({'role': row[0], 'count': row[1]})
+        except:
+            pass
         
         return jsonify({
             'success': True,
@@ -4107,12 +4135,17 @@ def get_dashboard_stats_public():
                 'today_registers': today_registers,
                 'recent_users': recent_users,
                 'recent_logs': recent_logs,
+                'role_distribution': role_distribution,
                 'system_resources': {
                     'cpu_percent': cpu_percent,
                     'memory_percent': memory_percent,
                     'disk_percent': disk_percent
                 },
-                'timestamp': datetime.now().isoformat()
+                'timestamp': datetime.now().isoformat(),
+                'version': '6.0.0',
+                'codename': 'Distributed Database Edition',
+                'database_count': 13,
+                'databases': ['auth', 'exam', 'question', 'learning', 'system', 'ai', 'physics', 'math', 'admin', 'proctor', 'user', 'log', 'other']
             }
         })
     except Exception as e:
