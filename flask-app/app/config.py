@@ -7,9 +7,31 @@
 
 import os
 import logging
+import signal
+import traceback
 from typing import Dict, Any, Optional
 
 logger = logging.getLogger(__name__)
+
+class TimeoutError(Exception):
+    """超时异常"""
+    pass
+
+def timeout_wrapper(timeout_seconds=5):
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            def handler(signum, frame):
+                raise TimeoutError(f"函数 {func.__name__} 执行超时({timeout_seconds}秒)")
+            
+            old_handler = signal.signal(signal.SIGALRM, handler)
+            try:
+                signal.alarm(timeout_seconds)
+                return func(*args, **kwargs)
+            finally:
+                signal.alarm(0)
+                signal.signal(signal.SIGALRM, old_handler)
+        return wrapper
+    return decorator
 
 # ==================== 基础配置 ====================
 BASE_CONFIG = {
@@ -175,16 +197,28 @@ DEFAULT_CONFIG = {
 # 全局数据库配置管理器实例
 _db_config_manager = None
 
+@timeout_wrapper(timeout_seconds=5)
+def _import_db_config_manager():
+    """导入数据库配置管理器（带超时）"""
+    from app.services.db_config_manager import db_config_manager
+    return db_config_manager
+
 def get_db_config_manager():
     """获取数据库配置管理器实例"""
     global _db_config_manager
     if _db_config_manager is None:
         try:
-            from app.services.db_config_manager import db_config_manager
-            _db_config_manager = db_config_manager
+            _db_config_manager = _import_db_config_manager()
             logger.info("[配置] 数据库配置管理器加载成功")
+        except TimeoutError as e:
+            logger.warning(f"[配置] 数据库配置管理器加载超时({str(e)})，使用默认配置")
+            _db_config_manager = None
         except ImportError as e:
             logger.warning(f"[配置] 数据库配置管理器加载失败，使用默认配置: {str(e)}")
+            _db_config_manager = None
+        except Exception as e:
+            logger.error(f"[配置] 数据库配置管理器加载异常: {str(e)}")
+            logger.error(f"[配置] 异常堆栈:\n{traceback.format_exc()}")
             _db_config_manager = None
     return _db_config_manager
 

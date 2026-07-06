@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 import sqlite3
 import os
-import re
-import inspect
 
 DB_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'split_databases')
 
@@ -40,60 +38,13 @@ def build_table_mapping():
 
 build_table_mapping()
 
-def get_db_for_table(table_name):
-    return TABLE_TO_DB.get(table_name, 'other')
-
-def extract_table_name_from_sql(sql):
-    sql_upper = sql.strip().upper()
-    
-    patterns = [
-        r'FROM\s+(\w+)',
-        r'INSERT\s+INTO\s+(\w+)',
-        r'UPDATE\s+(\w+)',
-        r'DELETE\s+FROM\s+(\w+)',
-        r'CREATE\s+TABLE\s+(\w+)',
-        r'ALTER\s+TABLE\s+(\w+)',
-        r'DROP\s+TABLE\s+(\w+)',
-        r'PRAGMA\s+table_info\((\w+)\)',
-    ]
-    
-    for pattern in patterns:
-        match = re.search(pattern, sql_upper)
-        if match:
-            return match.group(1).lower()
-    return None
-
-def extract_table_name_from_stack():
-    try:
-        stack = inspect.stack()
-        for frame in stack[3:8]:
-            source = frame.code_context
-            if source:
-                line = source[0].strip()
-                table_name = extract_table_name_from_sql(line)
-                if table_name:
-                    return table_name
-    except:
-        pass
-    return None
-
 original_connect = sqlite3.connect
 
 def smart_connect(database, *args, **kwargs):
     if database in ['smart://distributed', 'smart://split']:
-        try:
-            table_name = extract_table_name_from_stack()
-            if table_name:
-                db_name = get_db_for_table(table_name)
-                db_path = DATABASES.get(db_name)
-                if db_path and os.path.exists(db_path):
-                    return original_connect(db_path, *args, **kwargs)
-            
-            db_path = DATABASES.get('system')
-            if db_path and os.path.exists(db_path):
-                return original_connect(db_path, *args, **kwargs)
-        except Exception as e:
-            pass
+        db_path = DATABASES.get('system')
+        if db_path and os.path.exists(db_path):
+            return original_connect(db_path, *args, **kwargs)
         
         db_path = DATABASES.get('other')
         if db_path and os.path.exists(db_path):
@@ -103,5 +54,5 @@ def smart_connect(database, *args, **kwargs):
 
 sqlite3.connect = smart_connect
 
-print("[Smart DB Router] 已启用智能数据库路由")
-print(f"[Smart DB Router] 已映射 {len(TABLE_TO_DB)} 个表")
+print("[Smart DB Router Simple] 已启用智能数据库路由")
+print(f"[Smart DB Router Simple] 已映射 {len(TABLE_TO_DB)} 个表")

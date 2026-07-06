@@ -13,7 +13,7 @@ import logging
 import traceback
 import argparse
 import sqlite3
-import smart_db_router
+import smart_db_router_simple
 import hashlib
 import time
 import json
@@ -6054,7 +6054,9 @@ def init_points_tables():
         logger.error(f"初始化积分表失败: {e}")
 
 
+print("[DEBUG MODULE] Calling init_points_tables...", flush=True)
 init_points_tables()
+print("[DEBUG MODULE] init_points_tables completed", flush=True)
 
 
 @app.route('/exam_system/redeem_store')
