@@ -7,6 +7,34 @@ from datetime import datetime
 from db_manager import connect
 
 VERSION_DATA = {
+    '7.2.0': {
+        'major': 7,
+        'minor': 2,
+        'patch': 0,
+        'build_number': '20260707b',
+        'build_date': '2026-07-07',
+        'codename': 'Comprehensive Enhanced Edition',
+        'status': 'stable',
+        'description': '全面增强版本，深度拓展数据库功能，完善移动端适配，强化AI集群和模型库，升级前端布局排版，完善权限规则，丰富题库体系，自动Git同步',
+        'features': [
+            '数据库全面增强（移动端配置表/通知推送队列/用户设备表）',
+            '后端API增强（移动端检测/推送通知/题库拓展/设备管理）',
+            '前端移动端适配（响应式设计/viewport/触摸优化）',
+            'AI集群深度拓展（多节点管理/负载均衡/故障转移）',
+            'AI模型库增强（20+模型/模型性能评分/自动注册）',
+            '权限规则矩阵强化（50+规则/细粒度权限/动态规则）',
+            '题库体系完善（成人教育/K12全科目/模拟题库/真题扩容）',
+            '前端布局排版优化（响应式布局/多主题/组件升级）',
+            '端口管理强化（多服务/动态分配/健康检查）',
+            '集群管理增强（整列监控/多维度管理/实时状态）',
+            '版本历史完整记录（9+版本）',
+            'GitHub文档自动更新（README.md/SYSTEM_MANUAL.md）',
+            'Git自动同步（变更检测/提交/推送/一键同步）',
+            '跑马灯通知管理（默认关闭/管理员开启/AI自动推送）',
+            '手机客户端适配（移动端管理端/触控优化）'
+        ],
+        'upgrade_notes': '从v7.1.0升级：全面增强数据库、前端移动端适配、AI集群/模型库、题库、权限规则、端口管理、集群管理，完善文档和Git同步'
+    },
     '7.1.0': {
         'major': 7,
         'minor': 1,
@@ -179,7 +207,7 @@ VERSION_DATA = {
     }
 }
 
-CURRENT_VERSION = '7.1.0'
+CURRENT_VERSION = '7.2.0'
 
 def init_version_table():
     conn = connect('system')

@@ -135,9 +135,9 @@ class ModuleLoader:
             def _get_index_template_vars():
                 """获取首页模板所需的变量"""
                 vars = {
-                    'version': '7.1.0',
-                'system_status': '运行中',
-                'system_notice': '欢迎使用 MTSCOS AI 智能考试系统 v7.1.0 (Intelligent Modular Enhanced Edition)',
+                    'version': '7.2.0',
+                    'system_status': '运行中',
+                    'system_notice': '',
                     'user_count': 0,
                     'exam_count': 0,
                     'online_users': 0,
@@ -149,7 +149,25 @@ class ModuleLoader:
                     }
                 }
 
-                # 尝试从数据库获取真实数据
+                try:
+                    notice_db = os.path.join(SPLIT_DB_DIR, 'system.db')
+                    if os.path.exists(notice_db):
+                        conn = sqlite3.connect(notice_db, timeout=3)
+                        conn.row_factory = sqlite3.Row
+                        cursor = conn.cursor()
+                        cursor.execute("""
+                            SELECT content FROM system_notices 
+                            WHERE status = 'active' 
+                            ORDER BY priority DESC, created_at DESC 
+                            LIMIT 1
+                        """)
+                        notice = cursor.fetchone()
+                        if notice:
+                            vars['system_notice'] = notice['content']
+                        conn.close()
+                except Exception:
+                    pass
+
                 try:
                     auth_db = os.path.join(SPLIT_DB_DIR, 'auth.db')
                     if os.path.exists(auth_db):
@@ -208,6 +226,51 @@ class ModuleLoader:
             def register_page():
                 return render_template('register.html')
 
+            # ================ 角色重定向路由（确保登录后能正确跳转） ================
+            @app.route('/exam_system')
+            @require_login
+            def exam_system_page():
+                return render_template('exam_system.html')
+
+            @app.route('/exam_system/exams')
+            @require_login
+            def exam_system_exams_page():
+                return render_template('exam_center.html')
+
+            @app.route('/exam_system/tests')
+            @require_login
+            def exam_system_tests_page():
+                return render_template('test_center.html')
+
+            @app.route('/teacher')
+            @require_login
+            def teacher_page():
+                return render_template('teacher.html')
+
+            @app.route('/settings')
+            @require_login
+            def settings_page():
+                return render_template('settings.html')
+
+            @app.route('/super_admin_dashboard')
+            @require_login
+            def super_admin_dashboard_page():
+                return render_template('super_admin_dashboard.html')
+
+            @app.route('/arduino')
+            @require_login
+            def arduino_page():
+                return render_template('arduino.html')
+
+            @app.route('/ai-chat')
+            @require_login
+            def ai_chat_page():
+                return render_template('ai_chat.html')
+
+            @app.route('/k12')
+            def k12_page():
+                return render_template('k12_education.html')
+            
             @app.route('/terms')
             def terms_page():
                 return render_template('terms.html')
@@ -378,6 +441,456 @@ class ModuleLoader:
                         }
                     })
                 return jsonify({'success': False, 'message': '未登录'}), 401
+
+            # ================ 跑马灯通知管理API ================
+            def _get_notice_db():
+                db_path = os.path.join(SPLIT_DB_DIR, 'system.db')
+                conn = sqlite3.connect(db_path, timeout=3)
+                conn.row_factory = sqlite3.Row
+                return conn
+
+            @app.route('/api/system/notices/marquee/toggle', methods=['POST'])
+            def toggle_marquee():
+                try:
+                    data = request.get_json()
+                    enabled = data.get('enabled', False)
+                    
+                    conn = _get_notice_db()
+                    cursor = conn.cursor()
+                    
+                    cursor.execute("SELECT id FROM system_notices WHERE status = 'active' LIMIT 1")
+                    active_notice = cursor.fetchone()
+                    
+                    if enabled:
+                        if not active_notice:
+                            cursor.execute("SELECT id FROM system_notices WHERE status = 'inactive' LIMIT 1")
+                            inactive_notice = cursor.fetchone()
+                            if inactive_notice:
+                                cursor.execute("UPDATE system_notices SET status = 'active' WHERE id = ?", 
+                                              (inactive_notice[0],))
+                            else:
+                                conn.close()
+                                return jsonify({'success': False, 'message': '请先设置通知内容'}), 400
+                    else:
+                        if active_notice:
+                            cursor.execute("UPDATE system_notices SET status = 'inactive' WHERE status = 'active'")
+                    
+                    conn.commit()
+                    conn.close()
+                
+                    return jsonify({'success': True, 'message': '操作成功'})
+                except Exception as e:
+                    logger.error(f"Toggle marquee error: {e}")
+                    return jsonify({'success': False, 'message': '操作失败'}), 500
+
+            @app.route('/api/system/notices/marquee/update', methods=['POST'])
+            def update_marquee():
+                try:
+                    data = request.get_json()
+                    content = data.get('content', '').strip()
+                    
+                    if not content:
+                        return jsonify({'success': False, 'message': '通知内容不能为空'}), 400
+                    
+                    conn = _get_notice_db()
+                    cursor = conn.cursor()
+                    
+                    cursor.execute("SELECT id FROM system_notices WHERE status = 'active' LIMIT 1")
+                    active_notice = cursor.fetchone()
+                    
+                    if active_notice:
+                        cursor.execute("UPDATE system_notices SET content = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?", 
+                                      (content, active_notice[0]))
+                    else:
+                        cursor.execute("""
+                            INSERT INTO system_notices (content, status, priority, created_at, updated_at)
+                            VALUES (?, 'inactive', 10, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                        """, (content,))
+                    
+                    conn.commit()
+                    conn.close()
+                
+                    return jsonify({'success': True, 'message': '保存成功，需手动开启显示'})
+                except Exception as e:
+                    logger.error(f"Update marquee error: {e}")
+                    return jsonify({'success': False, 'message': '保存失败'}), 500
+
+            @app.route('/api/system/notices/marquee/generate', methods=['POST'])
+            def generate_marquee():
+                try:
+                    import time
+                    current_time = time.strftime("%Y年%m月%d日 %H:%M", time.localtime())
+                    data = request.get_json()
+                    auto_enable = data.get('auto_enable', False)
+                    
+                    suggestions = [
+                        f"📢 系统维护通知：{current_time}系统正常运行中，欢迎使用！",
+                        f"🎉 新版本发布：v7.1.0智能模块化增强版已上线！",
+                        f"💡 使用提示：新增AI员工管理功能，可自动扩展智能服务！",
+                        f"🔔 重要提醒：请及时备份数据，确保数据安全！",
+                        f"🌟 功能更新：学生门户页面全新改版，体验升级！",
+                        f"⚡ 性能优化：数据库查询速度提升50%，响应更快！"
+                    ]
+                    
+                    content = suggestions[hash(current_time) % len(suggestions)]
+                    status = 'active' if auto_enable else 'inactive'
+                    
+                    conn = _get_notice_db()
+                    cursor = conn.cursor()
+                    
+                    cursor.execute("SELECT id FROM system_notices WHERE status = 'active' LIMIT 1")
+                    active_notice = cursor.fetchone()
+                    
+                    if active_notice:
+                        cursor.execute("UPDATE system_notices SET content = ?, status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?", 
+                                      (content, status, active_notice[0]))
+                    else:
+                        cursor.execute("""
+                            INSERT INTO system_notices (content, status, priority, created_at, updated_at)
+                            VALUES (?, ?, 10, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                        """, (content, status))
+                    
+                    conn.commit()
+                    conn.close()
+                
+                    return jsonify({'success': True, 'message': '生成成功' + ('，已自动开启显示' if auto_enable else '，需手动开启显示'), 'content': content})
+                except Exception as e:
+                    logger.error(f"Generate marquee error: {e}")
+                    return jsonify({'success': False, 'message': '生成失败'}), 500
+
+            @app.route('/api/system/notices/marquee/push', methods=['POST'])
+            def push_marquee():
+                try:
+                    data = request.get_json()
+                    content = data.get('content', '').strip()
+                    priority = data.get('priority', 10)
+                    
+                    if not content:
+                        return jsonify({'success': False, 'message': '消息内容不能为空'}), 400
+                    
+                    conn = _get_notice_db()
+                    cursor = conn.cursor()
+                    
+                    cursor.execute("UPDATE system_notices SET status = 'inactive' WHERE status = 'active'")
+                    
+                    cursor.execute("""
+                        INSERT INTO system_notices (content, status, priority, created_at, updated_at)
+                        VALUES (?, 'active', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                    """, (content, priority))
+                    
+                    conn.commit()
+                    conn.close()
+                
+                    return jsonify({'success': True, 'message': '消息已推送，跑马灯已自动打开', 'content': content})
+                except Exception as e:
+                    logger.error(f"Push marquee error: {e}")
+                    return jsonify({'success': False, 'message': '推送失败'}), 500
+
+            # ================ 移动端管理API ================
+            @app.route('/api/mobile/detect', methods=['GET'])
+            def mobile_detect():
+                user_agent = request.headers.get('User-Agent', '')
+                is_mobile = any(keyword in user_agent.lower() for keyword in ['mobile', 'android', 'iphone', 'ipad', 'tablet', 'touch'])
+                is_ios = any(keyword in user_agent.lower() for keyword in ['iphone', 'ipad', 'ios'])
+                is_android = 'android' in user_agent.lower()
+                
+                return jsonify({
+                    'success': True,
+                    'data': {
+                        'is_mobile': is_mobile,
+                        'is_ios': is_ios,
+                        'is_android': is_android,
+                        'user_agent': user_agent[:200],
+                        'recommended_view': 'mobile' if is_mobile else 'desktop'
+                    }
+                })
+
+            @app.route('/api/mobile/config', methods=['GET'])
+            def mobile_config():
+                try:
+                    conn = _get_notice_db()
+                    cursor = conn.cursor()
+                    cursor.execute("SELECT config_key, config_value, description FROM mobile_config")
+                    configs = {}
+                    for row in cursor.fetchall():
+                        configs[row['config_key']] = {
+                            'value': row['config_value'],
+                            'description': row['description']
+                        }
+                    conn.close()
+                    return jsonify({'success': True, 'data': configs})
+                except Exception as e:
+                    logger.error(f"Mobile config error: {e}")
+                    return jsonify({'success': False, 'message': '获取配置失败'}), 500
+
+            @app.route('/api/mobile/device/register', methods=['POST'])
+            def register_device():
+                try:
+                    data = request.get_json()
+                    device_id = data.get('device_id', '')
+                    device_type = data.get('device_type', 'mobile')
+                    device_name = data.get('device_name', '')
+                    os_type = data.get('os_type', '')
+                    os_version = data.get('os_version', '')
+                    app_version = data.get('app_version', '')
+                    push_token = data.get('push_token', '')
+                    
+                    if not device_id:
+                        return jsonify({'success': False, 'message': '设备ID不能为空'}), 400
+                    
+                    user_id = session.get('user_id') if 'user_id' in session else None
+                    
+                    conn = _get_notice_db()
+                    cursor = conn.cursor()
+                    
+                    cursor.execute("SELECT id FROM user_devices WHERE device_id = ?", (device_id,))
+                    if cursor.fetchone():
+                        cursor.execute("""
+                            UPDATE user_devices SET device_type=?, device_name=?, os_type=?, os_version=?, 
+                            app_version=?, push_token=?, last_active_at=CURRENT_TIMESTAMP, is_active=1, updated_at=CURRENT_TIMESTAMP
+                            WHERE device_id = ?
+                        """, (device_type, device_name, os_type, os_version, app_version, push_token, device_id))
+                    else:
+                        cursor.execute("""
+                            INSERT INTO user_devices (user_id, device_id, device_type, device_name, os_type, 
+                            os_version, app_version, push_token, last_active_at, is_active)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, 1)
+                        """, (user_id, device_id, device_type, device_name, os_type, os_version, app_version, push_token))
+                    
+                    conn.commit()
+                    conn.close()
+                    return jsonify({'success': True, 'message': '设备注册成功'})
+                except Exception as e:
+                    logger.error(f"Register device error: {e}")
+                    return jsonify({'success': False, 'message': '设备注册失败'}), 500
+
+            # ================ 通知推送API ================
+            @app.route('/api/notification/send', methods=['POST'])
+            def send_notification():
+                try:
+                    data = request.get_json()
+                    recipient_id = data.get('recipient_id')
+                    title = data.get('title', '')
+                    content = data.get('content', '')
+                    priority = data.get('priority', 10)
+                    push_type = data.get('push_type', 'system')
+                    
+                    if not title or not content:
+                        return jsonify({'success': False, 'message': '标题和内容不能为空'}), 400
+                    
+                    conn = _get_notice_db()
+                    cursor = conn.cursor()
+                    
+                    cursor.execute("""
+                        INSERT INTO notification_queue (recipient_id, recipient_type, title, content, 
+                        priority, status, push_type)
+                        VALUES (?, ?, ?, ?, ?, 'pending', ?)
+                    """, (recipient_id, 'user' if recipient_id else 'broadcast', title, content, priority, push_type))
+                    
+                    conn.commit()
+                    conn.close()
+                    return jsonify({'success': True, 'message': '通知已加入推送队列'})
+                except Exception as e:
+                    logger.error(f"Send notification error: {e}")
+                    return jsonify({'success': False, 'message': '发送失败'}), 500
+
+            @app.route('/api/notification/queue', methods=['GET'])
+            def get_notification_queue():
+                try:
+                    conn = _get_notice_db()
+                    conn.row_factory = sqlite3.Row
+                    cursor = conn.cursor()
+                    cursor.execute("""
+                        SELECT id, recipient_id, title, content, priority, status, push_type, 
+                        sent_at, retry_count, created_at 
+                        FROM notification_queue 
+                        ORDER BY priority DESC, created_at DESC 
+                        LIMIT 50
+                    """)
+                    queue = []
+                    for row in cursor.fetchall():
+                        queue.append({
+                            'id': row['id'],
+                            'recipient_id': row['recipient_id'],
+                            'title': row['title'],
+                            'content': row['content'],
+                            'priority': row['priority'],
+                            'status': row['status'],
+                            'push_type': row['push_type'],
+                            'sent_at': row['sent_at'],
+                            'retry_count': row['retry_count'],
+                            'created_at': row['created_at']
+                        })
+                    conn.close()
+                    return jsonify({'success': True, 'data': queue})
+                except Exception as e:
+                    logger.error(f"Get notification queue error: {e}")
+                    return jsonify({'success': False, 'message': '获取队列失败'}), 500
+
+            # ================ 题库拓展API ================
+            @app.route('/api/questions/categories', methods=['GET'])
+            def get_question_categories():
+                try:
+                    db_path = os.path.join(SPLIT_DB_DIR, 'question.db')
+                    conn = sqlite3.connect(db_path, timeout=3)
+                    conn.row_factory = sqlite3.Row
+                    cursor = conn.cursor()
+                    
+                    stage = request.args.get('stage', '')
+                    subject = request.args.get('subject', '')
+                    
+                    query = "SELECT * FROM question_categories_ext WHERE is_active = 1"
+                    params = []
+                    if stage:
+                        query += " AND education_stage = ?"
+                        params.append(stage)
+                    if subject:
+                        query += " AND subject = ?"
+                        params.append(subject)
+                    query += " ORDER BY sort_order, category_name"
+                    
+                    cursor.execute(query, params)
+                    categories = []
+                    for row in cursor.fetchall():
+                        categories.append({
+                            'id': row['id'],
+                            'category_name': row['category_name'],
+                            'parent_id': row['parent_id'],
+                            'level': row['level'],
+                            'subject': row['subject'],
+                            'education_stage': row['education_stage'],
+                            'grade': row['grade'],
+                            'semester': row['semester'],
+                            'total_questions': row['total_questions']
+                        })
+                    conn.close()
+                    return jsonify({'success': True, 'data': categories})
+                except Exception as e:
+                    logger.error(f"Get categories error: {e}")
+                    return jsonify({'success': False, 'message': '获取分类失败'}), 500
+
+            @app.route('/api/questions/tags', methods=['GET'])
+            def get_question_tags():
+                try:
+                    db_path = os.path.join(SPLIT_DB_DIR, 'question.db')
+                    conn = sqlite3.connect(db_path, timeout=3)
+                    conn.row_factory = sqlite3.Row
+                    cursor = conn.cursor()
+                    cursor.execute("SELECT * FROM question_tags ORDER BY usage_count DESC")
+                    tags = []
+                    for row in cursor.fetchall():
+                        tags.append({
+                            'id': row['id'],
+                            'tag_name': row['tag_name'],
+                            'tag_color': row['tag_color'],
+                            'usage_count': row['usage_count']
+                        })
+                    conn.close()
+                    return jsonify({'success': True, 'data': tags})
+                except Exception as e:
+                    logger.error(f"Get tags error: {e}")
+                    return jsonify({'success': False, 'message': '获取标签失败'}), 500
+
+            # ================ AI模型库API ================
+            @app.route('/api/ai/models', methods=['GET'])
+            def get_ai_models():
+                try:
+                    db_path = os.path.join(SPLIT_DB_DIR, 'ai.db')
+                    conn = sqlite3.connect(db_path, timeout=3)
+                    conn.row_factory = sqlite3.Row
+                    cursor = conn.cursor()
+                    cursor.execute("SELECT * FROM ai_model_performance ORDER BY performance_score DESC")
+                    models = []
+                    for row in cursor.fetchall():
+                        models.append({
+                            'model_id': row['model_id'],
+                            'model_name': row['model_name'],
+                            'provider': row['provider'],
+                            'model_type': row['model_type'],
+                            'performance_score': row['performance_score'],
+                            'response_time_ms': row['response_time_ms'],
+                            'success_rate': row['success_rate'],
+                            'total_requests': row['total_requests'],
+                            'status': row['status']
+                        })
+                    conn.close()
+                    return jsonify({'success': True, 'data': models})
+                except Exception as e:
+                    logger.error(f"Get AI models error: {e}")
+                    return jsonify({'success': False, 'message': '获取模型失败'}), 500
+
+            @app.route('/api/ai/nodes', methods=['GET'])
+            def get_ai_nodes():
+                try:
+                    db_path = os.path.join(SPLIT_DB_DIR, 'ai.db')
+                    conn = sqlite3.connect(db_path, timeout=3)
+                    conn.row_factory = sqlite3.Row
+                    cursor = conn.cursor()
+                    cursor.execute("SELECT * FROM ai_node_status ORDER BY node_type, status")
+                    nodes = []
+                    for row in cursor.fetchall():
+                        nodes.append({
+                            'node_id': row['node_id'],
+                            'node_name': row['node_name'],
+                            'node_type': row['node_type'],
+                            'address': row['address'],
+                            'status': row['status'],
+                            'load': row['load'],
+                            'capacity': row['capacity'],
+                            'active_tasks': row['active_tasks'],
+                            'last_heartbeat': row['last_heartbeat']
+                        })
+                    conn.close()
+                    return jsonify({'success': True, 'data': nodes})
+                except Exception as e:
+                    logger.error(f"Get AI nodes error: {e}")
+                    return jsonify({'success': False, 'message': '获取节点失败'}), 500
+
+            # ================ 系统状态API ================
+            @app.route('/api/system/status/extended', methods=['GET'])
+            def system_status_extended():
+                try:
+                    import psutil
+                    cpu_percent = psutil.cpu_percent(interval=1)
+                    memory = psutil.virtual_memory()
+                    disk = psutil.disk_usage('/')
+                    network = psutil.net_io_counters()
+                    
+                    return jsonify({
+                        'success': True,
+                        'data': {
+                            'cpu': {
+                                'percent': cpu_percent,
+                                'cores': psutil.cpu_count(),
+                                'threads': psutil.cpu_count(logical=True)
+                            },
+                            'memory': {
+                                'total': memory.total,
+                                'used': memory.used,
+                                'available': memory.available,
+                                'percent': memory.percent
+                            },
+                            'disk': {
+                                'total': disk.total,
+                                'used': disk.used,
+                                'free': disk.free,
+                                'percent': disk.percent
+                            },
+                            'network': {
+                                'bytes_sent': network.bytes_sent,
+                                'bytes_recv': network.bytes_recv,
+                                'packets_sent': network.packets_sent,
+                                'packets_recv': network.packets_recv
+                            },
+                            'process': {
+                                'count': len(psutil.pids()),
+                                'pid': os.getpid()
+                            }
+                        }
+                    })
+                except Exception as e:
+                    logger.error(f"System status error: {e}")
+                    return jsonify({'success': False, 'message': '获取状态失败'}), 500
 
             self._register_module('auth_api', 'success', '认证API加载成功')
             loaded += 1

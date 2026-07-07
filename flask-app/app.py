@@ -1452,12 +1452,12 @@ def update_marquee():
             else:
                 cursor.execute("""
                     INSERT INTO system_notices (content, status, priority, created_at, updated_at)
-                    VALUES (?, 'active', 10, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                    VALUES (?, 'inactive', 10, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
                 """, (content,))
             
             conn.commit()
         
-        return jsonify({'success': True, 'message': '保存成功'})
+        return jsonify({'success': True, 'message': '保存成功，需手动开启显示'})
     except Exception as e:
         logger.error(f"Update marquee error: {e}")
         return jsonify({'success': False, 'message': '保存失败'}), 500
@@ -1469,6 +1469,8 @@ def generate_marquee():
     try:
         import time
         current_time = time.strftime("%Y年%m月%d日 %H:%M", time.localtime())
+        data = request.get_json()
+        auto_enable = data.get('auto_enable', False)
         
         suggestions = [
             f"📢 系统维护通知：{current_time}系统正常运行中，欢迎使用！",
@@ -1481,6 +1483,8 @@ def generate_marquee():
         
         content = suggestions[hash(current_time) % len(suggestions)]
         
+        status = 'active' if auto_enable else 'inactive'
+        
         with sqlite3.connect(DATABASE_PATH) as conn:
             cursor = conn.cursor()
             
@@ -1488,20 +1492,49 @@ def generate_marquee():
             active_notice = cursor.fetchone()
             
             if active_notice:
-                cursor.execute("UPDATE system_notices SET content = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?", 
-                              (content, active_notice[0]))
+                cursor.execute("UPDATE system_notices SET content = ?, status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?", 
+                              (content, status, active_notice[0]))
             else:
                 cursor.execute("""
                     INSERT INTO system_notices (content, status, priority, created_at, updated_at)
-                    VALUES (?, 'active', 10, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-                """, (content,))
+                    VALUES (?, ?, 10, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                """, (content, status))
             
             conn.commit()
         
-        return jsonify({'success': True, 'message': '生成成功', 'content': content})
+        return jsonify({'success': True, 'message': '生成成功' + ('，已自动开启显示' if auto_enable else '，需手动开启显示'), 'content': content})
     except Exception as e:
         logger.error(f"Generate marquee error: {e}")
         return jsonify({'success': False, 'message': '生成失败'}), 500
+
+
+@app.route('/api/system/notices/marquee/push', methods=['POST'])
+def push_marquee():
+    """AI推送重要消息，自动打开跑马灯"""
+    try:
+        data = request.get_json()
+        content = data.get('content', '').strip()
+        priority = data.get('priority', 10)
+        
+        if not content:
+            return jsonify({'success': False, 'message': '消息内容不能为空'}), 400
+        
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            cursor = conn.cursor()
+            
+            cursor.execute("UPDATE system_notices SET status = 'inactive' WHERE status = 'active'")
+            
+            cursor.execute("""
+                INSERT INTO system_notices (content, status, priority, created_at, updated_at)
+                VALUES (?, 'active', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            """, (content, priority))
+            
+            conn.commit()
+        
+        return jsonify({'success': True, 'message': '消息已推送，跑马灯已自动打开', 'content': content})
+    except Exception as e:
+        logger.error(f"Push marquee error: {e}")
+        return jsonify({'success': False, 'message': '推送失败'}), 500
 
 
 @app.route('/api/system/gray_release/settings', methods=['GET', 'POST'])
