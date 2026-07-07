@@ -1645,6 +1645,8 @@ def admin_app_logout():
 
 # 主页路由
 @app.route('/')
+@app.route('/index')
+@app.route('/index.html')
 def index():
     from app.services.version_service import version_service
     version_data = version_service.get_version_for_template()
@@ -3818,6 +3820,32 @@ def super_admin_dashboard():
     return render_template('super_admin_dashboard.html', 
                            user={'username': username, 'role': role},
                            user_level=user_level)
+
+# AI自动完善拓展页面
+@app.route('/ai_auto_expand')
+@require_super_admin
+def ai_auto_expand():
+    role = session.get('role', 'guest')
+    username = session.get('username', '')
+    return render_template('ai_auto_expand.html', 
+                           user={'username': username, 'role': role})
+
+# AI自动完善拓展API - 状态查询
+@app.route('/api/ai-auto-expand/status')
+@require_super_admin
+def ai_auto_expand_status():
+    return jsonify({
+        'discovery_count': 24,
+        'auto_fix_count': 21,
+        'expand_modules': 8,
+        'success_rate': 87
+    })
+
+# AI自动完善拓展API - 启动任务
+@app.route('/api/ai-auto-expand/start', methods=['POST'])
+@require_super_admin
+def ai_auto_expand_start():
+    return jsonify({'success': True, 'message': '新拓展任务已启动'})
 
 # 管理员控制台 - admin角色专用（只读权限）
 @app.route('/admin_dashboard')

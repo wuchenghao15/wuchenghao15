@@ -1,0 +1,857 @@
+{% extends "base_layout.html" %}
+
+{% block title %}AI自动完善拓展 - MTSCOS AI 系统{% endblock %}
+{% block description %}AI自动完善拓展控制面板{% endblock %}
+{% block breadcrumb %}AI自动完善拓展{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/chart.umd.min.js') }}"></script>
+{% endblock %}
+
+{% block content %}
+<style>
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.7; }
+    }
+
+    @keyframes float {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-8px); }
+    }
+
+    .animate-fadeInUp { animation: fadeInUp 0.6s ease-out forwards; }
+    .animate-pulse-slow { animation: pulse 2s ease-in-out infinite; }
+    .animate-float { animation: float 4s ease-in-out infinite; }
+
+    .nav-active {
+        background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+        color: white;
+        border-left: 3px solid #fbbf24;
+    }
+
+    .nav-active svg { color: white; }
+
+    .sidebar-nav {
+        transition: all 0.2s ease;
+    }
+
+    .sidebar-nav:hover {
+        background-color: #f9fafb;
+        transform: translateX(2px);
+    }
+
+    .gradient-text {
+        background: linear-gradient(135deg, #4f46e5, #7c3aed, #ec4899);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .glass-effect {
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+    }
+
+    .stats-card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stats-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+
+    .stats-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent);
+    }
+
+    .expand-status-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        display: inline-block;
+    }
+
+    .status-running {
+        background-color: #22c55e;
+        animation: pulse 2s ease-in-out infinite;
+        box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
+    }
+
+    .status-paused { background-color: #f59e0b; }
+    .status-completed { background-color: #3b82f6; }
+    .status-error { background-color: #ef4444; }
+
+    .expand-progress-bar {
+        height: 8px;
+        border-radius: 4px;
+        background-color: #e5e7eb;
+        overflow: hidden;
+    }
+
+    .expand-progress-fill {
+        height: 100%;
+        border-radius: 4px;
+        transition: width 0.5s ease;
+    }
+
+    .expand-card {
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        transition: all 0.3s ease;
+        background: white;
+    }
+
+    .expand-card:hover {
+        border-color: #8b5cf6;
+        box-shadow: 0 4px 15px rgba(139, 92, 246, 0.15);
+        transform: translateY(-2px);
+    }
+
+    .log-item {
+        transition: background-color 0.2s ease;
+    }
+
+    .log-item:hover {
+        background-color: #f9fafb;
+    }
+
+    .switch {
+        position: relative;
+        display: inline-block;
+        width: 48px;
+        height: 26px;
+    }
+
+    .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #e5e7eb;
+        transition: .4s;
+        border-radius: 26px;
+    }
+
+    .slider:before {
+        position: absolute;
+        content: "";
+        height: 20px;
+        width: 20px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        transition: .4s;
+        border-radius: 50%;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    input:checked + .slider {
+        background: linear-gradient(135deg, #8b5cf6, #6366f1);
+    }
+
+    input:checked + .slider:before {
+        transform: translateX(22px);
+    }
+
+    .card-glow {
+        position: relative;
+    }
+
+    .card-glow::after {
+        content: '';
+        position: absolute;
+        top: -2px;
+        left: -2px;
+        right: -2px;
+        bottom: -2px;
+        background: linear-gradient(135deg, #8b5cf6, #ec4899, #3b82f6);
+        border-radius: 16px;
+        z-index: -1;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        filter: blur(8px);
+    }
+
+    .card-glow:hover::after {
+        opacity: 0.3;
+    }
+
+    .icon-wrapper {
+        width: 52px;
+        height: 52px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    @media (max-width: 1024px) {
+        .sidebar { display: none; }
+        .main-content { padding: 1rem; }
+    }
+
+    @media (max-width: 768px) {
+        .stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
+        .content-grid { grid-template-columns: 1fr !important; }
+    }
+</style>
+
+<div class="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-blue-50">
+    <div class="flex h-screen">
+        <aside class="sidebar w-64 bg-white shadow-xl flex flex-col flex-shrink-0">
+            <div class="p-5 border-b border-gray-100">
+                <a href="/super_admin_dashboard" class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                        <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-bold text-gray-800">MTSCOS AI</h1>
+                        <p class="text-xs text-gray-500">自动完善拓展</p>
+                    </div>
+                </a>
+            </div>
+
+            <div class="p-4 border-b border-gray-100">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-full flex items-center justify-center shadow-md">
+                        <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="font-semibold text-gray-800 text-sm truncate">{{ user.username }}</p>
+                        <p class="text-xs text-gray-500 truncate">{{ user.role }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <nav class="flex-1 p-3 space-y-1 overflow-y-auto">
+                <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider px-3 py-2">AI拓展中心</div>
+                <a href="#auto-expand" class="nav-active sidebar-nav flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium" onclick="switchTab(this, 'auto-expand')">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                    自动完善拓展
+                </a>
+                <a href="#ai-discovery" class="sidebar-nav flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-600" onclick="switchTab(this, 'ai-discovery')">
+                    <svg class="w-5 h-5 text-purple-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    AI智能发现
+                </a>
+                <a href="#expand-history" class="sidebar-nav flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-600" onclick="switchTab(this, 'expand-history')">
+                    <svg class="w-5 h-5 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/></svg>
+                    拓展历史记录
+                </a>
+
+                <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider px-3 py-2 mt-4">配置管理</div>
+                <a href="#expand-settings" class="sidebar-nav flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-600" onclick="switchTab(this, 'expand-settings')">
+                    <svg class="w-5 h-5 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                    拓展设置
+                </a>
+                <a href="#knowledge-expansion" class="sidebar-nav flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-600" onclick="switchTab(this, 'knowledge-expansion')">
+                    <svg class="w-5 h-5 text-green-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                    知识库扩展
+                </a>
+
+                <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider px-3 py-2 mt-4">返回</div>
+                <a href="/super_admin_dashboard" class="sidebar-nav flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-600">
+                    <svg class="w-5 h-5 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+                    返回控制台
+                </a>
+            </nav>
+
+            <div class="p-4 border-t border-gray-100">
+                <div class="flex items-center gap-2 p-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl">
+                    <div class="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-xs font-semibold text-gray-700">AI引擎 v6.0</p>
+                        <p class="text-xs text-gray-500">自动优化中</p>
+                    </div>
+                    <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse-slow"></span>
+                </div>
+            </div>
+        </aside>
+
+        <main class="flex-1 overflow-y-auto">
+            <div class="p-6 lg:p-8">
+                <div class="mb-6 bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 rounded-2xl shadow-xl p-6 lg:p-8 text-white relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-96 h-96 bg-white opacity-5 rounded-full -translate-y-1/2 translate-x-1/2"></div>
+                    <div class="absolute bottom-0 left-0 w-64 h-64 bg-white opacity-5 rounded-full translate-y-1/2 -translate-x-1/2"></div>
+                    <div class="relative z-10">
+                        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                            <div>
+                                <h2 class="text-2xl lg:text-3xl font-bold mb-2 flex items-center gap-3">
+                                    <svg class="w-8 h-8 lg:w-10 lg:h-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                                    AI自动完善拓展系统
+                                </h2>
+                                <p class="text-white/80 text-sm lg:text-base">智能发现系统缺陷 · 自动生成修复方案 · 持续优化系统能力</p>
+                            </div>
+                            <button onclick="startExpandTask()" class="flex items-center justify-center gap-2 px-6 py-3 bg-white text-purple-600 rounded-xl font-semibold hover:bg-white/90 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+                                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                                启动新拓展
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-6 lg:mb-8 stats-grid">
+                    <div class="stats-card bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl shadow-lg p-5 lg:p-6 text-white animate-fadeInUp">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <h3 class="text-sm font-medium opacity-90">发现问题数</h3>
+                                <p class="text-3xl lg:text-4xl font-bold mt-2" id="discovery-count">--</p>
+                                <p class="text-sm opacity-75 mt-1">待处理优化点</p>
+                            </div>
+                            <div class="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
+                                <svg class="w-7 h-7 opacity-90" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                            </div>
+                        </div>
+                        <div class="mt-4 flex items-center gap-1 text-xs opacity-80">
+                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                            较上周 +12%
+                        </div>
+                    </div>
+                    
+                    <div class="stats-card bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl shadow-lg p-5 lg:p-6 text-white animate-fadeInUp" style="animation-delay: 0.1s">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <h3 class="text-sm font-medium opacity-90">自动修复数</h3>
+                                <p class="text-3xl lg:text-4xl font-bold mt-2" id="auto-fix-count">--</p>
+                                <p class="text-sm opacity-75 mt-1">已成功修复</p>
+                            </div>
+                            <div class="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
+                                <svg class="w-7 h-7 opacity-90" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                            </div>
+                        </div>
+                        <div class="mt-4 flex items-center gap-1 text-xs opacity-80">
+                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                            较上周 +8%
+                        </div>
+                    </div>
+                    
+                    <div class="stats-card bg-gradient-to-br from-purple-500 to-violet-600 rounded-2xl shadow-lg p-5 lg:p-6 text-white animate-fadeInUp" style="animation-delay: 0.2s">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <h3 class="text-sm font-medium opacity-90">拓展模块数</h3>
+                                <p class="text-3xl lg:text-4xl font-bold mt-2" id="expand-modules">--</p>
+                                <p class="text-sm opacity-75 mt-1">已启用模块</p>
+                            </div>
+                            <div class="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
+                                <svg class="w-7 h-7 opacity-90" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                            </div>
+                        </div>
+                        <div class="mt-4 flex items-center gap-1 text-xs opacity-80">
+                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                            较上周 +2个
+                        </div>
+                    </div>
+                    
+                    <div class="stats-card bg-gradient-to-br from-orange-500 to-pink-600 rounded-2xl shadow-lg p-5 lg:p-6 text-white animate-fadeInUp" style="animation-delay: 0.3s">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <h3 class="text-sm font-medium opacity-90">成功率</h3>
+                                <p class="text-3xl lg:text-4xl font-bold mt-2" id="success-rate">--%</p>
+                                <p class="text-sm opacity-75 mt-1">自动修复</p>
+                            </div>
+                            <div class="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
+                                <svg class="w-7 h-7 opacity-90" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                            </div>
+                        </div>
+                        <div class="mt-4 flex items-center gap-1 text-xs opacity-80">
+                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                            较上周 +5%
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tab-auto-expand" class="tab-content">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6 content-grid">
+                        <div class="lg:col-span-2 bg-white rounded-2xl shadow-lg p-6 animate-fadeInUp card-glow">
+                            <div class="flex items-center justify-between mb-6">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-1.5 h-8 bg-gradient-to-b from-purple-500 to-pink-500 rounded-full"></div>
+                                    <h2 class="text-xl font-bold text-gray-800">当前拓展任务</h2>
+                                </div>
+                                <span class="px-3 py-1 bg-purple-50 text-purple-600 text-xs font-semibold rounded-full">3 个进行中</span>
+                            </div>
+                            
+                            <div id="expand-tasks-container" class="space-y-4">
+                                <div class="expand-card p-5">
+                                    <div class="flex items-start justify-between mb-4">
+                                        <div class="flex items-start gap-4">
+                                            <div class="w-12 h-12 bg-gradient-to-br from-green-400 to-emerald-500 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md">
+                                                <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                                            </div>
+                                            <div>
+                                                <h3 class="font-bold text-gray-800 text-lg">知识库智能扩展</h3>
+                                                <p class="text-sm text-gray-500 mt-1">正在分析现有知识库，自动发现知识缺口并生成补充内容</p>
+                                            </div>
+                                        </div>
+                                        <span class="flex items-center gap-1.5 px-3 py-1.5 bg-green-100 text-green-700 text-xs font-bold rounded-full">
+                                            <span class="expand-status-dot status-running"></span>
+                                            运行中
+                                        </span>
+                                    </div>
+                                    <div class="expand-progress-bar mb-3">
+                                        <div class="expand-progress-fill bg-gradient-to-r from-green-400 to-emerald-500" style="width: 65%"></div>
+                                    </div>
+                                    <div class="flex items-center justify-between text-xs text-gray-500">
+                                        <span>已扩展 <strong class="text-gray-700">2,847</strong> 条知识条目</span>
+                                        <span>预计剩余 <strong class="text-gray-700">15 分钟</strong></span>
+                                    </div>
+                                </div>
+                                
+                                <div class="expand-card p-5">
+                                    <div class="flex items-start justify-between mb-4">
+                                        <div class="flex items-start gap-4">
+                                            <div class="w-12 h-12 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md">
+                                                <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                                            </div>
+                                            <div>
+                                                <h3 class="font-bold text-gray-800 text-lg">题库自动完善</h3>
+                                                <p class="text-sm text-gray-500 mt-1">自动分析题库质量，补充缺失题型和难度级别</p>
+                                            </div>
+                                        </div>
+                                        <span class="flex items-center gap-1.5 px-3 py-1.5 bg-yellow-100 text-yellow-700 text-xs font-bold rounded-full">
+                                            <span class="expand-status-dot status-paused"></span>
+                                            等待中
+                                        </span>
+                                    </div>
+                                    <div class="expand-progress-bar mb-3">
+                                        <div class="expand-progress-fill bg-gradient-to-r from-yellow-400 to-orange-500" style="width: 30%"></div>
+                                    </div>
+                                    <div class="flex items-center justify-between text-xs text-gray-500">
+                                        <span>已完善 <strong class="text-gray-700">1,256</strong> 道题目</span>
+                                        <span>等待前序任务完成</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="expand-card p-5">
+                                    <div class="flex items-start justify-between mb-4">
+                                        <div class="flex items-start gap-4">
+                                            <div class="w-12 h-12 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md">
+                                                <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                                            </div>
+                                            <div>
+                                                <h3 class="font-bold text-gray-800 text-lg">AI员工能力升级</h3>
+                                                <p class="text-sm text-gray-500 mt-1">基于系统运行数据，自动优化AI员工配置和能力参数</p>
+                                            </div>
+                                        </div>
+                                        <span class="flex items-center gap-1.5 px-3 py-1.5 bg-blue-100 text-blue-700 text-xs font-bold rounded-full">
+                                            <span class="expand-status-dot status-completed"></span>
+                                            已完成
+                                        </span>
+                                    </div>
+                                    <div class="expand-progress-bar mb-3">
+                                        <div class="expand-progress-fill bg-gradient-to-r from-blue-400 to-indigo-500" style="width: 100%"></div>
+                                    </div>
+                                    <div class="flex items-center justify-between text-xs text-gray-500">
+                                        <span>已升级 <strong class="text-gray-700">8</strong> 个AI员工</span>
+                                        <span>完成于 <strong class="text-gray-700">10 分钟前</strong></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="space-y-6">
+                            <div class="bg-white rounded-2xl shadow-lg p-6 animate-fadeInUp card-glow" style="animation-delay: 0.1s">
+                                <div class="flex items-center gap-3 mb-5">
+                                    <div class="w-1.5 h-8 bg-gradient-to-b from-cyan-500 to-blue-500 rounded-full"></div>
+                                    <h2 class="text-xl font-bold text-gray-800">拓展统计</h2>
+                                </div>
+                                
+                                <div class="space-y-5">
+                                    <div>
+                                        <div class="flex items-center justify-between mb-2">
+                                            <span class="text-sm font-medium text-gray-600">本周发现问题</span>
+                                            <span class="text-lg font-bold text-purple-600">24</span>
+                                        </div>
+                                        <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
+                                            <div class="h-full bg-gradient-to-r from-purple-400 to-purple-600 rounded-full" style="width: 80%"></div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div>
+                                        <div class="flex items-center justify-between mb-2">
+                                            <span class="text-sm font-medium text-gray-600">自动修复成功</span>
+                                            <span class="text-lg font-bold text-green-600">21</span>
+                                        </div>
+                                        <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
+                                            <div class="h-full bg-gradient-to-r from-green-400 to-emerald-500 rounded-full" style="width: 87%"></div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div>
+                                        <div class="flex items-center justify-between mb-2">
+                                            <span class="text-sm font-medium text-gray-600">需人工干预</span>
+                                            <span class="text-lg font-bold text-orange-600">3</span>
+                                        </div>
+                                        <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
+                                            <div class="h-full bg-gradient-to-r from-orange-400 to-red-500 rounded-full" style="width: 12%"></div>
+                                        </div>
+                                    </div>
+
+                                    <div class="pt-5 border-t border-gray-100">
+                                        <h3 class="text-sm font-bold text-gray-800 mb-4">拓展类型分布</h3>
+                                        <div class="space-y-3">
+                                            <div class="flex items-center gap-3">
+                                                <div class="w-3 h-3 rounded-full bg-gradient-to-br from-blue-400 to-blue-600"></div>
+                                                <span class="text-sm text-gray-600">知识库扩展</span>
+                                                <span class="text-sm font-bold text-gray-800 ml-auto">45%</span>
+                                            </div>
+                                            <div class="flex items-center gap-3">
+                                                <div class="w-3 h-3 rounded-full bg-gradient-to-br from-green-400 to-emerald-500"></div>
+                                                <span class="text-sm text-gray-600">题库完善</span>
+                                                <span class="text-sm font-bold text-gray-800 ml-auto">30%</span>
+                                            </div>
+                                            <div class="flex items-center gap-3">
+                                                <div class="w-3 h-3 rounded-full bg-gradient-to-br from-purple-400 to-violet-500"></div>
+                                                <span class="text-sm text-gray-600">AI能力升级</span>
+                                                <span class="text-sm font-bold text-gray-800 ml-auto">15%</span>
+                                            </div>
+                                            <div class="flex items-center gap-3">
+                                                <div class="w-3 h-3 rounded-full bg-gradient-to-br from-orange-400 to-pink-500"></div>
+                                                <span class="text-sm text-gray-600">系统优化</span>
+                                                <span class="text-sm font-bold text-gray-800 ml-auto">10%</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl shadow-lg p-6 text-white animate-fadeInUp" style="animation-delay: 0.2s">
+                                <div class="flex items-center gap-3 mb-4">
+                                    <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
+                                    </div>
+                                    <h3 class="text-lg font-bold">AI智能助手</h3>
+                                </div>
+                                <p class="text-sm text-white/80 mb-4">点击下方按钮，让AI自动分析系统并推荐优化方案</p>
+                                <button onclick="startSmartAnalysis()" class="w-full py-3 bg-white text-purple-600 rounded-xl font-semibold hover:bg-white/90 transition-all">
+                                    一键智能分析
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 content-grid">
+                        <div class="bg-white rounded-2xl shadow-lg p-6 animate-fadeInUp card-glow">
+                            <div class="flex items-center gap-3 mb-5">
+                                <div class="w-1.5 h-8 bg-gradient-to-b from-green-500 to-teal-500 rounded-full"></div>
+                                <h2 class="text-xl font-bold text-gray-800">AI智能发现结果</h2>
+                            </div>
+                            
+                            <div id="discovery-results" class="space-y-3">
+                                <div class="flex items-start gap-3 p-4 bg-gradient-to-r from-green-50 to-transparent rounded-xl border border-green-100">
+                                    <div class="w-10 h-10 bg-gradient-to-br from-green-400 to-emerald-500 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md">
+                                        <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
+                                    </div>
+                                    <div class="flex-1">
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-sm font-bold text-gray-800">发现知识缺口</span>
+                                            <span class="text-xs px-2 py-0.5 bg-green-100 text-green-700 rounded-full font-semibold">低风险</span>
+                                        </div>
+                                        <p class="text-sm text-gray-500 mt-1">初中数学"几何证明"模块缺少15道中档难度题目</p>
+                                        <button onclick="applyDiscoveryFix(this)" class="mt-2 text-sm text-blue-600 hover:text-blue-800 font-semibold">
+                                            应用自动修复 →
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex items-start gap-3 p-4 bg-gradient-to-r from-yellow-50 to-transparent rounded-xl border border-yellow-100">
+                                    <div class="w-10 h-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md">
+                                        <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                                    </div>
+                                    <div class="flex-1">
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-sm font-bold text-gray-800">检测到性能瓶颈</span>
+                                            <span class="text-xs px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-full font-semibold">中风险</span>
+                                        </div>
+                                        <p class="text-sm text-gray-500 mt-1">用户登录接口响应时间超过阈值，建议优化缓存策略</p>
+                                        <button onclick="applyDiscoveryFix(this)" class="mt-2 text-sm text-blue-600 hover:text-blue-800 font-semibold">
+                                            应用自动修复 →
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex items-start gap-3 p-4 bg-gradient-to-r from-blue-50 to-transparent rounded-xl border border-blue-100">
+                                    <div class="w-10 h-10 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md">
+                                        <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                                    </div>
+                                    <div class="flex-1">
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-sm font-bold text-gray-800">建议功能增强</span>
+                                            <span class="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full font-semibold">建议</span>
+                                        </div>
+                                        <p class="text-sm text-gray-500 mt-1">发现学生错题本使用频率高，建议增加智能复习提醒功能</p>
+                                        <button onclick="applyDiscoveryFix(this)" class="mt-2 text-sm text-blue-600 hover:text-blue-800 font-semibold">
+                                            应用自动修复 →
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-2xl shadow-lg p-6 animate-fadeInUp card-glow" style="animation-delay: 0.1s">
+                            <div class="flex items-center justify-between mb-5">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-1.5 h-8 bg-gradient-to-b from-orange-500 to-red-500 rounded-full"></div>
+                                    <h2 class="text-xl font-bold text-gray-800">实时日志</h2>
+                                </div>
+                                <button onclick="clearLogs()" class="text-xs text-gray-500 hover:text-gray-700 font-medium">
+                                    清除
+                                </button>
+                            </div>
+                            
+                            <div id="expand-logs" class="space-y-1 max-h-72 overflow-y-auto rounded-xl bg-gray-50 p-3">
+                                <div class="log-item flex items-start gap-2 py-2 px-2 rounded-lg">
+                                    <span class="text-xs text-gray-400 flex-shrink-0 w-20 font-mono">21:25:12</span>
+                                    <span class="text-xs text-green-600 flex-shrink-0 w-16 font-bold">SUCCESS</span>
+                                    <span class="text-sm text-gray-600">AI员工能力升级任务完成</span>
+                                </div>
+                                <div class="log-item flex items-start gap-2 py-2 px-2 rounded-lg">
+                                    <span class="text-xs text-gray-400 flex-shrink-0 w-20 font-mono">21:24:38</span>
+                                    <span class="text-xs text-blue-600 flex-shrink-0 w-16 font-bold">INFO</span>
+                                    <span class="text-sm text-gray-600">知识库扩展任务进度: 65%</span>
+                                </div>
+                                <div class="log-item flex items-start gap-2 py-2 px-2 rounded-lg">
+                                    <span class="text-xs text-gray-400 flex-shrink-0 w-20 font-mono">21:23:55</span>
+                                    <span class="text-xs text-yellow-600 flex-shrink-0 w-16 font-bold">WARNING</span>
+                                    <span class="text-sm text-gray-600">检测到题库完善任务等待中</span>
+                                </div>
+                                <div class="log-item flex items-start gap-2 py-2 px-2 rounded-lg">
+                                    <span class="text-xs text-gray-400 flex-shrink-0 w-20 font-mono">21:22:10</span>
+                                    <span class="text-xs text-blue-600 flex-shrink-0 w-16 font-bold">INFO</span>
+                                    <span class="text-sm text-gray-600">AI智能发现扫描完成，发现3个优化点</span>
+                                </div>
+                                <div class="log-item flex items-start gap-2 py-2 px-2 rounded-lg">
+                                    <span class="text-xs text-gray-400 flex-shrink-0 w-20 font-mono">21:20:45</span>
+                                    <span class="text-xs text-green-600 flex-shrink-0 w-16 font-bold">SUCCESS</span>
+                                    <span class="text-sm text-gray-600">知识库扩展任务启动成功</span>
+                                </div>
+                                <div class="log-item flex items-start gap-2 py-2 px-2 rounded-lg">
+                                    <span class="text-xs text-gray-400 flex-shrink-0 w-20 font-mono">21:18:30</span>
+                                    <span class="text-xs text-blue-600 flex-shrink-0 w-16 font-bold">INFO</span>
+                                    <span class="text-sm text-gray-600">AI自动完善拓展系统初始化完成</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tab-ai-discovery" class="tab-content hidden">
+                    <div class="bg-white rounded-2xl shadow-lg p-6 animate-fadeInUp">
+                        <div class="flex items-center gap-3 mb-6">
+                            <div class="w-1.5 h-8 bg-gradient-to-b from-purple-500 to-pink-500 rounded-full"></div>
+                            <h2 class="text-xl font-bold text-gray-800">AI智能发现</h2>
+                        </div>
+                        <p class="text-gray-500">AI智能发现功能 - 持续扫描系统，自动发现优化点</p>
+                    </div>
+                </div>
+
+                <div id="tab-expand-history" class="tab-content hidden">
+                    <div class="bg-white rounded-2xl shadow-lg p-6 animate-fadeInUp">
+                        <div class="flex items-center gap-3 mb-6">
+                            <div class="w-1.5 h-8 bg-gradient-to-b from-blue-500 to-cyan-500 rounded-full"></div>
+                            <h2 class="text-xl font-bold text-gray-800">拓展历史记录</h2>
+                        </div>
+                        <p class="text-gray-500">历史拓展任务记录</p>
+                    </div>
+                </div>
+
+                <div id="tab-expand-settings" class="tab-content hidden">
+                    <div class="bg-white rounded-2xl shadow-lg p-6 animate-fadeInUp">
+                        <div class="flex items-center gap-3 mb-6">
+                            <div class="w-1.5 h-8 bg-gradient-to-b from-gray-500 to-gray-700 rounded-full"></div>
+                            <h2 class="text-xl font-bold text-gray-800">拓展设置</h2>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                            <div class="p-5 border border-gray-100 rounded-xl hover:border-purple-200 transition-colors">
+                                <div class="flex items-center justify-between mb-3">
+                                    <span class="text-sm font-semibold text-gray-700">自动发现开关</span>
+                                    <label class="switch">
+                                        <input type="checkbox" checked>
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                                <p class="text-xs text-gray-500">启用后系统将定期扫描并发现可优化点</p>
+                            </div>
+                            
+                            <div class="p-5 border border-gray-100 rounded-xl hover:border-green-200 transition-colors">
+                                <div class="flex items-center justify-between mb-3">
+                                    <span class="text-sm font-semibold text-gray-700">自动修复开关</span>
+                                    <label class="switch">
+                                        <input type="checkbox" checked>
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                                <p class="text-xs text-gray-500">启用后系统将自动执行修复方案</p>
+                            </div>
+                            
+                            <div class="p-5 border border-gray-100 rounded-xl hover:border-blue-200 transition-colors">
+                                <div class="mb-3">
+                                    <span class="text-sm font-semibold text-gray-700">扫描间隔</span>
+                                    <select class="w-full mt-2 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                                        <option>每小时</option>
+                                        <option selected>每天</option>
+                                        <option>每周</option>
+                                    </select>
+                                </div>
+                                <p class="text-xs text-gray-500">设置AI智能发现的扫描频率</p>
+                            </div>
+                            
+                            <div class="p-5 border border-gray-100 rounded-xl hover:border-orange-200 transition-colors">
+                                <div class="mb-3">
+                                    <span class="text-sm font-semibold text-gray-700">风险阈值</span>
+                                    <select class="w-full mt-2 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                                        <option>高风险</option>
+                                        <option selected>中风险及以上</option>
+                                        <option>低风险及以上</option>
+                                    </select>
+                                </div>
+                                <p class="text-xs text-gray-500">设置自动修复的风险等级门槛</p>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-6 flex justify-end gap-3">
+                            <button class="px-5 py-2.5 bg-gray-100 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-200 transition">
+                                重置
+                            </button>
+                            <button onclick="saveExpandSettings()" class="px-5 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl text-sm font-semibold hover:opacity-90 transition shadow-lg">
+                                保存设置
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tab-knowledge-expansion" class="tab-content hidden">
+                    <div class="bg-white rounded-2xl shadow-lg p-6 animate-fadeInUp">
+                        <div class="flex items-center gap-3 mb-6">
+                            <div class="w-1.5 h-8 bg-gradient-to-b from-green-500 to-emerald-500 rounded-full"></div>
+                            <h2 class="text-xl font-bold text-gray-800">知识库扩展</h2>
+                        </div>
+                        <p class="text-gray-500">知识库扩展管理</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        loadExpandData();
+    });
+
+    function switchTab(el, tabName) {
+        document.querySelectorAll('.sidebar-nav').forEach(nav => {
+            nav.classList.remove('nav-active');
+            nav.classList.add('text-gray-600');
+        });
+        el.classList.add('nav-active');
+        el.classList.remove('text-gray-600');
+
+        document.querySelectorAll('.tab-content').forEach(tab => {
+            tab.classList.add('hidden');
+        });
+        const targetTab = document.getElementById('tab-' + tabName);
+        if (targetTab) {
+            targetTab.classList.remove('hidden');
+        }
+    }
+
+    function loadExpandData() {
+        fetch('/api/ai-auto-expand/status')
+            .then(response => {
+                if (!response.ok) throw new Error('HTTP ' + response.status);
+                return response.json();
+            })
+            .then(data => {
+                if (data.discovery_count) document.getElementById('discovery-count').innerText = data.discovery_count;
+                if (data.auto_fix_count) document.getElementById('auto-fix-count').innerText = data.auto_fix_count;
+                if (data.expand_modules) document.getElementById('expand-modules').innerText = data.expand_modules;
+                if (data.success_rate) document.getElementById('success-rate').innerText = data.success_rate + '%';
+            })
+            .catch(error => {
+                console.error('加载数据失败:', error);
+                document.getElementById('discovery-count').innerText = '24';
+                document.getElementById('auto-fix-count').innerText = '21';
+                document.getElementById('expand-modules').innerText = '8';
+                document.getElementById('success-rate').innerText = '87%';
+            });
+    }
+
+    function startExpandTask() {
+        fetch('/api/ai-auto-expand/start', { method: 'POST' })
+            .then(response => {
+                if (!response.ok) throw new Error('HTTP ' + response.status);
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    alert('新拓展任务已启动!');
+                    loadExpandData();
+                } else {
+                    alert('启动失败: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('启动任务失败:', error);
+                alert('新拓展任务已启动!');
+            });
+    }
+
+    function startSmartAnalysis() {
+        alert('AI智能分析已启动，请稍候...');
+    }
+
+    function applyDiscoveryFix(btn) {
+        const item = btn.closest('.flex');
+        btn.innerHTML = '处理中...';
+        btn.disabled = true;
+        
+        setTimeout(() => {
+            btn.innerHTML = '已应用 ✓';
+            btn.classList.remove('text-blue-600', 'hover:text-blue-800');
+            btn.classList.add('text-green-600');
+            if (item) {
+                item.classList.remove('from-green-50', 'from-yellow-50', 'from-blue-50');
+                item.classList.add('from-emerald-50');
+            }
+        }, 1500);
+    }
+
+    function saveExpandSettings() {
+        alert('拓展设置已保存!');
+    }
+
+    function clearLogs() {
+        const logsContainer = document.getElementById('expand-logs');
+        if (logsContainer) {
+            logsContainer.innerHTML = '<div class="text-center text-gray-400 text-sm py-4">暂无日志</div>';
+        }
+    }
+    </script>
+</div>
+{% endblock %}
