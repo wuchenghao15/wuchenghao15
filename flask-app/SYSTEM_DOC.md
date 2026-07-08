@@ -19,9 +19,11 @@
 11. [Git自动同步](#11-git自动同步)
 12. [前端页面系统](#12-前端页面系统)
 13. [移动端适配](#13-移动端适配)
-14. [版本历史](#14-版本历史)
-15. [API接口文档](#15-api接口文档)
-16. [部署指南](#16-部署指南)
+14. [AI智能题目生成器](#14-ai智能题目生成器)
+15. [AI智能学习路径推荐](#15-ai智能学习路径推荐)
+16. [版本历史](#16-版本历史)
+17. [API接口文档](#17-api接口文档)
+18. [部署指南](#18-部署指南)
 
 ---
 
@@ -473,11 +475,92 @@ python app.py --ssl --ssl-port 8443
 
 ---
 
-## 14. 版本历史
+## 14. AI智能题目生成器
+
+### 14.1 功能概述
+AI智能题目生成器是一个基于文本内容自动生成考试题目的智能系统。用户输入任意文本内容，系统会自动分析文本、提取关键点，并生成多种题型的考试题目。
+
+### 14.2 核心特性
+- **文本分析**：自动检测文本科目（语文、数学、英语、物理、化学、生物、历史、地理、政治、科学、日语）
+- **关键点提取**：从文本中提取关键信息作为题目基础
+- **6种题型生成**：单选题、多选题、判断题、填空题、简答题、论述题
+- **难度控制**：简单/中等/困难三级难度
+- **自动保存**：支持将生成的题目保存到题库数据库
+
+### 14.3 技术实现
+- 服务文件：`app/services/ai_question_generation_service.py`
+- API文件：`app/api/ai_generation_api.py`
+- 前端页面：`templates/admin_app/ai_question_generator.html`
+- 页面路由：`/admin/ai-question-generator`
+
+### 14.4 API接口
+| 接口 | 方法 | 说明 |
+|------|------|------|
+| /api/ai/generate-questions | POST | 从文本生成题目 |
+| /api/ai/generate-questions/save | POST | 保存生成的题目 |
+| /api/ai/generate-questions/stats | GET | 获取生成统计 |
+| /api/ai/generate-questions/subjects | GET | 获取科目列表 |
+| /api/ai/generate-questions/types | GET | 获取题型列表 |
+| /api/ai/detect-subject | POST | 自动检测科目 |
+| /api/ai/extract-key-points | POST | 提取关键点 |
+
+### 14.5 使用示例
+```json
+POST /api/ai/generate-questions
+{
+    "text": "物理学是研究物质最一般的运动规律和物质基本结构的学科...",
+    "count": 10,
+    "types": ["单选题", "多选题", "判断题"],
+    "difficulty": "medium",
+    "subject": "物理"
+}
+```
+
+---
+
+## 15. AI智能学习路径推荐
+
+### 15.1 功能概述
+AI智能学习路径推荐系统分析学生学习数据，识别薄弱环节，生成个性化学习路径，帮助学生高效提升学习成绩。
+
+### 15.2 核心特性
+- **薄弱环节分析**：基于错题数据分析各知识点错误率，分级标记（紧急加强/重点复习/巩固练习/日常练习）
+- **学习路径生成**：根据薄弱环节自动生成1-30天的个性化学习路径
+- **知识图谱**：9个科目完整知识体系，每个科目5个主题，共45个主题
+- **学习进度追踪**：按科目统计学习进度
+
+### 15.3 技术实现
+- 服务文件：`app/services/ai_study_path_service.py`
+- API文件：`app/api/study_path_api.py`
+- 前端页面：`templates/admin_app/ai_study_path.html`
+- 页面路由：`/admin/ai-study-path`
+
+### 15.4 API接口
+| 接口 | 方法 | 说明 |
+|------|------|------|
+| /api/ai/study-path/generate | POST | 生成学习路径 |
+| /api/ai/study-path/analyze | POST | 分析薄弱环节 |
+| /api/ai/study-path/subjects | GET | 获取科目列表 |
+| /api/ai/study-path/knowledge-graph | GET | 获取知识图谱 |
+| /api/ai/study-path/progress | POST | 获取学习进度 |
+
+### 15.5 使用示例
+```json
+POST /api/ai/study-path/generate
+{
+    "user_id": 1,
+    "subject": "数学",
+    "days": 7
+}
+```
+
+---
+
+## 16. 版本历史
 
 | 版本 | 代号 | 日期 | 主要特性 |
 |------|------|------|---------|
-| v7.2.0 | Comprehensive Enhancement Edition | 2026-07-09 | 题库拓展(37K题)、权限矩阵(12角色)、AI集群(15模型)、端口管理(21端口)、集群管理(4种策略) |
+| v7.2.0 | Comprehensive Enhancement Edition | 2026-07-09 | 题库拓展(37K题)、权限矩阵(12角色)、AI集群(15模型)、端口管理(21端口)、集群管理(4种策略)、AI题目生成器、AI学习路径推荐、性能监控API |
 | v7.1.0 | Dashboard Refactor Edition | 2026-07-08 | 仪表盘重构、AI拓展系统、629路由、14数据库481表、41AI员工 |
 | v7.0.0 | Intelligent Modular Edition | 2026-07-07 | 模块化启动、AI智能检索、API/路由数据库管理 |
 | v6.0.0 | Distributed Database Edition | 2026-07-06 | 分布式数据库架构（13个独立数据库） |

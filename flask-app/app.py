@@ -17463,6 +17463,38 @@ def layout_manager_index():
     
     return render_template('layout_manager.html', user=user)
 
+@app.route('/admin/ai-question-generator')
+def ai_question_generator():
+    """AI智能题目生成器页面"""
+    has_access, redirect_to = require_admin_app_access()
+    if not has_access:
+        if redirect_to == 'login':
+            return redirect('/admin_app/login')
+        return "无权访问", 403
+    
+    user = {
+        'id': session.get('user_id'),
+        'username': session.get('username'),
+        'role': session.get('role')
+    }
+    return render_template('admin_app/ai_question_generator.html', user=user)
+
+@app.route('/admin/ai-study-path')
+def ai_study_path():
+    """AI智能学习路径推荐页面"""
+    has_access, redirect_to = require_admin_app_access()
+    if not has_access:
+        if redirect_to == 'login':
+            return redirect('/admin_app/login')
+        return "无权访问", 403
+    
+    user = {
+        'id': session.get('user_id'),
+        'username': session.get('username'),
+        'role': session.get('role')
+    }
+    return render_template('admin_app/ai_study_path.html', user=user)
+
 @app.route('/api/layout-manager/config', methods=['GET'])
 def get_layout_config():
     """获取当前布局配置"""
