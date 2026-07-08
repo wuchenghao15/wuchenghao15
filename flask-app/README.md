@@ -1,7 +1,14 @@
 # MTSCOS AI 智能考试系统
 
+[![CI](https://github.com/wuchenghao15/wuchenghao15/actions/workflows/ci.yml/badge.svg)](https://github.com/wuchenghao15/wuchenghao15/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Python](https://img.shields.io/badge/python-3.8%2B-blue.svg)](https://www.python.org)
+[![Flask](https://img.shields.io/badge/flask-2.0%2B-green.svg)](https://flask.palletsprojects.com)
+
 > 版本: v7.2.0 (Comprehensive Enhancement Edition)
 > 更新日期: 2026-07-09
+
+[English](README_EN.md) | 中文
 
 MTSCOS AI 是一个基于 Flask 框架开发的分布式智能考试管理平台，提供完整的题库系统、考试管理、学习分析、AI智能引擎等功能，支持成人教育和K12全科目。
 
