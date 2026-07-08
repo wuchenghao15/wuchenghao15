@@ -300,11 +300,34 @@ python app.py --port 8888
 
 MIT License
 
+## 🧪 测试账号
+
+系统已预置11个测试账号，供开发者和测试人员使用：
+
+| 用户名 | 角色 | 权限等级 |
+|--------|------|---------|
+| `test_student` | 学生 | 1 |
+| `test_parent` | 家长 | 1 |
+| `test_designer` | 设计师 | 1 |
+| `test_teacher` | 教师 | 2 |
+| `test_proctor` | 监考员 | 2 |
+| `test_qm` | 题库管理员 | 3 |
+| `test_aim` | AI管理员 | 3 |
+| `test_cm` | 集群管理员 | 3 |
+| `test_admin` | 系统管理员 | 4 |
+| `test_superadmin` | 超级管理员 | 5 |
+| `test_hwadmin` | 硬件管理员 | 6 |
+
+**统一密码**: `Test@2026`
+
+详细使用指南请参考 [TEST_ACCOUNTS.md](docs/TEST_ACCOUNTS.md)
+
 ## 📞 联系方式
 
 - 项目地址: https://github.com/wuchenghao15/wuchenghao15
 - 系统文档: [SYSTEM_DOC.md](SYSTEM_DOC.md)
 - 版本历史: [SYSTEM_VERSION_HISTORY.md](SYSTEM_VERSION_HISTORY.md)
+- 测试账号: [TEST_ACCOUNTS.md](docs/TEST_ACCOUNTS.md)
 
 ---
 
