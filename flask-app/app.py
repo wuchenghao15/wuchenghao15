@@ -17429,6 +17429,13 @@ except Exception as e:
     logger.error(f"✗ 注册蓝图 study_path_api 失败: {e}")
 
 try:
+    from app.api.exam_composition_api import exam_composition_bp
+    app.register_blueprint(exam_composition_bp)
+    logger.info("✓ 注册蓝图: exam_composition_api")
+except Exception as e:
+    logger.error(f"✗ 注册蓝图 exam_composition_api 失败: {e}")
+
+try:
     from ai_engines.cluster_array_api import cluster_array_api
     app.register_blueprint(cluster_array_api)
     logger.info("✓ 注册蓝图: cluster_array_api")
@@ -17494,6 +17501,38 @@ def ai_study_path():
         'role': session.get('role')
     }
     return render_template('admin_app/ai_study_path.html', user=user)
+
+@app.route('/admin/ai-exam-composer')
+def ai_exam_composer():
+    """AI试卷自动组卷页面"""
+    has_access, redirect_to = require_admin_app_access()
+    if not has_access:
+        if redirect_to == 'login':
+            return redirect('/admin_app/login')
+        return "无权访问", 403
+    
+    user = {
+        'id': session.get('user_id'),
+        'username': session.get('username'),
+        'role': session.get('role')
+    }
+    return render_template('admin_app/ai_exam_composer.html', user=user)
+
+@app.route('/admin/student-analytics')
+def student_analytics():
+    """学生成绩分析仪表盘页面"""
+    has_access, redirect_to = require_admin_app_access()
+    if not has_access:
+        if redirect_to == 'login':
+            return redirect('/admin_app/login')
+        return "无权访问", 403
+    
+    user = {
+        'id': session.get('user_id'),
+        'username': session.get('username'),
+        'role': session.get('role')
+    }
+    return render_template('admin_app/student_analytics.html', user=user)
 
 @app.route('/api/layout-manager/config', methods=['GET'])
 def get_layout_config():

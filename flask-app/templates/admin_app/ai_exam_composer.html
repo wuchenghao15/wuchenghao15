@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI试卷自动组卷 - MTSCOS智能考试系统</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f0f23; color: #fff; min-height: 100vh; }
+        .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 20px 30px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.3); }
+        .header h1 { font-size: 24px; background: linear-gradient(90deg, #00d4ff, #7c3aed); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .header .user-info { display: flex; align-items: center; gap: 15px; }
+        .header .user-info span { color: #888; }
+        
+        .main-container { display: flex; height: calc(100vh - 70px); }
+        .sidebar { width: 280px; background: #16213e; padding: 20px; border-right: 1px solid #2a2a4a; overflow-y: auto; }
+        .sidebar h3 { color: #00d4ff; margin-bottom: 15px; font-size: 16px; }
+        .sidebar .form-group { margin-bottom: 20px; }
+        .sidebar label { display: block; color: #aaa; font-size: 13px; margin-bottom: 8px; }
+        .sidebar select, .sidebar input { width: 100%; padding: 10px; background: #0f0f23; border: 1px solid #2a2a4a; border-radius: 8px; color: #fff; font-size: 14px; }
+        .sidebar select:focus, .sidebar input:focus { outline: none; border-color: #00d4ff; }
+        .sidebar .checkbox-group { display: flex; flex-wrap: wrap; gap: 10px; }
+        .sidebar .checkbox-item { display: flex; align-items: center; gap: 5px; padding: 5px 10px; background: #0f0f23; border-radius: 6px; cursor: pointer; transition: all 0.3s; }
+        .sidebar .checkbox-item:hover { background: #2a2a4a; }
+        .sidebar .checkbox-item.selected { background: #00d4ff; color: #000; }
+        .sidebar .checkbox-item input { width: auto; }
+        .sidebar .btn { width: 100%; padding: 12px; background: linear-gradient(135deg, #00d4ff, #7c3aed); border: none; border-radius: 8px; color: #fff; font-size: 16px; font-weight: bold; cursor: pointer; transition: all 0.3s; margin-top: 20px; }
+        .sidebar .btn:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(0,212,255,0.3); }
+        .sidebar .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        .content { flex: 1; padding: 30px; overflow-y: auto; }
+        .content .tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid #2a2a4a; }
+        .content .tabs button { padding: 12px 24px; background: transparent; border: none; color: #888; font-size: 14px; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.3s; }
+        .content .tabs button.active { color: #00d4ff; border-bottom-color: #00d4ff; }
+        
+        .result-card { background: #16213e; border-radius: 12px; padding: 25px; margin-bottom: 20px; border: 1px solid #2a2a4a; }
+        .result-card h3 { color: #00d4ff; margin-bottom: 20px; font-size: 18px; }
+        .result-card .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .result-card .stat-item { background: #0f0f23; padding: 15px; border-radius: 8px; text-align: center; }
+        .result-card .stat-item .label { color: #888; font-size: 12px; margin-bottom: 5px; }
+        .result-card .stat-item .value { color: #00d4ff; font-size: 24px; font-weight: bold; }
+        
+        .result-card .distribution { margin-bottom: 20px; }
+        .result-card .distribution h4 { color: #aaa; font-size: 14px; margin-bottom: 10px; }
+        .result-card .progress-bar { height: 20px; background: #0f0f23; border-radius: 10px; overflow: hidden; margin-bottom: 5px; }
+        .result-card .progress-fill { height: 100%; border-radius: 10px; transition: width 0.5s; }
+        .result-card .progress-fill.easy { background: #10b981; }
+        .result-card .progress-fill.medium { background: #f59e0b; }
+        .result-card .progress-fill.hard { background: #ef4444; }
+        .result-card .progress-fill.single { background: #00d4ff; }
+        .result-card .progress-fill.multi { background: #7c3aed; }
+        .result-card .progress-fill.judge { background: #10b981; }
+        .result-card .progress-fill.fill { background: #f59e0b; }
+        .result-card .progress-fill.short { background: #ef4444; }
+        .result-card .progress-fill.discuss { background: #ec4899; }
+        
+        .result-card .knowledge-coverage { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; }
+        .result-card .coverage-item { background: #0f0f23; padding: 10px; border-radius: 6px; text-align: center; }
+        .result-card .coverage-item .name { color: #888; font-size: 11px; margin-bottom: 5px; }
+        .result-card .coverage-item .percent { color: #fff; font-size: 16px; font-weight: bold; }
+        
+        .question-list { background: #16213e; border-radius: 12px; padding: 25px; }
+        .question-list h3 { color: #00d4ff; margin-bottom: 20px; font-size: 18px; }
+        .question-item { background: #0f0f23; padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #00d4ff; }
+        .question-item .q-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .question-item .q-type { padding: 3px 8px; background: #00d4ff; color: #000; border-radius: 4px; font-size: 12px; font-weight: bold; }
+        .question-item .q-difficulty { padding: 3px 8px; border-radius: 4px; font-size: 12px; }
+        .question-item .q-difficulty.easy { background: #10b981; color: #fff; }
+        .question-item .q-difficulty.medium { background: #f59e0b; color: #fff; }
+        .question-item .q-difficulty.hard { background: #ef4444; color: #fff; }
+        .question-item .q-score { color: #00d4ff; font-weight: bold; }
+        .question-item .q-content { color: #ddd; font-size: 14px; line-height: 1.6; }
+        .question-item .q-options { margin-top: 10px; padding-left: 20px; color: #aaa; font-size: 13px; }
+        .question-item .q-options li { margin-bottom: 5px; }
+        .question-item .q-answer { margin-top: 10px; padding: 10px; background: #1a1a2e; border-radius: 6px; font-size: 13px; }
+        .question-item .q-answer .label { color: #00d4ff; font-weight: bold; }
+        
+        .preview-section { display: none; }
+        .preview-section.active { display: block; }
+        
+        .actions-bar { display: flex; gap: 15px; margin-top: 20px; }
+        .actions-bar .btn { padding: 12px 30px; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; border: none; transition: all 0.3s; }
+        .actions-bar .btn-primary { background: linear-gradient(135deg, #00d4ff, #7c3aed); color: #fff; }
+        .actions-bar .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(0,212,255,0.3); }
+        .actions-bar .btn-secondary { background: #2a2a4a; color: #fff; }
+        .actions-bar .btn-secondary:hover { background: #3a3a5a; }
+        
+        .loading { text-align: center; padding: 50px; color: #888; }
+        .loading .spinner { width: 40px; height: 40px; border: 4px solid #2a2a4a; border-top-color: #00d4ff; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 20px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        @media (max-width: 768px) {
+            .main-container { flex-direction: column; }
+            .sidebar { width: 100%; border-right: none; border-bottom: 1px solid #2a2a4a; }
+            .content { padding: 15px; }
+            .result-card .stats-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>AI试卷自动组卷系统</h1>
+        <div class="user-info">
+            <span>管理员</span>
+            <span>|</span>
+            <span>{{ user.username }}</span>
+        </div>
+    </div>
+    
+    <div class="main-container">
+        <div class="sidebar">
+            <h3>组卷参数设置</h3>
+            
+            <div class="form-group">
+                <label>选择科目</label>
+                <select id="subject">
+                    <option value="">请选择科目</option>
+                    <option value="语文">语文</option>
+                    <option value="数学">数学</option>
+                    <option value="英语">英语</option>
+                    <option value="物理">物理</option>
+                    <option value="化学">化学</option>
+                    <option value="生物">生物</option>
+                    <option value="历史">历史</option>
+                    <option value="地理">地理</option>
+                    <option value="政治">政治</option>
+                    <option value="科学">科学</option>
+                    <option value="日语">日语</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>题目数量</label>
+                <input type="number" id="questionCount" value="50" min="10" max="100">
+            </div>
+            
+            <div class="form-group">
+                <label>总分</label>
+                <input type="number" id="totalScore" value="100" min="50" max="300">
+            </div>
+            
+            <div class="form-group">
+                <label>试卷名称</label>
+                <input type="text" id="examName" placeholder="自动生成">
+            </div>
+            
+            <div class="form-group">
+                <label>选择题型</label>
+                <div class="checkbox-group">
+                    <div class="checkbox-item selected" data-type="单选题">
+                        <input type="checkbox" checked> 单选
+                    </div>
+                    <div class="checkbox-item selected" data-type="多选题">
+                        <input type="checkbox" checked> 多选
+                    </div>
+                    <div class="checkbox-item selected" data-type="判断题">
+                        <input type="checkbox" checked> 判断
+                    </div>
+                    <div class="checkbox-item selected" data-type="填空题">
+                        <input type="checkbox" checked> 填空
+                    </div>
+                    <div class="checkbox-item selected" data-type="简答题">
+                        <input type="checkbox" checked> 简答
+                    </div>
+                    <div class="checkbox-item selected" data-type="论述题">
+                        <input type="checkbox" checked> 论述
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>难度比例</label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="range" id="easyRatio" min="0" max="100" value="30" style="flex:1">
+                    <span style="width:40px">简单</span>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <input type="range" id="mediumRatio" min="0" max="100" value="50" style="flex:1">
+                    <span style="width:40px">中等</span>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <input type="range" id="hardRatio" min="0" max="100" value="20" style="flex:1">
+                    <span style="width:40px">困难</span>
+                </div>
+            </div>
+            
+            <button class="btn" id="composeBtn">开始组卷</button>
+            <button class="btn" id="previewBtn">预览试卷</button>
+        </div>
+        
+        <div class="content">
+            <div class="tabs">
+                <button class="active" data-tab="preview">试卷预览</button>
+                <button data-tab="questions">题目详情</button>
+                <button data-tab="statistics">统计分析</button>
+            </div>
+            
+            <div class="preview-section active" id="tab-preview">
+                <div id="loading" class="loading" style="display:none;">
+                    <div class="spinner"></div>
+                    <p>正在生成试卷...</p>
+                </div>
+                <div id="resultContainer"></div>
+            </div>
+            
+            <div class="preview-section" id="tab-questions">
+                <div id="questionsContainer"></div>
+            </div>
+            
+            <div class="preview-section" id="tab-statistics">
+                <div id="statisticsContainer"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let currentExamData = null;
+        
+        document.querySelectorAll('.checkbox-item').forEach(item => {
+            item.addEventListener('click', function() {
+                const checkbox = this.querySelector('input');
+                checkbox.checked = !checkbox.checked;
+                this.classList.toggle('selected', checkbox.checked);
+            });
+        });
+        
+        function getSelectedTypes() {
+            const types = [];
+            document.querySelectorAll('.checkbox-item.selected').forEach(item => {
+                types.push(item.dataset.type);
+            });
+            return types;
+        }
+        
+        function showLoading(show) {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
+            document.getElementById('resultContainer').style.display = show ? 'none' : 'block';
+        }
+        
+        async function composeExam(previewOnly = false) {
+            const subject = document.getElementById('subject').value;
+            const questionCount = parseInt(document.getElementById('questionCount').value);
+            const totalScore = parseInt(document.getElementById('totalScore').value);
+            const examName = document.getElementById('examName').value || null;
+            const types = getSelectedTypes();
+            
+            if (!subject) {
+                alert('请选择科目');
+                return;
+            }
+            
+            showLoading(true);
+            
+            const difficultyRatio = {
+                easy: parseInt(document.getElementById('easyRatio').value) / 100,
+                medium: parseInt(document.getElementById('mediumRatio').value) / 100,
+                hard: parseInt(document.getElementById('hardRatio').value) / 100
+            };
+            
+            try {
+                const endpoint = previewOnly ? '/api/ai/exam-compose/preview' : '/api/ai/exam-compose';
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        subject,
+                        total_questions: questionCount,
+                        types,
+                        difficulty_ratio: difficultyRatio,
+                        total_score: totalScore,
+                        exam_name: examName
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    currentExamData = result.data;
+                    renderResult(result.data);
+                    document.querySelector('[data-tab="preview"]').click();
+                } else {
+                    alert('组卷失败: ' + result.error);
+                }
+            } catch (error) {
+                alert('组卷失败: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+        
+        function renderResult(examData) {
+            const container = document.getElementById('resultContainer');
+            const questionsContainer = document.getElementById('questionsContainer');
+            const statisticsContainer = document.getElementById('statisticsContainer');
+            
+            container.innerHTML = `
+                <div class="result-card">
+                    <h3>${examData.exam_name}</h3>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="label">题目总数</div>
+                            <div class="value">${examData.total_questions}</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="label">总分</div>
+                            <div class="value">${examData.total_score}</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="label">考试时长</div>
+                            <div class="value">${examData.duration}分钟</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="label">质量分数</div>
+                            <div class="value">${examData.quality_score}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="distribution">
+                        <h4>难度分布</h4>
+                        ${Object.entries(examData.difficulty_distribution).map(([diff, count]) => `
+                            <div>
+                                <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
+                                    <span>${diff === 'easy' ? '简单' : diff === 'medium' ? '中等' : '困难'}</span>
+                                    <span>${count}题</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill ${diff}" style="width:${(count / examData.total_questions * 100).toFixed(0)}%"></div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    
+                    <div class="distribution">
+                        <h4>题型分布</h4>
+                        ${Object.entries(examData.type_distribution).map(([type, count]) => {
+                            const typeMap = { '单选题': 'single', '多选题': 'multi', '判断题': 'judge', '填空题': 'fill', '简答题': 'short', '论述题': 'discuss' };
+                            return `
+                                <div>
+                                    <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
+                                        <span>${type}</span>
+                                        <span>${count}题</span>
+                                    </div>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill ${typeMap[type] || 'single'}" style="width:${(count / examData.total_questions * 100).toFixed(0)}%"></div>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                    
+                    <div class="distribution">
+                        <h4>知识覆盖率</h4>
+                        <div class="knowledge-coverage">
+                            ${Object.entries(examData.knowledge_coverage).map(([point, percent]) => `
+                                <div class="coverage-item">
+                                    <div class="name">${point}</div>
+                                    <div class="percent">${percent}%</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    
+                    <div class="actions-bar">
+                        <button class="btn btn-primary" onclick="saveExam()">保存试卷</button>
+                        <button class="btn btn-secondary" onclick="composeExam()">重新组卷</button>
+                    </div>
+                </div>
+            `;
+            
+            questionsContainer.innerHTML = `
+                <div class="question-list">
+                    <h3>题目详情 (共${examData.questions.length}题)</h3>
+                    ${examData.questions.map((q, index) => `
+                        <div class="question-item">
+                            <div class="q-header">
+                                <span class="q-type">${q.question_type}</span>
+                                <span class="q-difficulty ${q.difficulty}">${q.difficulty === 'easy' ? '简单' : q.difficulty === 'medium' ? '中等' : '困难'}</span>
+                                <span class="q-score">${q.score}分</span>
+                            </div>
+                            <div class="q-content"><strong>${index + 1}.</strong> ${q.content}</div>
+                            ${q.options ? `
+                                <ul class="q-options">${JSON.parse(q.options).map((opt, i) => `<li>${String.fromCharCode(65 + i)}. ${opt}</li>`).join('')}</ul>
+                            ` : ''}
+                            <div class="q-answer">
+                                <span class="label">答案：</span>${q.answer || '暂无答案'}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            
+            statisticsContainer.innerHTML = `
+                <div class="result-card">
+                    <h3>统计分析</h3>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="label">简单题占比</div>
+                            <div class="value">${((examData.difficulty_distribution.easy || 0) / examData.total_questions * 100).toFixed(1)}%</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="label">中等题占比</div>
+                            <div class="value">${((examData.difficulty_distribution.medium || 0) / examData.total_questions * 100).toFixed(1)}%</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="label">困难题占比</div>
+                            <div class="value">${((examData.difficulty_distribution.hard || 0) / examData.total_questions * 100).toFixed(1)}%</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="label">平均每题分数</div>
+                            <div class="value">${(examData.total_score / examData.total_questions).toFixed(1)}</div>
+                        </div>
+                    </div>
+                    <div style="margin-top:20px;">
+                        <h4 style="color:#aaa;margin-bottom:10px;">知识覆盖分析</h4>
+                        <div style="display:flex;flex-wrap:wrap;gap:10px;">
+                            ${Object.entries(examData.knowledge_coverage).map(([point, percent]) => `
+                                <div style="padding:10px 20px;background:#0f0f23;border-radius:8px;">
+                                    <div style="color:#888;font-size:12px;">${point}</div>
+                                    <div style="color:#00d4ff;font-size:18px;font-weight:bold;">${percent}%</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        async function saveExam() {
+            if (!currentExamData) {
+                alert('请先生成试卷');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/ai/exam-compose/save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ exam_data: currentExamData })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert(`试卷保存成功！试卷ID: ${result.exam_id}`);
+                } else {
+                    alert('保存失败: ' + result.error);
+                }
+            } catch (error) {
+                alert('保存失败: ' + error.message);
+            }
+        }
+        
+        document.getElementById('composeBtn').addEventListener('click', () => composeExam(false));
+        document.getElementById('previewBtn').addEventListener('click', () => composeExam(true));
+        
+        document.querySelectorAll('.tabs button').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.preview-section').forEach(s => s.classList.remove('active'));
+                
+                this.classList.add('active');
+                document.getElementById('tab-' + this.dataset.tab).classList.add('active');
+            });
+        });
+    </script>
+</body>
+</html>
