@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能错题本 - MTSCOS AI</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.3.0/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        .mastery-0 { background: linear-gradient(135deg, #ef4444, #dc2626); }
+        .mastery-1 { background: linear-gradient(135deg, #f97316, #ea580c); }
+        .mastery-2 { background: linear-gradient(135deg, #eab308, #ca8a04); }
+        .mastery-3 { background: linear-gradient(135deg, #84cc16, #65a30d); }
+        .mastery-4 { background: linear-gradient(135deg, #22c55e, #16a34a); }
+        .mastery-5 { background: linear-gradient(135deg, #10b981, #059669); }
+        
+        .tab-active {
+            color: #7c3aed;
+            border-bottom: 2px solid #7c3aed;
+        }
+        
+        .wrong-card {
+            transition: all 0.2s ease;
+        }
+        
+        .wrong-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);
+        }
+        
+        .flip-card {
+            perspective: 1000px;
+        }
+        
+        .flip-card-inner {
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+        
+        .flip-card.flipped .flip-card-inner {
+            transform: rotateY(180deg);
+        }
+        
+        .flip-card-front, .flip-card-back {
+            backface-visibility: hidden;
+        }
+        
+        .flip-card-back {
+            transform: rotateY(180deg);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="max-w-7xl mx-auto px-4 py-6">
+        <!-- 头部 -->
+        <div class="mb-6">
+            <h1 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                <i class="ri-bookmark-line text-purple-600"></i>
+                智能错题本
+            </h1>
+            <p class="text-gray-500 mt-1">AI驱动的智能复习系统，科学记忆，高效提升</p>
+        </div>
+        
+        <!-- 统计卡片 -->
+        <div id="statsCards" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div class="bg-white rounded-2xl p-4 shadow-sm">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-xl bg-red-100 flex items-center justify-center">
+                        <i class="ri-error-warning-line text-2xl text-red-500"></i>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-bold text-gray-800" id="totalWrong">0</div>
+                        <div class="text-sm text-gray-500">总错题数</div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-2xl p-4 shadow-sm">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-xl bg-orange-100 flex items-center justify-center">
+                        <i class="ri-alarm-line text-2xl text-orange-500"></i>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-bold text-gray-800" id="dueCount">0</div>
+                        <div class="text-sm text-gray-500">今日待复习</div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-2xl p-4 shadow-sm">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center">
+                        <i class="ri-checkbox-circle-line text-2xl text-green-500"></i>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-bold text-gray-800" id="masteredCount">0</div>
+                        <div class="text-sm text-gray-500">已掌握</div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-2xl p-4 shadow-sm">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center">
+                        <i class="ri-repeat-line text-2xl text-purple-500"></i>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-bold text-gray-800" id="reviewCount">0</div>
+                        <div class="text-sm text-gray-500">总复习次数</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 选项卡 -->
+        <div class="bg-white rounded-2xl shadow-sm mb-6">
+            <div class="border-b px-6">
+                <div class="flex gap-6">
+                    <button class="py-4 font-medium tab-active" onclick="switchTab('list', this)">
+                        <i class="ri-list-check-2 mr-1"></i>错题列表
+                    </button>
+                    <button class="py-4 font-medium text-gray-500" onclick="switchTab('review', this)">
+                        <i class="ri-play-circle-line mr-1"></i>开始复习
+                    </button>
+                    <button class="py-4 font-medium text-gray-500" onclick="switchTab('weak', this)">
+                        <i class="ri-pie-chart-line mr-1"></i>薄弱知识点
+                    </button>
+                    <button class="py-4 font-medium text-gray-500" onclick="switchTab('stats', this)">
+                        <i class="ri-bar-chart-2-line mr-1"></i>统计分析
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 错题列表 -->
+            <div id="tab-list" class="p-6">
+                <div class="flex flex-wrap gap-3 mb-6">
+                    <select id="filterSubject" onchange="loadWrongList()" class="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-purple-500">
+                        <option value="">全部科目</option>
+                        <option value="语文">语文</option>
+                        <option value="数学">数学</option>
+                        <option value="英语">英语</option>
+                        <option value="物理">物理</option>
+                        <option value="化学">化学</option>
+                        <option value="生物">生物</option>
+                        <option value="历史">历史</option>
+                        <option value="地理">地理</option>
+                        <option value="政治">政治</option>
+                    </select>
+                    
+                    <select id="filterMastery" onchange="loadWrongList()" class="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-purple-500">
+                        <option value="">全部掌握程度</option>
+                        <option value="0">未掌握</option>
+                        <option value="1">初步了解</option>
+                        <option value="2">基本掌握</option>
+                        <option value="3">较好掌握</option>
+                        <option value="4">熟练掌握</option>
+                        <option value="5">完全掌握</option>
+                    </select>
+                    
+                    <button onclick="filterStarred()" class="px-4 py-2 border border-gray-200 rounded-lg hover:border-purple-500 transition flex items-center gap-2">
+                        <i class="ri-star-line"></i>
+                        收藏
+                    </button>
+                    
+                    <div class="flex-1"></div>
+                    
+                    <button onclick="addDemoWrong()" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">
+                        <i class="ri-add-line mr-1"></i>添加错题
+                    </button>
+                </div>
+                
+                <div id="wrongList" class="space-y-4">
+                    <div class="text-center py-12 text-gray-400">
+                        <i class="ri-inbox-line text-5xl mb-3 opacity-50"></i>
+                        <p>暂无错题</p>
+                        <p class="text-sm mt-1">做题时答错的题目会自动添加到错题本</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 开始复习 -->
+            <div id="tab-review" class="p-6 hidden">
+                <div id="reviewStart" class="text-center py-12">
+                    <div class="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 flex items-center justify-center">
+                        <i class="ri-brain-line text-5xl text-white"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">智能复习</h3>
+                    <p class="text-gray-500 mb-6">基于艾宾浩斯遗忘曲线，科学安排复习时间</p>
+                    <div class="flex justify-center gap-4 mb-6">
+                        <div class="text-center">
+                            <div class="text-3xl font-bold text-purple-600" id="reviewDueCount">0</div>
+                            <div class="text-sm text-gray-500">待复习</div>
+                        </div>
+                        <div class="w-px bg-gray-200"></div>
+                        <div class="text-center">
+                            <div class="text-3xl font-bold text-green-600" id="reviewDoneCount">0</div>
+                            <div class="text-sm text-gray-500">已掌握</div>
+                        </div>
+                    </div>
+                    <button onclick="startReview()" class="px-8 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl font-medium hover:from-purple-700 hover:to-indigo-700 transition">
+                        开始复习
+                    </button>
+                </div>
+                
+                <div id="reviewCard" class="hidden">
+                    <div class="max-w-2xl mx-auto">
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="text-sm text-gray-500">进度: <span id="reviewProgress">0/0</span></span>
+                            <button onclick="exitReview()" class="text-gray-400 hover:text-gray-600">
+                                <i class="ri-close-line text-xl"></i>
+                            </button>
+                        </div>
+                        
+                        <div class="w-full h-2 bg-gray-100 rounded-full mb-6">
+                            <div id="reviewProgressBar" class="h-full bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full transition-all" style="width: 0%"></div>
+                        </div>
+                        
+                        <div class="flip-card">
+                            <div class="flip-card-inner relative">
+                                <div class="flip-card-front bg-white rounded-2xl shadow-lg p-8">
+                                    <div class="flex items-center gap-2 mb-4">
+                                        <span class="px-3 py-1 bg-purple-100 text-purple-600 text-sm rounded-full" id="reviewSubject">科目</span>
+                                        <span class="px-3 py-1 bg-gray-100 text-gray-600 text-sm rounded-full" id="reviewType">题型</span>
+                                        <div class="flex-1"></div>
+                                        <div class="w-8 h-8 rounded-full mastery-0" id="reviewMastery"></div>
+                                    </div>
+                                    <h3 class="text-lg font-medium text-gray-800 mb-6" id="reviewQuestion">题目内容</h3>
+                                    <div class="flex justify-center">
+                                        <button onclick="flipCard()" class="px-6 py-2 border border-gray-200 rounded-lg hover:border-purple-500 hover:text-purple-600 transition">
+                                            <i class="ri-eye-line mr-1"></i>显示答案
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="flip-card-back bg-white rounded-2xl shadow-lg p-8 absolute inset-0">
+                                    <div class="flex items-center gap-2 mb-4">
+                                        <span class="px-3 py-1 bg-green-100 text-green-600 text-sm rounded-full">
+                                            <i class="ri-check-line mr-1"></i>正确答案
+                                        </span>
+                                    </div>
+                                    <div class="text-gray-800 mb-6" id="reviewAnswer">答案内容</div>
+                                    <div class="flex justify-center gap-4">
+                                        <button onclick="answerReview(false)" class="px-6 py-3 bg-red-100 text-red-600 rounded-xl hover:bg-red-200 transition">
+                                            <i class="ri-close-line mr-1"></i>没记住
+                                        </button>
+                                        <button onclick="answerReview(true)" class="px-6 py-3 bg-green-100 text-green-600 rounded-xl hover:bg-green-200 transition">
+                                            <i class="ri-check-line mr-1"></i>记住了
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 薄弱知识点 -->
+            <div id="tab-weak" class="p-6 hidden">
+                <div id="weakPointsContent">
+                    <div class="text-center py-12 text-gray-400">
+                        <i class="ri-pie-chart-line text-5xl mb-3 opacity-50"></i>
+                        <p>暂无薄弱知识点数据</p>
+                        <p class="text-sm mt-1">多做一些题目，系统会自动分析你的薄弱环节</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 统计分析 -->
+            <div id="tab-stats" class="p-6 hidden">
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div class="bg-gray-50 rounded-xl p-6">
+                        <h4 class="font-bold text-gray-800 mb-4">📊 掌握程度分布</h4>
+                        <canvas id="masteryChart" height="200"></canvas>
+                    </div>
+                    <div class="bg-gray-50 rounded-xl p-6">
+                        <h4 class="font-bold text-gray-800 mb-4">📚 科目分布</h4>
+                        <canvas id="subjectChart" height="200"></canvas>
+                    </div>
+                    <div class="md:col-span-2 bg-gray-50 rounded-xl p-6">
+                        <h4 class="font-bold text-gray-800 mb-4">📈 复习趋势（近30天）</h4>
+                        <canvas id="trendChart" height="100"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentTab = 'list';
+        let reviewQuestions = [];
+        let currentReviewIndex = 0;
+        let masteryChart, subjectChart, trendChart;
+        
+        function switchTab(tab, btn) {
+            currentTab = tab;
+            
+            document.querySelectorAll('[id^="tab-"]').forEach(t => t.classList.add('hidden'));
+            document.getElementById('tab-' + tab).classList.remove('hidden');
+            
+            document.querySelectorAll('.border-b button').forEach(b => {
+                b.classList.remove('tab-active');
+                b.classList.add('text-gray-500');
+            });
+            btn.classList.add('tab-active');
+            btn.classList.remove('text-gray-500');
+            
+            if (tab === 'list') loadWrongList();
+            if (tab === 'review') loadReviewData();
+            if (tab === 'weak') loadWeakPoints();
+            if (tab === 'stats') loadStatistics();
+        }
+        
+        function loadStatistics() {
+            fetch('/api/wrong-book/statistics')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        const stats = data.statistics;
+                        
+                        document.getElementById('totalWrong').textContent = stats.total_wrong || 0;
+                        document.getElementById('masteredCount').textContent = stats.level4plus || 0;
+                        document.getElementById('reviewCount').textContent = stats.total_reviews || 0;
+                        
+                        if (masteryChart) masteryChart.destroy();
+                        const masteryCtx = document.getElementById('masteryChart').getContext('2d');
+                        masteryChart = new Chart(masteryCtx, {
+                            type: 'doughnut',
+                            data: {
+                                labels: ['未掌握', '初步了解', '基本掌握', '较好掌握', '熟练掌握'],
+                                datasets: [{
+                                    data: [stats.level0 || 0, stats.level1 || 0, stats.level2 || 0, stats.level3 || 0, stats.level4plus || 0],
+                                    backgroundColor: ['#ef4444', '#f97316', '#eab308', '#84cc16', '#22c55e'],
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                plugins: { legend: { position: 'bottom' } }
+                            }
+                        });
+                        
+                        if (subjectChart) subjectChart.destroy();
+                        const subjects = data.subject_distribution || [];
+                        const subjectCtx = document.getElementById('subjectChart').getContext('2d');
+                        subjectChart = new Chart(subjectCtx, {
+                            type: 'bar',
+                            data: {
+                                labels: subjects.map(s => s.subject || '其他'),
+                                datasets: [{
+                                    label: '错题数',
+                                    data: subjects.map(s => s.question_count || 0),
+                                    backgroundColor: 'rgba(124, 58, 237, 0.7)',
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                plugins: { legend: { display: false } }
+                            }
+                        });
+                        
+                        if (trendChart) trendChart.destroy();
+                        const history = data.review_history || [];
+                        const trendCtx = document.getElementById('trendChart').getContext('2d');
+                        trendChart = new Chart(trendCtx, {
+                            type: 'line',
+                            data: {
+                                labels: history.map(h => h.date || ''),
+                                datasets: [
+                                    {
+                                        label: '复习题数',
+                                        data: history.map(h => h.review_count || 0),
+                                        borderColor: '#7c3aed',
+                                        backgroundColor: 'rgba(124, 58, 237, 0.1)',
+                                        fill: true,
+                                        tension: 0.4
+                                    },
+                                    {
+                                        label: '正确数',
+                                        data: history.map(h => h.correct_count || 0),
+                                        borderColor: '#22c55e',
+                                        backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                                        fill: true,
+                                        tension: 0.4
+                                    }
+                                ]
+                            },
+                            options: {
+                                responsive: true,
+                                plugins: { legend: { position: 'bottom' } },
+                                scales: { y: { beginAtZero: true } }
+                            }
+                        });
+                    }
+                });
+        }
+        
+        function loadWrongList() {
+            const subject = document.getElementById('filterSubject').value;
+            const mastery = document.getElementById('filterMastery').value;
+            
+            let url = '/api/wrong-book/list?page=1&page_size=20';
+            if (subject) url += '&subject=' + encodeURIComponent(subject);
+            if (mastery) url += '&mastery_level=' + mastery;
+            
+            fetch(url)
+                .then(r => r.json())
+                .then(data => {
+                    const container = document.getElementById('wrongList');
+                    if (data.success && data.questions && data.questions.length > 0) {
+                        container.innerHTML = data.questions.map(q => `
+                            <div class="wrong-card bg-white border border-gray-100 rounded-xl p-5">
+                                <div class="flex items-start gap-4">
+                                    <div class="w-10 h-10 rounded-full mastery-${q.mastery_level || 0} flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+                                        ${q.mastery_level || 0}
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-center gap-2 mb-2">
+                                            <span class="px-2 py-1 bg-purple-50 text-purple-600 text-xs rounded">${q.subject || '综合'}</span>
+                                            <span class="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">${q.question_type || '单选题'}</span>
+                                            <span class="px-2 py-1 bg-orange-50 text-orange-600 text-xs rounded">错误${q.wrong_count}次</span>
+                                            <div class="flex-1"></div>
+                                            <button onclick="toggleStar(${q.id})" class="text-gray-400 hover:text-yellow-500 ${q.is_starred ? 'text-yellow-500' : ''}">
+                                                <i class="${q.is_starred ? 'ri-star-fill' : 'ri-star-line'} text-lg"></i>
+                                            </button>
+                                        </div>
+                                        <p class="text-gray-800 font-medium mb-2 line-clamp-2">${q.question_text || ''}</p>
+                                        <div class="flex items-center gap-4 text-sm text-gray-500">
+                                            <span><i class="ri-time-line mr-1"></i>${formatTime(q.last_wrong_time)}</span>
+                                            <span>复习${q.review_count || 0}次</span>
+                                            ${q.knowledge_point ? `<span><i class="ri-book-mark-line mr-1"></i>${q.knowledge_point}</span>` : ''}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('');
+                    } else {
+                        container.innerHTML = `
+                            <div class="text-center py-12 text-gray-400">
+                                <i class="ri-inbox-line text-5xl mb-3 opacity-50"></i>
+                                <p>暂无错题</p>
+                            </div>
+                        `;
+                    }
+                });
+        }
+        
+        function loadReviewData() {
+            fetch('/api/wrong-book/today-review')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('reviewDueCount').textContent = data.due_count || 0;
+                        reviewQuestions = data.questions || [];
+                    }
+                });
+        }
+        
+        function loadWeakPoints() {
+            fetch('/api/wrong-book/weak-points')
+                .then(r => r.json())
+                .then(data => {
+                    const container = document.getElementById('weakPointsContent');
+                    if (data.success && data.weak_points && data.weak_points.length > 0) {
+                        container.innerHTML = `
+                            <div class="grid md:grid-cols-2 gap-6">
+                                <div>
+                                    <h4 class="font-bold text-gray-800 mb-4">🎯 薄弱知识点TOP10</h4>
+                                    <div class="space-y-3">
+                                        ${data.weak_points.slice(0, 10).map((wp, i) => `
+                                            <div class="flex items-center gap-3">
+                                                <span class="w-6 h-6 rounded-full ${i < 3 ? 'bg-red-500' : 'bg-orange-400'} text-white text-xs flex items-center justify-center flex-shrink-0">${i + 1}</span>
+                                                <div class="flex-1">
+                                                    <div class="flex items-center justify-between mb-1">
+                                                        <span class="font-medium text-gray-700">${wp.knowledge_point}</span>
+                                                        <span class="text-sm text-gray-500">${Math.round((wp.error_rate || 0) * 100)}%</span>
+                                                    </div>
+                                                    <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
+                                                        <div class="h-full bg-gradient-to-r from-red-500 to-orange-500 rounded-full" style="width: ${(wp.error_rate || 0) * 100}%"></div>
+                                                    </div>
+                                                </div>
+                                                <span class="text-xs text-gray-400 w-16 text-right">${wp.subject || ''}</span>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-gray-800 mb-4">📊 科目薄弱情况</h4>
+                                    <div class="space-y-3">
+                                        ${(data.subject_stats || []).map(s => `
+                                            <div class="bg-gray-50 rounded-xl p-4">
+                                                <div class="flex items-center justify-between mb-2">
+                                                    <span class="font-medium text-gray-700">${s.subject || '其他'}</span>
+                                                    <span class="text-sm text-gray-500">${s.total_wrong || 0} 次错误</span>
+                                                </div>
+                                                <div class="flex items-center gap-2 text-sm text-gray-500">
+                                                    <i class="ri-book-mark-line"></i>
+                                                    <span>${s.point_count || 0} 个薄弱知识点</span>
+                                                </div>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                });
+        }
+        
+        function startReview() {
+            if (reviewQuestions.length === 0) {
+                alert('今天没有需要复习的题目啦！');
+                return;
+            }
+            
+            currentReviewIndex = 0;
+            document.getElementById('reviewStart').classList.add('hidden');
+            document.getElementById('reviewCard').classList.remove('hidden');
+            showReviewQuestion();
+        }
+        
+        function showReviewQuestion() {
+            const q = reviewQuestions[currentReviewIndex];
+            if (!q) {
+                finishReview();
+                return;
+            }
+            
+            document.getElementById('reviewSubject').textContent = q.subject || '综合';
+            document.getElementById('reviewType').textContent = q.question_type || '单选题';
+            document.getElementById('reviewQuestion').textContent = q.question_text || '';
+            document.getElementById('reviewAnswer').textContent = q.correct_answer || '暂无答案';
+            document.getElementById('reviewMastery').className = 'w-8 h-8 rounded-full mastery-' + (q.mastery_level || 0);
+            
+            document.getElementById('reviewProgress').textContent = `${currentReviewIndex + 1}/${reviewQuestions.length}`;
+            document.getElementById('reviewProgressBar').style.width = `${((currentReviewIndex + 1) / reviewQuestions.length) * 100}%`;
+            
+            document.querySelector('.flip-card').classList.remove('flipped');
+        }
+        
+        function flipCard() {
+            document.querySelector('.flip-card').classList.add('flipped');
+        }
+        
+        function answerReview(isCorrect) {
+            const q = reviewQuestions[currentReviewIndex];
+            if (!q) return;
+            
+            fetch('/api/wrong-book/review', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    wrong_question_id: q.id,
+                    is_correct: isCorrect
+                })
+            });
+            
+            currentReviewIndex++;
+            if (currentReviewIndex >= reviewQuestions.length) {
+                finishReview();
+            } else {
+                showReviewQuestion();
+            }
+        }
+        
+        function exitReview() {
+            if (confirm('确定要退出复习吗？')) {
+                finishReview();
+            }
+        }
+        
+        function finishReview() {
+            document.getElementById('reviewStart').classList.remove('hidden');
+            document.getElementById('reviewCard').classList.add('hidden');
+            alert('复习完成！继续加油！');
+            loadReviewData();
+            loadStatistics();
+        }
+        
+        function toggleStar(id) {
+            fetch(`/api/wrong-book/star/${id}`, { method: 'POST' })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) loadWrongList();
+                });
+        }
+        
+        function addDemoWrong() {
+            const demoQuestions = [
+                { subject: '数学', question_text: '已知函数f(x)=x²-2x+1，求f(3)的值', correct_answer: '4', question_type: 'single', knowledge_point: '函数求值' },
+                { subject: '英语', question_text: 'Choose the correct form: He ___ to school every day.', correct_answer: 'goes', question_type: 'single', knowledge_point: '一般现在时' },
+                { subject: '物理', question_text: '一个物体从静止开始做匀加速直线运动，加速度为2m/s²，求3秒后的速度', correct_answer: '6m/s', question_type: 'single', knowledge_point: '匀加速运动' },
+                { subject: '化学', question_text: '水的化学式是什么？', correct_answer: 'H₂O', question_type: 'single', knowledge_point: '化学式' },
+            ];
+            
+            const randomQ = demoQuestions[Math.floor(Math.random() * demoQuestions.length)];
+            
+            fetch('/api/wrong-book/add', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ...randomQ,
+                    user_answer: '错误答案',
+                    difficulty: 'medium'
+                })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    loadWrongList();
+                    loadStatistics();
+                }
+            });
+        }
+        
+        function filterStarred() {
+            loadWrongList();
+        }
+        
+        function formatTime(timestamp) {
+            if (!timestamp) return '';
+            const date = new Date(timestamp * 1000);
+            const now = new Date();
+            const diff = now - date;
+            if (diff < 86400000) return '今天';
+            if (diff < 172800000) return '昨天';
+            if (diff < 604800000) return Math.floor(diff / 86400000) + '天前';
+            return date.toLocaleDateString();
+        }
+        
+        loadStatistics();
+        loadWrongList();
+    </script>
+</body>
+</html>

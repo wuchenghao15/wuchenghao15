@@ -17436,6 +17436,20 @@ except Exception as e:
     logger.error(f"✗ 注册蓝图 exam_composition_api 失败: {e}")
 
 try:
+    from app.api.ai_tutor_api import ai_tutor_api
+    app.register_blueprint(ai_tutor_api)
+    logger.info("✓ 注册蓝图: ai_tutor_api")
+except Exception as e:
+    logger.error(f"✗ 注册蓝图 ai_tutor_api 失败: {e}")
+
+try:
+    from app.api.wrong_book_api import wrong_book_api
+    app.register_blueprint(wrong_book_api)
+    logger.info("✓ 注册蓝图: wrong_book_api")
+except Exception as e:
+    logger.error(f"✗ 注册蓝图 wrong_book_api 失败: {e}")
+
+try:
     from ai_engines.cluster_array_api import cluster_array_api
     app.register_blueprint(cluster_array_api)
     logger.info("✓ 注册蓝图: cluster_array_api")
@@ -17533,6 +17547,56 @@ def student_analytics():
         'role': session.get('role')
     }
     return render_template('admin_app/student_analytics.html', user=user)
+
+@app.route('/admin/ai-tutor')
+def ai_tutor():
+    """AI智能答疑页面"""
+    has_access, redirect_to = require_admin_app_access()
+    if not has_access:
+        if redirect_to == 'login':
+            return redirect('/admin_app/login')
+        return "无权访问", 403
+    
+    user = {
+        'id': session.get('user_id'),
+        'username': session.get('username'),
+        'role': session.get('role')
+    }
+    return render_template('admin_app/ai_tutor.html', user=user)
+
+@app.route('/admin/wrong-book')
+def wrong_book():
+    """智能错题本页面"""
+    has_access, redirect_to = require_admin_app_access()
+    if not has_access:
+        if redirect_to == 'login':
+            return redirect('/admin_app/login')
+        return "无权访问", 403
+    
+    user = {
+        'id': session.get('user_id'),
+        'username': session.get('username'),
+        'role': session.get('role')
+    }
+    return render_template('admin_app/wrong_book.html', user=user)
+
+@app.route('/manifest.json')
+def pwa_manifest():
+    """PWA应用清单"""
+    return send_from_directory(
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'pwa'),
+        'manifest.json',
+        mimetype='application/manifest+json'
+    )
+
+@app.route('/service-worker.js')
+def pwa_service_worker():
+    """PWA Service Worker"""
+    return send_from_directory(
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'pwa'),
+        'service-worker.js',
+        mimetype='application/javascript'
+    )
 
 @app.route('/api/layout-manager/config', methods=['GET'])
 def get_layout_config():

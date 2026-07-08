@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI智能答疑 - MTSCOS AI</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.3.0/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .chat-container {
+            height: calc(100vh - 180px);
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(0,0,0,0.2) transparent;
+        }
+        
+        .chat-container::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .chat-container::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        
+        .chat-container::-webkit-scrollbar-thumb {
+            background: rgba(0,0,0,0.2);
+            border-radius: 3px;
+        }
+        
+        .message-bubble {
+            max-width: 80%;
+            word-wrap: break-word;
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .typing-indicator span {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: #6b7280;
+            border-radius: 50%;
+            margin: 0 2px;
+            animation: typing 1.4s infinite;
+        }
+        
+        .typing-indicator span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        
+        .typing-indicator span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        
+        @keyframes typing {
+            0%, 60%, 100% {
+                transform: translateY(0);
+                opacity: 0.4;
+            }
+            30% {
+                transform: translateY(-10px);
+                opacity: 1;
+            }
+        }
+        
+        .subject-tag {
+            transition: all 0.2s ease;
+        }
+        
+        .subject-tag:hover {
+            transform: translateY(-2px);
+        }
+        
+        .subject-tag.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .sidebar-item {
+            transition: all 0.2s ease;
+        }
+        
+        .sidebar-item:hover {
+            background: rgba(102, 126, 234, 0.1);
+        }
+        
+        .sidebar-item.active {
+            background: rgba(102, 126, 234, 0.2);
+            border-left: 3px solid #667eea;
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                left: -300px;
+                top: 0;
+                bottom: 0;
+                z-index: 50;
+                transition: left 0.3s ease;
+            }
+            
+            .sidebar.open {
+                left: 0;
+            }
+            
+            .message-bubble {
+                max-width: 90%;
+            }
+        }
+        
+        .markdown-content h1, .markdown-content h2, .markdown-content h3 {
+            font-weight: bold;
+            margin: 0.5rem 0;
+        }
+        
+        .markdown-content p {
+            margin: 0.5rem 0;
+            line-height: 1.6;
+        }
+        
+        .markdown-content ul, .markdown-content ol {
+            margin-left: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .markdown-content code {
+            background: rgba(0,0,0,0.05);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="flex h-screen">
+        <!-- 侧边栏 - 会话列表 -->
+        <div id="sidebar" class="sidebar w-72 bg-white shadow-lg flex flex-col">
+            <div class="p-4 border-b">
+                <button onclick="createNewSession()" class="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-3 px-4 rounded-lg font-medium hover:from-purple-700 hover:to-indigo-700 transition flex items-center justify-center gap-2">
+                    <i class="ri-add-line text-xl"></i>
+                    新建对话
+                </button>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto">
+                <div id="sessionList" class="p-2">
+                    <div class="text-center text-gray-400 py-8">
+                        <i class="ri-chat-3-line text-4xl mb-2 opacity-50"></i>
+                        <p>暂无对话记录</p>
+                        <p class="text-sm mt-1">开始你的第一次提问吧</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="p-4 border-t bg-gray-50">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 flex items-center justify-center text-white font-bold">
+                        {{ user.username[0].upper() if user else 'U' }}
+                    </div>
+                    <div class="flex-1">
+                        <p class="font-medium text-gray-800">{{ user.username if user else '游客' }}</p>
+                        <p class="text-xs text-gray-500">AI智能助教</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 主聊天区域 -->
+        <div class="flex-1 flex flex-col">
+            <!-- 顶部导航 -->
+            <div class="bg-white shadow-sm px-4 md:px-6 py-4 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <button onclick="toggleSidebar()" class="md:hidden text-gray-600 hover:text-gray-800">
+                        <i class="ri-menu-line text-2xl"></i>
+                    </button>
+                    <div>
+                        <h1 class="text-xl font-bold text-gray-800">AI智能答疑</h1>
+                        <p class="text-sm text-gray-500">你的专属AI学习助手</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="showStats()" class="p-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition" title="统计数据">
+                        <i class="ri-bar-chart-box-line text-xl"></i>
+                    </button>
+                    <button onclick="showKnowledgeBase()" class="p-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition" title="知识库">
+                        <i class="ri-book-open-line text-xl"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 科目选择 -->
+            <div class="bg-white border-b px-4 md:px-6 py-3">
+                <div class="flex gap-2 overflow-x-auto pb-1">
+                    <button class="subject-tag active px-4 py-2 rounded-full text-sm font-medium bg-gray-100 text-gray-700 whitespace-nowrap" onclick="selectSubject(this, null)">
+                        综合
+                    </button>
+                    <button class="subject-tag px-4 py-2 rounded-full text-sm font-medium bg-gray-100 text-gray-700 whitespace-nowrap" onclick="selectSubject(this, '语文')">
+                        语文
+                    </button>
+                    <button class="subject-tag px-4 py-2 rounded-full text-sm font-medium bg-gray-100 text-gray-700 whitespace-nowrap" onclick="selectSubject(this, '数学')">
+                        数学
+                    </button>
+                    <button class="subject-tag px-4 py-2 rounded-full text-sm font-medium bg-gray-100 text-gray-700 whitespace-nowrap" onclick="selectSubject(this, '英语')">
+                        英语
+                    </button>
+                    <button class="subject-tag px-4 py-2 rounded-full text-sm font-medium bg-gray-100 text-gray-700 whitespace-nowrap" onclick="selectSubject(this, '物理')">
+                        物理
+                    </button>
+                    <button class="subject-tag px-4 py-2 rounded-full text-sm font-medium bg-gray-100 text-gray-700 whitespace-nowrap" onclick="selectSubject(this, '化学')">
+                        化学
+                    </button>
+                    <button class="subject-tag px-4 py-2 rounded-full text-sm font-medium bg-gray-100 text-gray-700 whitespace-nowrap" onclick="selectSubject(this, '生物')">
+                        生物
+                    </button>
+                    <button class="subject-tag px-4 py-2 rounded-full text-sm font-medium bg-gray-100 text-gray-700 whitespace-nowrap" onclick="selectSubject(this, '历史')">
+                        历史
+                    </button>
+                    <button class="subject-tag px-4 py-2 rounded-full text-sm font-medium bg-gray-100 text-gray-700 whitespace-nowrap" onclick="selectSubject(this, '地理')">
+                        地理
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 聊天消息区域 -->
+            <div id="chatContainer" class="chat-container flex-1 p-4 md:p-6 bg-gray-50">
+                <div id="messageList" class="space-y-4">
+                    <!-- 欢迎消息 -->
+                    <div class="flex items-start gap-3">
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 flex items-center justify-center text-white flex-shrink-0">
+                            <i class="ri-robot-line"></i>
+                        </div>
+                        <div class="message-bubble bg-white rounded-2xl rounded-tl-none shadow-sm p-4">
+                            <h3 class="font-bold text-gray-800 mb-2">👋 你好！我是你的AI学习助手</h3>
+                            <p class="text-gray-600 mb-3">我可以帮你解答各种学习问题，包括：</p>
+                            <ul class="text-gray-600 space-y-1">
+                                <li>📚 各科知识点讲解</li>
+                                <li>✏️ 习题解析和解题思路</li>
+                                <li>💡 学习方法和技巧指导</li>
+                                <li>🎯 考试复习建议</li>
+                            </ul>
+                            <p class="text-gray-600 mt-3">选择科目后，直接输入你的问题开始吧！</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 输入区域 -->
+            <div class="bg-white border-t p-4">
+                <div class="max-w-4xl mx-auto">
+                    <div class="flex gap-3 items-end">
+                        <div class="flex-1 relative">
+                            <textarea 
+                                id="questionInput" 
+                                rows="1"
+                                placeholder="输入你的问题，按Enter发送，Shift+Enter换行..."
+                                class="w-full px-4 py-3 pr-12 border border-gray-200 rounded-2xl focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100 resize-none transition"
+                                onkeydown="handleKeyDown(event)"
+                                oninput="autoResize(this)"
+                            ></textarea>
+                            <button class="absolute right-3 bottom-3 text-gray-400 hover:text-purple-600 transition" title="语音输入">
+                                <i class="ri-mic-line text-xl"></i>
+                            </button>
+                        </div>
+                        <button 
+                            id="sendBtn"
+                            onclick="sendMessage()"
+                            class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-3 rounded-full hover:from-purple-700 hover:to-indigo-700 transition shadow-lg hover:shadow-xl"
+                        >
+                            <i class="ri-send-plane-2-line text-xl"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="flex items-center justify-between mt-3 text-xs text-gray-400">
+                        <div class="flex items-center gap-4">
+                            <span><i class="ri-shield-check-line mr-1"></i>内容安全审核</span>
+                            <span><i class="ri-flashlight-line mr-1"></i>平均响应3秒</span>
+                        </div>
+                        <span id="charCount">0/2000</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 统计弹窗 -->
+    <div id="statsModal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-lg w-full max-h-[80vh] overflow-y-auto">
+            <div class="p-6 border-b flex items-center justify-between">
+                <h2 class="text-xl font-bold">📊 答疑统计</h2>
+                <button onclick="closeStats()" class="text-gray-400 hover:text-gray-600">
+                    <i class="ri-close-line text-2xl"></i>
+                </button>
+            </div>
+            <div class="p-6" id="statsContent">
+                <div class="text-center py-8">
+                    <div class="animate-spin w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+                    <p class="text-gray-500">加载中...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 知识库弹窗 -->
+    <div id="knowledgeModal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+            <div class="p-6 border-b">
+                <h2 class="text-xl font-bold mb-4">📚 知识库搜索</h2>
+                <div class="relative">
+                    <input 
+                        type="text" 
+                        id="kbSearchInput"
+                        placeholder="搜索知识点..."
+                        class="w-full px-4 py-3 pl-10 border border-gray-200 rounded-xl focus:outline-none focus:border-purple-500"
+                        onkeydown="if(event.key==='Enter') searchKnowledge()"
+                    >
+                    <i class="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                </div>
+            </div>
+            <div class="p-6" id="knowledgeResults">
+                <div class="text-center py-8 text-gray-400">
+                    <i class="ri-search-line text-4xl mb-2 opacity-50"></i>
+                    <p>输入关键词搜索知识库</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentSubject = null;
+        let currentSessionId = null;
+        let isLoading = false;
+        
+        function autoResize(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = Math.min(textarea.scrollHeight, 150) + 'px';
+            document.getElementById('charCount').textContent = textarea.value.length + '/2000';
+        }
+        
+        function handleKeyDown(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+        
+        function selectSubject(btn, subject) {
+            document.querySelectorAll('.subject-tag').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentSubject = subject;
+        }
+        
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('open');
+        }
+        
+        function createNewSession() {
+            currentSessionId = null;
+            document.getElementById('messageList').innerHTML = `
+                <div class="flex items-start gap-3">
+                    <div class="w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 flex items-center justify-center text-white flex-shrink-0">
+                        <i class="ri-robot-line"></i>
+                    </div>
+                    <div class="message-bubble bg-white rounded-2xl rounded-tl-none shadow-sm p-4">
+                        <h3 class="font-bold text-gray-800 mb-2">👋 你好！我是你的AI学习助手</h3>
+                        <p class="text-gray-600">有什么问题我可以帮你解答吗？</p>
+                    </div>
+                </div>
+            `;
+            if (window.innerWidth < 768) toggleSidebar();
+        }
+        
+        function sendMessage() {
+            const input = document.getElementById('questionInput');
+            const question = input.value.trim();
+            
+            if (!question || isLoading) return;
+            
+            addUserMessage(question);
+            input.value = '';
+            input.style.height = 'auto';
+            document.getElementById('charCount').textContent = '0/2000';
+            
+            showTypingIndicator();
+            isLoading = true;
+            
+            fetch('/api/ai/tutor/ask', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    question: question,
+                    subject: currentSubject,
+                    session_id: currentSessionId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                hideTypingIndicator();
+                isLoading = false;
+                
+                if (data.success) {
+                    addAIMessage(data.answer, data);
+                    currentSessionId = data.session_id;
+                    loadSessions();
+                } else {
+                    addErrorMessage(data.error || '发送失败，请重试');
+                }
+            })
+            .catch(error => {
+                hideTypingIndicator();
+                isLoading = false;
+                addErrorMessage('网络错误，请稍后重试');
+            });
+        }
+        
+        function addUserMessage(text) {
+            const messageList = document.getElementById('messageList');
+            const div = document.createElement('div');
+            div.className = 'flex items-start gap-3 justify-end';
+            div.innerHTML = `
+                <div class="message-bubble bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-2xl rounded-tr-none shadow-sm p-4">
+                    <p class="whitespace-pre-wrap">${escapeHtml(text)}</p>
+                </div>
+                <div class="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 flex-shrink-0">
+                    <i class="ri-user-line"></i>
+                </div>
+            `;
+            messageList.appendChild(div);
+            scrollToBottom();
+        }
+        
+        function addAIMessage(text, data) {
+            const messageList = document.getElementById('messageList');
+            const div = document.createElement('div');
+            div.className = 'flex items-start gap-3';
+            
+            let relatedHtml = '';
+            if (data.related_knowledge && data.related_knowledge.length > 0) {
+                relatedHtml = `
+                    <div class="mt-3 pt-3 border-t border-gray-100">
+                        <p class="text-sm font-medium text-gray-700 mb-2">📚 相关知识点：</p>
+                        <div class="flex flex-wrap gap-2">
+                            ${data.related_knowledge.map(k => `
+                                <span class="px-2 py-1 bg-purple-50 text-purple-600 text-xs rounded-full">${k.point}</span>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            div.innerHTML = `
+                <div class="w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 flex items-center justify-center text-white flex-shrink-0">
+                    <i class="ri-robot-line"></i>
+                </div>
+                <div class="message-bubble bg-white rounded-2xl rounded-tl-none shadow-sm p-4">
+                    <div class="markdown-content text-gray-700 whitespace-pre-wrap">${formatAnswer(text)}</div>
+                    ${relatedHtml}
+                    <div class="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
+                        <div class="flex items-center gap-2 text-xs text-gray-400">
+                            <span><i class="ri-brain-line mr-1"></i>${data.model || 'AI'}</span>
+                            <span><i class="ri-check-double-line mr-1"></i>置信度 ${Math.round((data.confidence || 0) * 100)}%</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button onclick="submitFeedback(${data.question_id}, true)" class="text-gray-400 hover:text-green-500 transition" title="有帮助">
+                                <i class="ri-thumb-up-line"></i>
+                            </button>
+                            <button onclick="submitFeedback(${data.question_id}, false)" class="text-gray-400 hover:text-red-500 transition" title="没帮助">
+                                <i class="ri-thumb-down-line"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            messageList.appendChild(div);
+            scrollToBottom();
+        }
+        
+        function addErrorMessage(text) {
+            const messageList = document.getElementById('messageList');
+            const div = document.createElement('div');
+            div.className = 'flex items-start gap-3';
+            div.innerHTML = `
+                <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-red-500 flex-shrink-0">
+                    <i class="ri-error-warning-line"></i>
+                </div>
+                <div class="message-bubble bg-red-50 text-red-600 rounded-2xl rounded-tl-none shadow-sm p-4">
+                    <p>${text}</p>
+                </div>
+            `;
+            messageList.appendChild(div);
+            scrollToBottom();
+        }
+        
+        function showTypingIndicator() {
+            const messageList = document.getElementById('messageList');
+            const div = document.createElement('div');
+            div.id = 'typingIndicator';
+            div.className = 'flex items-start gap-3';
+            div.innerHTML = `
+                <div class="w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 flex items-center justify-center text-white flex-shrink-0">
+                    <i class="ri-robot-line"></i>
+                </div>
+                <div class="message-bubble bg-white rounded-2xl rounded-tl-none shadow-sm p-4">
+                    <div class="typing-indicator">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                </div>
+            `;
+            messageList.appendChild(div);
+            scrollToBottom();
+        }
+        
+        function hideTypingIndicator() {
+            const indicator = document.getElementById('typingIndicator');
+            if (indicator) indicator.remove();
+        }
+        
+        function formatAnswer(text) {
+            text = escapeHtml(text);
+            text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            text = text.replace(/^### (.*?)$/gm, '<h3 class="text-lg font-bold mt-4 mb-2">$1</h3>');
+            text = text.replace(/^## (.*?)$/gm, '<h2 class="text-xl font-bold mt-4 mb-2">$1</h2>');
+            text = text.replace(/^# (.*?)$/gm, '<h1 class="text-2xl font-bold mt-4 mb-2">$1</h1>');
+            return text;
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        function scrollToBottom() {
+            const container = document.getElementById('chatContainer');
+            container.scrollTop = container.scrollHeight;
+        }
+        
+        function submitFeedback(questionId, isHelpful) {
+            fetch('/api/ai/tutor/feedback', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    question_id: questionId,
+                    is_helpful: isHelpful
+                })
+            }).then(() => {
+                alert('感谢您的反馈！');
+            });
+        }
+        
+        function loadSessions() {
+            fetch('/api/ai/tutor/sessions')
+                .then(response => response.json())
+                .then(data => {
+                    const sessionList = document.getElementById('sessionList');
+                    if (data.success && data.sessions && data.sessions.length > 0) {
+                        sessionList.innerHTML = data.sessions.map(s => `
+                            <div class="sidebar-item p-3 rounded-lg cursor-pointer mb-1 ${currentSessionId === s.session_id ? 'active' : ''}" onclick="loadSession('${s.session_id}')">
+                                <div class="font-medium text-gray-800 truncate">${escapeHtml(s.title || '新对话')}</div>
+                                <div class="text-xs text-gray-400 mt-1 flex items-center justify-between">
+                                    <span>${s.message_count || 0} 条消息</span>
+                                    <span>${formatTime(s.last_message_at)}</span>
+                                </div>
+                            </div>
+                        `).join('');
+                    }
+                });
+        }
+        
+        function loadSession(sessionId) {
+            currentSessionId = sessionId;
+            loadSessions();
+            if (window.innerWidth < 768) toggleSidebar();
+        }
+        
+        function formatTime(timestamp) {
+            if (!timestamp) return '';
+            const date = new Date(timestamp * 1000);
+            const now = new Date();
+            const diff = now - date;
+            
+            if (diff < 60000) return '刚刚';
+            if (diff < 3600000) return Math.floor(diff / 60000) + '分钟前';
+            if (diff < 86400000) return Math.floor(diff / 3600000) + '小时前';
+            if (diff < 604800000) return Math.floor(diff / 86400000) + '天前';
+            return date.toLocaleDateString();
+        }
+        
+        function showStats() {
+            document.getElementById('statsModal').classList.remove('hidden');
+            document.getElementById('statsModal').classList.add('flex');
+            
+            fetch('/api/ai/tutor/statistics')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const stats = data.statistics;
+                        const subjects = data.subject_distribution || [];
+                        
+                        document.getElementById('statsContent').innerHTML = `
+                            <div class="grid grid-cols-2 gap-4 mb-6">
+                                <div class="bg-purple-50 rounded-xl p-4 text-center">
+                                    <div class="text-3xl font-bold text-purple-600">${stats.total_questions || 0}</div>
+                                    <div class="text-sm text-gray-500 mt-1">总提问数</div>
+                                </div>
+                                <div class="bg-indigo-50 rounded-xl p-4 text-center">
+                                    <div class="text-3xl font-bold text-indigo-600">${stats.subject_count || 0}</div>
+                                    <div class="text-sm text-gray-500 mt-1">涉及科目</div>
+                                </div>
+                                <div class="bg-green-50 rounded-xl p-4 text-center">
+                                    <div class="text-3xl font-bold text-green-600">${Math.round((stats.avg_confidence || 0) * 100)}%</div>
+                                    <div class="text-sm text-gray-500 mt-1">平均置信度</div>
+                                </div>
+                                <div class="bg-orange-50 rounded-xl p-4 text-center">
+                                    <div class="text-3xl font-bold text-orange-600">${stats.helpful_count || 0}</div>
+                                    <div class="text-sm text-gray-500 mt-1">有帮助数</div>
+                                </div>
+                            </div>
+                            
+                            <h3 class="font-bold text-gray-800 mb-3">📚 科目分布</h3>
+                            ${subjects.length > 0 ? `
+                                <div class="space-y-2">
+                                    ${subjects.map(s => `
+                                        <div class="flex items-center gap-3">
+                                            <span class="w-16 text-sm text-gray-600">${s.subject || '综合'}</span>
+                                            <div class="flex-1 h-6 bg-gray-100 rounded-full overflow-hidden">
+                                                <div class="h-full bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full" style="width: ${(s.count / subjects[0].count) * 100}%"></div>
+                                            </div>
+                                            <span class="w-10 text-sm text-gray-500 text-right">${s.count}</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            ` : '<p class="text-gray-400 text-center py-4">暂无数据</p>'}
+                        `;
+                    }
+                });
+        }
+        
+        function closeStats() {
+            document.getElementById('statsModal').classList.add('hidden');
+            document.getElementById('statsModal').classList.remove('flex');
+        }
+        
+        function showKnowledgeBase() {
+            document.getElementById('knowledgeModal').classList.remove('hidden');
+            document.getElementById('knowledgeModal').classList.add('flex');
+        }
+        
+        function searchKnowledge() {
+            const keyword = document.getElementById('kbSearchInput').value.trim();
+            if (!keyword) return;
+            
+            const resultsDiv = document.getElementById('knowledgeResults');
+            resultsDiv.innerHTML = `
+                <div class="text-center py-8">
+                    <div class="animate-spin w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+                    <p class="text-gray-500">搜索中...</p>
+                </div>
+            `;
+            
+            fetch(`/api/ai/tutor/knowledge/search?keyword=${encodeURIComponent(keyword)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        if (data.results.length > 0) {
+                            resultsDiv.innerHTML = `
+                                <p class="text-sm text-gray-500 mb-4">找到 ${data.count} 个相关知识点</p>
+                                <div class="space-y-3">
+                                    ${data.results.map(r => `
+                                        <div class="border border-gray-100 rounded-xl p-4 hover:border-purple-200 hover:bg-purple-50/50 transition cursor-pointer">
+                                            <div class="flex items-center justify-between mb-2">
+                                                <h4 class="font-bold text-gray-800">${escapeHtml(r.knowledge_point)}</h4>
+                                                <span class="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded-full">${r.subject || '综合'}</span>
+                                            </div>
+                                            <p class="text-sm text-gray-600 line-clamp-2">${escapeHtml(r.content || '')}</p>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            `;
+                        } else {
+                            resultsDiv.innerHTML = `
+                                <div class="text-center py-8 text-gray-400">
+                                    <i class="ri-search-line text-4xl mb-2 opacity-50"></i>
+                                    <p>未找到相关知识点</p>
+                                    <p class="text-sm mt-1">试试其他关键词</p>
+                                </div>
+                            `;
+                        }
+                    }
+                });
+        }
+        
+        document.getElementById('statsModal').addEventListener('click', function(e) {
+            if (e.target === this) closeStats();
+        });
+        
+        document.getElementById('knowledgeModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                this.classList.add('hidden');
+                this.classList.remove('flex');
+            }
+        });
+        
+        loadSessions();
+    </script>
+</body>
+</html>
