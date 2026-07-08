@@ -336,7 +336,8 @@ class VersionModel:
             {'version': '4.1.0', 'date': '2026-06-03', 'type': 'minor', 'description': '新增HTTPS强制登录功能', 'status': 'stable'},
             {'version': '4.2.0', 'date': '2026-06-04', 'type': 'minor', 'description': '升级版本管理系统v4.0 + 数据库版本历史记录', 'status': 'stable'},
             {'version': '5.0.0', 'date': '2026-06-26', 'type': 'major', 'description': 'AI维护员工与系统说明书版', 'status': 'stable'},
-            {'version': '5.1.0', 'date': '2026-06-29', 'type': 'minor', 'description': '自动迭代更新版本', 'status': 'stable'}
+            {'version': '5.1.0', 'date': '2026-06-29', 'type': 'minor', 'description': '自动迭代更新版本', 'status': 'stable'},
+            {'version': '7.2.0', 'date': '2026-07-09', 'type': 'major', 'description': '全面增强版：题库拓展/权限矩阵/AI集群/性能监控', 'status': 'stable'}
         ]
         
         for v in version_definitions:
@@ -355,7 +356,7 @@ class VersionModel:
                 'status': 'stable'
             }
         else:
-            self.current_version = '5.1.0'
+            self.current_version = '7.2.0'
     
     def _sync_to_database(self):
         """同步版本数据到数据库"""
