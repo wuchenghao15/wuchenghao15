@@ -3,20 +3,99 @@
 系统版本管理模块
 """
 
-VERSION = "5.3.0"
-BUILD_NUMBER = "20260706003"
-RELEASE_DATE = "2026-07-06"
+VERSION = "7.2.0"
+BUILD_NUMBER = "20260709001"
+RELEASE_DATE = "2026-07-09"
 
 VERSION_INFO = {
     'version': VERSION,
     'build_number': BUILD_NUMBER,
     'release_date': RELEASE_DATE,
     'api_version': 'v1',
-    'codename': 'Enhanced Permission Edition',
+    'codename': 'Comprehensive Enhancement Edition',
     'status': 'stable'
 }
 
 CHANGELOG = [
+    {
+        'version': '7.2.0',
+        'date': '2026-07-09',
+        'title': '全面增强版',
+        'changes': [
+            '统一版本号至v7.2.0 - 修复config.py/version.py/SYSTEM_DOC.md版本不一致问题',
+            '题库全面拓展 - 37个科目（成人教育9个+K12全科目28个），37,000+题目',
+            '权限规则矩阵完善 - 12个角色，细粒度权限控制覆盖全系统功能',
+            'AI集群升级 - 15个AI模型（GPT-4/Claude-3/Qwen/Llama-3/Gemini等），性能监控',
+            '端口管理增强 - 21个端口配置，支持扫描/分配/预留/释放/自动修复',
+            '集群多维度管理 - 4种负载均衡策略（轮询/最小连接/加权轮询/IP哈希），健康检查，自动故障转移',
+            'Git自动同步 - 安全机制、保护分支、操作审计、定时同步',
+            '手机管理端界面升级 - 新增端口管理和集群管理Tab，负载均衡策略切换',
+            '系统说明书完善 - 16个章节，完整架构、API、部署指南',
+            '版本历史记录 - 完整记录v1.0.0至v7.2.0所有版本变更',
+            '数据库性能优化 - 索引优化、查询重构、分片架构',
+            '前端布局优化 - 响应式设计、移动端适配、组件增强',
+            'API管理增强 - 120+API接口，统一响应格式，安全认证',
+            '自动化运维 - 每日健康检查、日志清理、数据库备份'
+        ],
+        'security_fixes': [],
+        'breaking_changes': [],
+        'contributors': ['System AI', 'Enhancement AI'],
+        'highlights': ['题库拓展', '权限矩阵', 'AI集群', '端口管理', '集群管理']
+    },
+    {
+        'version': '7.1.0',
+        'date': '2026-07-08',
+        'title': '仪表盘重构与AI拓展系统',
+        'changes': [
+            '超级管理员仪表盘完全重构 - 左侧标签栏(260px固定)+右侧Tab切换式内容区',
+            '左侧标签栏 - Logo区+用户卡片(L{user_level}·{role})+4个导航分组+底部操作按钮',
+            '右侧内容区 - 渐变欢迎横幅+4统计卡片+快捷操作网格+系统资源监控+最近活动日志',
+            'Tab切换 - overview/resources/logs/engines/users/exam/routes/employees/backup/settings共10个标签页',
+            '数据每30秒自动刷新 - 调用/api/super-admin/dashboard获取实时数据',
+            'base_layout.html重构 - 删除aside侧边栏，各页面自带侧边栏',
+            '新建AI自动完善拓展页面(ai_auto_expand.html) - 5个标签页，实时日志，统计卡片',
+            '模块加载器新增API - /api/super-admin/dashboard, /api/routes/list, /api/routes/reload, /api/routes/check',
+            'ROOT_REBOOT最高级初始化(Level 14) - 6步流程，14个数据库481张表，82条路由，41个AI员工'
+        ],
+        'security_fixes': [],
+        'breaking_changes': [],
+        'contributors': ['Dashboard AI', 'UI AI'],
+        'highlights': ['仪表盘重构', 'AI拓展系统', '实时监控']
+    },
+    {
+        'version': '7.0.0',
+        'date': '2026-07-07',
+        'title': '智能模块化启动版',
+        'changes': [
+            '模块化启动系统 - 8阶段配置加载+6阶段功能模块加载',
+            'AI智能检索系统 - 智能搜索和数据查询',
+            'API管理数据库化 - API配置存储到数据库',
+            '路由管理数据库化 - 路由规则存储到数据库',
+            '分布式数据库架构完善 - 16+独立数据库',
+            'AI引擎矩阵扩展 - 20+核心引擎，60+AI员工'
+        ],
+        'security_fixes': [],
+        'breaking_changes': [],
+        'contributors': ['Modular AI', 'Integration AI'],
+        'highlights': ['模块化启动', '智能检索', '数据库化管理']
+    },
+    {
+        'version': '6.0.0',
+        'date': '2026-07-06',
+        'title': '分布式数据库架构版',
+        'changes': [
+            '分布式数据库架构 - 13个独立数据库分离',
+            '智能数据库路由 - SQL查询自动路由到正确数据库',
+            '数据分片策略 - 按功能模块、数据类型、热度分散',
+            '数据库健康监控 - 实时监控分片健康状态',
+            '数据迁移执行 - 安全分批迁移，MD5一致性校验',
+            '查询路由优化 - 智能路由到最优分片'
+        ],
+        'security_fixes': [],
+        'breaking_changes': [],
+        'contributors': ['Database AI', 'Architecture AI'],
+        'highlights': ['分布式数据库', '智能路由', '数据分片']
+    },
     {
         'version': '5.3.0',
         'date': '2026-07-06',

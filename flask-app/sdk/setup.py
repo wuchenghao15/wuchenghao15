@@ -13,7 +13,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="mtscos-sdk",
-    version="2.0.0",
+    version="7.2.0",
     author="MTSCOS AI Team",
     author_email="support@mtscos.com",
     description="MTSCOS AI System SDK - 用于集成MTSCOS AI系统的Python SDK",
