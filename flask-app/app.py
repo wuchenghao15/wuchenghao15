@@ -17422,6 +17422,13 @@ except Exception as e:
     logger.error(f"✗ 注册蓝图 ai_generation_api 失败: {e}")
 
 try:
+    from app.api.study_path_api import study_path_api
+    app.register_blueprint(study_path_api)
+    logger.info("✓ 注册蓝图: study_path_api")
+except Exception as e:
+    logger.error(f"✗ 注册蓝图 study_path_api 失败: {e}")
+
+try:
     from ai_engines.cluster_array_api import cluster_array_api
     app.register_blueprint(cluster_array_api)
     logger.info("✓ 注册蓝图: cluster_array_api")

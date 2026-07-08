@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AI智能学习路径 - MTSCOS</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            min-height: 100vh;
+            padding-top: 20px;
+        }
+        .container {
+            max-width: 1200px;
+        }
+        .card {
+            border: none;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(10px);
+        }
+        .card-header {
+            background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%);
+            color: white;
+            border-radius: 16px 16px 0 0 !important;
+            padding: 20px 24px;
+        }
+        .card-header h3 {
+            margin: 0;
+            font-weight: 600;
+        }
+        .form-control {
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            border-radius: 10px;
+            padding: 12px 16px;
+            transition: all 0.3s;
+        }
+        .form-control:focus {
+            border-color: #0ea5e9;
+            box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+            background: rgba(15, 23, 42, 0.7);
+        }
+        .form-control option {
+            background: #1e293b;
+            color: white;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%);
+            border: none;
+            border-radius: 10px;
+            padding: 12px 30px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(14, 165, 233, 0.4);
+        }
+        .day-card {
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+            border-left: 4px solid #0ea5e9;
+            transition: all 0.3s;
+        }
+        .day-card:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .day-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .day-number {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: white;
+        }
+        .focus-area {
+            font-size: 16px;
+            font-weight: 600;
+            color: #f1f5f9;
+        }
+        .suggestion-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .suggestion-critical { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+        .suggestion-high { background: rgba(249, 115, 22, 0.2); color: #f97316; }
+        .suggestion-medium { background: rgba(234, 179, 8, 0.2); color: #eab308; }
+        .suggestion-low { background: rgba(34, 197, 94, 0.2); color: #22c55e; }
+        .task-item {
+            background: rgba(51, 65, 85, 0.5);
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .task-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+        .task-video { background: rgba(14, 165, 233, 0.2); color: #0ea5e9; }
+        .task-practice { background: rgba(249, 115, 22, 0.2); color: #f97316; }
+        .task-review { background: rgba(34, 197, 94, 0.2); color: #22c55e; }
+        .task-mixed { background: rgba(168, 85, 247, 0.2); color: #a855f7; }
+        .task-content {
+            flex: 1;
+        }
+        .task-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: #f1f5f9;
+        }
+        .task-info {
+            display: flex;
+            gap: 16px;
+            font-size: 12px;
+            color: #94a3b8;
+            margin-top: 4px;
+        }
+        .stats-card {
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .stats-number {
+            font-size: 32px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .stats-label {
+            font-size: 13px;
+            color: #94a3b8;
+            margin-top: 4px;
+        }
+        .weak-point-card {
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 12px;
+            border-left: 3px solid;
+        }
+        .weak-critical { border-left-color: #ef4444; }
+        .weak-high { border-left-color: #f97316; }
+        .weak-medium { border-left-color: #eab308; }
+        .weak-low { border-left-color: #22c55e; }
+        .weak-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .weak-topic {
+            font-size: 15px;
+            font-weight: 600;
+            color: #f1f5f9;
+        }
+        .weak-rate {
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .knowledge-tree {
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .topic-node {
+            margin-bottom: 16px;
+        }
+        .topic-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #0ea5e9;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .sub-topic {
+            display: inline-block;
+            padding: 4px 12px;
+            background: rgba(14, 165, 233, 0.1);
+            border-radius: 20px;
+            font-size: 12px;
+            color: #7dd3fc;
+            margin-right: 8px;
+            margin-bottom: 6px;
+        }
+        .nav-tabs .nav-link {
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px 10px 0 0;
+            font-weight: 600;
+            color: #94a3b8;
+            margin-right: 8px;
+        }
+        .nav-tabs .nav-link.active {
+            background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%);
+            color: white;
+            border: none;
+        }
+        .progress-bar {
+            background: linear-gradient(90deg, #0ea5e9 0%, #3b82f6 100%);
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h3><i class="fas fa-route"></i> AI智能学习路径推荐</h3>
+                        <p class="text-white-80 mt-1" style="font-size: 14px;">分析学习数据，生成个性化学习路径</p>
+                    </div>
+                    <div class="text-right">
+                        <span class="badge bg-white text-blue" style="font-size: 14px;">v7.2.0</span>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <ul class="nav nav-tabs mb-4">
+                    <li class="nav-item">
+                        <a class="nav-link active" data-bs-toggle="tab" href="#path-tab">学习路径</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="tab" href="#analysis-tab">薄弱分析</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="tab" href="#knowledge-tab">知识图谱</a>
+                    </li>
+                </ul>
+
+                <div class="tab-content">
+                    <div class="tab-pane active" id="path-tab">
+                        <form id="path-form" class="mb-6">
+                            <div class="row g-4">
+                                <div class="col-lg-3">
+                                    <label class="form-label text-white fw-bold">学生ID</label>
+                                    <input type="number" class="form-control" id="user-id" value="1">
+                                </div>
+                                <div class="col-lg-3">
+                                    <label class="form-label text-white fw-bold">科目</label>
+                                    <select class="form-control" id="subject-select">
+                                        <option value="" selected>综合</option>
+                                    </select>
+                                </div>
+                                <div class="col-lg-3">
+                                    <label class="form-label text-white fw-bold">学习天数</label>
+                                    <input type="range" class="form-range" id="days-range" min="1" max="30" value="7">
+                                    <div class="text-center text-primary fw-bold mt-2" id="days-display">7 天</div>
+                                </div>
+                                <div class="col-lg-3 d-flex align-items-end">
+                                    <button type="submit" class="btn btn-primary w-100">
+                                        <i class="fas fa-magic"></i> 生成学习路径
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+
+                        <div id="path-results" class="d-none">
+                            <div class="row g-4 mb-4">
+                                <div class="col-lg-3">
+                                    <div class="stats-card">
+                                        <div class="stats-number" id="total-days">0</div>
+                                        <div class="stats-label">学习天数</div>
+                                    </div>
+                                </div>
+                                <div class="col-lg-3">
+                                    <div class="stats-card">
+                                        <div class="stats-number" id="total-hours">0</div>
+                                        <div class="stats-label">预计时长(小时)</div>
+                                    </div>
+                                </div>
+                                <div class="col-lg-3">
+                                    <div class="stats-card">
+                                        <div class="stats-number" id="weak-count">0</div>
+                                        <div class="stats-label">薄弱环节数</div>
+                                    </div>
+                                </div>
+                                <div class="col-lg-3">
+                                    <div class="stats-card">
+                                        <div class="stats-number" id="total-tasks">0</div>
+                                        <div class="stats-label">总任务数</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="path-container">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tab-pane" id="analysis-tab">
+                        <form id="analysis-form" class="mb-4">
+                            <div class="row g-4">
+                                <div class="col-lg-4">
+                                    <label class="form-label text-white fw-bold">学生ID</label>
+                                    <input type="number" class="form-control" id="analysis-user-id" value="1">
+                                </div>
+                                <div class="col-lg-4">
+                                    <label class="form-label text-white fw-bold">科目筛选</label>
+                                    <select class="form-control" id="analysis-subject">
+                                        <option value="" selected>全部科目</option>
+                                    </select>
+                                </div>
+                                <div class="col-lg-4 d-flex align-items-end">
+                                    <button type="submit" class="btn btn-primary w-100">
+                                        <i class="fas fa-search"></i> 分析薄弱环节
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+
+                        <div id="analysis-results" class="d-none">
+                            <div class="mb-4">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h5><i class="fas fa-chart-line"></i> 薄弱环节分析</h5>
+                                    <span class="badge bg-primary" id="analysis-count">0 个薄弱环节</span>
+                                </div>
+                            </div>
+                            <div id="weak-points-container">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tab-pane" id="knowledge-tab">
+                        <div class="mb-4">
+                            <label class="form-label text-white fw-bold">选择科目</label>
+                            <select class="form-control" id="knowledge-subject" onchange="loadKnowledgeGraph()">
+                                <option value="" selected>请选择科目</option>
+                            </select>
+                        </div>
+
+                        <div id="knowledge-results" class="d-none">
+                            <div class="knowledge-tree" id="knowledge-tree">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let subjects = [];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadSubjects();
+            
+            document.getElementById('days-range').addEventListener('input', updateDaysDisplay);
+            document.getElementById('path-form').addEventListener('submit', handleGeneratePath);
+            document.getElementById('analysis-form').addEventListener('submit', handleAnalyze);
+        });
+
+        function updateDaysDisplay() {
+            const days = document.getElementById('days-range').value;
+            document.getElementById('days-display').textContent = days + ' 天';
+        }
+
+        async function loadSubjects() {
+            try {
+                const response = await fetch('/api/ai/study-path/subjects');
+                const data = await response.json();
+                if (data.success) {
+                    subjects = data.data;
+                    const selects = ['subject-select', 'analysis-subject', 'knowledge-subject'];
+                    selects.forEach(id => {
+                        const select = document.getElementById(id);
+                        subjects.forEach(subject => {
+                            const option = document.createElement('option');
+                            option.value = subject;
+                            option.textContent = subject;
+                            select.appendChild(option);
+                        });
+                    });
+                }
+            } catch (error) {
+                console.error('加载科目失败:', error);
+            }
+        }
+
+        async function handleGeneratePath(event) {
+            event.preventDefault();
+            
+            const user_id = parseInt(document.getElementById('user-id').value);
+            const subject = document.getElementById('subject-select').value || null;
+            const days = parseInt(document.getElementById('days-range').value);
+
+            document.getElementById('path-results').classList.add('d-none');
+
+            try {
+                const response = await fetch('/api/ai/study-path/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id, subject, days })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayPath(data.data);
+                    document.getElementById('path-results').classList.remove('d-none');
+                } else {
+                    alert('生成失败: ' + data.message);
+                }
+            } catch (error) {
+                alert('生成失败: ' + error.message);
+            }
+        }
+
+        function displayPath(data) {
+            document.getElementById('total-days').textContent = data.total_days;
+            document.getElementById('total-hours').textContent = data.estimated_total_hours;
+            document.getElementById('weak-count').textContent = data.weak_points_count;
+            
+            const totalTasks = data.study_path.reduce((sum, day) => sum + day.tasks.length, 0);
+            document.getElementById('total-tasks').textContent = totalTasks;
+
+            const container = document.getElementById('path-container');
+            container.innerHTML = '';
+
+            data.study_path.forEach(day => {
+                const suggestionClass = day.suggestion ? getSuggestionClass(day.suggestion) : '';
+                const suggestionText = day.suggestion || '日常学习';
+                
+                const card = document.createElement('div');
+                card.className = 'day-card';
+                card.innerHTML = `
+                    <div class="day-header">
+                        <div class="day-number">${day.day}</div>
+                        <div class="focus-area">${day.focus_area}</div>
+                        <span class="suggestion-badge ${suggestionClass}">${suggestionText}</span>
+                    </div>
+                    <div class="tasks">
+                        ${day.tasks.map(task => `
+                            <div class="task-item">
+                                <div class="task-icon task-${task.type}">
+                                    ${getTaskIcon(task.type)}
+                                </div>
+                                <div class="task-content">
+                                    <div class="task-title">${task.description}</div>
+                                    <div class="task-info">
+                                        <span><i class="fas fa-clock"></i> ${task.duration}分钟</span>
+                                        <span><i class="fas fa-bar-chart"></i> ${getDifficultyText(task.difficulty)}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function getSuggestionClass(suggestion) {
+            const mapping = {
+                '紧急加强': 'suggestion-critical',
+                '重点复习': 'suggestion-high',
+                '巩固练习': 'suggestion-medium',
+                '日常练习': 'suggestion-low'
+            };
+            return mapping[suggestion] || 'suggestion-low';
+        }
+
+        function getTaskIcon(type) {
+            const icons = {
+                'video': '<i class="fas fa-video"></i>',
+                'practice': '<i class="fas fa-pencil-alt"></i>',
+                'review': '<i class="fas fa-book-open"></i>',
+                'mixed': '<i class="fas fa-random"></i>'
+            };
+            return icons[type] || '<i class="fas fa-tasks"></i>';
+        }
+
+        function getDifficultyText(difficulty) {
+            const mapping = {
+                'easy': '简单',
+                'medium': '中等',
+                'hard': '困难'
+            };
+            return mapping[difficulty] || difficulty;
+        }
+
+        async function handleAnalyze(event) {
+            event.preventDefault();
+            
+            const user_id = parseInt(document.getElementById('analysis-user-id').value);
+            const subject = document.getElementById('analysis-subject').value || null;
+
+            document.getElementById('analysis-results').classList.add('d-none');
+
+            try {
+                const response = await fetch('/api/ai/study-path/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id, subject })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayAnalysis(data.data);
+                    document.getElementById('analysis-results').classList.remove('d-none');
+                } else {
+                    alert('分析失败: ' + data.message);
+                }
+            } catch (error) {
+                alert('分析失败: ' + error.message);
+            }
+        }
+
+        function displayAnalysis(data) {
+            document.getElementById('analysis-count').textContent = data.total_weak_topics + ' 个薄弱环节';
+            
+            const container = document.getElementById('weak-points-container');
+            
+            if (data.weak_points.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-gray-400">
+                        <i class="fas fa-check-circle" style="font-size: 48px; margin-bottom: 12px; color: #22c55e;"></i>
+                        <div>暂无明显薄弱环节</div>
+                        <div class="text-sm mt-2">继续保持良好的学习状态！</div>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = '';
+
+            data.weak_points.forEach(point => {
+                const levelClass = getLevelClass(point.level);
+                const rateColor = point.error_rate > 0.6 ? '#ef4444' : (point.error_rate > 0.4 ? '#f97316' : '#eab308');
+                
+                const card = document.createElement('div');
+                card.className = 'weak-point-card weak-' + point.level;
+                card.innerHTML = `
+                    <div class="weak-header">
+                        <div class="weak-topic">${point.topic}</div>
+                        <div class="weak-rate" style="color: ${rateColor};">${(point.error_rate * 100).toFixed(0)}%</div>
+                    </div>
+                    <div class="mb-2">
+                        <div class="text-sm text-gray-400 mb-1">错误率</div>
+                        <div class="progress" style="height: 6px;">
+                            <div class="progress-bar" style="width: ${point.error_rate * 100}%; background: ${rateColor}"></div>
+                        </div>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-400">总题数: ${point.total_questions}</span>
+                        <span style="color: ${rateColor};">错误: ${point.wrong_count}</span>
+                        <span class="text-blue-400">建议: ${point.suggestion}</span>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function getLevelClass(level) {
+            return level || 'low';
+        }
+
+        async function loadKnowledgeGraph() {
+            const subject = document.getElementById('knowledge-subject').value;
+            
+            if (!subject) {
+                document.getElementById('knowledge-results').classList.add('d-none');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/ai/study-path/knowledge-graph?subject=' + encodeURIComponent(subject));
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayKnowledgeGraph(data.data);
+                    document.getElementById('knowledge-results').classList.remove('d-none');
+                } else {
+                    alert('加载失败: ' + data.message);
+                }
+            } catch (error) {
+                alert('加载失败: ' + error.message);
+            }
+        }
+
+        function displayKnowledgeGraph(data) {
+            const tree = document.getElementById('knowledge-tree');
+            tree.innerHTML = '';
+
+            data.topics.forEach(topic => {
+                const node = document.createElement('div');
+                node.className = 'topic-node';
+                node.innerHTML = `
+                    <div class="topic-title">
+                        <i class="fas fa-folder-open"></i> ${topic.topic}
+                    </div>
+                    <div class="sub-topics">
+                        ${topic.sub_topics.map(st => `<span class="sub-topic">${st}</span>`).join('')}
+                    </div>
+                `;
+                tree.appendChild(node);
+            });
+        }
+    </script>
+</body>
+</html>
