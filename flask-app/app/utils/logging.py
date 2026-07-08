@@ -35,4 +35,24 @@ def get_logger(name: str):
     """获取指定名称的logger"""
     return logging.getLogger(name)
 
-__all__ = ['logger', 'get_logger']
+class LoggingManager:
+    def __init__(self):
+        self.log_counts = {}
+        self.error_counts = {}
+    
+    def get_log_stats(self):
+        return {
+            'total_logs': sum(self.log_counts.values()),
+            'error_count': sum(self.error_counts.values()),
+            'log_counts': self.log_counts
+        }
+    
+    def increment_log_count(self, level):
+        self.log_counts[level] = self.log_counts.get(level, 0) + 1
+    
+    def increment_error_count(self, error_type):
+        self.error_counts[error_type] = self.error_counts.get(error_type, 0) + 1
+
+logging_manager = LoggingManager()
+
+__all__ = ['logger', 'get_logger', 'logging_manager']

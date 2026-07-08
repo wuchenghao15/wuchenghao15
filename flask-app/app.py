@@ -137,7 +137,7 @@ def add_security_headers(response):
     return response
 
 DATABASE_PATH_LEGACY = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'app.db')
-DATABASE_PATH = 'smart://distributed'
+DATABASE_PATH = DATABASE_PATH_LEGACY
 class DistributedDBHelper:
     def __init__(self):
         from db_manager import connect, get_db_for_table, TABLE_TO_DB, build_table_mapping
@@ -725,7 +725,7 @@ def verify_password(stored_password, provided_password):
 def get_user_by_username(username):
     """从数据库获取用户信息"""
     try:
-        with sqlite3.connect(DATABASE_PATH) as conn:
+        with sqlite3.connect(DATABASE_PATH_LEGACY) as conn:
             cursor = conn.cursor()
             cursor.execute('SELECT * FROM users WHERE username = ?', (username,))
             user = cursor.fetchone()
@@ -3707,6 +3707,12 @@ def login():
     
     except Exception as e:
         return handle_login_exception(e)
+
+
+@app.route('/api/auth/login', methods=['POST'])
+def api_auth_login():
+    return login()
+
 
 # 登出路由
 @app.route('/auth/logout', methods=['GET', 'POST'])

@@ -191,16 +191,91 @@ def check_port_config_params(port):
 def get_expected_port_config():
     """获取预期端口配置"""
     configs = [
-        {'port': 8888, 'service_name': 'HTTP服务', 'expected_status': 'running', 'protocol': 'tcp'},
-        {'port': 8443, 'service_name': 'HTTPS服务', 'expected_status': 'running', 'protocol': 'tcp'},
-        {'port': 5000, 'service_name': 'Flask开发服务', 'expected_status': 'running', 'protocol': 'tcp'},
-        {'port': 3306, 'service_name': 'MySQL数据库', 'expected_status': 'optional', 'protocol': 'tcp'},
-        {'port': 27017, 'service_name': 'MongoDB', 'expected_status': 'optional', 'protocol': 'tcp'},
-        {'port': 6379, 'service_name': 'Redis缓存', 'expected_status': 'optional', 'protocol': 'tcp'},
-        {'port': 80, 'service_name': '标准HTTP', 'expected_status': 'optional', 'protocol': 'tcp'},
-        {'port': 443, 'service_name': '标准HTTPS', 'expected_status': 'optional', 'protocol': 'tcp'},
+        {'port': 8888, 'service_name': 'MTSCOS HTTP服务', 'expected_status': 'running', 'protocol': 'tcp', 'description': '主应用HTTP端口'},
+        {'port': 8443, 'service_name': 'MTSCOS HTTPS服务', 'expected_status': 'running', 'protocol': 'tcp', 'description': '主应用HTTPS端口'},
+        {'port': 5000, 'service_name': 'Flask开发服务', 'expected_status': 'running', 'protocol': 'tcp', 'description': '开发环境端口'},
+        {'port': 5001, 'service_name': 'API服务', 'expected_status': 'running', 'protocol': 'tcp', 'description': 'API服务端口'},
+        {'port': 5002, 'service_name': 'WebSocket服务', 'expected_status': 'running', 'protocol': 'tcp', 'description': '实时通信端口'},
+        {'port': 3306, 'service_name': 'MySQL数据库', 'expected_status': 'optional', 'protocol': 'tcp', 'description': 'MySQL数据库端口'},
+        {'port': 27017, 'service_name': 'MongoDB', 'expected_status': 'optional', 'protocol': 'tcp', 'description': 'MongoDB数据库端口'},
+        {'port': 6379, 'service_name': 'Redis缓存', 'expected_status': 'running', 'protocol': 'tcp', 'description': 'Redis缓存端口'},
+        {'port': 6380, 'service_name': 'Redis哨兵', 'expected_status': 'optional', 'protocol': 'tcp', 'description': 'Redis哨兵端口'},
+        {'port': 80, 'service_name': '标准HTTP', 'expected_status': 'optional', 'protocol': 'tcp', 'description': '标准HTTP端口'},
+        {'port': 443, 'service_name': '标准HTTPS', 'expected_status': 'optional', 'protocol': 'tcp', 'description': '标准HTTPS端口'},
+        {'port': 22, 'service_name': 'SSH服务', 'expected_status': 'running', 'protocol': 'tcp', 'description': 'SSH远程连接端口'},
+        {'port': 25, 'service_name': 'SMTP服务', 'expected_status': 'optional', 'protocol': 'tcp', 'description': '邮件服务端口'},
+        {'port': 587, 'service_name': 'SMTP TLS', 'expected_status': 'optional', 'protocol': 'tcp', 'description': '邮件加密端口'},
+        {'port': 9200, 'service_name': 'Elasticsearch', 'expected_status': 'optional', 'protocol': 'tcp', 'description': '搜索服务端口'},
+        {'port': 9092, 'service_name': 'Kafka', 'expected_status': 'optional', 'protocol': 'tcp', 'description': '消息队列端口'},
+        {'port': 8080, 'service_name': '管理控制台', 'expected_status': 'running', 'protocol': 'tcp', 'description': '管理控制台端口'},
+        {'port': 8081, 'service_name': '监控服务', 'expected_status': 'running', 'protocol': 'tcp', 'description': '监控服务端口'},
+        {'port': 8082, 'service_name': '日志服务', 'expected_status': 'running', 'protocol': 'tcp', 'description': '日志服务端口'},
+        {'port': 8083, 'service_name': '定时任务', 'expected_status': 'running', 'protocol': 'tcp', 'description': '定时任务服务端口'},
     ]
     return configs
+
+
+def scan_port_range(start_port, end_port, host='127.0.0.1'):
+    """扫描端口范围"""
+    results = []
+    for port in range(start_port, end_port + 1):
+        try:
+            status = get_port_status(port)
+            results.append(status)
+        except Exception:
+            pass
+    return results
+
+
+def allocate_port(start_range=8000, end_range=9000):
+    """分配可用端口"""
+    for port in range(start_range, end_range + 1):
+        if not is_port_open(port):
+            return port
+    return None
+
+
+def reserve_port(port, service_name):
+    """预留端口"""
+    with get_db() as conn:
+        conn.execute('''
+            INSERT OR REPLACE INTO port_status (
+                port, service_name, expected_status, protocol, bind_address,
+                actual_status, last_check
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', (port, service_name, 'reserved', 'tcp', '0.0.0.0', 'reserved', int(time.time())))
+        conn.commit()
+    return True
+
+
+def release_port(port):
+    """释放端口"""
+    with get_db() as conn:
+        conn.execute('DELETE FROM port_status WHERE port = ?', (port,))
+        conn.execute('DELETE FROM port_config_params WHERE port = ?', (port,))
+        conn.commit()
+    return True
+
+
+def get_port_usage_stats():
+    """获取端口使用统计"""
+    with get_db() as conn:
+        total = conn.execute('SELECT COUNT(*) FROM port_status').fetchone()[0]
+        running = conn.execute('SELECT COUNT(*) FROM port_status WHERE actual_status = "running"').fetchone()[0]
+        stopped = conn.execute('SELECT COUNT(*) FROM port_status WHERE actual_status = "stopped"').fetchone()[0]
+        reserved = conn.execute('SELECT COUNT(*) FROM port_status WHERE actual_status = "reserved"').fetchone()[0]
+        
+        protocol_stats = conn.execute('SELECT protocol, COUNT(*) FROM port_status GROUP BY protocol').fetchall()
+        status_stats = conn.execute('SELECT actual_status, COUNT(*) FROM port_status GROUP BY actual_status').fetchall()
+        
+        return {
+            'total': total,
+            'running': running,
+            'stopped': stopped,
+            'reserved': reserved,
+            'protocol_distribution': dict(protocol_stats),
+            'status_distribution': dict(status_stats)
+        }
 
 
 def sync_port_configs():

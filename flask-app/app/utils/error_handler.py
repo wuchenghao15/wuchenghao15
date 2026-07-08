@@ -276,3 +276,5 @@ def register_error_handlers(app):
     error_handler.init_app(app)
     logger.info("统一错误处理器注册成功")
     return error_handler
+
+error_handler = ErrorHandler()

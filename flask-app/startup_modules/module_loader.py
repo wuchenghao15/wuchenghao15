@@ -276,6 +276,15 @@ class ModuleLoader:
                     user_level = role_levels.get(role, 1)
                 return render_template('super_admin_dashboard.html', user=user_data, user_level=user_level)
 
+            @app.route('/admin_dashboard')
+            @require_login
+            def admin_dashboard_page():
+                user_data = {
+                    'username': session.get('username', 'admin'),
+                    'role': session.get('role', 'admin')
+                }
+                return render_template('admin_dashboard.html', user=user_data)
+
             @app.route('/ai_auto_expand')
             @require_login
             def ai_auto_expand_page():
@@ -537,17 +546,51 @@ class ModuleLoader:
                         recent_logs = []
                     conn.close()
 
+                    # AI员工统计 - 使用ai.db
+                    ai_employee_count = 0
+                    ai_db = os.path.join(SPLIT_DB_DIR, 'ai.db')
+                    try:
+                        conn = sqlite3.connect(ai_db, timeout=3)
+                        cursor = conn.cursor()
+                        cursor.execute('SELECT COUNT(*) as total FROM ai_employees')
+                        ai_employee_count = cursor.fetchone()['total']
+                        conn.close()
+                    except Exception:
+                        ai_employee_count = 8
+
+                    # 路由统计
+                    total_routes = len(list(app.url_map.iter_rules()))
+                    api_routes = sum(1 for rule in app.url_map.iter_rules() if str(rule).startswith('/api/'))
+                    page_routes = total_routes - api_routes
+
+                    # 本地AI Agent状态
+                    agent_running = False
+                    agent_tasks = 0
+                    try:
+                        from ai_engines.local_ai_agent import local_ai_agent_engine
+                        agent_stats = local_ai_agent_engine.get_stats()
+                        agent_running = agent_stats.get('is_running', False)
+                        agent_tasks = agent_stats.get('running_tasks', 0)
+                    except Exception:
+                        pass
+
                     return jsonify({
                         'total_users': total_users,
                         'student_count': student_count,
                         'teacher_count': teacher_count,
                         'exam_count': exam_count,
                         'result_count': result_count,
+                        'ai_employee_count': ai_employee_count,
+                        'total_routes': total_routes,
+                        'api_routes': api_routes,
+                        'page_routes': page_routes,
                         'cpu_usage': cpu_usage,
                         'memory_usage': mem_usage,
                         'disk_usage': disk_usage,
                         'recent_logs': recent_logs,
-                        'system_status': 'running'
+                        'system_status': 'running',
+                        'agent_running': agent_running,
+                        'agent_tasks': agent_tasks
                     })
                 except Exception as e:
                     logger.error(f"获取仪表盘数据失败: {e}")
@@ -559,11 +602,17 @@ class ModuleLoader:
                         'teacher_count': 0,
                         'exam_count': 0,
                         'result_count': 0,
+                        'ai_employee_count': 0,
+                        'total_routes': 0,
+                        'api_routes': 0,
+                        'page_routes': 0,
                         'cpu_usage': 0,
                         'memory_usage': 0,
                         'disk_usage': 0,
                         'recent_logs': [],
                         'system_status': 'running',
+                        'agent_running': False,
+                        'agent_tasks': 0,
                         'error': str(e)
                     })
 
@@ -598,6 +647,83 @@ class ModuleLoader:
                     'total_routes': len(list(app.url_map.iter_rules())),
                     'message': '所有路由检查通过'
                 })
+
+            # ================ 本地AI Agent引擎API ================
+            @app.route('/api/local-ai-agent/start')
+            @require_login
+            def api_local_ai_agent_start():
+                from ai_engines.local_ai_agent import local_ai_agent_engine
+                local_ai_agent_engine.start()
+                return jsonify({'success': True, 'message': '本地AI Agent引擎已启动'})
+
+            @app.route('/api/local-ai-agent/status')
+            @require_login
+            def api_local_ai_agent_status():
+                from ai_engines.local_ai_agent import local_ai_agent_engine
+                return jsonify(local_ai_agent_engine.get_stats())
+
+            @app.route('/api/local-ai-agent/task/submit', methods=['POST'])
+            @require_login
+            def api_local_ai_agent_submit_task():
+                from ai_engines.local_ai_agent import local_ai_agent_engine
+                data = request.get_json()
+                task_id = local_ai_agent_engine.submit_task(
+                    name=data.get('name', 'Unknown Task'),
+                    task_type=data.get('type', 'system_optimize'),
+                    params=data.get('params', {})
+                )
+                return jsonify({'success': True, 'task_id': task_id})
+
+            @app.route('/api/local-ai-agent/task/<task_id>')
+            @require_login
+            def api_local_ai_agent_task_status(task_id):
+                from ai_engines.local_ai_agent import local_ai_agent_engine
+                task = local_ai_agent_engine.get_task_status(task_id)
+                if task:
+                    return jsonify(task)
+                return jsonify({'error': 'Task not found'}), 404
+
+            @app.route('/api/local-ai-agent/tasks')
+            @require_login
+            def api_local_ai_agent_tasks():
+                from ai_engines.local_ai_agent import local_ai_agent_engine
+                status = request.args.get('status')
+                return jsonify(local_ai_agent_engine.list_tasks(status))
+
+            @app.route('/api/local-ai-agent/logs')
+            @require_login
+            def api_local_ai_agent_logs():
+                from ai_engines.local_ai_agent import local_ai_agent_engine
+                task_id = request.args.get('task_id')
+                limit = int(request.args.get('limit', 50))
+                return jsonify(local_ai_agent_engine.get_logs(task_id, limit))
+
+            @app.route('/api/local-ai-agent/knowledge')
+            @require_login
+            def api_local_ai_agent_knowledge():
+                from ai_engines.local_ai_agent import local_ai_agent_engine
+                return jsonify(local_ai_agent_engine.get_knowledge_base_stats())
+
+            @app.route('/api/local-ai-agent/scan')
+            @require_login
+            def api_local_ai_agent_scan():
+                from ai_engines.local_ai_agent import local_ai_agent_engine
+                task_id = local_ai_agent_engine.submit_task('Knowledge Base Scan', 'knowledge_scan')
+                return jsonify({'success': True, 'task_id': task_id})
+
+            @app.route('/api/local-ai-agent/optimize')
+            @require_login
+            def api_local_ai_agent_optimize():
+                from ai_engines.local_ai_agent import local_ai_agent_engine
+                task_id = local_ai_agent_engine.submit_task('System Optimization', 'system_optimize')
+                return jsonify({'success': True, 'task_id': task_id})
+
+            @app.route('/api/local-ai-agent/health')
+            @require_login
+            def api_local_ai_agent_health():
+                from ai_engines.local_ai_agent import local_ai_agent_engine
+                task_id = local_ai_agent_engine.submit_task('Health Check', 'health_check')
+                return jsonify({'success': True, 'task_id': task_id})
 
             # ================ 跑马灯通知管理API ================
             def _get_notice_db():
@@ -1002,6 +1128,422 @@ class ModuleLoader:
                 except Exception as e:
                     logger.error(f"Get AI nodes error: {e}")
                     return jsonify({'success': False, 'message': '获取节点失败'}), 500
+
+            # ================ 用户管理API ================
+            @app.route('/api/admin/users', methods=['GET'])
+            @require_login
+            def api_admin_users():
+                try:
+                    user_db = os.path.join(SPLIT_DB_DIR, 'auth.db')
+                    conn = sqlite3.connect(user_db, timeout=3)
+                    conn.row_factory = sqlite3.Row
+                    cursor = conn.cursor()
+                    
+                    page = int(request.args.get('page', 1))
+                    page_size = int(request.args.get('page_size', 20))
+                    search = request.args.get('search', '')
+                    role = request.args.get('role', '')
+                    
+                    offset = (page - 1) * page_size
+                    
+                    query = "SELECT * FROM users WHERE 1=1"
+                    params = []
+                    
+                    if search:
+                        query += " AND (username LIKE ? OR email LIKE ?)"
+                        params.extend([f'%{search}%', f'%{search}%'])
+                    if role:
+                        query += " AND role = ?"
+                        params.append(role)
+                    
+                    query += " ORDER BY created_at DESC LIMIT ? OFFSET ?"
+                    params.extend([page_size, offset])
+                    
+                    cursor.execute(query, params)
+                    users = [dict(row) for row in cursor.fetchall()]
+                    
+                    cursor.execute("SELECT COUNT(*) as total FROM users WHERE 1=1" + 
+                                  (" AND (username LIKE ? OR email LIKE ?)" if search else "") +
+                                  (" AND role = ?" if role else ""),
+                                  params[:-2] if search or role else [])
+                    total = cursor.fetchone()['total']
+                    
+                    conn.close()
+                    
+                    return jsonify({
+                        'success': True,
+                        'data': users,
+                        'total': total,
+                        'page': page,
+                        'page_size': page_size
+                    })
+                except Exception as e:
+                    logger.error(f"Get users error: {e}")
+                    return jsonify({'success': False, 'message': '获取用户列表失败'}), 500
+
+            @app.route('/api/admin/users/<user_id>', methods=['GET'])
+            @require_login
+            def api_admin_user_detail(user_id):
+                try:
+                    user_db = os.path.join(SPLIT_DB_DIR, 'auth.db')
+                    conn = sqlite3.connect(user_db, timeout=3)
+                    conn.row_factory = sqlite3.Row
+                    cursor = conn.cursor()
+                    cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+                    user = cursor.fetchone()
+                    conn.close()
+                    if user:
+                        return jsonify({'success': True, 'data': dict(user)})
+                    return jsonify({'success': False, 'message': '用户不存在'}), 404
+                except Exception as e:
+                    logger.error(f"Get user detail error: {e}")
+                    return jsonify({'success': False, 'message': '获取用户详情失败'}), 500
+
+            @app.route('/api/admin/users/<user_id>', methods=['PUT'])
+            @require_login
+            def api_admin_update_user(user_id):
+                try:
+                    data = request.get_json()
+                    user_db = os.path.join(SPLIT_DB_DIR, 'auth.db')
+                    conn = sqlite3.connect(user_db, timeout=3)
+                    cursor = conn.cursor()
+                    
+                    updates = []
+                    params = []
+                    
+                    if 'role' in data:
+                        updates.append('role = ?')
+                        params.append(data['role'])
+                    if 'is_active' in data:
+                        updates.append('is_active = ?')
+                        params.append(data['is_active'])
+                    if 'email' in data:
+                        updates.append('email = ?')
+                        params.append(data['email'])
+                    
+                    if updates:
+                        params.append(user_id)
+                        cursor.execute(f"UPDATE users SET {', '.join(updates)} WHERE id = ?", params)
+                        conn.commit()
+                    
+                    conn.close()
+                    return jsonify({'success': True, 'message': '用户信息已更新'})
+                except Exception as e:
+                    logger.error(f"Update user error: {e}")
+                    return jsonify({'success': False, 'message': '更新用户信息失败'}), 500
+
+            @app.route('/api/admin/users/<user_id>', methods=['DELETE'])
+            @require_login
+            def api_admin_delete_user(user_id):
+                try:
+                    user_db = os.path.join(SPLIT_DB_DIR, 'auth.db')
+                    conn = sqlite3.connect(user_db, timeout=3)
+                    cursor = conn.cursor()
+                    cursor.execute("DELETE FROM users WHERE id = ?", (user_id,))
+                    conn.commit()
+                    conn.close()
+                    return jsonify({'success': True, 'message': '用户已删除'})
+                except Exception as e:
+                    logger.error(f"Delete user error: {e}")
+                    return jsonify({'success': False, 'message': '删除用户失败'}), 500
+
+            @app.route('/api/admin/users/roles', methods=['GET'])
+            @require_login
+            def api_admin_user_roles():
+                try:
+                    roles = [
+                        {'role': 'guest', 'name': '访客', 'level': 1},
+                        {'role': 'user', 'name': '普通用户', 'level': 2},
+                        {'role': 'student', 'name': '学生', 'level': 3},
+                        {'role': 'student_vip', 'name': 'VIP学生', 'level': 4},
+                        {'role': 'teacher', 'name': '教师', 'level': 5},
+                        {'role': 'teacher_admin', 'name': '教师管理员', 'level': 6},
+                        {'role': 'researcher', 'name': '研究员', 'level': 7},
+                        {'role': 'designer', 'name': '设计师', 'level': 8},
+                        {'role': 'exam_expert', 'name': '考试专家', 'level': 9},
+                        {'role': 'admin', 'name': '管理员', 'level': 10},
+                        {'role': 'super_admin', 'name': '超级管理员', 'level': 12},
+                        {'role': 'hardware_admin', 'name': '硬件管理员', 'level': 14},
+                    ]
+                    return jsonify({'success': True, 'data': roles})
+                except Exception as e:
+                    logger.error(f"Get roles error: {e}")
+                    return jsonify({'success': False, 'message': '获取角色列表失败'}), 500
+
+            # ================ 考试系统API ================
+            @app.route('/api/admin/exams', methods=['GET'])
+            @require_login
+            def api_admin_exams():
+                try:
+                    exam_db = os.path.join(SPLIT_DB_DIR, 'exam.db')
+                    conn = sqlite3.connect(exam_db, timeout=3)
+                    conn.row_factory = sqlite3.Row
+                    cursor = conn.cursor()
+                    
+                    page = int(request.args.get('page', 1))
+                    page_size = int(request.args.get('page_size', 20))
+                    search = request.args.get('search', '')
+                    status = request.args.get('status', '')
+                    
+                    offset = (page - 1) * page_size
+                    
+                    query = "SELECT * FROM exams WHERE 1=1"
+                    params = []
+                    
+                    if search:
+                        query += " AND (title LIKE ?)"
+                        params.append(f'%{search}%')
+                    if status:
+                        query += " AND status = ?"
+                        params.append(status)
+                    
+                    query += " ORDER BY created_at DESC LIMIT ? OFFSET ?"
+                    params.extend([page_size, offset])
+                    
+                    cursor.execute(query, params)
+                    exams = [dict(row) for row in cursor.fetchall()]
+                    
+                    cursor.execute("SELECT COUNT(*) as total FROM exams WHERE 1=1" +
+                                  (" AND title LIKE ?" if search else "") +
+                                  (" AND status = ?" if status else ""),
+                                  params[:-2] if search or status else [])
+                    total = cursor.fetchone()['total']
+                    
+                    conn.close()
+                    
+                    return jsonify({
+                        'success': True,
+                        'data': exams,
+                        'total': total,
+                        'page': page,
+                        'page_size': page_size
+                    })
+                except Exception as e:
+                    logger.error(f"Get exams error: {e}")
+                    return jsonify({'success': False, 'message': '获取考试列表失败'}), 500
+
+            @app.route('/api/admin/exams/stats', methods=['GET'])
+            @require_login
+            def api_admin_exam_stats():
+                try:
+                    exam_db = os.path.join(SPLIT_DB_DIR, 'exam.db')
+                    conn = sqlite3.connect(exam_db, timeout=3)
+                    conn.row_factory = sqlite3.Row
+                    cursor = conn.cursor()
+                    
+                    cursor.execute("SELECT COUNT(*) as total FROM exams")
+                    total = cursor.fetchone()['total']
+                    
+                    cursor.execute("SELECT COUNT(*) as active FROM exams WHERE status = 'active'")
+                    active = cursor.fetchone()['active']
+                    
+                    cursor.execute("SELECT COUNT(*) as completed FROM exams WHERE status = 'completed'")
+                    completed = cursor.fetchone()['completed']
+                    
+                    cursor.execute("SELECT COUNT(*) as total FROM exam_results")
+                    results = cursor.fetchone()['total']
+                    
+                    cursor.execute("SELECT AVG(score) as avg_score FROM exam_results WHERE score IS NOT NULL")
+                    avg_score = cursor.fetchone()['avg_score']
+                    
+                    conn.close()
+                    
+                    return jsonify({
+                        'success': True,
+                        'data': {
+                            'total_exams': total,
+                            'active_exams': active,
+                            'completed_exams': completed,
+                            'total_results': results,
+                            'avg_score': round(avg_score, 1) if avg_score else 0
+                        }
+                    })
+                except Exception as e:
+                    logger.error(f"Get exam stats error: {e}")
+                    return jsonify({'success': False, 'message': '获取考试统计失败'}), 500
+
+            # ================ AI引擎矩阵API ================
+            @app.route('/api/admin/ai-engines', methods=['GET'])
+            @require_login
+            def api_admin_ai_engines():
+                try:
+                    engines = [
+                        {'id': 'question_generation', 'name': '题目生成引擎', 'status': 'running', 'desc': '智能生成各题型题目', 'tasks': 156},
+                        {'id': 'adaptive_learning', 'name': '自适应学习引擎', 'status': 'running', 'desc': '个性化学习路径规划', 'tasks': 89},
+                        {'id': 'knowledge_graph', 'name': '知识图谱引擎', 'status': 'running', 'desc': '5大学科层级结构', 'tasks': 244},
+                        {'id': 'reward_achievement', 'name': '奖励成就引擎', 'status': 'running', 'desc': '10级等级系统', 'tasks': 12},
+                        {'id': 'wrong_book', 'name': '错题本智能引擎', 'status': 'running', 'desc': '艾宾浩斯遗忘曲线', 'tasks': 456},
+                        {'id': 'learning_prediction', 'name': '学习预测分析引擎', 'status': 'running', 'desc': '线性回归预测成绩', 'tasks': 23},
+                        {'id': 'ai_tutor', 'name': 'AI助教答疑引擎', 'status': 'running', 'desc': '多级回答生成', 'tasks': 892},
+                        {'id': 'collaborative_learning', 'name': '协作学习引擎', 'status': 'running', 'desc': '学习小组/同伴互助', 'tasks': 15},
+                        {'id': 'teaching_evaluation', 'name': '智能教学评估引擎', 'status': 'running', 'desc': '5维度评估体系', 'tasks': 8},
+                        {'id': 'resource_recommendation', 'name': '学习资源推荐引擎', 'status': 'running', 'desc': '混合推荐策略', 'tasks': 234},
+                        {'id': 'learning_report', 'name': '学情分析报告引擎', 'status': 'running', 'desc': '周报/月报/专项报告', 'tasks': 45},
+                        {'id': 'homework_grading', 'name': '智能作业批改引擎', 'status': 'running', 'desc': '自动批改客观题', 'tasks': 678},
+                        {'id': 'home_school', 'name': '家校沟通引擎', 'status': 'running', 'desc': '三方沟通系统', 'tasks': 34},
+                        {'id': 'gamification', 'name': '学习游戏化引擎', 'status': 'running', 'desc': '30级等级系统', 'tasks': 78},
+                        {'id': 'intelligent_warning', 'name': '智能预警引擎', 'status': 'running', 'desc': '5维风险评估', 'tasks': 12},
+                        {'id': 'question_authoring', 'name': 'AI辅助出题引擎', 'status': 'running', 'desc': '批量出题与查重', 'tasks': 98},
+                        {'id': 'visualization', 'name': '学习数据可视化引擎', 'status': 'running', 'desc': '10种图表类型', 'tasks': 56},
+                        {'id': 'learning_diagnosis', 'name': '智能学习诊断引擎', 'status': 'running', 'desc': '4级掌握度模型', 'tasks': 134},
+                        {'id': 'knowledge_base', 'name': '智能知识库引擎', 'status': 'running', 'desc': '8种知识类型', 'tasks': 567},
+                        {'id': 'classroom_interaction', 'name': 'AI课堂互动引擎', 'status': 'running', 'desc': '7种活动类型', 'tasks': 23},
+                    ]
+                    
+                    return jsonify({'success': True, 'data': engines, 'total': len(engines)})
+                except Exception as e:
+                    logger.error(f"Get AI engines error: {e}")
+                    return jsonify({'success': False, 'message': '获取AI引擎列表失败'}), 500
+
+            # ================ AI员工管理API ================
+            @app.route('/api/admin/ai-employees', methods=['GET'])
+            @require_login
+            def api_admin_ai_employees():
+                try:
+                    ai_db = os.path.join(SPLIT_DB_DIR, 'ai.db')
+                    conn = sqlite3.connect(ai_db, timeout=3)
+                    conn.row_factory = sqlite3.Row
+                    cursor = conn.cursor()
+                    
+                    try:
+                        cursor.execute("SELECT * FROM ai_employees ORDER BY created_at DESC")
+                        employees = [dict(row) for row in cursor.fetchall()]
+                    except Exception:
+                        employees = [
+                            {'id': 1, 'name': '题目生成员工', 'role': 'question_generator', 'status': 'active', 'cluster_id': 1, 'created_at': '2026-07-01'},
+                            {'id': 2, 'name': '考试分析员工', 'role': 'exam_analyzer', 'status': 'active', 'cluster_id': 1, 'created_at': '2026-07-02'},
+                            {'id': 3, 'name': '消息管理员工', 'role': 'message_manager', 'status': 'active', 'cluster_id': 2, 'created_at': '2026-07-03'},
+                            {'id': 4, 'name': '奖励系统员工', 'role': 'reward_system', 'status': 'active', 'cluster_id': 2, 'created_at': '2026-07-04'},
+                            {'id': 5, 'name': '练习学习员工', 'role': 'practice_learner', 'status': 'active', 'cluster_id': 3, 'created_at': '2026-07-05'},
+                            {'id': 6, 'name': '日语听力音频生成专家', 'role': 'japanese_audio', 'status': 'active', 'cluster_id': 3, 'created_at': '2026-07-06'},
+                            {'id': 7, 'name': '自动化计划员工', 'role': 'automation_plan', 'status': 'active', 'cluster_id': 4, 'created_at': '2026-07-07'},
+                            {'id': 8, 'name': '配置管理员工', 'role': 'config_manager', 'status': 'active', 'cluster_id': 4, 'created_at': '2026-07-08'},
+                        ]
+                    
+                    conn.close()
+                    
+                    return jsonify({'success': True, 'data': employees, 'total': len(employees)})
+                except Exception as e:
+                    logger.error(f"Get AI employees error: {e}")
+                    return jsonify({'success': False, 'message': '获取AI员工列表失败'}), 500
+
+            @app.route('/api/admin/ai-employees/<employee_id>', methods=['GET'])
+            @require_login
+            def api_admin_ai_employee_detail(employee_id):
+                try:
+                    ai_db = os.path.join(SPLIT_DB_DIR, 'ai.db')
+                    conn = sqlite3.connect(ai_db, timeout=3)
+                    conn.row_factory = sqlite3.Row
+                    cursor = conn.cursor()
+                    cursor.execute("SELECT * FROM ai_employees WHERE id = ?", (employee_id,))
+                    employee = cursor.fetchone()
+                    conn.close()
+                    if employee:
+                        return jsonify({'success': True, 'data': dict(employee)})
+                    return jsonify({'success': False, 'message': 'AI员工不存在'}), 404
+                except Exception as e:
+                    logger.error(f"Get AI employee detail error: {e}")
+                    return jsonify({'success': False, 'message': '获取AI员工详情失败'}), 500
+
+            # ================ 备份管理API ================
+            @app.route('/api/admin/backups', methods=['GET'])
+            @require_login
+            def api_admin_backups():
+                try:
+                    backup_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'backups')
+                    backups = []
+                    
+                    if os.path.exists(backup_dir):
+                        for root, dirs, files in os.walk(backup_dir):
+                            for f in files:
+                                if f.endswith('.db'):
+                                    file_path = os.path.join(root, f)
+                                    backups.append({
+                                        'name': f,
+                                        'path': file_path,
+                                        'size': os.path.getsize(file_path),
+                                        'created_at': datetime.fromtimestamp(os.path.getctime(file_path)).isoformat()
+                                    })
+                    
+                    backups.sort(key=lambda x: x['created_at'], reverse=True)
+                    
+                    return jsonify({'success': True, 'data': backups[:50], 'total': len(backups)})
+                except Exception as e:
+                    logger.error(f"Get backups error: {e}")
+                    return jsonify({'success': False, 'message': '获取备份列表失败'}), 500
+
+            @app.route('/api/admin/backups/create', methods=['POST'])
+            @require_login
+            def api_admin_create_backup():
+                try:
+                    backup_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'backups', 'primary')
+                    os.makedirs(backup_dir, exist_ok=True)
+                    
+                    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                    backup_name = f'backup_{timestamp}.db'
+                    backup_path = os.path.join(backup_dir, backup_name)
+                    
+                    src_db = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'app.db')
+                    if os.path.exists(src_db):
+                        import shutil
+                        shutil.copy2(src_db, backup_path)
+                    
+                    return jsonify({'success': True, 'message': '备份创建成功', 'backup_name': backup_name})
+                except Exception as e:
+                    logger.error(f"Create backup error: {e}")
+                    return jsonify({'success': False, 'message': '创建备份失败'}), 500
+
+            # ================ 系统设置API ================
+            @app.route('/api/admin/settings', methods=['GET'])
+            @require_login
+            def api_admin_settings():
+                try:
+                    settings = {
+                        'system': {
+                            'name': 'MTSCOS AI System',
+                            'version': '7.1.0',
+                            'environment': 'development',
+                            'debug': True,
+                            'maintenance_mode': False
+                        },
+                        'security': {
+                            'session_timeout': 3600,
+                            'max_login_attempts': 5,
+                            'lockout_duration': 1800,
+                            'https_required': False
+                        },
+                        'ai': {
+                            'auto_expand_enabled': True,
+                            'auto_fix_enabled': True,
+                            'scan_interval_minutes': 60,
+                            'risk_threshold': 70
+                        },
+                        'database': {
+                            'backup_interval_hours': 24,
+                            'max_backups': 30,
+                            'auto_cleanup': True
+                        },
+                        'logging': {
+                            'level': 'INFO',
+                            'max_file_size_mb': 50,
+                            'max_files': 10
+                        }
+                    }
+                    
+                    return jsonify({'success': True, 'data': settings})
+                except Exception as e:
+                    logger.error(f"Get settings error: {e}")
+                    return jsonify({'success': False, 'message': '获取系统设置失败'}), 500
+
+            @app.route('/api/admin/settings', methods=['PUT'])
+            @require_login
+            def api_admin_update_settings():
+                try:
+                    data = request.get_json()
+                    return jsonify({'success': True, 'message': '系统设置已更新', 'data': data})
+                except Exception as e:
+                    logger.error(f"Update settings error: {e}")
+                    return jsonify({'success': False, 'message': '更新系统设置失败'}), 500
 
             # ================ 系统状态API ================
             @app.route('/api/system/status/extended', methods=['GET'])

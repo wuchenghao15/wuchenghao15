@@ -7,6 +7,7 @@ import json
 import hashlib
 import base64
 from app.utils.session_manager import get_session_manager
+from app.utils.role_router import get_role_router
 
 auth_api = Blueprint('auth_api', __name__)
 

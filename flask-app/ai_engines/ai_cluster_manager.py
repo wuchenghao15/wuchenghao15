@@ -109,6 +109,50 @@ def init_cluster_database():
                 )
             ''')
 
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS ai_model_config (
+                    model_id TEXT PRIMARY KEY,
+                    model_name TEXT NOT NULL,
+                    model_type TEXT NOT NULL,
+                    provider TEXT NOT NULL,
+                    api_key TEXT DEFAULT '',
+                    endpoint TEXT DEFAULT '',
+                    parameters TEXT DEFAULT '{}',
+                    performance_metrics TEXT DEFAULT '{}',
+                    status TEXT DEFAULT 'active',
+                    version TEXT DEFAULT '1.0',
+                    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS ai_model_endpoints (
+                    endpoint_id TEXT PRIMARY KEY,
+                    model_id TEXT NOT NULL,
+                    url TEXT NOT NULL,
+                    method TEXT DEFAULT 'POST',
+                    headers TEXT DEFAULT '{}',
+                    timeout INTEGER DEFAULT 30,
+                    status TEXT DEFAULT 'active',
+                    FOREIGN KEY (model_id) REFERENCES ai_model_config(model_id)
+                )
+            ''')
+
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS ai_model_performance (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    model_id TEXT NOT NULL,
+                    timestamp TEXT DEFAULT CURRENT_TIMESTAMP,
+                    latency REAL DEFAULT 0.0,
+                    throughput REAL DEFAULT 0.0,
+                    accuracy REAL DEFAULT 0.0,
+                    error_rate REAL DEFAULT 0.0,
+                    requests_count INTEGER DEFAULT 0,
+                    FOREIGN KEY (model_id) REFERENCES ai_model_config(model_id)
+                )
+            ''')
+
             cursor.execute('SELECT version FROM ai_database_version ORDER BY version DESC LIMIT 1')
             row = cursor.fetchone()
             current_version = row[0] if row else 0
@@ -496,6 +540,7 @@ class AIClusterManager:
         self._create_default_clusters()
         self._create_default_employees()
         self._assign_default_employees()
+        self._initialize_default_models()
         self._save_to_database()
 
     def _create_default_clusters(self):
@@ -1103,6 +1148,259 @@ class AIClusterManager:
         self.auto_upgrade_enabled = enabled
         logger.info(f"Auto-upgrade {'enabled' if enabled else 'disabled'}")
         return True
+
+    def _initialize_default_models(self):
+        """Initialize default AI models"""
+        logger.info("初始化默认AI模型...")
+        default_models = [
+            {
+                'model_id': 'gpt-4',
+                'model_name': 'GPT-4',
+                'model_type': 'llm',
+                'provider': 'openai',
+                'endpoint': 'https://api.openai.com/v1/chat/completions',
+                'parameters': json.dumps({'temperature': 0.7, 'max_tokens': 4096}),
+                'performance_metrics': json.dumps({'latency': 0.8, 'throughput': 50, 'accuracy': 0.95}),
+                'version': '4.0'
+            },
+            {
+                'model_id': 'gpt-4o',
+                'model_name': 'GPT-4o',
+                'model_type': 'llm',
+                'provider': 'openai',
+                'endpoint': 'https://api.openai.com/v1/chat/completions',
+                'parameters': json.dumps({'temperature': 0.7, 'max_tokens': 128000}),
+                'performance_metrics': json.dumps({'latency': 0.5, 'throughput': 100, 'accuracy': 0.96}),
+                'version': '4.o'
+            },
+            {
+                'model_id': 'claude-3-opus',
+                'model_name': 'Claude 3 Opus',
+                'model_type': 'llm',
+                'provider': 'anthropic',
+                'endpoint': 'https://api.anthropic.com/v1/messages',
+                'parameters': json.dumps({'temperature': 0.7, 'max_tokens': 200000}),
+                'performance_metrics': json.dumps({'latency': 1.2, 'throughput': 30, 'accuracy': 0.97}),
+                'version': '3.0'
+            },
+            {
+                'model_id': 'claude-3-sonnet',
+                'model_name': 'Claude 3 Sonnet',
+                'model_type': 'llm',
+                'provider': 'anthropic',
+                'endpoint': 'https://api.anthropic.com/v1/messages',
+                'parameters': json.dumps({'temperature': 0.7, 'max_tokens': 200000}),
+                'performance_metrics': json.dumps({'latency': 0.6, 'throughput': 80, 'accuracy': 0.94}),
+                'version': '3.0'
+            },
+            {
+                'model_id': 'qwen-max',
+                'model_name': 'Qwen Max',
+                'model_type': 'llm',
+                'provider': 'alibaba',
+                'endpoint': 'https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation',
+                'parameters': json.dumps({'temperature': 0.7, 'max_tokens': 8192}),
+                'performance_metrics': json.dumps({'latency': 0.7, 'throughput': 60, 'accuracy': 0.92}),
+                'version': '2.0'
+            },
+            {
+                'model_id': 'qwen-plus',
+                'model_name': 'Qwen Plus',
+                'model_type': 'llm',
+                'provider': 'alibaba',
+                'endpoint': 'https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation',
+                'parameters': json.dumps({'temperature': 0.7, 'max_tokens': 4096}),
+                'performance_metrics': json.dumps({'latency': 0.4, 'throughput': 100, 'accuracy': 0.90}),
+                'version': '2.0'
+            },
+            {
+                'model_id': 'llama-3-70b',
+                'model_name': 'Llama 3 70B',
+                'model_type': 'llm',
+                'provider': 'meta',
+                'endpoint': '',
+                'parameters': json.dumps({'temperature': 0.7, 'max_tokens': 8192}),
+                'performance_metrics': json.dumps({'latency': 1.0, 'throughput': 40, 'accuracy': 0.93}),
+                'version': '3.0'
+            },
+            {
+                'model_id': 'gemini-pro',
+                'model_name': 'Gemini Pro',
+                'model_type': 'llm',
+                'provider': 'google',
+                'endpoint': 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent',
+                'parameters': json.dumps({'temperature': 0.7, 'max_tokens': 8192}),
+                'performance_metrics': json.dumps({'latency': 0.6, 'throughput': 70, 'accuracy': 0.92}),
+                'version': '1.5'
+            },
+            {
+                'model_id': 'whisper-large',
+                'model_name': 'Whisper Large',
+                'model_type': 'speech_to_text',
+                'provider': 'openai',
+                'endpoint': 'https://api.openai.com/v1/audio/transcriptions',
+                'parameters': json.dumps({'language': 'zh'}),
+                'performance_metrics': json.dumps({'latency': 2.0, 'throughput': 10, 'accuracy': 0.98}),
+                'version': '3.0'
+            },
+            {
+                'model_id': 'text-embedding-3-large',
+                'model_name': 'Text Embedding 3 Large',
+                'model_type': 'embedding',
+                'provider': 'openai',
+                'endpoint': 'https://api.openai.com/v1/embeddings',
+                'parameters': json.dumps({'dimensions': 3072}),
+                'performance_metrics': json.dumps({'latency': 0.1, 'throughput': 500, 'accuracy': 0.99}),
+                'version': '3.0'
+            },
+            {
+                'model_id': 'dall-e-3',
+                'model_name': 'DALL-E 3',
+                'model_type': 'image_generation',
+                'provider': 'openai',
+                'endpoint': 'https://api.openai.com/v1/images/generations',
+                'parameters': json.dumps({'size': '1024x1024'}),
+                'performance_metrics': json.dumps({'latency': 5.0, 'throughput': 5, 'accuracy': 0.90}),
+                'version': '3.0'
+            },
+            {
+                'model_id': 'stable-diffusion',
+                'model_name': 'Stable Diffusion',
+                'model_type': 'image_generation',
+                'provider': 'stability-ai',
+                'endpoint': '',
+                'parameters': json.dumps({'steps': 30}),
+                'performance_metrics': json.dumps({'latency': 8.0, 'throughput': 3, 'accuracy': 0.88}),
+                'version': '2.1'
+            },
+            {
+                'model_id': 'code-llama',
+                'model_name': 'Code Llama',
+                'model_type': 'code',
+                'provider': 'meta',
+                'endpoint': '',
+                'parameters': json.dumps({'temperature': 0.2, 'max_tokens': 8192}),
+                'performance_metrics': json.dumps({'latency': 1.5, 'throughput': 20, 'accuracy': 0.91}),
+                'version': '3.0'
+            },
+            {
+                'model_id': 'chatglm-4',
+                'model_name': 'ChatGLM 4',
+                'model_type': 'llm',
+                'provider': 'zhipu',
+                'endpoint': 'https://open.bigmodel.cn/api/paas/v4/chat/completions',
+                'parameters': json.dumps({'temperature': 0.7, 'max_tokens': 8192}),
+                'performance_metrics': json.dumps({'latency': 0.5, 'throughput': 90, 'accuracy': 0.91}),
+                'version': '4.0'
+            },
+            {
+                'model_id': 'ernie-4.0',
+                'model_name': 'ERNIE 4.0',
+                'model_type': 'llm',
+                'provider': 'baidu',
+                'endpoint': 'https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions',
+                'parameters': json.dumps({'temperature': 0.7, 'max_tokens': 4096}),
+                'performance_metrics': json.dumps({'latency': 0.6, 'throughput': 70, 'accuracy': 0.90}),
+                'version': '4.0'
+            }
+        ]
+
+        for model_info in default_models:
+            self.create_model(model_info)
+
+    def create_model(self, model_info: Dict) -> bool:
+        """Create a new AI model"""
+        try:
+            with get_db_connection() as conn:
+                cursor = conn.cursor()
+                
+                model_id = model_info['model_id']
+                cursor.execute('SELECT COUNT(*) FROM ai_model_config WHERE model_id = ?', (model_id,))
+                if cursor.fetchone()[0] > 0:
+                    logger.warning(f"Model {model_id} already exists")
+                    return False
+
+                cursor.execute('''
+                    INSERT INTO ai_model_config 
+                    (model_id, model_name, model_type, provider, endpoint, parameters, performance_metrics, version)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (
+                    model_info['model_id'],
+                    model_info['model_name'],
+                    model_info['model_type'],
+                    model_info['provider'],
+                    model_info.get('endpoint', ''),
+                    model_info.get('parameters', '{}'),
+                    model_info.get('performance_metrics', '{}'),
+                    model_info.get('version', '1.0')
+                ))
+                
+                conn.commit()
+                logger.info(f"Created AI model: {model_id}")
+                return True
+        except Exception as e:
+            logger.error(f"Failed to create model: {str(e)}")
+            return False
+
+    def get_models(self, model_type: str = None) -> Dict[str, Any]:
+        """Get all AI models"""
+        try:
+            with get_db_connection() as conn:
+                cursor = conn.cursor()
+                
+                if model_type:
+                    cursor.execute('SELECT * FROM ai_model_config WHERE model_type = ?', (model_type,))
+                else:
+                    cursor.execute('SELECT * FROM ai_model_config')
+                
+                models = []
+                for row in cursor.fetchall():
+                    models.append({
+                        'model_id': row[0],
+                        'model_name': row[1],
+                        'model_type': row[2],
+                        'provider': row[3],
+                        'endpoint': row[5],
+                        'parameters': json.loads(row[6]) if row[6] else {},
+                        'performance_metrics': json.loads(row[7]) if row[7] else {},
+                        'status': row[8],
+                        'version': row[9]
+                    })
+                
+                return {'success': True, 'models': models}
+        except Exception as e:
+            return {'success': False, 'error': str(e)}
+
+    def update_model_performance(self, model_id: str, metrics: Dict) -> bool:
+        """Update model performance metrics"""
+        try:
+            with get_db_connection() as conn:
+                cursor = conn.cursor()
+                
+                cursor.execute('''
+                    INSERT INTO ai_model_performance 
+                    (model_id, latency, throughput, accuracy, error_rate, requests_count)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                ''', (
+                    model_id,
+                    metrics.get('latency', 0.0),
+                    metrics.get('throughput', 0.0),
+                    metrics.get('accuracy', 0.0),
+                    metrics.get('error_rate', 0.0),
+                    metrics.get('requests_count', 0)
+                ))
+                
+                cursor.execute('''
+                    UPDATE ai_model_config 
+                    SET performance_metrics = ?, updated_at = ?
+                    WHERE model_id = ?
+                ''', (json.dumps(metrics), str(time.time()), model_id))
+                
+                conn.commit()
+                return True
+        except Exception as e:
+            logger.error(f"Failed to update model performance: {str(e)}")
+            return False
 
     def shutdown(self) -> bool:
         """Shutdown the cluster manager"""

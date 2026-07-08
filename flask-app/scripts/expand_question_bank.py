@@ -14,7 +14,17 @@ DATABASE_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__f
 
 SUBJECTS = [
     '语文', '数学', '英语', '物理', '化学', '生物',
-    '历史', '地理', '政治', '科学', '日语'
+    '历史', '地理', '政治', '科学', '日语',
+    '成人高考语文', '成人高考数学', '成人高考英语',
+    '成人高考政治', '成人高考物理', '成人高考化学',
+    '成人高考历史', '成人高考地理', '成人高考医学综合',
+    '自考汉语言文学', '自考法律', '自考会计',
+    '自考计算机', '自考心理学', '自考教育学',
+    '小学语文', '小学数学', '小学英语', '小学科学',
+    '初中语文', '初中数学', '初中英语', '初中物理', '初中化学',
+    '初中生物', '初中历史', '初中地理', '初中道德与法治',
+    '高中语文', '高中数学', '高中英语', '高中物理', '高中化学',
+    '高中生物', '高中历史', '高中地理', '高中政治'
 ]
 
 QUESTION_TYPES = ['single_choice', 'multiple_choice', 'true_false', 'fill_blank', 'short_answer']
@@ -525,6 +535,316 @@ def generate_japanese_question(difficulty, topic):
     else:
         return '"すみません"的意思是？', '对不起/打扰了'
 
+def generate_adult_exam_chinese_question(difficulty, topic):
+    if difficulty == 'easy':
+        return '《诗经》是我国最早的一部什么类型的书籍？', '诗歌总集'
+    elif difficulty == 'medium':
+        return '鲁迅的原名是？', '周树人'
+    else:
+        return '"沉舟侧畔千帆过，病树前头万木春"出自哪位诗人的作品？', '刘禹锡'
+
+def generate_adult_exam_math_question(difficulty, topic):
+    if difficulty == 'easy':
+        a, b = random.randint(1, 20), random.randint(1, 20)
+        return f"计算：{a} + {b} = ?", str(a + b)
+    elif difficulty == 'medium':
+        a, b = random.randint(1, 10), random.randint(1, 10)
+        return f"计算：({a} + {b})^2 = ?", str((a + b) ** 2)
+    else:
+        a, b, c = random.randint(1, 5), random.randint(1, 10), random.randint(1, 10)
+        return f"求二次函数 y = {a}x^2 + {b}x + {c} 的顶点坐标", f"(-{b}/{2*a}, {4*a*c-b*b}/{4*a})"
+
+def generate_adult_exam_english_question(difficulty, topic):
+    if difficulty == 'easy':
+        return 'The sky is ____.', 'blue'
+    elif difficulty == 'medium':
+        return 'She ____ to school every day.', 'goes'
+    else:
+        return 'The book ____ by many students.', 'is read'
+
+def generate_adult_exam_politics_question(difficulty, topic):
+    if difficulty == 'easy':
+        return '我国的根本大法是？', '宪法'
+    elif difficulty == 'medium':
+        return '社会主义初级阶段的基本路线的核心是？', '一个中心，两个基本点'
+    else:
+        return '科学发展观的第一要义是？', '发展'
+
+def generate_adult_exam_physics_question(difficulty, topic):
+    if difficulty == 'easy':
+        return '物体做匀速直线运动时，其加速度为？', '0'
+    elif difficulty == 'medium':
+        return '动能的计算公式是？', 'Ek = 1/2 mv^2'
+    else:
+        return '牛顿第二定律的表达式是？', 'F = ma'
+
+def generate_adult_exam_chemistry_question(difficulty, topic):
+    if difficulty == 'easy':
+        return '原子的中心是什么？', '原子核'
+    elif difficulty == 'medium':
+        return '物质的量的单位是？', '摩尔'
+    else:
+        return '化学反应速率的计算公式是？', 'v = Δc/Δt'
+
+def generate_adult_exam_history_question(difficulty, topic):
+    if difficulty == 'easy':
+        return '新中国成立于哪一年？', '1949年'
+    elif difficulty == 'medium':
+        return '改革开放是在哪一年开始的？', '1978年'
+    else:
+        return '辛亥革命发生在哪一年？', '1911年'
+
+def generate_adult_exam_geography_question(difficulty, topic):
+    if difficulty == 'easy':
+        return '我国面积最大的省级行政区是？', '新疆维吾尔自治区'
+    elif difficulty == 'medium':
+        return '我国人口最多的省份是？', '广东省'
+    else:
+        return '世界上最长的河流是？', '尼罗河'
+
+def generate_adult_exam_medical_question(difficulty, topic):
+    if difficulty == 'easy':
+        return '人体最大的器官是？', '皮肤'
+    elif difficulty == 'medium':
+        return '心脏有几个腔？', '4个'
+    else:
+        return '血液循环包括体循环和什么循环？', '肺循环'
+
+def generate_self_exam_chinese_question(difficulty, topic):
+    if difficulty == 'easy':
+        return '《红楼梦》的作者是？', '曹雪芹'
+    elif difficulty == 'medium':
+        return '《论语》是记录谁的言行的著作？', '孔子及其弟子'
+    else:
+        return '《诗经》分为风、雅、颂三部分，其中哪部分是民间歌谣？', '风'
+
+def generate_self_exam_law_question(difficulty, topic):
+    if difficulty == 'easy':
+        return '法律的本质是什么？', '统治阶级意志的体现'
+    elif difficulty == 'medium':
+        return '我国的法律体系以什么为核心？', '宪法'
+    else:
+        return '民法的基本原则包括平等原则、自愿原则和什么原则？', '公平原则'
+
+def generate_self_exam_accounting_question(difficulty, topic):
+    if difficulty == 'easy':
+        return '会计的基本职能是核算和什么？', '监督'
+    elif difficulty == 'medium':
+        return '资产=负债+什么？', '所有者权益'
+    else:
+        return '会计凭证按其填制程序和用途分为原始凭证和什么？', '记账凭证'
+
+def generate_self_exam_computer_question(difficulty, topic):
+    if difficulty == 'easy':
+        return '计算机的核心部件是？', 'CPU'
+    elif difficulty == 'medium':
+        return '二进制数1010转换为十进制是？', '10'
+    else:
+        return '操作系统的主要功能包括进程管理、内存管理和什么管理？', '文件管理'
+
+def generate_self_exam_psychology_question(difficulty, topic):
+    if difficulty == 'easy':
+        return '心理学的研究对象是？', '心理现象'
+    elif difficulty == 'medium':
+        return '马斯洛需要层次理论中最高层次的需要是？', '自我实现的需要'
+    else:
+        return '精神分析学派的创始人是？', '弗洛伊德'
+
+def generate_self_exam_education_question(difficulty, topic):
+    if difficulty == 'easy':
+        return '教育的本质属性是？', '培养人的社会活动'
+    elif difficulty == 'medium':
+        return '我国现行学制的结构是？', '学前教育、初等教育、中等教育、高等教育'
+    else:
+        return '教学过程的基本规律包括间接经验与直接经验相结合和什么？', '掌握知识与发展智力相统一'
+
+def generate_primary_chinese_question(difficulty, topic):
+    if difficulty == 'easy':
+        poem = random.choice(CHINESE_POEMS)
+        return f'"{poem[0]}"的作者是？', poem[1]
+    elif difficulty == 'medium':
+        return '汉字的拼音有几种声调？', '4种'
+    else:
+        return '《静夜思》的作者是？', '李白'
+
+def generate_primary_math_question(difficulty, topic):
+    if difficulty == 'easy':
+        a, b = random.randint(1, 100), random.randint(1, 100)
+        return f"计算：{a} + {b} = ?", str(a + b)
+    elif difficulty == 'medium':
+        a, b = random.randint(1, 20), random.randint(1, 20)
+        return f"计算：{a} × {b} = ?", str(a * b)
+    else:
+        a, b, c = random.randint(1, 10), random.randint(1, 10), random.randint(1, 10)
+        return f"计算：{a} + {b} × {c} = ?", str(a + b * c)
+
+def generate_primary_english_question(difficulty, topic):
+    if difficulty == 'easy':
+        word, meaning = random.choice(list(ENGLISH_WORDS_EXTENDED.items()))
+        return f'"{word}"的意思是？', meaning
+    elif difficulty == 'medium':
+        return 'How many letters are in the English alphabet?', '26'
+    else:
+        return 'What is the plural of "book"?', 'books'
+
+def generate_primary_science_question(difficulty, topic):
+    if difficulty == 'easy':
+        return '太阳从哪个方向升起？', '东方'
+    elif difficulty == 'medium':
+        return '水的三种状态是固态、液态和什么？', '气态'
+    else:
+        return '植物的光合作用需要什么气体？', '二氧化碳'
+
+def generate_middle_chinese_question(difficulty, topic):
+    if difficulty == 'easy':
+        return '《西游记》的作者是？', '吴承恩'
+    elif difficulty == 'medium':
+        return '唐宋八大家中属于唐代的有韩愈和谁？', '柳宗元'
+    else:
+        return '"海内存知己，天涯若比邻"出自哪位诗人？', '王勃'
+
+def generate_middle_math_question(difficulty, topic):
+    if difficulty == 'easy':
+        x = random.randint(1, 20)
+        return f"解方程：x + {x} = {2*x}", str(x)
+    elif difficulty == 'medium':
+        a, b = random.randint(1, 10), random.randint(1, 20)
+        return f"解方程：{a}x = {a*b}", str(b)
+    else:
+        a, b, c = random.randint(1, 5), random.randint(-10, 10), random.randint(-10, 10)
+        return f"求二次函数 y = {a}x^2 + {b}x + {c} 的判别式", f"Δ = {b}^2 - 4×{a}×{c}"
+
+def generate_middle_english_question(difficulty, topic):
+    if difficulty == 'easy':
+        return 'She ___ to school.', 'goes'
+    elif difficulty == 'medium':
+        return 'They ___ playing football now.', 'are'
+    else:
+        return 'The letter ___ by Tom yesterday.', 'was written'
+
+def generate_middle_physics_question(difficulty, topic):
+    if difficulty == 'easy':
+        return '力的单位是？', '牛顿'
+    elif difficulty == 'medium':
+        return '速度的计算公式是？', 'v = s/t'
+    else:
+        return '重力加速度g约等于多少？', '9.8 m/s^2'
+
+def generate_middle_chemistry_question(difficulty, topic):
+    if difficulty == 'easy':
+        return '氧气的化学式是？', 'O2'
+    elif difficulty == 'medium':
+        return '二氧化碳的化学式是？', 'CO2'
+    else:
+        return '酸碱中和反应生成盐和什么？', '水'
+
+def generate_middle_biology_question(difficulty, topic):
+    if difficulty == 'easy':
+        return '细胞的基本结构包括细胞膜、细胞质和什么？', '细胞核'
+    elif difficulty == 'medium':
+        return '光合作用的产物是氧气和什么？', '有机物'
+    else:
+        return 'DNA位于细胞的哪个结构中？', '细胞核'
+
+def generate_middle_history_question(difficulty, topic):
+    if difficulty == 'easy':
+        return '中国古代四大发明包括造纸术、印刷术、火药和什么？', '指南针'
+    elif difficulty == 'medium':
+        return '唐朝的开国皇帝是？', '李渊'
+    else:
+        return '明朝的开国皇帝是？', '朱元璋'
+
+def generate_middle_geography_question(difficulty, topic):
+    if difficulty == 'easy':
+        return '地球的形状是什么？', '球体'
+    elif difficulty == 'medium':
+        return '我国的四大高原是青藏高原、黄土高原、内蒙古高原和什么？', '云贵高原'
+    else:
+        return '世界上面积最大的国家是？', '俄罗斯'
+
+def generate_middle_politics_question(difficulty, topic):
+    if difficulty == 'easy':
+        return '我国的国旗是？', '五星红旗'
+    elif difficulty == 'medium':
+        return '我国的国歌是？', '义勇军进行曲'
+    else:
+        return '我国的国体是？', '人民民主专政'
+
+def generate_high_chinese_question(difficulty, topic):
+    if difficulty == 'easy':
+        return '《离骚》的作者是？', '屈原'
+    elif difficulty == 'medium':
+        return '《史记》的作者是？', '司马迁'
+    else:
+        return '"落霞与孤鹜齐飞，秋水共长天一色"出自哪篇文章？', '《滕王阁序》'
+
+def generate_high_math_question(difficulty, topic):
+    if difficulty == 'easy':
+        a = random.randint(1, 10)
+        return f"求函数 y = {a}x 的导数", str(a)
+    elif difficulty == 'medium':
+        a, b = random.randint(1, 5), random.randint(1, 10)
+        return f"求函数 y = {a}x^2 + {b}x 的导数", f"{2*a}x + {b}"
+    else:
+        a, b, c = random.randint(1, 5), random.randint(1, 10), random.randint(1, 10)
+        return f"求函数 y = {a}x^3 + {b}x^2 + {c}x 的导数", f"{3*a}x^2 + {2*b}x + {c}"
+
+def generate_high_english_question(difficulty, topic):
+    if difficulty == 'easy':
+        return 'The weather is getting ___ and ___.', 'colder, colder'
+    elif difficulty == 'medium':
+        return 'It is the first time that I ___ to Beijing.', 'have been'
+    else:
+        return '___ the project was completed ahead of schedule.', 'To our surprise'
+
+def generate_high_physics_question(difficulty, topic):
+    if difficulty == 'easy':
+        return '功的单位是？', '焦耳'
+    elif difficulty == 'medium':
+        return '功率的计算公式是？', 'P = W/t'
+    else:
+        return '安培力的计算公式是？', 'F = BIL'
+
+def generate_high_chemistry_question(difficulty, topic):
+    if difficulty == 'easy':
+        return '原子序数等于质子数还是中子数？', '质子数'
+    elif difficulty == 'medium':
+        return '元素周期表有多少个周期？', '7个'
+    else:
+        return '化学键包括离子键、共价键和什么？', '金属键'
+
+def generate_high_biology_question(difficulty, topic):
+    if difficulty == 'easy':
+        return 'DNA的基本组成单位是？', '脱氧核苷酸'
+    elif difficulty == 'medium':
+        return '遗传信息的传递过程是DNA→RNA→什么？', '蛋白质'
+    else:
+        return '孟德尔遗传定律包括分离定律和什么定律？', '自由组合定律'
+
+def generate_high_history_question(difficulty, topic):
+    if difficulty == 'easy':
+        return '第一次世界大战爆发于哪一年？', '1914年'
+    elif difficulty == 'medium':
+        return '第二次世界大战爆发于哪一年？', '1939年'
+    else:
+        return '巴黎和会召开于哪一年？', '1919年'
+
+def generate_high_geography_question(difficulty, topic):
+    if difficulty == 'easy':
+        return '地球自转的方向是？', '自西向东'
+    elif difficulty == 'medium':
+        return '地球公转的周期是？', '一年'
+    else:
+        return '大气圈分为对流层、平流层和什么层？', '高层大气'
+
+def generate_high_politics_question(difficulty, topic):
+    if difficulty == 'easy':
+        return '唯物辩证法的实质和核心是什么？', '对立统一规律'
+    elif difficulty == 'medium':
+        return '实践是检验真理的唯一标准，这是谁提出的观点？', '马克思'
+    else:
+        return '社会存在决定社会意识，社会意识对社会存在具有什么作用？', '反作用'
+
 SUBJECT_GENERATORS = {
     '语文': generate_chinese_question,
     '数学': generate_math_question,
@@ -536,7 +856,44 @@ SUBJECT_GENERATORS = {
     '地理': generate_geography_question,
     '政治': generate_politics_question,
     '科学': generate_science_question,
-    '日语': generate_japanese_question
+    '日语': generate_japanese_question,
+    '成人高考语文': generate_adult_exam_chinese_question,
+    '成人高考数学': generate_adult_exam_math_question,
+    '成人高考英语': generate_adult_exam_english_question,
+    '成人高考政治': generate_adult_exam_politics_question,
+    '成人高考物理': generate_adult_exam_physics_question,
+    '成人高考化学': generate_adult_exam_chemistry_question,
+    '成人高考历史': generate_adult_exam_history_question,
+    '成人高考地理': generate_adult_exam_geography_question,
+    '成人高考医学综合': generate_adult_exam_medical_question,
+    '自考汉语言文学': generate_self_exam_chinese_question,
+    '自考法律': generate_self_exam_law_question,
+    '自考会计': generate_self_exam_accounting_question,
+    '自考计算机': generate_self_exam_computer_question,
+    '自考心理学': generate_self_exam_psychology_question,
+    '自考教育学': generate_self_exam_education_question,
+    '小学语文': generate_primary_chinese_question,
+    '小学数学': generate_primary_math_question,
+    '小学英语': generate_primary_english_question,
+    '小学科学': generate_primary_science_question,
+    '初中语文': generate_middle_chinese_question,
+    '初中数学': generate_middle_math_question,
+    '初中英语': generate_middle_english_question,
+    '初中物理': generate_middle_physics_question,
+    '初中化学': generate_middle_chemistry_question,
+    '初中生物': generate_middle_biology_question,
+    '初中历史': generate_middle_history_question,
+    '初中地理': generate_middle_geography_question,
+    '初中道德与法治': generate_middle_politics_question,
+    '高中语文': generate_high_chinese_question,
+    '高中数学': generate_high_math_question,
+    '高中英语': generate_high_english_question,
+    '高中物理': generate_high_physics_question,
+    '高中化学': generate_high_chemistry_question,
+    '高中生物': generate_high_biology_question,
+    '高中历史': generate_high_history_question,
+    '高中地理': generate_high_geography_question,
+    '高中政治': generate_high_politics_question
 }
 
 def generate_question(subject, q_type, difficulty):
@@ -744,7 +1101,7 @@ def save_questions_batch(questions, conn):
         conn.rollback()
         return 0
 
-def expand_subject_questions(subject, target_count=100000):
+def expand_subject_questions(subject, target_count=1000):
     print(f"\n=== 开始扩充 {subject} 题库 ===")
     start_time = time.time()
     
@@ -829,12 +1186,12 @@ def main():
     
     init_database()
     
-    print(f"\n目标: 每个科目扩充到 100,000 道题目")
+    print(f"\n目标: 每个科目扩充到 1000 道题目")
     print(f"涉及科目: {', '.join(SUBJECTS)}")
     
     total_added = 0
     for subject in SUBJECTS:
-        added = expand_subject_questions(subject, 100000)
+        added = expand_subject_questions(subject, 1000)
         total_added += added
     
     print("\n" + "=" * 60)
