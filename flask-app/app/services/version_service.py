@@ -102,7 +102,7 @@ class VersionService:
         """将版本文件同步到数据库"""
         version_data = self._parse_version_file()
         
-        version = version_data.get('VERSION', '5.3.0')
+        version = version_data.get('VERSION', '7.2.0')
         version_parts = version.split('.')
         major = int(version_parts[0]) if len(version_parts) > 0 else 1
         minor = int(version_parts[1]) if len(version_parts) > 1 else 0
@@ -209,9 +209,9 @@ class VersionService:
         facts = self.get_version_facts()
         
         return {
-            'version': version.get('version', '5.3.0'),
-            'major_version': version.get('major_version', 5),
-            'minor_version': version.get('minor_version', 3),
+            'version': version.get('version', '7.2.0'),
+            'major_version': version.get('major_version', 7),
+            'minor_version': version.get('minor_version', 2),
             'patch_version': version.get('patch_version', 0),
             'build_number': version.get('build_number', ''),
             'build_date': version.get('build_date', ''),

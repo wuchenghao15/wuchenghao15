@@ -93,8 +93,8 @@ def verify_password(stored_password, provided_password):
 
 @app.route('/')
 def index():
-    version_data = {'version': '6.0.0', 'major_version': 6, 'minor_version': 0, 'patch_version': 0, 
-                    'build_number': '', 'build_date': '2026-07-06', 'codename': 'Distributed Database Edition', 'status': 'stable'}
+    version_data = {'version': '7.2.0', 'major_version': 7, 'minor_version': 2, 'patch_version': 0, 
+                    'build_number': '20260709001', 'build_date': '2026-07-09', 'codename': 'Comprehensive Enhancement Edition', 'status': 'stable'}
     
     system_notice = None
     try:
@@ -255,14 +255,14 @@ def api_health():
             try:
                 cursor.execute('SELECT version FROM system_version LIMIT 1')
                 result = cursor.fetchone()
-                version = result[0] if result else '5.3.0'
+                version = result[0] if result else '7.2.0'
             except:
-                version = '5.3.0'
+                version = '7.2.0'
             conn.close()
         else:
-            version = '5.3.0'
+            version = '7.2.0'
     except:
-        version = '5.3.0'
+        version = '7.2.0'
     return jsonify({'status': 'healthy', 'version': version})
 
 @app.route('/api/server-time')
@@ -273,10 +273,10 @@ def api_server_time():
 @app.route('/api/system/status')
 def api_system_status():
     status = {
-        'version': '6.0.0',
-        'codename': 'Distributed Database Edition',
+        'version': '7.2.0',
+        'codename': 'Comprehensive Enhancement Edition',
         'status': 'running',
-        'database_count': 13,
+        'database_count': 17,
         'databases': ['auth', 'exam', 'question', 'learning', 'system', 'ai', 
                       'physics', 'math', 'admin', 'proctor', 'user', 'log', 'other'],
         'timestamp': time.strftime('%Y-%m-%d %H:%M:%S')
@@ -312,8 +312,8 @@ def api_user_ip():
 
 @app.route('/login')
 def login_page():
-    version_data = {'version': '6.0.0', 'major_version': 6, 'minor_version': 0, 'patch_version': 0, 
-                    'build_number': '', 'build_date': '2026-07-06', 'codename': 'Distributed Database Edition', 'status': 'stable'}
+    version_data = {'version': '7.2.0', 'major_version': 7, 'minor_version': 2, 'patch_version': 0, 
+                    'build_number': '20260709001', 'build_date': '2026-07-09', 'codename': 'Comprehensive Enhancement Edition', 'status': 'stable'}
     return render_template('login.html', version=version_data['version'], version_info=version_data)
 
 def require_login(f):
@@ -336,8 +336,8 @@ def hardware_dashboard():
 @app.route('/super_admin_dashboard')
 @require_login
 def super_admin_dashboard():
-    version_data = {'version': '6.0.0', 'major_version': 6, 'minor_version': 0, 'patch_version': 0, 
-                    'build_number': '', 'build_date': '2026-07-06', 'codename': 'Distributed Database Edition', 'status': 'stable'}
+    version_data = {'version': '7.2.0', 'major_version': 7, 'minor_version': 2, 'patch_version': 0, 
+                    'build_number': '20260709001', 'build_date': '2026-07-09', 'codename': 'Comprehensive Enhancement Edition', 'status': 'stable'}
     
     user_info = {
         'username': session.get('username'),
@@ -430,8 +430,8 @@ def get_dashboard_stats_public():
         stats['database_count'] = 13
         stats['databases'] = ['auth', 'exam', 'question', 'learning', 'system', 'ai', 
                              'physics', 'math', 'admin', 'proctor', 'user', 'log', 'other']
-        stats['version'] = '6.0.0'
-        stats['codename'] = 'Distributed Database Edition'
+        stats['version'] = '7.2.0'
+        stats['codename'] = 'Comprehensive Enhancement Edition'
         
         return jsonify({
             'success': True,
@@ -453,7 +453,7 @@ def exam_system():
         'email': session.get('email'),
         'user_id': session.get('user_id')
     }
-    return render_template('exam_system.html', user=user_info, version='6.0.0')
+    return render_template('exam_system.html', user=user_info, version='7.2.0')
 
 @app.route('/teacher')
 @require_login  
@@ -464,7 +464,7 @@ def teacher_dashboard():
         'email': session.get('email'),
         'user_id': session.get('user_id')
     }
-    return render_template('teacher_dashboard.html', user=user_info, version='6.0.0')
+    return render_template('teacher_dashboard.html', user=user_info, version='7.2.0')
 
 @app.route('/admin_app/settings')
 @require_login
@@ -475,7 +475,7 @@ def admin_settings():
         'email': session.get('email'),
         'user_id': session.get('user_id')
     }
-    return render_template('admin_settings.html', user=user_info, version='6.0.0')
+    return render_template('admin_settings.html', user=user_info, version='7.2.0')
 
 @app.route('/api/users', methods=['GET'])
 @require_login
@@ -558,14 +558,14 @@ def api_system_version():
                 if result:
                     db_version = result[0]
                 else:
-                    db_version = '5.3.0'
+                    db_version = '7.2.0'
             except:
-                db_version = '5.3.0'
+                db_version = '7.2.0'
             conn.close()
         else:
-            db_version = '5.3.0'
+            db_version = '7.2.0'
     except:
-        db_version = '5.3.0'
+        db_version = '7.2.0'
     
     version_data = {
         'version': db_version,
@@ -610,7 +610,7 @@ def api_system_version_check():
 @require_login
 def api_system_version_compare():
     version1 = request.args.get('v1', '5.0.0')
-    version2 = request.args.get('v2', '6.0.0')
+    version2 = request.args.get('v2', '7.2.0')
     comparison = get_version_comparison(version1, version2)
     if comparison:
         return jsonify({'success': True, 'data': comparison})
@@ -833,7 +833,7 @@ def api_backup_list():
 @require_login
 def api_notification_list():
     notifications = [
-        {'id': 1, 'title': '系统升级通知', 'content': '系统已升级至v6.0.0分布式数据库版本', 'type': 'info', 'read': False, 'created_at': '2026-07-06 10:00:00'},
+        {'id': 1, 'title': '系统升级通知', 'content': '系统已升级至v7.2.0全面增强版本', 'type': 'info', 'read': False, 'created_at': '2026-07-09 10:00:00'},
         {'id': 2, 'title': '数据库备份提醒', 'content': '上次备份时间: 2026-07-06 15:00:00', 'type': 'warning', 'read': True, 'created_at': '2026-07-06 09:00:00'},
         {'id': 3, 'title': '新用户注册', 'content': '有3位新用户注册', 'type': 'success', 'read': True, 'created_at': '2026-07-05 18:00:00'}
     ]
@@ -937,14 +937,14 @@ def api_statistics_overview():
                 try:
                     cursor.execute('SELECT version FROM system_version LIMIT 1')
                     result = cursor.fetchone()
-                    stats['version'] = result[0] if result else '5.3.0'
+                    stats['version'] = result[0] if result else '7.2.0'
                 except:
-                    stats['version'] = '5.3.0'
+                    stats['version'] = '7.2.0'
                 conn.close()
             else:
-                stats['version'] = '5.3.0'
+                stats['version'] = '7.2.0'
         except:
-            stats['version'] = '5.3.0'
+            stats['version'] = '7.2.0'
         
         stats['database_count'] = 13
         
