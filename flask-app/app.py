@@ -742,7 +742,7 @@ def get_system_settings():
     """获取系统设置"""
     settings = {
         'system_name': 'MTSCOS AI 智能学习评估系统',
-        'version': "7.2.0",
+        'version': "7.4.0",
         'description': '基于AI的智能学习评估系统,提供个性化学习体验和智能评估功能.',
         'admin_email': 'admin@example.com',
         'maintenance_mode': False,
@@ -1474,7 +1474,7 @@ def generate_marquee():
         
         suggestions = [
             f"📢 系统维护通知：{current_time}系统正常运行中，欢迎使用！",
-            f"🎉 新版本发布：v5.3.0权限增强版已上线，体验更安全！",
+            f"🎉 新版本发布：v7.4.0 Arduino AI增强版已上线，体验AI代码生成！",
             f"💡 使用提示：新增AI员工管理功能，可自动扩展智能服务！",
             f"🔔 重要提醒：请及时备份数据，确保数据安全！",
             f"🌟 功能更新：学生门户页面全新改版，体验升级！",
@@ -4222,7 +4222,7 @@ def get_dashboard_stats_public():
 # 系统状态
 @app.route('/api/system/status')
 def system_status():
-    return jsonify({'status': 'running', 'version': "7.2.0", 'timestamp': datetime.now().isoformat()})
+    return jsonify({'status': 'running', 'version': "7.4.0", 'timestamp': datetime.now().isoformat()})
 
 # 用户信息API - 改用/api/users/info避免路由冲突
 @app.route('/api/users/info/<username>')
@@ -17456,6 +17456,27 @@ try:
 except Exception as e:
     logger.error(f"✗ 注册蓝图 cluster_array_api 失败: {e}")
 
+try:
+    from app.api.arduino_ai_api import arduino_ai_api
+    app.register_blueprint(arduino_ai_api)
+    logger.info("✓ 注册蓝图: arduino_ai_api")
+except Exception as e:
+    logger.error(f"✗ 注册蓝图 arduino_ai_api 失败: {e}")
+
+try:
+    from app.api.ai_intelligent_api import ai_intelligent_api
+    app.register_blueprint(ai_intelligent_api)
+    logger.info("✓ 注册蓝图: ai_intelligent_api")
+except Exception as e:
+    logger.error(f"✗ 注册蓝图 ai_intelligent_api 失败: {e}")
+
+try:
+    from app.api.adult_k12_api import adult_k12_api
+    app.register_blueprint(adult_k12_api)
+    logger.info("✓ 注册蓝图: adult_k12_api")
+except Exception as e:
+    logger.error(f"✗ 注册蓝图 adult_k12_api 失败: {e}")
+
 # ==================== AI布局管理员工模块 ====================
 
 def require_layout_admin():
@@ -17565,7 +17586,7 @@ def ai_tutor():
     return render_template('admin_app/ai_tutor.html', user=user)
 
 @app.route('/admin/wrong-book')
-def wrong_book():
+def admin_wrong_book():
     """智能错题本页面"""
     has_access, redirect_to = require_admin_app_access()
     if not has_access:
@@ -17579,6 +17600,38 @@ def wrong_book():
         'role': session.get('role')
     }
     return render_template('admin_app/wrong_book.html', user=user)
+
+@app.route('/admin/arduino-ide')
+def arduino_ide():
+    """Arduino AI设计系统页面"""
+    has_access, redirect_to = require_admin_app_access()
+    if not has_access:
+        if redirect_to == 'login':
+            return redirect('/admin_app/login')
+        return "无权访问", 403
+
+    user = {
+        'id': session.get('user_id'),
+        'username': session.get('username'),
+        'role': session.get('role')
+    }
+    return render_template('admin_app/arduino_ide.html', user=user)
+
+@app.route('/admin/ai-intelligent-center')
+def ai_intelligent_center():
+    """AI智能控制中心页面"""
+    has_access, redirect_to = require_admin_app_access()
+    if not has_access:
+        if redirect_to == 'login':
+            return redirect('/admin_app/login')
+        return "无权访问", 403
+
+    user = {
+        'id': session.get('user_id'),
+        'username': session.get('username'),
+        'role': session.get('role')
+    }
+    return render_template('admin_app/ai_intelligent_center.html', user=user)
 
 @app.route('/manifest.json')
 def pwa_manifest():

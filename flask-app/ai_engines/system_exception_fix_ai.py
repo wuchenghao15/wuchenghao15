@@ -276,7 +276,7 @@ class SystemExceptionFixAI:
                         with open(config_file, 'w', encoding='utf-8') as f:
                             f.write('''# 系统配置
 SYSTEM_NAME = "MTSCOS AI Project"
-SYSTEM_VERSION = "7.2.0"
+SYSTEM_VERSION = "7.4.0"
 DEBUG_MODE = False
 LOG_LEVEL = "INFO"
 ''')

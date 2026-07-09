@@ -345,7 +345,7 @@ class DatabaseManager:
     def _create_connection(self):
         try:
             if self.db_type == 'sqlite':
-                conn = sqlite3.connect(self.db_path, check_same_thread=False)
+                conn = sqlite3.connect(self.db_path, check_same_thread=False, timeout=30)
                 if SQLCIPHER_AVAILABLE:
                     encryption_key = getattr(Config, 'DATABASE_ENCRYPTION_KEY', None)
                     if not encryption_key:
@@ -355,6 +355,12 @@ class DatabaseManager:
                     conn.execute(f"PRAGMA key = '{encryption_key}';")
                     conn.execute("PRAGMA cipher_compatibility = 4;")
                     logger.info("SQLCipher加密已启用")
+
+                conn.execute("PRAGMA journal_mode = WAL;")
+                conn.execute("PRAGMA busy_timeout = 30000;")
+                conn.execute("PRAGMA synchronous = NORMAL;")
+                conn.execute("PRAGMA cache_size = 10000;")
+                logger.info("SQLite WAL模式已启用,busy_timeout=30000ms")
 
                 return conn
             elif self.db_type == 'mysql' and MYSQL_AVAILABLE:

@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 class SelfUpgradingSystem:
     def __init__(self):
         self.enabled = True
-        self.current_version = "7.2.0"
+        self.current_version = "7.4.0"
     
     def check_updates(self):
         return {'available': False, 'current_version': self.current_version, 'latest_version': self.current_version}

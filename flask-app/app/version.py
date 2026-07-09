@@ -3,20 +3,79 @@
 系统版本管理模块
 """
 
-VERSION = "7.2.0"
-BUILD_NUMBER = "20260709001"
-RELEASE_DATE = "2026-07-09"
+VERSION = "7.5.0"
+BUILD_NUMBER = "20260710001"
+RELEASE_DATE = "2026-07-10"
 
 VERSION_INFO = {
     'version': VERSION,
     'build_number': BUILD_NUMBER,
     'release_date': RELEASE_DATE,
     'api_version': 'v1',
-    'codename': 'Comprehensive Enhancement Edition',
+    'codename': 'Adult K12 Education Suite',
     'status': 'stable'
 }
 
 CHANGELOG = [
+    {
+        'version': '7.5.0',
+        'date': '2026-07-10',
+        'title': '成人教育与K12全学段题库拓展版',
+        'changes': [
+            '新增成人教育与K12题库服务 - adult_k12_question_bank_service.py，支持全学段题库管理',
+            '新增9大教育阶段 - 小学/初中/高中/职业教育/专科/本科/成人高考/自学考试/职业资格',
+            '新增14大科目题库 - 语文/数学/英语/物理/化学/生物/历史/地理/政治/计算机/经济/法律/管理/会计',
+            '新增8种题型支持 - 单选/多选/判断/填空/简答/论述/计算/案例分析',
+            '新增成人高考题库 - 覆盖语文、数学、英语、政治等成人高考科目',
+            '新增自学考试题库 - 覆盖多专业核心课程',
+            '新增职业资格题库 - 会计从业、法律职业、计算机等级、经济师等',
+            '新增K12全学段题库 - 小学/初中/高中各科目，覆盖基础到高级知识点',
+            '新增题库统计API - 按阶段/科目/题型/难度多维度统计',
+            '新增adult_k12_api.py API模块 - 6个RESTful接口，支持题目CRUD和统计',
+            '完善题库数据模型 - 知识点标签、难度分级、分数设置、题目解析',
+            'SQLite数据库优化 - 启用WAL模式、30秒busy_timeout、NORMAL同步模式、10000缓存',
+            '系统版本升级至v7.5.0 - 统一所有版本文件和配置',
+            '系统功能统计更新 - 27个蓝图、94个API、132个服务、239个AI引擎、566个路由、19个数据库'
+        ],
+        'security_fixes': [],
+        'breaking_changes': [],
+        'contributors': ['Education AI', 'Question Bank AI', 'System AI'],
+        'highlights': ['成人教育题库', 'K12全学段', '职业资格', '多维度统计', 'SQLite优化']
+    },
+    {
+        'version': '7.4.0',
+        'date': '2026-07-09',
+        'title': 'Arduino AI增强版',
+        'changes': [
+            '新增Arduino AI IDE - 全新Web端代码编辑器，支持5种板型（Uno/Nano/Mega/ESP32/ESP8266）',
+            '新增AI代码生成系统 - 根据功能描述自动生成Arduino代码，支持代码解释和复杂度分析',
+            '新增项目管理系统 - 项目保存/加载、元数据管理、电路数据存储、标签筛选',
+            '新增教学课程系统 - 6大分类（入门/基础/传感器/显示/通信/进阶），3级难度，代码示例',
+            '新增元件库系统 - 5大类元件（基础/传感器/输出/通信/存储），图标展示和代码片段',
+            '新增arduino.db独立数据库 - 4张核心表（projects/tutorials/ai_prompts/user_progress）',
+            '新增18个API接口 - 代码生成/编译/上传/验证/项目/教程/元件库等完整RESTful API',
+            '统一系统版本号至v7.4.0 - 修复version.py/config.py/version_service等版本不一致',
+            '系统功能全面统计 - 25个蓝图、90个API、120个服务、200+AI引擎'
+        ],
+        'security_fixes': [],
+        'breaking_changes': [],
+        'contributors': ['Arduino AI', 'System AI'],
+        'highlights': ['Arduino AI IDE', 'AI代码生成', '项目管理', '教学课程', '元件库']
+    },
+    {
+        'version': '7.3.0',
+        'date': '2026-07-08',
+        'title': 'PWA移动端与AI学习套件版',
+        'changes': [
+            '新增PWA移动端适配 - manifest.json、service-worker.js，支持添加到主屏幕和离线缓存',
+            '新增AI智能答疑系统 - 多科目问答、会话管理、知识库搜索',
+            '新增智能错题本系统 - 错题收集、艾宾浩斯复习、薄弱知识点分析'
+        ],
+        'security_fixes': [],
+        'breaking_changes': [],
+        'contributors': ['PWA AI', 'Tutor AI'],
+        'highlights': ['PWA适配', 'AI答疑', '智能错题本']
+    },
     {
         'version': '7.2.0',
         'date': '2026-07-09',
