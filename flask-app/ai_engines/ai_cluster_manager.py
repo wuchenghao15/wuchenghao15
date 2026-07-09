@@ -553,6 +553,12 @@ class AIClusterManager:
             ('security_cluster', 'security_management'),
             ('middleware_cluster', 'middleware_management'),
             ('logging_cluster', 'log_management'),
+            ('ai_education_cluster', 'ai_education'),
+            ('ai_question_bank_cluster', 'ai_question_bank'),
+            ('ai_analysis_cluster', 'ai_analysis'),
+            ('ai_tutor_cluster', 'ai_tutor'),
+            ('ai_code_cluster', 'ai_code_generation'),
+            ('ai_image_cluster', 'ai_image_generation'),
         ]
 
         for cluster_id, cluster_type in default_clusters:
@@ -569,7 +575,18 @@ class AIClusterManager:
             ('database_worker_2', 'database_specialist', ['database_management', 'backup_restore', 'security_audit']),
             ('middleware_worker_1', 'middleware_specialist', ['middleware_management', 'containerization', 'microservices']),
             ('logging_worker_1', 'logging_specialist', ['log_management', 'log_analysis', 'monitoring']),
-            ('lock_ai_employee', 'lock_manager', ['system_lock_management', 'timeout_management', 'user_activity_tracking', 'security_policies', 'auto_maintenance', 'self_upgrade'])
+            ('lock_ai_employee', 'lock_manager', ['system_lock_management', 'timeout_management', 'user_activity_tracking', 'security_policies', 'auto_maintenance', 'self_upgrade']),
+            ('ai_education_worker_1', 'ai_education_specialist', ['learning_path_recommendation', 'personalized_learning', 'knowledge_graph', 'adaptive_assessment']),
+            ('ai_education_worker_2', 'ai_education_specialist', ['learning_analytics', 'student_progress_tracking', 'classroom_optimization', 'curriculum_design']),
+            ('ai_question_bank_worker_1', 'ai_question_bank_specialist', ['question_generation', 'exam_composition', 'difficulty_adjustment', 'knowledge_point_mapping']),
+            ('ai_question_bank_worker_2', 'ai_question_bank_specialist', ['wrong_book_analysis', 'weak_point_detection', 'practice_recommendation', 'question_bank_expansion']),
+            ('ai_analysis_worker_1', 'ai_analysis_specialist', ['data_visualization', 'predictive_analytics', 'trend_analysis', 'performance_metrics']),
+            ('ai_analysis_worker_2', 'ai_analysis_specialist', ['cluster_analysis', 'anomaly_detection', 'root_cause_analysis', 'business_intelligence']),
+            ('ai_tutor_worker_1', 'ai_tutor_specialist', ['intelligent_qna', 'explaination_generation', 'concept_clarification', 'study_assistance']),
+            ('ai_tutor_worker_2', 'ai_tutor_specialist', ['exam_preparation', 'homework_assistance', 'learning_strategy', 'motivation_boost']),
+            ('ai_code_worker_1', 'ai_code_specialist', ['code_generation', 'code_explanation', 'debug_assistance', 'code_optimization']),
+            ('ai_code_worker_2', 'ai_code_specialist', ['arduino_code_generation', 'circuit_design', 'embedded_programming', 'hardware_integration']),
+            ('ai_image_worker_1', 'ai_image_specialist', ['image_generation', 'visual_design', 'diagram_generation', 'educational_visuals']),
         ]
 
         for employee_id, employee_type, capabilities in employees:
@@ -587,7 +604,18 @@ class AIClusterManager:
             ('database_worker_2', 'database_cluster'),
             ('middleware_worker_1', 'middleware_cluster'),
             ('logging_worker_1', 'logging_cluster'),
-            ('lock_ai_employee', 'security_cluster')
+            ('lock_ai_employee', 'security_cluster'),
+            ('ai_education_worker_1', 'ai_education_cluster'),
+            ('ai_education_worker_2', 'ai_education_cluster'),
+            ('ai_question_bank_worker_1', 'ai_question_bank_cluster'),
+            ('ai_question_bank_worker_2', 'ai_question_bank_cluster'),
+            ('ai_analysis_worker_1', 'ai_analysis_cluster'),
+            ('ai_analysis_worker_2', 'ai_analysis_cluster'),
+            ('ai_tutor_worker_1', 'ai_tutor_cluster'),
+            ('ai_tutor_worker_2', 'ai_tutor_cluster'),
+            ('ai_code_worker_1', 'ai_code_cluster'),
+            ('ai_code_worker_2', 'ai_code_cluster'),
+            ('ai_image_worker_1', 'ai_image_cluster'),
         ]
 
         for employee_id, cluster_id in assignments:
@@ -622,7 +650,13 @@ class AIClusterManager:
             'security_specialist': 'security_cluster',
             'middleware_specialist': 'middleware_cluster',
             'logging_specialist': 'logging_cluster',
-            'lock_manager': 'security_cluster'
+            'lock_manager': 'security_cluster',
+            'ai_education_specialist': 'ai_education_cluster',
+            'ai_question_bank_specialist': 'ai_question_bank_cluster',
+            'ai_analysis_specialist': 'ai_analysis_cluster',
+            'ai_tutor_specialist': 'ai_tutor_cluster',
+            'ai_code_specialist': 'ai_code_cluster',
+            'ai_image_specialist': 'ai_image_cluster',
         }
         
         if employee_type in type_mapping:
@@ -1174,6 +1208,26 @@ class AIClusterManager:
                 'version': '4.o'
             },
             {
+                'model_id': 'gpt-4o-mini',
+                'model_name': 'GPT-4o mini',
+                'model_type': 'llm',
+                'provider': 'openai',
+                'endpoint': 'https://api.openai.com/v1/chat/completions',
+                'parameters': json.dumps({'temperature': 0.7, 'max_tokens': 128000}),
+                'performance_metrics': json.dumps({'latency': 0.15, 'throughput': 200, 'accuracy': 0.92}),
+                'version': '1.0'
+            },
+            {
+                'model_id': 'gpt-4-turbo',
+                'model_name': 'GPT-4 Turbo',
+                'model_type': 'llm',
+                'provider': 'openai',
+                'endpoint': 'https://api.openai.com/v1/chat/completions',
+                'parameters': json.dumps({'temperature': 0.7, 'max_tokens': 128000}),
+                'performance_metrics': json.dumps({'latency': 0.6, 'throughput': 80, 'accuracy': 0.95}),
+                'version': '128k'
+            },
+            {
                 'model_id': 'claude-3-opus',
                 'model_name': 'Claude 3 Opus',
                 'model_type': 'llm',
@@ -1192,6 +1246,26 @@ class AIClusterManager:
                 'parameters': json.dumps({'temperature': 0.7, 'max_tokens': 200000}),
                 'performance_metrics': json.dumps({'latency': 0.6, 'throughput': 80, 'accuracy': 0.94}),
                 'version': '3.0'
+            },
+            {
+                'model_id': 'claude-3.5-sonnet',
+                'model_name': 'Claude 3.5 Sonnet',
+                'model_type': 'llm',
+                'provider': 'anthropic',
+                'endpoint': 'https://api.anthropic.com/v1/messages',
+                'parameters': json.dumps({'temperature': 0.7, 'max_tokens': 200000}),
+                'performance_metrics': json.dumps({'latency': 0.4, 'throughput': 120, 'accuracy': 0.96}),
+                'version': '3.5'
+            },
+            {
+                'model_id': 'claude-3.5-haiku',
+                'model_name': 'Claude 3.5 Haiku',
+                'model_type': 'llm',
+                'provider': 'anthropic',
+                'endpoint': 'https://api.anthropic.com/v1/messages',
+                'parameters': json.dumps({'temperature': 0.7, 'max_tokens': 200000}),
+                'performance_metrics': json.dumps({'latency': 0.15, 'throughput': 300, 'accuracy': 0.90}),
+                'version': '3.5'
             },
             {
                 'model_id': 'qwen-max',
@@ -1214,6 +1288,26 @@ class AIClusterManager:
                 'version': '2.0'
             },
             {
+                'model_id': 'qwen-2.5-max',
+                'model_name': 'Qwen 2.5 Max',
+                'model_type': 'llm',
+                'provider': 'alibaba',
+                'endpoint': 'https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation',
+                'parameters': json.dumps({'temperature': 0.7, 'max_tokens': 128000}),
+                'performance_metrics': json.dumps({'latency': 0.3, 'throughput': 150, 'accuracy': 0.94}),
+                'version': '2.5'
+            },
+            {
+                'model_id': 'qwen-2.5-plus',
+                'model_name': 'Qwen 2.5 Plus',
+                'model_type': 'llm',
+                'provider': 'alibaba',
+                'endpoint': 'https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation',
+                'parameters': json.dumps({'temperature': 0.7, 'max_tokens': 4096}),
+                'performance_metrics': json.dumps({'latency': 0.2, 'throughput': 200, 'accuracy': 0.91}),
+                'version': '2.5'
+            },
+            {
                 'model_id': 'llama-3-70b',
                 'model_name': 'Llama 3 70B',
                 'model_type': 'llm',
@@ -1224,6 +1318,26 @@ class AIClusterManager:
                 'version': '3.0'
             },
             {
+                'model_id': 'llama-3.1-70b',
+                'model_name': 'Llama 3.1 70B',
+                'model_type': 'llm',
+                'provider': 'meta',
+                'endpoint': '',
+                'parameters': json.dumps({'temperature': 0.7, 'max_tokens': 128000}),
+                'performance_metrics': json.dumps({'latency': 0.8, 'throughput': 60, 'accuracy': 0.94}),
+                'version': '3.1'
+            },
+            {
+                'model_id': 'llama-3.1-8b',
+                'model_name': 'Llama 3.1 8B',
+                'model_type': 'llm',
+                'provider': 'meta',
+                'endpoint': '',
+                'parameters': json.dumps({'temperature': 0.7, 'max_tokens': 8192}),
+                'performance_metrics': json.dumps({'latency': 0.2, 'throughput': 150, 'accuracy': 0.90}),
+                'version': '3.1'
+            },
+            {
                 'model_id': 'gemini-pro',
                 'model_name': 'Gemini Pro',
                 'model_type': 'llm',
@@ -1231,6 +1345,26 @@ class AIClusterManager:
                 'endpoint': 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent',
                 'parameters': json.dumps({'temperature': 0.7, 'max_tokens': 8192}),
                 'performance_metrics': json.dumps({'latency': 0.6, 'throughput': 70, 'accuracy': 0.92}),
+                'version': '1.5'
+            },
+            {
+                'model_id': 'gemini-1.5-pro',
+                'model_name': 'Gemini 1.5 Pro',
+                'model_type': 'llm',
+                'provider': 'google',
+                'endpoint': 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent',
+                'parameters': json.dumps({'temperature': 0.7, 'max_tokens': 1048576}),
+                'performance_metrics': json.dumps({'latency': 0.8, 'throughput': 50, 'accuracy': 0.95}),
+                'version': '1.5'
+            },
+            {
+                'model_id': 'gemini-1.5-flash',
+                'model_name': 'Gemini 1.5 Flash',
+                'model_type': 'llm',
+                'provider': 'google',
+                'endpoint': 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent',
+                'parameters': json.dumps({'temperature': 0.7, 'max_tokens': 1048576}),
+                'performance_metrics': json.dumps({'latency': 0.2, 'throughput': 200, 'accuracy': 0.92}),
                 'version': '1.5'
             },
             {
@@ -1254,6 +1388,16 @@ class AIClusterManager:
                 'version': '3.0'
             },
             {
+                'model_id': 'text-embedding-3-small',
+                'model_name': 'Text Embedding 3 Small',
+                'model_type': 'embedding',
+                'provider': 'openai',
+                'endpoint': 'https://api.openai.com/v1/embeddings',
+                'parameters': json.dumps({'dimensions': 1536}),
+                'performance_metrics': json.dumps({'latency': 0.05, 'throughput': 1000, 'accuracy': 0.97}),
+                'version': '3.0'
+            },
+            {
                 'model_id': 'dall-e-3',
                 'model_name': 'DALL-E 3',
                 'model_type': 'image_generation',
@@ -1274,6 +1418,16 @@ class AIClusterManager:
                 'version': '2.1'
             },
             {
+                'model_id': 'sdxl',
+                'model_name': 'Stable Diffusion XL',
+                'model_type': 'image_generation',
+                'provider': 'stability-ai',
+                'endpoint': '',
+                'parameters': json.dumps({'steps': 30, 'width': 1024, 'height': 1024}),
+                'performance_metrics': json.dumps({'latency': 10.0, 'throughput': 2, 'accuracy': 0.92}),
+                'version': '1.0'
+            },
+            {
                 'model_id': 'code-llama',
                 'model_name': 'Code Llama',
                 'model_type': 'code',
@@ -1282,6 +1436,26 @@ class AIClusterManager:
                 'parameters': json.dumps({'temperature': 0.2, 'max_tokens': 8192}),
                 'performance_metrics': json.dumps({'latency': 1.5, 'throughput': 20, 'accuracy': 0.91}),
                 'version': '3.0'
+            },
+            {
+                'model_id': 'codellama-3.1',
+                'model_name': 'Code Llama 3.1',
+                'model_type': 'code',
+                'provider': 'meta',
+                'endpoint': '',
+                'parameters': json.dumps({'temperature': 0.2, 'max_tokens': 128000}),
+                'performance_metrics': json.dumps({'latency': 1.0, 'throughput': 40, 'accuracy': 0.93}),
+                'version': '3.1'
+            },
+            {
+                'model_id': 'deepseek-coder',
+                'model_name': 'DeepSeek Coder',
+                'model_type': 'code',
+                'provider': 'deepseek',
+                'endpoint': '',
+                'parameters': json.dumps({'temperature': 0.2, 'max_tokens': 8192}),
+                'performance_metrics': json.dumps({'latency': 0.8, 'throughput': 50, 'accuracy': 0.92}),
+                'version': '2.0'
             },
             {
                 'model_id': 'chatglm-4',
@@ -1294,6 +1468,16 @@ class AIClusterManager:
                 'version': '4.0'
             },
             {
+                'model_id': 'chatglm-4-plus',
+                'model_name': 'ChatGLM 4 Plus',
+                'model_type': 'llm',
+                'provider': 'zhipu',
+                'endpoint': 'https://open.bigmodel.cn/api/paas/v4/chat/completions',
+                'parameters': json.dumps({'temperature': 0.7, 'max_tokens': 128000}),
+                'performance_metrics': json.dumps({'latency': 0.3, 'throughput': 120, 'accuracy': 0.93}),
+                'version': '4.0'
+            },
+            {
                 'model_id': 'ernie-4.0',
                 'model_name': 'ERNIE 4.0',
                 'model_type': 'llm',
@@ -1302,7 +1486,57 @@ class AIClusterManager:
                 'parameters': json.dumps({'temperature': 0.7, 'max_tokens': 4096}),
                 'performance_metrics': json.dumps({'latency': 0.6, 'throughput': 70, 'accuracy': 0.90}),
                 'version': '4.0'
-            }
+            },
+            {
+                'model_id': 'ernie-5.0',
+                'model_name': 'ERNIE 5.0',
+                'model_type': 'llm',
+                'provider': 'baidu',
+                'endpoint': 'https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions',
+                'parameters': json.dumps({'temperature': 0.7, 'max_tokens': 8192}),
+                'performance_metrics': json.dumps({'latency': 0.4, 'throughput': 100, 'accuracy': 0.92}),
+                'version': '5.0'
+            },
+            {
+                'model_id': 'mistral-large',
+                'model_name': 'Mistral Large',
+                'model_type': 'llm',
+                'provider': 'mistral',
+                'endpoint': 'https://api.mistral.ai/v1/chat/completions',
+                'parameters': json.dumps({'temperature': 0.7, 'max_tokens': 32768}),
+                'performance_metrics': json.dumps({'latency': 0.6, 'throughput': 60, 'accuracy': 0.93}),
+                'version': '2.0'
+            },
+            {
+                'model_id': 'mixtral-8x7b',
+                'model_name': 'Mixtral 8x7B',
+                'model_type': 'llm',
+                'provider': 'mistral',
+                'endpoint': '',
+                'parameters': json.dumps({'temperature': 0.7, 'max_tokens': 32768}),
+                'performance_metrics': json.dumps({'latency': 0.8, 'throughput': 40, 'accuracy': 0.91}),
+                'version': '8x7b'
+            },
+            {
+                'model_id': 'embedding-qwen',
+                'model_name': 'Qwen Embedding',
+                'model_type': 'embedding',
+                'provider': 'alibaba',
+                'endpoint': 'https://dashscope.aliyuncs.com/api/v1/services/embedding/text-embedding/text-embedding',
+                'parameters': json.dumps({'dimensions': 1024}),
+                'performance_metrics': json.dumps({'latency': 0.08, 'throughput': 800, 'accuracy': 0.95}),
+                'version': '2.0'
+            },
+            {
+                'model_id': 'speech-qwen',
+                'model_name': 'Qwen Speech',
+                'model_type': 'speech_to_text',
+                'provider': 'alibaba',
+                'endpoint': 'https://dashscope.aliyuncs.com/api/v1/services/audio/asr/speech_to_text',
+                'parameters': json.dumps({'language': 'zh'}),
+                'performance_metrics': json.dumps({'latency': 1.5, 'throughput': 15, 'accuracy': 0.96}),
+                'version': '2.0'
+            },
         ]
 
         for model_info in default_models:
