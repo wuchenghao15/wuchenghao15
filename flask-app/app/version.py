@@ -3,20 +3,44 @@
 系统版本管理模块
 """
 
-VERSION = "7.5.0"
-BUILD_NUMBER = "20260710001"
-RELEASE_DATE = "2026-07-10"
+VERSION = "7.6.0"
+BUILD_NUMBER = "20260711001"
+RELEASE_DATE = "2026-07-11"
 
 VERSION_INFO = {
     'version': VERSION,
     'build_number': BUILD_NUMBER,
     'release_date': RELEASE_DATE,
     'api_version': 'v1',
-    'codename': 'Adult K12 Education Suite',
+    'codename': 'Mobile Adaptive & AI Enhancement Suite',
     'status': 'stable'
 }
 
 CHANGELOG = [
+    {
+        'version': '7.6.0',
+        'date': '2026-07-11',
+        'title': '移动端适配增强与AI全面升级套件',
+        'changes': [
+            '新增移动端响应式布局系统 - 768px/480px/360px三档断点，flexbox自适应，触摸优化',
+            '新增移动端交互脚本 - MobileInteractions类，支持滑动手势识别、触摸事件、表单输入优化',
+            '新增移动端菜单系统 - 左侧抽屉式菜单，触摸滑动打开/关闭，响应式导航切换',
+            '新增移动端专用页面模板 - mobile/home.html、mobile/login.html、mobile/exam.html、mobile/profile.html',
+            '新增PWA增强配置 - manifest.json升级、service-worker.js优化、离线缓存策略',
+            '前端布局排版升级 - 统一CSS变量系统、AI玻璃态效果、发光动画、进度条样式',
+            'AI集群全面升级 - 新增6个AI专用集群（教育/题库/分析/辅导/代码/图像），共13个集群',
+            'AI模型库扩展至38个模型 - 覆盖GPT-4/Claude-3/Qwen/Llama-3/Gemini/Mistral等主流模型',
+            'AI员工系统扩展 - 新增12个AI员工，共41个AI员工负责不同领域',
+            '权限规则系统增强 - 扩展至16个系统角色，6级访问控制，审计日志系统完善',
+            '系统版本统一管理 - VERSION文件、version.py、SYSTEM_DOC.md、CHANGELOG.md统一升级至v7.6.0',
+            '系统说明书更新 - 新增移动端适配章节、AI集群管理章节、API接口文档完善',
+            '系统功能统计更新 - 28个蓝图、98个API、138个服务、251个AI引擎、580个路由、20个数据库'
+        ],
+        'security_fixes': [],
+        'breaking_changes': [],
+        'contributors': ['Mobile AI', 'UI AI', 'AI Cluster AI', 'Permission AI', 'Documentation AI'],
+        'highlights': ['移动端适配', 'AI集群升级', '模型库扩展', '权限增强', '文档完善']
+    },
     {
         'version': '7.5.0',
         'date': '2026-07-10',

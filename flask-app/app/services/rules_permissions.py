@@ -37,6 +37,16 @@ class ResourceType(Enum):
     REPORT = "report"
     DATA = "data"
     SYSTEM = "system"
+    AI = "ai"
+    CLUSTER = "cluster"
+    PORT = "port"
+    BACKUP = "backup"
+    LOG = "log"
+    ANALYTICS = "analytics"
+    EDUCATION = "education"
+    CONTENT = "content"
+    FINANCIAL = "financial"
+    SECURITY = "security"
 
 
 class ActionType(Enum):
@@ -47,6 +57,13 @@ class ActionType(Enum):
     EXECUTE = "execute"
     VIEW = "view"
     MANAGE = "manage"
+    GRANT = "grant"
+    REVOKE = "revoke"
+    EXPORT = "export"
+    IMPORT = "import"
+    CONFIGURE = "configure"
+    MONITOR = "monitor"
+    OPTIMIZE = "optimize"
 
 
 class AuditAction(Enum):
@@ -57,6 +74,19 @@ class AuditAction(Enum):
     UPDATE = "update"
     ACCESS_DENIED = "access_denied"
     ACCESS_GRANTED = "access_granted"
+    CREATE = "create"
+    DELETE = "delete"
+    EXPORT = "export"
+    IMPORT = "import"
+    CONFIGURE = "configure"
+
+
+class RoleCategory(Enum):
+    SYSTEM = "system"
+    EDUCATION = "education"
+    ADMINISTRATION = "administration"
+    SECURITY = "security"
+    ANALYTICS = "analytics"
 
 
 class PermissionManager:
@@ -73,6 +103,7 @@ class PermissionManager:
         
         self._init_database()
         self._load_default_roles()
+        self._load_default_permissions()
         
         logger.info("权限管理器初始化完成")
 
@@ -80,7 +111,7 @@ class PermissionManager:
         """初始化数据库"""
         try:
             db_path = 'permission_manager.db'
-            self.db_conn = sqlite3.connect(db_path, check_same_thread=False)
+            self.db_conn = sqlite3.connect(db_path, check_same_thread=False, timeout=30)
             cursor = self.db_conn.cursor()
             
             cursor.execute('''
@@ -89,6 +120,7 @@ class PermissionManager:
                     name TEXT UNIQUE NOT NULL,
                     description TEXT,
                     level INTEGER NOT NULL,
+                    category TEXT DEFAULT 'system',
                     is_system BOOLEAN DEFAULT FALSE,
                     is_active BOOLEAN DEFAULT TRUE,
                     created_at REAL,
@@ -134,13 +166,26 @@ class PermissionManager:
                     details TEXT,
                     timestamp REAL,
                     ip_address TEXT,
-                    success BOOLEAN DEFAULT TRUE
+                    success BOOLEAN DEFAULT TRUE,
+                    session_id TEXT
+                )
+            ''')
+            
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS permission_templates (
+                    template_id TEXT PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    description TEXT,
+                    permissions TEXT NOT NULL,
+                    created_at REAL
                 )
             ''')
             
             cursor.execute('CREATE INDEX IF NOT EXISTS idx_user_roles_user ON user_roles(user_id)')
             cursor.execute('CREATE INDEX IF NOT EXISTS idx_permission_rules_role ON permission_rules(role_id)')
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_permission_rules_resource ON permission_rules(resource_type)')
             cursor.execute('CREATE INDEX IF NOT EXISTS idx_audit_records_timestamp ON audit_records(timestamp)')
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_audit_records_user ON audit_records(user_id)')
             
             self.db_conn.commit()
             logger.info("权限管理数据库初始化完成")
@@ -150,13 +195,22 @@ class PermissionManager:
     def _load_default_roles(self):
         """加载默认角色"""
         default_roles = [
-            {'role_id': 'guest', 'name': '访客', 'description': '系统访客，只读权限', 'level': PermissionLevel.NONE.value, 'is_system': True},
-            {'role_id': 'user', 'name': '普通用户', 'description': '普通用户权限', 'level': PermissionLevel.VIEW.value, 'is_system': True},
-            {'role_id': 'teacher', 'name': '教师', 'description': '教师权限', 'level': PermissionLevel.EDIT.value, 'is_system': True},
-            {'role_id': 'researcher', 'name': '教研员', 'description': '教研员权限', 'level': PermissionLevel.MANAGE.value, 'is_system': True},
-            {'role_id': 'admin', 'name': '管理员', 'description': '系统管理员权限', 'level': PermissionLevel.ADMIN.value, 'is_system': True},
-            {'role_id': 'super_admin', 'name': '超级管理员', 'description': '超级管理员权限', 'level': PermissionLevel.SUPER_ADMIN.value, 'is_system': True},
-            {'role_id': 'hardware_admin', 'name': '硬件管理员', 'description': '硬件管理权限', 'level': PermissionLevel.SUPER_ADMIN.value, 'is_system': True}
+            {'role_id': 'guest', 'name': '访客', 'description': '系统访客，只读权限', 'level': PermissionLevel.NONE.value, 'category': RoleCategory.SYSTEM.value, 'is_system': True},
+            {'role_id': 'user', 'name': '普通用户', 'description': '普通用户权限', 'level': PermissionLevel.VIEW.value, 'category': RoleCategory.SYSTEM.value, 'is_system': True},
+            {'role_id': 'student', 'name': '学生', 'description': '学生权限', 'level': PermissionLevel.VIEW.value, 'category': RoleCategory.EDUCATION.value, 'is_system': True},
+            {'role_id': 'student_vip', 'name': 'VIP学生', 'description': 'VIP学生权限', 'level': PermissionLevel.EDIT.value, 'category': RoleCategory.EDUCATION.value, 'is_system': True},
+            {'role_id': 'teacher', 'name': '教师', 'description': '教师权限', 'level': PermissionLevel.EDIT.value, 'category': RoleCategory.EDUCATION.value, 'is_system': True},
+            {'role_id': 'researcher', 'name': '教研员', 'description': '教研员权限', 'level': PermissionLevel.MANAGE.value, 'category': RoleCategory.EDUCATION.value, 'is_system': True},
+            {'role_id': 'parent', 'name': '家长', 'description': '家长权限', 'level': PermissionLevel.VIEW.value, 'category': RoleCategory.EDUCATION.value, 'is_system': True},
+            {'role_id': 'admin', 'name': '管理员', 'description': '系统管理员权限', 'level': PermissionLevel.ADMIN.value, 'category': RoleCategory.ADMINISTRATION.value, 'is_system': True},
+            {'role_id': 'super_admin', 'name': '超级管理员', 'description': '超级管理员权限', 'level': PermissionLevel.SUPER_ADMIN.value, 'category': RoleCategory.ADMINISTRATION.value, 'is_system': True},
+            {'role_id': 'hardware_admin', 'name': '硬件管理员', 'description': '硬件管理权限', 'level': PermissionLevel.SUPER_ADMIN.value, 'category': RoleCategory.SECURITY.value, 'is_system': True},
+            {'role_id': 'security_admin', 'name': '安全管理员', 'description': '安全管理权限', 'level': PermissionLevel.ADMIN.value, 'category': RoleCategory.SECURITY.value, 'is_system': True},
+            {'role_id': 'analytics_admin', 'name': '数据分析管理员', 'description': '数据分析权限', 'level': PermissionLevel.MANAGE.value, 'category': RoleCategory.ANALYTICS.value, 'is_system': True},
+            {'role_id': 'content_admin', 'name': '内容管理员', 'description': '内容管理权限', 'level': PermissionLevel.MANAGE.value, 'category': RoleCategory.EDUCATION.value, 'is_system': True},
+            {'role_id': 'exam_admin', 'name': '考试管理员', 'description': '考试管理权限', 'level': PermissionLevel.MANAGE.value, 'category': RoleCategory.EDUCATION.value, 'is_system': True},
+            {'role_id': 'ai_admin', 'name': 'AI管理员', 'description': 'AI管理权限', 'level': PermissionLevel.MANAGE.value, 'category': RoleCategory.ADMINISTRATION.value, 'is_system': True},
+            {'role_id': 'cluster_admin', 'name': '集群管理员', 'description': '集群管理权限', 'level': PermissionLevel.MANAGE.value, 'category': RoleCategory.ADMINISTRATION.value, 'is_system': True},
         ]
         
         with self.lock:
@@ -165,19 +219,231 @@ class PermissionManager:
                     self.roles[role['role_id']] = role
                     self._save_role(role)
 
+    def _load_default_permissions(self):
+        """加载默认权限配置"""
+        permission_groups = {
+            'user_management': [
+                ('users:read', '查看用户列表'),
+                ('users:write', '创建/修改用户'),
+                ('users:delete', '删除用户'),
+                ('users:import', '导入用户'),
+                ('users:export', '导出用户'),
+                ('users:manage_roles', '管理用户角色'),
+                ('users:reset_password', '重置密码'),
+                ('users:view_profile', '查看用户资料'),
+            ],
+            'system_management': [
+                ('system:config', '系统配置'),
+                ('system:logs', '查看系统日志'),
+                ('system:backup', '系统备份'),
+                ('system:restore', '系统恢复'),
+                ('system:upgrade', '系统升级'),
+                ('system:maintenance', '系统维护'),
+                ('system:health', '健康检查'),
+                ('system:monitor', '系统监控'),
+            ],
+            'ai_management': [
+                ('ai:manage', '管理AI'),
+                ('ai:monitor', '监控AI'),
+                ('ai:configure', '配置AI'),
+                ('ai:optimize', '优化AI'),
+                ('ai:cluster', 'AI集群管理'),
+                ('ai:model', 'AI模型管理'),
+                ('ai:deploy', 'AI部署'),
+                ('ai:test', 'AI测试'),
+            ],
+            'exam_management': [
+                ('exam:create', '创建考试'),
+                ('exam:view', '查看考试'),
+                ('exam:grade', '批改考试'),
+                ('exam:edit', '编辑考试'),
+                ('exam:delete', '删除考试'),
+                ('exam:export', '导出考试'),
+                ('exam:import', '导入考试'),
+                ('exam:analyze', '分析考试'),
+                ('exam:schedule', '安排考试'),
+                ('exam:proctor', '监考管理'),
+            ],
+            'question_bank': [
+                ('question:create', '创建题目'),
+                ('question:view', '查看题目'),
+                ('question:edit', '编辑题目'),
+                ('question:delete', '删除题目'),
+                ('question:import', '导入题目'),
+                ('question:export', '导出题目'),
+                ('question:generate', 'AI生成题目'),
+                ('question:analyze', '分析题目'),
+                ('question:tag', '标签管理'),
+                ('question:difficulty', '难度管理'),
+            ],
+            'content_management': [
+                ('content:read', '读取内容'),
+                ('content:write', '创建/修改内容'),
+                ('content:delete', '删除内容'),
+                ('content:publish', '发布内容'),
+                ('content:approve', '审核内容'),
+                ('content:import', '导入内容'),
+                ('content:export', '导出内容'),
+            ],
+            'security_management': [
+                ('security:audit', '安全审计'),
+                ('security:access_control', '访问控制'),
+                ('security:threat_detection', '威胁检测'),
+                ('security:firewall', '防火墙管理'),
+                ('security:encryption', '加密管理'),
+                ('security:backup', '安全备份'),
+                ('security:monitor', '安全监控'),
+            ],
+            'analytics': [
+                ('analytics:view', '查看分析'),
+                ('analytics:generate', '生成分析报告'),
+                ('analytics:export', '导出分析'),
+                ('analytics:dashboard', '仪表盘管理'),
+                ('analytics:customize', '自定义分析'),
+            ],
+            'cluster_management': [
+                ('cluster:view', '查看集群'),
+                ('cluster:manage', '管理集群'),
+                ('cluster:scale', '集群扩容'),
+                ('cluster:deploy', '集群部署'),
+                ('cluster:monitor', '集群监控'),
+                ('cluster:health', '集群健康检查'),
+            ],
+            'port_management': [
+                ('port:view', '查看端口'),
+                ('port:assign', '分配端口'),
+                ('port:release', '释放端口'),
+                ('port:reserve', '预留端口'),
+                ('port:monitor', '端口监控'),
+            ],
+        }
+
+        for group_name, permissions in permission_groups.items():
+            for perm_id, desc in permissions:
+                self.permissions[perm_id] = {
+                    'id': perm_id,
+                    'description': desc,
+                    'group': group_name,
+                    'created_at': datetime.now().isoformat()
+                }
+        
+        self._init_role_permissions()
+        logger.info("默认权限配置加载完成")
+
+    def _init_role_permissions(self):
+        """初始化角色权限矩阵"""
+        role_permission_map = {
+            'super_admin': [
+                'users:read', 'users:write', 'users:delete', 'users:import', 'users:export', 'users:manage_roles', 'users:reset_password', 'users:view_profile',
+                'system:config', 'system:logs', 'system:backup', 'system:restore', 'system:upgrade', 'system:maintenance', 'system:health', 'system:monitor',
+                'ai:manage', 'ai:monitor', 'ai:configure', 'ai:optimize', 'ai:cluster', 'ai:model', 'ai:deploy', 'ai:test',
+                'exam:create', 'exam:view', 'exam:grade', 'exam:edit', 'exam:delete', 'exam:export', 'exam:import', 'exam:analyze', 'exam:schedule', 'exam:proctor',
+                'question:create', 'question:view', 'question:edit', 'question:delete', 'question:import', 'question:export', 'question:generate', 'question:analyze', 'question:tag', 'question:difficulty',
+                'content:read', 'content:write', 'content:delete', 'content:publish', 'content:approve', 'content:import', 'content:export',
+                'security:audit', 'security:access_control', 'security:threat_detection', 'security:firewall', 'security:encryption', 'security:backup', 'security:monitor',
+                'analytics:view', 'analytics:generate', 'analytics:export', 'analytics:dashboard', 'analytics:customize',
+                'cluster:view', 'cluster:manage', 'cluster:scale', 'cluster:deploy', 'cluster:monitor', 'cluster:health',
+                'port:view', 'port:assign', 'port:release', 'port:reserve', 'port:monitor',
+            ],
+            'admin': [
+                'users:read', 'users:write', 'users:delete', 'users:manage_roles', 'users:view_profile',
+                'system:config', 'system:logs', 'system:backup', 'system:health', 'system:monitor',
+                'ai:manage', 'ai:monitor', 'ai:configure',
+                'exam:create', 'exam:view', 'exam:grade', 'exam:edit', 'exam:delete', 'exam:export', 'exam:import', 'exam:analyze',
+                'question:create', 'question:view', 'question:edit', 'question:delete', 'question:import', 'question:export',
+                'content:read', 'content:write', 'content:delete', 'content:publish', 'content:approve',
+                'analytics:view', 'analytics:generate', 'analytics:dashboard',
+                'cluster:view', 'cluster:monitor', 'cluster:health',
+                'port:view', 'port:assign', 'port:monitor',
+            ],
+            'ai_admin': [
+                'ai:manage', 'ai:monitor', 'ai:configure', 'ai:optimize', 'ai:cluster', 'ai:model', 'ai:deploy', 'ai:test',
+                'system:logs', 'system:monitor',
+                'cluster:view', 'cluster:manage', 'cluster:monitor',
+            ],
+            'security_admin': [
+                'security:audit', 'security:access_control', 'security:threat_detection', 'security:firewall', 'security:encryption', 'security:backup', 'security:monitor',
+                'system:logs', 'system:health',
+                'users:read', 'users:view_profile',
+            ],
+            'analytics_admin': [
+                'analytics:view', 'analytics:generate', 'analytics:export', 'analytics:dashboard', 'analytics:customize',
+                'exam:view', 'exam:analyze',
+                'question:view', 'question:analyze',
+                'system:logs',
+            ],
+            'exam_admin': [
+                'exam:create', 'exam:view', 'exam:grade', 'exam:edit', 'exam:delete', 'exam:export', 'exam:import', 'exam:analyze', 'exam:schedule', 'exam:proctor',
+                'question:create', 'question:view', 'question:edit', 'question:generate',
+                'content:read', 'content:write',
+            ],
+            'content_admin': [
+                'content:read', 'content:write', 'content:delete', 'content:publish', 'content:approve', 'content:import', 'content:export',
+                'question:view', 'question:edit',
+            ],
+            'teacher': [
+                'exam:create', 'exam:view', 'exam:grade', 'exam:edit', 'exam:analyze',
+                'question:create', 'question:view', 'question:edit', 'question:generate',
+                'content:read', 'content:write',
+                'users:view_profile',
+                'analytics:view',
+            ],
+            'researcher': [
+                'exam:view', 'exam:analyze',
+                'question:view', 'question:analyze', 'question:generate',
+                'content:read',
+                'analytics:view', 'analytics:generate',
+            ],
+            'student_vip': [
+                'exam:view',
+                'question:view',
+                'content:read',
+                'analytics:view',
+            ],
+            'student': [
+                'exam:view',
+                'question:view',
+                'content:read',
+            ],
+            'parent': [
+                'exam:view',
+                'analytics:view',
+                'users:view_profile',
+            ],
+            'user': [
+                'content:read',
+                'users:view_profile',
+            ],
+            'guest': [
+                'content:read',
+            ],
+        }
+
+        with self.lock:
+            for role_id, permissions in role_permission_map.items():
+                if role_id not in self.role_permissions:
+                    self.role_permissions[role_id] = []
+                for perm_id in permissions:
+                    if perm_id not in self.role_permissions[role_id]:
+                        self.role_permissions[role_id].append(perm_id)
+        
+        self._invalidate_cache()
+        logger.info("角色权限矩阵初始化完成")
+
     def _save_role(self, role: Dict):
         """保存角色到数据库"""
         try:
             cursor = self.db_conn.cursor()
             cursor.execute('''
                 INSERT OR REPLACE INTO roles 
-                (role_id, name, description, level, is_system, is_active, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                (role_id, name, description, level, category, is_system, is_active, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
                 role['role_id'],
                 role['name'],
                 role['description'],
                 role['level'],
+                role.get('category', RoleCategory.SYSTEM.value),
                 role.get('is_system', False),
                 role.get('is_active', True),
                 role.get('created_at', time.time()),
@@ -187,18 +453,24 @@ class PermissionManager:
         except Exception as e:
             logger.error(f"保存角色失败: {str(e)}")
 
-    def define_permission(self, permission_id: str, description: str):
+    def define_permission(self, permission_id: str, description: str, group: str = 'other'):
         """定义权限"""
-        self.permissions[permission_id] = {'id': permission_id, 'description': description, 'created_at': datetime.now().isoformat()}
+        self.permissions[permission_id] = {
+            'id': permission_id,
+            'description': description,
+            'group': group,
+            'created_at': datetime.now().isoformat()
+        }
         logger.info(f"定义权限: {permission_id}")
 
-    def define_role(self, role_id: str, description: str, level: PermissionLevel = PermissionLevel.VIEW):
+    def define_role(self, role_id: str, description: str, level: PermissionLevel = PermissionLevel.VIEW, category: RoleCategory = RoleCategory.SYSTEM):
         """定义角色"""
         role = {
             'role_id': role_id,
             'name': role_id,
             'description': description,
             'level': level.value,
+            'category': category.value,
             'is_system': False,
             'is_active': True,
             'created_at': time.time(),
@@ -247,7 +519,7 @@ class PermissionManager:
                     logger.error(f"规则评估失败 {rule_id}: {str(e)}")
         return results
 
-    def create_role(self, name: str, description: str = "", level: PermissionLevel = PermissionLevel.VIEW) -> str:
+    def create_role(self, name: str, description: str = "", level: PermissionLevel = PermissionLevel.VIEW, category: RoleCategory = RoleCategory.SYSTEM) -> str:
         """创建角色"""
         role_id = f"role_{uuid.uuid4().hex[:8]}"
         role = {
@@ -255,6 +527,7 @@ class PermissionManager:
             'name': name,
             'description': description,
             'level': level.value,
+            'category': category.value,
             'is_system': False,
             'is_active': True,
             'created_at': time.time(),
@@ -287,6 +560,8 @@ class PermissionManager:
                 role['description'] = kwargs['description']
             if 'level' in kwargs:
                 role['level'] = kwargs['level'].value if isinstance(kwargs['level'], PermissionLevel) else kwargs['level']
+            if 'category' in kwargs:
+                role['category'] = kwargs['category'].value if isinstance(kwargs['category'], RoleCategory) else kwargs['category']
             if 'is_active' in kwargs:
                 role['is_active'] = kwargs['is_active']
             
@@ -330,9 +605,11 @@ class PermissionManager:
                 'name': role['name'],
                 'description': role['description'],
                 'level': role['level'],
+                'category': role.get('category', RoleCategory.SYSTEM.value),
                 'is_system': role.get('is_system', False),
                 'is_active': role.get('is_active', True),
-                'created_at': role.get('created_at', 0)
+                'created_at': role.get('created_at', 0),
+                'permission_count': len(self.role_permissions.get(role['role_id'], []))
             } for role in self.roles.values()]
 
     def grant_permission(self, role_id: str, resource_type: ResourceType, actions: List[ActionType],
@@ -356,7 +633,7 @@ class PermissionManager:
                 resource_id,
                 ','.join([a.value for a in actions]),
                 level.value,
-                str(conditions),
+                json.dumps(conditions),
                 None,
                 time.time()
             ))
@@ -398,7 +675,18 @@ class PermissionManager:
         """获取角色的所有权限"""
         with self.lock:
             if role_id in self.role_permissions:
-                return [{'permission': p} for p in self.role_permissions[role_id]]
+                perms = []
+                for perm in self.role_permissions[role_id]:
+                    parts = perm.split(':')
+                    if len(parts) == 2:
+                        perms.append({
+                            'permission': perm,
+                            'resource_type': parts[0],
+                            'action': parts[1],
+                            'description': self.permissions.get(perm, {}).get('description', perm),
+                            'group': self.permissions.get(perm, {}).get('group', 'other')
+                        })
+                return perms
             return []
 
     def assign_role(self, user_id: str, role_id: str, granted_by: str = None) -> bool:
@@ -489,6 +777,7 @@ class PermissionManager:
             return [{
                 'role_id': ur['role_id'],
                 'role_name': self.roles.get(ur['role_id'], {}).get('name', ur['role_id']),
+                'role_category': self.roles.get(ur['role_id'], {}).get('category', 'system'),
                 'granted_at': ur['granted_at'],
                 'granted_by': ur['granted_by'],
                 'expires_at': ur['expires_at'],
@@ -538,7 +827,7 @@ class PermissionManager:
             self.user_permissions_cache.clear()
 
     def check_access(self, user_id: str, resource_type: str, action: str,
-                    resource_id: str = None, ip_address: str = None) -> bool:
+                    resource_id: str = None, ip_address: str = None, session_id: str = None) -> bool:
         """检查访问权限并记录审计"""
         has_access = self.has_permission(user_id, resource_type, action)
         
@@ -550,13 +839,14 @@ class PermissionManager:
             resource_type=resource_type,
             resource_id=resource_id or "all",
             ip_address=ip_address,
+            session_id=session_id,
             success=has_access
         )
         
         return has_access
 
     def _log_audit(self, user_id: str, action: str, resource_type: str, resource_id: str,
-                   details: Dict = None, ip_address: str = None, success: bool = True):
+                   details: Dict = None, ip_address: str = None, session_id: str = None, success: bool = True):
         """记录审计日志"""
         if details is None:
             details = {}
@@ -567,25 +857,26 @@ class PermissionManager:
             cursor = self.db_conn.cursor()
             cursor.execute('''
                 INSERT INTO audit_records 
-                (audit_id, user_id, action, resource_type, resource_id, details, timestamp, ip_address, success)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (audit_id, user_id, action, resource_type, resource_id, details, timestamp, ip_address, success, session_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
                 audit_id,
                 user_id,
                 action,
                 resource_type,
                 resource_id,
-                str(details),
+                json.dumps(details),
                 time.time(),
                 ip_address,
-                success
+                success,
+                session_id
             ))
             self.db_conn.commit()
         except Exception as e:
             logger.error(f"记录审计日志失败: {str(e)}")
 
     def get_audit_records(self, user_id: str = None, action: str = None,
-                         start_time: float = None, end_time: float = None) -> List[Dict]:
+                         start_time: float = None, end_time: float = None, limit: int = 100) -> List[Dict]:
         """获取审计记录"""
         query = 'SELECT * FROM audit_records WHERE 1=1'
         params = []
@@ -606,7 +897,7 @@ class PermissionManager:
             query += ' AND timestamp <= ?'
             params.append(end_time)
         
-        query += ' ORDER BY timestamp DESC LIMIT 100'
+        query += f' ORDER BY timestamp DESC LIMIT {limit}'
         
         cursor = self.db_conn.cursor()
         cursor.execute(query, params)
@@ -619,10 +910,11 @@ class PermissionManager:
                 'action': row[2],
                 'resource_type': row[3],
                 'resource_id': row[4],
-                'details': row[5],
+                'details': json.loads(row[5]) if row[5] else {},
                 'timestamp': row[6],
                 'ip_address': row[7],
-                'success': row[8]
+                'success': row[8],
+                'session_id': row[9]
             })
         
         return records
@@ -642,16 +934,43 @@ class PermissionManager:
             active_assignments = 0
             for roles in self.user_roles.values():
                 active_assignments += sum(1 for r in roles if r.get('is_active', True))
+
+            category_stats = {}
+            for role in self.roles.values():
+                cat = role.get('category', 'system')
+                category_stats[cat] = category_stats.get(cat, 0) + 1
+
+            permission_group_stats = {}
+            for perm_id, perm_info in self.permissions.items():
+                group = perm_info.get('group', 'other')
+                permission_group_stats[group] = permission_group_stats.get(group, 0) + 1
         
         return {
             'total_roles': total_roles,
             'system_roles': system_roles,
             'custom_roles': custom_roles,
+            'category_stats': category_stats,
             'total_permission_rules': total_rules,
+            'permission_group_stats': permission_group_stats,
             'total_users_with_roles': total_users,
             'total_role_assignments': total_role_assignments,
             'active_role_assignments': active_assignments
         }
+
+    def get_all_permissions(self) -> List[Dict]:
+        """获取所有权限列表"""
+        perms = []
+        for perm_id, perm_info in self.permissions.items():
+            parts = perm_id.split(':')
+            if len(parts) == 2:
+                perms.append({
+                    'permission_id': perm_id,
+                    'resource_type': parts[0],
+                    'action': parts[1],
+                    'description': perm_info.get('description', perm_id),
+                    'group': perm_info.get('group', 'other')
+                })
+        return perms
 
 
 permission_manager = PermissionManager()
@@ -662,41 +981,18 @@ def init_rules_and_permissions():
     """初始化规则和权限"""
     logger.info("初始化规则和权限...")
 
-    permissions = [
-        ('users:read', '查看用户列表'), ('users:write', '创建/修改用户'), ('users:delete', '删除用户'),
-        ('system:config', '系统配置'), ('system:logs', '查看系统日志'),
-        ('ai:manage', '管理AI'), ('ai:monitor', '监控AI'),
-        ('exam:create', '创建考试'), ('exam:view', '查看考试'), ('exam:grade', '批改考试'),
-        ('content:read', '读取内容'), ('content:write', '创建/修改内容')
-    ]
-
-    for perm_id, desc in permissions:
-        permission_manager.define_permission(perm_id, desc)
-
-    roles = [('admin', '系统管理员'), ('teacher', '教师'), ('student', '学生'), ('guest', '访客')]
-    for role_id, desc in roles:
-        permission_manager.define_role(role_id, desc)
-
-    admin_perms = ['users:read', 'users:write', 'users:delete', 'system:config', 'system:logs', 'ai:manage', 'ai:monitor', 'exam:create', 'exam:view', 'exam:grade', 'content:read', 'content:write']
-    teacher_perms = ['exam:create', 'exam:view', 'exam:grade', 'content:read', 'content:write']
-    student_perms = ['exam:view', 'content:read']
-    guest_perms = ['content:read']
-
-    for perm in admin_perms:
-        permission_manager.assign_permission_to_role('admin', perm)
-    for perm in teacher_perms:
-        permission_manager.assign_permission_to_role('teacher', perm)
-    for perm in student_perms:
-        permission_manager.assign_permission_to_role('student', perm)
-    for perm in guest_perms:
-        permission_manager.assign_permission_to_role('guest', perm)
-
     rule_engine.add_rule('rate_limit', lambda ctx: ctx.get('request_count', 0) > 100, lambda ctx: {'action': 'throttle'}, priority=10)
     rule_engine.add_rule('access_control', lambda ctx: ctx.get('role') != 'admin' and ctx.get('resource') == 'system:config', lambda ctx: {'action': 'deny'}, priority=9)
     rule_engine.add_rule('session_timeout', lambda ctx: ctx.get('session_age', 0) > 3600, lambda ctx: {'action': 'logout'}, priority=8)
+    rule_engine.add_rule('super_admin_only', lambda ctx: ctx.get('role') != 'super_admin' and ctx.get('resource') in ['system:upgrade', 'system:restore'], lambda ctx: {'action': 'deny'}, priority=10)
+    rule_engine.add_rule('security_admin_only', lambda ctx: ctx.get('role') != 'security_admin' and ctx.get('role') != 'super_admin' and ctx.get('resource') in ['security:audit', 'security:access_control'], lambda ctx: {'action': 'deny'}, priority=9)
+    rule_engine.add_rule('ai_admin_only', lambda ctx: ctx.get('role') != 'ai_admin' and ctx.get('role') != 'super_admin' and ctx.get('resource') in ['ai:manage', 'ai:deploy'], lambda ctx: {'action': 'deny'}, priority=9)
+    rule_engine.add_rule('cluster_admin_only', lambda ctx: ctx.get('role') != 'cluster_admin' and ctx.get('role') != 'super_admin' and ctx.get('resource') in ['cluster:scale', 'cluster:deploy'], lambda ctx: {'action': 'deny'}, priority=9)
 
     logger.info("规则和权限初始化完成")
 
 
 if __name__ == "__main__":
     init_rules_and_permissions()
+    stats = permission_manager.get_permission_stats()
+    logger.info(f"权限统计: {json.dumps(stats, indent=2)}")
