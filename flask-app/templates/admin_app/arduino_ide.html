@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arduino AI设计系统 - MTSCOS</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.3.0/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        
+        .code-editor {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            tab-size: 2;
+        }
+        
+        .sidebar-item {
+            transition: all 0.2s ease;
+        }
+        
+        .sidebar-item:hover {
+            background: rgba(99, 102, 241, 0.1);
+        }
+        
+        .sidebar-item.active {
+            background: rgba(99, 102, 241, 0.15);
+            border-right: 3px solid #6366f1;
+            color: #6366f1;
+        }
+        
+        .tool-btn {
+            transition: all 0.2s ease;
+        }
+        
+        .tool-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .compile-output {
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        
+        .line-numbers {
+            counter-reset: line;
+        }
+        
+        .line-numbers > div::before {
+            counter-increment: line;
+            content: counter(line);
+            display: inline-block;
+            width: 3em;
+            text-align: right;
+            margin-right: 1em;
+            color: #9ca3af;
+            user-select: none;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .compiling {
+            animation: pulse 1.5s infinite;
+        }
+        
+        .template-card {
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        
+        .template-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);
+        }
+        
+        .tutorial-card {
+            transition: all 0.2s ease;
+        }
+        
+        .tutorial-card:hover {
+            transform: translateY(-2px);
+        }
+        
+        .difficulty-beginner { background: #10b981; }
+        .difficulty-intermediate { background: #f59e0b; }
+        .difficulty-advanced { background: #ef4444; }
+        
+        .tab-btn.active {
+            color: #6366f1;
+            border-bottom: 2px solid #6366f1;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="flex h-screen overflow-hidden">
+        <!-- 左侧边栏 -->
+        <div class="w-64 bg-white shadow-lg flex flex-col">
+            <div class="p-4 border-b">
+                <h1 class="text-xl font-bold text-indigo-600 flex items-center gap-2">
+                    <i class="ri-cpu-line"></i>
+                    Arduino AI
+                </h1>
+                <p class="text-xs text-gray-500 mt-1">智能设计系统</p>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto py-2">
+                <div class="px-3 py-2">
+                    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">开发</p>
+                    <div class="sidebar-item active px-3 py-2 rounded-lg cursor-pointer flex items-center gap-3" onclick="switchView('editor')">
+                        <i class="ri-code-s-slash-line text-lg"></i>
+                        <span>代码编辑器</span>
+                    </div>
+                    <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer flex items-center gap-3" onclick="switchView('tutorials')">
+                        <i class="ri-book-open-line text-lg"></i>
+                        <span>学习教程</span>
+                    </div>
+                    <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer flex items-center gap-3" onclick="switchView('projects')">
+                        <i class="ri-folder-line text-lg"></i>
+                        <span>我的项目</span>
+                    </div>
+                    <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer flex items-center gap-3" onclick="switchView('components')">
+                        <i class="ri-microchip-line text-lg"></i>
+                        <span>元件库</span>
+                    </div>
+                </div>
+                
+                <div class="px-3 py-2 mt-4">
+                    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">AI工具</p>
+                    <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer flex items-center gap-3" onclick="showAIPanel()">
+                        <i class="ri-robot-line text-lg"></i>
+                        <span>AI代码生成</span>
+                    </div>
+                    <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer flex items-center gap-3" onclick="explainCurrentCode()">
+                        <i class="ri-question-line text-lg"></i>
+                        <span>代码解释</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="p-4 border-t bg-gray-50">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold">
+                        {{ user.username[0].upper() if user else 'U' }}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="font-medium text-gray-800 truncate">{{ user.username if user else '游客' }}</p>
+                        <p class="text-xs text-gray-500">Arduino开发者</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 主内容区 -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- 顶部工具栏 -->
+            <div class="bg-white border-b px-4 py-3 flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <select id="boardSelect" class="px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-indigo-500 text-sm">
+                        <option value="uno">Arduino Uno</option>
+                        <option value="nano">Arduino Nano</option>
+                        <option value="mega">Arduino Mega</option>
+                        <option value="esp32">ESP32 DevKit</option>
+                        <option value="esp8266">NodeMCU ESP8266</option>
+                    </select>
+                    
+                    <div class="h-6 w-px bg-gray-200"></div>
+                    
+                    <button onclick="compileCode()" class="tool-btn px-4 py-2 bg-green-500 text-white rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-green-600">
+                        <i class="ri-play-line"></i>
+                        编译
+                    </button>
+                    <button onclick="uploadCode()" class="tool-btn px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-blue-600">
+                        <i class="ri-upload-2-line"></i>
+                        上传
+                    </button>
+                    <button onclick="verifyCode()" class="tool-btn px-4 py-2 bg-gray-500 text-white rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-gray-600">
+                        <i class="ri-check-line"></i>
+                        验证
+                    </button>
+                    
+                    <div class="h-6 w-px bg-gray-200"></div>
+                    
+                    <select id="portSelect" class="px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-indigo-500 text-sm">
+                        <option value="">选择端口...</option>
+                    </select>
+                    <button onclick="refreshPorts()" class="p-2 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition">
+                        <i class="ri-refresh-line"></i>
+                    </button>
+                </div>
+                
+                <div class="flex items-center gap-2">
+                    <button onclick="saveProject()" class="tool-btn px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium flex items-center gap-2 hover:border-indigo-500 hover:text-indigo-600">
+                        <i class="ri-save-line"></i>
+                        保存项目
+                    </button>
+                    <button onclick="showTemplates()" class="tool-btn px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium flex items-center gap-2 hover:border-indigo-500 hover:text-indigo-600">
+                        <i class="ri-file-code-line"></i>
+                        模板
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 编辑器视图 -->
+            <div id="view-editor" class="flex-1 flex flex-col overflow-hidden">
+                <div class="flex-1 flex overflow-hidden">
+                    <div class="flex-1 flex flex-col">
+                        <div class="bg-gray-800 text-gray-100 flex-1 overflow-auto p-4 code-editor" id="codeContainer">
+                            <textarea id="codeEditor" class="w-full h-full bg-transparent text-gray-100 outline-none resize-none code-editor" spellcheck="false">void setup() {
+  // 初始化代码
+  Serial.begin(9600);
+  pinMode(LED_BUILTIN, OUTPUT);
+  Serial.println("Arduino 已启动");
+}
+
+void loop() {
+  // 主循环代码
+  digitalWrite(LED_BUILTIN, HIGH);
+  delay(1000);
+  digitalWrite(LED_BUILTIN, LOW);
+  delay(1000);
+}</textarea>
+                        </div>
+                        
+                        <div class="h-48 bg-gray-900 border-t border-gray-700 flex flex-col">
+                            <div class="flex border-b border-gray-700">
+                                <button class="tab-btn active px-4 py-2 text-sm text-gray-300" onclick="switchOutputTab('compile')">
+                                    <i class="ri-terminal-box-line mr-1"></i>编译输出
+                                </button>
+                                <button class="tab-btn px-4 py-2 text-sm text-gray-300" onclick="switchOutputTab('serial')">
+                                    <i class="ri-usb-line mr-1"></i>串口监视器
+                                </button>
+                            </div>
+                            <div id="output-compile" class="flex-1 p-4 overflow-auto compile-output text-green-400">
+                                <span class="text-gray-500">// 编译输出将显示在这里</span>
+                            </div>
+                            <div id="output-serial" class="flex-1 p-4 overflow-auto compile-output text-green-400 hidden">
+                                <span class="text-gray-500">// 串口监视器输出</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 教程视图 -->
+            <div id="view-tutorials" class="flex-1 overflow-y-auto p-6 hidden">
+                <div class="max-w-5xl mx-auto">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+                        <i class="ri-book-open-line text-indigo-600"></i>
+                        Arduino学习教程
+                    </h2>
+                    
+                    <div class="flex gap-2 mb-6 overflow-x-auto pb-2">
+                        <button class="px-4 py-2 bg-indigo-600 text-white rounded-full text-sm whitespace-nowrap">全部</button>
+                        <button class="px-4 py-2 bg-gray-100 text-gray-600 rounded-full text-sm whitespace-nowrap hover:bg-gray-200">入门</button>
+                        <button class="px-4 py-2 bg-gray-100 text-gray-600 rounded-full text-sm whitespace-nowrap hover:bg-gray-200">基础</button>
+                        <button class="px-4 py-2 bg-gray-100 text-gray-600 rounded-full text-sm whitespace-nowrap hover:bg-gray-200">传感器</button>
+                        <button class="px-4 py-2 bg-gray-100 text-gray-600 rounded-full text-sm whitespace-nowrap hover:bg-gray-200">显示</button>
+                        <button class="px-4 py-2 bg-gray-100 text-gray-600 rounded-full text-sm whitespace-nowrap hover:bg-gray-200">通信</button>
+                        <button class="px-4 py-2 bg-gray-100 text-gray-600 rounded-full text-sm whitespace-nowrap hover:bg-gray-200">进阶</button>
+                    </div>
+                    
+                    <div id="tutorialList" class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 项目视图 -->
+            <div id="view-projects" class="flex-1 overflow-y-auto p-6 hidden">
+                <div class="max-w-5xl mx-auto">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                            <i class="ri-folder-line text-indigo-600"></i>
+                            我的项目
+                        </h2>
+                        <button onclick="newProject()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-indigo-700">
+                            <i class="ri-add-line"></i>
+                            新建项目
+                        </button>
+                    </div>
+                    
+                    <div id="projectList" class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div class="text-center py-12 text-gray-400 col-span-full">
+                            <i class="ri-inbox-line text-5xl mb-3 opacity-50"></i>
+                            <p>暂无项目</p>
+                            <p class="text-sm mt-1">保存你的第一个项目吧</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 元件库视图 -->
+            <div id="view-components" class="flex-1 overflow-y-auto p-6 hidden">
+                <div class="max-w-5xl mx-auto">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+                        <i class="ri-microchip-line text-indigo-600"></i>
+                        元件库
+                    </h2>
+                    
+                    <div class="space-y-8" id="componentList">
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- AI助手面板 -->
+        <div id="aiPanel" class="fixed right-0 top-0 h-full w-96 bg-white shadow-2xl transform translate-x-full transition-transform z-50">
+            <div class="h-full flex flex-col">
+                <div class="p-4 border-b flex items-center justify-between">
+                    <h3 class="font-bold text-gray-800 flex items-center gap-2">
+                        <i class="ri-robot-line text-indigo-600"></i>
+                        AI代码助手
+                    </h3>
+                    <button onclick="hideAIPanel()" class="text-gray-400 hover:text-gray-600">
+                        <i class="ri-close-line text-xl"></i>
+                    </button>
+                </div>
+                
+                <div class="p-4 border-b">
+                    <p class="text-sm text-gray-500 mb-3">描述你想要的功能，AI帮你生成代码</p>
+                    <div class="space-y-3">
+                        <select id="aiFeature" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500">
+                            <option value="LED闪烁">LED闪烁</option>
+                            <option value="传感器读取">传感器读取</option>
+                            <option value="电机控制">电机控制</option>
+                            <option value="自定义功能">自定义功能</option>
+                        </select>
+                        <textarea id="aiDescription" rows="3" placeholder="详细描述你想要实现的功能..." class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500 resize-none"></textarea>
+                        <button onclick="generateAICode()" class="w-full py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg text-sm font-medium hover:from-indigo-700 hover:to-purple-700">
+                            <i class="ri-magic-line mr-1"></i>生成代码
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="flex-1 overflow-y-auto p-4">
+                    <div id="aiResult">
+                        <div class="text-center py-12 text-gray-400">
+                            <i class="ri-lightbulb-line text-4xl mb-3 opacity-50"></i>
+                            <p>输入功能描述</p>
+                            <p class="text-sm mt-1">AI将为你生成Arduino代码</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 模板弹窗 -->
+        <div id="templateModal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center p-4">
+            <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[80vh] overflow-hidden">
+                <div class="p-6 border-b flex items-center justify-between">
+                    <h3 class="text-xl font-bold">代码模板</h3>
+                    <button onclick="closeTemplates()" class="text-gray-400 hover:text-gray-600">
+                        <i class="ri-close-line text-2xl"></i>
+                    </button>
+                </div>
+                <div class="p-6 overflow-y-auto max-h-[60vh]">
+                    <div id="templateGrid" class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentView = 'editor';
+        
+        function switchView(view) {
+            currentView = view;
+            
+            document.querySelectorAll('[id^="view-"]').forEach(v => v.classList.add('hidden'));
+            document.getElementById('view-' + view).classList.remove('hidden');
+            
+            document.querySelectorAll('.sidebar-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.currentTarget.classList.add('active');
+            
+            if (view === 'tutorials') loadTutorials();
+            if (view === 'projects') loadProjects();
+            if (view === 'components') loadComponents();
+        }
+        
+        function switchOutputTab(tab) {
+            document.querySelectorAll('[id^="output-"]').forEach(o => o.classList.add('hidden'));
+            document.getElementById('output-' + tab).classList.remove('hidden');
+            
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+        }
+        
+        function compileCode() {
+            const code = document.getElementById('codeEditor').value;
+            const board = document.getElementById('boardSelect').value;
+            const output = document.getElementById('output-compile');
+            
+            output.innerHTML = '<span class="text-yellow-400 compiling">⏳ 正在编译...</span>';
+            
+            fetch('/api/arduino/compile', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code, board })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    output.innerHTML = `<span class="text-green-400">✓ ${data.message}</span>\n<span class="text-gray-500">${data.output || ''}</span>`;
+                } else {
+                    let errors = data.errors ? data.errors.join('\n') : data.error;
+                    output.innerHTML = `<span class="text-red-400">✗ ${data.message}</span>\n<span class="text-red-300">${errors || ''}</span>`;
+                }
+            })
+            .catch(err => {
+                output.innerHTML = `<span class="text-red-400">编译失败: ${err.message}</span>`;
+            });
+        }
+        
+        function uploadCode() {
+            const code = document.getElementById('codeEditor').value;
+            const board = document.getElementById('boardSelect').value;
+            const port = document.getElementById('portSelect').value;
+            const output = document.getElementById('output-compile');
+            
+            output.innerHTML = '<span class="text-yellow-400 compiling">⏳ 正在上传...</span>';
+            
+            fetch('/api/arduino/upload', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code, board, port })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    output.innerHTML = `<span class="text-green-400">✓ ${data.message}</span>`;
+                } else {
+                    output.innerHTML = `<span class="text-red-400">✗ ${data.message}</span>\n<span class="text-red-300">${data.error || ''}</span>`;
+                }
+            });
+        }
+        
+        function verifyCode() {
+            const code = document.getElementById('codeEditor').value;
+            const output = document.getElementById('output-compile');
+            
+            fetch('/api/arduino/verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    let warnings = data.warnings && data.warnings.length > 0 
+                        ? `\n<span class="text-yellow-400">⚠️ ${data.warnings.length} 个警告:</span>\n${data.warnings.map(w => '  ' + w).join('\n')}`
+                        : '';
+                    output.innerHTML = `<span class="text-green-400">✓ 代码验证通过</span>${warnings}`;
+                } else {
+                    output.innerHTML = `<span class="text-red-400">✗ 代码存在错误</span>\n<span class="text-red-300">${data.errors.join('\n')}</span>`;
+                }
+            });
+        }
+        
+        function refreshPorts() {
+            fetch('/api/arduino/ports')
+                .then(r => r.json())
+                .then(data => {
+                    const select = document.getElementById('portSelect');
+                    select.innerHTML = '<option value="">选择端口...</option>';
+                    if (data.success && data.ports) {
+                        data.ports.forEach(port => {
+                            const option = document.createElement('option');
+                            option.value = port;
+                            option.textContent = port;
+                            select.appendChild(option);
+                        });
+                    }
+                });
+        }
+        
+        function showAIPanel() {
+            document.getElementById('aiPanel').classList.remove('translate-x-full');
+        }
+        
+        function hideAIPanel() {
+            document.getElementById('aiPanel').classList.add('translate-x-full');
+        }
+        
+        function generateAICode() {
+            const feature = document.getElementById('aiFeature').value;
+            const description = document.getElementById('aiDescription').value || feature;
+            const board = document.getElementById('boardSelect').value;
+            const resultDiv = document.getElementById('aiResult');
+            
+            resultDiv.innerHTML = `
+                <div class="text-center py-8">
+                    <div class="animate-spin w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+                    <p class="text-gray-500">AI正在生成代码...</p>
+                </div>
+            `;
+            
+            fetch('/api/arduino/ai/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ description, board, feature })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    resultDiv.innerHTML = `
+                        <div class="space-y-4">
+                            <div class="bg-indigo-50 rounded-lg p-4">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-sm font-medium text-indigo-600">生成成功！</span>
+                                    <button onclick="applyAICode()" class="text-sm text-indigo-600 hover:text-indigo-800">
+                                        <i class="ri-file-copy-line mr-1"></i>应用代码
+                                    </button>
+                                </div>
+                                <p class="text-xs text-gray-500">${data.description}</p>
+                            </div>
+                            <div class="bg-gray-900 rounded-lg p-3 overflow-x-auto">
+                                <pre class="text-green-400 text-xs whitespace-pre-wrap">${escapeHtml(data.code)}</pre>
+                            </div>
+                            <div class="text-xs text-gray-500 space-y-1">
+                                <p>📊 代码行数: ${data.code.split('\n').length}</p>
+                                <p>⚡ 复杂度: ${data.complexity}</p>
+                                <p>🔧 板型: ${data.board}</p>
+                            </div>
+                        </div>
+                    `;
+                    window._lastAICode = data.code;
+                } else {
+                    resultDiv.innerHTML = `<p class="text-red-500 text-center">生成失败: ${data.error}</p>`;
+                }
+            });
+        }
+        
+        function applyAICode() {
+            if (window._lastAICode) {
+                document.getElementById('codeEditor').value = window._lastAICode;
+                hideAIPanel();
+            }
+        }
+        
+        function explainCurrentCode() {
+            const code = document.getElementById('codeEditor').value;
+            showAIPanel();
+            
+            const resultDiv = document.getElementById('aiResult');
+            resultDiv.innerHTML = `
+                <div class="text-center py-8">
+                    <div class="animate-spin w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+                    <p class="text-gray-500">AI正在分析代码...</p>
+                </div>
+            `;
+            
+            fetch('/api/arduino/ai/explain', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    resultDiv.innerHTML = `
+                        <div class="space-y-4">
+                            <div class="bg-green-50 rounded-lg p-4">
+                                <p class="text-sm text-green-700">${data.summary}</p>
+                            </div>
+                            <div class="space-y-3">
+                                ${data.explanations.map(e => `
+                                    <div class="border-l-4 border-indigo-500 pl-3">
+                                        <h4 class="font-medium text-gray-800">${e.section}</h4>
+                                        <p class="text-sm text-gray-600 mt-1">${e.description}</p>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+        }
+        
+        function showTemplates() {
+            document.getElementById('templateModal').classList.remove('hidden');
+            document.getElementById('templateModal').classList.add('flex');
+            loadTemplates();
+        }
+        
+        function closeTemplates() {
+            document.getElementById('templateModal').classList.add('hidden');
+            document.getElementById('templateModal').classList.remove('flex');
+        }
+        
+        function loadTemplates() {
+            fetch('/api/arduino/templates')
+                .then(r => r.json())
+                .then(data => {
+                    const grid = document.getElementById('templateGrid');
+                    if (data.success && data.templates) {
+                        grid.innerHTML = Object.entries(data.templates).map(([key, t]) => `
+                            <div class="template-card border border-gray-200 rounded-xl p-4 hover:border-indigo-300" onclick="loadTemplate('${key}')">
+                                <h4 class="font-bold text-gray-800 mb-2">${t.name}</h4>
+                                <p class="text-sm text-gray-500 mb-3">${t.description}</p>
+                                <div class="bg-gray-900 rounded-lg p-2 text-xs text-gray-400 overflow-hidden">
+                                    <pre class="truncate">${t.code.substring(0, 80)}...</pre>
+                                </div>
+                            </div>
+                        `).join('');
+                    }
+                });
+        }
+        
+        function loadTemplate(key) {
+            fetch('/api/arduino/templates')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success && data.templates && data.templates[key]) {
+                        document.getElementById('codeEditor').value = data.templates[key].code;
+                        closeTemplates();
+                    }
+                });
+        }
+        
+        function loadTutorials() {
+            fetch('/api/arduino/tutorials')
+                .then(r => r.json())
+                .then(data => {
+                    const list = document.getElementById('tutorialList');
+                    if (data.success && data.tutorials) {
+                        list.innerHTML = data.tutorials.map(t => `
+                            <div class="tutorial-card bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden cursor-pointer" onclick="openTutorial(${t.id})">
+                                <div class="h-32 bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+                                    <i class="ri-book-open-line text-4xl text-white opacity-80"></i>
+                                </div>
+                                <div class="p-4">
+                                    <div class="flex items-center gap-2 mb-2">
+                                        <span class="difficulty-${t.difficulty} text-white text-xs px-2 py-0.5 rounded">
+                                            ${t.difficulty === 'beginner' ? '入门' : t.difficulty === 'intermediate' ? '中等' : '进阶'}
+                                        </span>
+                                        <span class="text-xs text-gray-400"><i class="ri-time-line mr-1"></i>${t.duration}分钟</span>
+                                    </div>
+                                    <h4 class="font-bold text-gray-800 mb-1">${t.title}</h4>
+                                    <p class="text-sm text-gray-500 line-clamp-2">${t.description}</p>
+                                </div>
+                            </div>
+                        `).join('');
+                    }
+                });
+        }
+        
+        function openTutorial(id) {
+            fetch(`/api/arduino/tutorials/${id}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success && data.tutorial) {
+                        const t = data.tutorial;
+                        if (t.code_example) {
+                            document.getElementById('codeEditor').value = t.code_example;
+                            switchView('editor');
+                        }
+                    }
+                });
+        }
+        
+        function loadProjects() {
+            fetch('/api/arduino/projects')
+                .then(r => r.json())
+                .then(data => {
+                    const list = document.getElementById('projectList');
+                    if (data.success && data.projects && data.projects.length > 0) {
+                        list.innerHTML = data.projects.map(p => `
+                            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 cursor-pointer hover:border-indigo-300" onclick="loadProject(${p.id})">
+                                <div class="flex items-start justify-between mb-3">
+                                    <div class="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center">
+                                        <i class="ri-file-code-line text-xl text-indigo-600"></i>
+                                    </div>
+                                    <button class="text-gray-400 hover:text-red-500" onclick="deleteProject(${p.id}); event.stopPropagation();">
+                                        <i class="ri-delete-bin-line"></i>
+                                    </button>
+                                </div>
+                                <h4 class="font-bold text-gray-800 mb-1">${p.project_name}</h4>
+                                <p class="text-sm text-gray-500 line-clamp-2 mb-3">${p.description || '暂无描述'}</p>
+                                <div class="flex items-center justify-between text-xs text-gray-400">
+                                    <span>${p.board_type}</span>
+                                    <span>${formatTime(p.updated_at)}</span>
+                                </div>
+                            </div>
+                        `).join('');
+                    }
+                });
+        }
+        
+        function saveProject() {
+            const code = document.getElementById('codeEditor').value;
+            const board = document.getElementById('boardSelect').value;
+            const projectName = prompt('请输入项目名称:', '我的Arduino项目');
+            
+            if (!projectName) return;
+            
+            fetch('/api/arduino/projects', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    project_name: projectName,
+                    code,
+                    board_type: board
+                })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    alert('项目保存成功！');
+                }
+            });
+        }
+        
+        function loadProject(id) {
+            fetch(`/api/arduino/projects/${id}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success && data.project) {
+                        document.getElementById('codeEditor').value = data.project.code || '';
+                        document.getElementById('boardSelect').value = data.project.board_type || 'uno';
+                        switchView('editor');
+                    }
+                });
+        }
+        
+        function deleteProject(id) {
+            if (!confirm('确定要删除这个项目吗？')) return;
+            
+            fetch(`/api/arduino/projects/${id}`, {
+                method: 'DELETE'
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    loadProjects();
+                }
+            });
+        }
+        
+        function newProject() {
+            document.getElementById('codeEditor').value = `void setup() {
+  // 初始化代码
+  Serial.begin(9600);
+}
+
+void loop() {
+  // 主循环代码
+  delay(1000);
+}`;
+            switchView('editor');
+        }
+        
+        function loadComponents() {
+            fetch('/api/arduino/components')
+                .then(r => r.json())
+                .then(data => {
+                    const list = document.getElementById('componentList');
+                    if (data.success && data.components) {
+                        const categoryNames = {
+                            'basic': '基础元件',
+                            'sensors': '传感器',
+                            'output': '输出设备',
+                            'communication': '通信模块',
+                            'storage': '存储模块'
+                        };
+                        
+                        list.innerHTML = Object.entries(data.components).map(([cat, items]) => `
+                            <div>
+                                <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                                    <i class="ri-${cat === 'basic' ? 'circuit-board' : cat === 'sensors' ? 'radar' : cat === 'output' ? 'volume-up' : cat === 'communication' ? 'wifi' : 'hard-drive'}-line text-indigo-600"></i>
+                                    ${categoryNames[cat] || cat}
+                                </h3>
+                                <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                                    ${items.map(c => `
+                                        <div class="bg-white rounded-xl p-4 text-center border border-gray-100 hover:border-indigo-300 transition cursor-pointer">
+                                            <div class="text-3xl mb-2">${c.icon}</div>
+                                            <p class="text-sm font-medium text-gray-700">${c.name}</p>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        `).join('');
+                    }
+                });
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        function formatTime(timestamp) {
+            if (!timestamp) return '';
+            const date = new Date(timestamp * 1000);
+            const now = new Date();
+            const diff = now - date;
+            if (diff < 86400000) return '今天';
+            if (diff < 604800000) return Math.floor(diff / 86400000) + '天前';
+            return date.toLocaleDateString();
+        }
+        
+        document.getElementById('templateModal').addEventListener('click', function(e) {
+            if (e.target === this) closeTemplates();
+        });
+        
+        document.getElementById('codeEditor').addEventListener('keydown', function(e) {
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                const start = this.selectionStart;
+                const end = this.selectionEnd;
+                this.value = this.value.substring(0, start) + '  ' + this.value.substring(end);
+                this.selectionStart = this.selectionEnd = start + 2;
+            }
+        });
+        
+        refreshPorts();
+    </script>
+</body>
+</html>

@@ -18094,6 +18094,125 @@ def api_start_all_agents():
     return jsonify({'success': True, 'started_count': count})
 
 
+@app.route('/api/system/health', methods=['GET'])
+def api_system_health():
+    import psutil
+    disk = psutil.disk_usage('/')
+    memory = psutil.virtual_memory()
+    cpu = psutil.cpu_percent(interval=1)
+    
+    return jsonify({
+        'success': True,
+        'cpu': {'percent': cpu, 'cores': psutil.cpu_count()},
+        'memory': {'percent': memory.percent, 'available': round(memory.available / (1024**3), 2), 'total': round(memory.total / (1024**3), 2)},
+        'disk': {'percent': disk.percent, 'free': round(disk.free / (1024**3), 2), 'total': round(disk.total / (1024**3), 2)},
+        'status': 'healthy' if cpu < 80 and memory.percent < 80 and disk.percent < 90 else 'warning',
+        'timestamp': int(time.time() * 1000)
+    })
+
+
+@app.route('/api/firewall/rules', methods=['GET'])
+def api_firewall_rules():
+    from app.services.firewall_system import firewall_system
+    rules = firewall_system.list_rules()
+    stats = firewall_system.get_statistics()
+    return jsonify({
+        'success': True,
+        'rules': rules,
+        'statistics': stats,
+        'rule_count': len(rules)
+    })
+
+
+@app.route('/api/firewall/stats', methods=['GET'])
+def api_firewall_stats():
+    from app.services.firewall_system import firewall_system
+    stats = firewall_system.get_statistics()
+    return jsonify({'success': True, 'statistics': stats})
+
+
+@app.route('/api/brain/knowledge', methods=['GET'])
+def api_brain_knowledge():
+    import sqlite3
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+    cursor.execute('SELECT category, COUNT(*) FROM ai_brain_enhanced_knowledge GROUP BY category')
+    categories = cursor.fetchall()
+    cursor.execute('SELECT COUNT(*) FROM ai_brain_enhanced_knowledge')
+    total = cursor.fetchone()[0]
+    conn.close()
+    
+    return jsonify({
+        'success': True,
+        'total_knowledge': total,
+        'categories': [{'name': cat[0], 'count': cat[1]} for cat in categories]
+    })
+
+
+@app.route('/api/ui/components', methods=['GET'])
+def api_ui_components():
+    import sqlite3
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+    cursor.execute('SELECT component_id, name, type FROM ui_component_registry')
+    components = cursor.fetchall()
+    conn.close()
+    
+    return jsonify({
+        'success': True,
+        'components': [{'id': c[0], 'name': c[1], 'type': c[2]} for c in components],
+        'count': len(components)
+    })
+
+
+@app.route('/api/upgrade/status', methods=['GET'])
+def api_upgrade_status():
+    import sqlite3
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM system_upgrade_records ORDER BY started_at DESC LIMIT 1')
+    row = cursor.fetchone()
+    conn.close()
+    
+    if row:
+        return jsonify({
+            'success': True,
+            'upgrade_id': row[0],
+            'version_from': row[1],
+            'version_to': row[2],
+            'status': row[3],
+            'started_at': row[4],
+            'completed_at': row[5],
+            'duration': row[6],
+            'total_tasks': row[7],
+            'success_tasks': row[8],
+            'failed_tasks': row[9],
+            'summary': row[10]
+        })
+    return jsonify({'success': False, 'message': '未找到升级记录'})
+
+
+@app.route('/api/courses/list', methods=['GET'])
+def api_courses_list():
+    import sqlite3
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+    cursor.execute('SELECT id, course_name, subject, grade_level, description FROM courses')
+    rows = cursor.fetchall()
+    conn.close()
+    
+    return jsonify({
+        'success': True,
+        'courses': [{'id': r[0], 'name': r[1], 'subject': r[2], 'grade_level': r[3], 'description': r[4]} for r in rows],
+        'count': len(rows)
+    })
+
+
+@app.route('/system-status')
+def system_status_dashboard():
+    return render_template('system_status_dashboard.html')
+
+
 if __name__ == '__main__':
     import time
     print(f"[DEBUG MAIN] Starting main block at {time.strftime('%Y-%m-%d %H:%M:%S')}")

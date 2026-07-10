@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI智能控制中心 - MTSCOS</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.3.0/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f3f4f6; }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .stat-card {
+            transition: all 0.3s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4); }
+            50% { box-shadow: 0 0 0 10px rgba(99, 102, 241, 0); }
+        }
+        
+        .pulse-glow {
+            animation: pulse-glow 2s infinite;
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .spin { animation: spin 1s linear infinite; }
+        
+        .progress-bar {
+            transition: width 0.5s ease;
+        }
+        
+        .tab-btn.active {
+            color: #6366f1;
+            border-bottom: 2px solid #6366f1;
+            background: rgba(99, 102, 241, 0.05);
+        }
+        
+        .health-score {
+            font-size: 3rem;
+            font-weight: 800;
+        }
+    </style>
+</head>
+<body>
+    <div class="min-h-screen">
+        <!-- 顶部横幅 -->
+        <div class="gradient-bg text-white py-8 px-6">
+            <div class="max-w-7xl mx-auto">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-3xl font-bold flex items-center gap-3">
+                            <i class="ri-brain-line"></i>
+                            AI智能控制中心
+                        </h1>
+                        <p class="text-white/80 mt-2">系统版本 v7.4.0 - 智能分析、智能推荐、智能运维</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="runHealthAnalysis()" class="px-6 py-3 bg-white/20 hover:bg-white/30 rounded-xl font-medium backdrop-blur-sm transition flex items-center gap-2">
+                            <i class="ri-heart-pulse-line"></i> 健康分析
+                        </button>
+                        <button onclick="runMaintenance()" class="px-6 py-3 bg-white/20 hover:bg-white/30 rounded-xl font-medium backdrop-blur-sm transition flex items-center gap-2">
+                            <i class="ri-tools-line"></i> 智能运维
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 统计卡片 -->
+        <div class="max-w-7xl mx-auto px-6 -mt-6">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="statsGrid">
+                <div class="stat-card glass-card rounded-2xl p-5 shadow-lg">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-gray-500">API模块</p>
+                            <p class="text-2xl font-bold text-gray-800" id="stat-api">-</p>
+                        </div>
+                        <div class="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center">
+                            <i class="ri-api-line text-2xl text-indigo-600"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="stat-card glass-card rounded-2xl p-5 shadow-lg">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-gray-500">服务模块</p>
+                            <p class="text-2xl font-bold text-gray-800" id="stat-service">-</p>
+                        </div>
+                        <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
+                            <i class="ri-service-line text-2xl text-purple-600"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="stat-card glass-card rounded-2xl p-5 shadow-lg">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-gray-500">AI引擎</p>
+                            <p class="text-2xl font-bold text-gray-800" id="stat-ai">-</p>
+                        </div>
+                        <div class="w-12 h-12 bg-pink-100 rounded-xl flex items-center justify-center">
+                            <i class="ri-robot-line text-2xl text-pink-600"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="stat-card glass-card rounded-2xl p-5 shadow-lg">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-gray-500">数据库</p>
+                            <p class="text-2xl font-bold text-gray-800" id="stat-db">-</p>
+                        </div>
+                        <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                            <i class="ri-database-2-line text-2xl text-green-600"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 主内容 -->
+        <div class="max-w-7xl mx-auto px-6 py-8">
+            <!-- Tab切换 -->
+            <div class="flex gap-1 mb-6 border-b">
+                <button class="tab-btn active px-6 py-3 text-sm font-medium transition" onclick="switchTab('health')">
+                    <i class="ri-heart-pulse-line mr-1"></i> 健康分析
+                </button>
+                <button class="tab-btn px-6 py-3 text-sm font-medium text-gray-500 transition" onclick="switchTab('recommendations')">
+                    <i class="ri-lightbulb-line mr-1"></i> 智能推荐
+                </button>
+                <button class="tab-btn px-6 py-3 text-sm font-medium text-gray-500 transition" onclick="switchTab('optimization')">
+                    <i class="ri-rocket-line mr-1"></i> 优化建议
+                </button>
+                <button class="tab-btn px-6 py-3 text-sm font-medium text-gray-500 transition" onclick="switchTab('predictions')">
+                    <i class="ri-line-chart-line mr-1"></i> 趋势预测
+                </button>
+                <button class="tab-btn px-6 py-3 text-sm font-medium text-gray-500 transition" onclick="switchTab('maintenance')">
+                    <i class="ri-tools-line mr-1"></i> 运维记录
+                </button>
+            </div>
+            
+            <!-- 健康分析 -->
+            <div id="tab-health" class="space-y-6">
+                <div class="bg-white rounded-2xl p-6 shadow-sm">
+                    <div id="healthContent">
+                        <div class="text-center py-12">
+                            <div class="w-24 h-24 mx-auto mb-4 bg-indigo-100 rounded-full flex items-center justify-center pulse-glow">
+                                <i class="ri-heart-pulse-line text-5xl text-indigo-600"></i>
+                            </div>
+                            <h3 class="text-lg font-semibold text-gray-700 mb-2">系统健康分析</h3>
+                            <p class="text-gray-500 mb-4">AI将全面分析系统各模块的健康状态</p>
+                            <button onclick="runHealthAnalysis()" class="px-6 py-3 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition">
+                                <i class="ri-play-line mr-1"></i> 开始分析
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 智能推荐 -->
+            <div id="tab-recommendations" class="hidden space-y-4">
+                <div class="bg-white rounded-2xl p-6 shadow-sm">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-bold text-gray-800">
+                            <i class="ri-lightbulb-line text-yellow-500 mr-2"></i>AI智能推荐
+                        </h3>
+                        <button onclick="loadRecommendations()" class="text-sm text-indigo-600 hover:text-indigo-800">
+                            <i class="ri-refresh-line mr-1"></i>刷新
+                        </button>
+                    </div>
+                    <div id="recommendationsList" class="space-y-3">
+                        <div class="text-center py-8 text-gray-400">
+                            <i class="ri-inbox-line text-4xl mb-2 opacity-50"></i>
+                            <p>点击刷新获取AI推荐</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 优化建议 -->
+            <div id="tab-optimization" class="hidden space-y-4">
+                <div class="bg-white rounded-2xl p-6 shadow-sm">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">
+                        <i class="ri-rocket-line text-green-500 mr-2"></i>AI优化建议
+                    </h3>
+                    <div id="optimizationList" class="space-y-3">
+                        <div class="text-center py-8 text-gray-400">
+                            <i class="ri-inbox-line text-4xl mb-2 opacity-50"></i>
+                            <p>点击下方按钮生成优化建议</p>
+                        </div>
+                    </div>
+                    <button onclick="loadOptimizations()" class="mt-4 w-full py-3 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700 transition">
+                        <i class="ri-magic-line mr-1"></i>生成优化建议
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 趋势预测 -->
+            <div id="tab-predictions" class="hidden space-y-4">
+                <div class="bg-white rounded-2xl p-6 shadow-sm">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">
+                        <i class="ri-line-chart-line text-blue-500 mr-2"></i>AI趋势预测
+                    </h3>
+                    <div id="predictionsList" class="space-y-3">
+                        <div class="text-center py-8 text-gray-400">
+                            <i class="ri-inbox-line text-4xl mb-2 opacity-50"></i>
+                            <p>点击下方按钮生成趋势预测</p>
+                        </div>
+                    </div>
+                    <button onclick="loadPredictions()" class="mt-4 w-full py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition">
+                        <i class="ri-magic-line mr-1"></i>生成趋势预测
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 运维记录 -->
+            <div id="tab-maintenance" class="hidden space-y-4">
+                <div class="bg-white rounded-2xl p-6 shadow-sm">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">
+                        <i class="ri-tools-line text-purple-500 mr-2"></i>AI智能运维
+                    </h3>
+                    <div id="maintenanceList" class="space-y-3">
+                        <div class="text-center py-8 text-gray-400">
+                            <i class="ri-inbox-line text-4xl mb-2 opacity-50"></i>
+                            <p>点击下方按钮执行智能运维</p>
+                        </div>
+                    </div>
+                    <button onclick="runMaintenance()" class="mt-4 w-full py-3 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700 transition">
+                        <i class="ri-play-line mr-1"></i>执行智能运维
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(tab) {
+            document.querySelectorAll('[id^="tab-"]').forEach(t => t.classList.add('hidden'));
+            document.getElementById('tab-' + tab).classList.remove('hidden');
+            
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+                btn.classList.add('text-gray-500');
+            });
+            event.currentTarget.classList.add('active');
+            event.currentTarget.classList.remove('text-gray-500');
+            
+            if (tab === 'recommendations') loadRecommendations();
+        }
+        
+        function loadStatistics() {
+            fetch('/api/ai/intelligent/statistics')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success && data.statistics) {
+                        const s = data.statistics;
+                        document.getElementById('stat-api').textContent = s.modules?.api_count || 0;
+                        document.getElementById('stat-service').textContent = s.modules?.service_count || 0;
+                        document.getElementById('stat-ai').textContent = s.modules?.ai_engine_count || 0;
+                        document.getElementById('stat-db').textContent = s.databases?.distributed_count || 0;
+                    }
+                });
+        }
+        
+        function runHealthAnalysis() {
+            const content = document.getElementById('healthContent');
+            content.innerHTML = `
+                <div class="text-center py-12">
+                    <div class="w-16 h-16 mx-auto mb-4 border-4 border-indigo-500 border-t-transparent rounded-full spin"></div>
+                    <p class="text-gray-500">AI正在分析系统健康状态...</p>
+                </div>
+            `;
+            
+            fetch('/api/ai/intelligent/health-analysis', { method: 'POST' })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success && data.health_data) {
+                        const h = data.health_data;
+                        let scoreColor = h.overall_score >= 90 ? 'text-green-600' : h.overall_score >= 75 ? 'text-yellow-600' : 'text-red-600';
+                        let scoreBg = h.overall_score >= 90 ? 'bg-green-100' : h.overall_score >= 75 ? 'bg-yellow-100' : 'bg-red-100';
+                        
+                        content.innerHTML = `
+                            <div class="text-center mb-6">
+                                <div class="inline-block ${scoreBg} rounded-full w-32 h-32 flex items-center justify-center mb-4">
+                                    <span class="health-score ${scoreColor}">${h.overall_score}</span>
+                                </div>
+                                <p class="text-lg font-semibold text-gray-700">系统总体健康得分</p>
+                                <p class="text-sm text-gray-500 mt-1">分析耗时: ${data.duration}s</p>
+                            </div>
+                            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                                ${Object.entries(h.categories).map(([cat, data]) => {
+                                    let statusColor = data.status === 'healthy' ? 'green' : data.status === 'warning' ? 'yellow' : 'red';
+                                    let statusText = data.status === 'healthy' ? '健康' : data.status === 'warning' ? '警告' : '严重';
+                                    let catName = {database:'数据库',api:'API',ai_engines:'AI引擎',frontend:'前端',security:'安全'}[cat] || cat;
+                                    return `
+                                        <div class="border rounded-xl p-4">
+                                            <div class="flex items-center justify-between mb-2">
+                                                <h4 class="font-semibold text-gray-800">${catName}</h4>
+                                                <span class="px-2 py-0.5 bg-${statusColor}-100 text-${statusColor}-700 text-xs rounded-full">${statusText}</span>
+                                            </div>
+                                            <div class="flex items-center gap-2 mb-3">
+                                                <div class="flex-1 bg-gray-200 rounded-full h-2">
+                                                    <div class="bg-${statusColor}-500 h-2 rounded-full progress-bar" style="width: ${data.score}%"></div>
+                                                </div>
+                                                <span class="text-sm font-medium text-gray-700">${data.score}</span>
+                                            </div>
+                                            <ul class="text-xs text-gray-500 space-y-1">
+                                                ${data.issues.map(i => `<li>• ${i}</li>`).join('')}
+                                            </ul>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                            <div class="bg-indigo-50 rounded-xl p-4">
+                                <h4 class="font-semibold text-indigo-700 mb-2"><i class="ri-lightbulb-line mr-1"></i>AI建议</h4>
+                                <ul class="text-sm text-gray-600 space-y-1">
+                                    ${h.recommendations.map(r => `<li>• ${r}</li>`).join('')}
+                                </ul>
+                            </div>
+                        `;
+                    } else {
+                        content.innerHTML = `<p class="text-center text-red-500">分析失败: ${data.error}</p>`;
+                    }
+                });
+        }
+        
+        function loadRecommendations() {
+            const list = document.getElementById('recommendationsList');
+            list.innerHTML = `<div class="text-center py-4"><div class="w-8 h-8 mx-auto border-2 border-indigo-500 border-t-transparent rounded-full spin"></div></div>`;
+            
+            fetch('/api/ai/intelligent/recommendations?limit=7')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success && data.recommendations) {
+                        const colors = {ai_learning:'indigo',ai_tutor:'purple',wrong_book:'pink',arduino:'blue',exam:'green',analytics:'yellow'};
+                        list.innerHTML = data.recommendations.map(r => {
+                            let color = colors[r.category] || 'gray';
+                            return `
+                                <div class="flex items-center gap-4 p-4 border rounded-xl hover:border-${color}-300 hover:bg-${color}-50 transition cursor-pointer" onclick="window.location.href='${r.action_url}'">
+                                    <div class="w-10 h-10 bg-${color}-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                                        <i class="ri-arrow-right-circle-line text-xl text-${color}-600"></i>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <h4 class="font-medium text-gray-800">${r.title}</h4>
+                                        <p class="text-sm text-gray-500">${r.description}</p>
+                                    </div>
+                                    <span class="px-2 py-1 bg-${color}-100 text-${color}-700 text-xs rounded-full">优先级${r.priority}</span>
+                                </div>
+                            `;
+                        }).join('');
+                    }
+                });
+        }
+        
+        function loadOptimizations() {
+            const list = document.getElementById('optimizationList');
+            list.innerHTML = `<div class="text-center py-4"><div class="w-8 h-8 mx-auto border-2 border-green-500 border-t-transparent rounded-full spin"></div></div>`;
+            
+            fetch('/api/ai/intelligent/optimization-suggestions', { method: 'POST' })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success && data.suggestions) {
+                        const impactColors = {high:'red',medium:'yellow',low:'green'};
+                        list.innerHTML = data.suggestions.map(s => `
+                            <div class="border rounded-xl p-4">
+                                <div class="flex items-center justify-between mb-2">
+                                    <h4 class="font-medium text-gray-800">${s.target_name}</h4>
+                                    <span class="px-2 py-0.5 bg-${impactColors[s.impact_level]}-100 text-${impactColors[s.impact_level]}-700 text-xs rounded-full">
+                                        ${s.impact_level === 'high' ? '高影响' : s.impact_level === 'medium' ? '中影响' : '低影响'}
+                                    </span>
+                                </div>
+                                <div class="grid grid-cols-2 gap-2 text-sm mb-2">
+                                    <div class="bg-red-50 rounded-lg p-2">
+                                        <p class="text-xs text-gray-500">当前</p>
+                                        <p class="text-gray-700">${s.current_value}</p>
+                                    </div>
+                                    <div class="bg-green-50 rounded-lg p-2">
+                                        <p class="text-xs text-gray-500">建议</p>
+                                        <p class="text-gray-700">${s.suggested_value}</p>
+                                    </div>
+                                </div>
+                                <p class="text-sm text-gray-500"><i class="ri-information-line mr-1"></i>${s.reason}</p>
+                            </div>
+                        `).join('');
+                    }
+                });
+        }
+        
+        function loadPredictions() {
+            const list = document.getElementById('predictionsList');
+            list.innerHTML = `<div class="text-center py-4"><div class="w-8 h-8 mx-auto border-2 border-blue-500 border-t-transparent rounded-full spin"></div></div>`;
+            
+            fetch('/api/ai/intelligent/predictions', { method: 'POST' })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success && data.predictions) {
+                        list.innerHTML = data.predictions.map(p => {
+                            let confidenceColor = p.confidence >= 0.85 ? 'green' : p.confidence >= 0.75 ? 'yellow' : 'red';
+                            let typeIcon = {usage:'ri-traffic-light-line',storage:'ri-hard-drive-2-line',performance:'ri-speed-up-line',ai_usage:'ri-robot-line'}[p.prediction_type] || 'ri-line-chart-line';
+                            return `
+                                <div class="border rounded-xl p-4">
+                                    <div class="flex items-start gap-3">
+                                        <div class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                                            <i class="${typeIcon} text-xl text-blue-600"></i>
+                                        </div>
+                                        <div class="flex-1">
+                                            <div class="flex items-center justify-between mb-1">
+                                                <h4 class="font-medium text-gray-800">${p.target}</h4>
+                                                <span class="px-2 py-0.5 bg-${confidenceColor}-100 text-${confidenceColor}-700 text-xs rounded-full">
+                                                    置信度${Math.round(p.confidence * 100)}%
+                                                </span>
+                                            </div>
+                                            <p class="text-gray-700 mb-1">${p.predicted_value}</p>
+                                            <p class="text-xs text-gray-500"><i class="ri-information-line mr-1"></i>${p.factors}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('');
+                    }
+                });
+        }
+        
+        function runMaintenance() {
+            const list = document.getElementById('maintenanceList');
+            list.innerHTML = `<div class="text-center py-4"><div class="w-8 h-8 mx-auto border-2 border-purple-500 border-t-transparent rounded-full spin"></div><p class="text-gray-500 mt-2">正在执行智能运维...</p></div>`;
+            
+            fetch('/api/ai/intelligent/maintenance', { method: 'POST' })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success && data.tasks) {
+                        list.innerHTML = `
+                            <div class="bg-purple-50 rounded-xl p-4 mb-3">
+                                <div class="flex items-center justify-between">
+                                    <span class="font-medium text-purple-700">运维完成</span>
+                                    <span class="text-sm text-gray-500">${data.success_count}/${data.total_tasks} 成功 · ${data.duration}s</span>
+                                </div>
+                            </div>
+                            ${data.tasks.map(t => `
+                                <div class="flex items-center gap-3 p-3 border rounded-xl">
+                                    <div class="w-8 h-8 ${t.status === 'success' ? 'bg-green-100' : 'bg-red-100'} rounded-lg flex items-center justify-center flex-shrink-0">
+                                        <i class="${t.status === 'success' ? 'ri-check-line text-green-600' : 'ri-close-line text-red-600'}"></i>
+                                    </div>
+                                    <div class="flex-1">
+                                        <h4 class="text-sm font-medium text-gray-800">${t.name}</h4>
+                                        <p class="text-xs text-gray-500">${t.result}</p>
+                                    </div>
+                                    <span class="text-xs text-gray-400">${t.duration}s</span>
+                                </div>
+                            `).join('')}
+                        `;
+                    }
+                });
+        }
+        
+        loadStatistics();
+    </script>
+</body>
+</html>
