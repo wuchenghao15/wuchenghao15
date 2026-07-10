@@ -17477,6 +17477,13 @@ try:
 except Exception as e:
     logger.error(f"✗ 注册蓝图 adult_k12_api 失败: {e}")
 
+try:
+    from app.blueprints.upgrade_api import upgrade_api
+    app.register_blueprint(upgrade_api)
+    logger.info("✓ 注册蓝图: upgrade_api")
+except Exception as e:
+    logger.error(f"✗ 注册蓝图 upgrade_api 失败: {e}")
+
 # ==================== AI布局管理员工模块 ====================
 
 def require_layout_admin():
@@ -17487,6 +17494,23 @@ def require_layout_admin():
     if role not in ['admin', 'super_admin']:
         return False, 'forbidden'
     return True, None
+
+@app.route('/admin/system-upgrade')
+def system_upgrade_center():
+    """MTSCOS全面系统升级中心"""
+    has_access, redirect_to = require_layout_admin()
+    if not has_access:
+        if redirect_to == 'login':
+            return redirect('/admin_app/login')
+        return "无权访问", 403
+    
+    user = {
+        'id': session.get('user_id'),
+        'username': session.get('username'),
+        'role': session.get('role')
+    }
+    
+    return render_template('system_upgrade_center.html', user=user)
 
 @app.route('/admin/layout-manager')
 def layout_manager_index():
