@@ -96,19 +96,36 @@
 
 ### 方案一：升级Python版本（推荐）
 
+由于当前环境网络限制（HTTP/2 framing层错误），无法通过pyenv编译安装Python 3.12。建议使用以下方式：
+
 ```bash
-# 使用Homebrew安装Python 3.12
+# 方式1：使用官方安装包（需要浏览器下载）
+# 访问: https://www.python.org/downloads/macos/
+# 下载Python 3.12.x macOS安装包并安装
+
+# 方式2：使用Homebrew（需要管理员权限）
 brew install python@3.12
 
-# 设置为默认Python
-echo 'export PATH="/usr/local/opt/python@3.12/bin:$PATH"' >> ~/.zshrc
-source ~/.zshrc
+# 方式3：配置代理后使用pyenv（推荐）
+export HTTP_PROXY="http://your-proxy:port"
+export HTTPS_PROXY="http://your-proxy:port"
+pyenv install 3.12.13
+pyenv global 3.12.13
 
-# 重新安装所有依赖
-python3 -m pip install -r requirements.txt
+# 方式4：手动下载源码到pyenv缓存
+# 1. 下载: https://www.python.org/ftp/python/3.12.13/Python-3.12.13.tgz
+# 2. 下载: https://www.openssl.org/source/openssl-3.1.4.tar.gz
+# 3. 放入: ~/.pyenv/cache/
+# 4. 执行: pyenv install 3.12.13
 ```
 
-**预期效果**: 修复所有20个安全漏洞
+**预期效果**: 修复所有28个安全漏洞
+
+### 当前已完成的准备工作
+
+- ✅ pyenv已安装到 `~/.pyenv`
+- ✅ pyenv已配置到 `~/.zshrc`
+- ✅ 安全扫描别名已配置（`scan-vuln`, `scan-vuln-json`, `scan-vuln-fix`）
 
 ### 方案二：隔离高危依赖
 
