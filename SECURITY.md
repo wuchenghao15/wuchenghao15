@@ -4,6 +4,9 @@
 
 This document tracks known security vulnerabilities in the MTSCOS AI Project dependencies.
 
+**Critical Notice**: Current environment uses Python 3.9.6. 4 security vulnerabilities require Python 3.10+ to fix.
+See [PYTHON_UPGRADE_GUIDE.md](PYTHON_UPGRADE_GUIDE.md) for detailed upgrade instructions.
+
 ## Fixed Vulnerabilities (15)
 
 | Package | Old Version | New Version | CVE/Vulnerability ID |
