@@ -479,6 +479,332 @@ class AIQuestionGenerationService:
             'analysis': skill['analysis']
         }
     
+    def generate_college_admission_question(self) -> Dict:
+        """生成自主招生题目"""
+        admission_topics = [
+            {
+                'topic': '数学竞赛',
+                'question': "已知函数f(x) = x³ - 3x + a，若f(x)在区间[-2, 2]上有两个零点，求实数a的取值范围。",
+                'answer': "参考答案：a ∈ (-2, 2)",
+                'analysis': "本题考查三次函数的零点问题，需要利用导数分析函数单调性和极值。"
+            },
+            {
+                'topic': '物理竞赛',
+                'question': "如图所示，质量为m的小球从光滑斜面顶端由静止滑下，斜面倾角为θ，斜面长度为L。求小球到达斜面底端时的速度大小。",
+                'answer': "参考答案：v = √(2gLsinθ)",
+                'analysis': "本题考查机械能守恒定律的应用，重力势能转化为动能。"
+            },
+            {
+                'topic': '化学竞赛',
+                'question': "在标准状况下，将22.4L的HCl气体溶于水配制成1L溶液。求该溶液的物质的量浓度。",
+                'answer': "参考答案：1mol/L",
+                'analysis': "本题考查气体摩尔体积和物质的量浓度的计算。"
+            },
+            {
+                'topic': '生物竞赛',
+                'question': "请简述DNA复制的过程，并说明其生物学意义。",
+                'answer': "参考答案：DNA复制包括解旋、引物合成、延伸和终止四个阶段，保证了遗传信息的准确传递。",
+                'analysis': "本题考查DNA复制的分子机制。"
+            },
+            {
+                'topic': '综合能力',
+                'question': "请结合实际，谈谈科技创新对社会发展的影响。",
+                'answer': "参考答案：科技创新推动生产力发展、改变生活方式、促进社会进步。",
+                'analysis': "本题考查综合分析和表达能力。"
+            }
+        ]
+        
+        topic = random.choice(admission_topics)
+        return {
+            'type': '自主招生',
+            'question': f"【{topic['topic']}】{topic['question']}",
+            'answer': topic['answer'],
+            'analysis': topic['analysis']
+        }
+    
+    def generate_competition_question(self) -> Dict:
+        """生成专项竞赛试题"""
+        competition_topics = [
+            {
+                'topic': '奥数',
+                'question': "求满足x² + y² = z²的正整数解（勾股数），并证明有无穷多组解。",
+                'answer': "参考答案：取x = m² - n², y = 2mn, z = m² + n²，其中m > n > 0，可得无穷多组解。",
+                'analysis': "本题考查数论中的勾股数问题。"
+            },
+            {
+                'topic': '物理奥赛',
+                'question': "一个质点在光滑水平面上做匀速圆周运动，向心力由绳子提供。若绳子突然断裂，质点将如何运动？",
+                'answer': "参考答案：质点将沿切线方向做匀速直线运动。",
+                'analysis': "本题考查牛顿第一定律和圆周运动。"
+            },
+            {
+                'topic': '化学奥赛',
+                'question': "配平下列化学方程式：Fe + O₂ → Fe₂O₃",
+                'answer': "参考答案：4Fe + 3O₂ = 2Fe₂O₃",
+                'analysis': "本题考查化学方程式配平。"
+            },
+            {
+                'topic': '信息学',
+                'question': "使用二分查找算法在有序数组中查找某个元素，最坏情况下的时间复杂度是多少？",
+                'answer': "参考答案：O(log n)",
+                'analysis': "本题考查算法复杂度分析。"
+            },
+            {
+                'topic': '英语竞赛',
+                'question': "Translate the following sentence into English: 科技改变生活。",
+                'answer': "参考答案：Technology changes life.",
+                'analysis': "本题考查翻译能力。"
+            }
+        ]
+        
+        topic = random.choice(competition_topics)
+        return {
+            'type': '竞赛题',
+            'question': f"【{topic['topic']}】{topic['question']}",
+            'answer': topic['answer'],
+            'analysis': topic['analysis']
+        }
+    
+    def generate_exam_real_question(self) -> Dict:
+        """生成历年高考中考真题"""
+        exam_topics = [
+            {
+                'year': '2023',
+                'subject': '数学',
+                'type': '高考',
+                'question': "已知等差数列{an}的前n项和为Sn，若a₁ = 2，公差d = 3，求S₁₀。",
+                'answer': "参考答案：S₁₀ = 10×2 + 10×9×3/2 = 155",
+                'analysis': "本题考查等差数列求和公式。"
+            },
+            {
+                'year': '2022',
+                'subject': '物理',
+                'type': '中考',
+                'question': "一辆汽车以20m/s的速度行驶，司机看到前方红灯后立即刹车，加速度为-5m/s²。求汽车刹车后4秒内的位移。",
+                'answer': "参考答案：s = vt + ½at² = 20×4 - ½×5×16 = 40m",
+                'analysis': "本题考查匀变速直线运动。"
+            },
+            {
+                'year': '2023',
+                'subject': '语文',
+                'type': '高考',
+                'question': "阅读下面的诗歌，完成题目。《登高》杜甫\n风急天高猿啸哀，渚清沙白鸟飞回。无边落木萧萧下，不尽长江滚滚来。",
+                'answer': "参考答案：本题考查诗歌鉴赏，分析意境、手法等。",
+                'analysis': "本题考查古诗词鉴赏能力。"
+            },
+            {
+                'year': '2022',
+                'subject': '英语',
+                'type': '中考',
+                'question': "Choose the correct answer: He _____ to school every day. A) go B) goes C) going D) went",
+                'answer': "参考答案：B",
+                'analysis': "本题考查一般现在时态。"
+            },
+            {
+                'year': '2023',
+                'subject': '化学',
+                'type': '高考',
+                'question': "写出下列反应的化学方程式：氢氧化钠与盐酸反应。",
+                'answer': "参考答案：NaOH + HCl = NaCl + H₂O",
+                'analysis': "本题考查酸碱中和反应。"
+            }
+        ]
+        
+        topic = random.choice(exam_topics)
+        return {
+            'type': '真题',
+            'question': f"【{topic['year']}{topic['type']}-{topic['subject']}】{topic['question']}",
+            'answer': topic['answer'],
+            'analysis': topic['analysis']
+        }
+    
+    def generate_key_review_question(self) -> Dict:
+        """生成重点复习题"""
+        review_topics = [
+            {
+                'subject': '数学',
+                'key_point': '函数单调性',
+                'question': "设函数f(x) = x³ - 3x，求f(x)的单调递增区间和单调递减区间。",
+                'answer': "参考答案：增区间(-∞, -1)和(1, +∞)，减区间(-1, 1)",
+                'analysis': "本题考查利用导数求函数单调性。"
+            },
+            {
+                'subject': '物理',
+                'key_point': '牛顿运动定律',
+                'question': "质量为2kg的物体受到10N的水平推力作用，在光滑水平面上运动。求物体的加速度。",
+                'answer': "参考答案：a = F/m = 10/2 = 5m/s²",
+                'analysis': "本题考查牛顿第二定律。"
+            },
+            {
+                'subject': '语文',
+                'key_point': '文言文虚词',
+                'question': "下列句子中'之'的用法与其他三项不同的是：A)吾欲之南海 B)送孟浩然之广陵 C)辍耕之垄上 D)予独爱莲之出淤泥而不染",
+                'answer': "参考答案：D（D项为取消句子独立性，其他三项为动词'到'）",
+                'analysis': "本题考查文言虚词'之'的用法。"
+            },
+            {
+                'subject': '英语',
+                'key_point': '非谓语动词',
+                'question': "_____ the book, he found it very interesting. A) Read B) Reading C) To read D) Readed",
+                'answer': "参考答案：B",
+                'analysis': "本题考查现在分词作状语。"
+            },
+            {
+                'subject': '化学',
+                'key_point': '化学反应速率',
+                'question': "影响化学反应速率的因素有哪些？请举例说明。",
+                'answer': "参考答案：温度、浓度、压强、催化剂等。",
+                'analysis': "本题考查化学反应速率的影响因素。"
+            }
+        ]
+        
+        topic = random.choice(review_topics)
+        return {
+            'type': '重点复习',
+            'question': f"【{topic['subject']}-{topic['key_point']}】{topic['question']}",
+            'answer': topic['answer'],
+            'analysis': topic['analysis']
+        }
+    
+    def generate_international_competition_question(self) -> Dict:
+        """生成国际竞赛真题"""
+        international_topics = [
+            {
+                'competition': 'IMO',
+                'year': '2023',
+                'question': "Let n be a positive integer. Prove that there exists a positive integer k such that n divides 2ᵏ - 1.",
+                'answer': "参考答案：利用鸽巢原理证明。",
+                'analysis': "本题考查数论中的阶的概念。"
+            },
+            {
+                'competition': 'IPhO',
+                'year': '2022',
+                'question': "A particle moves in a circular path of radius R with constant speed v. What is the magnitude of its centripetal acceleration?",
+                'answer': "参考答案：a = v²/R",
+                'analysis': "本题考查圆周运动的向心加速度。"
+            },
+            {
+                'competition': 'IChO',
+                'year': '2023',
+                'question': "Calculate the pH of a 0.1mol/L solution of acetic acid (Ka = 1.8×10⁻⁵).",
+                'answer': "参考答案：pH ≈ 2.87",
+                'analysis': "本题考查弱酸的电离平衡。"
+            },
+            {
+                'competition': 'IBO',
+                'year': '2022',
+                'question': "Describe the process of photosynthesis and explain its significance.",
+                'answer': "参考答案：光合作用包括光反应和暗反应两个阶段，将光能转化为化学能。",
+                'analysis': "本题考查光合作用的过程。"
+            },
+            {
+                'competition': 'IOI',
+                'year': '2023',
+                'question': "Design an algorithm to find the shortest path in a weighted graph.",
+                'answer': "参考答案：使用Dijkstra算法。",
+                'analysis': "本题考查图论中的最短路径算法。"
+            }
+        ]
+        
+        topic = random.choice(international_topics)
+        return {
+            'type': '国际竞赛',
+            'question': f"【{topic['competition']} {topic['year']}】{topic['question']}",
+            'answer': topic['answer'],
+            'analysis': topic['analysis']
+        }
+    
+    def generate_literature_analysis_question(self) -> Dict:
+        """生成文科经典案例文章解析与阅读理解"""
+        literature_topics = [
+            {
+                'work': '红楼梦',
+                'author': '曹雪芹',
+                'question': "分析林黛玉的人物形象及其悲剧命运的原因。",
+                'answer': "参考答案：林黛玉是一个才情出众、敏感多疑的女性形象，她的悲剧源于封建礼教的束缚和个人性格的弱点。",
+                'analysis': "本题考查古典文学名著的人物分析能力。"
+            },
+            {
+                'work': '呐喊',
+                'author': '鲁迅',
+                'question': "分析阿Q精神胜利法的内涵及其社会意义。",
+                'answer': "参考答案：阿Q精神胜利法是一种自我安慰的心理机制，反映了当时国民的劣根性。",
+                'analysis': "本题考查现代文学作品的主题分析。"
+            },
+            {
+                'work': '围城',
+                'author': '钱钟书',
+                'question': "谈谈你对'围城'这一象征意义的理解。",
+                'answer': "参考答案：围城象征着人生的困境，城外的人想进去，城里的人想出来。",
+                'analysis': "本题考查文学作品的象征手法。"
+            },
+            {
+                'work': '平凡的世界',
+                'author': '路遥',
+                'question': "分析孙少平的成长历程及其体现的时代精神。",
+                'answer': "参考答案：孙少平从农村青年成长为有理想、有追求的青年，体现了改革开放初期的时代精神。",
+                'analysis': "本题考查当代文学作品的人物分析。"
+            },
+            {
+                'work': '古文观止',
+                'author': '吴楚材',
+                'question': "分析《岳阳楼记》中'先天下之忧而忧，后天下之乐而乐'的思想内涵。",
+                'answer': "参考答案：这句话表达了作者忧国忧民的情怀和以天下为己任的担当精神。",
+                'analysis': "本题考查古代散文的思想内涵分析。"
+            }
+        ]
+        
+        topic = random.choice(literature_topics)
+        return {
+            'type': '文学分析',
+            'question': f"【{topic['work']}-{topic['author']}】{topic['question']}",
+            'answer': topic['answer'],
+            'analysis': topic['analysis']
+        }
+    
+    def generate_formula_skill_question(self) -> Dict:
+        """生成基础公式巧用与运用试题"""
+        formula_skill_topics = [
+            {
+                'formula': '完全平方公式',
+                'question': "利用完全平方公式计算：(a + b)² - (a - b)²",
+                'answer': "参考答案：(a² + 2ab + b²) - (a² - 2ab + b²) = 4ab",
+                'analysis': "本题考查完全平方公式的灵活运用。"
+            },
+            {
+                'formula': '均值不等式',
+                'question': "已知x > 0，求x + 1/x的最小值。",
+                'answer': "参考答案：由均值不等式，x + 1/x ≥ 2√(x·1/x) = 2，当x = 1时取等号。",
+                'analysis': "本题考查均值不等式的应用。"
+            },
+            {
+                'formula': '勾股定理',
+                'question': "已知直角三角形的斜边为10，一条直角边为6，求另一条直角边的长度。",
+                'answer': "参考答案：由勾股定理，另一条直角边 = √(10² - 6²) = √64 = 8",
+                'analysis': "本题考查勾股定理的直接应用。"
+            },
+            {
+                'formula': '欧姆定律',
+                'question': "一个电阻为10Ω的导体，两端电压为20V，通过的电流是多少？",
+                'answer': "参考答案：由欧姆定律，I = U/R = 20/10 = 2A",
+                'analysis': "本题考查欧姆定律的应用。"
+            },
+            {
+                'formula': '牛顿第二定律',
+                'question': "质量为5kg的物体受到25N的合力作用，求物体的加速度。",
+                'answer': "参考答案：由牛顿第二定律，a = F/m = 25/5 = 5m/s²",
+                'analysis': "本题考查牛顿第二定律的应用。"
+            }
+        ]
+        
+        topic = random.choice(formula_skill_topics)
+        return {
+            'type': '公式巧用',
+            'question': f"【{topic['formula']}】{topic['question']}",
+            'answer': topic['answer'],
+            'analysis': topic['analysis']
+        }
+    
     def generate_ai_foundation_question(self) -> Dict:
         """生成AI基础模型专项练习题"""
         ai_topics = [
@@ -528,7 +854,14 @@ class AIQuestionGenerationService:
             '公式运用': self.generate_formula_application,
             '案例分析': self.generate_case_analysis,
             '技能题': self.generate_adult_education_question,
-            'AI专项': self.generate_ai_foundation_question
+            'AI专项': self.generate_ai_foundation_question,
+            '自主招生': self.generate_college_admission_question,
+            '竞赛题': self.generate_competition_question,
+            '真题': self.generate_exam_real_question,
+            '重点复习': self.generate_key_review_question,
+            '国际竞赛': self.generate_international_competition_question,
+            '文学分析': self.generate_literature_analysis_question,
+            '公式巧用': self.generate_formula_skill_question
         }
         
         generator = type_map.get(question_type)
@@ -565,7 +898,9 @@ class AIQuestionGenerationService:
         }
         
         specialized_types = ['默写题', '翻译题', '赏析题', '古文解析', '作文题', 
-                            '阅读理解', '公式运用', '案例分析', '技能题', 'AI专项']
+                            '阅读理解', '公式运用', '案例分析', '技能题', 'AI专项',
+                            '自主招生', '竞赛题', '真题', '重点复习', '国际竞赛',
+                            '文学分析', '公式巧用']
         
         available_types = []
         for t in types:

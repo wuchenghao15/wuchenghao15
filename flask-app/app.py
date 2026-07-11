@@ -17622,6 +17622,13 @@ try:
 except Exception as e:
     logger.error(f"✗ 注册蓝图 health_api 失败: {e}")
 
+try:
+    from app.routes.security_scan_api import security_scan_api
+    app.register_blueprint(security_scan_api)
+    logger.info("✓ 注册蓝图: security_scan_api")
+except Exception as e:
+    logger.error(f"✗ 注册蓝图 security_scan_api 失败: {e}")
+
 # ==================== AI布局管理员工模块 ====================
 
 def require_layout_admin():
