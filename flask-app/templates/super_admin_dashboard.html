@@ -35,7 +35,7 @@
 .user-detail { flex: 1; }
 .user-name { font-size: 12px; font-weight: 700; color: #1e293b; margin: 0; }
 .user-role { font-size: 10px; color: #64748b; margin: 2px 0 0; }
-.logout-btn { background: transparent; border: none; color: #ef4444; cursor: pointer; padding: 4px; }
+.logout-btn { background: transparent; border: none; color: var(--color-error); cursor: pointer; padding: 4px; }
 .main-content { flex: 1; margin-left: 260px; padding: 24px; min-height: 100vh; }
 .page-header { margin-bottom: 24px; }
 .page-header h1 { font-size: 24px; font-weight: 800; color: #1e293b; margin: 0; }
@@ -89,16 +89,16 @@
 .chart-container { height: 300px; position: relative; }
 .resource-bar { height: 24px; background: #f1f5f9; border-radius: 12px; overflow: hidden; margin-bottom: 8px; }
 .resource-fill { height: 100%; border-radius: 12px; transition: width 0.3s; }
-.resource-fill.cpu { background: linear-gradient(90deg, #ef4444 0%, #f97316 100%); }
-.resource-fill.mem { background: linear-gradient(90deg, #3b82f6 0%, #8b5cf6 100%); }
-.resource-fill.disk { background: linear-gradient(90deg, #10b981 0%, #06b6d4 100%); }
+.resource-fill.cpu { background: linear-gradient(90deg, var(--color-error) 0%, #f97316 100%); }
+.resource-fill.mem { background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-secondary) 100%); }
+.resource-fill.disk { background: linear-gradient(90deg, var(--color-success) 0%, #06b6d4 100%); }
 .resource-label { display: flex; justify-content: space-between; font-size: 12px; color: #64748b; margin-bottom: 4px; }
-.status-dot { width: 8px; height: 8px; border-radius: 50%; background: #10b981; animation: pulse 2s infinite; }
+.status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--color-success); animation: pulse 2s infinite; }
 .status-dot.inactive { background: #94a3b8; animation: none; }
 .engine-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
 .engine-card { background: white; border-radius: 12px; padding: 16px; border: 1px solid #f1f5f9; }
 .engine-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-.engine-dot { width: 6px; height: 6px; border-radius: 50%; background: #10b981; }
+.engine-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--color-success); }
 .engine-dot.inactive { background: #94a3b8; }
 .engine-name { font-size: 13px; font-weight: 700; color: #1e293b; }
 .engine-desc { font-size: 11px; color: #64748b; }
@@ -463,7 +463,7 @@ function loadAgentStatus() {
         const isRunning = data.is_running;
         dot.className = 'status-dot' + (isRunning ? '' : ' inactive');
         label.textContent = '本地AI Agent ' + (isRunning ? '运行中' : '待启动');
-        stats.innerHTML = `<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;"><div><p style="font-size:12px;color:#64748b;margin:0;">总任务</p><p style="font-size:24px;font-weight:800;color:#1e293b;margin:0;">${data.total_tasks || 0}</p></div><div><p style="font-size:12px;color:#64748b;margin:0;">运行中</p><p style="font-size:24px;font-weight:800;color:#3b82f6;margin:0;">${data.running_tasks || 0}</p></div><div><p style="font-size:12px;color:#64748b;margin:0;">已完成</p><p style="font-size:24px;font-weight:800;color:#10b981;margin:0;">${data.completed_tasks || 0}</p></div><div><p style="font-size:12px;color:#64748b;margin:0;">失败</p><p style="font-size:24px;font-weight:800;color:#ef4444;margin:0;">${data.failed_tasks || 0}</p></div></div>`;
+        stats.innerHTML = `<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;"><div><p style="font-size:12px;color:#64748b;margin:0;">总任务</p><p style="font-size:24px;font-weight:800;color:#1e293b;margin:0;">${data.total_tasks || 0}</p></div><div><p style="font-size:12px;color:#64748b;margin:0;">运行中</p><p style="font-size:24px;font-weight:800;color:var(--color-primary);margin:0;">${data.running_tasks || 0}</p></div><div><p style="font-size:12px;color:#64748b;margin:0;">已完成</p><p style="font-size:24px;font-weight:800;color:var(--color-success);margin:0;">${data.completed_tasks || 0}</p></div><div><p style="font-size:12px;color:#64748b;margin:0;">失败</p><p style="font-size:24px;font-weight:800;color:var(--color-error);margin:0;">${data.failed_tasks || 0}</p></div></div>`;
         safeFetch('/api/local-ai-agent/tasks').then(td => {
             tasks.innerHTML = td.length ? td.map(t => `<div class="task-item"><div class="task-header"><span class="task-name">${t.name}</span><span class="task-status" style="background:${t.status==='completed'?'#d1fae5':t.status==='running'?'#dbeafe':t.status==='failed'?'#fee2e2':'#fef3c7'};color:${t.status==='completed'?'#059669':t.status==='running'?'#2563eb':t.status==='failed'?'#dc2626':'#d97706'}">${t.status}</span></div><div class="task-detail">ID: ${t.id}</div></div>`).join('') : '<div class="empty-state">暂无任务</div>';
         });
@@ -495,7 +495,7 @@ function initResourceChart() {
         type: 'line',
         data: {
             labels: ['10分钟前', '8分钟前', '6分钟前', '4分钟前', '2分钟前', '现在'],
-            datasets: [{label: 'CPU', data: [30,45,35,50,40,35], borderColor: '#ef4444', tension: 0.3}, {label: '内存', data: [60,65,62,68,64,66], borderColor: '#3b82f6', tension: 0.3}, {label: '磁盘', data: [45,45,45,46,46,46], borderColor: '#10b981', tension: 0.3}]
+            datasets: [{label: 'CPU', data: [30,45,35,50,40,35], borderColor: 'var(--color-error)', tension: 0.3}, {label: '内存', data: [60,65,62,68,64,66], borderColor: 'var(--color-primary)', tension: 0.3}, {label: '磁盘', data: [45,45,45,46,46,46], borderColor: 'var(--color-success)', tension: 0.3}]
         },
         options: {responsive: true, maintainAspectRatio: false, plugins: {legend: {position: 'top'}}},
         scales: {y: {beginAtZero: true, max: 100}}

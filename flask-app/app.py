@@ -17566,6 +17566,27 @@ try:
 except Exception as e:
     logger.error(f"✗ 注册蓝图 admin_api_bp 失败: {e}")
 
+try:
+    from app.routes.notification_routes import notification_api
+    app.register_blueprint(notification_api)
+    logger.info("✓ 注册蓝图: notification_api")
+except Exception as e:
+    logger.error(f"✗ 注册蓝图 notification_api 失败: {e}")
+
+try:
+    from app.routes.learning_path_routes import learning_path_api
+    app.register_blueprint(learning_path_api)
+    logger.info("✓ 注册蓝图: learning_path_api")
+except Exception as e:
+    logger.error(f"✗ 注册蓝图 learning_path_api 失败: {e}")
+
+try:
+    from app.routes.report_routes import report_api
+    app.register_blueprint(report_api)
+    logger.info("✓ 注册蓝图: report_api")
+except Exception as e:
+    logger.error(f"✗ 注册蓝图 report_api 失败: {e}")
+
 # ==================== AI布局管理员工模块 ====================
 
 def require_layout_admin():

@@ -7,6 +7,8 @@
 from .base_model import BaseModel
 from .user import User
 from .question import Question
+from .notification import Notification, NotificationType, NotificationStatus
+from .learning_path import LearningPath, PathNode, LearningPathStatus
 
 __all__ = [
     # 基础模型
@@ -16,5 +18,15 @@ __all__ = [
     'User',
     
     # 题库相关
-    'Question'
+    'Question',
+    
+    # 通知相关
+    'Notification',
+    'NotificationType',
+    'NotificationStatus',
+    
+    # 学习路径相关
+    'LearningPath',
+    'PathNode',
+    'LearningPathStatus'
 ]
