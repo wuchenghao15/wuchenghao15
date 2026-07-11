@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#1e293b">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>用户登录 - MTSCOS AI 智能教育平台</title>
+    <link rel="stylesheet" href="/assets/css/mtscos-design-system.css">
+    <link rel="stylesheet" href="/assets/font-awesome/css/all.min.css">
+    <style>
+        :root {
+            --primary: var(--color-primary);
+            --primary-dark: var(--color-primary-dark);
+            --secondary: var(--color-secondary);
+            --bg-primary: var(--bg-dark);
+            --bg-secondary: #1e293b;
+            --text-primary: var(--text-contrast);
+            --text-secondary: var(--text-light);
+            --text-muted: #64748b;
+            --border: rgba(148, 163, 184, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            -webkit-font-smoothing: antialiased;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .bg-gradient {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            background: radial-gradient(ellipse at top, rgba(59, 130, 246, 0.15) 0%, transparent 50%),
+                        radial-gradient(ellipse at bottom, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
+        }
+
+        .tech-grid {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+            background-image: 
+                linear-gradient(rgba(148, 163, 184, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(148, 163, 184, 0.05) 1px, transparent 1px);
+            background-size: 50px 50px;
+        }
+
+        .login-container {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 420px;
+        }
+
+        .login-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 40px 32px;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .brand-section {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .brand-logo {
+            width: 64px;
+            height: 64px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            margin: 0 auto 16px;
+            box-shadow: 0 8px 30px rgba(59, 130, 246, 0.3);
+        }
+
+        .brand-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 4px;
+            background: linear-gradient(135deg, #fff, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .brand-subtitle {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            display: block;
+            font-weight: 500;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 14px 16px;
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            background: rgba(0, 0, 0, 0.2);
+            color: var(--text-primary);
+            font-size: 15px;
+            outline: none;
+            transition: all 0.2s;
+            min-height: 48px;
+        }
+
+        .form-input:focus {
+            border-color: var(--primary);
+            background: rgba(0, 0, 0, 0.3);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .form-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .form-input-icon {
+            position: relative;
+        }
+
+        .form-input-icon i {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 16px;
+        }
+
+        .form-input-icon input {
+            padding-left: 42px;
+        }
+
+        .form-options {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+        }
+
+        .checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+
+        .checkbox-wrapper input[type="checkbox"] {
+            display: none;
+        }
+
+        .checkbox-custom {
+            width: 20px;
+            height: 20px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .checkbox-wrapper input[type="checkbox"]:checked + .checkbox-custom {
+            background: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .checkbox-custom i {
+            color: white;
+            font-size: 12px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .checkbox-wrapper input[type="checkbox"]:checked + .checkbox-custom i {
+            opacity: 1;
+        }
+
+        .checkbox-label {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .forgot-link {
+            font-size: 13px;
+            color: var(--primary);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .forgot-link:hover {
+            color: #60a5fa;
+        }
+
+        .btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 14px 24px;
+            border-radius: 14px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+            min-height: 48px;
+            width: 100%;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            box-shadow: 0 4px 16px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-primary:active {
+            transform: scale(0.98);
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            margin: 24px 0;
+            gap: 12px;
+        }
+
+        .divider-line {
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        .divider-text {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:active {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .register-section {
+            text-align: center;
+            margin-top: 24px;
+        }
+
+        .register-text {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .register-link {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+            margin-left: 4px;
+        }
+
+        .register-link:hover {
+            color: #60a5fa;
+        }
+
+        .alert {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 14px 24px;
+            border-radius: 12px;
+            font-size: 14px;
+            z-index: 1000;
+            animation: slideDown 0.3s ease;
+            max-width: 90%;
+            text-align: center;
+        }
+
+        .alert-success {
+            background: rgba(16, 185, 129, 0.9);
+            color: white;
+        }
+
+        .alert-error {
+            background: rgba(239, 68, 68, 0.9);
+            color: white;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+
+        .network-status {
+            position: fixed;
+            top: 12px;
+            right: 12px;
+            padding: 8px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            z-index: 100;
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid var(--border);
+            backdrop-filter: blur(10px);
+        }
+
+        .network-status.online {
+            color: var(--success);
+        }
+
+        .network-status.offline {
+            color: var(--danger);
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-gradient"></div>
+    <div class="tech-grid"></div>
+
+    <div class="network-status online" id="network-status">
+        <i class="fas fa-wifi"></i>
+        <span>网络正常</span>
+    </div>
+
+    <div class="login-container">
+        <div class="login-card">
+            <div class="brand-section">
+                <div class="brand-logo">
+                    <i class="fas fa-shield-halved"></i>
+                </div>
+                <div class="brand-title">MTSCOS AI</div>
+                <div class="brand-subtitle">智能教育平台管理系统</div>
+            </div>
+
+            <form id="login-form" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label class="form-label">用户名</label>
+                    <div class="form-input-icon">
+                        <i class="fas fa-user"></i>
+                        <input type="text" class="form-input" id="username" placeholder="请输入用户名" required autocomplete="username">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">密码</label>
+                    <div class="form-input-icon">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" class="form-input" id="password" placeholder="请输入密码" required autocomplete="current-password">
+                    </div>
+                </div>
+
+                <div class="form-options">
+                    <label class="checkbox-wrapper">
+                        <input type="checkbox" id="remember">
+                        <div class="checkbox-custom">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <span class="checkbox-label">记住我</span>
+                    </label>
+                    <a href="/forgot_password" class="forgot-link">忘记密码?</a>
+                </div>
+
+                <button type="submit" id="login-btn" class="btn btn-primary">
+                    <span>登 录</span>
+                </button>
+            </form>
+
+            <div class="divider">
+                <div class="divider-line"></div>
+                <span class="divider-text">其他登录方式</span>
+                <div class="divider-line"></div>
+            </div>
+
+            <button class="btn btn-secondary">
+                <i class="fas fa-user-plus"></i>
+                <span>注册账号</span>
+            </button>
+
+            <div class="register-section">
+                <span class="register-text">还没有账号?</span>
+                <a href="/register" class="register-link">立即注册</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.protocol + '//' + window.location.host;
+
+        function checkNetworkStatus() {
+            if (navigator.onLine) {
+                return { online: true, message: '网络连接正常' };
+            } else {
+                return { online: false, message: '网络连接已断开' };
+            }
+        }
+
+        function updateNetworkStatus() {
+            const statusEl = document.getElementById('network-status');
+            const status = checkNetworkStatus();
+            
+            if (status.online) {
+                statusEl.classList.remove('offline');
+                statusEl.classList.add('online');
+                statusEl.innerHTML = '<i class="fas fa-wifi"></i><span>网络正常</span>';
+            } else {
+                statusEl.classList.remove('online');
+                statusEl.classList.add('offline');
+                statusEl.innerHTML = '<i class="fas fa-wifi-slash"></i><span>网络断开</span>';
+            }
+        }
+
+        window.addEventListener('online', updateNetworkStatus);
+        window.addEventListener('offline', updateNetworkStatus);
+
+        updateNetworkStatus();
+
+        function showAlert(message, type) {
+            const alertEl = document.createElement('div');
+            alertEl.className = `alert alert-${type}`;
+            alertEl.textContent = message;
+            document.body.appendChild(alertEl);
+
+            setTimeout(() => {
+                alertEl.remove();
+            }, 3000);
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            const remember = document.getElementById('remember').checked;
+            const btn = document.getElementById('login-btn');
+
+            if (!username || !password) {
+                showAlert('请输入用户名和密码', 'error');
+                return;
+            }
+
+            const networkStatus = checkNetworkStatus();
+            if (!networkStatus.online) {
+                showAlert('网络连接失败，请检查网络设置或稍后重试', 'error');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<div class="spinner"></div><span>登录中...</span>';
+
+            try {
+                const loginUrl = API_BASE + '/auth/login';
+                const res = await fetch(loginUrl, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password, remember }),
+                    credentials: 'include',
+                    timeout: 30000
+                });
+
+                if (!res.ok) {
+                    const errorData = await res.json().catch(() => ({}));
+                    let errorMsg = errorData.message || `HTTP错误: ${res.status}`;
+                    
+                    if (res.status === 403) {
+                        errorMsg = errorData.message || '访问被拒绝，请联系管理员';
+                    } else if (res.status === 401) {
+                        errorMsg = errorData.message || '用户名或密码错误';
+                    } else if (res.status === 429) {
+                        errorMsg = '请求过于频繁，请稍后再试';
+                    }
+                    
+                    showAlert(errorMsg, 'error');
+                    btn.disabled = false;
+                    btn.innerHTML = '<span>登 录</span>';
+                    return;
+                }
+
+                const data = await res.json();
+                
+                if (data.success) {
+                    showAlert('登录成功', 'success');
+                    setTimeout(() => {
+                        window.location.href = data.redirect || '/dashboard';
+                    }, 500);
+                } else {
+                    showAlert(data.message || '登录失败', 'error');
+                    btn.disabled = false;
+                    btn.innerHTML = '<span>登 录</span>';
+                }
+            } catch (error) {
+                console.error('登录错误:', error);
+                showAlert('网络连接失败，请检查网络设置或稍后重试', 'error');
+                btn.disabled = false;
+                btn.innerHTML = '<span>登 录</span>';
+            }
+        }
+    </script>
+</body>
+</html>

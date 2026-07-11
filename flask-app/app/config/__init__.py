@@ -16,16 +16,40 @@ try:
         spec.loader.exec_module(app_config_module)
         load_config = app_config_module.load_config
         get_config = getattr(app_config_module, 'get_config', None)
+        get_config_value = getattr(app_config_module, 'get_config_value', None)
+        get_config_category = getattr(app_config_module, 'get_config_category', None)
+        update_config = getattr(app_config_module, 'update_config', None)
+        delete_config = getattr(app_config_module, 'delete_config', None)
+        get_all_configs = getattr(app_config_module, 'get_all_configs', None)
+        get_all_configs_with_category = getattr(app_config_module, 'get_all_configs_with_category', None)
+        refresh_config = getattr(app_config_module, 'refresh_config', None)
+        init_database_config = getattr(app_config_module, 'init_database_config', None)
         app_config = getattr(app_config_module, 'app_config', {})
     else:
         def load_config(config_type=None):
             return {}
         get_config = None
+        get_config_value = None
+        get_config_category = None
+        update_config = None
+        delete_config = None
+        get_all_configs = None
+        get_all_configs_with_category = None
+        refresh_config = None
+        init_database_config = None
         app_config = {}
 except Exception:
     def load_config(config_type=None):
         return {}
     get_config = None
+    get_config_value = None
+    get_config_category = None
+    update_config = None
+    delete_config = None
+    get_all_configs = None
+    get_all_configs_with_category = None
+    refresh_config = None
+    init_database_config = None
     app_config = {}
 
 
@@ -109,6 +133,14 @@ from .unified_rules import (
 __all__ = [
     'load_config',
     'get_config',
+    'get_config_value',
+    'get_config_category',
+    'update_config',
+    'delete_config',
+    'get_all_configs',
+    'get_all_configs_with_category',
+    'refresh_config',
+    'init_database_config',
     'Config',
     'EXAM_SYSTEM_ROUTES',
     'TEST_SYSTEM_ROUTES',

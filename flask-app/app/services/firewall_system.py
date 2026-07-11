@@ -139,6 +139,50 @@ class FirewallSystem:
                 "conditions": [],
             },
             {
+                "rule_id": "rule_allow_auth_login",
+                "name": "允许登录接口",
+                "description": "允许登录接口访问",
+                "action": "allow",
+                "priority": 5,
+                "enabled": True,
+                "conditions": [
+                    {"field": "url", "operator": "eq", "value": "/auth/login"},
+                ],
+            },
+            {
+                "rule_id": "rule_allow_auth_register",
+                "name": "允许注册接口",
+                "description": "允许注册接口访问",
+                "action": "allow",
+                "priority": 5,
+                "enabled": True,
+                "conditions": [
+                    {"field": "url", "operator": "eq", "value": "/auth/register"},
+                ],
+            },
+            {
+                "rule_id": "rule_allow_api_auth_login",
+                "name": "允许API登录接口",
+                "description": "允许API登录接口访问",
+                "action": "allow",
+                "priority": 5,
+                "enabled": True,
+                "conditions": [
+                    {"field": "url", "operator": "eq", "value": "/api/auth/login"},
+                ],
+            },
+            {
+                "rule_id": "rule_allow_api_auth_register",
+                "name": "允许API注册接口",
+                "description": "允许API注册接口访问",
+                "action": "allow",
+                "priority": 5,
+                "enabled": True,
+                "conditions": [
+                    {"field": "url", "operator": "eq", "value": "/api/auth/register"},
+                ],
+            },
+            {
                 "rule_id": "rule_block_sql_injection",
                 "name": "SQL注入防护",
                 "description": "阻止疑似SQL注入攻击的请求",

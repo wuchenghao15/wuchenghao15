@@ -299,6 +299,39 @@ def init_database_config():
         db_manager.init_defaults(AI_CONFIG, 'ai')
         db_manager.init_defaults(LOG_CONFIG, 'log')
         db_manager.init_defaults(HA_CONFIG, 'ha')
+        
+        security_extra_config = {
+            'RATE_LIMITS': {
+                'login': {'limit': 5, 'window': 60},
+                'api': {'limit': 100, 'window': 60},
+                'register': {'limit': 3, 'window': 300},
+            },
+            'PERMISSION_RULES': {
+                'admin': {
+                    'allowed_routes': ['*'],
+                    'allowed_pages': ['dashboard', 'admin*', 'system*', 'exam*', 'user*', 'api*'],
+                },
+                'teacher': {
+                    'allowed_routes': ['/dashboard', '/exam*', '/api/exam*', '/api/question*'],
+                    'allowed_pages': ['dashboard', 'exam*', 'question*'],
+                },
+                'student': {
+                    'allowed_routes': ['/dashboard', '/exam/*', '/api/exam/*'],
+                    'allowed_pages': ['dashboard', 'exam*'],
+                },
+                'parent': {
+                    'allowed_routes': ['/dashboard', '/api/parent/*'],
+                    'allowed_pages': ['dashboard', 'parent*'],
+                },
+                'user': {
+                    'allowed_routes': ['/dashboard', '/api/user/*'],
+                    'allowed_pages': ['dashboard'],
+                },
+            },
+            'CSP_POLICY': "default-src 'self' http://localhost:8888 http://127.0.0.1:8888 http://0.0.0.0:8888 http://192.168.0.0/16; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' http://localhost:8888 http://127.0.0.1:8888 http://0.0.0.0:8888 http://192.168.0.0/16; media-src 'self' data:;",
+        }
+        db_manager.init_defaults(security_extra_config, 'security')
+        
         logger.info("[配置] 默认配置已初始化到数据库")
 
 

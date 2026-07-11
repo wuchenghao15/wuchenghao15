@@ -955,6 +955,29 @@
             }
         }
 
+        function checkNetworkStatus() {
+            if (navigator.onLine) {
+                return { online: true, message: '网络连接正常' };
+            } else {
+                return { online: false, message: '网络连接已断开' };
+            }
+        }
+
+        function showNetworkStatus() {
+            const status = checkNetworkStatus();
+            if (!status.online) {
+                showAlert(status.message + '，请检查网络连接', 'error');
+            }
+        }
+
+        window.addEventListener('online', () => {
+            showAlert('网络连接已恢复', 'success');
+        });
+
+        window.addEventListener('offline', () => {
+            showAlert('网络连接已断开，请检查网络设置', 'error');
+        });
+
         async function handleLogin(e) {
             e.preventDefault();
             const username = document.getElementById('username').value.trim();
@@ -964,6 +987,12 @@
 
             if (!username || !password) {
                 showAlert('请输入用户名和密码', 'error');
+                return;
+            }
+
+            const networkStatus = checkNetworkStatus();
+            if (!networkStatus.online) {
+                showAlert('网络连接失败，请检查网络设置或稍后重试', 'error');
                 return;
             }
 
@@ -981,13 +1010,24 @@
                         'Accept': 'application/json'
                     },
                     body: JSON.stringify({ username, password, remember }),
-                    credentials: 'include'
+                    credentials: 'include',
+                    timeout: 30000
                 });
 
                 console.log('登录响应状态:', res.status);
                 
                 if (!res.ok) {
-                    throw new Error(`HTTP错误: ${res.status}`);
+                    const errorData = await res.json().catch(() => ({}));
+                    let errorMsg = errorData.message || `HTTP错误: ${res.status}`;
+                    
+                    if (res.status === 403) {
+                        errorMsg = errorData.message || '访问被拒绝，请联系管理员';
+                    } else if (res.status === 401) {
+                        errorMsg = errorData.message || '用户名或密码错误';
+                    } else if (res.status === 429) {
+                        errorMsg = '请求过于频繁，请稍后再试';
+                    }
+                    throw new Error(errorMsg);
                 }
 
                 const data = await res.json();
@@ -1017,6 +1057,8 @@
                 let errorMsg = '登录失败: ' + err.message;
                 if (err.message === 'Failed to fetch') {
                     errorMsg = '网络连接失败，请检查网络设置或稍后重试';
+                } else if (err.message.includes('timeout')) {
+                    errorMsg = '请求超时，请检查网络连接';
                 }
                 showAlert(errorMsg, 'error');
             } finally {
@@ -1026,6 +1068,7 @@
         }
 
         loadRememberedCredentials();
+        showNetworkStatus();
 
         async function handleRegister(e) {
             e.preventDefault();

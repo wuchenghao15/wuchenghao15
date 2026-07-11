@@ -341,6 +341,27 @@ var currentUserPage = 1;
 var currentExamPage = 1;
 var resourceChart = null;
 
+function safeFetch(url, options) {
+    return fetch(url, options).then(response => {
+        if (!response.ok) {
+            return response.text().then(text => {
+                try { return JSON.parse(text); } catch {
+                    return { success: false, error: 'HTTP_ERROR', status: response.status, message: text || '请求失败' };
+                }
+            });
+        }
+        return response.text().then(text => {
+            if (!text) return { success: false, error: 'EMPTY_RESPONSE', message: '响应为空' };
+            try { return JSON.parse(text); } catch {
+                return { success: false, error: 'INVALID_JSON', message: '无效的JSON响应', raw: text };
+            }
+        });
+    }).catch(err => {
+        console.error('Fetch error:', err);
+        return { success: false, error: 'NETWORK_ERROR', message: '网络请求失败' };
+    });
+}
+
 function switchTab(tabName) {
     document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
@@ -363,18 +384,19 @@ function setResource(type, percent) {
 }
 
 function loadDashboardData() {
-    fetch('/api/super-admin/dashboard').then(r => r.json()).then(data => {
-        document.getElementById('stat-users').textContent = data.total_users || '--';
-        document.getElementById('stat-exams').textContent = data.total_exams || '--';
-        document.getElementById('stat-employees').textContent = data.ai_employee_count || '--';
-        document.getElementById('stat-routes').textContent = data.total_routes || '--';
-        document.getElementById('stat-agent').textContent = data.agent_tasks || '0';
-        document.getElementById('agent-status').textContent = data.agent_running ? '运行中' : '待启动';
-        setResource('cpu', data.cpu_usage || 0);
-        setResource('mem', data.memory_usage || 0);
-        setResource('disk', data.disk_usage || 0);
-        if (data.recent_activity) {
-            document.getElementById('recent-activity').innerHTML = data.recent_activity.map(a => `<tr><td>${a.time}</td><td>${a.type}</td><td>${a.message}</td><td>${a.user}</td></tr>`).join('');
+    safeFetch('/api/super-admin/dashboard').then(data => {
+        const d = data.data || {};
+        document.getElementById('stat-users').textContent = d.total_users || '--';
+        document.getElementById('stat-exams').textContent = d.total_exams || '--';
+        document.getElementById('stat-employees').textContent = d.ai_employee_count || '--';
+        document.getElementById('stat-routes').textContent = d.total_routes || '--';
+        document.getElementById('stat-agent').textContent = d.agent_tasks || '0';
+        document.getElementById('agent-status').textContent = d.agent_running ? '运行中' : '待启动';
+        setResource('cpu', d.cpu_usage || 0);
+        setResource('mem', d.memory_usage || 0);
+        setResource('disk', d.disk_usage || 0);
+        if (d.recent_activity) {
+            document.getElementById('recent-activity').innerHTML = d.recent_activity.map(a => `<tr><td>${a.time}</td><td>${a.type}</td><td>${a.message}</td><td>${a.user}</td></tr>`).join('');
         }
     });
 }
@@ -382,7 +404,7 @@ function loadDashboardData() {
 function loadUsers() {
     const search = document.getElementById('user-search').value;
     const role = document.getElementById('user-role-filter').value;
-    fetch('/api/admin/users?page=' + currentUserPage + '&search=' + encodeURIComponent(search) + '&role=' + role).then(r => r.json()).then(data => {
+    safeFetch('/api/admin/users?page=' + currentUserPage + '&search=' + encodeURIComponent(search) + '&role=' + role).then(data => {
         const tbody = document.querySelector('#user-table tbody');
         if (!data.success) { tbody.innerHTML = '<tr><td colspan="7" class="empty-state">加载失败</td></tr>'; return; }
         tbody.innerHTML = data.data.map(u => `<tr><td>${u.id}</td><td>${u.username}</td><td>${u.email || '-'}</td><td>${u.role}</td><td><span class="status-badge ${u.is_active ? 'active' : 'pending'}">${u.is_active ? '活跃' : '禁用'}</span></td><td>${u.created_at ? u.created_at.slice(0,10) : '-'}</td><td><button onclick="editUser(${u.id})">编辑</button> <button onclick="deleteUser(${u.id})">删除</button></td></tr>`).join('');
@@ -393,12 +415,12 @@ function loadUsers() {
 function loadExams() {
     const search = document.getElementById('exam-search').value;
     const status = document.getElementById('exam-status-filter').value;
-    fetch('/api/admin/exams?page=' + currentExamPage + '&search=' + encodeURIComponent(search) + '&status=' + status).then(r => r.json()).then(data => {
+    safeFetch('/api/admin/exams?page=' + currentExamPage + '&search=' + encodeURIComponent(search) + '&status=' + status).then(data => {
         const tbody = document.querySelector('#exam-table tbody');
         if (!data.success) { tbody.innerHTML = '<tr><td colspan="7" class="empty-state">加载失败</td></tr>'; return; }
         tbody.innerHTML = data.data.map(e => `<tr><td>${e.id}</td><td>${e.title}</td><td>${e.subject || '-'}</td><td>${e.duration || '-'}</td><td>${e.question_count || '-'}</td><td><span class="status-badge ${e.status}">${e.status === 'active' ? '进行中' : '已完成'}</span></td><td>${e.created_at ? e.created_at.slice(0,10) : '-'}</td></tr>`).join('');
     });
-    fetch('/api/admin/exams/stats').then(r => r.json()).then(data => {
+    safeFetch('/api/admin/exams/stats').then(data => {
         if (data.success) {
             document.getElementById('exam-total').textContent = data.data.total_exams || '--';
             document.getElementById('exam-active').textContent = data.data.active_exams || '--';
@@ -410,7 +432,7 @@ function loadExams() {
 
 function loadRoutes() {
     const search = document.getElementById('route-search').value;
-    fetch('/api/routes/list').then(r => r.json()).then(data => {
+    safeFetch('/api/routes/list').then(data => {
         const tbody = document.querySelector('#route-table tbody');
         let routes = data.routes || [];
         if (search) routes = routes.filter(r => r.route.includes(search));
@@ -419,21 +441,21 @@ function loadRoutes() {
 }
 
 function loadEngines() {
-    fetch('/api/admin/ai-engines').then(r => r.json()).then(data => {
+    safeFetch('/api/admin/ai-engines').then(data => {
         const grid = document.getElementById('engine-grid');
         grid.innerHTML = (data.data || []).map(e => `<div class="engine-card"><div class="engine-header"><div class="engine-dot ${e.status === 'running' ? '' : 'inactive'}"></div><div class="engine-name">${e.name}</div></div><div class="engine-desc">${e.desc}</div></div>`).join('');
     });
 }
 
 function loadEmployees() {
-    fetch('/api/admin/ai-employees').then(r => r.json()).then(data => {
+    safeFetch('/api/admin/ai-employees').then(data => {
         const tbody = document.querySelector('#employee-table tbody');
         tbody.innerHTML = (data.data || []).map(e => `<tr><td>${e.id}</td><td>${e.name}</td><td>${e.role}</td><td><span class="status-badge ${e.status}">${e.status === 'active' ? '活跃' : '离线'}</span></td></tr>`).join('');
     });
 }
 
 function loadAgentStatus() {
-    fetch('/api/local-ai-agent/status').then(r => r.json()).then(data => {
+    safeFetch('/api/local-ai-agent/status').then(data => {
         const dot = document.getElementById('agent-dot');
         const label = document.getElementById('agent-status-label');
         const stats = document.getElementById('agent-stats');
@@ -442,7 +464,7 @@ function loadAgentStatus() {
         dot.className = 'status-dot' + (isRunning ? '' : ' inactive');
         label.textContent = '本地AI Agent ' + (isRunning ? '运行中' : '待启动');
         stats.innerHTML = `<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;"><div><p style="font-size:12px;color:#64748b;margin:0;">总任务</p><p style="font-size:24px;font-weight:800;color:#1e293b;margin:0;">${data.total_tasks || 0}</p></div><div><p style="font-size:12px;color:#64748b;margin:0;">运行中</p><p style="font-size:24px;font-weight:800;color:#3b82f6;margin:0;">${data.running_tasks || 0}</p></div><div><p style="font-size:12px;color:#64748b;margin:0;">已完成</p><p style="font-size:24px;font-weight:800;color:#10b981;margin:0;">${data.completed_tasks || 0}</p></div><div><p style="font-size:12px;color:#64748b;margin:0;">失败</p><p style="font-size:24px;font-weight:800;color:#ef4444;margin:0;">${data.failed_tasks || 0}</p></div></div>`;
-        fetch('/api/local-ai-agent/tasks').then(r => r.json()).then(td => {
+        safeFetch('/api/local-ai-agent/tasks').then(td => {
             tasks.innerHTML = td.length ? td.map(t => `<div class="task-item"><div class="task-header"><span class="task-name">${t.name}</span><span class="task-status" style="background:${t.status==='completed'?'#d1fae5':t.status==='running'?'#dbeafe':t.status==='failed'?'#fee2e2':'#fef3c7'};color:${t.status==='completed'?'#059669':t.status==='running'?'#2563eb':t.status==='failed'?'#dc2626':'#d97706'}">${t.status}</span></div><div class="task-detail">ID: ${t.id}</div></div>`).join('') : '<div class="empty-state">暂无任务</div>';
         });
     }).catch(() => {
@@ -452,14 +474,14 @@ function loadAgentStatus() {
 }
 
 function loadBackups() {
-    fetch('/api/admin/backups').then(r => r.json()).then(data => {
+    safeFetch('/api/admin/backups').then(data => {
         const list = document.getElementById('backup-list');
         list.innerHTML = (data.data || []).map(b => `<div class="backup-item"><div class="backup-info"><p class="backup-name">${b.name}</p><p class="backup-meta">${(b.size / 1024 / 1024).toFixed(2)} MB · ${b.created_at ? b.created_at.slice(0,19) : '-'}</p></div><div style="display:flex;gap:8px;"><button class="btn-icon primary">下载</button><button class="btn-icon danger">删除</button></div></div>`).join('');
     });
 }
 
 function loadSettings() {
-    fetch('/api/admin/settings').then(r => r.json()).then(data => {
+    safeFetch('/api/admin/settings').then(data => {
         const content = document.getElementById('settings-content');
         const s = data.data || {};
         content.innerHTML = `<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:20px;"><div style="background:#f8fafc;border-radius:12px;padding:16px;"><h4 style="font-size:13px;font-weight:700;color:#1e293b;margin:0 0 12px;">系统设置</h4><div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f1f5f9;"><span style="font-size:12px;color:#475569;">系统名称</span><span style="font-size:12px;font-weight:600;color:#1e293b;">${s.system?.name || '-'}</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f1f5f9;"><span style="font-size:12px;color:#475569;">版本</span><span style="font-size:12px;font-weight:600;color:#1e293b;">${s.system?.version || '-'}</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;"><span style="font-size:12px;color:#475569;">环境</span><span style="font-size:12px;font-weight:600;color:#1e293b;">${s.system?.environment || '-'}</span></div></div><div style="background:#f8fafc;border-radius:12px;padding:16px;"><h4 style="font-size:13px;font-weight:700;color:#1e293b;margin:0 0 12px;">AI设置</h4><div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f1f5f9;"><span style="font-size:12px;color:#475569;">自动拓展</span><div class="toggle-switch${s.ai?.auto_expand_enabled?' active':''}"></div></div><div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;"><span style="font-size:12px;color:#475569;">扫描间隔</span><span style="font-size:12px;font-weight:600;color:#1e293b;">${s.ai?.scan_interval_minutes || 60}分钟</span></div></div></div>`;
@@ -481,31 +503,31 @@ function initResourceChart() {
 }
 
 function startLocalAgent() {
-    fetch('/api/local-ai-agent/start').then(r => r.json()).then(data => { if (data.success) { alert('Agent启动成功'); loadAgentStatus(); } });
+    safeFetch('/api/local-ai-agent/start').then(data => { if (data.success) { alert('Agent启动成功'); loadAgentStatus(); } });
 }
 
 function submitAgentTask(name, type) {
-    fetch('/api/local-ai-agent/task/submit', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({name, type})}).then(r => r.json()).then(data => { if (data.success) { alert('任务已提交: ' + data.task_id); loadAgentStatus(); } });
+    safeFetch('/api/local-ai-agent/task/submit', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({name, type})}).then(data => { if (data.success) { alert('任务已提交: ' + data.task_id); loadAgentStatus(); } });
 }
 
 function startKnowledgeScan() {
-    fetch('/api/local-ai-agent/scan').then(r => r.json()).then(data => { if (data.success) alert('知识扫描已启动'); });
+    safeFetch('/api/local-ai-agent/scan').then(data => { if (data.success) alert('知识扫描已启动'); });
 }
 
 function createBackup() {
-    fetch('/api/admin/backups/create', {method: 'POST'}).then(r => r.json()).then(data => { if (data.success) { alert('备份创建成功'); loadBackups(); } });
+    safeFetch('/api/admin/backups/create', {method: 'POST'}).then(data => { if (data.success) { alert('备份创建成功'); loadBackups(); } });
 }
 
 function reloadRoutes() {
-    fetch('/api/routes/reload').then(r => r.json()).then(data => { if (data.success) { alert('路由已刷新'); loadDashboardData(); } });
+    safeFetch('/api/routes/reload').then(data => { if (data.success) { alert('路由已刷新'); loadDashboardData(); } });
 }
 
 function checkRoutes() {
-    fetch('/api/routes/check').then(r => r.json()).then(data => { alert(data.message); });
+    safeFetch('/api/routes/check').then(data => { alert(data.message); });
 }
 
 function editUser(id) { alert('编辑用户: ' + id); }
-function deleteUser(id) { if (confirm('确定删除用户?')) { fetch('/api/admin/users/' + id, {method: 'DELETE'}).then(r => r.json()).then(data => { if (data.success) loadUsers(); }); } }
+function deleteUser(id) { if (confirm('确定删除用户?')) { safeFetch('/api/admin/users/' + id, {method: 'DELETE'}).then(data => { if (data.success) loadUsers(); }); } }
 
 function renderPagination(containerId, total, page, pageSize, callback) {
     const pages = Math.ceil(total / pageSize);

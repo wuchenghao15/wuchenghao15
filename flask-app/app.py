@@ -63,6 +63,13 @@ app.static_url_path = '/assets'
 app.config['JSON_AS_ASCII'] = False
 app.secret_key = os.environ.get('SECRET_KEY', 'mtscos_ai_secret_key_2026')  # 设置session密钥
 
+try:
+    from app.exceptions.handler import exception_handler
+    exception_handler.init_app(app)
+    logger.info("✓ 注册统一异常处理中间件")
+except Exception as e:
+    logger.error(f"✗ 注册统一异常处理中间件失败: {e}")
+
 # 注册Jinja2模板全局函数
 def get_role_name(role):
     """获取角色中文名"""
@@ -130,7 +137,17 @@ def add_security_headers(response):
     response.headers['X-Content-Type-Options'] = 'nosniff'
     response.headers['X-Frame-Options'] = 'SAMEORIGIN'
     response.headers['X-XSS-Protection'] = '1; mode=block'
-    response.headers['Content-Security-Policy'] = "default-src 'self' http://localhost:8888 http://127.0.0.1:8888 http://0.0.0.0:8888 http://192.168.0.0/16; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' http://localhost:8888 http://127.0.0.1:8888 http://0.0.0.0:8888 http://192.168.0.0/16; media-src 'self' data:;"
+    
+    try:
+        from app.config import get_config_value
+        csp_policy = get_config_value('CSP_POLICY')
+        if csp_policy:
+            response.headers['Content-Security-Policy'] = csp_policy
+        else:
+            response.headers['Content-Security-Policy'] = "default-src 'self' http://localhost:8888 http://127.0.0.1:8888 http://0.0.0.0:8888 http://192.168.0.0/16; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' http://localhost:8888 http://127.0.0.1:8888 http://0.0.0.0:8888 http://192.168.0.0/16; media-src 'self' data:;"
+    except Exception:
+        response.headers['Content-Security-Policy'] = "default-src 'self' http://localhost:8888 http://127.0.0.1:8888 http://0.0.0.0:8888 http://192.168.0.0/16; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' http://localhost:8888 http://127.0.0.1:8888 http://0.0.0.0:8888 http://192.168.0.0/16; media-src 'self' data:;"
+    
     response.headers['Access-Control-Allow-Origin'] = '*'
     response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
     response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
@@ -862,16 +879,18 @@ def get_server_time():
 @app.before_request
 def force_https_redirect():
     """强制HTTPS重定向 - 仅在SSL模式下启用"""
-    # 仅在SSL模式下强制HTTPS重定向
-    # HTTP模式下跳过此检查
     pass
+
+@app.before_request
+def security_check():
+    """安全检查中间件 - 会话超时、权限验证、速率限制"""
+    from app.middlewares.security_middleware import security_middleware
     
-    # 添加安全响应头
-    # HSTS - 强制浏览器使用HTTPS
-    # CSP - 内容安全策略
-    # X-Frame-Options - 防止iframe嵌入
-    # X-Content-Type-Options - 防止MIME类型嗅探
-    # X-XSS-Protection - XSS过滤器
+    result = security_middleware.before_request_handler()
+    if result:
+        if request.is_json or 'application/json' in request.headers.get('Accept', ''):
+            return jsonify(result), result.get('status_code', 401)
+        return redirect('/auth/login')
 
 # 添加安全响应头到所有响应
 @app.after_request
@@ -890,8 +909,21 @@ def add_security_headers(response):
     # XSS防护
     response.headers['X-XSS-Protection'] = '1; mode=block'
     
-    # 内容安全策略
-    response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https:; frame-ancestors 'self';"
+    # 内容安全策略 - 从数据库读取
+    try:
+        from app.config import get_config_value
+        csp_policy = get_config_value('CSP_POLICY')
+        if csp_policy:
+            response.headers['Content-Security-Policy'] = csp_policy
+        elif request.is_secure:
+            response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https:; frame-ancestors 'self';"
+        else:
+            response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: http: https:; font-src 'self' data:; connect-src 'self' http: https:; frame-ancestors 'self';"
+    except Exception:
+        if request.is_secure:
+            response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https:; frame-ancestors 'self';"
+        else:
+            response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: http: https:; font-src 'self' data:; connect-src 'self' http: https:; frame-ancestors 'self';"
     
     # Referrer策略
     response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
@@ -1690,7 +1722,7 @@ def index():
     except Exception as e:
         logger.error(f"获取系统数据失败: {e}")
     
-    return render_template('index.html',
+    return render_template('admin_ui_login.html',
                           version=version_data['version'],
                           version_info=version_data,
                           latest_version=version_data,
@@ -3433,25 +3465,21 @@ def detect_direct_access() -> dict:
         'action': 'allow'
     }
     
-    # 获取请求来源
     referer = request.headers.get('Referer', '')
     host = request.host
     
-    # 检查是否有来源引用
     if not referer:
         result['is_direct_access'] = True
-        result['risk_level'] = 'medium'
+        result['risk_level'] = 'low'
         result['message'] = '直接访问检测:未检测到来源页面引用'
-        logger.warning(f"[安全检测] 直接访问登录页面 - IP: {request.remote_addr}, User-Agent: {request.user_agent.string}")
+        logger.info(f"[安全检测] 直接访问登录页面 - IP: {request.remote_addr}, User-Agent: {request.user_agent.string}")
     else:
-        # 检查来源是否为本站
         if host not in referer:
             result['is_direct_access'] = True
-            result['risk_level'] = 'high'
+            result['risk_level'] = 'medium'
             result['message'] = f'直接访问检测:来源非本站 ({referer})'
             logger.warning(f"[安全检测] 外部来源访问登录页面 - IP: {request.remote_addr}, Referer: {referer}, User-Agent: {request.user_agent.string}")
     
-    # 检查是否为爬虫或异常请求
     user_agent = request.user_agent.string.lower()
     suspicious_agents = ['curl', 'wget', 'python-requests', 'bot', 'spider', 'scrapy']
     for agent in suspicious_agents:
@@ -3461,15 +3489,12 @@ def detect_direct_access() -> dict:
             logger.warning(f"[安全检测] 可疑用户代理访问登录页面 - IP: {request.remote_addr}, User-Agent: {user_agent}")
             break
     
-    # 检查请求频率(简单实现)
     request_count = session.get('login_attempts', 0)
-    if request_count > 5:
+    if request_count > 20:
         result['risk_level'] = 'high'
         result['message'] = '登录请求频率过高'
         result['action'] = 'block'
         logger.warning(f"[安全检测] 登录请求频率过高 - IP: {request.remote_addr}, 次数: {request_count}")
-    
-    session['login_attempts'] = request_count + 1
     
     return result
 
@@ -3593,6 +3618,8 @@ def login():
             username = data.get('username')
             password = data.get('password')
             
+            logger.info(f"[登录调试] 用户名: '{username}', 密码长度: {len(password) if password else 0}")
+            
             # 用户名格式验证
             if not username or len(username.strip()) < 3:
                 return jsonify({'success': False, 'message': '用户名格式错误'}), 400
@@ -3604,13 +3631,21 @@ def login():
             # 从数据库查询用户
             user = get_user_by_username(username)
             
+            logger.info(f"[登录调试] 查询用户结果: {'用户存在' if user else '用户不存在'}, 用户ID: {user['id'] if user else 'N/A'}")
+            
             if not user:
                 logger.warning(f"[登录失败] 用户不存在 - IP: {request.remote_addr}, 用户名: {username}")
+                session['login_attempts'] = session.get('login_attempts', 0) + 1
                 return jsonify({'success': False, 'message': '用户名或密码错误'}), 401
             
             # 验证密码
-            if not verify_password(user['password'], password):
+            logger.info(f"[登录调试] 存储的密码哈希: '{user['password']}', 长度: {len(user['password'])}")
+            password_match = verify_password(user['password'], password)
+            logger.info(f"[登录调试] 密码验证结果: {password_match}")
+            
+            if not password_match:
                 logger.warning(f"[登录失败] 密码错误 - IP: {request.remote_addr}, 用户名: {username}")
+                session['login_attempts'] = session.get('login_attempts', 0) + 1
                 return jsonify({'success': False, 'message': '用户名或密码错误'}), 401
             
             # 检查用户状态
@@ -15515,11 +15550,51 @@ def handle_500_error(e):
     logger.error(f"[错误页面] 500错误: {e}")
     return render_template('500.html'), 500
 
+
+try:
+    from app.exceptions import AppException
+    from app.exceptions.ai_decision_engine import AIDecisionEngine
+    
+    @app.errorhandler(AppException)
+    def handle_app_exception(e):
+        """处理自定义业务异常"""
+        logger.log(
+            getattr(logging, e.log_level.upper(), logging.ERROR),
+            f"业务异常 [{e.error_id}]: {e.message} | 分类: {e.category}"
+        )
+        
+        if not e.redirect_url:
+            e.redirect_url = AIDecisionEngine.determine_redirect(e, request)
+        
+        if request.path.startswith('/api/'):
+            return jsonify(e.to_dict()), e.error_code
+        else:
+            return render_template(
+                'unified_error.html',
+                error_id=e.error_id,
+                error_code=e.error_code,
+                error_title='业务错误',
+                error_message=e.message,
+                error_type=e.error_type,
+                category=e.category,
+                suggestion=e.suggestion,
+                timestamp=e.timestamp,
+                redirect_url=e.redirect_url,
+                details=e.details,
+                request_info={
+                    'method': request.method,
+                    'path': request.path
+                },
+                is_app_exception=True
+            ), e.error_code
+except ImportError:
+    logger.warning("AppException模块未加载，跳过注册")
+
+
 @app.errorhandler(Exception)
 def handle_generic_error(e):
     """处理所有未捕获的异常"""
     logger.error(f"[错误页面] 未捕获异常: {type(e).__name__}: {e}")
-    # 如果是API请求，返回JSON错误
     if request.path.startswith('/api/'):
         return jsonify({
             'success': False,
@@ -17484,6 +17559,13 @@ try:
 except Exception as e:
     logger.error(f"✗ 注册蓝图 upgrade_api 失败: {e}")
 
+try:
+    from app.routes.admin_api import admin_api_bp
+    app.register_blueprint(admin_api_bp)
+    logger.info("✓ 注册蓝图: admin_api_bp")
+except Exception as e:
+    logger.error(f"✗ 注册蓝图 admin_api_bp 失败: {e}")
+
 # ==================== AI布局管理员工模块 ====================
 
 def require_layout_admin():
@@ -18205,6 +18287,251 @@ def api_courses_list():
         'success': True,
         'courses': [{'id': r[0], 'name': r[1], 'subject': r[2], 'grade_level': r[3], 'description': r[4]} for r in rows],
         'count': len(rows)
+    })
+
+
+@app.route('/api/ai/employees', methods=['GET'])
+def api_ai_employees():
+    from ai_engines.automated_ai_employees import automated_employee_system
+    employees = automated_employee_system.get_all_employees()
+    return jsonify({
+        'success': True,
+        'employees': employees,
+        'count': len(employees)
+    })
+
+
+@app.route('/api/ai/employees/<employee_id>/tasks', methods=['POST'])
+def api_ai_employee_task(employee_id):
+    data = request.get_json() or {}
+    task_data = {
+        'employee_id': employee_id,
+        'task_type': data.get('task_type', 'generate_questions'),
+        'priority': data.get('priority', 'normal'),
+        'scheduled_time': data.get('scheduled_time', time.time()),
+        **data.get('params', {})
+    }
+    
+    from ai_engines.automated_ai_employees import automated_employee_system
+    task_id = automated_employee_system.schedule_task(task_data)
+    
+    return jsonify({
+        'success': True,
+        'task_id': task_id,
+        'message': '任务已调度'
+    })
+
+
+@app.route('/api/ai/employees/<employee_id>/execute', methods=['POST'])
+def api_ai_employee_execute(employee_id):
+    data = request.get_json() or {}
+    task_data = {
+        'employee_id': employee_id,
+        'task_type': data.get('task_type', 'generate_questions'),
+        **data.get('params', {})
+    }
+    
+    from ai_engines.automated_ai_employees import automated_employee_system
+    employee = automated_employee_system._find_employee(employee_id)
+    
+    if not employee:
+        return jsonify({'success': False, 'message': '未找到员工'}), 404
+    
+    result = employee.execute_task(task_data)
+    return jsonify(result)
+
+
+@app.route('/api/ai/course/create', methods=['POST'])
+def api_ai_create_course():
+    data = request.get_json() or {}
+    from ai_engines.automated_ai_employees import CourseCreationAI
+    ai = CourseCreationAI()
+    result = ai.execute_task({
+        'task_type': 'create_course',
+        'subject': data.get('subject', '数学'),
+        'grade': data.get('grade', '高中'),
+        'topic': data.get('topic', '函数')
+    })
+    return jsonify(result)
+
+
+@app.route('/api/ai/questions/generate', methods=['POST'])
+def api_ai_generate_questions():
+    data = request.get_json() or {}
+    from ai_engines.automated_ai_employees import QuestionGenerationAI
+    ai = QuestionGenerationAI()
+    result = ai.execute_task({
+        'task_type': 'generate_questions',
+        'subject': data.get('subject', '数学'),
+        'count': data.get('count', 10),
+        'difficulty': data.get('difficulty', 'medium')
+    })
+    return jsonify(result)
+
+
+@app.route('/api/ai/test/adaptive', methods=['POST'])
+def api_ai_adaptive_test():
+    data = request.get_json() or {}
+    from ai_engines.automated_ai_employees import TestSystemAI
+    ai = TestSystemAI()
+    result = ai.execute_task({
+        'task_type': 'adaptive_test',
+        'user_id': data.get('user_id'),
+        'subject': data.get('subject', '数学'),
+        'target_score': data.get('target_score', 80)
+    })
+    return jsonify(result)
+
+
+@app.route('/api/ai/question/explain', methods=['POST'])
+def api_ai_explain_question():
+    data = request.get_json() or {}
+    from ai_engines.automated_ai_employees import QuestionExplanationAI
+    ai = QuestionExplanationAI()
+    result = ai.execute_task({
+        'task_type': 'explain_question',
+        'question_id': data.get('question_id'),
+        'subject': data.get('subject', '数学')
+    })
+    return jsonify(result)
+
+
+@app.route('/api/security/locked-users', methods=['GET'])
+def api_security_locked_users():
+    from app.middlewares.security_middleware import LOCKED_USERS
+    locked_users = []
+    for username, info in LOCKED_USERS.items():
+        locked_users.append({
+            'username': username,
+            'locked_at': info['locked_at'],
+            'locked_until': info['locked_until'],
+            'locked_by': info['locked_by'],
+            'remaining_seconds': max(0, int(info['locked_until'] - time.time()))
+        })
+    return jsonify({
+        'success': True,
+        'locked_users': locked_users,
+        'count': len(locked_users)
+    })
+
+
+@app.route('/api/security/unlock-user/<username>', methods=['POST'])
+def api_security_unlock_user(username):
+    from app.middlewares.security_middleware import SecurityMiddleware
+    SecurityMiddleware.unlock_user(username)
+    return jsonify({
+        'success': True,
+        'message': f'用户 {username} 已解锁'
+    })
+
+
+@app.route('/api/security/session-timeout', methods=['GET'])
+def api_security_session_timeout():
+    from app.config import get_config_value
+    session_timeout = get_config_value('SESSION_TIMEOUT', 1800)
+    return jsonify({
+        'success': True,
+        'session_timeout_seconds': session_timeout,
+        'session_timeout_minutes': session_timeout // 60
+    })
+
+
+@app.route('/api/config', methods=['GET'])
+def api_config_list():
+    from app.config import get_all_configs_with_category
+    configs = get_all_configs_with_category()
+    return jsonify({
+        'success': True,
+        'configs': configs,
+        'categories': list(configs.keys())
+    })
+
+
+@app.route('/api/config/<category>', methods=['GET'])
+def api_config_category(category):
+    from app.config import get_config_category
+    configs = get_config_category(category)
+    return jsonify({
+        'success': True,
+        'category': category,
+        'configs': configs
+    })
+
+
+@app.route('/api/config/<category>/<key>', methods=['GET'])
+def api_config_get(category, key):
+    from app.config import get_config_value
+    value = get_config_value(key)
+    if value is not None:
+        return jsonify({
+            'success': True,
+            'category': category,
+            'key': key,
+            'value': value
+        })
+    return jsonify({
+        'success': False,
+        'message': f'配置项 {key} 不存在'
+    }), 404
+
+
+@app.route('/api/config/<category>/<key>', methods=['PUT'])
+def api_config_update(category, key):
+    data = request.get_json()
+    if not data or 'value' not in data:
+        return jsonify({
+            'success': False,
+            'message': '缺少value参数'
+        }), 400
+    
+    from app.config import update_config
+    success = update_config(key, data['value'], category, data.get('description', ''))
+    if success:
+        return jsonify({
+            'success': True,
+            'message': f'配置 {key} 更新成功',
+            'value': data['value']
+        })
+    return jsonify({
+        'success': False,
+        'message': '更新失败'
+    }), 500
+
+
+@app.route('/api/config/<category>/<key>', methods=['DELETE'])
+def api_config_delete(category, key):
+    from app.config import delete_config
+    success = delete_config(key)
+    if success:
+        return jsonify({
+            'success': True,
+            'message': f'配置 {key} 删除成功'
+        })
+    return jsonify({
+        'success': False,
+        'message': '删除失败'
+    }), 500
+
+
+@app.route('/api/config/sync', methods=['POST'])
+def api_config_sync():
+    from app.config import init_database_config, refresh_config
+    init_database_config()
+    refresh_config()
+    return jsonify({
+        'success': True,
+        'message': '配置已从数据库同步'
+    })
+
+
+@app.route('/api/config/categories', methods=['GET'])
+def api_config_categories():
+    from app.services.db_config_manager import db_config_manager
+    categories = db_config_manager.get_categories()
+    return jsonify({
+        'success': True,
+        'categories': categories,
+        'count': len(categories)
     })
 
 
