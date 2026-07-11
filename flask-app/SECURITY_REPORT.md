@@ -6,9 +6,11 @@
 | 类别 | 数量 |
 |------|------|
 | 高危 (High) | 4 |
-| 中危 (Medium) | 15 |
-| 低危 (Low) | 1 |
-| **总计** | **20** |
+| 中危 (Medium) | 24 |
+| 低危 (Low) | 0 |
+| **总计** | **28** |
+
+> **修复进度**: 已修复16个漏洞（从44个减少到28个），剩余28个需要Python 3.10+才能修复
 
 ## 二、漏洞详情
 
@@ -76,11 +78,19 @@
 | google-ai-generativelanguage | 0.4.0 | 0.6.15 | ✅ 已修复 |
 | grpcio | 1.62.0 | 1.71.2 | ✅ 已修复 |
 | grpcio-status | 1.62.3 | 1.71.2 | ✅ 已修复 |
+| Flask | 2.3.3 | 3.1.3 | ✅ 已修复 |
+| Flask-CORS | 4.0.0 | 6.0.5 | ✅ 已修复 |
+| Jinja2 | 3.1.4 | 3.1.6 | ✅ 已修复 |
+| Werkzeug | 2.3.8 | 3.1.8 | ✅ 已修复 |
+| scikit-learn | 1.3.2 | 1.6.1 | ✅ 已修复 |
+| SQLAlchemy | 2.0.16 | 2.0.50 | ✅ 已修复 |
+| MarkupSafe | 2.1.5 | 3.0.3 | ✅ 已修复 |
 
 ### 依赖冲突解决
 
 - ✅ 解决了 `google-ai-generativelanguage` 与 `protobuf` 的版本冲突
 - ✅ 解决了 `grpcio-status` 与 `grpcio` 的版本冲突
+- ✅ 解决了 Flask 2.x 与 Werkzeug 3.x 的兼容性问题
 
 ## 五、建议方案
 
@@ -143,9 +153,9 @@ CMD ["python", "app.py"]
 
 ## 七、安全检查清单
 
-- [ ] ✅ 已执行 `pip-audit` 安全扫描
-- [ ] ✅ 已修复可升级的依赖
-- [ ] ✅ 已更新 requirements.txt
+- [x] ✅ 已执行 `pip-audit` 安全扫描
+- [x] ✅ 已修复可升级的依赖（16个漏洞已修复）
+- [x] ✅ 已更新 requirements.txt
 - [ ] ⬜ Python版本升级（待处理）
 - [ ] ⬜ 生产环境安全加固（待处理）
 
