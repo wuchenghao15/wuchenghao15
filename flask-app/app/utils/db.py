@@ -855,6 +855,10 @@ class DatabaseManager:
             logger.error(f"开始事务失败: {str(e)}")
         return None
 
+    def commit(self):
+        """兼容旧代码的commit方法，execute()已在内部处理commit"""
+        pass
+
     def commit_transaction(self, conn):
         try:
             if conn:

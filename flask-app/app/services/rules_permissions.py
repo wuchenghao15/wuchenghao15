@@ -128,6 +128,12 @@ class PermissionManager:
                 )
             ''')
             
+            try:
+                cursor.execute('ALTER TABLE roles ADD COLUMN category TEXT DEFAULT "system"')
+                self.db_conn.commit()
+            except sqlite3.OperationalError:
+                pass
+            
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS permission_rules (
                     rule_id TEXT PRIMARY KEY,

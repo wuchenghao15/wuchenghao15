@@ -34,6 +34,8 @@ class IterationEngine:
         
         self._lock = threading.Lock()
         self._iterations: Dict[str, Dict] = {}
+        self._db_retry_max = 5
+        self._db_retry_delay = 2.0
         
         from app.utils.db import DatabaseManager
         db = DatabaseManager()
@@ -47,6 +49,19 @@ class IterationEngine:
         self._start_iteration_thread()
         
         self._initialized = True
+    
+    def _execute_with_retry(self, func, *args, **kwargs):
+        """带重试机制的数据库操作"""
+        for attempt in range(self._db_retry_max):
+            try:
+                return func(*args, **kwargs)
+            except sqlite3.OperationalError as e:
+                if 'database is locked' in str(e) and attempt < self._db_retry_max - 1:
+                    logger.warning(f"[迭代引擎] 数据库锁定，第 {attempt + 1} 次重试...")
+                    time.sleep(self._db_retry_delay * (attempt + 1))
+                else:
+                    raise
+        raise sqlite3.OperationalError("数据库锁定，重试次数已用完")
     
     def _init_database(self):
         """初始化数据库表"""
@@ -505,7 +520,7 @@ class IterationEngine:
     
     def _save_runtime_analysis(self, plan_id: str, issues: List[Dict]):
         """保存运行时分析"""
-        try:
+        def _do_save():
             import sqlite3
             conn = sqlite3.connect(self._db_path)
             cursor = conn.cursor()
@@ -528,13 +543,16 @@ class IterationEngine:
             
             conn.commit()
             conn.close()
+        
+        try:
+            self._execute_with_retry(_do_save)
         except Exception as e:
             logger.error(f"[迭代引擎] 保存运行时分析失败: {e}")
     
     def _save_code_analysis(self, plan_id: str, file_path: str, 
                            complexity: int, loc: int, duplicate_score: float):
         """保存代码分析"""
-        try:
+        def _do_save():
             import sqlite3
             conn = sqlite3.connect(self._db_path)
             cursor = conn.cursor()
@@ -555,6 +573,9 @@ class IterationEngine:
             
             conn.commit()
             conn.close()
+        
+        try:
+            self._execute_with_retry(_do_save)
         except Exception as e:
             logger.error(f"[迭代引擎] 保存代码分析失败: {e}")
     

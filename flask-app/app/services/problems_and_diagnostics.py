@@ -58,6 +58,8 @@ class ProblemsAndDiagnosticsService:
         )
         self._problems: List[ProblemDiagnosis] = []
         self._health_check_interval = 3600
+        self._db_retry_max = 5
+        self._db_retry_delay = 2.0
         
         self._init_database()
         self._load_existing_problems()
@@ -65,6 +67,19 @@ class ProblemsAndDiagnosticsService:
         
         logger.info("[问题诊断服务] 初始化完成")
         self._initialized = True
+    
+    def _execute_with_retry(self, func, *args, **kwargs):
+        """带重试机制的数据库操作"""
+        for attempt in range(self._db_retry_max):
+            try:
+                return func(*args, **kwargs)
+            except sqlite3.OperationalError as e:
+                if 'database is locked' in str(e) and attempt < self._db_retry_max - 1:
+                    logger.warning(f"[问题诊断服务] 数据库锁定，第 {attempt + 1} 次重试...")
+                    time.sleep(self._db_retry_delay * (attempt + 1))
+                else:
+                    raise
+        raise sqlite3.OperationalError("数据库锁定，重试次数已用完")
     
     def _init_database(self):
         """初始化数据库表"""
@@ -420,7 +435,7 @@ class ProblemsAndDiagnosticsService:
     
     def _add_problem(self, problem: ProblemDiagnosis):
         """添加问题到数据库"""
-        try:
+        def _do_add():
             conn = sqlite3.connect(self._db_path)
             cursor = conn.cursor()
             
@@ -447,12 +462,15 @@ class ProblemsAndDiagnosticsService:
                 self._problems.append(problem)
             
             logger.info(f"[问题诊断服务] 检测到问题: {problem.title} ({problem.severity})")
+        
+        try:
+            self._execute_with_retry(_do_add)
         except Exception as e:
             logger.error(f"[问题诊断服务] 添加问题失败: {e}")
     
     def resolve_problem(self, problem_id: str, resolution: str) -> bool:
         """标记问题为已解决"""
-        try:
+        def _do_resolve():
             conn = sqlite3.connect(self._db_path)
             cursor = conn.cursor()
             
@@ -475,6 +493,9 @@ class ProblemsAndDiagnosticsService:
                     break
             
             logger.info(f"[问题诊断服务] 问题 {problem_id} 已解决")
+        
+        try:
+            self._execute_with_retry(_do_resolve)
             return True
         except Exception as e:
             logger.error(f"[问题诊断服务] 解决问题失败: {e}")
@@ -649,7 +670,7 @@ class ProblemsAndDiagnosticsService:
     
     def _save_health_check_result(self, results: Dict):
         """保存健康检查结果"""
-        try:
+        def _do_save():
             conn = sqlite3.connect(self._db_path)
             cursor = conn.cursor()
             
@@ -669,6 +690,9 @@ class ProblemsAndDiagnosticsService:
             
             conn.commit()
             conn.close()
+        
+        try:
+            self._execute_with_retry(_do_save)
         except Exception as e:
             logger.error(f"[问题诊断服务] 保存健康检查结果失败: {e}")
     

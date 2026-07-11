@@ -98,7 +98,11 @@ class RedisManager:
             'last_reset': datetime.now().isoformat()
         }
 
-        # 初始化连接
+        self._use_memory_fallback = False
+        self._memory_cache = {}
+        self._memory_cache_expire = {}
+        self._memory_cache_lock = threading.RLock()
+
         self._init_connections()
 
         # 启动连接监控线程
@@ -127,6 +131,10 @@ class RedisManager:
                 self._init_cluster_connection()
             else:
                 logger.error(f"不支持的Redis连接模式: {self.connection_mode}")
+            
+            if not self.connections and not hasattr(self, 'master'):
+                self._use_memory_fallback = True
+                logger.warning("Redis连接失败，自动切换到内存缓存模式")
 
     def _init_single_connection(self):
         """初始化单机模式连接"""
@@ -475,25 +483,46 @@ class RedisManager:
         """设置键值对"""
         try:
             conn = self.get_master_connection()
-            if not conn:
-                return False
-
-            full_key = self._get_full_key(key)
             ttl = expire if expire else self.cache_config['default_ttl']
 
             if isinstance(value, (dict, list)):
                 value = json.dumps(value)
 
-            if ttl:
-                result = conn.setex(full_key, ttl, value)
+            if conn:
+                full_key = self._get_full_key(key)
+                if ttl:
+                    result = conn.setex(full_key, ttl, value)
+                else:
+                    result = conn.set(full_key, value)
+                self.metrics['set_count'] += 1
+                return result
             else:
-                result = conn.set(full_key, value)
-            
-            self.metrics['set_count'] += 1
-            return result
+                if self._use_memory_fallback:
+                    full_key = self._get_full_key(key)
+                    with self._memory_cache_lock:
+                        self._memory_cache[full_key] = value
+                        if ttl:
+                            self._memory_cache_expire[full_key] = time.time() + ttl
+                        else:
+                            self._memory_cache_expire[full_key] = None
+                    self.metrics['set_count'] += 1
+                    logger.debug(f"内存缓存 set: {full_key}")
+                    return True
+                return False
         except Exception as e:
             self.metrics['errors'] += 1
             logger.error(f"Redis set操作失败: {str(e)}")
+            if self._use_memory_fallback:
+                full_key = self._get_full_key(key)
+                with self._memory_cache_lock:
+                    self._memory_cache[full_key] = value
+                    ttl = expire if expire else self.cache_config['default_ttl']
+                    if ttl:
+                        self._memory_cache_expire[full_key] = time.time() + ttl
+                    else:
+                        self._memory_cache_expire[full_key] = None
+                self.metrics['set_count'] += 1
+                return True
             return False
 
     def get(self, key, default=None, prefer_slave=True):
@@ -503,80 +532,189 @@ class RedisManager:
                 conn = self.get_slave_connection()
             else:
                 conn = self.get_connection()
-            
-            if not conn:
-                return default
 
             full_key = self._get_full_key(key)
-            value = conn.get(full_key)
-            
-            if value is None:
-                self.metrics['misses'] += 1
+
+            if conn:
+                value = conn.get(full_key)
+                
+                if value is None:
+                    self.metrics['misses'] += 1
+                    if self._use_memory_fallback:
+                        with self._memory_cache_lock:
+                            if full_key in self._memory_cache:
+                                expire_time = self._memory_cache_expire.get(full_key)
+                                if expire_time is None or expire_time > time.time():
+                                    value = self._memory_cache[full_key]
+                                    self.metrics['hits'] += 1
+                                    self.metrics['misses'] -= 1
+                                    try:
+                                        return json.loads(value)
+                                    except (json.JSONDecodeError, TypeError):
+                                        return value
+                    return default
+
+                self.metrics['hits'] += 1
+                self.metrics['get_count'] += 1
+
+                try:
+                    return json.loads(value)
+                except (json.JSONDecodeError, TypeError):
+                    return value
+            else:
+                if self._use_memory_fallback:
+                    with self._memory_cache_lock:
+                        if full_key in self._memory_cache:
+                            expire_time = self._memory_cache_expire.get(full_key)
+                            if expire_time is None or expire_time > time.time():
+                                value = self._memory_cache[full_key]
+                                self.metrics['hits'] += 1
+                                self.metrics['get_count'] += 1
+                                try:
+                                    return json.loads(value)
+                                except (json.JSONDecodeError, TypeError):
+                                    return value
+                            else:
+                                del self._memory_cache[full_key]
+                                del self._memory_cache_expire[full_key]
+                    self.metrics['misses'] += 1
                 return default
-
-            self.metrics['hits'] += 1
-            self.metrics['get_count'] += 1
-
-            try:
-                return json.loads(value)
-            except (json.JSONDecodeError, TypeError):
-                return value
         except Exception as e:
             self.metrics['errors'] += 1
             logger.error(f"Redis get操作失败: {str(e)}")
+            if self._use_memory_fallback:
+                with self._memory_cache_lock:
+                    if full_key in self._memory_cache:
+                        expire_time = self._memory_cache_expire.get(full_key)
+                        if expire_time is None or expire_time > time.time():
+                            value = self._memory_cache[full_key]
+                            self.metrics['hits'] += 1
+                            self.metrics['get_count'] += 1
+                            try:
+                                return json.loads(value)
+                            except (json.JSONDecodeError, TypeError):
+                                return value
+                self.metrics['misses'] += 1
             return default
 
     def delete(self, key):
         """删除键"""
         try:
             conn = self.get_master_connection()
-            if not conn:
-                return False
-            
             full_key = self._get_full_key(key)
-            result = bool(conn.delete(full_key))
-            self.metrics['delete_count'] += 1
-            return result
+
+            if conn:
+                result = bool(conn.delete(full_key))
+                self.metrics['delete_count'] += 1
+                if self._use_memory_fallback:
+                    with self._memory_cache_lock:
+                        self._memory_cache.pop(full_key, None)
+                        self._memory_cache_expire.pop(full_key, None)
+                return result
+            else:
+                if self._use_memory_fallback:
+                    with self._memory_cache_lock:
+                        self._memory_cache.pop(full_key, None)
+                        self._memory_cache_expire.pop(full_key, None)
+                    self.metrics['delete_count'] += 1
+                    return True
+                return False
         except Exception as e:
             self.metrics['errors'] += 1
             logger.error(f"Redis delete操作失败: {str(e)}")
+            if self._use_memory_fallback:
+                with self._memory_cache_lock:
+                    self._memory_cache.pop(full_key, None)
+                    self._memory_cache_expire.pop(full_key, None)
+                self.metrics['delete_count'] += 1
+                return True
             return False
 
     def exists(self, key):
         """检查键是否存在"""
         try:
             conn = self.get_connection()
-            if not conn:
-                return False
-            
             full_key = self._get_full_key(key)
-            return bool(conn.exists(full_key))
+
+            if conn:
+                return bool(conn.exists(full_key))
+            else:
+                if self._use_memory_fallback:
+                    with self._memory_cache_lock:
+                        if full_key in self._memory_cache:
+                            expire_time = self._memory_cache_expire.get(full_key)
+                            if expire_time is None or expire_time > time.time():
+                                return True
+                            else:
+                                del self._memory_cache[full_key]
+                                del self._memory_cache_expire[full_key]
+                    return False
+                return False
         except Exception as e:
             logger.error(f"Redis exists操作失败: {str(e)}")
+            if self._use_memory_fallback:
+                with self._memory_cache_lock:
+                    if full_key in self._memory_cache:
+                        expire_time = self._memory_cache_expire.get(full_key)
+                        if expire_time is None or expire_time > time.time():
+                            return True
+                return False
             return False
 
     def expire(self, key, seconds):
         """设置键的过期时间"""
         try:
             conn = self.get_master_connection()
-            if not conn:
-                return False
-            
             full_key = self._get_full_key(key)
-            return bool(conn.expire(full_key, seconds))
+
+            if conn:
+                result = bool(conn.expire(full_key, seconds))
+                if self._use_memory_fallback:
+                    with self._memory_cache_lock:
+                        if full_key in self._memory_cache:
+                            self._memory_cache_expire[full_key] = time.time() + seconds
+                return result
+            else:
+                if self._use_memory_fallback:
+                    with self._memory_cache_lock:
+                        if full_key in self._memory_cache:
+                            self._memory_cache_expire[full_key] = time.time() + seconds
+                            return True
+                    return False
+                return False
         except Exception as e:
             logger.error(f"Redis expire操作失败: {str(e)}")
+            if self._use_memory_fallback:
+                with self._memory_cache_lock:
+                    if full_key in self._memory_cache:
+                        self._memory_cache_expire[full_key] = time.time() + seconds
+                        return True
+                return False
             return False
 
     def ttl(self, key):
         """获取键的剩余过期时间"""
         try:
             conn = self.get_connection()
-            if not conn:
-                return -2
-            
             full_key = self._get_full_key(key)
-            return conn.ttl(full_key)
+
+            if conn:
+                return conn.ttl(full_key)
+            else:
+                if self._use_memory_fallback:
+                    with self._memory_cache_lock:
+                        if full_key in self._memory_cache:
+                            expire_time = self._memory_cache_expire.get(full_key)
+                            if expire_time is None:
+                                return -1
+                            remaining = int(expire_time - time.time())
+                            if remaining <= 0:
+                                del self._memory_cache[full_key]
+                                del self._memory_cache_expire[full_key]
+                                return -2
+                            return remaining
+                    return -2
+                return -2
         except Exception as e:
             logger.error(f"Redis ttl操作失败: {str(e)}")
             return -2
@@ -585,11 +723,15 @@ class RedisManager:
         """测试Redis连接"""
         try:
             conn = self.get_connection()
-            if not conn:
-                return False
-            return conn.ping()
+            if conn:
+                return conn.ping()
+            elif self._use_memory_fallback:
+                return True
+            return False
         except Exception as e:
             logger.error(f"Redis ping操作失败: {str(e)}")
+            if self._use_memory_fallback:
+                return True
             return False
 
     # ========== Hash操作 ==========
@@ -598,55 +740,104 @@ class RedisManager:
         """设置哈希表字段"""
         try:
             conn = self.get_master_connection()
-            if not conn:
-                return False
-            
             full_name = self._get_full_key(name)
             
             if isinstance(value, (dict, list)):
                 value = json.dumps(value)
             
-            return bool(conn.hset(full_name, key, value))
+            if conn:
+                return bool(conn.hset(full_name, key, value))
+            else:
+                if self._use_memory_fallback:
+                    with self._memory_cache_lock:
+                        if full_name not in self._memory_cache:
+                            self._memory_cache[full_name] = {}
+                        self._memory_cache[full_name][key] = value
+                        self._memory_cache_expire[full_name] = None
+                    return True
+                return False
         except Exception as e:
             logger.error(f"Redis hset操作失败: {str(e)}")
+            if self._use_memory_fallback:
+                with self._memory_cache_lock:
+                    if full_name not in self._memory_cache:
+                        self._memory_cache[full_name] = {}
+                    self._memory_cache[full_name][key] = value
+                    self._memory_cache_expire[full_name] = None
+                return True
             return False
 
     def hget(self, name, key, default=None):
         """获取哈希表字段"""
         try:
             conn = self.get_connection()
-            if not conn:
-                return default
-            
             full_name = self._get_full_key(name)
-            value = conn.hget(full_name, key)
-            if value is None:
+
+            if conn:
+                value = conn.hget(full_name, key)
+                if value is None:
+                    return default
+                try:
+                    return json.loads(value)
+                except (json.JSONDecodeError, TypeError):
+                    return value
+            else:
+                if self._use_memory_fallback:
+                    with self._memory_cache_lock:
+                        if full_name in self._memory_cache:
+                            value = self._memory_cache[full_name].get(key)
+                            if value is None:
+                                return default
+                            try:
+                                return json.loads(value)
+                            except (json.JSONDecodeError, TypeError):
+                                return value
+                    return default
                 return default
-            
-            try:
-                return json.loads(value)
-            except (json.JSONDecodeError, TypeError):
-                return value
         except Exception as e:
             logger.error(f"Redis hget操作失败: {str(e)}")
+            if self._use_memory_fallback:
+                with self._memory_cache_lock:
+                    if full_name in self._memory_cache:
+                        value = self._memory_cache[full_name].get(key)
+                        if value is None:
+                            return default
+                        try:
+                            return json.loads(value)
+                        except (json.JSONDecodeError, TypeError):
+                            return value
+                return default
             return default
 
     def hgetall(self, name):
         """获取哈希表所有字段"""
         try:
             conn = self.get_connection()
-            if not conn:
-                return {}
-            
             full_name = self._get_full_key(name)
-            data = conn.hgetall(full_name)
-            result = {}
-            for key, value in data.items():
-                try:
-                    result[key] = json.loads(value)
-                except (json.JSONDecodeError, TypeError):
-                    result[key] = value
-            return result
+
+            if conn:
+                data = conn.hgetall(full_name)
+                result = {}
+                for key, value in data.items():
+                    try:
+                        result[key] = json.loads(value)
+                    except (json.JSONDecodeError, TypeError):
+                        result[key] = value
+                return result
+            else:
+                if self._use_memory_fallback:
+                    with self._memory_cache_lock:
+                        if full_name in self._memory_cache:
+                            data = self._memory_cache[full_name]
+                            result = {}
+                            for key, value in data.items():
+                                try:
+                                    result[key] = json.loads(value)
+                                except (json.JSONDecodeError, TypeError):
+                                    result[key] = value
+                            return result
+                    return {}
+                return {}
         except Exception as e:
             logger.error(f"Redis hgetall操作失败: {str(e)}")
             return {}
@@ -655,11 +846,19 @@ class RedisManager:
         """删除哈希表字段"""
         try:
             conn = self.get_master_connection()
-            if not conn:
-                return False
-            
             full_name = self._get_full_key(name)
-            return bool(conn.hdel(full_name, key))
+
+            if conn:
+                return bool(conn.hdel(full_name, key))
+            else:
+                if self._use_memory_fallback:
+                    with self._memory_cache_lock:
+                        if full_name in self._memory_cache:
+                            if key in self._memory_cache[full_name]:
+                                del self._memory_cache[full_name][key]
+                                return True
+                    return False
+                return False
         except Exception as e:
             logger.error(f"Redis hdel操作失败: {str(e)}")
             return False
@@ -670,9 +869,6 @@ class RedisManager:
         """将值推入列表左侧"""
         try:
             conn = self.get_master_connection()
-            if not conn:
-                return 0
-            
             full_name = self._get_full_key(name)
             serial_values = []
             for value in values:
@@ -681,18 +877,32 @@ class RedisManager:
                 else:
                     serial_values.append(value)
             
-            return conn.lpush(full_name, *serial_values)
+            if conn:
+                return conn.lpush(full_name, *serial_values)
+            else:
+                if self._use_memory_fallback:
+                    with self._memory_cache_lock:
+                        if full_name not in self._memory_cache:
+                            self._memory_cache[full_name] = []
+                        self._memory_cache[full_name] = serial_values + self._memory_cache[full_name]
+                        self._memory_cache_expire[full_name] = None
+                    return len(self._memory_cache[full_name])
+                return 0
         except Exception as e:
             logger.error(f"Redis lpush操作失败: {str(e)}")
+            if self._use_memory_fallback:
+                with self._memory_cache_lock:
+                    if full_name not in self._memory_cache:
+                        self._memory_cache[full_name] = []
+                    self._memory_cache[full_name] = serial_values + self._memory_cache[full_name]
+                    self._memory_cache_expire[full_name] = None
+                return len(self._memory_cache[full_name])
             return 0
 
     def rpush(self, name, *values):
         """将值推入列表右侧"""
         try:
             conn = self.get_master_connection()
-            if not conn:
-                return 0
-            
             full_name = self._get_full_key(name)
             serial_values = []
             for value in values:
@@ -701,27 +911,59 @@ class RedisManager:
                 else:
                     serial_values.append(value)
             
-            return conn.rpush(full_name, *serial_values)
+            if conn:
+                return conn.rpush(full_name, *serial_values)
+            else:
+                if self._use_memory_fallback:
+                    with self._memory_cache_lock:
+                        if full_name not in self._memory_cache:
+                            self._memory_cache[full_name] = []
+                        self._memory_cache[full_name].extend(serial_values)
+                        self._memory_cache_expire[full_name] = None
+                    return len(self._memory_cache[full_name])
+                return 0
         except Exception as e:
             logger.error(f"Redis rpush操作失败: {str(e)}")
+            if self._use_memory_fallback:
+                with self._memory_cache_lock:
+                    if full_name not in self._memory_cache:
+                        self._memory_cache[full_name] = []
+                    self._memory_cache[full_name].extend(serial_values)
+                    self._memory_cache_expire[full_name] = None
+                return len(self._memory_cache[full_name])
             return 0
 
     def lrange(self, name, start, end):
         """获取列表指定范围的元素"""
         try:
             conn = self.get_connection()
-            if not conn:
-                return []
-            
             full_name = self._get_full_key(name)
-            values = conn.lrange(full_name, start, end)
-            result = []
-            for value in values:
-                try:
-                    result.append(json.loads(value))
-                except (json.JSONDecodeError, TypeError):
-                    result.append(value)
-            return result
+
+            if conn:
+                values = conn.lrange(full_name, start, end)
+                result = []
+                for value in values:
+                    try:
+                        result.append(json.loads(value))
+                    except (json.JSONDecodeError, TypeError):
+                        result.append(value)
+                return result
+            else:
+                if self._use_memory_fallback:
+                    with self._memory_cache_lock:
+                        if full_name in self._memory_cache:
+                            values = self._memory_cache[full_name]
+                            if end == -1:
+                                end = len(values)
+                            result = []
+                            for value in values[start:end+1]:
+                                try:
+                                    result.append(json.loads(value))
+                                except (json.JSONDecodeError, TypeError):
+                                    result.append(value)
+                            return result
+                    return []
+                return []
         except Exception as e:
             logger.error(f"Redis lrange操作失败: {str(e)}")
             return []
@@ -730,11 +972,17 @@ class RedisManager:
         """获取列表长度"""
         try:
             conn = self.get_connection()
-            if not conn:
-                return 0
-            
             full_name = self._get_full_key(name)
-            return conn.llen(full_name)
+
+            if conn:
+                return conn.llen(full_name)
+            else:
+                if self._use_memory_fallback:
+                    with self._memory_cache_lock:
+                        if full_name in self._memory_cache:
+                            return len(self._memory_cache[full_name])
+                    return 0
+                return 0
         except Exception as e:
             logger.error(f"Redis llen操作失败: {str(e)}")
             return 0
@@ -745,11 +993,23 @@ class RedisManager:
         """添加元素到集合"""
         try:
             conn = self.get_master_connection()
-            if not conn:
-                return 0
-            
             full_name = self._get_full_key(name)
-            return conn.sadd(full_name, *values)
+
+            if conn:
+                return conn.sadd(full_name, *values)
+            else:
+                if self._use_memory_fallback:
+                    with self._memory_cache_lock:
+                        if full_name not in self._memory_cache:
+                            self._memory_cache[full_name] = set()
+                        count = 0
+                        for v in values:
+                            if v not in self._memory_cache[full_name]:
+                                self._memory_cache[full_name].add(v)
+                                count += 1
+                        self._memory_cache_expire[full_name] = None
+                    return count
+                return 0
         except Exception as e:
             logger.error(f"Redis sadd操作失败: {str(e)}")
             return 0
@@ -758,11 +1018,17 @@ class RedisManager:
         """获取集合所有元素"""
         try:
             conn = self.get_connection()
-            if not conn:
-                return set()
-            
             full_name = self._get_full_key(name)
-            return conn.smembers(full_name)
+
+            if conn:
+                return conn.smembers(full_name)
+            else:
+                if self._use_memory_fallback:
+                    with self._memory_cache_lock:
+                        if full_name in self._memory_cache:
+                            return set(self._memory_cache[full_name])
+                    return set()
+                return set()
         except Exception as e:
             logger.error(f"Redis smembers操作失败: {str(e)}")
             return set()
@@ -771,11 +1037,17 @@ class RedisManager:
         """检查元素是否在集合中"""
         try:
             conn = self.get_connection()
-            if not conn:
-                return False
-            
             full_name = self._get_full_key(name)
-            return conn.sismember(full_name, value)
+
+            if conn:
+                return conn.sismember(full_name, value)
+            else:
+                if self._use_memory_fallback:
+                    with self._memory_cache_lock:
+                        if full_name in self._memory_cache:
+                            return value in self._memory_cache[full_name]
+                    return False
+                return False
         except Exception as e:
             logger.error(f"Redis sismember操作失败: {str(e)}")
             return False
@@ -784,11 +1056,22 @@ class RedisManager:
         """从集合中移除元素"""
         try:
             conn = self.get_master_connection()
-            if not conn:
-                return 0
-            
             full_name = self._get_full_key(name)
-            return conn.srem(full_name, *values)
+
+            if conn:
+                return conn.srem(full_name, *values)
+            else:
+                if self._use_memory_fallback:
+                    with self._memory_cache_lock:
+                        if full_name in self._memory_cache:
+                            count = 0
+                            for v in values:
+                                if v in self._memory_cache[full_name]:
+                                    self._memory_cache[full_name].remove(v)
+                                    count += 1
+                            return count
+                    return 0
+                return 0
         except Exception as e:
             logger.error(f"Redis srem操作失败: {str(e)}")
             return 0
@@ -799,11 +1082,23 @@ class RedisManager:
         """添加元素到有序集合"""
         try:
             conn = self.get_master_connection()
-            if not conn:
-                return 0
-            
             full_name = self._get_full_key(name)
-            return conn.zadd(full_name, *args, **kwargs)
+
+            if conn:
+                return conn.zadd(full_name, *args, **kwargs)
+            else:
+                if self._use_memory_fallback:
+                    with self._memory_cache_lock:
+                        if full_name not in self._memory_cache:
+                            self._memory_cache[full_name] = {}
+                        for k, v in kwargs.items():
+                            self._memory_cache[full_name][k] = v
+                        if args:
+                            for i in range(0, len(args), 2):
+                                self._memory_cache[full_name][args[i]] = args[i+1]
+                        self._memory_cache_expire[full_name] = None
+                    return len(kwargs) + len(args) // 2
+                return 0
         except Exception as e:
             logger.error(f"Redis zadd操作失败: {str(e)}")
             return 0
@@ -812,11 +1107,24 @@ class RedisManager:
         """获取有序集合指定范围的元素"""
         try:
             conn = self.get_connection()
-            if not conn:
-                return []
-            
             full_name = self._get_full_key(name)
-            return conn.zrange(full_name, start, end, desc=desc, withscores=withscores)
+
+            if conn:
+                return conn.zrange(full_name, start, end, desc=desc, withscores=withscores)
+            else:
+                if self._use_memory_fallback:
+                    with self._memory_cache_lock:
+                        if full_name in self._memory_cache:
+                            items = list(self._memory_cache[full_name].items())
+                            items.sort(key=lambda x: x[1], reverse=desc)
+                            if end == -1:
+                                end = len(items)
+                            result = items[start:end+1]
+                            if withscores:
+                                return result
+                            return [item[0] for item in result]
+                    return []
+                return []
         except Exception as e:
             logger.error(f"Redis zrange操作失败: {str(e)}")
             return []
@@ -825,11 +1133,21 @@ class RedisManager:
         """获取元素在有序集合中的排名"""
         try:
             conn = self.get_connection()
-            if not conn:
-                return None
-            
             full_name = self._get_full_key(name)
-            return conn.zrank(full_name, value)
+
+            if conn:
+                return conn.zrank(full_name, value)
+            else:
+                if self._use_memory_fallback:
+                    with self._memory_cache_lock:
+                        if full_name in self._memory_cache:
+                            items = list(self._memory_cache[full_name].items())
+                            items.sort(key=lambda x: x[1])
+                            for i, (k, v) in enumerate(items):
+                                if k == value:
+                                    return i
+                    return None
+                return None
         except Exception as e:
             logger.error(f"Redis zrank操作失败: {str(e)}")
             return None

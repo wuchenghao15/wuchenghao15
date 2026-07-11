@@ -14,7 +14,8 @@
 import logging
 import uuid
 from datetime import datetime
-from flask import request, jsonify, render_template, redirect
+from typing import Dict
+from flask import request, jsonify, render_template, redirect, session
 from app.exceptions import (
     AppException,
     AuthenticationException,
@@ -30,6 +31,17 @@ from app.exceptions import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def _get_ai_analysis(error: Exception, error_code: int, error_message: str, 
+                     request_info: Dict) -> Dict:
+    """获取AI错误分析"""
+    try:
+        from app.services.ai_error_analysis_service import analyze_error
+        return analyze_error(error, error_code, error_message, request_info)
+    except Exception as e:
+        logger.warning(f"AI错误分析调用失败: {e}")
+        return {'analyzed': False, 'items': []}
 
 
 class ExceptionHandler:
@@ -75,9 +87,9 @@ class ExceptionHandler:
             'headers': {k: v for k, v in request.headers.items() if k not in ['Cookie', 'Authorization']},
             'client_ip': request.remote_addr,
             'user_agent': request.user_agent.string if request.user_agent else '',
-            'user_id': request.session.get('user_id'),
-            'username': request.session.get('username'),
-            'role': request.session.get('role')
+            'user_id': session.get('user_id'),
+            'username': session.get('username'),
+            'role': session.get('role')
         }
     
     def _handle_app_exception(self, exc: AppException, request_info: dict):
@@ -155,6 +167,9 @@ class ExceptionHandler:
     
     def _build_error_template_context(self, exc: AppException) -> dict:
         """构建错误页面模板上下文"""
+        request_info = self._get_request_info()
+        ai_analysis = _get_ai_analysis(exc, exc.error_code, exc.message, request_info)
+        
         return {
             'error_id': exc.error_id,
             'error_code': exc.error_code,
@@ -166,12 +181,16 @@ class ExceptionHandler:
             'timestamp': exc.timestamp,
             'redirect_url': exc.redirect_url,
             'details': exc.details,
-            'request_info': self._get_request_info(),
-            'is_app_exception': True
+            'request_info': request_info,
+            'is_app_exception': True,
+            'ai_analysis': ai_analysis
         }
     
     def _build_system_error_template_context(self, error_id: str, timestamp: str, message: str) -> dict:
         """构建系统错误页面模板上下文"""
+        request_info = self._get_request_info()
+        ai_analysis = _get_ai_analysis(Exception(message), 500, message, request_info)
+        
         return {
             'error_id': error_id,
             'error_code': 500,
@@ -183,8 +202,9 @@ class ExceptionHandler:
             'timestamp': timestamp,
             'redirect_url': None,
             'details': {'original_error': message},
-            'request_info': self._get_request_info(),
-            'is_app_exception': False
+            'request_info': request_info,
+            'is_app_exception': False,
+            'ai_analysis': ai_analysis
         }
     
     def _get_error_title(self, error_code: int) -> str:

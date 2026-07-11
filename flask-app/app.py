@@ -17525,6 +17525,13 @@ except Exception as e:
     logger.error(f"✗ 注册蓝图 wrong_book_api 失败: {e}")
 
 try:
+    from app.api.question_bank_expansion_api import question_bank_expansion_api
+    app.register_blueprint(question_bank_expansion_api)
+    logger.info("✓ 注册蓝图: question_bank_expansion_api")
+except Exception as e:
+    logger.error(f"✗ 注册蓝图 question_bank_expansion_api 失败: {e}")
+
+try:
     from ai_engines.cluster_array_api import cluster_array_api
     app.register_blueprint(cluster_array_api)
     logger.info("✓ 注册蓝图: cluster_array_api")
@@ -17581,11 +17588,39 @@ except Exception as e:
     logger.error(f"✗ 注册蓝图 learning_path_api 失败: {e}")
 
 try:
+    from app.routes.learning_assistant_routes import learning_assistant_api
+    app.register_blueprint(learning_assistant_api)
+    logger.info("✓ 注册蓝图: learning_assistant_api")
+except Exception as e:
+    logger.error(f"✗ 注册蓝图 learning_assistant_api 失败: {e}")
+
+try:
     from app.routes.report_routes import report_api
     app.register_blueprint(report_api)
     logger.info("✓ 注册蓝图: report_api")
 except Exception as e:
     logger.error(f"✗ 注册蓝图 report_api 失败: {e}")
+
+try:
+    from app.routes.course_routes import course_api
+    app.register_blueprint(course_api)
+    logger.info("✓ 注册蓝图: course_api")
+except Exception as e:
+    logger.error(f"✗ 注册蓝图 course_api 失败: {e}")
+
+try:
+    from app.routes.assignment_routes import assignment_api
+    app.register_blueprint(assignment_api)
+    logger.info("✓ 注册蓝图: assignment_api")
+except Exception as e:
+    logger.error(f"✗ 注册蓝图 assignment_api 失败: {e}")
+
+try:
+    from app.routes.health_check_routes import health_api
+    app.register_blueprint(health_api)
+    logger.info("✓ 注册蓝图: health_api")
+except Exception as e:
+    logger.error(f"✗ 注册蓝图 health_api 失败: {e}")
 
 # ==================== AI布局管理员工模块 ====================
 

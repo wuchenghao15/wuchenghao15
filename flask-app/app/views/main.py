@@ -108,3 +108,13 @@ def system_monitoring():
 def language_test():
     """语言测试页面"""
     return render_template('language_test.html', **get_user_context())
+
+@main_bp.route('/admin_app/learning_paths')
+def admin_learning_paths():
+    """学习路径管理页面"""
+    return render_template('admin_app/learning_paths.html', **get_user_context())
+
+@main_bp.route('/admin_app/exam_analysis')
+def admin_exam_analysis():
+    """考试数据分析页面"""
+    return render_template('admin_app/exam_analysis.html', **get_user_context())

@@ -1,0 +1,427 @@
+{% extends 'admin_app/base.html' %}
+
+{% block title %}系统健康监控 - MTSCOS{% endblock %}
+
+{% block extra_head %}
+    <script src="/assets/js/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+    <div class="page-header">
+        <h1>系统健康监控</h1>
+        <p>实时监控系统运行状态</p>
+    </div>
+
+    <div class="grid-container">
+        <div class="card health-card" id="cpu-card">
+            <div class="card-header">
+                <div class="card-title">CPU状态</div>
+                <span class="badge badge-secondary" id="cpu-status">加载中...</span>
+            </div>
+            <div class="card-body">
+                <div class="metric-display">
+                    <div class="metric-value" id="cpu-usage">--</div>
+                    <div class="metric-unit">%</div>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="cpu-progress"></div>
+                </div>
+                <div class="metric-details">
+                    <span>物理核心: <strong id="cpu-cores">--</strong></span>
+                    <span>逻辑核心: <strong id="cpu-logical">--</strong></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card health-card" id="memory-card">
+            <div class="card-header">
+                <div class="card-title">内存状态</div>
+                <span class="badge badge-secondary" id="memory-status">加载中...</span>
+            </div>
+            <div class="card-body">
+                <div class="metric-display">
+                    <div class="metric-value" id="memory-usage">--</div>
+                    <div class="metric-unit">%</div>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="memory-progress"></div>
+                </div>
+                <div class="metric-details">
+                    <span>已用: <strong id="memory-used">--</strong></span>
+                    <span>可用: <strong id="memory-available">--</strong></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card health-card" id="disk-card">
+            <div class="card-header">
+                <div class="card-title">磁盘状态</div>
+                <span class="badge badge-secondary" id="disk-status">加载中...</span>
+            </div>
+            <div class="card-body">
+                <div class="metric-display">
+                    <div class="metric-value" id="disk-usage">--</div>
+                    <div class="metric-unit">%</div>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="disk-progress"></div>
+                </div>
+                <div class="metric-details">
+                    <span>已用: <strong id="disk-used">--</strong></span>
+                    <span>剩余: <strong id="disk-free">--</strong></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card health-card" id="database-card">
+            <div class="card-header">
+                <div class="card-title">数据库状态</div>
+                <span class="badge badge-secondary" id="db-status">加载中...</span>
+            </div>
+            <div class="card-body">
+                <div class="db-icon">
+                    <i class="fas fa-database"></i>
+                </div>
+                <div class="db-message" id="db-message">检查中...</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">资源使用趋势</div>
+            <select class="form-control-sm" id="trendPeriod" onchange="refreshTrendCharts()">
+                <option value="10">最近10次</option>
+                <option value="30">最近30次</option>
+                <option value="60">最近60次</option>
+            </select>
+        </div>
+        <div class="card-body">
+            <div class="grid-container">
+                <div class="chart-container">
+                    <canvas id="cpuTrendChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <canvas id="memoryTrendChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">系统信息</div>
+        </div>
+        <div class="card-body">
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="info-label">系统平台</div>
+                    <div class="info-value" id="system-platform">--</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">系统版本</div>
+                    <div class="info-value" id="system-release">--</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">开机时间</div>
+                    <div class="info-value" id="system-boot-time">--</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">运行时长</div>
+                    <div class="info-value" id="system-uptime">--</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">进程总数</div>
+                    <div class="info-value" id="process-count">--</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">当前进程</div>
+                    <div class="info-value" id="current-process">--</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let cpuChart, memoryChart;
+        const historyData = {
+            cpu: [],
+            memory: [],
+            timestamps: []
+        };
+
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function updateStatusBadge(elementId, status) {
+            const badge = document.getElementById(elementId);
+            badge.className = 'badge ' + (status === 'healthy' ? 'badge-success' : status === 'warning' ? 'badge-warning' : 'badge-error');
+            badge.textContent = status === 'healthy' ? '正常' : status === 'warning' ? '警告' : '严重';
+        }
+
+        function updateProgressBar(elementId, percent) {
+            const progress = document.getElementById(elementId);
+            progress.style.width = percent + '%';
+            if (percent >= 95) {
+                progress.style.background = 'var(--el-color-danger)';
+            } else if (percent >= 85) {
+                progress.style.background = 'var(--el-color-warning)';
+            } else {
+                progress.style.background = 'var(--color-primary)';
+            }
+        }
+
+        async function fetchMetrics() {
+            try {
+                const response = await fetch('/api/health/metrics');
+                const data = await response.json();
+                
+                if (data.success || data.code === 200) {
+                    const metrics = data.data;
+                    
+                    updateCPUInfo(metrics.cpu);
+                    updateMemoryInfo(metrics.memory);
+                    updateDiskInfo(metrics.disk);
+                    updateDatabaseInfo(metrics.database);
+                    updateSystemInfo(metrics.system);
+                    updateProcessInfo(metrics.process);
+                    
+                    addToHistory(metrics.cpu.usage_percent, metrics.memory.used_percent);
+                    updateCharts();
+                }
+            } catch (error) {
+                console.error('获取监控数据失败:', error);
+            }
+        }
+
+        function updateCPUInfo(cpu) {
+            document.getElementById('cpu-usage').textContent = cpu.usage_percent.toFixed(1);
+            document.getElementById('cpu-cores').textContent = cpu.physical_cores;
+            document.getElementById('cpu-logical').textContent = cpu.logical_cores;
+            updateStatusBadge('cpu-status', cpu.status);
+            updateProgressBar('cpu-progress', cpu.usage_percent);
+        }
+
+        function updateMemoryInfo(memory) {
+            document.getElementById('memory-usage').textContent = memory.used_percent.toFixed(1);
+            document.getElementById('memory-used').textContent = formatBytes(memory.used);
+            document.getElementById('memory-available').textContent = formatBytes(memory.available);
+            updateStatusBadge('memory-status', memory.status);
+            updateProgressBar('memory-progress', memory.used_percent);
+        }
+
+        function updateDiskInfo(disk) {
+            document.getElementById('disk-usage').textContent = disk.used_percent.toFixed(1);
+            document.getElementById('disk-used').textContent = formatBytes(disk.used);
+            document.getElementById('disk-free').textContent = formatBytes(disk.free);
+            updateStatusBadge('disk-status', disk.status);
+            updateProgressBar('disk-progress', disk.used_percent);
+        }
+
+        function updateDatabaseInfo(database) {
+            updateStatusBadge('db-status', database.status);
+            document.getElementById('db-message').textContent = database.message;
+        }
+
+        function updateSystemInfo(system) {
+            document.getElementById('system-platform').textContent = system.system;
+            document.getElementById('system-release').textContent = system.release;
+            document.getElementById('system-boot-time').textContent = system.boot_time;
+            document.getElementById('system-uptime').textContent = system.uptime.days + '天 ' + system.uptime.hours % 24 + '小时';
+        }
+
+        function updateProcessInfo(process) {
+            document.getElementById('process-count').textContent = process.total_processes;
+            document.getElementById('current-process').textContent = process.current_process.name + ' (PID: ' + process.current_process.pid + ')';
+        }
+
+        function addToHistory(cpuUsage, memoryUsage) {
+            historyData.cpu.push(cpuUsage);
+            historyData.memory.push(memoryUsage);
+            const now = new Date();
+            historyData.timestamps.push(now.getHours() + ':' + String(now.getMinutes()).padStart(2, '0') + ':' + String(now.getSeconds()).padStart(2, '0'));
+
+            const maxCount = parseInt(document.getElementById('trendPeriod').value);
+            if (historyData.cpu.length > maxCount) {
+                historyData.cpu.shift();
+                historyData.memory.shift();
+                historyData.timestamps.shift();
+            }
+        }
+
+        function initCharts() {
+            const cpuCtx = document.getElementById('cpuTrendChart').getContext('2d');
+            const memoryCtx = document.getElementById('memoryTrendChart').getContext('2d');
+
+            cpuChart = new Chart(cpuCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'CPU使用率 (%)',
+                        data: [],
+                        borderColor: 'var(--color-primary)',
+                        backgroundColor: 'rgba(64, 158, 255, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, max: 100 }
+                    }
+                }
+            });
+
+            memoryChart = new Chart(memoryCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: '内存使用率 (%)',
+                        data: [],
+                        borderColor: 'var(--el-color-success)',
+                        backgroundColor: 'rgba(103, 194, 58, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, max: 100 }
+                    }
+                }
+            });
+        }
+
+        function updateCharts() {
+            cpuChart.data.labels = historyData.timestamps;
+            cpuChart.data.datasets[0].data = historyData.cpu;
+            cpuChart.update();
+
+            memoryChart.data.labels = historyData.timestamps;
+            memoryChart.data.datasets[0].data = historyData.memory;
+            memoryChart.update();
+        }
+
+        function refreshTrendCharts() {
+            historyData.cpu = [];
+            historyData.memory = [];
+            historyData.timestamps = [];
+            fetchMetrics();
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            initCharts();
+            fetchMetrics();
+            setInterval(fetchMetrics, 5000);
+        });
+    </script>
+
+    <style>
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: var(--spacing-4);
+            margin-bottom: var(--spacing-4);
+        }
+
+        .health-card {
+            transition: all 0.3s;
+        }
+
+        .health-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .metric-display {
+            display: flex;
+            align-items: baseline;
+            justify-content: center;
+            margin-bottom: var(--spacing-3);
+        }
+
+        .metric-value {
+            font-size: 48px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .metric-unit {
+            font-size: 20px;
+            color: var(--text-secondary);
+            margin-left: 4px;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: rgba(148, 163, 184, 0.2);
+            border-radius: var(--border-radius-sm);
+            overflow: hidden;
+            margin-bottom: var(--spacing-3);
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: var(--border-radius-sm);
+            transition: width 0.3s, background 0.3s;
+        }
+
+        .metric-details {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .db-icon {
+            font-size: 64px;
+            color: var(--text-secondary);
+            text-align: center;
+            margin-bottom: var(--spacing-3);
+        }
+
+        .db-message {
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .chart-container {
+            height: 250px;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: var(--spacing-4);
+        }
+
+        .info-item {
+            padding: var(--spacing-3);
+            background: rgba(148, 163, 184, 0.05);
+            border-radius: var(--border-radius-sm);
+        }
+
+        .info-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+
+        .info-value {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+    </style>
+{% endblock %}

@@ -4,8 +4,13 @@
 提供用户IP地址等信息获取接口
 """
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, request
 import logging
+from app.utils.api_response import (
+    success_response,
+    authentication_error,
+    system_error
+)
 
 logger = logging.getLogger(__name__)
 
@@ -16,34 +21,21 @@ user_info_api = Blueprint('user_info_api', __name__)
 def get_user_ip():
     """获取用户IP地址（公开访问，无需登录）"""
     try:
-        # 获取客户端IP地址
         if request.headers.get('X-Forwarded-For'):
-            # 如果通过代理，获取真实IP
             ip = request.headers.get('X-Forwarded-For').split(',')[0]
         elif request.headers.get('X-Real-IP'):
-            # Nginx等反向代理设置的IP
             ip = request.headers.get('X-Real-IP')
         else:
-            # 直接连接的IP
             ip = request.remote_addr or '127.0.0.1'
         
-        # 如果是本地开发环境，返回特殊标识
         if ip in ['127.0.0.1', '::1', 'localhost', None]:
             ip = '127.0.0.1 (本地开发)'
         
-        return jsonify({
-            'success': True,
-            'ip': ip,
-            'message': 'IP地址获取成功'
-        })
+        return success_response(data={'ip': ip}, message='IP地址获取成功')
     
     except Exception as e:
         logger.error(f"获取IP地址失败: {e}")
-        return jsonify({
-            'success': True,  # 即使失败也返回成功，提供默认值
-            'ip': '127.0.0.1 (默认)',
-            'message': '获取失败，使用默认值'
-        })
+        return success_response(data={'ip': '127.0.0.1 (默认)'}, message='获取失败，使用默认值')
 
 
 @user_info_api.route('/api/user/info', methods=['GET'])
@@ -56,17 +48,14 @@ def get_user_info():
         username = session.get('username')
         role = session.get('role', 'guest')
         
-        # 获取IP
         if request.headers.get('X-Forwarded-For'):
             ip = request.headers.get('X-Forwarded-For').split(',')[0]
         else:
             ip = request.remote_addr
         
-        # 获取浏览器信息
         user_agent = request.headers.get('User-Agent', 'Unknown')
         
-        return jsonify({
-            'success': True,
+        return success_response(data={
             'user': {
                 'user_id': user_id,
                 'username': username,
@@ -79,10 +68,7 @@ def get_user_info():
     
     except Exception as e:
         logger.error(f"获取用户信息失败: {e}")
-        return jsonify({
-            'success': False,
-            'message': '获取失败'
-        }), 500
+        return system_error('获取失败')
 
 
 @user_info_api.route('/api/users/current', methods=['GET'])
@@ -96,34 +82,24 @@ def get_current_user():
         role = session.get('role', 'guest')
         
         if not user_id:
-            return jsonify({
-                'success': False,
-                'message': '用户未登录'
-            }), 401
+            return authentication_error('用户未登录')
         
-        # 获取IP
         if request.headers.get('X-Forwarded-For'):
             ip = request.headers.get('X-Forwarded-For').split(',')[0]
         else:
             ip = request.remote_addr
         
-        return jsonify({
-            'success': True,
-            'data': {
-                'user_id': user_id,
-                'username': username,
-                'role': role,
-                'ip': ip,
-                'logged_in': True
-            }
+        return success_response(data={
+            'user_id': user_id,
+            'username': username,
+            'role': role,
+            'ip': ip,
+            'logged_in': True
         })
     
     except Exception as e:
         logger.error(f"获取当前用户失败: {e}")
-        return jsonify({
-            'success': False,
-            'message': '获取失败'
-        }), 500
+        return system_error('获取失败')
 
 
 @user_info_api.route('/api/user/session', methods=['GET'])
@@ -136,7 +112,6 @@ def get_session_info():
         session_id = session.get('session_id')
         login_time = session.get('login_time')
         
-        # 计算会话持续时间
         duration = None
         if login_time:
             try:
@@ -145,8 +120,7 @@ def get_session_info():
             except:
                 duration = 'Unknown'
         
-        return jsonify({
-            'success': True,
+        return success_response(data={
             'session': {
                 'session_id': session_id,
                 'login_time': login_time,
@@ -157,7 +131,4 @@ def get_session_info():
     
     except Exception as e:
         logger.error(f"获取会话信息失败: {e}")
-        return jsonify({
-            'success': False,
-            'message': '获取失败'
-        }), 500
+        return system_error('获取失败')

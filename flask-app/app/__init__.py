@@ -817,6 +817,16 @@ def init_database_tables(db_path: str):
     """初始化数据库表结构"""
     import sqlite3
     
+    try:
+        from app.models.local_agent import init_local_agent_tables
+        from app.utils.db import DatabaseManager
+        
+        db_manager = DatabaseManager()
+        init_local_agent_tables(db_manager)
+        logger.info("[数据库] 本地Agent表初始化完成")
+    except Exception as e:
+        logger.error(f"[数据库] 本地Agent表初始化失败: {e}")
+    
     tables = [
         '''CREATE TABLE IF NOT EXISTS approvals (
             approval_id TEXT PRIMARY KEY,

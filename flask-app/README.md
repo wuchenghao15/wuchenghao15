@@ -1,23 +1,42 @@
 # MTSCOS AI 智能考试系统
 
-[![CI](https://github.com/wuchenghao15/wuchenghao15/actions/workflows/ci.yml/badge.svg)](https://github.com/wuchenghao15/wuchenghao15/actions/workflows/ci.yml)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Python](https://img.shields.io/badge/python-3.8%2B-blue.svg)](https://www.python.org)
-[![Flask](https://img.shields.io/badge/flask-2.0%2B-green.svg)](https://flask.palletsprojects.com)
+[![Python Version](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/downloads/)
+[![Flask Version](https://img.shields.io/badge/flask-2.0%2B-green.svg)](https://flask.palletsprojects.com/)
+[![License](https://img.shields.io/badge/license-MIT-yellow.svg)](LICENSE)
+[![Version](https://img.shields.io/badge/version-v7.7.0-orange.svg)](CHANGELOG.md)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
-> 版本: v7.2.0 (Comprehensive Enhancement Edition)
-> 更新日期: 2026-07-09
+> 版本: v7.7.0 (AI-Powered Comprehensive Enhancement Suite)
+> 更新日期: 2026-07-11
 
 [English](README_EN.md) | 中文
 
 MTSCOS AI 是一个基于 Flask 框架开发的分布式智能考试管理平台，提供完整的题库系统、考试管理、学习分析、AI智能引擎等功能，支持成人教育和K12全科目。
 
+---
+
+## 📋 目录
+
+- [🌟 核心特性](#-核心特性)
+- [📁 项目结构](#-项目结构)
+- [🚀 快速开始](#-快速开始)
+- [📡 API接口](#-api接口)
+- [📊 数据库架构](#-数据库架构)
+- [🌐 管理后台页面](#-管理后台页面)
+- [📈 功能使用流程](#-功能使用流程)
+- [🧪 测试账号](#-测试账号)
+- [🤝 贡献指南](#-贡献指南)
+- [📄 许可证](#-许可证)
+- [📞 联系方式](#-联系方式)
+
+---
+
 ## 🌟 核心特性
 
 ### 🏗️ 架构特性
 - **模块化启动系统**：8阶段配置加载 + 6阶段功能模块加载
-- **分布式数据库架构**：16+ 独立数据库，智能路由
-- **AI智能引擎矩阵**：20+ 核心引擎，60+ AI员工
+- **分布式数据库架构**：20+ 独立数据库，智能路由
+- **AI智能引擎矩阵**：41+ AI员工，6+ AI Agent，590+ 检索模型
 - **响应式前端布局**：支持桌面端和移动端，适配手机客户端
 
 ### 📚 题库系统
@@ -27,8 +46,8 @@ MTSCOS AI 是一个基于 Flask 框架开发的分布式智能考试管理平台
 - **AI题目生成器**：从文本内容自动生成考试题目
 
 ### 🔐 权限管理
-- **12个角色**：guest→student→parent→designer→teacher→exam_proctor→question_manager→ai_manager→cluster_manager→admin→super_admin→hardware_admin
-- **细粒度权限**：覆盖全系统功能权限控制
+- **16+ 角色**：guest→student→parent→designer→teacher→exam_proctor→question_manager→ai_manager→cluster_manager→admin→super_admin→hardware_admin
+- **细粒度权限**：50+权限规则覆盖，6级访问控制
 - **审计日志**：完整操作记录、实时审计
 - **权限矩阵**：支持自定义权限规则配置
 
@@ -45,6 +64,16 @@ MTSCOS AI 是一个基于 Flask 框架开发的分布式智能考试管理平台
 - **AI智能答疑**：学生在线提问，AI自动解答，支持多科目、多题型，会话管理，知识库搜索
 - **智能错题本**：自动收集错题，艾宾浩斯遗忘曲线复习，薄弱知识点分析，掌握程度追踪
 - **学生成绩分析仪表盘**：多维度数据可视化分析，成绩分布直方图、各科平均分雷达图、学习时间趋势图、错题率分析
+- **智能学习助手**：个性化学习推荐、智能作业辅导、学习效果分析
+
+### 🔐 安全防护
+- **企业级防火墙**：10+安全规则（SQL注入/XSS/命令注入/SSRF/文件包含/路径遍历/敏感文件/暴力破解/扫描器防护/API限流）
+- **AI安全建议**：智能分析安全漏洞，生成优化建议和实施步骤
+
+### 🚀 自我维护能力
+- **自动修复引擎**：8种修复能力（表结构修复/配置校正/缓存清理/连接池重建/配置回滚/数据恢复/索引重建/权限修复）
+- **预防式维护**：8项维护内容，预测准确率100%
+- **系统健康诊断**：8项核心检查（数据库/API响应/内存/CPU/磁盘/网络/缓存/错误日志）
 
 ### 🌐 端口与集群管理
 - **21个端口配置**：HTTP/HTTPS、API、WebSocket、数据库等
@@ -64,14 +93,18 @@ MTSCOS AI 是一个基于 Flask 框架开发的分布式智能考试管理平台
 - **自动升级**：版本检测、灰度发布、健康检查回滚
 - **版本管理**：系统历史版本记录、自动更新说明文档
 
+---
+
 ## 📁 项目结构
 
 ```
 flask-app/
 ├── app.py                      # 应用入口
 ├── modular_start.py            # 模块化启动脚本
+├── simple_start.py             # 简化启动脚本
 ├── VERSION                     # 版本文件
 ├── SYSTEM_DOC.md               # 系统说明书
+├── requirements.txt            # Python依赖
 ├── ai_engines/                 # AI引擎模块 (20+核心引擎)
 │   ├── ai_cluster_manager.py   # AI集群管理
 │   ├── ai_employee_manager.py  # AI员工管理
@@ -84,35 +117,32 @@ flask-app/
 │   ├── ai_tutor_engine.py             # AI助教答疑引擎
 │   └── ...
 ├── app/                        # 应用模块
-│   ├── api/                    # API接口 (120+个)
-│   │   ├── auth_api.py         # 认证API
-│   │   ├── exam_api.py         # 考试API
-│   │   ├── ai_generation_api.py    # AI题目生成API
-│   │   ├── study_path_api.py       # 学习路径API
-│   │   ├── exam_composition_api.py # 试卷组卷API
-│   │   ├── performance_api.py      # 性能监控API
-│   │   └── ...
-│   ├── ai/                     # AI子模块
-│   ├── blueprints/             # 蓝图模块
+│   ├── routes/                 # 路由模块 (API蓝图)
 │   ├── services/               # 服务模块
 │   │   ├── ai_question_generation_service.py   # AI题目生成服务
 │   │   ├── ai_study_path_service.py           # AI学习路径服务
 │   │   ├── ai_exam_composition_service.py     # AI试卷组卷服务
+│   │   ├── ai_learning_assistant.py           # 智能学习助手服务
 │   │   ├── db_performance_service.py          # 数据库性能服务
 │   │   ├── cluster_service.py                 # 集群管理服务
 │   │   └── port_monitor_service.py            # 端口监控服务
 │   ├── models/                 # 数据模型 (20+个)
-│   ├── middlewares/            # 中间件
-│   ├── routes/                 # 路由模块
-│   ├── containers/             # 容器模块
-│   └── utils/                  # 工具模块
-├── split_databases/            # 分布式数据库 (16+个)
+│   ├── exceptions/             # 自定义异常体系
+│   ├── utils/                  # 工具模块
+│   │   ├── redis_manager.py    # Redis管理器（支持内存缓存降级）
+│   │   ├── db.py               # 数据库连接池管理
+│   │   └── ...
+│   ├── extensions.py           # 扩展初始化
+│   └── __init__.py             # 应用初始化
+├── split_databases/            # 分布式数据库 (20+个)
 │   ├── auth.db                 # 认证和用户管理
 │   ├── exam.db                 # 考试管理
 │   ├── question.db             # 题库管理
 │   ├── learning.db             # 学习系统
 │   ├── system.db               # 系统配置
 │   ├── ai.db                   # AI引擎数据
+│   ├── api_management.db       # API管理
+│   ├── routes_management.db    # 路由管理
 │   └── ...
 ├── templates/                  # HTML模板 (100+个)
 │   ├── admin_app/              # 管理后台页面
@@ -122,22 +152,30 @@ flask-app/
 │   │   ├── student_analytics.html       # 学生成绩分析仪表盘
 │   │   └── ...
 │   └── ...
-├── static/                     # 静态资源
+├── src/html/assets/            # 设计系统资源
+│   ├── css/                    # 样式文件
+│   │   ├── mtscos-design-system.css    # 设计系统
+│   │   └── ...
+│   ├── js/                     # JavaScript文件
+│   └── font-awesome/           # Font Awesome图标库
+├── static/                     # Flask静态文件
 ├── scripts/                    # 脚本工具
-│   └── expand_question_bank.py # 题库拓展脚本
+├── tests/                      # 测试文件
 ├── migrations/                 # 数据库迁移脚本
-│   └── migrate_ai_generated_questions.py # AI题目元数据迁移
 └── startup_modules/            # 模块化启动器
     ├── db_config_loader.py     # 数据库配置加载器
     ├── core_init.py            # 核心初始化
     └── module_loader.py        # 功能模块加载器
 ```
 
+---
+
 ## 🚀 快速开始
 
 ### 环境要求
-- Python 3.8+
+- Python 3.9+
 - SQLite 3.30+
+- Redis 7.0+（可选，系统支持内存缓存降级）
 - Git
 - pip 20.0+
 
@@ -145,8 +183,8 @@ flask-app/
 
 ```bash
 # 克隆仓库
-git clone https://github.com/wuchenghao15/wuchenghao15.git
-cd wuchenghao15/flask-app
+git clone https://github.com/MTSCOS/MTSCOS_AI_Project.git
+cd MTSCOS_AI_Project/flask-app
 
 # 创建虚拟环境（推荐）
 python3 -m venv venv
@@ -155,14 +193,11 @@ source venv/bin/activate
 # 安装依赖
 pip install -r requirements.txt
 
-# 初始化数据库
-python -c "from app.utils.db import init_all_databases; init_all_databases()"
+# 启动服务（简化启动）
+python simple_start.py --port 8888
 
-# 执行数据库迁移（可选）
-python migrations/migrate_ai_generated_questions.py
-
-# 启动服务
-python app.py --port 8888
+# 或使用模块化启动（完整功能）
+# python modular_start.py --port 8888
 ```
 
 ### 启动参数
@@ -176,8 +211,12 @@ python app.py --port 8888
 | --ssl-port | SSL端口 | 8443 |
 
 ### 访问地址
+- 系统首页: http://localhost:8888/
+- 登录页面: http://localhost:8888/login
 - 管理后台: http://localhost:8888/admin_app/login
-- API文档: http://localhost:8888/api/system/docs
+- 增强管理器仪表板: http://localhost:8888/enhancement
+
+---
 
 ## 📡 API接口
 
@@ -213,6 +252,14 @@ python app.py --port 8888
 | /api/ai/study-path/knowledge-graph | GET | 获取知识图谱 |
 | /api/ai/study-path/progress | POST | 获取学习进度 |
 
+### AI学习助手接口
+| 接口 | 方法 | 说明 |
+|------|------|------|
+| /api/learning_assistant/recommendations | GET | 获取学习推荐 |
+| /api/learning_assistant/generate_recommendations | POST | 生成学习推荐 |
+| /api/learning_assistant/homework/analyze | POST | 分析作业答案 |
+| /api/learning_assistant/report | GET | 获取学习报告 |
+
 ### AI试卷组卷接口
 | 接口 | 方法 | 说明 |
 |------|------|------|
@@ -221,30 +268,16 @@ python app.py --port 8888
 | /api/ai/exam-compose/save | POST | 保存试卷 |
 | /api/ai/exam-compose/statistics | GET | 获取组卷统计 |
 
-### 性能监控接口
+### 增强管理器接口
 | 接口 | 方法 | 说明 |
 |------|------|------|
-| /api/performance/db/status | GET | 获取数据库状态 |
-| /api/performance/db/query-stats | GET | 获取查询统计 |
-| /api/performance/db/slow-queries | GET | 获取慢查询列表 |
-| /api/performance/db/optimize | POST | 优化数据库 |
+| /api/enhancement/status | GET | 增强管理器总览状态 |
+| /api/enhancement/database/health | GET | 数据库健康检查 |
+| /api/enhancement/cluster/monitor | GET | 集群状态监控 |
+| /api/enhancement/system/resources | GET | 系统资源多维度监控 |
+| /api/enhancement/git/sync | POST | Git一键同步 |
 
-### 端口管理接口
-| 接口 | 方法 | 说明 |
-|------|------|------|
-| /api/ports/status | GET | 获取端口状态 |
-| /api/ports/scan | POST | 扫描端口范围 |
-| /api/ports/allocate | POST | 分配可用端口 |
-| /api/ports/reserve | POST | 预留端口 |
-| /api/ports/release | POST | 释放端口 |
-
-### 集群管理接口
-| 接口 | 方法 | 说明 |
-|------|------|------|
-| /api/cluster/nodes | GET | 获取节点列表 |
-| /api/cluster/stats | GET | 获取集群统计 |
-| /api/cluster/strategy | POST | 设置负载均衡策略 |
-| /api/cluster/health | GET | 健康检查状态 |
+---
 
 ## 📊 数据库架构
 
@@ -259,6 +292,10 @@ python app.py --port 8888
 | ai.db | AI引擎数据 | ai_models, ai_clusters, ai_results |
 | admin.db | 管理后台 | admin_users, admin_logs |
 | log.db | 日志系统 | system_logs, audit_logs, error_logs |
+| api_management.db | API管理 | api_endpoints, api_stats |
+| routes_management.db | 路由管理 | routes, route_stats |
+
+---
 
 ## 🌐 管理后台页面
 
@@ -272,6 +309,9 @@ python app.py --port 8888
 | /admin/question-bank | 题库管理 | question_manager |
 | /admin/ai-cluster | AI集群管理 | ai_manager |
 | /admin/cluster-management | 集群管理 | cluster_manager |
+| /enhancement | 增强管理器仪表板 | admin/super_admin |
+
+---
 
 ## 📈 功能使用流程
 
@@ -287,20 +327,10 @@ python app.py --port 8888
 ### 学生成绩分析流程
 1. 选择科目/班级/时间范围 → 加载统计数据 → 可视化展示 → 导出分析报告
 
-## 🤝 贡献
+### 智能学习助手流程
+1. 获取学习推荐 → 完成推荐学习 → 提交作业 → AI分析作业 → 生成学习报告
 
-欢迎提交Issue和Pull Request！
-
-### 贡献指南
-1. Fork 本仓库
-2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
-5. 打开 Pull Request
-
-## 📄 许可证
-
-MIT License
+---
 
 ## 🧪 测试账号
 
@@ -324,9 +354,92 @@ MIT License
 
 详细使用指南请参考 [TEST_ACCOUNTS.md](docs/TEST_ACCOUNTS.md)
 
+---
+
+## 🤝 贡献指南
+
+欢迎加入 MTSCOS AI 项目！无论是代码贡献、文档完善、Bug报告还是功能建议，我们都非常欢迎。
+
+### 代码规范
+
+项目遵循以下规范文档，所有贡献必须严格遵守：
+
+- [设计规范](../.trae/rules/设计规范.md) - 统一UI设计标准和视觉风格
+- [开发规则](../.trae/rules/开发规则.md) - 统一开发标准和代码规范
+
+### 分支管理策略
+
+| 分支 | 用途 |
+|------|------|
+| `main` | 主分支，生产环境代码 |
+| `develop` | 开发分支，集成所有功能 |
+| `feature/xxx` | 功能分支，开发新功能 |
+| `bugfix/xxx` | Bug修复分支 |
+| `hotfix/xxx` | 紧急修复分支 |
+
+### 提交信息规范
+
+```
+<类型>(<范围>): <描述>
+
+<详细说明>
+```
+
+| 类型 | 说明 |
+|------|------|
+| `feat` | 新功能 |
+| `fix` | Bug修复 |
+| `docs` | 文档更新 |
+| `style` | 样式修改 |
+| `refactor` | 代码重构 |
+| `test` | 测试代码 |
+| `chore` | 构建/工具更新 |
+
+### 开发环境搭建
+
+1. **克隆仓库**
+```bash
+git clone https://github.com/MTSCOS/MTSCOS_AI_Project.git
+cd MTSCOS_AI_Project/flask-app
+```
+
+2. **安装依赖**
+```bash
+pip install -r requirements.txt
+```
+
+3. **启动开发服务器**
+```bash
+python simple_start.py --port 8888
+```
+
+4. **运行测试**
+```bash
+python -m pytest
+```
+
+### 提交PR流程
+
+1. **Fork仓库** - 在GitHub上Fork本仓库到自己的账户
+2. **创建分支** - 基于 `develop` 分支创建新分支
+3. **开发功能** - 实现功能或修复Bug，遵循代码规范
+4. **提交代码** - 使用规范的提交信息
+5. **推送分支** - 推送到自己的Fork仓库
+6. **创建PR** - 在GitHub上创建Pull Request到 `develop` 分支
+7. **代码审查** - 等待项目维护者审查
+8. **合并分支** - PR通过审查后合并到 `develop`
+
+---
+
+## 📄 许可证
+
+MIT License
+
+---
+
 ## 📞 联系方式
 
-- 项目地址: https://github.com/wuchenghao15/wuchenghao15
+- 项目地址: https://github.com/MTSCOS/MTSCOS_AI_Project
 - 系统文档: [SYSTEM_DOC.md](SYSTEM_DOC.md)
 - 版本历史: [SYSTEM_VERSION_HISTORY.md](SYSTEM_VERSION_HISTORY.md)
 - 测试账号: [TEST_ACCOUNTS.md](docs/TEST_ACCOUNTS.md)

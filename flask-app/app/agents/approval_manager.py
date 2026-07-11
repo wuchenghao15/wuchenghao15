@@ -260,7 +260,7 @@ class ApprovalManager:
             logger.error(f"[审批系统] 保存审批记录失败: {e}")
     
     def _notify_admins(self, approval_id: str, level: str, description: str):
-        """通知管理员"""
+        """通知管理员（私有方法）"""
         level_map = {
             'normal': 'info',
             'important': 'warning',
@@ -301,6 +301,10 @@ class ApprovalManager:
             logger.error(f"[审批系统] 保存通知失败: {e}")
         
         logger.warning(f"[审批系统] 已推送审批通知给管理员: {level} - {description}")
+    
+    def notify_admins(self, approval_id: str, level: str, description: str):
+        """通知管理员（公开方法，兼容外部调用）"""
+        self._notify_admins(approval_id, level, description)
     
     def approve(self, approval_id: str, approver: str = 'admin') -> bool:
         """审批通过"""
