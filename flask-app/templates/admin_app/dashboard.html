@@ -2,6 +2,10 @@
 
 {% block title %}数据概览 - MTSCOS 管理端{% endblock %}
 
+{% block extra_head %}
+    <script src="/assets/js/chart.umd.min.js"></script>
+{% endblock %}
+
 {% block content %}
 <div class="page-container">
     <div class="user-profile-card">
@@ -200,6 +204,22 @@
         {% endif %}
     </div>
 
+    <div class="section-title">
+        <i class="fas fa-chart-line" style="color: var(--color-primary);"></i>
+        数据趋势
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr; gap: 16px; margin-bottom: 16px;">
+        <div class="card" style="padding: 16px;">
+            <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">用户增长趋势（近7天）</div>
+            <div style="height: 200px;"><canvas id="userGrowthChart"></canvas></div>
+        </div>
+        <div class="card" style="padding: 16px;">
+            <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">考试完成趋势（近7天）</div>
+            <div style="height: 200px;"><canvas id="examChart"></canvas></div>
+        </div>
+    </div>
+
     <div style="height: 20px;"></div>
 </div>
 
@@ -207,5 +227,83 @@
     function get_role_name(role) {
         return getRoleName(role);
     }
+
+    function initCharts() {
+        var days = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+        
+        var ctx1 = document.getElementById('userGrowthChart');
+        if (ctx1) {
+            new Chart(ctx1, {
+                type: 'line',
+                data: {
+                    labels: days,
+                    datasets: [{
+                        label: '新增用户',
+                        data: [12, 19, 15, 25, 22, 30, 28],
+                        borderColor: 'var(--color-primary)',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: 'var(--color-primary)'
+                    }, {
+                        label: '活跃用户',
+                        data: [45, 52, 48, 60, 55, 70, 65],
+                        borderColor: 'var(--color-success)',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: 'var(--color-success)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { color: '#64748b', font: { size: 12 } } }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: '#e2e8f0' }, ticks: { color: '#64748b' } },
+                        x: { grid: { display: false }, ticks: { color: '#64748b' } }
+                    }
+                }
+            });
+        }
+
+        var ctx2 = document.getElementById('examChart');
+        if (ctx2) {
+            new Chart(ctx2, {
+                type: 'bar',
+                data: {
+                    labels: days,
+                    datasets: [{
+                        label: '已完成考试',
+                        data: [15, 22, 18, 28, 25, 35, 30],
+                        backgroundColor: 'rgba(139, 92, 246, 0.7)',
+                        borderRadius: 6
+                    }, {
+                        label: '进行中',
+                        data: [8, 12, 10, 15, 13, 20, 18],
+                        backgroundColor: 'rgba(245, 158, 11, 0.7)',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { color: '#64748b', font: { size: 12 } } }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: '#e2e8f0' }, ticks: { color: '#64748b' } },
+                        x: { grid: { display: false }, ticks: { color: '#64748b' } }
+                    }
+                }
+            });
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        initCharts();
+    });
 </script>
 {% endblock %}

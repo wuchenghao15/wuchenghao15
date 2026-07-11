@@ -191,6 +191,30 @@
     </div>
 
     <div class="settings-group">
+        <div class="settings-group-title">缓存管理</div>
+        <div class="settings-item" onclick="clearCache()">
+            <div class="settings-icon" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24;">
+                <i class="fas fa-trash"></i>
+            </div>
+            <div class="settings-content">
+                <div class="settings-label">清除缓存</div>
+                <div class="settings-desc">清除系统缓存数据，提升性能</div>
+            </div>
+            <i class="fas fa-chevron-right arrow"></i>
+        </div>
+        <div class="settings-item" onclick="viewCacheStats()">
+            <div class="settings-icon" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa;">
+                <i class="fas fa-chart-pie"></i>
+            </div>
+            <div class="settings-content">
+                <div class="settings-label">缓存统计</div>
+                <div class="settings-desc">查看缓存使用情况</div>
+            </div>
+            <i class="fas fa-chevron-right arrow"></i>
+        </div>
+    </div>
+
+    <div class="settings-group">
         <div class="settings-group-title">关于</div>
         <div class="settings-item">
             <div class="settings-icon" style="background: rgba(100, 116, 139, 0.15); color: #94a3b8;">
@@ -202,15 +226,25 @@
             </div>
             <span class="settings-value">v7.2.0</span>
         </div>
-        <div class="settings-item" onclick="showToast('检查更新')">
+        <div class="settings-item" onclick="checkUpdate()">
             <div class="settings-icon" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">
                 <i class="fas fa-sync-alt"></i>
             </div>
             <div class="settings-content">
                 <div class="settings-label">检查更新</div>
-                <div class="settings-desc">当前已是最新版本</div>
+                <div class="settings-desc" id="update-status">点击检查更新</div>
             </div>
             <i class="fas fa-chevron-right arrow"></i>
+        </div>
+        <div class="settings-item">
+            <div class="settings-icon" style="background: rgba(139, 92, 246, 0.15); color: #a78bfa;">
+                <i class="fas fa-server"></i>
+            </div>
+            <div class="settings-content">
+                <div class="settings-label">服务器信息</div>
+                <div class="settings-desc">查看服务器配置和运行状态</div>
+            </div>
+            <i class="fas fa-chevron-right arrow" onclick="showServerInfo()"></i>
         </div>
     </div>
 
@@ -457,5 +491,178 @@
     document.addEventListener('DOMContentLoaded', function() {
         loadGrayReleaseStatus();
     });
+
+    function clearCache() {
+        showModal('清除缓存', '<div style="text-align: center; color: var(--text-secondary);">确定要清除系统缓存吗？这可能会暂时影响系统性能。</div>', {
+            onConfirm: function(modal) {
+                showLoading();
+                fetch('/api/system/cache/clear', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                }).then(function(res) {
+                    return res.json();
+                }).then(function(data) {
+                    hideLoading();
+                    if (data.success) {
+                        showToast('缓存已清除');
+                    } else {
+                        showToast(data.message || '清除失败', 'error');
+                    }
+                }).catch(function() {
+                    hideLoading();
+                    showToast('网络错误', 'error');
+                });
+            }
+        });
+    }
+
+    function viewCacheStats() {
+        fetch('/api/system/cache/stats')
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                if (data.success) {
+                    var stats = data.stats;
+                    var contentHtml = '<div style="padding: 10px 0;">' +
+                        '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">' +
+                        '<div style="background: var(--bg-secondary); padding: 12px; border-radius: 8px;">' +
+                        '<div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">缓存键数量</div>' +
+                        '<div style="font-weight: bold;">' + (stats.keys_count || 0) + '</div>' +
+                        '</div>' +
+                        '<div style="background: var(--bg-secondary); padding: 12px; border-radius: 8px;">' +
+                        '<div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">缓存大小</div>' +
+                        '<div style="font-weight: bold;">' + (stats.size || '0') + ' KB</div>' +
+                        '</div>' +
+                        '</div>' +
+                        '<div style="background: var(--bg-secondary); padding: 12px; border-radius: 8px;">' +
+                        '<div style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">缓存命中率</div>' +
+                        '<div style="height: 8px; background: var(--border); border-radius: 4px; overflow: hidden;">' +
+                        '<div style="height: 100%; width: ' + (stats.hit_rate || 0) + '%; background: var(--color-success);"></div>' +
+                        '</div>' +
+                        '<div style="font-size: 13px; margin-top: 8px;">' + (stats.hit_rate || 0) + '%</div>' +
+                        '</div>' +
+                        '</div>';
+                    
+                    showModal('缓存统计', contentHtml, {
+                        showFooter: true,
+                        confirmText: '关闭',
+                        onConfirm: function() { hideModal(); }
+                    });
+                } else {
+                    showToast('获取缓存统计失败', 'error');
+                }
+            }).catch(function() {
+                showToast('网络错误', 'error');
+            });
+    }
+
+    function checkUpdate() {
+        var statusEl = document.getElementById('update-status');
+        if (statusEl) {
+            statusEl.textContent = '正在检查更新...';
+        }
+        
+        fetch('/api/system/update/check')
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                if (data.success) {
+                    if (data.has_update) {
+                        if (statusEl) {
+                            statusEl.textContent = '有新版本: ' + data.latest_version;
+                            statusEl.style.color = 'var(--color-warning)';
+                        }
+                        showModal('发现更新', '<div style="padding: 10px 0;">' +
+                            '<div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 8px;">当前版本: ' + data.current_version + '</div>' +
+                            '<div style="font-size: 14px; color: var(--color-success); margin-bottom: 12px;">最新版本: ' + data.latest_version + '</div>' +
+                            '<div style="background: var(--bg-secondary); padding: 12px; border-radius: 8px; font-size: 13px;">' +
+                            '<div style="font-weight: bold; margin-bottom: 4px;">更新内容:</div>' +
+                            data.release_notes + '</div>' +
+                            '</div>', {
+                                showFooter: true,
+                                confirmText: '立即更新',
+                                cancelText: '稍后更新',
+                                onConfirm: function() {
+                                    showLoading();
+                                    fetch('/api/system/update/apply', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' }
+                                    }).then(function(res) { return res.json(); })
+                                    .then(function(data) {
+                                        hideLoading();
+                                        if (data.success) {
+                                            showToast('更新成功！系统将自动重启');
+                                            setTimeout(function() { location.reload(); }, 3000);
+                                        } else {
+                                            showToast(data.message || '更新失败', 'error');
+                                        }
+                                    }).catch(function() {
+                                        hideLoading();
+                                        showToast('网络错误', 'error');
+                                    });
+                                }
+                            });
+                    } else {
+                        if (statusEl) {
+                            statusEl.textContent = '当前已是最新版本';
+                            statusEl.style.color = 'var(--text-muted)';
+                        }
+                        showToast('当前已是最新版本');
+                    }
+                } else {
+                    if (statusEl) {
+                        statusEl.textContent = '检查失败';
+                    }
+                    showToast(data.message || '检查更新失败', 'error');
+                }
+            }).catch(function() {
+                if (statusEl) {
+                    statusEl.textContent = '网络错误';
+                }
+                showToast('网络错误', 'error');
+            });
+    }
+
+    function showServerInfo() {
+        fetch('/api/system/info')
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                if (data.success) {
+                    var info = data.info;
+                    var contentHtml = '<div style="padding: 10px 0;">' +
+                        '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">' +
+                        '<div style="background: var(--bg-secondary); padding: 12px; border-radius: 8px;">' +
+                        '<div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">操作系统</div>' +
+                        '<div style="font-weight: bold;">' + (info.os || '-') + '</div>' +
+                        '</div>' +
+                        '<div style="background: var(--bg-secondary); padding: 12px; border-radius: 8px;">' +
+                        '<div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">Python版本</div>' +
+                        '<div style="font-weight: bold;">' + (info.python_version || '-') + '</div>' +
+                        '</div>' +
+                        '<div style="background: var(--bg-secondary); padding: 12px; border-radius: 8px;">' +
+                        '<div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">CPU核心数</div>' +
+                        '<div style="font-weight: bold;">' + (info.cpu_cores || '-') + '</div>' +
+                        '</div>' +
+                        '<div style="background: var(--bg-secondary); padding: 12px; border-radius: 8px;">' +
+                        '<div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">内存大小</div>' +
+                        '<div style="font-weight: bold;">' + (info.memory || '-') + '</div>' +
+                        '</div>' +
+                        '</div>' +
+                        '<div style="background: var(--bg-secondary); padding: 12px; border-radius: 8px;">' +
+                        '<div style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">运行时间</div>' +
+                        '<div style="font-weight: bold;">' + (info.uptime || '-') + '</div>' +
+                        '</div>' +
+                        '</div>';
+                    
+                    showModal('服务器信息', contentHtml, {
+                        showFooter: true,
+                        confirmText: '关闭',
+                        onConfirm: function() { hideModal(); }
+                    });
+                } else {
+                    showToast('获取服务器信息失败', 'error');
+                }
+            }).catch(function() {
+                showToast('网络错误', 'error');
+            });
+    }
 </script>
 {% endblock %}

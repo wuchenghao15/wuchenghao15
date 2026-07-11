@@ -10,6 +10,21 @@
         <span class="tag tag-blue" style="margin-left: auto;">{{ users|length }} 人</span>
     </div>
 
+    <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+        <button class="btn btn-primary" onclick="showImportModal()">
+            <i class="fas fa-upload"></i> 导入用户
+        </button>
+        <button class="btn btn-secondary" onclick="exportUsers()">
+            <i class="fas fa-download"></i> 导出用户
+        </button>
+        <button class="btn btn-danger" onclick="batchDeleteUsers()" id="batch-delete-btn" style="display: none;">
+            <i class="fas fa-trash"></i> 批量删除
+        </button>
+        <button class="btn btn-warning" onclick="batchToggleStatus()" id="batch-toggle-btn" style="display: none;">
+            <i class="fas fa-toggle-on"></i> 批量切换状态
+        </button>
+    </div>
+
     <div class="search-bar">
         <i class="fas fa-search"></i>
         <input type="text" id="search-input" placeholder="搜索用户名、邮箱..." oninput="filterUsers()">
@@ -26,8 +41,9 @@
     <div id="user-list">
         {% if users %}
             {% for u in users %}
-            <div class="card user-card" data-role="{{ u.role }}" data-username="{{ u.username }}" data-email="{{ u.email }}">
+            <div class="card user-card" data-role="{{ u.role }}" data-username="{{ u.username }}" data-email="{{ u.email }}" data-id="{{ u.id }}">
                 <div class="list-item" style="padding: 0; border: none;">
+                    <input type="checkbox" class="user-checkbox" value="{{ u.id }}" onchange="updateBatchSelection()" style="margin: 0 12px; width: 18px; height: 18px; cursor: pointer;">
                     <div class="list-avatar" style="background: linear-gradient(135deg, 
                         {% if u.role == 'super_admin' %}var(--color-error), #dc2626
                         {% elif u.role == 'admin' %}var(--color-secondary), #7c3aed
@@ -276,6 +292,147 @@
             hideLoading();
             showToast('网络错误，请重试', 3000);
         });
+    }
+
+    function updateBatchSelection() {
+        var checked = document.querySelectorAll('.user-checkbox:checked');
+        var deleteBtn = document.getElementById('batch-delete-btn');
+        var toggleBtn = document.getElementById('batch-toggle-btn');
+        
+        if (checked.length > 0) {
+            deleteBtn.style.display = 'block';
+            toggleBtn.style.display = 'block';
+        } else {
+            deleteBtn.style.display = 'none';
+            toggleBtn.style.display = 'none';
+        }
+    }
+
+    function batchDeleteUsers() {
+        var checked = document.querySelectorAll('.user-checkbox:checked');
+        if (checked.length === 0) return;
+        
+        if (!confirm('确定要删除选中的 ' + checked.length + ' 个用户吗？此操作不可恢复！')) return;
+        
+        var ids = Array.from(checked).map(function(cb) { return cb.value; });
+        
+        showLoading();
+        fetch('/api/users/batch_delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_ids: ids })
+        })
+        .then(function(response) { return response.json(); })
+        .then(function(data) {
+            hideLoading();
+            if (data.success) {
+                showToast('已删除 ' + data.deleted_count + ' 个用户！', 2000);
+                setTimeout(function() { location.reload(); }, 1500);
+            } else {
+                showToast(data.error || '删除失败', 3000);
+            }
+        })
+        .catch(function(error) {
+            hideLoading();
+            showToast('网络错误，请重试', 3000);
+        });
+    }
+
+    function batchToggleStatus() {
+        var checked = document.querySelectorAll('.user-checkbox:checked');
+        if (checked.length === 0) return;
+        
+        var ids = Array.from(checked).map(function(cb) { return cb.value; });
+        
+        showLoading();
+        fetch('/api/users/batch_status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_ids: ids })
+        })
+        .then(function(response) { return response.json(); })
+        .then(function(data) {
+            hideLoading();
+            if (data.success) {
+                showToast('状态已切换！', 2000);
+                setTimeout(function() { location.reload(); }, 1500);
+            } else {
+                showToast(data.error || '操作失败', 3000);
+            }
+        })
+        .catch(function(error) {
+            hideLoading();
+            showToast('网络错误，请重试', 3000);
+        });
+    }
+
+    function showImportModal() {
+        var contentHtml = '<div style="padding: 10px 0;">' +
+            '<div style="margin-bottom: 16px;">' +
+            '<label style="display: block; font-size: 14px; color: var(--text-secondary); margin-bottom: 8px;">导入用户数据</label>' +
+            '<div style="background: var(--bg-secondary); padding: 20px; border-radius: 8px;">' +
+            '<div style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">' +
+            '请准备CSV文件，格式如下：<br>' +
+            '<code style="background: var(--bg-primary); padding: 4px 8px; border-radius: 4px;">username,email,password,role</code><br>' +
+            '示例：<br>' +
+            '<code style="background: var(--bg-primary); padding: 4px 8px; border-radius: 4px;">zhangsan,zs@example.com,123456,student</code>' +
+            '</div>' +
+            '<input type="file" id="import-file" accept=".csv" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-primary); color: var(--text-primary); font-size: 14px;">' +
+            '</div>' +
+            '</div>' +
+            '</div>';
+        
+        showModal('导入用户', contentHtml, {
+            showFooter: true,
+            confirmText: '上传导入',
+            cancelText: '取消',
+            onConfirm: function() {
+                var fileInput = document.getElementById('import-file');
+                if (!fileInput.files || fileInput.files.length === 0) {
+                    showToast('请选择文件', 3000);
+                    return;
+                }
+                
+                var file = fileInput.files[0];
+                var formData = new FormData();
+                formData.append('file', file);
+                
+                showLoading();
+                fetch('/api/users/import', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(function(response) { return response.json(); })
+                .then(function(data) {
+                    hideLoading();
+                    if (data.success) {
+                        showToast('导入成功，共导入 ' + data.imported_count + ' 个用户！', 2000);
+                        setTimeout(function() { location.reload(); }, 1500);
+                    } else {
+                        showToast(data.error || '导入失败', 3000);
+                    }
+                })
+                .catch(function(error) {
+                    hideLoading();
+                    showToast('网络错误，请重试', 3000);
+                });
+            }
+        });
+    }
+
+    function exportUsers() {
+        var roleFilter = currentFilter;
+        var url = '/api/users/export';
+        if (roleFilter !== 'all') {
+            url += '?role=' + roleFilter;
+        }
+        
+        var link = document.createElement('a');
+        link.href = url;
+        link.download = 'users_' + new Date().toISOString().slice(0, 10) + '.csv';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     }
 
     document.querySelectorAll('.user-card').forEach(function(card) {
