@@ -1227,6 +1227,104 @@ def admin_app_dashboard():
     
     return render_template('admin_app/dashboard.html', user=user, stats=stats, notification_count=notification_count, activities=activities, alerts=alerts, resolved_count=resolved_count, current_page='dashboard')
 
+@app.route('/admin_app/security_dashboard')
+def admin_app_security_dashboard():
+    """管理员App - 安全监控仪表盘"""
+    has_access, redirect_to = require_admin_app_access()
+    if not has_access:
+        if redirect_to == 'login':
+            return redirect('/admin_app/login')
+        return "无权访问", 403
+    
+    user_id = session.get('user_id')
+    user = {
+        'id': user_id,
+        'username': session.get('username'),
+        'role': session.get('role')
+    }
+    
+    security_score = 100
+    threat_level = 'low'
+    critical_count = 0
+    high_count = 0
+    medium_count = 0
+    scan_count = 0
+    
+    try:
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT security_score, threat_level FROM security_scan_results ORDER BY id DESC LIMIT 1')
+            result = cursor.fetchone()
+            if result:
+                security_score = result[0]
+                threat_level = result[1]
+            
+            cursor.execute('SELECT COUNT(*) FROM security_vulnerabilities WHERE severity = ? AND status = ?', ('critical', 'open'))
+            critical_count = cursor.fetchone()[0]
+            
+            cursor.execute('SELECT COUNT(*) FROM security_vulnerabilities WHERE severity = ? AND status = ?', ('high', 'open'))
+            high_count = cursor.fetchone()[0]
+            
+            cursor.execute('SELECT COUNT(*) FROM security_vulnerabilities WHERE severity = ? AND status = ?', ('medium', 'open'))
+            medium_count = cursor.fetchone()[0]
+            
+            cursor.execute('SELECT COUNT(*) FROM security_scan_results')
+            scan_count = cursor.fetchone()[0]
+    except Exception:
+        pass
+    
+    return render_template('admin_app/security_dashboard.html', user=user, 
+                           security_score=security_score, threat_level=threat_level,
+                           critical_count=critical_count, high_count=high_count,
+                           medium_count=medium_count, scan_count=scan_count)
+
+@app.route('/admin_app/health_details')
+def admin_app_health_details():
+    """管理员App - 健康检查详情"""
+    has_access, redirect_to = require_admin_app_access()
+    if not has_access:
+        if redirect_to == 'login':
+            return redirect('/admin_app/login')
+        return "无权访问", 403
+    
+    user_id = session.get('user_id')
+    user = {
+        'id': user_id,
+        'username': session.get('username'),
+        'role': session.get('role')
+    }
+    
+    overall_status = 'healthy'
+    cpu_usage = 0
+    memory_usage = 0
+    disk_usage = 0
+    db_count = 0
+    redis_status = 'healthy'
+    
+    try:
+        from app.services.health_check_service import health_check_service
+        health_data = health_check_service.get_health_summary()
+        overall_status = health_data.get('overall_status', 'healthy')
+        
+        details = health_data.get('details', {})
+        if details.get('cpu'):
+            cpu_usage = details['cpu'].get('usage_percent', 0)
+        if details.get('memory'):
+            memory_usage = details['memory'].get('used_percent', 0)
+        if details.get('disk'):
+            disk_usage = details['disk'].get('used_percent', 0)
+        if details.get('database'):
+            db_count = details['database'].get('total_databases', 0)
+        if details.get('redis'):
+            redis_status = details['redis'].get('status', 'healthy')
+    except Exception:
+        pass
+    
+    return render_template('admin_app/health_details.html', user=user,
+                           overall_status=overall_status, cpu_usage=cpu_usage,
+                           memory_usage=memory_usage, disk_usage=disk_usage,
+                           db_count=db_count, redis_status=redis_status)
+
 @app.route('/admin_app/users')
 def admin_app_users():
     """管理员App - 用户管理"""

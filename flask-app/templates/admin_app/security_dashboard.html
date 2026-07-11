@@ -1,0 +1,550 @@
+{% extends "admin_app/base.html" %}
+
+{% block title %}安全监控仪表盘 - MTSCOS{% endblock %}
+
+{% block extra_head %}
+    <script src="/assets/js/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <div class="section-title" style="margin-top: 0;">
+        <i class="fas fa-shield-alt" style="color: var(--color-primary);"></i>
+        安全监控仪表盘
+    </div>
+
+    <div class="stat-grid">
+        <div class="stat-card {% if security_score >= 80 %}green{% elif security_score >= 50 %}orange{% else %}red{% endif %}">
+            <div class="stat-value" style="font-size: 28px;">{{ security_score or '--' }}</div>
+            <div class="stat-label">安全评分</div>
+            <div class="stat-icon">
+                <i class="fas fa-shield-check"></i>
+            </div>
+        </div>
+        <div class="stat-card {% if threat_level == 'critical' %}red{% elif threat_level == 'high' %}orange{% elif threat_level == 'medium' %}yellow{% else %}green{% endif %}">
+            <div class="stat-value" style="font-size: 20px;">{{ threat_level or '--' }}</div>
+            <div class="stat-label">威胁级别</div>
+            <div class="stat-icon">
+                <i class="fas fa-triangle-exclamation"></i>
+            </div>
+        </div>
+        <div class="stat-card red">
+            <div class="stat-value" style="font-size: 20px;">{{ critical_count or 0 }}</div>
+            <div class="stat-label">高危漏洞</div>
+            <div class="stat-icon">
+                <i class="fas fa-skull"></i>
+            </div>
+        </div>
+        <div class="stat-card orange">
+            <div class="stat-value" style="font-size: 20px;">{{ high_count or 0 }}</div>
+            <div class="stat-label">中危漏洞</div>
+            <div class="stat-icon">
+                <i class="fas fa-exclamation-circle"></i>
+            </div>
+        </div>
+        <div class="stat-card yellow">
+            <div class="stat-value" style="font-size: 20px;">{{ medium_count or 0 }}</div>
+            <div class="stat-label">低危漏洞</div>
+            <div class="stat-icon">
+                <i class="fas fa-info-circle"></i>
+            </div>
+        </div>
+        <div class="stat-card green">
+            <div class="stat-value" style="font-size: 20px;">{{ scan_count or 0 }}</div>
+            <div class="stat-label">扫描次数</div>
+            <div class="stat-icon">
+                <i class="fas fa-search"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="filter-tabs">
+        <div class="filter-tab active" onclick="setSecurityTab(this, 'overview')">安全概览</div>
+        <div class="filter-tab" onclick="setSecurityTab(this, 'vulnerabilities')">漏洞列表</div>
+        <div class="filter-tab" onclick="setSecurityTab(this, 'alerts')">安全警报</div>
+        <div class="filter-tab" onclick="setSecurityTab(this, 'history')">扫描历史</div>
+    </div>
+
+    <div id="security-overview" class="security-tab">
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fas fa-chart-pie" style="color: var(--color-primary);"></i>
+                    漏洞分布
+                </div>
+            </div>
+            <div class="card-body">
+                <div style="display: flex; gap: 30px;">
+                    <div style="width: 250px; height: 250px;">
+                        <canvas id="vulnerabilityChart"></canvas>
+                    </div>
+                    <div style="flex: 1;">
+                        <div class="list-item">
+                            <div class="list-avatar" style="background: rgba(239, 68, 68, 0.15); color: #ef4444;">
+                                <i class="fas fa-skull"></i>
+                            </div>
+                            <div class="list-content">
+                                <div class="list-title">高危漏洞</div>
+                                <div class="list-desc">需要立即修复的安全问题</div>
+                            </div>
+                            <span class="tag tag-red">{{ critical_count or 0 }}</span>
+                        </div>
+                        <div class="list-item">
+                            <div class="list-avatar" style="background: rgba(249, 115, 22, 0.15); color: #f97316;">
+                                <i class="fas fa-exclamation-circle"></i>
+                            </div>
+                            <div class="list-content">
+                                <div class="list-title">中危漏洞</div>
+                                <div class="list-desc">建议尽快修复的安全问题</div>
+                            </div>
+                            <span class="tag tag-orange">{{ high_count or 0 }}</span>
+                        </div>
+                        <div class="list-item">
+                            <div class="list-avatar" style="background: rgba(234, 179, 8, 0.15); color: #eab308;">
+                                <i class="fas fa-info-circle"></i>
+                            </div>
+                            <div class="list-content">
+                                <div class="list-title">低危漏洞</div>
+                                <div class="list-desc">可计划修复的安全问题</div>
+                            </div>
+                            <span class="tag tag-yellow">{{ medium_count or 0 }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fas fa-play-circle" style="color: var(--color-primary);"></i>
+                    扫描控制
+                </div>
+            </div>
+            <div class="card-body">
+                <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                    <button class="btn btn-primary" onclick="runSecurityScan()">
+                        <i class="fas fa-search"></i> 执行扫描
+                    </button>
+                    <button class="btn btn-success" onclick="startScanner()">
+                        <i class="fas fa-play"></i> 启动扫描器
+                    </button>
+                    <button class="btn btn-danger" onclick="stopScanner()">
+                        <i class="fas fa-stop"></i> 停止扫描器
+                    </button>
+                    <button class="btn btn-secondary" onclick="refreshSecurityStatus()">
+                        <i class="fas fa-refresh"></i> 刷新状态
+                    </button>
+                </div>
+                <div style="margin-top: 20px; padding: 15px; background: var(--bg-secondary); border-radius: 8px;">
+                    <div class="list-item">
+                        <div class="list-content">
+                            <div class="list-title">扫描器状态</div>
+                            <div class="list-desc" id="scanner-status">加载中...</div>
+                        </div>
+                        <span class="tag" id="scanner-tag">--</span>
+                    </div>
+                    <div class="list-item">
+                        <div class="list-content">
+                            <div class="list-title">扫描间隔</div>
+                            <div class="list-desc" id="scan-interval">--</div>
+                        </div>
+                    </div>
+                    <div class="list-item">
+                        <div class="list-content">
+                            <div class="list-title">自动修复</div>
+                            <div class="list-desc" id="auto-fix-status">--</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="security-vulnerabilities" class="security-tab" style="display: none;">
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fas fa-bug" style="color: var(--color-error);"></i>
+                    漏洞列表
+                </div>
+                <div class="search-bar">
+                    <select class="form-control-sm" id="vuln-severity" onchange="filterVulnerabilities()">
+                        <option value="">全部级别</option>
+                        <option value="critical">高危</option>
+                        <option value="high">中危</option>
+                        <option value="medium">低危</option>
+                        <option value="low">信息</option>
+                    </select>
+                    <input type="text" class="form-control-sm" id="vuln-search" placeholder="搜索漏洞..." onkeyup="filterVulnerabilities()">
+                </div>
+            </div>
+            <div class="card-body">
+                <table class="table-grid">
+                    <thead>
+                        <tr>
+                            <th>漏洞ID</th>
+                            <th>包名</th>
+                            <th>当前版本</th>
+                            <th>建议版本</th>
+                            <th>严重级别</th>
+                            <th>描述</th>
+                            <th>状态</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="vulnerability-table-body">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="security-alerts" class="security-tab" style="display: none;">
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fas fa-bell" style="color: var(--color-warning);"></i>
+                    安全警报
+                </div>
+                <select class="form-control-sm" id="alert-status" onchange="filterAlerts()">
+                    <option value="">全部状态</option>
+                    <option value="active">待处理</option>
+                    <option value="acknowledged">已确认</option>
+                </select>
+            </div>
+            <div class="card-body">
+                <div id="alert-list">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="security-history" class="security-tab" style="display: none;">
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fas fa-history" style="color: var(--color-primary);"></i>
+                    扫描历史
+                </div>
+            </div>
+            <div class="card-body">
+                <div style="height: 300px; margin-bottom: 20px;">
+                    <canvas id="scanHistoryChart"></canvas>
+                </div>
+                <table class="table-grid">
+                    <thead>
+                        <tr>
+                            <th>扫描时间</th>
+                            <th>安全评分</th>
+                            <th>威胁级别</th>
+                            <th>漏洞总数</th>
+                            <th>耗时</th>
+                            <th>状态</th>
+                        </tr>
+                    </thead>
+                    <tbody id="scan-history-body">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let vulnerabilityChart = null;
+let scanHistoryChart = null;
+
+function setSecurityTab(tab, tabName) {
+    document.querySelectorAll('.security-tab').forEach(el => el.style.display = 'none');
+    document.querySelectorAll('.filter-tab').forEach(el => el.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('security-' + tabName).style.display = 'block';
+    
+    if (tabName === 'history' && !scanHistoryChart) {
+        loadScanHistory();
+    }
+}
+
+function getSeverityTag(severity) {
+    const tags = {
+        'critical': 'tag-red',
+        'high': 'tag-orange',
+        'medium': 'tag-yellow',
+        'low': 'tag-blue'
+    };
+    return tags[severity] || 'tag-gray';
+}
+
+function getSeverityText(severity) {
+    const texts = {
+        'critical': '高危',
+        'high': '中危',
+        'medium': '低危',
+        'low': '信息'
+    };
+    return texts[severity] || severity;
+}
+
+async function refreshSecurityStatus() {
+    try {
+        const response = await fetch('/api/security/status');
+        const data = await response.json();
+        
+        if (data.code === 200) {
+            const status = data.data;
+            document.getElementById('scanner-status').textContent = status.is_running ? '运行中' : '已停止';
+            document.getElementById('scanner-tag').className = 'tag ' + (status.is_running ? 'tag-green' : 'tag-gray');
+            document.getElementById('scanner-tag').textContent = status.is_running ? '运行中' : '已停止';
+            document.getElementById('scan-interval').textContent = (status.scan_interval / 3600) + ' 小时';
+            document.getElementById('auto-fix-status').textContent = status.auto_fix_enabled ? '已启用' : '已禁用';
+            
+            loadVulnerabilities();
+            loadAlerts();
+        }
+    } catch (error) {
+        console.error('获取安全状态失败:', error);
+    }
+}
+
+async function loadVulnerabilities() {
+    try {
+        const response = await fetch('/api/security/vulnerabilities?limit=50');
+        const data = await response.json();
+        
+        if (data.code === 200) {
+            const tbody = document.getElementById('vulnerability-table-body');
+            tbody.innerHTML = '';
+            
+            data.data.forEach(vuln => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${vuln.id || '--'}</td>
+                    <td><strong>${vuln.package_name || '--'}</strong></td>
+                    <td>${vuln.package_version || '--'}</td>
+                    <td>${vuln.fixed_version || '--'}</td>
+                    <td><span class="tag ${getSeverityTag(vuln.severity)}">${getSeverityText(vuln.severity)}</span></td>
+                    <td>${vuln.description || '--'}</td>
+                    <td><span class="tag ${vuln.status === 'fixed' ? 'tag-green' : 'tag-red'}">${vuln.status === 'fixed' ? '已修复' : '待处理'}</span></td>
+                    <td>
+                        ${vuln.status !== 'fixed' ? `<button class="btn btn-sm btn-primary" onclick="fixVulnerability(${vuln.id})">修复</button>` : ''}
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+    } catch (error) {
+        console.error('加载漏洞列表失败:', error);
+    }
+}
+
+async function loadAlerts() {
+    try {
+        const response = await fetch('/api/security/alerts');
+        const data = await response.json();
+        
+        if (data.code === 200) {
+            const container = document.getElementById('alert-list');
+            container.innerHTML = '';
+            
+            data.data.forEach(alert => {
+                const alertItem = document.createElement('div');
+                alertItem.className = 'list-item';
+                alertItem.innerHTML = `
+                    <div class="list-avatar" style="background: rgba(239, 68, 68, 0.15); color: #ef4444;">
+                        <i class="fas fa-bell"></i>
+                    </div>
+                    <div class="list-content">
+                        <div class="list-title">${alert.title || '--'}</div>
+                        <div class="list-desc">${alert.message || '--'}</div>
+                        <div style="font-size: 11px; color: var(--text-secondary);">${alert.created_at || '--'}</div>
+                    </div>
+                    <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
+                        <span class="tag ${getSeverityTag(alert.severity)}">${getSeverityText(alert.severity)}</span>
+                        ${alert.status === 'active' ? `<button class="btn btn-sm btn-secondary" onclick="acknowledgeAlert(${alert.id})">确认</button>` : '<span class="tag tag-gray">已确认</span>'}
+                    </div>
+                `;
+                container.appendChild(alertItem);
+            });
+        }
+    } catch (error) {
+        console.error('加载警报列表失败:', error);
+    }
+}
+
+async function loadScanHistory() {
+    try {
+        const response = await fetch('/api/security/history?limit=20');
+        const data = await response.json();
+        
+        if (data.code === 200) {
+            const tbody = document.getElementById('scan-history-body');
+            tbody.innerHTML = '';
+            
+            const labels = [];
+            const scores = [];
+            
+            data.data.forEach((record, index) => {
+                const time = new Date(record.time);
+                const label = time.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+                labels.push(label);
+                scores.push(record.score);
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${record.time || '--'}</td>
+                    <td><strong>${record.score || '--'}</strong></td>
+                    <td><span class="tag ${getSeverityTag(record.threat_level)}">${record.threat_level || '--'}</span></td>
+                    <td>${record.total_vulnerabilities || 0}</td>
+                    <td>${record.duration ? record.duration.toFixed(2) + 's' : '--'}</td>
+                    <td><span class="tag tag-green">已完成</span></td>
+                `;
+                tbody.appendChild(row);
+            });
+            
+            if (!scanHistoryChart) {
+                const ctx = document.getElementById('scanHistoryChart').getContext('2d');
+                scanHistoryChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: '安全评分',
+                            data: scores,
+                            borderColor: '#667eea',
+                            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                min: 0,
+                                max: 100
+                            }
+                        }
+                    }
+                });
+            }
+        }
+    } catch (error) {
+        console.error('加载扫描历史失败:', error);
+    }
+}
+
+async function runSecurityScan() {
+    try {
+        const response = await fetch('/api/security/scan', { method: 'POST' });
+        const data = await response.json();
+        
+        if (data.code === 200) {
+            alert('扫描完成！安全评分: ' + data.data.security_score);
+            refreshSecurityStatus();
+            loadScanHistory();
+        } else {
+            alert('扫描失败: ' + data.message);
+        }
+    } catch (error) {
+        console.error('执行扫描失败:', error);
+        alert('扫描失败，请查看控制台日志');
+    }
+}
+
+async function startScanner() {
+    try {
+        const response = await fetch('/api/security/scan/start', { method: 'POST' });
+        const data = await response.json();
+        
+        if (data.code === 200) {
+            alert('扫描器已启动');
+            refreshSecurityStatus();
+        }
+    } catch (error) {
+        console.error('启动扫描器失败:', error);
+    }
+}
+
+async function stopScanner() {
+    try {
+        const response = await fetch('/api/security/scan/stop', { method: 'POST' });
+        const data = await response.json();
+        
+        if (data.code === 200) {
+            alert('扫描器已停止');
+            refreshSecurityStatus();
+        }
+    } catch (error) {
+        console.error('停止扫描器失败:', error);
+    }
+}
+
+async function acknowledgeAlert(alertId) {
+    try {
+        const response = await fetch(`/api/security/alerts/${alertId}/acknowledge`, { method: 'POST' });
+        const data = await response.json();
+        
+        if (data.code === 200) {
+            alert('警报已确认');
+            loadAlerts();
+        }
+    } catch (error) {
+        console.error('确认警报失败:', error);
+    }
+}
+
+function filterVulnerabilities() {
+    const severity = document.getElementById('vuln-severity').value;
+    const search = document.getElementById('vuln-search').value.toLowerCase();
+    
+    document.querySelectorAll('#vulnerability-table-body tr').forEach(row => {
+        const severityCell = row.querySelector('td:nth-child(5)').textContent.toLowerCase();
+        const nameCell = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
+        
+        const matchesSeverity = !severity || severityCell.includes(severity);
+        const matchesSearch = !search || nameCell.includes(search) || row.textContent.toLowerCase().includes(search);
+        
+        row.style.display = (matchesSeverity && matchesSearch) ? '' : 'none';
+    });
+}
+
+function filterAlerts() {
+    const status = document.getElementById('alert-status').value;
+    
+    document.querySelectorAll('#alert-list .list-item').forEach(item => {
+        const statusTag = item.querySelector('.tag:last-child').textContent;
+        const matchesStatus = !status || statusTag.includes(status === 'active' ? '待处理' : '已确认');
+        
+        item.style.display = matchesStatus ? '' : 'none';
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    refreshSecurityStatus();
+    
+    const ctx = document.getElementById('vulnerabilityChart').getContext('2d');
+    vulnerabilityChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['高危', '中危', '低危'],
+            datasets: [{
+                data: [{{ critical_count or 0 }}, {{ high_count or 0 }}, {{ medium_count or 0 }}],
+                backgroundColor: ['#ef4444', '#f97316', '#eab308'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

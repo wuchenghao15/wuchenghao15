@@ -54,3 +54,21 @@ def get_database_status():
     """获取数据库状态"""
     database = HealthCheckService.get_database_status()
     return success_response(database)
+
+
+@health_api.route('/api/health/summary', methods=['GET'])
+def get_health_summary():
+    """获取健康检查摘要"""
+    health_check_service = HealthCheckService()
+    summary = health_check_service.get_health_summary()
+    return success_response(summary)
+
+
+@health_api.route('/api/health/history', methods=['GET'])
+def get_health_history():
+    """获取健康检查历史"""
+    from flask import request
+    limit = request.args.get('limit', 20, type=int)
+    health_check_service = HealthCheckService()
+    history = health_check_service.get_health_history(limit=limit)
+    return success_response(history)
