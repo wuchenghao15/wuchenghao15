@@ -117,26 +117,33 @@
             border-radius: 50%;
             opacity: 0;
             animation: particleFloat 20s infinite linear;
+            transition: transform 0.3s ease;
         }
         
         .particle.primary {
             background: #667eea;
-            box-shadow: 0 0 6px #667eea;
+            box-shadow: 0 0 6px #667eea, 0 0 12px rgba(102, 126, 234, 0.5);
         }
         
         .particle.secondary {
             background: #f093fb;
-            box-shadow: 0 0 6px #f093fb;
+            box-shadow: 0 0 6px #f093fb, 0 0 12px rgba(240, 147, 251, 0.5);
         }
         
         .particle.accent {
             background: #4facfe;
-            box-shadow: 0 0 6px #4facfe;
+            box-shadow: 0 0 6px #4facfe, 0 0 12px rgba(79, 172, 254, 0.5);
         }
         
         .particle.glow {
             background: white;
-            box-shadow: 0 0 10px white, 0 0 20px #667eea;
+            box-shadow: 0 0 10px white, 0 0 20px #667eea, 0 0 30px rgba(102, 126, 234, 0.3);
+        }
+        
+        .particle.twinkle {
+            background: #00f2fe;
+            box-shadow: 0 0 8px #00f2fe, 0 0 16px rgba(0, 242, 254, 0.6);
+            animation: twinkleFloat 15s infinite ease-in-out;
         }
         
         @keyframes particleFloat {
@@ -149,6 +156,61 @@
             100% { 
                 transform: translateY(-100vh) rotate(720deg); 
                 opacity: 0; 
+            }
+        }
+        
+        @keyframes twinkleFloat {
+            0%, 100% { 
+                transform: translateY(100vh) translateX(0) rotate(0deg); 
+                opacity: 0; 
+                box-shadow: 0 0 8px #00f2fe;
+            }
+            10% { opacity: 0.9; }
+            50% { 
+                transform: translateY(50vh) translateX(50px) rotate(360deg); 
+                box-shadow: 0 0 15px #00f2fe, 0 0 30px rgba(0, 242, 254, 0.8);
+            }
+            90% { opacity: 0.9; }
+            100% { 
+                transform: translateY(-100vh) translateX(-30px) rotate(720deg); 
+                opacity: 0; 
+            }
+        }
+        
+        /* 粒子连接线效果 */
+        .particle-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+        
+        /* 发光脉冲效果 */
+        .glow-pulse {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 600px;
+            height: 600px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(102, 126, 234, 0.15) 0%, transparent 70%);
+            z-index: 0;
+            pointer-events: none;
+            animation: glowPulse 8s ease-in-out infinite;
+        }
+        
+        @keyframes glowPulse {
+            0%, 100% { 
+                transform: translate(-50%, -50%) scale(1); 
+                opacity: 0.6; 
+            }
+            50% { 
+                transform: translate(-50%, -50%) scale(1.3); 
+                opacity: 0.3; 
             }
         }
         
@@ -629,8 +691,14 @@
         <div class="orb orb-3"></div>
     </div>
     
+    <!-- 发光脉冲效果 -->
+    <div class="glow-pulse"></div>
+    
     <!-- 粒子效果 -->
     <div class="particles" id="particles"></div>
+    
+    <!-- Canvas粒子连接线 -->
+    <canvas class="particle-canvas" id="particleCanvas"></canvas>
     
     <div class="login-container">
         <!-- Logo区域 -->
@@ -801,11 +869,11 @@
             const container = document.getElementById('particles');
             if (!container) return;
             
-            const particleCount = 80;
+            const particleCount = 100;
             
             for (let i = 0; i < particleCount; i++) {
                 const particle = document.createElement('div');
-                const types = ['primary', 'secondary', 'accent', 'glow'];
+                const types = ['primary', 'secondary', 'accent', 'glow', 'twinkle'];
                 const type = types[Math.floor(Math.random() * types.length)];
                 particle.className = 'particle ' + type;
                 
@@ -816,6 +884,8 @@
                 
                 if (type === 'glow') {
                     particle.style.width = (3 + Math.random() * 5) + 'px';
+                } else if (type === 'twinkle') {
+                    particle.style.width = (2 + Math.random() * 4) + 'px';
                 } else {
                     particle.style.width = (2 + Math.random() * 4) + 'px';
                 }
@@ -826,6 +896,117 @@
         }
         
         createParticles();
+        
+        // ========== Canvas粒子连接线效果 ==========
+        function initParticleCanvas() {
+            const canvas = document.getElementById('particleCanvas');
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            let particles = [];
+            let animationId;
+            let mouse = { x: null, y: null, radius: 150 };
+            
+            function resize() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+            
+            resize();
+            window.addEventListener('resize', resize);
+            
+            class Particle {
+                constructor() {
+                    this.x = Math.random() * canvas.width;
+                    this.y = Math.random() * canvas.height;
+                    this.size = Math.random() * 3 + 1;
+                    this.speedX = Math.random() * 0.5 - 0.25;
+                    this.speedY = Math.random() * 0.5 - 0.25;
+                    this.color = ['#667eea', '#f093fb', '#4facfe', '#00f2fe'][Math.floor(Math.random() * 4)];
+                }
+                
+                update() {
+                    this.x += this.speedX;
+                    this.y += this.speedY;
+                    
+                    if (this.x < 0 || this.x > canvas.width) this.speedX *= -1;
+                    if (this.y < 0 || this.y > canvas.height) this.speedY *= -1;
+                }
+                
+                draw() {
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                    ctx.fillStyle = this.color;
+                    ctx.fill();
+                    ctx.shadowBlur = 15;
+                    ctx.shadowColor = this.color;
+                }
+            }
+            
+            function connect() {
+                for (let i = 0; i < particles.length; i++) {
+                    for (let j = i + 1; j < particles.length; j++) {
+                        const dx = particles[i].x - particles[j].x;
+                        const dy = particles[i].y - particles[j].y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        
+                        if (distance < 150) {
+                            ctx.beginPath();
+                            ctx.strokeStyle = `rgba(102, 126, 234, ${0.2 * (1 - distance / 150)})`;
+                            ctx.lineWidth = 0.5;
+                            ctx.moveTo(particles[i].x, particles[i].y);
+                            ctx.lineTo(particles[j].x, particles[j].y);
+                            ctx.stroke();
+                        }
+                    }
+                    
+                    if (mouse.x !== null && mouse.y !== null) {
+                        const dx = particles[i].x - mouse.x;
+                        const dy = particles[i].y - mouse.y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        
+                        if (distance < mouse.radius) {
+                            ctx.beginPath();
+                            ctx.strokeStyle = `rgba(102, 126, 234, ${0.4 * (1 - distance / mouse.radius)})`;
+                            ctx.lineWidth = 1;
+                            ctx.moveTo(particles[i].x, particles[i].y);
+                            ctx.lineTo(mouse.x, mouse.y);
+                            ctx.stroke();
+                        }
+                    }
+                }
+            }
+            
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                particles.forEach(particle => {
+                    particle.update();
+                    particle.draw();
+                });
+                
+                connect();
+                animationId = requestAnimationFrame(animate);
+            }
+            
+            for (let i = 0; i < 60; i++) {
+                particles.push(new Particle());
+            }
+            
+            animate();
+            
+            document.addEventListener('mousemove', (e) => {
+                mouse.x = e.x;
+                mouse.y = e.y;
+            });
+            
+            document.addEventListener('mouseout', () => {
+                mouse.x = null;
+                mouse.y = null;
+            });
+        }
+        
+        initParticleCanvas();
         
         // ========== 鼠标跟随粒子效果 ==========
         let lastMouseTime = 0;
