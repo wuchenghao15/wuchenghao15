@@ -3,7 +3,6 @@
  * 版本: 1.0.0
  * 描述: 专业AI知识库，存储修复案例、最佳实践和技术文档
  */
-
 class BrainDatabase {
     constructor() {
         this.dbName = 'MTSCOS_BRAIN_DB';
@@ -20,33 +19,26 @@ class BrainDatabase {
         ];
         this.init();
     }
-    
     async init() {
         try {
             this.db = await this.openDatabase();
             this.isReady = true;
             console.log('✅ 脑库数据库初始化成功');
-            
             // 初始化默认数据
             await this.initBrainData();
-            
             // 触发就绪事件
             document.dispatchEvent(new CustomEvent('mtscos:brain:ready'));
         } catch (error) {
             console.error('❌ 脑库数据库初始化失败:', error);
         }
     }
-    
     async openDatabase() {
         return new Promise((resolve, reject) => {
             const request = indexedDB.open(this.dbName, this.dbVersion);
-            
             request.onerror = () => reject(request.error);
             request.onsuccess = () => resolve(request.result);
-            
             request.onupgradeneeded = (event) => {
                 const db = event.target.result;
-                
                 for (const collection of this.collections) {
                     if (!db.objectStoreNames.contains(collection.name)) {
                         db.createObjectStore(collection.name, {
@@ -58,44 +50,37 @@ class BrainDatabase {
             };
         });
     }
-    
     async initBrainData() {
         // 检查是否已有数据
         const existingCases = await this.getAll('fix_cases');
         if (existingCases.length === 0) {
-            // 初始化修复案例
             await this.bulkAdd('fix_cases', this.getFixCases());
             console.log('📚 修复案例已导入脑库');
         }
-        
         const existingPractices = await this.getAll('best_practices');
         if (existingPractices.length === 0) {
             // 初始化最佳实践
             await this.bulkAdd('best_practices', this.getBestPractices());
             console.log('💡 最佳实践已导入脑库');
         }
-        
         const existingPatterns = await this.getAll('tech_patterns');
         if (existingPatterns.length === 0) {
             // 初始化技术模式
             await this.bulkAdd('tech_patterns', this.getTechPatterns());
             console.log('🔧 技术模式已导入脑库');
         }
-        
         const existingErrors = await this.getAll('error_solutions');
         if (existingErrors.length === 0) {
             // 初始化错误解决方案
             await this.bulkAdd('error_solutions', this.getErrorSolutions());
             console.log('❌ 错误解决方案已导入脑库');
         }
-        
         const existingArch = await this.getAll('architecture_docs');
         if (existingArch.length === 0) {
             // 初始化架构文档
             await this.bulkAdd('architecture_docs', this.getArchitectureDocs());
             console.log('📐 架构文档已导入脑库');
         }
-        
         const existingMaterials = await this.getAll('learning_materials');
         if (existingMaterials.length === 0) {
             // 初始化学习材料
@@ -103,21 +88,17 @@ class BrainDatabase {
             console.log('📖 学习材料已导入脑库');
         }
     }
-    
     // ==================== 基础操作 ====================
-    
     async add(collectionName, data) {
         return this.transaction(collectionName, 'readwrite', (store) => {
             return store.add(data);
         });
     }
-    
     async put(collectionName, data) {
         return this.transaction(collectionName, 'readwrite', (store) => {
             return store.put(data);
         });
     }
-    
     async bulkAdd(collectionName, dataArray) {
         return this.transaction(collectionName, 'readwrite', (store) => {
             const results = [];
@@ -127,50 +108,41 @@ class BrainDatabase {
             return results;
         });
     }
-    
     async get(collectionName, key) {
         return this.transaction(collectionName, 'readonly', (store) => {
             return store.get(key);
         });
     }
-    
     async getAll(collectionName) {
         return this.transaction(collectionName, 'readonly', (store) => {
             return store.getAll();
         });
     }
-    
     async delete(collectionName, key) {
         return this.transaction(collectionName, 'readwrite', (store) => {
             return store.delete(key);
         });
     }
-    
     async clear(collectionName) {
         return this.transaction(collectionName, 'readwrite', (store) => {
             return store.clear();
         });
     }
-    
     async search(collectionName, keyword) {
         const items = await this.getAll(collectionName);
         const lowerKeyword = keyword.toLowerCase();
-        
         return items.filter(item => {
             const searchText = JSON.stringify(item).toLowerCase();
             return searchText.includes(lowerKeyword);
         });
     }
-    
     async transaction(collectionName, mode, callback) {
         if (!this.db) {
             throw new Error('脑库数据库未初始化');
         }
-        
         return new Promise((resolve, reject) => {
             const transaction = this.db.transaction([collectionName], mode);
             const store = transaction.objectStore(collectionName);
-            
             try {
                 const request = callback(store);
                 request.onsuccess = () => resolve(request.result);
@@ -180,9 +152,7 @@ class BrainDatabase {
             }
         });
     }
-    
     // ==================== 脑库数据定义 ====================
-    
     getFixCases() {
         return [
             {
@@ -282,11 +252,9 @@ class BrainDatabase {
                         pattern: `async initializeModules() {
     // 第一阶段
     this.modules.database = new DatabaseManager();
-    
     // 第二阶段：延迟初始化
     setTimeout(() => this.initializeDependentModules(), 100);
 }
-
 async initializeDependentModules() {
     await this.modules.database.waitForReady();
     // 初始化依赖模块...
@@ -328,7 +296,6 @@ async initializeDependentModules() {
         this.initPromise = this.init();
         this.isReady = false;
     }
-    
     async init() {
         await this.dep.waitForReady();
         // ... 初始化逻辑
@@ -336,7 +303,6 @@ async initializeDependentModules() {
         return true;
     }
 }
-
 // 使用
 const module = new Module(dep);
 await module.initPromise;`
@@ -373,7 +339,7 @@ await module.initPromise;`
                         '清除浏览器缓存重试'
                     ],
                     commands: {
-                        server: 'curl -I http://localhost:8888/',
+                        server: 'curl -I http://${config.host}:${config.port}/',
                         syntax: 'node --check *.js',
                         cache: '强制刷新 Ctrl+Shift+R / Cmd+Shift+R'
                     }
@@ -390,7 +356,6 @@ await module.initPromise;`
             }
         ];
     }
-    
     getBestPractices() {
         return [
             {
@@ -458,7 +423,6 @@ SystemOrchestrator (编排)`
                         example: `// 正确做法
 // module-a.js
 class MyClass { }
-
 // module-b.js
 // 不重复定义，直接使用
 // import { MyClass } from './module-a.js'`
@@ -522,7 +486,6 @@ await step3();
             }
         ];
     }
-    
     getTechPatterns() {
         return [
             {
@@ -552,7 +515,6 @@ await step3();
         this.syncService = syncService;
     }
 }
-
 // 使用
 const dispatcher = new AIDispatcher(
     database,
@@ -575,7 +537,6 @@ const dispatcher = new AIDispatcher(
 document.dispatchEvent(
     new CustomEvent('mtscos:database:ready')
 );
-
 // 监听事件
 document.addEventListener(
     'mtscos:database:ready',
@@ -613,7 +574,6 @@ document.addEventListener(
             }
         ];
     }
-    
     getErrorSolutions() {
         return [
             {
@@ -681,7 +641,6 @@ document.addEventListener(
             }
         ];
     }
-    
     getArchitectureDocs() {
         return [
             {
@@ -727,7 +686,6 @@ document.addEventListener(
             }
         ];
     }
-    
     getLearningMaterials() {
         return [
             {
@@ -773,10 +731,8 @@ document.addEventListener(
                         code: `const db = await openDatabase('MyDB', 1, (db) => {
     db.createObjectStore('items', { keyPath: 'id' });
 });
-
 // 添加数据
 await db.add('items', { id: 1, name: 'item' });
-
 // 获取数据
 const item = await db.get('items', 1);`
                     }
@@ -799,41 +755,31 @@ const item = await db.get('items', 1);`
             }
         ];
     }
-    
     // ==================== 查询接口 ====================
-    
     async getFixCase(id) {
         return await this.get('fix_cases', id);
     }
-    
     async getAllFixCases() {
         return await this.getAll('fix_cases');
     }
-    
     async getBestPractice(id) {
         return await this.get('best_practices', id);
     }
-    
     async getAllBestPractices() {
         return await this.getAll('best_practices');
     }
-    
     async getTechPattern(id) {
         return await this.get('tech_patterns', id);
     }
-    
     async getAllTechPatterns() {
         return await this.getAll('tech_patterns');
     }
-    
     async getErrorSolution(id) {
         return await this.get('error_solutions', id);
     }
-    
     async getAllErrorSolutions() {
         return await this.getAll('error_solutions');
     }
-    
     async searchBrain(keyword) {
         const results = {
             fixCases: await this.search('fix_cases', keyword),
@@ -843,7 +789,6 @@ const item = await db.get('items', 1);`
             architectureDocs: await this.search('architecture_docs', keyword),
             learningMaterials: await this.search('learning_materials', keyword)
         };
-        
         // 合并并添加来源标识
         const merged = [
             ...results.fixCases.map(item => ({ ...item, collection: 'fix_cases' })),
@@ -853,12 +798,9 @@ const item = await db.get('items', 1);`
             ...results.architectureDocs.map(item => ({ ...item, collection: 'architecture_docs' })),
             ...results.learningMaterials.map(item => ({ ...item, collection: 'learning_materials' }))
         ];
-        
         return merged;
     }
-    
     // ==================== 导出接口 ====================
-    
     async exportBrain() {
         const data = {
             exportedAt: Date.now(),
@@ -870,13 +812,10 @@ const item = await db.get('items', 1);`
             architectureDocs: await this.getAll('architecture_docs'),
             learningMaterials: await this.getAll('learning_materials')
         };
-        
         // 保存到本地存储
         localStorage.setItem('mtscos_brain_backup', JSON.stringify(data));
-        
         return data;
     }
-    
     async getStats() {
         return {
             totalItems: {
@@ -893,9 +832,7 @@ const item = await db.get('items', 1);`
             lastUpdated: Date.now()
         };
     }
-    
     // ==================== 健康检查 ====================
-    
     async healthCheck() {
         return {
             status: this.isReady ? 'ok' : 'error',
@@ -905,7 +842,6 @@ const item = await db.get('items', 1);`
         };
     }
 }
-
 // 导出模块
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = BrainDatabase;

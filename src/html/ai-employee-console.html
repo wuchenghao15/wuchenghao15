@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="MTSCOS AI 员工管理控制台 - 5.0.0智能系统优化版">
+    <title>AI员工管理控制台 - MTSCOS AI</title>
+
+    <link rel="stylesheet" href="assets/css/common_styles/modern-color-scheme.css">
+    <link rel="stylesheet" href="assets/css/common_styles/modern-forms.css">
+    <link rel="stylesheet" href="assets/css/common_styles/theme-system.css">
+    <link rel="stylesheet" href="assets/css/common_styles/fonts.css">
+    <link rel="stylesheet" href="assets/css/common_styles/responsive.css">
+    <link rel="stylesheet" href="assets/css/page_styles/main.css">
+    <link rel="stylesheet" href="assets/css/component_styles/footer.css">
+
+    <link href="/assets/vendor/tailwind/tailwind.min.css" rel="stylesheet">
+    <link href="/assets/vendor/fontawesome/css/all.min.css" rel="stylesheet">
+
+    <style>
+        body { background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); min-height: 100vh; }
+        .ai-employee-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .ai-employee-card:hover { transform: translateY(-8px); box-shadow: 0 20px 40px rgba(0,0,0,0.15); }
+        .status-pulse { animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .metric-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .gradient-blue { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+        .gradient-green { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+        .gradient-purple { background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); }
+        .gradient-red { background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%); }
+        .gradient-orange { background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); }
+        .nav-tab { transition: all 0.2s; cursor: pointer; }
+        .nav-tab.active { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .loading-spinner { border: 4px solid #f3f3f3; border-top: 4px solid #667eea; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .alert-badge { animation: blink 1.5s infinite; }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+    </style>
+</head>
+<body>
+    <!-- 顶部导航 -->
+    <header class="bg-white shadow-md fixed w-full top-0 z-50">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-robot text-white text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-gray-800">MTSCOS AI 员工管理控制台</h1>
+                    <p class="text-xs text-gray-500">版本 5.0.0 智能系统优化版</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div class="flex items-center space-x-2">
+                    <span class="w-2 h-2 bg-green-500 rounded-full status-pulse"></span>
+                    <span class="text-sm text-gray-600">系统运行中</span>
+                </div>
+                <a href="index.html" class="text-sm text-indigo-600 hover:text-indigo-800">
+                    <i class="fas fa-home"></i> 返回首页
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主内容 -->
+    <main class="container mx-auto px-4 pt-20 pb-12">
+        <!-- 系统概览统计 -->
+        <section class="mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">
+                <i class="fas fa-chart-line text-indigo-600"></i> 系统概览
+            </h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                <div class="bg-white rounded-xl shadow-md p-4 text-center">
+                    <div class="text-3xl font-bold text-indigo-600" id="stat-ai-employees">5</div>
+                    <div class="text-sm text-gray-600 mt-1">AI员工</div>
+                </div>
+                <div class="bg-white rounded-xl shadow-md p-4 text-center">
+                    <div class="text-3xl font-bold text-green-600" id="stat-features">13</div>
+                    <div class="text-sm text-gray-600 mt-1">系统功能</div>
+                </div>
+                <div class="bg-white rounded-xl shadow-md p-4 text-center">
+                    <div class="text-3xl font-bold text-purple-600" id="stat-tables">55</div>
+                    <div class="text-sm text-gray-600 mt-1">数据库表</div>
+                </div>
+                <div class="bg-white rounded-xl shadow-md p-4 text-center">
+                    <div class="text-3xl font-bold text-orange-600" id="stat-questions">122500</div>
+                    <div class="text-sm text-gray-600 mt-1">题目总数</div>
+                </div>
+                <div class="bg-white rounded-xl shadow-md p-4 text-center">
+                    <div class="text-3xl font-bold text-red-600" id="stat-alerts">0</div>
+                    <div class="text-sm text-gray-600 mt-1">待处理警报</div>
+                </div>
+                <div class="bg-white rounded-xl shadow-md p-4 text-center">
+                    <div class="text-3xl font-bold text-blue-600" id="stat-uptime">99.9%</div>
+                    <div class="text-sm text-gray-600 mt-1">系统可用率</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 标签导航 -->
+        <section class="mb-6">
+            <div class="bg-white rounded-xl shadow-md p-2 flex flex-wrap gap-2">
+                <button class="nav-tab active px-4 py-2 rounded-lg font-medium" data-tab="employees">
+                    <i class="fas fa-users mr-1"></i> AI员工
+                </button>
+                <button class="nav-tab px-4 py-2 rounded-lg font-medium text-gray-700 hover:bg-gray-100" data-tab="monitor">
+                    <i class="fas fa-monitor-heartrate mr-1"></i> 实时监控
+                </button>
+                <button class="nav-tab px-4 py-2 rounded-lg font-medium text-gray-700 hover:bg-gray-100" data-tab="alerts">
+                    <i class="fas fa-bell mr-1"></i> 警报中心
+                </button>
+                <button class="nav-tab px-4 py-2 rounded-lg font-medium text-gray-700 hover:bg-gray-100" data-tab="optimize">
+                    <i class="fas fa-rocket mr-1"></i> 系统优化
+                </button>
+                <button class="nav-tab px-4 py-2 rounded-lg font-medium text-gray-700 hover:bg-gray-100" data-tab="features">
+                    <i class="fas fa-puzzle-piece mr-1"></i> 功能拓展
+                </button>
+            </div>
+        </section>
+
+        <!-- AI员工列表 -->
+        <section id="tab-employees" class="tab-content">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="employees-grid">
+                <!-- 客户端监控员 -->
+                <div class="ai-employee-card bg-white rounded-xl shadow-md overflow-hidden">
+                    <div class="gradient-blue p-4">
+                        <div class="flex justify-between items-start">
+                            <div class="w-12 h-12 bg-white bg-opacity-30 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-users text-white text-2xl"></i>
+                            </div>
+                            <span class="px-2 py-1 bg-green-500 text-white text-xs rounded-full status-pulse">运行中</span>
+                        </div>
+                    </div>
+                    <div class="p-5">
+                        <h3 class="text-lg font-bold text-gray-800">客户端监控员</h3>
+                        <p class="text-sm text-gray-500 mt-1">远程客户端接入监控专家</p>
+                        <div class="mt-3 text-xs text-gray-600">
+                            <div class="flex justify-between py-1">
+                                <span>员工ID</span>
+                                <span class="font-mono">emp_monitor_client_access</span>
+                            </div>
+                            <div class="flex justify-between py-1">
+                                <span>类别</span>
+                                <span class="text-blue-600 font-medium">安全监控</span>
+                            </div>
+                            <div class="flex justify-between py-1">
+                                <span>效率</span>
+                                <span class="text-green-600 font-bold">100%</span>
+                            </div>
+                        </div>
+                        <div class="mt-4 flex space-x-2">
+                            <a href="/api/monitor/stats" target="_blank" class="flex-1 text-center px-3 py-2 bg-blue-50 text-blue-600 rounded-lg text-sm hover:bg-blue-100">
+                                <i class="fas fa-chart-bar"></i> 统计
+                            </a>
+                            <a href="/api/monitor/anomalies" target="_blank" class="flex-1 text-center px-3 py-2 bg-blue-50 text-blue-600 rounded-lg text-sm hover:bg-blue-100">
+                                <i class="fas fa-list"></i> 异常
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 代码修复员 -->
+                <div class="ai-employee-card bg-white rounded-xl shadow-md overflow-hidden">
+                    <div class="gradient-green p-4">
+                        <div class="flex justify-between items-start">
+                            <div class="w-12 h-12 bg-white bg-opacity-30 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-code text-white text-2xl"></i>
+                            </div>
+                            <span class="px-2 py-1 bg-green-500 text-white text-xs rounded-full status-pulse">运行中</span>
+                        </div>
+                    </div>
+                    <div class="p-5">
+                        <h3 class="text-lg font-bold text-gray-800">代码修复员</h3>
+                        <p class="text-sm text-gray-500 mt-1">系统代码自动修复专家</p>
+                        <div class="mt-3 text-xs text-gray-600">
+                            <div class="flex justify-between py-1">
+                                <span>员工ID</span>
+                                <span class="font-mono">emp_code_repair_ai</span>
+                            </div>
+                            <div class="flex justify-between py-1">
+                                <span>类别</span>
+                                <span class="text-green-600 font-medium">开发运维</span>
+                            </div>
+                            <div class="flex justify-between py-1">
+                                <span>效率</span>
+                                <span class="text-green-600 font-bold">95%</span>
+                            </div>
+                        </div>
+                        <div class="mt-4 flex space-x-2">
+                            <a href="/api/repair/stats" target="_blank" class="flex-1 text-center px-3 py-2 bg-green-50 text-green-600 rounded-lg text-sm hover:bg-green-100">
+                                <i class="fas fa-chart-bar"></i> 统计
+                            </a>
+                            <a href="/api/repair/errors" target="_blank" class="flex-1 text-center px-3 py-2 bg-green-50 text-green-600 rounded-lg text-sm hover:bg-green-100">
+                                <i class="fas fa-bug"></i> 错误
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 端口监控员 -->
+                <div class="ai-employee-card bg-white rounded-xl shadow-md overflow-hidden">
+                    <div class="gradient-purple p-4">
+                        <div class="flex justify-between items-start">
+                            <div class="w-12 h-12 bg-white bg-opacity-30 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-network-wired text-white text-2xl"></i>
+                            </div>
+                            <span class="px-2 py-1 bg-green-500 text-white text-xs rounded-full status-pulse">运行中</span>
+                        </div>
+                    </div>
+                    <div class="p-5">
+                        <h3 class="text-lg font-bold text-gray-800">端口监控员</h3>
+                        <p class="text-sm text-gray-500 mt-1">系统端口异常监控与修复专家</p>
+                        <div class="mt-3 text-xs text-gray-600">
+                            <div class="flex justify-between py-1">
+                                <span>员工ID</span>
+                                <span class="font-mono">emp_port_monitor_ai</span>
+                            </div>
+                            <div class="flex justify-between py-1">
+                                <span>类别</span>
+                                <span class="text-purple-600 font-medium">系统运维</span>
+                            </div>
+                            <div class="flex justify-between py-1">
+                                <span>效率</span>
+                                <span class="text-green-600 font-bold">98%</span>
+                            </div>
+                        </div>
+                        <div class="mt-4 flex space-x-2">
+                            <a href="/api/port-monitor/stats" target="_blank" class="flex-1 text-center px-3 py-2 bg-purple-50 text-purple-600 rounded-lg text-sm hover:bg-purple-100">
+                                <i class="fas fa-chart-bar"></i> 统计
+                            </a>
+                            <a href="/api/port-monitor/status" target="_blank" class="flex-1 text-center px-3 py-2 bg-purple-50 text-purple-600 rounded-lg text-sm hover:bg-purple-100">
+                                <i class="fas fa-plug"></i> 状态
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 行为监控员 -->
+                <div class="ai-employee-card bg-white rounded-xl shadow-md overflow-hidden">
+                    <div class="gradient-red p-4">
+                        <div class="flex justify-between items-start">
+                            <div class="w-12 h-12 bg-white bg-opacity-30 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-user-shield text-white text-2xl"></i>
+                            </div>
+                            <span class="px-2 py-1 bg-green-500 text-white text-xs rounded-full status-pulse">运行中</span>
+                        </div>
+                    </div>
+                    <div class="p-5">
+                        <h3 class="text-lg font-bold text-gray-800">行为监控员</h3>
+                        <p class="text-sm text-gray-500 mt-1">用户行为记录与异常警报专家</p>
+                        <div class="mt-3 text-xs text-gray-600">
+                            <div class="flex justify-between py-1">
+                                <span>员工ID</span>
+                                <span class="font-mono">emp_behavior_monitor_ai</span>
+                            </div>
+                            <div class="flex justify-between py-1">
+                                <span>类别</span>
+                                <span class="text-red-600 font-medium">安全监控</span>
+                            </div>
+                            <div class="flex justify-between py-1">
+                                <span>效率</span>
+                                <span class="text-green-600 font-bold">97%</span>
+                            </div>
+                        </div>
+                        <div class="mt-4 flex space-x-2">
+                            <a href="/api/behavior/stats" target="_blank" class="flex-1 text-center px-3 py-2 bg-red-50 text-red-600 rounded-lg text-sm hover:bg-red-100">
+                                <i class="fas fa-chart-bar"></i> 统计
+                            </a>
+                            <a href="/api/behavior/alerts" target="_blank" class="flex-1 text-center px-3 py-2 bg-red-50 text-red-600 rounded-lg text-sm hover:bg-red-100">
+                                <i class="fas fa-exclamation-triangle"></i> 警报
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 系统优化员 -->
+                <div class="ai-employee-card bg-white rounded-xl shadow-md overflow-hidden">
+                    <div class="gradient-orange p-4">
+                        <div class="flex justify-between items-start">
+                            <div class="w-12 h-12 bg-white bg-opacity-30 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-rocket text-white text-2xl"></i>
+                            </div>
+                            <span class="px-2 py-1 bg-green-500 text-white text-xs rounded-full status-pulse">运行中</span>
+                        </div>
+                    </div>
+                    <div class="p-5">
+                        <h3 class="text-lg font-bold text-gray-800">系统优化员</h3>
+                        <p class="text-sm text-gray-500 mt-1">系统自动优化与功能拓展专家</p>
+                        <div class="mt-3 text-xs text-gray-600">
+                            <div class="flex justify-between py-1">
+                                <span>员工ID</span>
+                                <span class="font-mono">emp_system_optimizer_ai</span>
+                            </div>
+                            <div class="flex justify-between py-1">
+                                <span>类别</span>
+                                <span class="text-orange-600 font-medium">开发运维</span>
+                            </div>
+                            <div class="flex justify-between py-1">
+                                <span>效率</span>
+                                <span class="text-green-600 font-bold">99%</span>
+                            </div>
+                        </div>
+                        <div class="mt-4 flex space-x-2">
+                            <a href="/api/optimizer/version" target="_blank" class="flex-1 text-center px-3 py-2 bg-orange-50 text-orange-600 rounded-lg text-sm hover:bg-orange-100">
+                                <i class="fas fa-code-branch"></i> 版本
+                            </a>
+                            <a href="/api/optimizer/history" target="_blank" class="flex-1 text-center px-3 py-2 bg-orange-50 text-orange-600 rounded-lg text-sm hover:bg-orange-100">
+                                <i class="fas fa-history"></i> 历史
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 实时监控 -->
+        <section id="tab-monitor" class="tab-content hidden">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">
+                        <i class="fas fa-server text-blue-600"></i> 系统服务状态
+                    </h3>
+                    <div id="service-status-list" class="space-y-3">
+                        <div class="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+                            <span>Flask HTTP</span>
+                            <span class="px-2 py-1 bg-green-500 text-white text-xs rounded">运行中</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+                            <span>Flask HTTPS</span>
+                            <span class="px-2 py-1 bg-green-500 text-white text-xs rounded">运行中</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+                            <span>SQLite数据库</span>
+                            <span class="px-2 py-1 bg-green-500 text-white text-xs rounded">正常</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
+                            <span>SSL/TLS</span>
+                            <span class="px-2 py-1 bg-blue-500 text-white text-xs rounded">已启用</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">
+                        <i class="fas fa-plug text-purple-600"></i> 端口监控
+                    </h3>
+                    <div id="port-monitor-list" class="space-y-3">
+                        <div class="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+                            <span>8888 (HTTP)</span>
+                            <span class="px-2 py-1 bg-green-500 text-white text-xs rounded">运行中</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+                            <span>8443 (HTTPS)</span>
+                            <span class="px-2 py-1 bg-green-500 text-white text-xs rounded">运行中</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">
+                        <i class="fas fa-users text-blue-600"></i> 客户端监控
+                    </h3>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="text-center p-3 bg-blue-50 rounded-lg">
+                            <div class="text-2xl font-bold text-blue-600" id="monitor-total">0</div>
+                            <div class="text-xs text-gray-600">总请求数</div>
+                        </div>
+                        <div class="text-center p-3 bg-blue-50 rounded-lg">
+                            <div class="text-2xl font-bold text-blue-600" id="monitor-unique">0</div>
+                            <div class="text-xs text-gray-600">独立客户端</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">
+                        <i class="fas fa-chart-line text-green-600"></i> 用户行为
+                    </h3>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="text-center p-3 bg-green-50 rounded-lg">
+                            <div class="text-2xl font-bold text-green-600" id="behavior-actions">0</div>
+                            <div class="text-xs text-gray-600">24h操作数</div>
+                        </div>
+                        <div class="text-center p-3 bg-green-50 rounded-lg">
+                            <div class="text-2xl font-bold text-green-600" id="behavior-users">0</div>
+                            <div class="text-xs text-gray-600">独立用户</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 警报中心 -->
+        <section id="tab-alerts" class="tab-content hidden">
+            <div class="bg-white rounded-xl shadow-md p-6">
+                <h3 class="text-lg font-bold text-gray-800 mb-4">
+                    <i class="fas fa-bell text-red-600"></i> 警报中心
+                </h3>
+                <div id="alerts-list" class="space-y-3">
+                    <div class="p-4 bg-green-50 border-l-4 border-green-500 rounded-lg">
+                        <div class="flex justify-between">
+                            <div>
+                                <div class="font-medium text-green-800">系统运行正常</div>
+                                <div class="text-sm text-gray-600">所有服务运行正常，无异常警报</div>
+                            </div>
+                            <span class="px-2 py-1 bg-green-500 text-white text-xs rounded">正常</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 系统优化 -->
+        <section id="tab-optimize" class="tab-content hidden">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">
+                        <i class="fas fa-bolt text-yellow-500"></i> 一键优化
+                    </h3>
+                    <div class="space-y-3">
+                        <button id="btn-optimize-all" class="w-full py-3 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-lg font-medium hover:opacity-90">
+                            <i class="fas fa-magic"></i> 运行自动优化（数据库+性能+安全）
+                        </button>
+                        <button id="btn-version-info" class="w-full py-3 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600">
+                            <i class="fas fa-info-circle"></i> 查看当前版本
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">
+                        <i class="fas fa-code-branch text-green-600"></i> 版本信息
+                    </h3>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between p-2 bg-gray-50 rounded">
+                            <span>当前版本</span>
+                            <span class="font-bold text-indigo-600" id="version-current">5.0.0</span>
+                        </div>
+                        <div class="flex justify-between p-2 bg-gray-50 rounded">
+                            <span>开发代号</span>
+                            <span class="font-medium text-purple-600">智能系统优化版</span>
+                        </div>
+                        <div class="flex justify-between p-2 bg-gray-50 rounded">
+                            <span>构建日期</span>
+                            <span class="font-medium">2026.06.23</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 功能拓展 -->
+        <section id="tab-features" class="tab-content hidden">
+            <div class="bg-white rounded-xl shadow-md p-6">
+                <h3 class="text-lg font-bold text-gray-800 mb-4">
+                    <i class="fas fa-puzzle-piece text-indigo-600"></i> 计划中的新功能
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3" id="planned-features-grid">
+                    <div class="p-3 border-l-4 border-red-500 bg-red-50 rounded">
+                        <div class="font-medium text-sm">智能数据分析报表</div>
+                        <div class="text-xs text-gray-500">P1优先级</div>
+                    </div>
+                    <div class="p-3 border-l-4 border-red-500 bg-red-50 rounded">
+                        <div class="font-medium text-sm">实时通知推送系统</div>
+                        <div class="text-xs text-gray-500">P1优先级</div>
+                    </div>
+                    <div class="p-3 border-l-4 border-red-500 bg-red-50 rounded">
+                        <div class="font-medium text-sm">性能监控仪表盘</div>
+                        <div class="text-xs text-gray-500">P1优先级</div>
+                    </div>
+                    <div class="p-3 border-l-4 border-red-500 bg-red-50 rounded">
+                        <div class="font-medium text-sm">缓存优化系统</div>
+                        <div class="text-xs text-gray-500">P1优先级</div>
+                    </div>
+                    <div class="p-3 border-l-4 border-red-500 bg-red-50 rounded">
+                        <div class="font-medium text-sm">备份恢复系统</div>
+                        <div class="text-xs text-gray-500">P1优先级</div>
+                    </div>
+                    <div class="p-3 border-l-4 border-red-500 bg-red-50 rounded">
+                        <div class="font-medium text-sm">权限细粒度控制</div>
+                        <div class="text-xs text-gray-500">P1优先级</div>
+                    </div>
+                    <div class="p-3 border-l-4 border-red-500 bg-red-50 rounded">
+                        <div class="font-medium text-sm">数据加密存储</div>
+                        <div class="text-xs text-gray-500">P1优先级</div>
+                    </div>
+                    <div class="p-3 border-l-4 border-red-500 bg-red-50 rounded">
+                        <div class="font-medium text-sm">智能搜索系统</div>
+                        <div class="text-xs text-gray-500">P1优先级</div>
+                    </div>
+                    <div class="p-3 border-l-4 border-yellow-500 bg-yellow-50 rounded">
+                        <div class="font-medium text-sm">多语言国际化支持</div>
+                        <div class="text-xs text-gray-500">P2优先级</div>
+                    </div>
+                    <div class="p-3 border-l-4 border-yellow-500 bg-yellow-50 rounded">
+                        <div class="font-medium text-sm">API文档自动生成</div>
+                        <div class="text-xs text-gray-500">P2优先级</div>
+                    </div>
+                    <div class="p-3 border-l-4 border-yellow-500 bg-yellow-50 rounded">
+                        <div class="font-medium text-sm">自动化测试框架</div>
+                        <div class="text-xs text-gray-500">P2优先级</div>
+                    </div>
+                    <div class="p-3 border-l-4 border-yellow-500 bg-yellow-50 rounded">
+                        <div class="font-medium text-sm">日志分析系统</div>
+                        <div class="text-xs text-gray-500">P2优先级</div>
+                    </div>
+                    <div class="p-3 border-l-4 border-yellow-500 bg-yellow-50 rounded">
+                        <div class="font-medium text-sm">移动端适配</div>
+                        <div class="text-xs text-gray-500">P2优先级</div>
+                    </div>
+                    <div class="p-3 border-l-4 border-yellow-500 bg-yellow-50 rounded">
+                        <div class="font-medium text-sm">数据导入导出</div>
+                        <div class="text-xs text-gray-500">P2优先级</div>
+                    </div>
+                    <div class="p-3 border-l-4 border-yellow-500 bg-yellow-50 rounded">
+                        <div class="font-medium text-sm">工作流引擎</div>
+                        <div class="text-xs text-gray-500">P2优先级</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 结果弹窗 -->
+    <div id="result-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+        <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full mx-4 max-h-96 overflow-auto">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-bold text-gray-800" id="modal-title">结果</h3>
+                    <button id="modal-close" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <pre id="modal-content" class="bg-gray-50 p-4 rounded text-xs overflow-auto max-h-64"></pre>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.protocol + '//' + window.location.host;
+
+        // 标签切换
+        document.querySelectorAll('.nav-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.nav-tab').forEach(t => {
+                    t.classList.remove('active');
+                    t.classList.add('text-gray-700', 'hover:bg-gray-100');
+                });
+                tab.classList.add('active');
+                tab.classList.remove('text-gray-700', 'hover:bg-gray-100');
+
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+                document.getElementById('tab-' + tab.dataset.tab).classList.remove('hidden');
+            });
+        });
+
+        // 弹窗
+        function showModal(title, content) {
+            document.getElementById('modal-title').textContent = title;
+            document.getElementById('modal-content').textContent = JSON.stringify(content, null, 2);
+            document.getElementById('result-modal').classList.remove('hidden');
+        }
+        document.getElementById('modal-close').addEventListener('click', () => {
+            document.getElementById('result-modal').classList.add('hidden');
+        });
+
+        // 加载统计数据
+        async function loadStats() {
+            try {
+                // 客户端监控
+                const monitorRes = await fetch(API_BASE + '/api/monitor/stats');
+                const monitor = await monitorRes.json();
+                if (monitor.data) {
+                    document.getElementById('monitor-total').textContent = monitor.data.total_requests || 0;
+                    document.getElementById('monitor-unique').textContent = monitor.data.unique_clients || 0;
+                }
+
+                // 行为监控
+                const behaviorRes = await fetch(API_BASE + '/api/behavior/stats');
+                const behavior = await behaviorRes.json();
+                if (behavior.data) {
+                    document.getElementById('behavior-actions').textContent = behavior.data.total_actions || 0;
+                    document.getElementById('behavior-users').textContent = behavior.data.unique_users || 0;
+                    document.getElementById('stat-alerts').textContent = behavior.data.pending_alerts || 0;
+                }
+
+                // 端口监控
+                const portRes = await fetch(API_BASE + '/api/port-monitor/stats');
+                const port = await portRes.json();
+                if (port.data) {
+                    document.getElementById('port-monitor-list').innerHTML = `
+                        <div class="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+                            <span>运行中端口</span>
+                            <span class="px-2 py-1 bg-green-500 text-white text-xs rounded">${port.data.running_ports || 0}</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-red-50 rounded-lg">
+                            <span>停止端口</span>
+                            <span class="px-2 py-1 bg-red-500 text-white text-xs rounded">${port.data.stopped_ports || 0}</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
+                            <span>总修复次数</span>
+                            <span class="px-2 py-1 bg-blue-500 text-white text-xs rounded">${port.data.total_fixes || 0}</span>
+                        </div>
+                    `;
+                }
+            } catch (e) {
+                console.error('加载统计失败:', e);
+            }
+        }
+
+        // 加载警报
+        async function loadAlerts() {
+            try {
+                const res = await fetch(API_BASE + '/api/behavior/alerts?limit=10');
+                const data = await res.json();
+                const list = document.getElementById('alerts-list');
+                if (data.data && data.data.length > 0) {
+                    list.innerHTML = data.data.map(a => `
+                        <div class="p-4 bg-${a.alert_level === 'high' ? 'red' : 'yellow'}-50 border-l-4 border-${a.alert_level === 'high' ? 'red' : 'yellow'}-500 rounded-lg">
+                            <div class="flex justify-between">
+                                <div>
+                                    <div class="font-medium">${a.alert_message || a.behavior_pattern}</div>
+                                    <div class="text-sm text-gray-600">IP: ${a.ip_address} | 类型: ${a.alert_type}</div>
+                                </div>
+                                <span class="px-2 py-1 bg-${a.alert_level === 'high' ? 'red' : 'yellow'}-500 text-white text-xs rounded">${a.alert_level}</span>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    list.innerHTML = '<div class="p-4 bg-green-50 border-l-4 border-green-500 rounded-lg"><div class="font-medium text-green-800">系统运行正常</div><div class="text-sm text-gray-600">所有服务运行正常，无异常警报</div></div>';
+                }
+            } catch (e) {
+                console.error('加载警报失败:', e);
+            }
+        }
+
+        // 加载版本
+        async function loadVersion() {
+            try {
+                const res = await fetch(API_BASE + '/api/optimizer/version');
+                const data = await res.json();
+                if (data.data && data.data.version) {
+                    document.getElementById('version-current').textContent = data.data.version;
+                }
+            } catch (e) {
+                console.error('加载版本失败:', e);
+            }
+        }
+
+        // 按钮事件
+        document.getElementById('btn-optimize-all').addEventListener('click', async () => {
+            try {
+                const res = await fetch(API_BASE + '/api/optimizer/optimize', { method: 'POST' });
+                const data = await res.json();
+                showModal('自动优化结果', data);
+                loadStats();
+            } catch (e) {
+                showModal('优化失败', { error: e.message });
+            }
+        });
+
+        document.getElementById('btn-version-info').addEventListener('click', async () => {
+            try {
+                const res = await fetch(API_BASE + '/api/optimizer/version');
+                const data = await res.json();
+                showModal('当前版本', data);
+            } catch (e) {
+                showModal('获取失败', { error: e.message });
+            }
+        });
+
+        // 定时刷新
+        loadStats();
+        loadAlerts();
+        loadVersion();
+        setInterval(() => {
+            loadStats();
+            loadAlerts();
+        }, 30000);
+    </script>
+</body>
+</html>

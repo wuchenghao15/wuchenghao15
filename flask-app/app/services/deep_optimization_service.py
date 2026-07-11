@@ -1,3 +1,6 @@
+import logging
+logger = logging.getLogger(__name__)
+
 # -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
@@ -727,7 +730,7 @@ class DeepOptimizationService:
         print("全面深度优化完成!")
         print(f"耗时: {elapsed:.2f} 秒")
         print(f"完成任务: {len(completed)}/{len(tasks)}")
-        print("=" * 60)
+        logger.info("=" * 60)
         
         return report
 

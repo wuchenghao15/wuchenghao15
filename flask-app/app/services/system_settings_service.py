@@ -1,3 +1,6 @@
+import logging
+logger = logging.getLogger(__name__)
+
 # -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
@@ -520,4 +523,4 @@ if __name__ == '__main__':
     print(f"   当前版本: {dashboard_data['stats']['current_version']}")
     print(f"   版本总数: {dashboard_data['stats']['total_versions']}")
     
-    print("\n == 测试完成 ===")
+    logger.info("\n == 测试完成 ===")

@@ -686,4 +686,4 @@ if __name__ == "__main__":
     # 测试完成测试
     print("\n完成测试...")
     report = service.complete_test(test['test_id'])
-    print(f"评估报告:\n{json.dumps(report, ensure_ascii=False, indent=2)}")
+    logger.info(f"评估报告:\n{json.dumps(report, ensure_ascii=False, indent=2)}")

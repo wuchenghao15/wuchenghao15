@@ -1,8 +1,6 @@
-
 // 兼容性检查和回退方案
 (function() {
     'use strict';
-    
     // 检查Array.includes支持
     if (!Array.prototype.includes) {
         Array.prototype.includes = function(searchElement, fromIndex) {
@@ -16,11 +14,9 @@
         };
     }
 })();
-
 // 兼容性检查和回退方案
 (function() {
     'use strict';
-    
     // 检查Array.includes支持
     if (!Array.prototype.includes) {
         Array.prototype.includes = function(searchElement, fromIndex) {
@@ -34,11 +30,9 @@
         };
     }
 })();
-
 // 兼容性检查和回退方案
 (function() {
     'use strict';
-    
     // 检查Array.includes支持
     if (!Array.prototype.includes) {
         Array.prototype.includes = function(searchElement, fromIndex) {
@@ -52,11 +46,9 @@
         };
     }
 })();
-
 // 兼容性检查和回退方案
 (function() {
     'use strict';
-    
     // 检查Array.includes支持
     if (!Array.prototype.includes) {
         Array.prototype.includes = function(searchElement, fromIndex) {
@@ -70,11 +62,9 @@
         };
     }
 })();
-
 // 兼容性检查和回退方案
 (function() {
     'use strict';
-    
     // 检查Array.includes支持
     if (!Array.prototype.includes) {
         Array.prototype.includes = function(searchElement, fromIndex) {
@@ -88,11 +78,9 @@
         };
     }
 })();
-
 // 兼容性检查和回退方案
 (function() {
     'use strict';
-    
     // 检查Array.includes支持
     if (!Array.prototype.includes) {
         Array.prototype.includes = function(searchElement, fromIndex) {
@@ -106,11 +94,9 @@
         };
     }
 })();
-
 // 兼容性检查和回退方案
 (function() {
     'use strict';
-    
     // 检查Array.includes支持
     if (!Array.prototype.includes) {
         Array.prototype.includes = function(searchElement, fromIndex) {
@@ -124,29 +110,23 @@
         };
     }
 })();
-
         // 用户操作记录（内存存储）
         let userActions = [];
-
         // 初始化页面
         document.addEventListener('DOMContentLoaded', function() {
             // 初始化选项卡
             initTabs();
-            
             // 加载数据
             loadSystemStats();
             loadUsers();
             loadAISettings();
-            
             // 设置AI提示
             updateAIPrompt();
-            
             // 监听风险阈值变化
             document.getElementById('aiRiskThreshold').addEventListener('input', function() {
                 document.getElementById('riskThresholdValue').textContent = this.value;
             });
         });
-
         // 初始化选项卡
         function initTabs() {
             const tabs = document.querySelectorAll('.tab');
@@ -155,7 +135,6 @@
                     // 移除所有活动状态
                     tabs.forEach(t => t.classList.remove('active'));
                     document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-                    
                     // 添加当前活动状态
                     this.classList.add('active');
                     const tabId = this.getAttribute('data-tab');
@@ -163,21 +142,17 @@
                 });
             });
         }
-
         // 更新AI提示
         function updateAIPrompt() {
             // 从localStorage获取设置
             const aiSettings = JSON.parse(localStorage.getItem('aiSettings') || '{}');
             const enabled = aiSettings.enabled !== false;
             const message = aiSettings.message || 'AI正在管理此操作，将提供智能优化建议';
-            
             const aiPrompt = document.getElementById('aiPrompt');
             const aiPromptMessage = document.getElementById('aiPromptMessage');
-            
             aiPrompt.style.display = enabled ? 'block' : 'none';
             aiPromptMessage.textContent = message;
         }
-
         // 加载系统统计
         async function loadSystemStats() {
             try {
@@ -188,7 +163,6 @@
                     highRiskActions: Math.floor(Math.random() * 5),
                     aiOptimizedTasks: Math.floor(Math.random() * 15) + 5
                 };
-                
                 const container = document.getElementById('systemStats');
                 container.innerHTML = `
                     <div class="stat-item">
@@ -212,11 +186,14 @@
                 console.error('加载系统统计失败:', error);
             }
         }
-
         // 加载用户列表
         async function loadUsers() {
             try {
-                const response = await fetch('https://localhost:8080/api/users', { method: 'GET', mode: 'cors' });
+                // 从配置文件中获取端口和协议
+                const portConfig = JSON.parse(localStorage.getItem('portConfig') || '{}');
+                const port = portConfig.port || 8080;
+                const protocol = portConfig.protocol || 'http';
+                const response = await fetch(`${protocol}://localhost:${port}/api/users`, { method: 'GET', mode: 'cors' }); 
                 const data = await response.json();
                 if (data.success) {
                     const users = data.users;
@@ -259,12 +236,10 @@
                 `;
             }
         }
-
         // 刷新用户列表
         function refreshUsers() {
             loadUsers();
         }
-
         // 删除用户
         function deleteUser(username) {
             if (confirm(`确定要删除用户 ${username} 吗？`)) {
@@ -273,20 +248,16 @@
                 loadUsers();
             }
         }
-
         // 执行登录
         async function performLogin() {
             const username = document.getElementById('loginUsername').value;
             const password = document.getElementById('loginPassword').value;
             const resultDiv = document.getElementById('loginResult');
-            
             if (!username || !password) {
                 resultDiv.innerHTML = '<div style="background: #f8d7da; color: #721c24; padding: 15px; border-radius: 6px;">用户名和密码不能为空</div>';
                 return;
             }
-            
             resultDiv.innerHTML = '<div class="loading">正在登录...</div>';
-            
             try {
                 const response = await fetch('https://localhost:8080/api/auth/login', {
                     method: 'POST',
@@ -295,15 +266,12 @@
                     },
                     body: JSON.stringify({ username, password })
                 });
-                
                 const data = await response.json();
-                
                 let html = '';
                 if (data.success) {
                     html += '<div style="background: #d4edda; color: #155724; padding: 15px; border-radius: 6px;">';
                     html += `<h3>登录成功！</h3>`;
                     html += `<p>欢迎，${data.user.username}！</p>`;
-                    
                     // 添加AI增强信息
                     if (data.ai_enhancement) {
                         html += '<div style="margin-top: 10px;">';
@@ -313,10 +281,8 @@
                             let riskLevel = 'low';
                             if (riskScore > 0.7) riskLevel = 'high';
                             else if (riskScore > 0.4) riskLevel = 'medium';
-                            
                             html += `<p>风险评分：<span class="risk-score risk-${riskLevel}">${riskScore.toFixed(2)}</span></p>`;
                         }
-                        
                         if (data.ai_enhancement.suggestions && data.ai_enhancement.suggestions.length > 0) {
                             html += '<h4>AI建议：</h4>';
                             data.ai_enhancement.suggestions.forEach(suggestion => {
@@ -332,40 +298,32 @@
                     html += `<p>${data.message}</p>`;
                     html += '</div>';
                 }
-                
                 // 添加AI提示
                 if (data.ai_prompt) {
                     html += `<div class="ai-prompt">
                         <strong>AI提示：</strong> ${data.ai_prompt.message}
                     </div>`;
                 }
-                
                 resultDiv.innerHTML = html;
-                
                 // 记录操作
                 logUserAction(username, 'login', data.success, data);
                 refreshUserActions();
-                
             } catch (error) {
                 console.error('登录失败:', error);
                 resultDiv.innerHTML = '<div style="background: #f8d7da; color: #721c24; padding: 15px; border-radius: 6px;">登录失败，请检查网络连接</div>';
             }
         }
-
         // 执行注册
         async function performRegister() {
             const username = document.getElementById('registerUsername').value;
             const email = document.getElementById('registerEmail').value;
             const password = document.getElementById('registerPassword').value;
             const resultDiv = document.getElementById('registerResult');
-            
             if (!username || !email || !password) {
                 resultDiv.innerHTML = '<div style="background: #f8d7da; color: #721c24; padding: 15px; border-radius: 6px;">用户名、邮箱和密码不能为空</div>';
                 return;
             }
-            
             resultDiv.innerHTML = '<div class="loading">正在注册...</div>';
-            
             try {
                 const response = await fetch('https://localhost:8080/api/auth/register', {
                     method: 'POST',
@@ -374,15 +332,12 @@
                     },
                     body: JSON.stringify({ username, email, password })
                 });
-                
                 const data = await response.json();
-                
                 let html = '';
                 if (data.success) {
                     html += '<div style="background: #d4edda; color: #155724; padding: 15px; border-radius: 6px;">';
                     html += `<h3>注册成功！</h3>`;
                     html += `<p>${data.message}</p>`;
-                    
                     // 添加AI增强信息
                     if (data.ai_enhancement) {
                         html += '<div style="margin-top: 10px;">';
@@ -392,10 +347,8 @@
                             let riskLevel = 'low';
                             if (riskScore > 0.7) riskLevel = 'high';
                             else if (riskScore > 0.4) riskLevel = 'medium';
-                            
                             html += `<p>风险评分：<span class="risk-score risk-${riskLevel}">${riskScore.toFixed(2)}</span></p>`;
                         }
-                        
                         if (data.ai_enhancement.suggestions && data.ai_enhancement.suggestions.length > 0) {
                             html += '<h4>AI建议：</h4>';
                             data.ai_enhancement.suggestions.forEach(suggestion => {
@@ -409,7 +362,6 @@
                     html += '<div style="background: #f8d7da; color: #721c24; padding: 15px; border-radius: 6px;">';
                     html += `<h3>注册失败！</h3>`;
                     html += `<p>${data.message}</p>`;
-                    
                     // 添加AI增强信息
                     if (data.ai_enhancement) {
                         html += '<div style="margin-top: 10px;">';
@@ -419,10 +371,8 @@
                             let riskLevel = 'low';
                             if (riskScore > 0.7) riskLevel = 'high';
                             else if (riskScore > 0.4) riskLevel = 'medium';
-                            
                             html += `<p>风险评分：<span class="risk-score risk-${riskLevel}">${riskScore.toFixed(2)}</span></p>`;
                         }
-                        
                         if (data.ai_enhancement.aiSuggestions && data.ai_enhancement.aiSuggestions.length > 0) {
                             html += '<h4>AI建议：</h4>';
                             data.ai_enhancement.aiSuggestions.forEach(suggestion => {
@@ -433,26 +383,21 @@
                     }
                     html += '</div>';
                 }
-                
                 // 添加AI提示
                 if (data.ai_prompt) {
                     html += `<div class="ai-prompt">
                         <strong>AI提示：</strong> ${data.ai_prompt.message}
                     </div>`;
                 }
-                
                 resultDiv.innerHTML = html;
-                
                 // 记录操作
                 logUserAction(username, 'register', data.success, data);
                 refreshUserActions();
-                
             } catch (error) {
                 console.error('注册失败:', error);
                 resultDiv.innerHTML = '<div style="background: #f8d7da; color: #721c24; padding: 15px; border-radius: 6px;">注册失败，请检查网络连接</div>';
             }
         }
-
         // 记录用户操作
         function logUserAction(username, action, success, details = {}) {
             const actionLog = {
@@ -462,30 +407,23 @@
                 timestamp: new Date().toISOString(),
                 details
             };
-            
             userActions.unshift(actionLog);
-            
             // 限制最多保存100条记录
             if (userActions.length > 100) {
                 userActions = userActions.slice(0, 100);
             }
-            
             // 保存到localStorage
             localStorage.setItem('userActions', JSON.stringify(userActions));
-            
             // 更新显示
             updateUserActionsDisplay();
         }
-
         // 更新用户操作显示
         function updateUserActionsDisplay() {
             const container = document.getElementById('userActions');
-            
             if (userActions.length === 0) {
                 container.innerHTML = '<p style="text-align: center; color: #7f8c8d;">暂无用户操作记录</p>';
                 return;
             }
-            
             const html = userActions.map(action => {
                 const statusClass = action.success ? 'success' : 'error';
                 return `
@@ -499,10 +437,8 @@
                     </div>
                 `;
             }).join('');
-            
             container.innerHTML = html;
         }
-
         // 刷新用户操作记录
         function refreshUserActions() {
             // 从localStorage加载
@@ -512,7 +448,6 @@
             }
             updateUserActionsDisplay();
         }
-
         // 清除用户操作记录
         function clearUserActions() {
             if (confirm('确定要清除所有操作记录吗？')) {
@@ -521,17 +456,14 @@
                 updateUserActionsDisplay();
             }
         }
-
         // 加载AI设置
         function loadAISettings() {
             const aiSettings = JSON.parse(localStorage.getItem('aiSettings') || '{}');
-            
             document.getElementById('aiTakeoverEnabled').value = aiSettings.enabled !== false ? 'true' : 'false';
             document.getElementById('aiTakeoverMessage').value = aiSettings.message || 'AI正在管理此操作，将提供智能优化建议';
             document.getElementById('aiRiskThreshold').value = aiSettings.riskThreshold || 0.7;
             document.getElementById('riskThresholdValue').textContent = aiSettings.riskThreshold || 0.7;
         }
-
         // 保存AI设置
         function saveAISettings() {
             const aiSettings = {
@@ -539,12 +471,9 @@
                 message: document.getElementById('aiTakeoverMessage').value,
                 riskThreshold: parseFloat(document.getElementById('aiRiskThreshold').value)
             };
-            
             localStorage.setItem('aiSettings', JSON.stringify(aiSettings));
             updateAIPrompt();
             alert('AI设置已保存');
         }
-
         // 初始加载用户操作记录
         refreshUserActions();
-    

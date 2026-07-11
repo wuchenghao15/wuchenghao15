@@ -608,6 +608,9 @@ x = (-b + math.sqrt(delta)) / (2 * a)</textarea>
                         <button class="btn btn-success" onclick="autoFix()">
                             <!-- Icon fa-magic not found -->自动修复
                         </button>
+                        <button class="btn btn-danger" onclick="fixAllProblems()" id="fix-all-btn">
+                            <svg class="svg-icon" viewBox="0 0 512 512" width="16" height="16"><path d="M502.285 278.629l-174.488-174.487c-6.66-6.66-17.474-6.66-24.134 0l-76.521 76.521-16.764-16.764c-6.66-6.66-17.474-6.66-24.134 0L18.37 178.915c-6.66 6.66-6.66 17.474 0 24.134l76.521 76.521-76.521 76.521c-6.66 6.66-6.66 17.474 0 24.134l43.054 43.054c6.66 6.66 17.474 6.66 24.134 0l16.764-16.764 76.521 76.521c6.66 6.66 17.474 6.66 24.134 0l174.488-174.487c6.66-6.66 6.66-17.474 0-24.134zM256 354.629l-56-56 56-56 56 56-56 56z"/></svg>修复所有问题
+                        </button>
                         <button class="btn btn-secondary" onclick="clearCode()">
                             <!-- Icon fa-trash not found -->清空
                         </button>
@@ -852,6 +855,94 @@ x = (-b + math.sqrt(delta)) / (2 * a)</textarea>
         } catch (error) {
             document.getElementById('fixed-code').innerHTML = '<div class="empty-state"><svg class="svg-icon" viewBox="0 0 576 512" fill="#ffc107" width="16" height="16"><path d="M569.5 412L334.1 55c-11.7-19.5-42-19.5-53.7 0L6.5 412c-11.7 19.5 2.6 44 26.8 44h499.4c24.2 0 38.5-24.5 26.8-44zm-277-112c-13.3 0-24-10.7-24-24v-96c0-13.3 10.7-24 24-24s24 10.7 24 24v96c0 13.3-10.7 24-24 24zm0 160c-17.7 0-32-14.3-32-32s14.3-32 32-32 32 14.3 32 32-14.3 32-32 32z"/></svg><p>网络错误</p></div>';
         }
+    }
+
+    // 修复所有问题 - 强力修复模式
+    async function fixAllProblems() {
+        const code = document.getElementById('code-input').value;
+        const language = document.getElementById('language-select').value;
+        
+        if (!code.trim()) {
+            alert('请输入代码');
+            return;
+        }
+        
+        const btn = document.getElementById('fix-all-btn');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<svg class="svg-icon" viewBox="0 0 512 512" width="16" height="16" style="animation: spin 1s linear infinite;"><path d="M505 442.7L405.3 343c-4.5-4.5-10.6-7-17-7H372c27.6-35.3 44-79.7 44-128C416 93.1 322.9 0 208 0S0 93.1 0 208s93.1 208 208 208c48.3 0 92.7-16.4 128-44v16.3c0 6.4 2.5 12.5 7 17l99.7 99.7c9.4 9.4 24.6 9.4 33.9 0l28.3-28.3c9.4-9.4 9.4-24.6.1-34zM208 336c-70.7 0-128-57.3-128-128s57.3-128 128-128 128 57.3 128 128-57.3 128-128 128z"/></svg>修复中...';
+        btn.disabled = true;
+        
+        document.getElementById('fixed-code').innerHTML = '<div class="loading"><svg class="svg-icon" viewBox="0 0 512 512" width="32" height="32" style="animation: spin 1s linear infinite; display: block; margin: 0 auto;"><path d="M505 442.7L405.3 343c-4.5-4.5-10.6-7-17-7H372c27.6-35.3 44-79.7 44-128C416 93.1 322.9 0 208 0S0 93.1 0 208s93.1 208 208 208c48.3 0 92.7-16.4 128-44v16.3c0 6.4 2.5 12.5 7 17l99.7 99.7c9.4 9.4 24.6 9.4 33.9 0l28.3-28.3c9.4-9.4 9.4-24.6.1-34zM208 336c-70.7 0-128-57.3-128-128s57.3-128 128-128 128 57.3 128 128-57.3 128-128 128z"/></svg><p style="color: #666; margin-top: 20px;">正在强力修复所有问题...</p></div>';
+        
+        try {
+            const response = await fetch('/api/ai-employee/fix-all', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ code, language })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                currentFixedCode = result.data.fixed_code;
+                
+                // 更新代码输入框
+                document.getElementById('code-input').value = result.data.fixed_code;
+                
+                // 显示修复结果
+                displayFixResult(result.data);
+                
+                // 更新错误列表
+                currentErrors = result.data.errors;
+                displayErrors({
+                    errors: result.data.errors,
+                    total_errors: result.data.errors.length
+                });
+                
+                // 显示强力修复报告
+                if (result.data.repair_report) {
+                    showRepairReport(result.data.repair_report);
+                }
+                
+                alert(`强力修复完成！共检测 ${result.data.total_errors} 个问题，成功修复 ${result.data.fixed_count} 个`);
+            } else {
+                document.getElementById('fixed-code').innerHTML = '<div class="empty-state"><svg class="svg-icon" viewBox="0 0 576 512" fill="#ffc107" width="16" height="16"><path d="M569.5 412L334.1 55c-11.7-19.5-42-19.5-53.7 0L6.5 412c-11.7 19.5 2.6 44 26.8 44h499.4c24.2 0 38.5-24.5 26.8-44zm-277-112c-13.3 0-24-10.7-24-24v-96c0-13.3 10.7-24 24-24s24 10.7 24 24v96c0 13.3-10.7 24-24 24zm0 160c-17.7 0-32-14.3-32-32s14.3-32 32-32 32 14.3 32 32-14.3 32-32 32z"/></svg><p>修复失败: ' + result.error + '</p></div>';
+            }
+        } catch (error) {
+            document.getElementById('fixed-code').innerHTML = '<div class="empty-state"><svg class="svg-icon" viewBox="0 0 576 512" fill="#ffc107" width="16" height="16"><path d="M569.5 412L334.1 55c-11.7-19.5-42-19.5-53.7 0L6.5 412c-11.7 19.5 2.6 44 26.8 44h499.4c24.2 0 38.5-24.5 26.8-44zm-277-112c-13.3 0-24-10.7-24-24v-96c0-13.3 10.7-24 24-24s24 10.7 24 24v96c0 13.3-10.7 24-24 24zm0 160c-17.7 0-32-14.3-32-32s14.3-32 32-32 32 14.3 32 32-14.3 32-32 32z"/></svg><p>网络错误</p></div>';
+        } finally {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+    }
+
+    // 显示强力修复报告
+    function showRepairReport(report) {
+        const reportDiv = document.getElementById('fix-report');
+        if (!reportDiv) return;
+        
+        let html = '<h4 style="margin-bottom: 15px;"><svg class="svg-icon" viewBox="0 0 512 512" width="16" height="16"><path d="M505 442.7L405.3 343c-4.5-4.5-10.6-7-17-7H372c27.6-35.3 44-79.7 44-128C416 93.1 322.9 0 208 0S0 93.1 0 208s93.1 208 208 208c48.3 0 92.7-16.4 128-44v16.3c0 6.4 2.5 12.5 7 17l99.7 99.7c9.4 9.4 24.6 9.4 33.9 0l28.3-28.3c9.4-9.4 9.4-24.6.1-34zM208 336c-70.7 0-128-57.3-128-128s57.3-128 128-128 128 57.3 128 128-57.3 128-128 128z"/></svg> 强力修复报告</h4>';
+        html += '<div style="background: #ecfdf5; padding: 15px; border-radius: 10px;">';
+        html += `<p><strong>AI员工参与数量:</strong> ${report.employees_count || 0}</p>`;
+        html += `<p><strong>修复策略:</strong> ${report.strategy || '自动选择'}</p>`;
+        html += `<p><strong>诊断时间:</strong> ${report.diagnosis_time || 'N/A'}</p>`;
+        html += `<p><strong>修复时间:</strong> ${report.fix_time || 'N/A'}</p>`;
+        html += `<p><strong>报告ID:</strong> ${report.report_id || 'N/A'}</p>`;
+        html += `<p><strong>数据库上报:</strong> ${report.reported_to_db ? '已上报' : '未上报'}</p>`;
+        
+        if (report.employees && report.employees.length > 0) {
+            html += '<div style="margin-top: 10px;"><strong>参与修复的AI员工:</strong>';
+            html += '<ul style="margin-left: 20px;">';
+            report.employees.forEach(emp => {
+                html += `<li>${emp.name} (${emp.role})</li>`;
+            });
+            html += '</ul></div>';
+        }
+        
+        html += '</div>';
+        reportDiv.innerHTML = html;
     }
 
     // 显示修复结果

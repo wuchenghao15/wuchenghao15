@@ -397,7 +397,198 @@ SCHEMA.add_table("formula_categories", {
 })
 
 # ----------------------------------------------------------
-# 6. 文件与存储相关表
+# 6. 文科知识相关表
+# ----------------------------------------------------------
+
+SCHEMA.add_table("poems", {
+    "description": "古诗词表",
+    "fields": {
+        "id": {"type": "INTEGER", "primary": True, "autoincrement": True},
+        "poem_id": {"type": "TEXT", "unique": True, "not_null": True},
+        "title": {"type": "TEXT", "not_null": True},
+        "author": {"type": "TEXT", "not_null": True},
+        "dynasty": {"type": "TEXT", "not_null": True},
+        "content": {"type": "TEXT", "not_null": True},
+        "pinyin": {"type": "TEXT"},
+        "translation": {"type": "TEXT"},
+        "annotation": {"type": "TEXT"},
+        "appreciation": {"type": "TEXT"},
+        "genre": {"type": "TEXT"},  # 诗、词、曲、赋
+        "theme": {"type": "TEXT"},  # 思乡、爱国、山水、边塞等
+        "grade_level": {"type": "TEXT"},  # 适用年级
+        "requirement": {"type": "TEXT", "default": "recite"},  # recite背诵, understand理解, read阅读
+        "difficulty": {"type": "INTEGER", "default": 3},  # 1-5
+        "is_classic": {"type": "INTEGER", "default": 1},  # 是否经典
+        "tags": {"type": "TEXT"},  # JSON数组
+        "created_at": {"type": "INTEGER", "not_null": True},
+        "updated_at": {"type": "INTEGER", "not_null": True}
+    },
+    "indexes": ["poem_id", "title", "author", "dynasty", "grade_level", "genre", "is_classic"]
+})
+
+SCHEMA.add_table("classical_chinese", {
+    "description": "文言文选段表",
+    "fields": {
+        "id": {"type": "INTEGER", "primary": True, "autoincrement": True},
+        "article_id": {"type": "TEXT", "unique": True, "not_null": True},
+        "title": {"type": "TEXT", "not_null": True},
+        "author": {"type": "TEXT"},
+        "dynasty": {"type": "TEXT"},
+        "original_text": {"type": "TEXT", "not_null": True},
+        "modern_translation": {"type": "TEXT"},
+        "word_notes": {"type": "TEXT"},  # JSON对象，重点字词注释
+        "sentence_analysis": {"type": "TEXT"},  # JSON数组，句子解析
+        "grammar_points": {"type": "TEXT"},  # JSON数组，语法知识点
+        "cultural_context": {"type": "TEXT"},  # 文化背景
+        "grade_level": {"type": "TEXT"},
+        "requirement": {"type": "TEXT", "default": "understand"},  # recite背诵, understand理解, analyze分析
+        "difficulty": {"type": "INTEGER", "default": 4},  # 1-5
+        "is_classic": {"type": "INTEGER", "default": 1},
+        "tags": {"type": "TEXT"},  # JSON数组
+        "created_at": {"type": "INTEGER", "not_null": True},
+        "updated_at": {"type": "INTEGER", "not_null": True}
+    },
+    "indexes": ["article_id", "title", "author", "dynasty", "grade_level", "is_classic"]
+})
+
+SCHEMA.add_table("textbook_segments", {
+    "description": "课文选段表",
+    "fields": {
+        "id": {"type": "INTEGER", "primary": True, "autoincrement": True},
+        "segment_id": {"type": "TEXT", "unique": True, "not_null": True},
+        "title": {"type": "TEXT", "not_null": True},
+        "author": {"type": "TEXT"},
+        "source": {"type": "TEXT"},  # 来源教材
+        "content": {"type": "TEXT", "not_null": True},
+        "summary": {"type": "TEXT"},
+        "key_points": {"type": "TEXT"},  # JSON数组，重点知识
+        "writing_style": {"type": "TEXT"},  # 写作风格
+        "analysis": {"type": "TEXT"},  # 课文分析
+        "subject": {"type": "TEXT", "default": "chinese"},  # chinese, english, etc.
+        "grade_level": {"type": "TEXT"},
+        "requirement": {"type": "TEXT", "default": "master"},  # master掌握, understand理解, read阅读
+        "difficulty": {"type": "INTEGER", "default": 3},  # 1-5
+        "tags": {"type": "TEXT"},  # JSON数组
+        "created_at": {"type": "INTEGER", "not_null": True},
+        "updated_at": {"type": "INTEGER", "not_null": True}
+    },
+    "indexes": ["segment_id", "title", "author", "subject", "grade_level"]
+})
+
+SCHEMA.add_table("idioms", {
+    "description": "成语表",
+    "fields": {
+        "id": {"type": "INTEGER", "primary": True, "autoincrement": True},
+        "idiom_id": {"type": "TEXT", "unique": True, "not_null": True},
+        "idiom": {"type": "TEXT", "not_null": True},
+        "pinyin": {"type": "TEXT"},
+        "meaning": {"type": "TEXT", "not_null": True},
+        "story": {"type": "TEXT"},  # 成语故事/典故
+        "origin": {"type": "TEXT"},  # 出处
+        "part_of_speech": {"type": "TEXT"},  # 词性
+        "usage": {"type": "TEXT"},  # 用法示例
+        "synonyms": {"type": "TEXT"},  # JSON数组，近义词
+        "antonyms": {"type": "TEXT"},  # JSON数组，反义词
+        "difficulty": {"type": "INTEGER", "default": 3},  # 1-5
+        "is_common": {"type": "INTEGER", "default": 1},  # 是否常用
+        "grade_level": {"type": "TEXT"},
+        "tags": {"type": "TEXT"},  # JSON数组
+        "created_at": {"type": "INTEGER", "not_null": True},
+        "updated_at": {"type": "INTEGER", "not_null": True}
+    },
+    "indexes": ["idiom_id", "idiom", "is_common", "grade_level"]
+})
+
+SCHEMA.add_table("xiehouyu", {
+    "description": "歇后语表",
+    "fields": {
+        "id": {"type": "INTEGER", "primary": True, "autoincrement": True},
+        "xhy_id": {"type": "TEXT", "unique": True, "not_null": True},
+        "front_part": {"type": "TEXT", "not_null": True},  # 前半部分
+        "back_part": {"type": "TEXT", "not_null": True},  # 后半部分
+        "pinyin": {"type": "TEXT"},
+        "meaning": {"type": "TEXT"},
+        "usage": {"type": "TEXT"},  # 用法示例
+        "difficulty": {"type": "INTEGER", "default": 2},  # 1-5
+        "is_common": {"type": "INTEGER", "default": 1},
+        "grade_level": {"type": "TEXT"},
+        "tags": {"type": "TEXT"},  # JSON数组
+        "created_at": {"type": "INTEGER", "not_null": True},
+        "updated_at": {"type": "INTEGER", "not_null": True}
+    },
+    "indexes": ["xhy_id", "front_part", "is_common", "grade_level"]
+})
+
+SCHEMA.add_table("literature_segments", {
+    "description": "经典文学选段表",
+    "fields": {
+        "id": {"type": "INTEGER", "primary": True, "autoincrement": True},
+        "segment_id": {"type": "TEXT", "unique": True, "not_null": True},
+        "title": {"type": "TEXT", "not_null": True},
+        "author": {"type": "TEXT", "not_null": True},
+        "work": {"type": "TEXT"},  # 作品名
+        "content": {"type": "TEXT", "not_null": True},
+        "summary": {"type": "TEXT"},
+        "analysis": {"type": "TEXT"},  # 文学分析
+        "literary_device": {"type": "TEXT"},  # 文学手法
+        "theme": {"type": "TEXT"},
+        "origin_country": {"type": "TEXT", "default": "中国"},
+        "time_period": {"type": "TEXT"},
+        "grade_level": {"type": "TEXT"},
+        "difficulty": {"type": "INTEGER", "default": 4},  # 1-5
+        "is_classic": {"type": "INTEGER", "default": 1},
+        "tags": {"type": "TEXT"},  # JSON数组
+        "created_at": {"type": "INTEGER", "not_null": True},
+        "updated_at": {"type": "INTEGER", "not_null": True}
+    },
+    "indexes": ["segment_id", "title", "author", "origin_country", "is_classic", "grade_level"]
+})
+
+SCHEMA.add_table("reading_comprehension", {
+    "description": "阅读理解表",
+    "fields": {
+        "id": {"type": "INTEGER", "primary": True, "autoincrement": True},
+        "rc_id": {"type": "TEXT", "unique": True, "not_null": True},
+        "title": {"type": "TEXT", "not_null": True},
+        "article": {"type": "TEXT", "not_null": True},  # 阅读文章
+        "questions": {"type": "TEXT"},  # JSON数组，题目列表
+        "answers": {"type": "TEXT"},  # JSON数组，答案列表
+        "analysis": {"type": "TEXT"},  # JSON数组，解析列表
+        "genre": {"type": "TEXT"},  # 记叙文、议论文、说明文等
+        "subject": {"type": "TEXT", "default": "chinese"},
+        "grade_level": {"type": "TEXT"},
+        "difficulty": {"type": "INTEGER", "default": 3},  # 1-5
+        "time_limit": {"type": "INTEGER"},  # 分钟
+        "score": {"type": "INTEGER"},  # 总分
+        "tags": {"type": "TEXT"},  # JSON数组
+        "created_at": {"type": "INTEGER", "not_null": True},
+        "updated_at": {"type": "INTEGER", "not_null": True}
+    },
+    "indexes": ["rc_id", "title", "genre", "subject", "grade_level", "difficulty"]
+})
+
+SCHEMA.add_table("famous_quotes", {
+    "description": "经典语录表",
+    "fields": {
+        "id": {"type": "INTEGER", "primary": True, "autoincrement": True},
+        "quote_id": {"type": "TEXT", "unique": True, "not_null": True},
+        "content": {"type": "TEXT", "not_null": True},
+        "author": {"type": "TEXT", "not_null": True},
+        "source": {"type": "TEXT"},  # 出处
+        "category": {"type": "TEXT"},  # 励志、哲理、情感、教育等
+        "language": {"type": "TEXT", "default": "chinese"},  # chinese, english
+        "grade_level": {"type": "TEXT"},
+        "difficulty": {"type": "INTEGER", "default": 2},  # 1-5
+        "is_classic": {"type": "INTEGER", "default": 1},
+        "tags": {"type": "TEXT"},  # JSON数组
+        "created_at": {"type": "INTEGER", "not_null": True},
+        "updated_at": {"type": "INTEGER", "not_null": True}
+    },
+    "indexes": ["quote_id", "author", "category", "language", "is_classic", "grade_level"]
+})
+
+# ----------------------------------------------------------
+# 7. 文件与存储相关表
 # ----------------------------------------------------------
 
 SCHEMA.add_table("files", {

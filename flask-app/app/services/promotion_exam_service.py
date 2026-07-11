@@ -1,3 +1,6 @@
+import logging
+logger = logging.getLogger(__name__)
+
 # -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
@@ -442,4 +445,4 @@ def get_promotion_exam_service():
 if __name__ == "__main__":
     service = PromotionExamService()
     service.init_database()
-    print("升级考试服务初始化完成")
+    logger.info("升级考试服务初始化完成")

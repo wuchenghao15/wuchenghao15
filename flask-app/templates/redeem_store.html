@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <!-- 设计系统 -->
+    <link rel="stylesheet" href="/assets/css/mtscos-design-system.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MTSCOS 积分商城</title>
+    
+    <link rel="stylesheet" href="/assets/tailwind.min.css">
+    <link rel="stylesheet" href="/assets/all.min.css">
+    <link rel="stylesheet" href="/assets/responsive_layout.css">
+    
+    <style>
+        :root {
+            --primary-color: var(--color-primary);
+            --secondary-color: var(--color-success);
+            --accent-color: var(--color-warning);
+            --warning-color: var(--color-warning);
+            --danger-color: var(--color-error);
+            --dark-bg: var(--bg-dark);
+            --card-bg: rgba(30, 41, 59, 0.8);
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--bg-dark) 0%, #1e293b 50%, var(--bg-dark) 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+        
+        .tech-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(245, 158, 11, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(245, 158, 11, 0.05) 1px, transparent 1px);
+            background-size: 60px 60px;
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        .floating-orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.3;
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        .orb-1 {
+            width: 400px;
+            height: 400px;
+            background: var(--accent-color);
+            top: -100px;
+            right: -100px;
+        }
+        
+        .glass-card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .glass-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-accent {
+            background: linear-gradient(135deg, var(--accent-color), #d97706);
+            color: white;
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+        }
+        
+        .btn-accent:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(245, 158, 11, 0.5);
+        }
+        
+        .btn-disabled {
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.5);
+            cursor: not-allowed;
+        }
+        
+        .tag {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        
+        .tag-yellow { background: rgba(245, 158, 11, 0.2); color: var(--accent-color); }
+        .tag-blue { background: rgba(59, 130, 246, 0.2); color: var(--primary-color); }
+        .tag-green { background: rgba(16, 185, 129, 0.2); color: var(--secondary-color); }
+        
+        .avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent-color), var(--primary-color));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: white;
+        }
+        
+        .product-card {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .product-card:hover {
+            border-color: rgba(245, 158, 11, 0.4);
+            transform: translateY(-4px);
+        }
+        
+        .product-card.disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .product-card.disabled:hover {
+            transform: none;
+        }
+        
+        .points-display {
+            background: linear-gradient(135deg, rgba(245,158,11,0.2), rgba(217,119,6,0.2));
+            border: 1px solid rgba(245,158,11,0.3);
+        }
+        
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 16px 24px;
+            border-radius: 12px;
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        .toast-success {
+            background: rgba(16, 185, 129, 0.9);
+            color: white;
+        }
+        
+        .toast-error {
+            background: rgba(239, 68, 68, 0.9);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="tech-grid"></div>
+    <div class="floating-orb orb-1"></div>
+    
+    <!-- 顶部导航 -->
+    <nav class="relative z-10 px-6 py-4" style="background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(16px); border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-yellow-500 to-orange-600 flex items-center justify-center">
+                    <i class="fas fa-shopping-bag text-white text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold">MTSCOS 积分商城</h1>
+                    <p class="text-sm text-gray-400">积分兑换中心</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-6">
+                <div class="flex items-center gap-3">
+                    <div class="avatar">
+                        {{ user.username[0]|upper if user.username else 'U' }}
+                    </div>
+                    <div>
+                        <p class="font-medium">{{ user.username }}</p>
+                        <div class="flex items-center text-yellow-400">
+                            <i class="fas fa-coins mr-1"></i>
+                            <span>{{ user_points }} 积分</span>
+                        </div>
+                    </div>
+                </div>
+                <a href="/exam_system" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i>
+                    返回首页
+                </a>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- 面包屑导航 -->
+    <div class="relative z-10 max-w-7xl mx-auto px-6 py-4">
+        <nav class="flex items-center gap-2 text-gray-400 text-sm">
+            <a href="/exam_system" class="hover:text-yellow-400">首页</a>
+            <i class="fas fa-chevron-right"></i>
+            <span class="text-yellow-400">积分商城</span>
+        </nav>
+    </div>
+    
+    <!-- 主内容区 -->
+    <main class="relative z-10 max-w-7xl mx-auto px-6 py-8">
+        
+        <!-- 页面标题 -->
+        <div class="mb-8">
+            <h2 class="text-3xl font-bold mb-2">积分商城</h2>
+            <p class="text-gray-400">用学习积分兑换丰富奖品，每500积分起兑</p>
+        </div>
+        
+        <!-- 积分信息卡片 -->
+        <div class="glass-card points-display p-6 mb-8">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+                <div class="flex items-center gap-6">
+                    <div class="text-center">
+                        <div class="text-4xl font-bold text-yellow-400">{{ user_points }}</div>
+                        <div class="text-sm text-gray-400">当前可用积分</div>
+                    </div>
+                    <div class="h-12 w-px bg-white/20"></div>
+                    <div>
+                        <h3 class="font-bold mb-2">积分兑换规则</h3>
+                        <ul class="text-sm text-gray-400 space-y-1">
+                            <li><i class="fas fa-check-circle text-green-400 mr-2"></i>每答对一题可获得1-5积分</li>
+                            <li><i class="fas fa-check-circle text-green-400 mr-2"></i>兑换门槛：500积分起</li>
+                            <li><i class="fas fa-check-circle text-green-400 mr-2"></i>积分有效期：永久有效</li>
+                            <li><i class="fas fa-check-circle text-green-400 mr-2"></i>兑换后积分即时扣除</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl text-yellow-400 mb-2">
+                        <i class="fas fa-gift"></i>
+                    </div>
+                    <div class="font-bold">兑换奖励</div>
+                    <div class="text-sm text-gray-400">让学习更有动力</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 商品列表 -->
+        <div class="mb-6">
+            <h3 class="text-xl font-bold mb-4 flex items-center gap-2">
+                <i class="fas fa-box-open text-yellow-400"></i>
+                兑换商品
+            </h3>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for product in products %}
+            <div class="glass-card p-6 product-card {% if user_points < product.price %}disabled{% endif %}">
+                <div class="flex items-start justify-between mb-4">
+                    <div class="flex items-center gap-2">
+                        <span class="tag tag-yellow">
+                            <i class="fas fa-coins mr-1"></i>{{ product.price }} 积分
+                        </span>
+                        {% if product.hot %}
+                        <span class="tag tag-green">
+                            <i class="fas fa-fire mr-1"></i>热门
+                        </span>
+                        {% endif %}
+                    </div>
+                    <div class="w-16 h-16 rounded-xl flex items-center justify-center" style="background: {{ product.bg_color }};">
+                        <i class="fas {{ product.icon }} text-2xl" style="color: {{ product.icon_color }};"></i>
+                    </div>
+                </div>
+                <h3 class="text-lg font-bold mb-2">{{ product.name }}</h3>
+                <p class="text-sm text-gray-400 mb-4">{{ product.description }}</p>
+                <div class="flex items-center justify-between">
+                    <div class="text-xs text-gray-500">
+                        剩余库存: {{ product.stock }}
+                    </div>
+                    <button 
+                        class="btn {% if user_points >= product.price %}btn-accent{% else %}btn-disabled{% endif %}"
+                        {% if user_points >= product.price %}onclick="redeemProduct('{{ product.id }}')"{% endif %}
+                    >
+                        <i class="fas fa-shopping-cart"></i>
+                        {% if user_points >= product.price %}立即兑换{% else %}积分不足{% endif %}
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- 积分获取说明 -->
+        <div class="glass-card p-6 mt-8">
+            <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                <i class="fas fa-info-circle text-blue-400"></i>
+                如何获取积分
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="p-4 rounded-lg" style="background: rgba(59,130,246,0.1); border:1px solid rgba(59,130,246,0.2);">
+                    <div class="flex items-center gap-3 mb-2">
+                        <i class="fas fa-check-circle text-blue-400"></i>
+                        <span class="font-medium">答对题目</span>
+                    </div>
+                    <div class="text-sm text-gray-400">每答对一题可获得1-5积分</div>
+                </div>
+                <div class="p-4 rounded-lg" style="background: rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.2);">
+                    <div class="flex items-center gap-3 mb-2">
+                        <i class="fas fa-calendar-check text-green-400"></i>
+                        <span class="font-medium">每日签到</span>
+                    </div>
+                    <div class="text-sm text-gray-400">每日签到可获得10积分</div>
+                </div>
+                <div class="p-4 rounded-lg" style="background: rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.2);">
+                    <div class="flex items-center gap-3 mb-2">
+                        <i class="fas fa-trophy text-yellow-400"></i>
+                        <span class="font-medium">完成考试</span>
+                    </div>
+                    <div class="text-sm text-gray-400">完成考试可获得额外积分奖励</div>
+                </div>
+                <div class="p-4 rounded-lg" style="background: rgba(139,92,246,0.1); border:1px solid rgba(139,92,246,0.2);">
+                    <div class="flex items-center gap-3 mb-2">
+                        <i class="fas fa-star text-purple-400"></i>
+                        <span class="font-medium">连续学习</span>
+                    </div>
+                    <div class="text-sm text-gray-400">连续学习可获得积分加成</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 我的兑换记录 -->
+        <div class="glass-card p-6 mt-8">
+            <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                <i class="fas fa-history text-gray-400"></i>
+                我的兑换记录
+            </h3>
+            {% if redeem_history %}
+            <div class="space-y-3">
+                {% for record in redeem_history %}
+                <div class="flex items-center justify-between p-4 rounded-lg" style="background: rgba(255,255,255,0.05);">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background: rgba(245,158,11,0.2);">
+                            <i class="fas fa-gift text-yellow-400"></i>
+                        </div>
+                        <div>
+                            <div class="font-medium">{{ record.product_name }}</div>
+                            <div class="text-xs text-gray-400">{{ record.created_at }}</div>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-yellow-400">-{{ record.points }} 积分</div>
+                        <div class="text-xs text-green-400">{{ record.status }}</div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-8">
+                <i class="fas fa-inbox text-gray-500 text-4xl mb-4"></i>
+                <p class="text-gray-400">暂无兑换记录</p>
+            </div>
+            {% endif %}
+        </div>
+        
+    </main>
+    
+    <!-- 底部 -->
+    <footer class="relative z-10 text-center py-6 text-gray-500 text-sm border-t border-white/5 mt-12">
+        <p>&copy; 2026 MTSCOS AI 智能教育平台 - 让学习更有价值</p>
+    </footer>
+    
+    <!-- 兑换确认弹窗 -->
+    <div id="confirmModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+        <div class="glass-card p-8 max-w-md w-full mx-4">
+            <h3 class="text-xl font-bold mb-4">确认兑换</h3>
+            <p id="confirmMessage" class="text-gray-400 mb-6"></p>
+            <div class="flex gap-4">
+                <button class="btn btn-secondary flex-1" onclick="closeModal()">取消</button>
+                <button class="btn btn-accent flex-1" onclick="confirmRedeem()">确认兑换</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let currentProductId = null;
+        
+        function redeemProduct(productId) {
+            currentProductId = productId;
+            const product = document.querySelector(`.product-card[data-product-id="${productId}"]`);
+            if (product) {
+                const name = product.querySelector('h3').textContent;
+                const price = product.querySelector('.tag-yellow').textContent;
+                document.getElementById('confirmMessage').textContent = `确定要花费 ${price} 兑换「${name}」吗？`;
+                document.getElementById('confirmModal').classList.remove('hidden');
+            }
+        }
+        
+        function closeModal() {
+            document.getElementById('confirmModal').classList.add('hidden');
+            currentProductId = null;
+        }
+        
+        function confirmRedeem() {
+            if (!currentProductId) return;
+            
+            fetch('/api/redeem', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ product_id: currentProductId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('兑换成功！', 'success');
+                    setTimeout(() => {
+                        location.reload();
+                    }, 2000);
+                } else {
+                    showToast(data.message || '兑换失败', 'error');
+                }
+                closeModal();
+            })
+            .catch(error => {
+                showToast('网络错误，请重试', 'error');
+                closeModal();
+            });
+        }
+        
+        function showToast(message, type) {
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'} mr-2"></i>${message}`;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.animation = 'slideIn 0.3s ease reverse';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+    </script>
+    
+    <script src="/assets/layout_adapter.js"></script>
+</body>
+</html>

@@ -1,3 +1,6 @@
+import logging
+logger = logging.getLogger(__name__)
+
 # -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """数据库深度维护工具 - 分析、清理、优化数据库表"""
@@ -146,7 +149,7 @@ def execute_maintenance():
     report_file = f"database_maintenance_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
     with open(report_file, 'w', encoding='utf-8') as f:
         f.write(report)
-    print(f"\n📝 报告已保存至: {report_file}")
+    logger.info(f"\n📝 报告已保存至: {report_file}")
     
     return report
 

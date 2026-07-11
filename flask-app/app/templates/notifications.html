@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>通知中心 - MTSCOS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f3f4f6; }
+        
+        .container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+        
+        .page-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 32px;
+            border-radius: 16px;
+            margin-bottom: 24px;
+        }
+        .page-header h1 { font-size: 28px; font-weight: 700; margin-bottom: 8px; }
+        .page-header p { opacity: 0.9; }
+        
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .stat-card .label { font-size: 13px; color: #666; margin-bottom: 8px; }
+        .stat-card .value { font-size: 28px; font-weight: 700; color: #333; }
+        .stat-card .icon { font-size: 32px; margin-bottom: 8px; }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 200px 1fr;
+            gap: 24px;
+        }
+        
+        .sidebar {
+            background: white;
+            border-radius: 12px;
+            padding: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            height: fit-content;
+        }
+        .sidebar-item {
+            padding: 12px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            color: #333;
+            transition: all 0.2s;
+            margin-bottom: 4px;
+        }
+        .sidebar-item:hover { background: #f3f4f6; }
+        .sidebar-item.active {
+            background: rgba(102,126,234,0.1);
+            color: #667eea;
+            font-weight: 600;
+        }
+        .sidebar-item .badge {
+            margin-left: auto;
+            background: #ef4444;
+            color: white;
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            min-width: 20px;
+            text-align: center;
+        }
+        
+        .notification-list {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+        .list-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid #f3f4f6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .list-header h3 { font-size: 16px; color: #333; }
+        .list-actions { display: flex; gap: 10px; }
+        .action-btn {
+            padding: 6px 12px;
+            font-size: 13px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .action-btn.primary {
+            background: rgba(102,126,234,0.1);
+            color: #667eea;
+        }
+        .action-btn.primary:hover { background: rgba(102,126,234,0.2); }
+        .action-btn.danger {
+            background: rgba(239,68,68,0.1);
+            color: #ef4444;
+        }
+        .action-btn.danger:hover { background: rgba(239,68,68,0.2); }
+        
+        .notification-item {
+            padding: 16px 20px;
+            border-bottom: 1px solid #f3f4f6;
+            display: flex;
+            gap: 14px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .notification-item:last-child { border-bottom: none; }
+        .notification-item:hover { background: #f9fafb; }
+        .notification-item.unread { background: rgba(102,126,234,0.03); }
+        .notification-item.unread:hover { background: rgba(102,126,234,0.06); }
+        
+        .notif-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+        .notif-icon.info { background: rgba(59,130,246,0.1); }
+        .notif-icon.success { background: rgba(34,197,94,0.1); }
+        .notif-icon.warning { background: rgba(245,158,11,0.1); }
+        .notif-icon.error { background: rgba(239,68,68,0.1); }
+        .notif-icon.message { background: rgba(102,126,234,0.1); }
+        
+        .notif-content { flex: 1; min-width: 0; }
+        .notif-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .notif-title .time { font-size: 12px; font-weight: 400; color: #999; }
+        .notif-text { font-size: 13px; color: #666; line-height: 1.5; }
+        .notif-meta { font-size: 11px; color: #999; margin-top: 6px; }
+        
+        .notif-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .notification-item:hover .notif-actions { opacity: 1; }
+        .notif-action {
+            padding: 4px 8px;
+            font-size: 11px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            background: #f3f4f6;
+            color: #666;
+        }
+        .notif-action:hover { background: #e5e7eb; }
+        .notif-action.delete { color: #ef4444; }
+        .notif-action.delete:hover { background: rgba(239,68,68,0.1); }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+        .empty-state .icon { font-size: 48px; margin-bottom: 16px; opacity: 0.5; }
+        .empty-state p { font-size: 14px; }
+        
+        @media (max-width: 768px) {
+            .stats-row { grid-template-columns: repeat(2, 1fr); }
+            .main-content { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="page-header">
+            <h1>🔔 通知中心</h1>
+            <p>管理您的系统通知和消息</p>
+        </div>
+        
+        <div class="stats-row">
+            <div class="stat-card">
+                <div class="icon">📬</div>
+                <div class="label">未读通知</div>
+                <div class="value" id="unreadCount">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="icon">📩</div>
+                <div class="label">未读消息</div>
+                <div class="value" id="messageCount">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="icon">📋</div>
+                <div class="label">总通知数</div>
+                <div class="value" id="totalNotifCount">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="icon">💬</div>
+                <div class="label">总消息数</div>
+                <div class="value" id="totalMsgCount">0</div>
+            </div>
+        </div>
+        
+        <div class="main-content">
+            <div class="sidebar">
+                <div class="sidebar-item active" onclick="switchTab('all', this)">
+                    <span>📭</span>
+                    <span>全部通知</span>
+                    <span class="badge" id="allBadge">0</span>
+                </div>
+                <div class="sidebar-item" onclick="switchTab('unread', this)">
+                    <span>🔴</span>
+                    <span>未读</span>
+                    <span class="badge" id="unreadBadge">0</span>
+                </div>
+                <div class="sidebar-item" onclick="switchTab('info', this)">
+                    <span>ℹ️</span>
+                    <span>系统通知</span>
+                </div>
+                <div class="sidebar-item" onclick="switchTab('exam', this)">
+                    <span>📝</span>
+                    <span>考试提醒</span>
+                </div>
+                <div class="sidebar-item" onclick="switchTab('message', this)">
+                    <span>💬</span>
+                    <span>私信</span>
+                </div>
+                <div style="padding: 12px 16px;">
+                    <button class="action-btn primary" style="width:100%;" onclick="openSettings()">⚙️ 通知设置</button>
+                </div>
+            </div>
+            
+            <div class="notification-list">
+                <div class="list-header">
+                    <h3 id="listTitle">全部通知</h3>
+                    <div class="list-actions">
+                        <button class="action-btn primary" onclick="markAllRead()">✓ 全部已读</button>
+                        <button class="action-btn danger" onclick="clearAll()">🗑️ 清空</button>
+                    </div>
+                </div>
+                <div id="notificationList">
+                    <div class="empty-state">
+                        <div class="icon">📭</div>
+                        <p>加载中...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="settingsModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;z-index:1000;">
+        <div style="background:white;border-radius:16px;padding:24px;width:400px;max-width:90%;">
+            <h3 style="margin-bottom:20px;color:#333;">通知设置</h3>
+            <div style="margin-bottom:16px;">
+                <label style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f3f4f6;">
+                    <span style="font-size:14px;color:#333;">系统通知</span>
+                    <input type="checkbox" id="setting_system" style="width:20px;height:20px;accent-color:#667eea;">
+                </label>
+                <label style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f3f4f6;">
+                    <span style="font-size:14px;color:#333;">考试提醒</span>
+                    <input type="checkbox" id="setting_exam" style="width:20px;height:20px;accent-color:#667eea;">
+                </label>
+                <label style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f3f4f6;">
+                    <span style="font-size:14px;color:#333;">私信通知</span>
+                    <input type="checkbox" id="setting_message" style="width:20px;height:20px;accent-color:#667eea;">
+                </label>
+                <label style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f3f4f6;">
+                    <span style="font-size:14px;color:#333;">邮件通知</span>
+                    <input type="checkbox" id="setting_email" style="width:20px;height:20px;accent-color:#667eea;">
+                </label>
+                <label style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f3f4f6;">
+                    <span style="font-size:14px;color:#333;">声音提醒</span>
+                    <input type="checkbox" id="setting_sound" style="width:20px;height:20px;accent-color:#667eea;">
+                </label>
+            </div>
+            <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px;">
+                <button class="action-btn" onclick="closeSettings()" style="padding:8px 16px;">取消</button>
+                <button class="action-btn primary" onclick="saveSettings()" style="padding:8px 16px;">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentTab = 'all';
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadNotifications();
+            loadStats();
+            loadSettings();
+        });
+
+        async function loadStats() {
+            try {
+                const resp = await fetch('/api/notifications/unread-count');
+                const data = await resp.json();
+                if (data.success) {
+                    document.getElementById('unreadCount').textContent = data.notification_count;
+                    document.getElementById('messageCount').textContent = data.message_count;
+                    document.getElementById('allBadge').textContent = data.total;
+                    document.getElementById('unreadBadge').textContent = data.notification_count;
+                }
+            } catch (e) {}
+        }
+
+        async function loadNotifications() {
+            try {
+                let url = '/api/notifications?limit=100';
+                if (currentTab === 'unread') url += '&read=false';
+                else if (currentTab !== 'all') url += `&type=${currentTab}`;
+
+                const resp = await fetch(url);
+                const data = await resp.json();
+                if (data.success) {
+                    renderNotifications(data.notifications);
+                    document.getElementById('unreadBadge').textContent = data.unread_count;
+                }
+            } catch (e) {
+                document.getElementById('notificationList').innerHTML = 
+                    '<div class="empty-state"><div class="icon">❌</div><p>加载失败</p></div>';
+            }
+        }
+
+        function renderNotifications(notifications) {
+            const list = document.getElementById('notificationList');
+            
+            if (notifications.length === 0) {
+                list.innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">📭</div>
+                        <p>暂无通知</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const typeMap = {
+                'info': { icon: 'ℹ️', class: 'info' },
+                'success': { icon: '✅', class: 'success' },
+                'warning': { icon: '⚠️', class: 'warning' },
+                'error': { icon: '❌', class: 'error' },
+                'message': { icon: '💬', class: 'message' }
+            };
+            
+            list.innerHTML = notifications.map(n => {
+                const typeInfo = typeMap[n.type] || typeMap['info'];
+                const time = formatTime(n.created_at);
+                return `
+                    <div class="notification-item ${n.is_read ? '' : 'unread'}" onclick="markAsRead(${n.id})">
+                        <div class="notif-icon ${typeInfo.class}">${n.icon || typeInfo.icon}</div>
+                        <div class="notif-content">
+                            <div class="notif-title">
+                                <span>${escapeHtml(n.title)}</span>
+                                <span class="time">${time}</span>
+                            </div>
+                            <div class="notif-text">${escapeHtml(n.content || '')}</div>
+                            ${n.sender_name ? `<div class="notif-meta">来自: ${escapeHtml(n.sender_name)}</div>` : ''}
+                        </div>
+                        <div class="notif-actions">
+                            <button class="notif-action" onclick="event.stopPropagation(); markAsRead(${n.id})">
+                                ${n.is_read ? '未读' : '已读'}
+                            </button>
+                            <button class="notif-action delete" onclick="event.stopPropagation(); deleteNotif(${n.id})">删除</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function switchTab(tab, el) {
+            currentTab = tab;
+            document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+            el.classList.add('active');
+            
+            const titles = {
+                'all': '全部通知',
+                'unread': '未读通知',
+                'info': '系统通知',
+                'exam': '考试提醒',
+                'message': '私信'
+            };
+            document.getElementById('listTitle').textContent = titles[tab] || '通知';
+            
+            loadNotifications();
+        }
+
+        async function markAsRead(id) {
+            try {
+                await fetch(`/api/notifications/${id}/read`, { method: 'POST' });
+                loadNotifications();
+                loadStats();
+            } catch (e) {}
+        }
+
+        async function markAllRead() {
+            try {
+                await fetch('/api/notifications/read-all', { method: 'POST' });
+                loadNotifications();
+                loadStats();
+            } catch (e) {}
+        }
+
+        async function deleteNotif(id) {
+            if (!confirm('确定删除这条通知吗？')) return;
+            try {
+                await fetch(`/api/notifications/${id}`, { method: 'DELETE' });
+                loadNotifications();
+                loadStats();
+            } catch (e) {}
+        }
+
+        async function clearAll() {
+            if (!confirm('确定清空所有通知吗？')) return;
+            try {
+                await fetch('/api/notifications/clear', { method: 'POST' });
+                loadNotifications();
+                loadStats();
+            } catch (e) {}
+        }
+
+        async function loadSettings() {
+            try {
+                const resp = await fetch('/api/notification-settings');
+                const data = await resp.json();
+                if (data.success) {
+                    const s = data.settings;
+                    document.getElementById('setting_system').checked = !!s.system_enabled;
+                    document.getElementById('setting_exam').checked = !!s.exam_enabled;
+                    document.getElementById('setting_message').checked = !!s.message_enabled;
+                    document.getElementById('setting_email').checked = !!s.email_enabled;
+                    document.getElementById('setting_sound').checked = !!s.sound_enabled;
+                }
+            } catch (e) {}
+        }
+
+        async function saveSettings() {
+            try {
+                const settings = {
+                    system_enabled: document.getElementById('setting_system').checked ? 1 : 0,
+                    exam_enabled: document.getElementById('setting_exam').checked ? 1 : 0,
+                    message_enabled: document.getElementById('setting_message').checked ? 1 : 0,
+                    email_enabled: document.getElementById('setting_email').checked ? 1 : 0,
+                    sound_enabled: document.getElementById('setting_sound').checked ? 1 : 0
+                };
+                const resp = await fetch('/api/notification-settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(settings)
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    closeSettings();
+                    alert('设置已保存');
+                }
+            } catch (e) {
+                alert('保存失败');
+            }
+        }
+
+        function openSettings() {
+            document.getElementById('settingsModal').style.display = 'flex';
+        }
+
+        function closeSettings() {
+            document.getElementById('settingsModal').style.display = 'none';
+        }
+
+        function formatTime(timeStr) {
+            if (!timeStr) return '';
+            const date = new Date(timeStr.replace(' ', 'T'));
+            const now = new Date();
+            const diff = now - date;
+            
+            if (diff < 60000) return '刚刚';
+            if (diff < 3600000) return Math.floor(diff / 60000) + '分钟前';
+            if (diff < 86400000) return Math.floor(diff / 3600000) + '小时前';
+            if (diff < 604800000) return Math.floor(diff / 86400000) + '天前';
+            
+            return date.toLocaleDateString();
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <!-- 设计系统 -->
+    <link rel="stylesheet" href="/assets/css/mtscos-design-system.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MTSCOS AI - 考试中心</title>
+    <style>
+        :root {
+            --primary-color: #4F46E5;
+            --primary-light: #6366F1;
+            --primary-dark: #4338CA;
+            --secondary-color: #10B981;
+            --accent-color: #F59E0B;
+            --danger-color: #EF4444;
+            --dark-bg: #0F172A;
+            --dark-card: #1E293B;
+            --dark-card-hover: #334155;
+            --text-primary: #F8FAFC;
+            --text-secondary: #94A3B8;
+            --text-muted: #64748B;
+            --border-color: #334155;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--dark-bg);
+            min-height: 100vh;
+            color: var(--text-primary);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        header {
+            background: rgba(15, 23, 42, 0.95);
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        header .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 72px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-primary);
+            text-decoration: none;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .user-info span {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .user-info .role-badge {
+            padding: 4px 12px;
+            background: rgba(79, 70, 229, 0.15);
+            border: 1px solid rgba(79, 70, 229, 0.3);
+            border-radius: 20px;
+            font-size: 12px;
+            color: #A78BFA;
+        }
+
+        .btn-logout {
+            padding: 10px 20px;
+            background: transparent;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-logout:hover {
+            border-color: var(--danger-color);
+            color: var(--danger-color);
+        }
+
+        .main-content {
+            padding: 48px 0;
+        }
+
+        .page-header {
+            margin-bottom: 40px;
+        }
+
+        .page-title {
+            font-size: 36px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .page-subtitle {
+            color: var(--text-secondary);
+            font-size: 16px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 24px;
+            margin-bottom: 48px;
+        }
+
+        .stat-card {
+            background: var(--dark-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 24px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            border-color: var(--primary-color);
+            transform: translateY(-4px);
+        }
+
+        .stat-value {
+            font-size: 36px;
+            font-weight: 700;
+            color: var(--primary-light);
+            margin-bottom: 8px;
+        }
+
+        .stat-label {
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .section-title::before {
+            content: '';
+            width: 4px;
+            height: 20px;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+            border-radius: 2px;
+        }
+
+        .exams-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 24px;
+        }
+
+        .exam-card {
+            background: var(--dark-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 28px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .exam-card:hover {
+            border-color: var(--primary-color);
+            box-shadow: 0 8px 30px rgba(79, 70, 229, 0.15);
+            transform: translateY(-4px);
+        }
+
+        .exam-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .exam-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+            flex: 1;
+        }
+
+        .category-tag {
+            padding: 2px 8px;
+            background: rgba(139, 92, 246, 0.15);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 4px;
+            font-size: 11px;
+            color: #A78BFA;
+            margin-right: 8px;
+        }
+
+        .category-tabs {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            padding: 10px 20px;
+            background: transparent;
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .tab-btn:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-light);
+        }
+
+        .tab-btn.active {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+            color: white;
+        }
+
+        .exam-status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .exam-status.active {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34D399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .exam-status.draft {
+            background: rgba(148, 163, 184, 0.15);
+            color: var(--text-muted);
+            border: 1px solid rgba(148, 163, 184, 0.3);
+        }
+
+        .exam-status.inactive {
+            background: rgba(239, 68, 68, 0.15);
+            color: #F87171;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .difficulty-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            margin-left: 8px;
+        }
+
+        .difficulty-badge.easy, .difficulty-badge.beginner {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34D399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .difficulty-badge.medium, .difficulty-badge.intermediate {
+            background: rgba(245, 158, 11, 0.15);
+            color: #FBBF24;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .difficulty-badge.hard, .difficulty-badge.advanced {
+            background: rgba(239, 68, 68, 0.15);
+            color: #F87171;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .level-indicator {
+            background: linear-gradient(135deg, rgba(79, 70, 229, 0.15) 0%, rgba(139, 92, 246, 0.15) 100%);
+            border: 1px solid rgba(79, 70, 229, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 32px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .level-icon {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .level-info {
+            flex: 1;
+        }
+
+        .level-title {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+
+        .level-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .level-desc {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .exam-description {
+            color: var(--text-secondary);
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .exam-meta {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .meta-item {
+            text-align: center;
+            padding: 12px;
+            background: rgba(79, 70, 229, 0.05);
+            border-radius: 8px;
+        }
+
+        .meta-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .meta-label {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .btn-start-exam {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-start-exam:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(79, 70, 229, 0.4);
+        }
+
+        .btn-start-exam.disabled {
+            background: var(--border-color);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 64px 24px;
+        }
+
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 24px;
+        }
+
+        .empty-state-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .empty-state-text {
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        .recent-exams {
+            margin-top: 48px;
+        }
+
+        .recent-exams-list {
+            background: var(--dark-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .recent-exam-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border-color);
+            transition: background 0.3s ease;
+        }
+
+        .recent-exam-item:hover {
+            background: rgba(79, 70, 229, 0.05);
+        }
+
+        .recent-exam-item:last-child {
+            border-bottom: none;
+        }
+
+        .recent-exam-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .recent-exam-name {
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .recent-exam-date {
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        .recent-exam-score {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .score-value {
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .score-value.passed {
+            color: var(--secondary-color);
+        }
+
+        .score-value.failed {
+            color: var(--danger-color);
+        }
+
+        .score-label {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .language-badge {
+            padding: 4px 12px;
+            background: rgba(59, 130, 246, 0.15);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 20px;
+            font-size: 12px;
+            color: #93C5FD;
+        }
+
+        @media (max-width: 768px) {
+            .exams-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .exam-meta {
+                grid-template-columns: 1fr;
+            }
+
+            .page-title {
+                font-size: 28px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <a href="/exam_system" class="logo">
+                <div class="logo-icon"><img src="/assets/images/mtscos_logo.svg" alt="MTSCOS Logo"></div>
+                <span>MTSCOS AI</span>
+            </a>
+            <div class="user-info">
+                <span>欢迎, {{ user.username }}</span>
+                <span class="role-badge">{{ user.role }}</span>
+                <button class="btn-logout" onclick="window.location.href='/auth/logout'">退出登录</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="container">
+            <div class="page-header">
+                <h1 class="page-title">考试中心</h1>
+                <p class="page-subtitle">选择一个考试开始您的测试之旅</p>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="stat-exams">0</div>
+                    <div class="stat-label">可用考试</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="stat-active">0</div>
+                    <div class="stat-label">进行中考试</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="stat-completed">0</div>
+                    <div class="stat-label">已完成考试</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="stat-avg-score">0</div>
+                    <div class="stat-label">平均得分</div>
+                </div>
+            </div>
+
+            <section>
+                <h2 class="section-title">可用考试</h2>
+                
+                <div class="category-tabs">
+                    <button class="tab-btn active" onclick="filterExams('all')">全部</button>
+                    <button class="tab-btn" onclick="filterExams('active')">进行中</button>
+                    <button class="tab-btn" onclick="filterExams('draft')">草稿</button>
+                </div>
+                
+                <div id="exams-container">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📝</div>
+                        <div class="empty-state-title">加载中...</div>
+                        <div class="empty-state-text">正在获取考试列表</div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="recent-exams">
+                <h2 class="section-title">最近考试记录</h2>
+                <div id="recent-exams-container">
+                    <div class="recent-exams-list">
+                        <div class="recent-exam-item">
+                            <div class="recent-exam-info">
+                                <div class="recent-exam-name">加载中...</div>
+                                <div class="recent-exam-date">-</div>
+                            </div>
+                            <div class="recent-exam-score">
+                                <span class="score-value">-</span>
+                                <span class="score-label">得分</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script>
+        const LANGUAGE_MAP = {
+            'zh': '中文',
+            'ja': '日语',
+            'en': '英语',
+            'japanese': '日语',
+            'english': '英语',
+            'chinese': '中文'
+        };
+
+        const LEVEL_MAP = {
+            'beginner': '基础',
+            'intermediate': '进阶',
+            'advanced': '挑战',
+            'expert': '专家'
+        };
+
+        async function loadExams() {
+            try {
+                const response = await fetch('/api/exam/exams');
+                const result = await response.json();
+                
+                if (result.success && result.data) {
+                    renderExams(result.data);
+                    updateStats(result.data);
+                } else {
+                    renderEmptyState();
+                }
+            } catch (error) {
+                console.error('加载考试列表失败:', error);
+                renderEmptyState();
+            }
+        }
+
+        async function loadUserResults() {
+            try {
+                const userId = '{{ user.user_id }}';
+                const response = await fetch(`/api/exam/results/user/${userId}`);
+                const result = await response.json();
+                
+                if (result.success && result.data) {
+                    renderUserResults(result.data);
+                } else {
+                    renderEmptyResults();
+                }
+            } catch (error) {
+                console.error('加载考试记录失败:', error);
+                renderEmptyResults();
+            }
+        }
+
+        function renderExams(exams) {
+            const container = document.getElementById('exams-container');
+            
+            if (!exams || exams.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📝</div>
+                        <div class="empty-state-title">暂无可用考试</div>
+                        <div class="empty-state-text">请联系管理员获取考试信息</div>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="exams-grid">
+                    ${exams.map(exam => `
+                        <div class="exam-card" data-category="${exam.status}" onclick="startExam('${exam.id}')">
+                            <div class="exam-header">
+                                <span class="language-badge">${LANGUAGE_MAP[exam.language] || exam.language}</span>
+                                <h3 class="exam-title">${exam.title}
+                                    ${exam.level ? `<span class="difficulty-badge ${exam.level}">${LEVEL_MAP[exam.level] || exam.level}</span>` : ''}
+                                </h3>
+                                <span class="exam-status ${exam.status}">${exam.status === 'active' ? '进行中' : exam.status === 'draft' ? '草稿' : '已结束'}</span>
+                            </div>
+                            <p class="exam-description">${exam.description || '暂无描述'}</p>
+                            <div class="exam-meta">
+                                <div class="meta-item">
+                                    <div class="meta-value">${exam.duration}<span style="font-size:12px;">分钟</span></div>
+                                    <div class="meta-label">考试时长</div>
+                                </div>
+                                <div class="meta-item">
+                                    <div class="meta-value">${exam.question_count}</div>
+                                    <div class="meta-label">题目数量</div>
+                                </div>
+                                <div class="meta-item">
+                                    <div class="meta-value">${exam.total_points}</div>
+                                    <div class="meta-label">总分</div>
+                                </div>
+                            </div>
+                            <button class="btn-start-exam ${exam.status !== 'active' ? 'disabled' : ''}" 
+                                    onclick="event.stopPropagation(); startExam('${exam.id}');"
+                                    ${exam.status !== 'active' ? 'disabled' : ''}>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                                    <path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                <span>${exam.status === 'active' ? '开始考试' : '暂不可用'}</span>
+                            </button>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function renderEmptyState() {
+            document.getElementById('exams-container').innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">📝</div>
+                    <div class="empty-state-title">暂无可用考试</div>
+                    <div class="empty-state-text">请联系管理员获取考试信息</div>
+                </div>
+            `;
+        }
+
+        function renderUserResults(results) {
+            const container = document.getElementById('recent-exams-container');
+            
+            if (!results || results.length === 0) {
+                renderEmptyResults();
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="recent-exams-list">
+                    ${results.map(result => `
+                        <div class="recent-exam-item">
+                            <div class="recent-exam-info">
+                                <div class="recent-exam-name">考试 #${result.exam_id.substring(0, 8)}</div>
+                                <div class="recent-exam-date">${new Date(result.created_at).toLocaleString('zh-CN')}</div>
+                            </div>
+                            <div class="recent-exam-score">
+                                <span class="score-value ${result.passed ? 'passed' : 'failed'}">${result.total_score}</span>
+                                <span class="score-label">${result.passed ? '通过' : '未通过'}</span>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function renderEmptyResults() {
+            document.getElementById('recent-exams-container').innerHTML = `
+                <div class="recent-exams-list">
+                    <div class="recent-exam-item">
+                        <div class="recent-exam-info">
+                            <div class="recent-exam-name">暂无考试记录</div>
+                            <div class="recent-exam-date">-</div>
+                        </div>
+                        <div class="recent-exam-score">
+                            <span class="score-value">-</span>
+                            <span class="score-label">得分</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function updateStats(exams) {
+            const activeExams = exams.filter(e => e.status === 'active').length;
+            document.getElementById('stat-exams').textContent = exams.length;
+            document.getElementById('stat-active').textContent = activeExams;
+        }
+
+        function startExam(examId) {
+            const confirmStart = confirm('确定要开始此考试吗？考试开始后将计时，请确保有足够的时间完成。');
+            if (confirmStart) {
+                window.location.href = `/exam_page/${examId}`;
+            }
+        }
+        
+        function filterExams(status) {
+            const tabs = document.querySelectorAll('.tab-btn');
+            const cards = document.querySelectorAll('.exam-card');
+            
+            tabs.forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            cards.forEach(card => {
+                if (status === 'all') {
+                    card.style.display = 'block';
+                } else {
+                    const cardStatus = card.getAttribute('data-category');
+                    card.style.display = cardStatus === status ? 'block' : 'none';
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadExams();
+            loadUserResults();
+        });
+    </script>
+</body>
+</html>

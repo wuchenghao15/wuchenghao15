@@ -181,6 +181,126 @@ def fix_single_error():
         }), 500
 
 
+@ai_employee_bp.route('/fix-all', methods=['POST'])
+def fix_all_problems():
+    """
+    强力修复所有问题 - 调用AI任务调度器进行全面修复
+    POST /api/ai-employee/fix-all
+    {
+        "code": "代码内容",
+        "language": "python"
+    }
+    """
+    try:
+        data = request.get_json()
+        code = data.get('code', '')
+        language = data.get('language', 'python')
+        
+        if not code:
+            return jsonify({
+                'success': False,
+                'error': '代码不能为空'
+            }), 400
+        
+        import time
+        start_time = time.time()
+        
+        from app.ai.ai_task_scheduler import get_ai_task_scheduler
+        scheduler = get_ai_task_scheduler()
+        
+        fixer = ErrorFixer()
+        errors = fixer.detect_all_errors(code, language)
+        
+        if not errors:
+            return jsonify({
+                'success': True,
+                'data': {
+                    'original_code': code,
+                    'fixed_code': code,
+                    'errors': [],
+                    'fix_reports': [],
+                    'total_errors': 0,
+                    'fixed_count': 0,
+                    'timestamp': datetime.now().isoformat(),
+                    'repair_report': {
+                        'report_id': str(uuid.uuid4()),
+                        'employees_count': 0,
+                        'strategy': '无需修复',
+                        'diagnosis_time': f"{(time.time() - start_time):.2f}s",
+                        'fix_time': "0s",
+                        'reported_to_db': True,
+                        'employees': []
+                    }
+                }
+            })
+        
+        problems_data = []
+        for error in errors:
+            problems_data.append({
+                'problem_id': f"code_error_{error.get('type')}_{error.get('line', 0)}",
+                'severity': error.get('severity', 'medium'),
+                'category': 'code_error',
+                'title': error.get('message', '代码错误'),
+                'description': f"第 {error.get('line', 0)} 行: {error.get('message', '')}",
+                'recommendation': error.get('suggestion', ''),
+                'error_data': error
+            })
+        
+        fix_result = scheduler.submit_problems_for_fix(problems_data)
+        
+        scheduler.start_scheduler()
+        time.sleep(5)
+        
+        tasks = scheduler.get_all_tasks()
+        completed_tasks = [t for t in tasks if t['status'] == 'completed']
+        successful_fixes = [t for t in completed_tasks if t['success']]
+        
+        fixed_code = code
+        fix_reports = []
+        for task in successful_fixes:
+            if task.get('fix_result'):
+                fixed_code = task['fix_result'].get('fixed_code', fixed_code)
+                fix_reports.append({
+                    'original_error': task.get('problem_data', {}).get('error_data', {}),
+                    'explanation': task.get('fix_result', {}).get('explanation', ''),
+                    'fixed': True
+                })
+        
+        final_errors = fixer.detect_all_errors(fixed_code, language)
+        
+        repair_report = scheduler.generate_repair_report(problems_data)
+        repair_report['diagnosis_time'] = f"{(time.time() - start_time):.2f}s"
+        repair_report['report_id'] = str(uuid.uuid4())
+        repair_report['reported_to_db'] = True
+        
+        scheduler.report_to_database(problems_data, completed_tasks)
+        
+        end_time = time.time()
+        
+        return jsonify({
+            'success': True,
+            'data': {
+                'original_code': code,
+                'fixed_code': fixed_code,
+                'errors': final_errors,
+                'fix_reports': fix_reports,
+                'total_errors': len(errors),
+                'fixed_count': len(fix_reports),
+                'timestamp': datetime.now().isoformat(),
+                'repair_report': repair_report,
+                'execution_time': f"{(end_time - start_time):.2f}s"
+            }
+        })
+        
+    except Exception as e:
+        import traceback
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'traceback': traceback.format_exc()
+        }), 500
+
+
 @ai_employee_bp.route('/test-code', methods=['POST'])
 def test_fixed_code():
     """

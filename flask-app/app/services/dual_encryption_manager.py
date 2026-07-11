@@ -1,3 +1,6 @@
+import logging
+logger = logging.getLogger(__name__)
+
 # -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
@@ -384,4 +387,4 @@ if __name__ == "__main__":
     print(f"匹配 'secret123': {match1}")
     print(f"匹配 'wrongpass': {match2}")
     
-    print("\n == 测试完成 ===")
+    logger.info("\n == 测试完成 ===")

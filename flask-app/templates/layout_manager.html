@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <!-- 设计系统 -->
+    <link rel="stylesheet" href="/assets/css/mtscos-design-system.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>AI布局管理员工 - MTSCOS系统</title>
+    <link rel="stylesheet" href="/assets/responsive_layout.css">
+    <link rel="stylesheet" href="/assets/font-awesome/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #667eea;
+            --secondary-color: #764ba2;
+            --success-color: var(--color-success);
+            --warning-color: var(--color-warning);
+            --danger-color: var(--color-error);
+            --dark-bg: var(--bg-dark);
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, var(--dark-bg) 0%, #1e293b 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 30px;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .logo {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+        }
+
+        .header-title {
+            h1 {
+                margin: 0;
+                font-size: clamp(20px, 3vw, 28px);
+                background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
+            }
+            p {
+                margin: 5px 0 0 0;
+                color: var(--text-secondary);
+                font-size: 14px;
+            }
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 16px;
+            background: var(--card-bg);
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+        }
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-success {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+        }
+
+        .btn-warning {
+            background: var(--warning-color);
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background: #d97706;
+        }
+
+        .btn-danger {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .btn-outline:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 24px;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--primary-color);
+        }
+
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin-bottom: 16px;
+        }
+
+        .stat-icon.blue { background: rgba(59, 130, 246, 0.2); color: var(--color-primary); }
+        .stat-icon.green { background: rgba(16, 185, 129, 0.2); color: var(--color-success); }
+        .stat-icon.purple { background: rgba(139, 92, 246, 0.2); color: var(--color-secondary); }
+        .stat-icon.orange { background: rgba(249, 115, 22, 0.2); color: #f97316; }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            margin: 0 0 8px 0;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin: 0;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 24px;
+            margin-bottom: 30px;
+        }
+
+        @media (max-width: 992px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .card-body {
+            padding: 24px;
+        }
+
+        .config-section {
+            margin-bottom: 24px;
+        }
+
+        .config-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .config-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .config-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            margin-bottom: 8px;
+        }
+
+        .config-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .config-key {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .config-value {
+            font-size: 14px;
+            font-family: monospace;
+            color: var(--primary-color);
+        }
+
+        .feature-toggle {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            margin-bottom: 8px;
+        }
+
+        .feature-name {
+            font-size: 14px;
+        }
+
+        .toggle-switch {
+            width: 48px;
+            height: 26px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 13px;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .toggle-switch.active {
+            background: var(--success-color);
+        }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            width: 22px;
+            height: 22px;
+            background: white;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: left 0.3s ease;
+        }
+
+        .toggle-switch.active::after {
+            left: 24px;
+        }
+
+        .action-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .progress-bar {
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            border-radius: 3px;
+            transition: width 0.5s ease;
+        }
+
+        .breakpoint-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .breakpoint-table th,
+        .breakpoint-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .breakpoint-table th {
+            color: var(--text-secondary);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .breakpoint-table td {
+            font-size: 14px;
+        }
+
+        .breakpoint-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .sync-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 16px;
+            background: rgba(16, 185, 129, 0.1);
+            border-radius: 10px;
+            margin-bottom: 16px;
+        }
+
+        .sync-status .status-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--success-color);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: var(--card-bg);
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            width: 90%;
+            max-width: 500px;
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+
+        .modal-overlay.active .modal {
+            transform: scale(1);
+        }
+
+        .modal-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .modal-body {
+            padding: 24px;
+        }
+
+        .modal-footer {
+            padding: 16px 24px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        .input-group {
+            margin-bottom: 16px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        .input-group input,
+        .input-group select {
+            width: 100%;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        .input-group input:focus,
+        .input-group select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 16px 24px;
+            border-radius: 10px;
+            color: white;
+            font-size: 14px;
+            z-index: 2000;
+            transform: translateX(120%);
+            transition: transform 0.3s ease;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.success {
+            background: var(--success-color);
+        }
+
+        .notification.error {
+            background: var(--danger-color);
+        }
+
+        .notification.info {
+            background: var(--primary-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-left">
+                <div class="logo">
+                    <i class="fas fa-paint-brush"></i>
+                </div>
+                <div class="header-title">
+                    <h1>AI布局管理员工</h1>
+                    <p>自动调节系统所有页面排版缩放排列功能</p>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="user-info">
+                    <div class="user-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <span>{{ user.username }}</span>
+                </div>
+                <button class="btn btn-outline" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i>退出
+                </button>
+            </div>
+        </header>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon blue">
+                    <i class="fas fa-file-lines"></i>
+                </div>
+                <div class="stat-value" id="totalPages">0</div>
+                <div class="stat-label">管理页面数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="stat-value" id="appliedPages">0</div>
+                <div class="stat-label">已应用布局</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon purple">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div class="stat-value" id="avgScore">0</div>
+                <div class="stat-label">平均布局评分</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon orange">
+                    <i class="fas fa-sync-alt"></i>
+                </div>
+                <div class="stat-value" id="syncCount">0</div>
+                <div class="stat-label">同步次数</div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">布局配置</h2>
+                    <button class="btn btn-primary" onclick="openConfigModal()">
+                        <i class="fas fa-edit"></i>编辑配置
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="config-section">
+                        <div class="config-title">CSS变量</div>
+                        <div class="config-item">
+                            <span class="config-key">基础字体大小</span>
+                            <span class="config-value" id="cfg-fontSize">--</span>
+                        </div>
+                        <div class="config-item">
+                            <span class="config-key">基础间距</span>
+                            <span class="config-value" id="cfg-spacing">--</span>
+                        </div>
+                        <div class="config-item">
+                            <span class="config-key">卡片内边距</span>
+                            <span class="config-value" id="cfg-cardPadding">--</span>
+                        </div>
+                        <div class="config-item">
+                            <span class="config-key">卡片间距</span>
+                            <span class="config-value" id="cfg-cardGap">--</span>
+                        </div>
+                        <div class="config-item">
+                            <span class="config-key">头像尺寸</span>
+                            <span class="config-value" id="cfg-avatarSize">--</span>
+                        </div>
+                        <div class="config-item">
+                            <span class="config-key">按钮内边距</span>
+                            <span class="config-value" id="cfg-btnPadding">--</span>
+                        </div>
+                        <div class="config-item">
+                            <span class="config-key">边框圆角</span>
+                            <span class="config-value" id="cfg-borderRadius">--</span>
+                        </div>
+                        <div class="config-item">
+                            <span class="config-key">容器最大宽度</span>
+                            <span class="config-value" id="cfg-maxWidth">--</span>
+                        </div>
+                        <div class="config-item">
+                            <span class="config-key">容器最小宽度</span>
+                            <span class="config-value" id="cfg-minWidth">--</span>
+                        </div>
+                    </div>
+
+                    <div class="config-section">
+                        <div class="config-title">响应式断点</div>
+                        <table class="breakpoint-table">
+                            <thead>
+                                <tr>
+                                    <th>断点名称</th>
+                                    <th>宽度范围</th>
+                                    <th>网格列数</th>
+                                </tr>
+                            </thead>
+                            <tbody id="breakpointBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">功能开关</h2>
+                </div>
+                <div class="card-body">
+                    <div class="feature-toggle">
+                        <span class="feature-name">自动调整网格布局</span>
+                        <div class="toggle-switch active" id="toggle-grid" onclick="toggleFeature('auto_adjust_grid')"></div>
+                    </div>
+                    <div class="feature-toggle">
+                        <span class="feature-name">自动调整字体大小</span>
+                        <div class="toggle-switch active" id="toggle-font" onclick="toggleFeature('auto_adjust_font')"></div>
+                    </div>
+                    <div class="feature-toggle">
+                        <span class="feature-name">自动调整间距</span>
+                        <div class="toggle-switch active" id="toggle-spacing" onclick="toggleFeature('auto_adjust_spacing')"></div>
+                    </div>
+                    <div class="feature-toggle">
+                        <span class="feature-name">溢出检测</span>
+                        <div class="toggle-switch active" id="toggle-overflow" onclick="toggleFeature('overflow_detection')"></div>
+                    </div>
+                    <div class="feature-toggle">
+                        <span class="feature-name">布局监控器</span>
+                        <div class="toggle-switch active" id="toggle-watcher" onclick="toggleFeature('layout_watcher')"></div>
+                    </div>
+                    <div class="feature-toggle">
+                        <span class="feature-name">图片懒加载</span>
+                        <div class="toggle-switch active" id="toggle-lazy" onclick="toggleFeature('lazy_loading')"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">快捷操作</h2>
+                </div>
+                <div class="card-body">
+                    <div class="sync-status" id="syncStatus">
+                        <div class="status-dot"></div>
+                        <span>布局系统运行正常</span>
+                    </div>
+                    <div class="action-buttons">
+                        <button class="btn btn-success" onclick="syncAllPages()">
+                            <i class="fas fa-sync-alt"></i>同步到所有页面
+                        </button>
+                        <button class="btn btn-primary" onclick="analyzeLayout()">
+                            <i class="fas fa-search"></i>分析页面布局
+                        </button>
+                        <button class="btn btn-warning" onclick="resetLayout()">
+                            <i class="fas fa-rotate-left"></i>重置布局设置
+                        </button>
+                        <button class="btn btn-outline" onclick="previewLayout()">
+                            <i class="fas fa-eye"></i>预览效果
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="configModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">编辑布局配置</h3>
+                <button class="modal-close" onclick="closeConfigModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="input-group">
+                    <label>基础字体大小</label>
+                    <input type="text" id="input-fontSize" placeholder="clamp(14px, 2vw, 18px)">
+                </div>
+                <div class="input-group">
+                    <label>基础间距</label>
+                    <input type="text" id="input-spacing" placeholder="clamp(8px, 1vw, 16px)">
+                </div>
+                <div class="input-group">
+                    <label>卡片内边距</label>
+                    <input type="text" id="input-cardPadding" placeholder="clamp(12px, 1.5vw, 24px)">
+                </div>
+                <div class="input-group">
+                    <label>容器最大宽度</label>
+                    <input type="text" id="input-maxWidth" placeholder="1200px">
+                </div>
+                <div class="input-group">
+                    <label>容器最小宽度</label>
+                    <input type="text" id="input-minWidth" placeholder="320px">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeConfigModal()">取消</button>
+                <button class="btn btn-primary" onclick="saveConfig()">保存配置</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="notification" id="notification"></div>
+
+    <script src="/assets/layout_adapter.js"></script>
+    <script>
+        let currentConfig = {};
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadConfig();
+            loadStats();
+        });
+
+        async function loadConfig() {
+            try {
+                const response = await fetch('/api/layout-manager/config');
+                const data = await response.json();
+                
+                if (data.success) {
+                    currentConfig = data.config;
+                    updateConfigDisplay(data.config);
+                }
+            } catch (error) {
+                console.error('加载配置失败:', error);
+            }
+        }
+
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/layout-manager/stats');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const stats = data.stats;
+                    document.getElementById('totalPages').textContent = stats.unique_pages || 0;
+                    document.getElementById('appliedPages').textContent = stats.successful_applications || 0;
+                    document.getElementById('avgScore').textContent = stats.average_score || 0;
+                    document.getElementById('syncCount').textContent = stats.total_applications || 0;
+                }
+            } catch (error) {
+                console.error('加载统计失败:', error);
+            }
+        }
+
+        function updateConfigDisplay(config) {
+            document.getElementById('cfg-fontSize').textContent = config.base_font_size || '--';
+            document.getElementById('cfg-spacing').textContent = config.base_spacing || '--';
+            document.getElementById('cfg-cardPadding').textContent = config.card_padding || '--';
+            document.getElementById('cfg-cardGap').textContent = config.card_gap || '--';
+            document.getElementById('cfg-avatarSize').textContent = config.avatar_size || '--';
+            document.getElementById('cfg-btnPadding').textContent = config.btn_padding || '--';
+            document.getElementById('cfg-borderRadius').textContent = config.border_radius || '--';
+            document.getElementById('cfg-maxWidth').textContent = config.max_container_width || '--';
+            document.getElementById('cfg-minWidth').textContent = config.min_container_width || '--';
+
+            const breakpoints = config.breakpoints || {};
+            const gridColumns = config.grid_columns || {};
+            const tbody = document.getElementById('breakpointBody');
+            tbody.innerHTML = '';
+
+            Object.entries(breakpoints).forEach(([key, value]) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${key}</td>
+                    <td>${value}</td>
+                    <td>${gridColumns[key] || 1}列</td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            const features = config.features || {};
+            document.getElementById('toggle-grid').classList.toggle('active', features.auto_adjust_grid !== false);
+            document.getElementById('toggle-font').classList.toggle('active', features.auto_adjust_font !== false);
+            document.getElementById('toggle-spacing').classList.toggle('active', features.auto_adjust_spacing !== false);
+            document.getElementById('toggle-overflow').classList.toggle('active', features.overflow_detection !== false);
+            document.getElementById('toggle-watcher').classList.toggle('active', features.layout_watcher !== false);
+            document.getElementById('toggle-lazy').classList.toggle('active', features.lazy_loading !== false);
+        }
+
+        function openConfigModal() {
+            document.getElementById('input-fontSize').value = currentConfig.base_font_size || '';
+            document.getElementById('input-spacing').value = currentConfig.base_spacing || '';
+            document.getElementById('input-cardPadding').value = currentConfig.card_padding || '';
+            document.getElementById('input-maxWidth').value = currentConfig.max_container_width || '';
+            document.getElementById('input-minWidth').value = currentConfig.min_container_width || '';
+            document.getElementById('configModal').classList.add('active');
+        }
+
+        function closeConfigModal() {
+            document.getElementById('configModal').classList.remove('active');
+        }
+
+        async function saveConfig() {
+            const config = {
+                base_font_size: document.getElementById('input-fontSize').value,
+                base_spacing: document.getElementById('input-spacing').value,
+                card_padding: document.getElementById('input-cardPadding').value,
+                max_container_width: document.getElementById('input-maxWidth').value,
+                min_container_width: document.getElementById('input-minWidth').value
+            };
+
+            try {
+                const response = await fetch('/api/layout-manager/config', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ config })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showNotification('配置保存成功', 'success');
+                    closeConfigModal();
+                    loadConfig();
+                } else {
+                    showNotification(data.error || '保存失败', 'error');
+                }
+            } catch (error) {
+                showNotification('保存失败: ' + error.message, 'error');
+            }
+        }
+
+        async function syncAllPages() {
+            try {
+                const response = await fetch('/api/layout-manager/sync-all-pages', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showNotification(data.message, 'success');
+                    loadStats();
+                } else {
+                    showNotification(data.error || '同步失败', 'error');
+                }
+            } catch (error) {
+                showNotification('同步失败: ' + error.message, 'error');
+            }
+        }
+
+        async function analyzeLayout() {
+            showNotification('正在分析页面布局...', 'info');
+            
+            try {
+                const response = await fetch('/api/layout-adjustment/analyze', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        pages: [
+                            { name: '学生门户', path: '/exam_system' },
+                            { name: '考试系统', path: '/exam_system/exams' },
+                            { name: '测试系统', path: '/exam_system/tests' },
+                            { name: '平时练习', path: '/exam_system/daily_practice' },
+                            { name: '积分商城', path: '/exam_system/redeem_store' }
+                        ]
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showNotification(`分析完成，生成方案: ${data.plan.name}`, 'success');
+                } else {
+                    showNotification('分析失败，使用默认布局配置', 'info');
+                }
+            } catch (error) {
+                console.error('分析失败:', error);
+                showNotification('分析失败，使用默认布局配置', 'info');
+            }
+        }
+
+        async function resetLayout() {
+            if (!confirm('确定要重置布局设置为默认值吗？')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/layout-manager/reset', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showNotification(data.message, 'success');
+                    loadConfig();
+                    loadStats();
+                } else {
+                    showNotification(data.error || '重置失败', 'error');
+                }
+            } catch (error) {
+                showNotification('重置失败: ' + error.message, 'error');
+            }
+        }
+
+        async function toggleFeature(featureName) {
+            const toggle = document.getElementById(`toggle-${featureName.replace('_', '-')}`);
+            const isActive = toggle.classList.toggle('active');
+
+            try {
+                const response = await fetch('/api/layout-manager/config', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        config: {
+                            features: {
+                                [featureName]: isActive
+                            }
+                        }
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!data.success) {
+                    toggle.classList.toggle('active');
+                    showNotification('保存失败', 'error');
+                }
+            } catch (error) {
+                toggle.classList.toggle('active');
+                showNotification('保存失败: ' + error.message, 'error');
+            }
+        }
+
+        function previewLayout() {
+            window.open('/exam_system', '_blank');
+        }
+
+        function logout() {
+            window.location.href = '/admin_app/logout';
+        }
+
+        function showNotification(message, type = 'info') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification ${type} show`;
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

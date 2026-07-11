@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <!-- 设计系统 -->
+    <link rel="stylesheet" href="/assets/css/mtscos-design-system.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MTSCOS 平时练习 - 每日学习</title>
+    
+    <link rel="stylesheet" href="/assets/tailwind.min.css">
+    <link rel="stylesheet" href="/assets/all.min.css">
+    <link rel="stylesheet" href="/assets/responsive_layout.css">
+    
+    <style>
+        :root {
+            --primary-color: var(--color-primary);
+            --secondary-color: var(--color-success);
+            --accent-color: var(--color-secondary);
+            --warning-color: var(--color-warning);
+            --danger-color: var(--color-error);
+            --dark-bg: var(--bg-dark);
+            --card-bg: rgba(30, 41, 59, 0.8);
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--bg-dark) 0%, #1e293b 50%, var(--bg-dark) 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+        
+        .tech-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(139, 92, 246, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(139, 92, 246, 0.05) 1px, transparent 1px);
+            background-size: 60px 60px;
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        .floating-orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.3;
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        .orb-1 {
+            width: 400px;
+            height: 400px;
+            background: var(--accent-color);
+            top: -100px;
+            right: -100px;
+        }
+        
+        .glass-card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .glass-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            border-color: rgba(139, 92, 246, 0.3);
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-accent {
+            background: linear-gradient(135deg, var(--accent-color), #7c3aed);
+            color: white;
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+        }
+        
+        .btn-accent:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(139, 92, 246, 0.5);
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .tag {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        
+        .tag-purple { background: rgba(139, 92, 246, 0.2); color: var(--accent-color); }
+        .tag-blue { background: rgba(59, 130, 246, 0.2); color: var(--primary-color); }
+        .tag-green { background: rgba(16, 185, 129, 0.2); color: var(--secondary-color); }
+        .tag-yellow { background: rgba(245, 158, 11, 0.2); color: var(--warning-color); }
+        
+        .avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent-color), var(--primary-color));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: white;
+        }
+        
+        .progress-ring {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: conic-gradient(var(--accent-color) var(--progress), rgba(255,255,255,0.1) 0);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        
+        .progress-ring::before {
+            content: '';
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: var(--dark-bg);
+        }
+        
+        .progress-text {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+        }
+        
+        .practice-card {
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="tech-grid"></div>
+    <div class="floating-orb orb-1"></div>
+    
+    <!-- 顶部导航 -->
+    <nav class="relative z-10 px-6 py-4" style="background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(16px); border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center">
+                    <i class="fas fa-book-open text-white text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold">MTSCOS 平时练习</h1>
+                    <p class="text-sm text-gray-400">每日学习中心</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-6">
+                <div class="flex items-center gap-3">
+                    <div class="avatar">
+                        {{ user.username[0]|upper if user.username else 'U' }}
+                    </div>
+                    <div>
+                        <p class="font-medium">{{ user.username }}</p>
+                        {% if grade %}
+                        <p class="text-sm text-gray-400">{{ grade }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                <a href="/auth/logout" class="btn btn-secondary">
+                    <i class="fas fa-sign-out-alt"></i>
+                    退出
+                </a>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- 面包屑导航 -->
+    <div class="relative z-10 max-w-7xl mx-auto px-6 py-4">
+        <nav class="flex items-center gap-2 text-gray-400 text-sm">
+            <a href="/exam_system" class="hover:text-purple-400">首页</a>
+            <i class="fas fa-chevron-right"></i>
+            <span class="text-purple-400">平时练习</span>
+        </nav>
+    </div>
+    
+    <!-- 主内容区 -->
+    <main class="relative z-10 max-w-7xl mx-auto px-6 py-8">
+        
+        <!-- 页面标题 -->
+        <div class="mb-8">
+            <h2 class="text-3xl font-bold mb-2">平时练习</h2>
+            <p class="text-gray-400">{{ '每日一练，巩固知识，稳步提升学习成绩' if education_type == 'nine_year' else '每日技能练习，持续提升专业能力' }}</p>
+        </div>
+        
+        <!-- 每日学习进度 -->
+        <div class="glass-card p-6 mb-8">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-8">
+                <div class="flex items-center gap-6">
+                    <div class="progress-ring" style="--progress: {{ daily_progress }}%">
+                        <div class="progress-text">
+                            <div class="text-2xl font-bold" style="color: var(--accent-color);">{{ daily_progress }}%</div>
+                            <div class="text-xs text-gray-400">今日进度</div>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold mb-2">每日学习目标</h3>
+                        <div class="space-y-2">
+                            <div class="flex items-center gap-3">
+                                <i class="fas fa-check-circle text-green-400"></i>
+                                <span>{{ daily_completed }}/{{ daily_target }} 道练习题</span>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <i class="fas fa-clock text-blue-400"></i>
+                                <span>已学习 {{ daily_time }} 分钟</span>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <i class="fas fa-calendar-check text-purple-400"></i>
+                                <span>连续学习 {{ streak_days }} 天</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    {% if daily_completed < daily_target %}
+                    <button class="btn btn-accent" onclick="startDailyPractice()">
+                        <i class="fas fa-play"></i>开始今日练习
+                    </button>
+                    {% else %}
+                    <div class="text-center">
+                        <div class="text-green-400 text-2xl mb-2"><i class="fas fa-trophy"></i></div>
+                        <div class="font-bold text-green-400">今日目标已完成！</div>
+                        <div class="text-sm text-gray-400">继续加油，保持学习节奏</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- 快捷练习入口 -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+            <div class="glass-card p-4 flex flex-col items-center gap-3 cursor-pointer hover:border-purple-500/30" onclick="startQuickPractice('daily')">
+                <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center">
+                    <i class="fas fa-calendar-day text-white text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-center">每日一练</h3>
+                    <p class="text-xs text-gray-400 text-center">10道精选题目</p>
+                </div>
+            </div>
+            
+            <div class="glass-card p-4 flex flex-col items-center gap-3 cursor-pointer hover:border-red-500/30" onclick="startQuickPractice('wrong')">
+                <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-red-500 to-pink-600 flex items-center justify-center">
+                    <i class="fas fa-book-open text-white text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-center">错题复习</h3>
+                    <p class="text-xs text-gray-400 text-center">巩固薄弱知识</p>
+                </div>
+            </div>
+            
+            <div class="glass-card p-4 flex flex-col items-center gap-3 cursor-pointer hover:border-blue-500/30" onclick="startQuickPractice('intelligent')">
+                <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center">
+                    <i class="fas fa-brain text-white text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-center">智能练习</h3>
+                    <p class="text-xs text-gray-400 text-center">AI定制题目</p>
+                </div>
+            </div>
+            
+            <div class="glass-card p-4 flex flex-col items-center gap-3 cursor-pointer hover:border-green-500/30" onclick="startQuickPractice('random')">
+                <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-green-500 to-teal-600 flex items-center justify-center">
+                    <i class="fas fa-dice text-white text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-center">随机练习</h3>
+                    <p class="text-xs text-gray-400 text-center">综合知识训练</p>
+                </div>
+            </div>
+            
+            <div class="glass-card p-4 flex flex-col items-center gap-3 cursor-pointer hover:border-blue-500/30" onclick="startQuickPractice('listening')">
+                <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center">
+                    <i class="fas fa-headphones text-white text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-center">听力练习</h3>
+                    <p class="text-xs text-gray-400 text-center">英式发音听力训练</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 科目筛选器 -->
+        <div class="glass-card p-4 mb-6">
+            <div class="flex flex-wrap items-center gap-3">
+                <span class="text-gray-400 text-sm font-medium">科目筛选:</span>
+                <button class="px-4 py-2 rounded-lg text-sm font-medium transition-all" 
+                        style="background: rgba(139,92,246,0.2); color: var(--accent-color); border:1px solid rgba(139,92,246,0.3);"
+                        onclick="filterSubject('')">
+                    <i class="fas fa-layer-group mr-2"></i>全部科目
+                </button>
+                {% for plan in practice_plans %}
+                <button class="px-4 py-2 rounded-lg text-sm font-medium transition-all hover:transform hover:scale-105"
+                        style="background: rgba(255,255,255,0.05); color: var(--text-primary); border:1px solid rgba(255,255,255,0.1);"
+                        onclick="filterSubject('{{ plan.subject }}')">
+                    <i class="{{ plan.icon }} mr-2" style="color: {{ plan.color }};"></i>{{ plan.subject }}
+                </button>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- 练习计划列表 -->
+        <div class="mb-6">
+            <h3 class="text-xl font-bold mb-4 flex items-center gap-2">
+                <i class="fas fa-list-alt text-purple-400"></i>
+                专项练习模块
+            </h3>
+            <p class="text-gray-400 text-sm">选择对应科目进行专项训练，针对性提升知识掌握</p>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="practice-plan-container">
+            {% for plan in practice_plans %}
+            <div class="glass-card p-6 practice-card hover:border-purple-500/30 group" onclick="startSubjectPractice('{{ plan.subject }}')">
+                <div class="flex items-start justify-between mb-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 rounded-xl flex items-center justify-center" style="background: rgba(255,255,255,0.05);">
+                            <i class="{{ plan.icon }} text-xl" style="color: {{ plan.color }};"></i>
+                        </div>
+                        <div>
+                            <span class="tag tag-purple">{{ plan.subject }}</span>
+                            {% if plan.is_daily %}
+                            <span class="tag tag-green mt-1 block">
+                                <i class="fas fa-star mr-1"></i>每日推荐
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <span class="text-gray-400 text-sm">
+                        <i class="fas fa-clock mr-1"></i>{{ plan.duration }}分钟
+                    </span>
+                </div>
+                <h3 class="text-lg font-bold mb-2 group-hover:text-purple-400 transition-colors">{{ plan.title }}</h3>
+                <p class="text-sm text-gray-400 line-clamp-2 mb-4">{{ plan.description }}</p>
+                <div class="flex items-center justify-between text-sm">
+                    <span class="text-gray-400">
+                        <i class="fas fa-question-circle mr-1"></i>{{ plan.question_count }}题
+                    </span>
+                    <div class="flex items-center gap-2">
+                        <div class="w-20 h-2 bg-white/10 rounded-full overflow-hidden">
+                            <div class="h-full" style="width: {{ plan.completion_rate }}%; background: linear-gradient(90deg, {{ plan.color }}, {{ plan.color }}88);"></div>
+                        </div>
+                        <span style="color: {{ plan.color }};">{{ plan.completion_rate }}%</span>
+                    </div>
+                </div>
+                <div class="mt-4 pt-4 border-t border-white/10">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs text-gray-500">上次练习: {{ plan.last_practiced or '未练习' }}</span>
+                        <span class="flex items-center text-sm" style="color: {{ plan.color }};">
+                            开始练习 <i class="fas fa-arrow-right ml-1 group-hover:translate-x-1 transition-transform"></i>
+                        </span>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+            
+            {% if not practice_plans %}
+            <div class="glass-card p-12 text-center col-span-full">
+                <i class="fas fa-book-open text-gray-500 text-4xl mb-4"></i>
+                <h3 class="text-xl font-bold mb-2">暂无练习计划</h3>
+                <p class="text-gray-400">系统将根据您的学习情况自动生成练习计划</p>
+                <button class="btn btn-accent mt-4" onclick="refreshPlans()">
+                    <i class="fas fa-refresh"></i>刷新计划
+                </button>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- 学习建议 -->
+        <div class="glass-card p-6 mt-8">
+            <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                <i class="fas fa-lightbulb text-yellow-400"></i>
+                AI学习建议
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {% for tip in learning_tips %}
+                <div class="p-4 rounded-lg" style="background: rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.2);">
+                    <div class="flex items-start gap-3">
+                        <i class="fas fa-info-circle text-yellow-400 mt-0.5"></i>
+                        <div>
+                            <div class="font-medium mb-1">{{ tip.title }}</div>
+                            <div class="text-sm text-gray-400">{{ tip.content }}</div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- 返回首页 -->
+        <div class="mt-8 text-center">
+            <a href="/exam_system" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i>
+                返回首页
+            </a>
+        </div>
+        
+    </main>
+    
+    <!-- 底部 -->
+    <footer class="relative z-10 text-center py-6 text-gray-500 text-sm border-t border-white/5 mt-12">
+        <p>&copy; 2026 MTSCOS AI 智能教育平台 - 让学习更高效</p>
+    </footer>
+    
+    <script>
+        function startDailyPractice() {
+            location.href = '/exam_system/daily_practice/start?type=daily';
+        }
+        
+        function startQuickPractice(type) {
+            location.href = '/exam_system/daily_practice/start?type=' + type;
+        }
+        
+        function startPracticePlan(planId) {
+            location.href = '/exam_system/daily_practice/start?plan=' + planId;
+        }
+        
+        function startSubjectPractice(subject) {
+            location.href = '/exam_system/daily_practice/start?subject=' + encodeURIComponent(subject);
+        }
+        
+        function filterSubject(subject) {
+            const container = document.getElementById('practice-plan-container');
+            const cards = container.querySelectorAll('.practice-card');
+            
+            cards.forEach(card => {
+                if (!subject) {
+                    card.style.display = 'block';
+                } else {
+                    const cardSubject = card.querySelector('.tag-purple').textContent.trim();
+                    if (cardSubject === subject) {
+                        card.style.display = 'block';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                }
+            });
+        }
+        
+        function refreshPlans() {
+            location.reload();
+        }
+    </script>
+    
+    <script src="/assets/layout_adapter.js"></script>
+</body>
+</html>

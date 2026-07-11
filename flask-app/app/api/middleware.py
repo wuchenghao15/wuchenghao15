@@ -25,6 +25,7 @@ class RateLimiter:
         self.max_requests = max_requests
         self.window_seconds = window_seconds
         self.requests = {}
+        self.local_ips = ['127.0.0.1', 'localhost', '::1']
 
     def allow_request(self, client_ip):
         """检查是否允许请求
@@ -35,6 +36,10 @@ class RateLimiter:
         Returns:
             bool: 是否允许请求
         """
+        # 本地IP完全跳过速率限制
+        if client_ip in self.local_ips:
+            return True
+        
         current_time = time.time()
 
         # 清理过期的请求记录

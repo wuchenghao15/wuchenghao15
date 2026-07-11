@@ -1,0 +1,185 @@
+{% extends 'admin_app/base.html' %}
+
+{% block title %}考试数据分析{% endblock %}
+
+{% block content %}
+    <div class="page-header">
+        <h1>考试数据分析</h1>
+        <p>深入分析考试数据，洞察学习趋势</p>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">选择考试</div>
+            <div class="search-bar">
+                <select class="form-control" id="examSelect" onchange="loadExamAnalysis()">
+                    <option value="">请选择考试</option>
+                </select>
+                <input type="text" class="form-control" id="examSearch" placeholder="搜索考试..." onkeyup="filterExams()">
+            </div>
+        </div>
+        <div class="card-body" id="analysisContent">
+            <div class="empty-state">
+                <i class="fas fa-chart-bar"></i>
+                <h3>选择考试查看分析报告</h3>
+                <p>从上方下拉框选择一场考试，查看详细的数据分析报告</p>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block script %}
+<script>
+let exams = [];
+
+function loadExams() {
+    fetch('/api/exam/papers')
+        .then(res => res.json())
+        .then(data => {
+            if (data.papers) {
+                exams = data.papers;
+                const select = document.getElementById('examSelect');
+                select.innerHTML = '<option value="">请选择考试</option>' + 
+                    exams.map(e => `<option value="${e.id}">${e.title}</option>`).join('');
+            }
+        });
+}
+
+function filterExams() {
+    const keyword = document.getElementById('examSearch').value.toLowerCase();
+    const filtered = exams.filter(e => e.title.toLowerCase().includes(keyword));
+    const select = document.getElementById('examSelect');
+    select.innerHTML = '<option value="">请选择考试</option>' + 
+        filtered.map(e => `<option value="${e.id}">${e.title}</option>`).join('');
+}
+
+function loadExamAnalysis() {
+    const examId = document.getElementById('examSelect').value;
+    if (!examId) {
+        document.getElementById('analysisContent').innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-chart-bar"></i>
+                <h3>选择考试查看分析报告</h3>
+                <p>从上方下拉框选择一场考试，查看详细的数据分析报告</p>
+            </div>
+        `;
+        return;
+    }
+    
+    document.getElementById('analysisContent').innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> 分析中...</div>';
+    
+    fetch(`/api/exam_analysis/score_distribution?exam_id=${examId}`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.code === 200) {
+                renderAnalysis(data.data);
+            } else if (data.error) {
+                document.getElementById('analysisContent').innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-lock"></i>
+                        <h3>需要登录</h3>
+                        <p>请先登录后再查看考试分析</p>
+                    </div>
+                `;
+            } else {
+                renderEmptyAnalysis();
+            }
+        })
+        .catch(() => {
+            renderEmptyAnalysis();
+        });
+}
+
+function renderEmptyAnalysis() {
+    document.getElementById('analysisContent').innerHTML = `
+        <div class="empty-state">
+            <i class="fas fa-chart-bar"></i>
+            <h3>暂无分析数据</h3>
+            <p>该考试暂无分析数据，请选择其他考试</p>
+        </div>
+    `;
+}
+
+function renderAnalysis(data) {
+    const scoreRanges = data.score_ranges || {};
+    const rangeKeys = Object.keys(scoreRanges);
+    const rangeData = rangeKeys.map(k => ({ name: scoreRanges[k].label, value: scoreRanges[k].percentage || 0 }));
+    
+    document.getElementById('analysisContent').innerHTML = `
+        <div class="grid grid-2">
+            <div class="stat-card">
+                <div class="stat-icon bg-primary"><i class="fas fa-chart-line"></i></div>
+                <div class="stat-info">
+                    <div class="stat-value">${data.mean ? data.mean.toFixed(1) : '-'}</div>
+                    <div class="stat-label">平均分</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon bg-success"><i class="fas fa-medal"></i></div>
+                <div class="stat-info">
+                    <div class="stat-value">${data.max_score || '-'}</div>
+                    <div class="stat-label">最高分</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon bg-danger"><i class="fas fa-minus-circle"></i></div>
+                <div class="stat-info">
+                    <div class="stat-value">${data.min_score || '-'}</div>
+                    <div class="stat-label">最低分</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon bg-warning"><i class="fas fa-percentage"></i></div>
+                <div class="stat-info">
+                    <div class="stat-value">${data.std_dev ? data.std_dev.toFixed(1) : '-'}</div>
+                    <div class="stat-label">标准差</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-title">成绩分布</div>
+        <div class="card">
+            <div class="card-body">
+                <div class="chart-container">
+                    ${rangeData.map(r => `
+                        <div class="bar-item">
+                            <span class="bar-label">${r.name}</span>
+                            <div class="bar-track">
+                                <div class="bar-fill" style="width: ${r.value}%"></div>
+                            </div>
+                            <span class="bar-value">${r.value.toFixed(1)}%</span>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        </div>
+
+        <div class="section-title">统计详情</div>
+        <div class="card">
+            <div class="card-body">
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <span class="detail-label">中位数</span>
+                        <span class="detail-value">${data.median || '-'}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">众数</span>
+                        <span class="detail-value">${data.mode || '-'}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">25分位数</span>
+                        <span class="detail-value">${data.percentile_25 || '-'}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">75分位数</span>
+                        <span class="detail-value">${data.percentile_75 || '-'}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+window.onload = loadExams;
+</script>
+{% endblock %}

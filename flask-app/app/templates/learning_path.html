@@ -1,0 +1,297 @@
+{% extends "base.html" %}
+
+{% block title %}学习路径规划 - MTSCOS AI{% endblock %}
+
+{% block content %}
+<div class="learning-path-container">
+    <div class="page-header">
+        <h1>🎯 学习路径规划</h1>
+        <p>根据您的学习情况，为您生成个性化学习路径</p>
+    </div>
+    
+    <!-- 学习目标设置 -->
+    <div class="goal-settings card">
+        <h2>设置学习目标</h2>
+        <div class="settings-form">
+            <div class="form-group">
+                <label for="currentLevel">当前水平</label>
+                <select id="currentLevel">
+                    <option value="初级">初级</option>
+                    <option value="中级" selected>中级</option>
+                    <option value="高级">高级</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="learningGoal">学习目标</label>
+                <select id="learningGoal">
+                    <option value="基础巩固">基础巩固</option>
+                    <option value="能力提升" selected>能力提升</option>
+                    <option value="进阶突破">进阶突破</option>
+                    <option value="冲刺备考">冲刺备考</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="availableTime">每周可用学习时间（小时）</label>
+                <input type="number" id="availableTime" value="10" min="1" max="40">
+            </div>
+            <button onclick="generateLearningPath()" class="btn-primary">生成学习路径</button>
+        </div>
+    </div>
+    
+    <!-- 学习路径结果 -->
+    <div id="pathResult" class="path-result card" style="display: none;">
+        <h2>您的个性化学习路径</h2>
+        <div id="pathSummary" class="path-summary"></div>
+        <div id="learningStages" class="learning-stages"></div>
+        <div id="dailyPlan" class="daily-plan"></div>
+        <div id="milestones" class="milestones"></div>
+    </div>
+    
+    <!-- 学习进度追踪 -->
+    <div class="progress-tracking card">
+        <h2>学习进度追踪</h2>
+        <div id="currentProgress" class="current-progress"></div>
+    </div>
+    
+    <!-- 推荐学习顺序 -->
+    <div class="recommended-sequence card">
+        <h2>推荐学习顺序</h2>
+        <button onclick="getRecommendedSequence()" class="btn-secondary">获取推荐顺序</button>
+        <div id="sequenceResult" class="sequence-list"></div>
+    </div>
+</div>
+
+<style>
+    .learning-path-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    
+    .page-header {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+    
+    .page-header h1 {
+        font-size: 28px;
+        color: #333;
+    }
+    
+    .card {
+        background: white;
+        border-radius: 12px;
+        padding: 24px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .card h2 {
+        font-size: 20px;
+        color: #333;
+        margin-bottom: 16px;
+        border-bottom: 2px solid #667eea;
+        padding-bottom: 8px;
+    }
+    
+    .settings-form {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+    }
+    
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+        color: #555;
+    }
+    
+    .form-group select, .form-group input {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 14px;
+    }
+    
+    .btn-primary {
+        background: #667eea;
+        color: white;
+        padding: 12px 24px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 16px;
+        transition: background 0.3s;
+    }
+    
+    .btn-primary:hover {
+        background: #5a6fd6;
+    }
+    
+    .btn-secondary {
+        background: #48bb78;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+    }
+    
+    .learning-stages {
+        display: grid;
+        gap: 16px;
+        margin-top: 16px;
+    }
+    
+    .stage-item {
+        background: #f8f9fa;
+        padding: 16px;
+        border-radius: 8px;
+        border-left: 4px solid #667eea;
+    }
+    
+    .stage-item h3 {
+        color: #667eea;
+        margin-bottom: 8px;
+    }
+    
+    .milestones {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 16px;
+        margin-top: 16px;
+    }
+    
+    .milestone-item {
+        background: #fff3cd;
+        padding: 12px;
+        border-radius: 8px;
+        text-align: center;
+    }
+    
+    .sequence-list {
+        margin-top: 16px;
+    }
+    
+    .sequence-item {
+        display: flex;
+        align-items: center;
+        padding: 12px;
+        background: #e8f5e9;
+        border-radius: 6px;
+        margin-bottom: 8px;
+    }
+    
+    .sequence-order {
+        width: 30px;
+        height: 30px;
+        background: #48bb78;
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 12px;
+    }
+</style>
+
+<script>
+    const userId = {{ user.user_id }};
+    
+    function generateLearningPath() {
+        const currentLevel = document.getElementById('currentLevel').value;
+        const learningGoal = document.getElementById('learningGoal').value;
+        const availableTime = document.getElementById('availableTime').value;
+        
+        fetch('/api/learning/enhancement/path/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                user_id: userId,
+                current_level: currentLevel,
+                learning_goal: learningGoal,
+                available_time: parseInt(availableTime)
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayLearningPath(data.data);
+            } else {
+                alert('生成失败: ' + data.error);
+            }
+        });
+    }
+    
+    function displayLearningPath(pathData) {
+        document.getElementById('pathResult').style.display = 'block';
+        
+        // 显示概要
+        document.getElementById('pathSummary').innerHTML = `
+            <p><strong>学习目标:</strong> ${pathData.learning_goal}</p>
+            <p><strong>预计时长:</strong> ${pathData.total_duration_weeks} 周</p>
+            <p><strong>预期改善:</strong> ${pathData.estimated_improvement}</p>
+        `;
+        
+        // 显示学习阶段
+        let stagesHtml = '';
+        pathData.learning_stages.forEach(stage => {
+            stagesHtml += `
+                <div class="stage-item">
+                    <h3>${stage.name}</h3>
+                    <p>时长: ${stage.duration_weeks} 周</p>
+                    <p>每日学习: ${stage.daily_hours} 小时</p>
+                    <p>重点内容: ${stage.focus_topics.join(', ')}</p>
+                    <p>目标: ${stage.objectives.join(', ')}</p>
+                </div>
+            `;
+        });
+        document.getElementById('learningStages').innerHTML = stagesHtml;
+        
+        // 显示里程碑
+        let milestonesHtml = '';
+        pathData.milestones.forEach(m => {
+            milestonesHtml += `
+                <div class="milestone-item">
+                    <h4>${m.name}</h4>
+                    <p>目标日期: ${m.target_date}</p>
+                    <p>完成标准: ${m.criteria.join(', ')}</p>
+                </div>
+            `;
+        });
+        document.getElementById('milestones').innerHTML = milestonesHtml;
+    }
+    
+    function getRecommendedSequence() {
+        fetch(`/api/learning/enhancement/path/sequence?user_id=${userId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displaySequence(data.data);
+            }
+        });
+    }
+    
+    function displaySequence(sequence) {
+        let html = '';
+        sequence.forEach(item => {
+            html += `
+                <div class="sequence-item">
+                    <div class="sequence-order">${item.recommended_order}</div>
+                    <div>
+                        <strong>${item.knowledge_point}</strong>
+                        <p>前置知识点: ${item.prerequisites.join(', ') || '无'}</p>
+                    </div>
+                </div>
+            `;
+        });
+        document.getElementById('sequenceResult').innerHTML = html;
+    }
+    
+    // 页面加载时获取推荐顺序
+    getRecommendedSequence();
+</script>
+{% endblock %}

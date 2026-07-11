@@ -237,28 +237,28 @@ def test():
     try:
         response = manager.generate_response("hello")
         results['ai_test'] = response['success']
-    except:
+    except Exception:
         pass
     
     # 测试模型列表
     try:
         models = manager.get_models()
         results['model_test'] = len(models) > 0
-    except:
+    except Exception:
         pass
     
     # 测试规则
     try:
         rules = manager.get_rules()
         results['rule_test'] = len(rules) > 0
-    except:
+    except Exception:
         pass
     
     # 测试安全规则
     try:
         response = manager.generate_response("my password is secret")
         results['security_test'] = not response['success']
-    except:
+    except Exception:
         pass
     
     return jsonify(results)

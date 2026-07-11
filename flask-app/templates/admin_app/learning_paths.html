@@ -1,0 +1,278 @@
+{% extends 'admin_app/base.html' %}
+
+{% block title %}学习路径管理{% endblock %}
+
+{% block content %}
+    <div class="page-header">
+        <h1>学习路径管理</h1>
+        <p>管理个性化学习路径</p>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">学习路径列表</div>
+            <button class="btn btn-primary" onclick="openCreateModal()">
+                <i class="fas fa-plus"></i>
+                创建路径
+            </button>
+        </div>
+        <div class="card-body">
+            <div class="search-bar">
+                <input type="text" class="form-control" id="searchKeyword" placeholder="搜索学习路径..." onkeyup="handleSearch()">
+                <select class="form-control" id="statusFilter" onchange="loadPaths()">
+                    <option value="">全部状态</option>
+                    <option value="active">进行中</option>
+                    <option value="paused">已暂停</option>
+                    <option value="completed">已完成</option>
+                    <option value="draft">草稿</option>
+                </select>
+            </div>
+            
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>路径名称</th>
+                            <th>用户</th>
+                            <th>进度</th>
+                            <th>状态</th>
+                            <th>创建时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pathList">
+                        <tr>
+                            <td colspan="7" class="text-center">加载中...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="pagination" id="pagination">
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="createModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">创建学习路径</h3>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="pathForm">
+                    <input type="hidden" id="pathId">
+                    <div class="form-group">
+                        <label class="form-label">路径名称 *</label>
+                        <input type="text" class="form-control" id="pathName" placeholder="输入学习路径名称" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">路径描述</label>
+                        <textarea class="form-control" id="pathDescription" rows="4" placeholder="输入路径描述"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">目标科目</label>
+                        <select class="form-control" id="pathSubject">
+                            <option value="">请选择科目</option>
+                            <option value="math">数学</option>
+                            <option value="english">英语</option>
+                            <option value="chinese">语文</option>
+                            <option value="physics">物理</option>
+                            <option value="chemistry">化学</option>
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">目标年级</label>
+                            <select class="form-control" id="pathGrade">
+                                <option value="">请选择年级</option>
+                                <option value="g1">一年级</option>
+                                <option value="g2">二年级</option>
+                                <option value="g3">三年级</option>
+                                <option value="g4">四年级</option>
+                                <option value="g5">五年级</option>
+                                <option value="g6">六年级</option>
+                                <option value="g7">初一</option>
+                                <option value="g8">初二</option>
+                                <option value="g9">初三</option>
+                                <option value="g10">高一</option>
+                                <option value="g11">高二</option>
+                                <option value="g12">高三</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">难度级别</label>
+                            <select class="form-control" id="pathDifficulty">
+                                <option value="easy">简单</option>
+                                <option value="medium">中等</option>
+                                <option value="hard">困难</option>
+                                <option value="expert">专家</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">目标时长（小时）</label>
+                        <input type="number" class="form-control" id="pathDuration" placeholder="目标学习时长" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">学习目标</label>
+                        <textarea class="form-control" id="pathGoals" rows="3" placeholder="输入学习目标，每行一个"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal()">取消</button>
+                <button class="btn btn-primary" onclick="savePath()">保存</button>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block script %}
+<script>
+const STATUS_MAP = {
+    'active': { label: '进行中', class: 'badge-success' },
+    'paused': { label: '已暂停', class: 'badge-warning' },
+    'completed': { label: '已完成', class: 'badge-primary' },
+    'draft': { label: '草稿', class: 'badge-secondary' }
+};
+
+function loadPaths() {
+    const keyword = document.getElementById('searchKeyword').value;
+    const status = document.getElementById('statusFilter').value;
+    
+    fetch(`/api/learning_paths?keyword=${encodeURIComponent(keyword)}&status=${status}`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.code === 200) {
+                renderPaths(data.data);
+            } else {
+                document.getElementById('pathList').innerHTML = '<tr><td colspan="7" class="text-center">加载失败</td></tr>';
+            }
+        })
+        .catch(() => {
+            document.getElementById('pathList').innerHTML = '<tr><td colspan="7" class="text-center">网络错误</td></tr>';
+        });
+}
+
+function renderPaths(paths) {
+    const tbody = document.getElementById('pathList');
+    if (!paths || paths.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center">暂无学习路径</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = paths.map(path => {
+        const status = STATUS_MAP[path.status] || { label: path.status, class: 'badge-secondary' };
+        return `
+            <tr>
+                <td>${path.id}</td>
+                <td><strong>${path.name}</strong></td>
+                <td>${path.user_id || '-'}</td>
+                <td>
+                    <div class="progress-bar">
+                        <div class="progress-fill-primary" style="width: ${path.progress}%"></div>
+                    </div>
+                    <span class="text-muted">${path.progress}%</span>
+                </td>
+                <td><span class="badge ${status.class}">${status.label}</span></td>
+                <td>${path.created_at || '-'}</td>
+                <td>
+                    <button class="btn btn-sm" onclick="viewPath(${path.id})"><i class="fas fa-eye"></i></button>
+                    <button class="btn btn-sm btn-primary" onclick="editPath(${path.id})"><i class="fas fa-edit"></i></button>
+                    <button class="btn btn-sm btn-danger" onclick="deletePath(${path.id})"><i class="fas fa-trash"></i></button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function handleSearch() {
+    loadPaths();
+}
+
+function openCreateModal() {
+    document.getElementById('modalTitle').textContent = '创建学习路径';
+    document.getElementById('pathId').value = '';
+    document.getElementById('pathForm').reset();
+    document.getElementById('createModal').style.display = 'block';
+}
+
+function closeModal() {
+    document.getElementById('createModal').style.display = 'none';
+}
+
+function savePath() {
+    const id = document.getElementById('pathId').value;
+    const data = {
+        name: document.getElementById('pathName').value,
+        description: document.getElementById('pathDescription').value,
+        subject: document.getElementById('pathSubject').value,
+        grade: document.getElementById('pathGrade').value,
+        difficulty: document.getElementById('pathDifficulty').value,
+        target_duration: document.getElementById('pathDuration').value,
+        goals: document.getElementById('pathGoals').value.split('\n').filter(g => g.trim())
+    };
+    
+    const url = id ? `/api/learning_paths/${id}` : '/api/learning_paths';
+    const method = id ? 'PUT' : 'POST';
+    
+    fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.code === 200) {
+            closeModal();
+            loadPaths();
+        } else {
+            alert(data.message || '保存失败');
+        }
+    })
+    .catch(() => alert('网络错误'));
+}
+
+function editPath(id) {
+    fetch(`/api/learning_paths/${id}`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.code === 200) {
+                const path = data.data;
+                document.getElementById('modalTitle').textContent = '编辑学习路径';
+                document.getElementById('pathId').value = path.id;
+                document.getElementById('pathName').value = path.name || '';
+                document.getElementById('pathDescription').value = path.description || '';
+                document.getElementById('pathSubject').value = path.subject || '';
+                document.getElementById('pathGrade').value = path.grade || '';
+                document.getElementById('pathDifficulty').value = path.difficulty || 'medium';
+                document.getElementById('pathDuration').value = path.target_duration || '';
+                document.getElementById('pathGoals').value = (path.goals || []).join('\n');
+                document.getElementById('createModal').style.display = 'block';
+            }
+        });
+}
+
+function viewPath(id) {
+    alert(`查看学习路径: ${id}`);
+}
+
+function deletePath(id) {
+    if (confirm('确定要删除这条学习路径吗？')) {
+        fetch(`/api/learning_paths/${id}`, { method: 'DELETE' })
+            .then(res => res.json())
+            .then(data => {
+                if (data.code === 200) {
+                    loadPaths();
+                } else {
+                    alert(data.message || '删除失败');
+                }
+            });
+    }
+}
+
+window.onload = loadPaths;
+</script>
+{% endblock %}

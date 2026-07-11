@@ -204,7 +204,7 @@ class AILogAnalyzer:
                             break
                         except ValueError:
                             continue
-                except:
+                except Exception:
                     pass
                 break
 

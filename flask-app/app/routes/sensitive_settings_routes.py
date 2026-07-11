@@ -24,7 +24,7 @@ def sensitive_settings_page():
         return redirect(url_for('login'))
     
     user_role = session.get('role', '')
-    if user_role not in ['hardware_admin', 'super_admin']:
+    if user_role not in ['hardware_admin', 'super_admin', 'hardware_vikey_admin']:
         return redirect(url_for('hardware_admin_dashboard'))
     
     return render_template('sensitive_settings.html')

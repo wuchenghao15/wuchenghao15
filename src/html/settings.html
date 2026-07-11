@@ -3,1229 +3,1092 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>系统管理 - MTSCOS</title>
-    <!-- 正确的CSS引用 -->
-    <link rel="stylesheet" href="assets/css/common_styles/modern-theme.css">
-    <link rel="stylesheet" href="assets/css/common_styles/responsive.css">
-    <link rel="stylesheet" href="assets/css/page_styles/settings.css">
-    <link rel="stylesheet" href="assets/css/third_party/font-awesome.min.css">
-    
-    <link rel="stylesheet" href="assets/css/page_styles/settings-custom.css">
-    
-    <!-- 用户管理样式 -->
-    <link rel="stylesheet" href="/assets/css/settings.css">
+    <title>系统设置 - MTSCOS AI</title>
+    <link href="/assets/vendor/tailwind/tailwind.min.css" rel="stylesheet">
+    <link href="/assets/vendor/fontawesome/css/all.min.css" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; background: #f3f4f6; min-height: 100vh; }
+        .top-bar { background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.05); padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+        .logo { display: flex; align-items: center; gap: 10px; }
+        .logo-icon { width: 36px; height: 36px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; }
+        .container { max-width: 1800px; margin: 24px auto; padding: 0 24px; display: grid; grid-template-columns: 260px 1fr; gap: 24px; }
+        .sidebar { background: white; border-radius: 12px; padding: 16px; height: fit-content; box-shadow: 0 2px 8px rgba(0,0,0,0.04); position: sticky; top: 80px; }
+        .sidebar-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 8px; cursor: pointer; color: #4b5563; font-size: 14px; margin-bottom: 4px; transition: all 0.15s; }
+        .sidebar-item:hover { background: #f3f4f6; color: #1f2937; }
+        .sidebar-item.active { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .sidebar-item i { width: 18px; text-align: center; }
+        .sidebar-section-title { font-size: 11px; font-weight: 600; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px; padding: 12px 14px 6px; }
+        .content { background: white; border-radius: 12px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); min-height: calc(100vh - 160px); }
+        .section-title { font-size: 22px; font-weight: 700; color: #1f2937; margin-bottom: 6px; }
+        .section-subtitle { font-size: 13px; color: #6b7280; margin-bottom: 24px; }
+        .employee-card { background: #f9fafb; border-radius: 10px; padding: 16px; border: 1px solid #e5e7eb; transition: all 0.2s; }
+        .employee-card:hover { transform: translateY(-2px); box-shadow: 0 8px 16px rgba(0,0,0,0.06); border-color: #c7d2fe; }
+        .status-badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+        .status-running { background: #d1fae5; color: #065f46; }
+        .status-stopped { background: #fee2e2; color: #b91c1c; }
+        .status-pulse { width: 6px; height: 6px; border-radius: 50%; background: #10b981; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+        .stat-card { padding: 20px; border-radius: 12px; color: white; }
+        .btn { padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: all 0.15s; }
+        .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 10px rgba(102,126,234,0.3); }
+        .btn-secondary { background: #f3f4f6; color: #4b5563; }
+        .btn-secondary:hover { background: #e5e7eb; }
+        .panel { display: none; }
+        .panel.active { display: block; }
+        .table-row { padding: 12px 0; border-bottom: 1px solid #f3f4f6; display: flex; justify-content: space-between; align-items: center; }
+        .table-row:last-child { border-bottom: none; }
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; align-items: center; justify-content: center; }
+        .modal.active { display: flex; }
+        .modal-content { background: white; border-radius: 12px; padding: 24px; max-width: 600px; width: 90%; max-height: 80vh; overflow: auto; }
+        
+        .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+        .stat-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .stat-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; opacity: 0.9; }
+        .stat-value { font-size: 36px; font-weight: 700; }
+        .stat-label { font-size: 12px; opacity: 0.8; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
+        .stat-bar { height: 4px; background: rgba(255,255,255,0.2); border-radius: 2px; margin-top: 12px; overflow: hidden; }
+        .stat-bar-fill { height: 100%; border-radius: 2px; background: rgba(255,255,255,0.8); transition: width 0.5s ease; }
+        
+        .alert-item { padding: 14px; border-radius: 10px; margin-bottom: 10px; border-left: 4px solid; }
+        .alert-item.critical { background: rgba(220,53,69,0.08); border-color: #dc3545; }
+        .alert-item.warning { background: rgba(245,158,11,0.08); border-color: #f59e0b; }
+        .alert-item.info { background: rgba(23,162,184,0.08); border-color: #17a2b8; }
+        
+        .recent-activity-item { display: flex; gap: 12px; padding: 12px; border-radius: 10px; margin-bottom: 8px; background: #f9fafb; }
+        .activity-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+        
+        .feature-card { background: #f9fafb; border-radius: 10px; padding: 20px; text-align: center; cursor: pointer; transition: all 0.2s; border: 1px solid transparent; }
+        .feature-card:hover { transform: translateY(-3px); box-shadow: 0 8px 16px rgba(0,0,0,0.06); border-color: #e5e7eb; }
+        .feature-icon { font-size: 36px; margin-bottom: 10px; }
+        
+        .system-status-item { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f3f4f6; }
+        .status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 8px; }
+        .status-dot.connected { background: #10b981; }
+        .status-dot.disconnected { background: #ef4444; }
+        .status-dot.normal { background: #10b981; }
+        .status-dot.warning { background: #f59e0b; }
+        
+        .perm-level { padding: 12px; border-radius: 10px; border-left: 4px solid; margin-bottom: 8px; }
+        .perm-level.highest { background: rgba(220,53,69,0.08); border-color: #dc3545; }
+        .perm-level.super { background: rgba(245,158,11,0.08); border-color: #f59e0b; }
+        .perm-level.admin { background: rgba(102,126,234,0.08); border-color: #667eea; }
+        .perm-level.user { background: rgba(16,185,129,0.08); border-color: #10b981; }
+        .perm-level.lowest { background: #f9fafb; border-color: #9ca3af; }
+        
+        .user-table { width: 100%; border-collapse: collapse; }
+        .user-table th, .user-table td { padding: 12px; text-align: left; border-bottom: 1px solid #f3f4f6; }
+        .user-table th { background: #f9fafb; font-weight: 600; font-size: 13px; color: #6b7280; }
+        .user-table tr:hover { background: #f9fafb; }
+
+        .ai-service-card { background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-radius: 12px; padding: 20px; border: 1px solid #bae6fd; transition: all 0.2s; }
+        .ai-service-card:hover { box-shadow: 0 4px 12px rgba(59,130,246,0.15); }
+        .ai-service-icon { font-size: 28px; margin-bottom: 12px; }
+        .ai-service-name { font-weight: 600; color: #1e40af; margin-bottom: 4px; }
+        .ai-service-status { font-size: 12px; padding: 3px 8px; border-radius: 6px; display: inline-block; }
+        .ai-service-status.active { background: #dcfce7; color: #166534; }
+        .ai-service-status.inactive { background: #fef2f2; color: #991b1b; }
+        
+        .task-item { display: flex; justify-content: space-between; align-items: center; padding: 14px; border-radius: 10px; background: #f9fafb; margin-bottom: 8px; }
+        .task-item:hover { background: #f3f4f6; }
+        .task-priority { font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: 600; }
+        .task-priority.high { background: #fee2e2; color: #dc2626; }
+        .task-priority.medium { background: #fef3c7; color: #d97706; }
+        .task-priority.low { background: #d1fae5; color: #059669; }
+        
+        .nav-anomaly-item { padding: 14px; border-radius: 10px; background: #fef2f2; border: 1px solid #fecaca; margin-bottom: 8px; }
+        .nav-anomaly-item:hover { background: #fee2e2; }
+        
+        .progress-ring { width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; position: relative; background: conic-gradient(#667eea 0deg, #e5e7eb 0deg); }
+        .progress-ring::before { content: ''; position: absolute; width: 60px; height: 60px; border-radius: 50%; background: white; }
+        .progress-value { position: relative; font-size: 18px; font-weight: 700; color: #1f2937; }
+        
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+        .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; }
+        
+        @media (max-width: 1200px) {
+            .grid-2 { grid-template-columns: 1fr; }
+            .grid-3 { grid-template-columns: repeat(2, 1fr); }
+            .grid-4 { grid-template-columns: repeat(2, 1fr); }
+        }
+        
+        @media (max-width: 768px) {
+            .container { grid-template-columns: 1fr; }
+            .sidebar { position: relative; top: 0; }
+            .grid-3 { grid-template-columns: 1fr; }
+            .grid-4 { grid-template-columns: 1fr; }
+        }
+    </style>
 </head>
 <body>
-    <!-- 顶部导航栏 -->
-    <header>
-        <div class="header-left">
-            <div class="logo-container">
-                <div class="logo">M</div>
-                <span>MTSCOS AI</span>
-            </div>
-            <div class="system-info">
-                <div>系统版本: 1.20260123.0001</div>
-                <div>环境: 开发环境</div>
+    <div class="top-bar">
+        <div class="logo">
+            <div class="logo-icon"><i class="fas fa-brain"></i></div>
+            <div>
+                <div style="font-weight: 700; color: #1f2937;">MTSCOS AI</div>
+                <div style="font-size: 11px; color: #6b7280;">v5.0.0 智能系统优化版</div>
             </div>
         </div>
-        <div class="header-right">
-            <div class="user-info">
-                <div class="user-avatar">U</div>
-                <div>
-                    <div class="user-name">管理员</div>
-                    <div class="user-role">系统管理员</div>
-                </div>
-            </div>
-            <button class="btn btn-secondary logout-btn">
-                <i class="fa fa-sign-out"></i>
-                退出
-            </button>
+        <div style="display: flex; align-items: center; gap: 16px;">
+            <a href="/dashboard" style="color: #4b5563; text-decoration: none; font-size: 13px;">
+                <i class="fas fa-tachometer-alt"></i> 仪表盘
+            </a>
+            <a href="/" style="color: #4b5563; text-decoration: none; font-size: 13px;">
+                <i class="fas fa-sign-out-alt"></i> 退出
+            </a>
         </div>
-    </header>
+    </div>
 
-    <!-- 主容器 -->
-    <div class="admin-container">
-        <!-- 侧边栏 -->
+    <div class="container">
         <aside class="sidebar">
-            <h3>系统管理</h3>
-            
-            <div class="menu-section">
-                <div class="menu-section-title">仪表盘</div>
-                <div class="menu-item active" data-panel="dashboard">
-                    <i class="fa fa-dashboard menu-icon"></i>
-                    <span>系统概览</span>
-                </div>
-                <div class="menu-item" data-panel="project-info" data-permission="dashboard:view">
-                    <i class="fa fa-project-diagram menu-icon"></i>
-                    <span>项目信息</span>
-                </div>
-                <div class="menu-item" data-panel="system-status" data-permission="dashboard:view">
-                    <i class="fa fa-server menu-icon"></i>
-                    <span>系统状态</span>
-                </div>
+            <div class="sidebar-section-title">系统概览</div>
+            <div class="sidebar-item active" data-panel="dashboard">
+                <i class="fas fa-chart-pie"></i> 系统仪表盘
+            </div>
+            <div class="sidebar-item" data-panel="ai-overview">
+                <i class="fas fa-cpu"></i> AI智能概览
             </div>
             
-            <div class="menu-section">
-                <div class="menu-section-title">设置管理</div>
-                <div class="menu-item" data-panel="general-settings" data-permission="settings:general:view">
-                    <i class="fa fa-cog menu-icon"></i>
-                    <span>通用设置</span>
-                </div>
-                <div class="menu-item" data-panel="security-settings" data-permission="settings:security:view">
-                    <i class="fa fa-shield-alt menu-icon"></i>
-                    <span>安全设置</span>
-                </div>
-                <div class="menu-item" data-panel="database-settings" data-permission="settings:database:view">
-                    <i class="fa fa-database menu-icon"></i>
-                    <span>数据库设置</span>
-                </div>
-                <div class="menu-item" data-panel="ai-settings" data-permission="settings:ai:view">
-                    <i class="fa fa-robot menu-icon"></i>
-                    <span>AI设置</span>
-                </div>
+            <div class="sidebar-section-title">AI员工管理</div>
+            <div class="sidebar-item" data-panel="ai-employees">
+                <i class="fas fa-robot"></i> AI员工管理
             </div>
             
-            <div class="menu-section">
-                <div class="menu-section-title">用户管理</div>
-                <div class="menu-item" data-panel="users" data-permission="users:view">
-                    <i class="fa fa-users menu-icon"></i>
-                    <span>用户管理</span>
-                </div>
-                <div class="menu-item" data-panel="permissions" data-permission="permissions:view">
-                    <i class="fa fa-lock menu-icon"></i>
-                    <span>权限设置</span>
-                </div>
-                <div class="menu-item" data-panel="roles" data-permission="roles:view">
-                    <i class="fa fa-user-tag menu-icon"></i>
-                    <span>角色管理</span>
-                </div>
-                <div class="menu-item" data-panel="audit" data-permission="audit:view">
-                    <i class="fa fa-history menu-icon"></i>
-                    <span>操作审计</span>
-                </div>
+            <div class="sidebar-section-title">用户管理</div>
+            <div class="sidebar-item" data-panel="users">
+                <i class="fas fa-users"></i> 用户管理
+            </div>
+            <div class="sidebar-item" data-panel="permissions">
+                <i class="fas fa-lock"></i> 权限设置
             </div>
             
-            <div class="menu-section">
-                <div class="menu-section-title">系统工具</div>
-                <div class="menu-item" data-panel="logs" data-permission="logs:view">
-                    <i class="fa fa-file-alt menu-icon"></i>
-                    <span>系统日志</span>
-                </div>
-                <div class="menu-item" data-panel="backup" data-permission="backup:view">
-                    <i class="fa fa-backup menu-icon"></i>
-                    <span>备份恢复</span>
-                </div>
-                <div class="menu-item" data-panel="maintenance" data-permission="maintenance:view">
-                    <i class="fa fa-tools menu-icon"></i>
-                    <span>系统维护</span>
-                </div>
+            <div class="sidebar-section-title">系统设置</div>
+            <div class="sidebar-item" data-panel="system-config">
+                <i class="fas fa-cog"></i> 系统配置
+            </div>
+            <div class="sidebar-item" data-panel="security">
+                <i class="fas fa-shield-alt"></i> 安全设置
+            </div>
+            <div class="sidebar-item" data-panel="database-settings">
+                <i class="fas fa-database"></i> 数据库设置
+            </div>
+            <div class="sidebar-item" data-panel="ai-settings">
+                <i class="fas fa-robot"></i> AI设置
+            </div>
+            
+            <div class="sidebar-section-title">系统工具</div>
+            <div class="sidebar-item" data-panel="logs">
+                <i class="fas fa-file-alt"></i> 系统日志
+            </div>
+            <div class="sidebar-item" data-panel="audit">
+                <i class="fas fa-history"></i> 操作审计
+            </div>
+            
+            <div class="sidebar-section-title">关于</div>
+            <div class="sidebar-item" data-panel="about">
+                <i class="fas fa-info-circle"></i> 关于系统
             </div>
         </aside>
 
-        <!-- 主内容区域 -->
-        <main class="main-content">
-            <!-- 仪表盘面板 -->
-            <div class="panel active" id="dashboard">
-                <h2>
-                    <i class="fa fa-dashboard"></i>
-                    系统概览
-                </h2>
+        <div class="content">
+            <!-- 系统仪表盘面板 -->
+            <div class="panel active" id="panel-dashboard">
+                <div class="section-title"><i class="fas fa-chart-pie text-indigo-600"></i> 系统仪表盘</div>
+                <div class="section-subtitle">实时监控系统性能和状态</div>
                 
-                <div class="welcome-section">
-                    <h1 class="welcome-title">欢迎回来，管理员</h1>
-                    <p class="welcome-message">
-                        这里是 MTSCOS AI 系统的管理控制台，您可以查看系统状态、管理设置和配置权限。
-                    </p>
-                    
-                    <div class="quick-actions">
-                        <button class="quick-action-btn">
-                            <i class="fa fa-refresh"></i>
-                            刷新系统状态
-                        </button>
-                        <button class="quick-action-btn">
-                            <i class="fa fa-sync"></i>
-                            同步配置
-                        </button>
-                        <button class="quick-action-btn">
-                            <i class="fa fa-download"></i>
-                            导出数据
-                        </button>
-                        <button class="quick-action-btn">
-                            <i class="fa fa-upload"></i>
-                            导入配置
-                        </button>
+                <div class="stat-grid">
+                    <div class="stat-card" style="background: linear-gradient(135deg, #f87171 0%, #ef4444 100%);">
+                        <div class="stat-card-header">
+                            <span class="stat-icon" style="background: rgba(255,255,255,0.2);">💻</span>
+                            <span class="status-dot" id="cpu-status"></span>
+                        </div>
+                        <div class="stat-value" id="cpu-value">--</div>
+                        <div class="stat-label">CPU 使用率</div>
+                        <div class="stat-bar">
+                            <div class="stat-bar-fill" id="cpu-bar"></div>
+                        </div>
+                    </div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #6ee7b7 0%, #10b981 100%);">
+                        <div class="stat-card-header">
+                            <span class="stat-icon" style="background: rgba(255,255,255,0.2);">💾</span>
+                            <span class="status-dot" id="memory-status"></span>
+                        </div>
+                        <div class="stat-value" id="memory-value">--</div>
+                        <div class="stat-label">内存使用率</div>
+                        <div class="stat-bar">
+                            <div class="stat-bar-fill" id="memory-bar"></div>
+                        </div>
+                    </div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);">
+                        <div class="stat-card-header">
+                            <span class="stat-icon" style="background: rgba(255,255,255,0.2);">🖥️</span>
+                            <span class="status-dot" id="disk-status"></span>
+                        </div>
+                        <div class="stat-value" id="disk-value">--</div>
+                        <div class="stat-label">磁盘使用率</div>
+                        <div class="stat-bar">
+                            <div class="stat-bar-fill" id="disk-bar"></div>
+                        </div>
+                    </div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%);">
+                        <div class="stat-card-header">
+                            <span class="stat-icon" style="background: rgba(255,255,255,0.2);">⚠️</span>
+                        </div>
+                        <div class="stat-value" id="alert-count">--</div>
+                        <div class="stat-label">活动告警</div>
+                    </div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);">
+                        <div class="stat-card-header">
+                            <span class="stat-icon" style="background: rgba(255,255,255,0.2);">👥</span>
+                        </div>
+                        <div class="stat-value" id="user-count">--</div>
+                        <div class="stat-label">活跃用户</div>
+                    </div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #f472b6 0%, #ec4899 100%);">
+                        <div class="stat-card-header">
+                            <span class="stat-icon" style="background: rgba(255,255,255,0.2);">🔗</span>
+                        </div>
+                        <div class="stat-value" id="session-count">--</div>
+                        <div class="stat-label">活动会话</div>
                     </div>
                 </div>
-                
-                <div class="system-status">
-                    <div class="status-card">
-                        <div class="status-icon">
-                            <i class="fa fa-server"></i>
-                        </div>
-                        <div class="status-info">
-                            <div class="status-value">正常</div>
-                            <div class="status-label">服务器状态</div>
-                            <div class="status-description">所有服务运行正常</div>
+
+                <div class="grid-2">
+                    <div>
+                        <h3 style="font-size: 16px; font-weight: 600; color: #1f2937; margin-bottom: 16px;">🔔 系统告警</h3>
+                        <div id="alert-list">
+                            <div style="text-align: center; padding: 40px; color: #9ca3af;">加载中...</div>
                         </div>
                     </div>
-                    
-                    <div class="status-card">
-                        <div class="status-icon">
-                            <i class="fa fa-database"></i>
+                    <div>
+                        <h3 style="font-size: 16px; font-weight: 600; color: #1f2937; margin-bottom: 16px;">📡 系统状态</h3>
+                        <div class="system-status-item">
+                            <span><span class="status-dot" id="db-status"></span>数据库连接</span>
+                            <span id="db-status-text">--</span>
                         </div>
-                        <div class="status-info">
-                            <div class="status-value">已连接</div>
-                            <div class="status-label">数据库状态</div>
-                            <div class="status-description">连接正常，响应时间 12ms</div>
+                        <div class="system-status-item">
+                            <span><span class="status-dot" id="net-status"></span>网络状态</span>
+                            <span id="net-status-text">--</span>
                         </div>
-                    </div>
-                    
-                    <div class="status-card">
-                        <div class="status-icon">
-                            <i class="fa fa-robot"></i>
+                        <div class="system-status-item">
+                            <span>系统版本</span>
+                            <span>v5.0.0</span>
                         </div>
-                        <div class="status-info">
-                            <div class="status-value">10/10</div>
-                            <div class="status-label">AI 模型状态</div>
-                            <div class="status-description">所有模型已加载</div>
+                        <div class="system-status-item">
+                            <span>最后检查时间</span>
+                            <span id="last-check">--</span>
                         </div>
-                    </div>
-                    
-                    <div class="status-card">
-                        <div class="status-icon">
-                            <i class="fa fa-users"></i>
+                        <div class="system-status-item">
+                            <span>运行时长</span>
+                            <span id="uptime">--</span>
                         </div>
-                        <div class="status-info">
-                            <div class="status-value">128</div>
-                            <div class="status-label">在线用户</div>
-                            <div class="status-description">当前活跃用户数</div>
+                        <div class="system-status-item">
+                            <span>API请求次数</span>
+                            <span id="api-requests">--</span>
                         </div>
                     </div>
                 </div>
-                
-                <div class="dashboard-grid">
-                    <div class="dashboard-card">
-                        <h3>系统资源</h3>
-                        <div class="info-grid">
-                            <div class="info-item">
-                                <div class="info-label">CPU 使用率</div>
-                                <div class="info-value">15%</div>
-                            </div>
-                            <div class="info-item">
-                                <div class="info-label">内存使用</div>
-                                <div class="info-value">3.2GB / 16GB</div>
-                            </div>
-                            <div class="info-item">
-                                <div class="info-label">磁盘空间</div>
-                                <div class="info-value">45GB / 256GB</div>
-                            </div>
-                            <div class="info-item">
-                                <div class="info-label">网络流量</div>
-                                <div class="info-value">1.2MB/s</div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="dashboard-card">
-                        <h3>项目统计</h3>
-                        <div class="info-grid">
-                            <div class="info-item">
-                                <div class="info-label">总项目数</div>
-                                <div class="info-value">24</div>
-                            </div>
-                            <div class="info-item">
-                                <div class="info-label">活跃项目</div>
-                                <div class="info-value">18</div>
-                            </div>
-                            <div class="info-item">
-                                <div class="info-label">AI 模型数</div>
-                                <div class="info-value">10</div>
-                            </div>
-                            <div class="info-item">
-                                <div class="info-label">API 调用</div>
-                                <div class="info-value">1,245/h</div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="dashboard-card">
-                        <h3>安全状态</h3>
-                        <div class="info-grid">
-                            <div class="info-item">
-                                <div class="info-label">安全评分</div>
-                                <div class="info-value">98/100</div>
-                            </div>
-                            <div class="info-item">
-                                <div class="info-label">未修复漏洞</div>
-                                <div class="info-value">0</div>
-                            </div>
-                            <div class="info-item">
-                                <div class="info-label">安全更新</div>
-                                <div class="info-value">最新</div>
-                            </div>
-                            <div class="info-item">
-                                <div class="info-label">防火墙状态</div>
-                                <div class="info-value">已启用</div>
-                            </div>
-                        </div>
+
+                <div style="margin-top: 24px;">
+                    <h3 style="font-size: 16px; font-weight: 600; color: #1f2937; margin-bottom: 16px;">📜 最近活动</h3>
+                    <div id="recent-activity-list">
+                        <div style="text-align: center; padding: 40px; color: #9ca3af;">加载中...</div>
                     </div>
                 </div>
             </div>
 
-            <!-- 项目信息面板 -->
-            <div class="panel" id="project-info">
-                <h2>
-                    <i class="fa fa-project-diagram"></i>
-                    项目信息
-                </h2>
+            <!-- AI智能概览面板 -->
+            <div class="panel" id="panel-ai-overview">
+                <div class="section-title"><i class="fas fa-cpu text-indigo-600"></i> AI智能概览</div>
+                <div class="section-subtitle">监控AI系统核心服务状态</div>
                 
-                <div class="project-info">
-                    <h3>项目基本信息</h3>
-                    <div class="info-grid">
-                        <div class="info-item">
-                            <div class="info-label">项目名称</div>
-                            <div class="info-value">MTSCOS AI Project</div>
+                <div class="grid-4" style="margin-bottom: 24px;">
+                    <div class="ai-service-card">
+                        <div class="ai-service-icon">🧠</div>
+                        <div class="ai-service-name">决策引擎</div>
+                        <div class="ai-service-status active" id="de-status">运行中</div>
+                        <div style="margin-top: 12px;">
+                            <div style="font-size: 24px; font-weight: 700; color: #1f2937;" id="de-decisions">0</div>
+                            <div style="font-size: 12px; color: #6b7280;">总决策数</div>
                         </div>
-                        <div class="info-item">
-                            <div class="info-label">项目版本</div>
-                            <div class="info-value">1.20260123.0001</div>
+                    </div>
+                    <div class="ai-service-card">
+                        <div class="ai-service-icon">🔗</div>
+                        <div class="ai-service-name">知识图谱</div>
+                        <div class="ai-service-status active" id="kg-status">运行中</div>
+                        <div style="margin-top: 12px;">
+                            <div style="font-size: 24px; font-weight: 700; color: #1f2937;" id="kg-nodes">0</div>
+                            <div style="font-size: 12px; color: #6b7280;">节点数</div>
                         </div>
-                        <div class="info-item">
-                            <div class="info-label">创建时间</div>
-                            <div class="info-value">2026-01-23 06:01:57</div>
+                    </div>
+                    <div class="ai-service-card">
+                        <div class="ai-service-icon">🔮</div>
+                        <div class="ai-service-name">预测器</div>
+                        <div class="ai-service-status active" id="pr-status">运行中</div>
+                        <div style="margin-top: 12px;">
+                            <div style="font-size: 24px; font-weight: 700; color: #1f2937;" id="pr-predictions">0</div>
+                            <div style="font-size: 12px; color: #6b7280;">预测次数</div>
                         </div>
-                        <div class="info-item">
-                            <div class="info-label">最后更新</div>
-                            <div class="info-value">2026-01-23 06:01:57</div>
-                        </div>
-                        <div class="info-item">
-                            <div class="info-label">项目状态</div>
-                            <div class="info-value">运行中</div>
-                        </div>
-                        <div class="info-item">
-                            <div class="info-label">项目类型</div>
-                            <div class="info-value">AI 管理系统</div>
+                    </div>
+                    <div class="ai-service-card">
+                        <div class="ai-service-icon">⚙️</div>
+                        <div class="ai-service-name">编排器</div>
+                        <div class="ai-service-status active" id="orc-status">运行中</div>
+                        <div style="margin-top: 12px;">
+                            <div style="font-size: 24px; font-weight: 700; color: #1f2937;" id="orc-tasks">0</div>
+                            <div style="font-size: 12px; color: #6b7280;">任务数</div>
                         </div>
                     </div>
                 </div>
-                
-                <div class="project-info">
-                    <h3>AI 模型信息</h3>
-                    <div class="info-grid">
-                        <div class="info-item">
-                            <div class="info-label">已加载模型</div>
-                            <div class="info-value">10</div>
+
+                <div class="grid-2">
+                    <div>
+                        <h3 style="font-size: 16px; font-weight: 600; color: #1f2937; margin-bottom: 16px;">📋 任务列表</h3>
+                        <div id="task-list">
+                            <div style="text-align: center; padding: 40px; color: #9ca3af;">加载中...</div>
                         </div>
-                        <div class="info-item">
-                            <div class="info-label">主要模型</div>
-                            <div class="info-value">DeepSeek, 超级小爱AI, Apple AI</div>
-                        </div>
-                        <div class="info-item">
-                            <div class="info-label">模型状态</div>
-                            <div class="info-value">全部在线</div>
-                        </div>
-                        <div class="info-item">
-                            <div class="info-label">AI 功能</div>
-                            <div class="info-value">交叉检查, 自我修复, 自动优化</div>
+                    </div>
+                    <div>
+                        <h3 style="font-size: 16px; font-weight: 600; color: #1f2937; margin-bottom: 16px;">🚨 导航异常检测</h3>
+                        <div id="nav-anomaly-list">
+                            <div style="text-align: center; padding: 40px; color: #9ca3af;">加载中...</div>
                         </div>
                     </div>
                 </div>
-                
-                <div class="project-info">
-                    <h3>系统功能</h3>
-                    <div class="info-grid">
-                        <div class="info-item">
-                            <div class="info-label">核心功能</div>
-                            <div class="info-value">AI 托管, 智能监控, 自动维护</div>
-                        </div>
-                        <div class="info-item">
-                            <div class="info-label">安全功能</div>
-                            <div class="info-value">登录监控, 证书管理, 域名管理</div>
-                        </div>
-                        <div class="info-item">
-                            <div class="info-label">管理功能</div>
-                            <div class="info-value">设置管理, 权限配置, 数据管理</div>
-                        </div>
-                        <div class="info-item">
-                            <div class="info-label">集成功能</div>
-                            <div class="info-value">API 接口, 数据链路, 第三方集成</div>
-                        </div>
+
+                <div style="margin-top: 24px;">
+                    <h3 style="font-size: 16px; font-weight: 600; color: #1f2937; margin-bottom: 16px;">💡 系统洞察</h3>
+                    <div id="insights-list">
+                        <div style="text-align: center; padding: 40px; color: #9ca3af;">加载中...</div>
                     </div>
                 </div>
             </div>
 
-            <!-- 系统状态面板 -->
-            <div class="panel" id="system-status">
-                <h2>
-                    <i class="fa fa-server"></i>
-                    系统状态
-                </h2>
+            <!-- AI员工管理面板 -->
+            <div class="panel" id="panel-ai-employees">
+                <div class="section-title"><i class="fas fa-robot text-indigo-600"></i> AI员工管理</div>
+                <div class="section-subtitle">管理和监控所有AI员工的运行状态</div>
                 
-                <div class="dashboard-grid">
-                    <div class="dashboard-card">
-                        <h3>服务器状态</h3>
-                        <div class="info-grid">
-                            <div class="info-item">
-                                <div class="info-label">CPU 使用率</div>
-                                <div class="info-value">15%</div>
-                            </div>
-                            <div class="info-item">
-                                <div class="info-label">内存使用</div>
-                                <div class="info-value">3.2GB / 16GB</div>
-                            </div>
-                            <div class="info-item">
-                                <div class="info-label">磁盘空间</div>
-                                <div class="info-value">45GB / 256GB</div>
-                            </div>
-                            <div class="info-item">
-                                <div class="info-label">网络流量</div>
-                                <div class="info-value">1.2MB/s</div>
-                            </div>
-                        </div>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    <div class="stat-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                        <div style="font-size: 28px; font-weight: 700;" id="stat-total">5</div>
+                        <div style="font-size: 12px; opacity: 0.9;">AI员工总数</div>
                     </div>
-                    
-                    <div class="dashboard-card">
-                        <h3>服务状态</h3>
-                        <div class="info-grid">
-                            <div class="info-item">
-                                <div class="info-label">Web 服务</div>
-                                <div class="info-value">运行中</div>
-                            </div>
-                            <div class="info-item">
-                                <div class="info-label">数据库服务</div>
-                                <div class="info-value">运行中</div>
-                            </div>
-                            <div class="info-item">
-                                <div class="info-label">AI 服务</div>
-                                <div class="info-value">运行中</div>
-                            </div>
-                            <div class="info-item">
-                                <div class="info-label">监控服务</div>
-                                <div class="info-value">运行中</div>
-                            </div>
-                        </div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                        <div style="font-size: 28px; font-weight: 700;" id="stat-running">5</div>
+                        <div style="font-size: 12px; opacity: 0.9;">运行中</div>
                     </div>
-                    
-                    <div class="dashboard-card">
-                        <h3>连接状态</h3>
-                        <div class="info-grid">
-                            <div class="info-item">
-                                <div class="info-label">API 连接</div>
-                                <div class="info-value">正常</div>
-                            </div>
-                            <div class="info-item">
-                                <div class="info-label">数据库连接</div>
-                                <div class="info-value">正常</div>
-                            </div>
-                            <div class="info-item">
-                                <div class="info-label">AI 模型连接</div>
-                                <div class="info-value">全部在线</div>
-                            </div>
-                            <div class="info-item">
-                                <div class="info-label">外部服务连接</div>
-                                <div class="info-value">正常</div>
-                            </div>
-                        </div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);">
+                        <div style="font-size: 28px; font-weight: 700;" id="stat-alerts">0</div>
+                        <div style="font-size: 12px; opacity: 0.9;">待处理警报</div>
+                    </div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #fbc2eb 0%, #a6c1ee 100%);">
+                        <div style="font-size: 28px; font-weight: 700;" id="stat-efficiency">98%</div>
+                        <div style="font-size: 12px; opacity: 0.9;">平均效率</div>
                     </div>
                 </div>
-            </div>
 
-            <!-- 通用设置面板 -->
-            <div class="panel" id="general-settings">
-                <h2>
-                    <i class="fa fa-cog"></i>
-                    通用设置
-                </h2>
-                
-                <form class="settings-form">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="system-name">系统名称</label>
-                            <input type="text" id="system-name" value="MTSCOS AI Project">
-                        </div>
-                        <div class="form-group">
-                            <label for="system-version">系统版本</label>
-                            <input type="text" id="system-version" value="1.20260123.0001" readonly>
-                        </div>
-                    </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="server-port">服务器端口</label>
-                            <input type="number" id="server-port" value="8081">
-                        </div>
-                        <div class="form-group">
-                            <label for="environment">运行环境</label>
-                            <select id="environment">
-                                <option value="development" selected>开发环境</option>
-                                <option value="staging">测试环境</option>
-                                <option value="production">生产环境</option>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="system-description">系统描述</label>
-                        <textarea id="system-description" rows="4">
-MTSCOS AI 项目管理系统 - 云端AI增强版
-提供智能的AI托管、监控和管理功能
-                        </textarea>
-                    </div>
-                    
-                    <div class="form-actions">
-                        <button type="submit" class="btn btn-primary">保存设置</button>
-                        <button type="button" class="btn btn-secondary">恢复默认</button>
-                        <button type="button" class="btn btn-info">导出配置</button>
-                    </div>
-                </form>
-            </div>
-
-            <!-- 安全设置面板 -->
-            <div class="panel" id="security-settings">
-                <h2>
-                    <i class="fa fa-shield-alt"></i>
-                    安全设置
-                </h2>
-                
-                <div class="permissions-section">
-                    <h3>安全配置</h3>
-                    
-                    <div class="permission-group">
-                        <h4>认证设置</h4>
-                        <div class="permission-item">
-                            <div class="permission-name">
-                                JWT 密钥
-                                <div class="permission-description">用于生成和验证认证令牌的密钥</div>
-                            </div>
-                            <input type="password" value="your-secret-key">
-                        </div>
-                        <div class="permission-item">
-                            <div class="permission-name">
-                                令牌过期时间
-                                <div class="permission-description">认证令牌的有效期</div>
-                            </div>
-                            <input type="text" value="24h">
-                        </div>
-                        <div class="permission-item">
-                            <div class="permission-name">
-                                密码加密强度
-                                <div class="permission-description">bcrypt 盐轮数</div>
-                            </div>
-                            <input type="number" value="10">
-                        </div>
-                    </div>
-                    
-                    <div class="permission-group">
-                        <h4>访问控制</h4>
-                        <div class="permission-item">
-                            <div class="permission-name">
-                                速率限制
-                                <div class="permission-description">每个IP的请求限制</div>
-                            </div>
-                            <input type="number" value="100">
-                        </div>
-                        <div class="permission-item">
-                            <div class="permission-name">
-                                限制窗口
-                                <div class="permission-description">速率限制的时间窗口</div>
-                            </div>
-                            <input type="text" value="15分钟">
-                        </div>
-                    </div>
-                    
-                    <div class="permission-group">
-                        <h4>安全功能</h4>
-                        <div class="permission-item">
-                            <div class="permission-name">
-                                AI 登录监控
-                                <div class="permission-description">启用 AI 驱动的登录监控系统</div>
-                            </div>
-                            <input type="checkbox" checked>
-                        </div>
-                        <div class="permission-item">
-                            <div class="permission-name">
-                                自我修复能力
-                                <div class="permission-description">启用系统自我修复功能</div>
-                            </div>
-                            <input type="checkbox" checked>
-                        </div>
-                        <div class="permission-item">
-                            <div class="permission-name">
-                                自动优化
-                                <div class="permission-description">启用系统自动优化功能</div>
-                            </div>
-                            <input type="checkbox" checked>
-                        </div>
-                    </div>
+                <div class="flex justify-between items-center mb-4">
+                    <h3 style="font-size: 16px; font-weight: 600; color: #1f2937;">员工列表</h3>
+                    <button class="btn btn-primary" onclick="refreshEmployees()">
+                        <i class="fas fa-sync-alt"></i> 刷新
+                    </button>
                 </div>
-                
-                <div class="form-actions">
-                    <button type="submit" class="btn btn-primary">保存安全设置</button>
-                    <button type="button" class="btn btn-secondary">测试安全配置</button>
-                    <button type="button" class="btn btn-warning">生成新密钥</button>
-                </div>
-            </div>
 
-            <!-- 数据库设置面板 -->
-            <div class="panel" id="database-settings">
-                <h2>
-                    <i class="fa fa-database"></i>
-                    数据库设置
-                </h2>
-                
-                <form class="settings-form">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="db-type">数据库类型</label>
-                            <select id="db-type">
-                                <option value="sqlite" selected>SQLite</option>
-                                <option value="mysql">MySQL</option>
-                                <option value="postgres">PostgreSQL</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="db-path">数据库路径</label>
-                            <input type="text" id="db-path" value="data/database.db">
-                        </div>
-                    </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="db-max-connections">最大连接数</label>
-                            <input type="number" id="db-max-connections" value="10">
-                        </div>
-                        <div class="form-group">
-                            <label for="db-min-connections">最小连接数</label>
-                            <input type="number" id="db-min-connections" value="0">
-                        </div>
-                    </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="db-acquire-timeout">获取连接超时</label>
-                            <input type="number" id="db-acquire-timeout" value="30000">
-                        </div>
-                        <div class="form-group">
-                            <label for="db-idle-timeout">空闲连接超时</label>
-                            <input type="number" id="db-idle-timeout" value="10000">
-                        </div>
-                    </div>
-                    
-                    <div class="form-actions">
-                        <button type="submit" class="btn btn-primary">保存数据库设置</button>
-                        <button type="button" class="btn btn-secondary">测试连接</button>
-                        <button type="button" class="btn btn-warning">重建数据库</button>
-                        <button type="button" class="btn btn-info">备份数据库</button>
-                    </div>
-                </form>
-            </div>
-
-            <!-- AI 设置面板 -->
-            <div class="panel" id="ai-settings">
-                <h2>
-                    <i class="fa fa-robot"></i>
-                    AI 设置
-                </h2>
-                
-                <div class="dashboard-grid">
-                    <div class="dashboard-card">
-                        <h3>AI 模型管理</h3>
-                        <div class="info-grid">
-                            <div class="info-item">
-                                <div class="info-label">已加载模型</div>
-                                <div class="info-value">10</div>
-                            </div>
-                            <div class="info-item">
-                                <div class="info-label">默认模型</div>
-                                <div class="info-value">DeepSeek</div>
-                            </div>
-                            <div class="info-item">
-                                <div class="info-label">模型状态</div>
-                                <div class="info-value">全部在线</div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="dashboard-card">
-                        <h3>AI 功能配置</h3>
-                        <div class="permission-item">
-                            <div class="permission-name">AI 交叉检查</div>
-                            <input type="checkbox" checked>
-                        </div>
-                        <div class="permission-item">
-                            <div class="permission-name">自我修复能力</div>
-                            <input type="checkbox" checked>
-                        </div>
-                        <div class="permission-item">
-                            <div class="permission-name">自动优化</div>
-                            <input type="checkbox" checked>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="form-actions">
-                    <button type="button" class="btn btn-primary">刷新 AI 模型</button>
-                    <button type="button" class="btn btn-secondary">测试 AI 功能</button>
-                    <button type="button" class="btn btn-info">查看 AI 日志</button>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="employees-container">
+                    <div style="text-align: center; padding: 40px; color: #9ca3af; grid-column: 1 / -1;">加载中...</div>
                 </div>
             </div>
 
             <!-- 用户管理面板 -->
-            <div class="panel" id="users">
-                <h2>
-                    <i class="fa fa-users"></i>
-                    用户管理
-                </h2>
+            <div class="panel" id="panel-users">
+                <div class="section-title"><i class="fas fa-users text-indigo-600"></i> 用户管理</div>
+                <div class="section-subtitle">管理系统用户和权限</div>
                 
-                <div class="users-section">
-                    <div class="users-header">
-                        <h3>用户列表</h3>
-                        <button class="btn btn-primary" id="add-user-btn">
-                            <i class="fa fa-plus"></i>
-                            添加用户
-                        </button>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                    <div>
+                        <input type="text" placeholder="搜索用户..." style="padding: 8px 12px; border-radius: 8px; border: 1px solid #e5e7eb; width: 200px;">
                     </div>
-                    
-                    <div class="users-controls">
-                        <div class="search-section">
-                            <input type="text" class="search-input" placeholder="搜索用户名、邮箱或角色">
-                            <button class="search-btn">
-                                <i class="fa fa-search"></i>
-                                搜索
-                            </button>
-                        </div>
-                        
-                        <div class="filter-section">
-                            <select class="role-filter">
-                                <option value="all">所有角色</option>
-                                <option value="admin">系统管理员</option>
-                                <option value="operator">运维人员</option>
-                                <option value="user">普通用户</option>
-                            </select>
-                            <select class="status-filter">
-                                <option value="all">所有状态</option>
-                                <option value="active">活跃</option>
-                                <option value="inactive">禁用</option>
-                                <option value="pending">待审核</option>
-                            </select>
-                            <button class="filter-btn">
-                                <i class="fa fa-filter"></i>
-                                筛选
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div class="users-table-container">
-                        <table class="users-table">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>用户名</th>
-                                    <th>邮箱</th>
-                                    <th>角色</th>
-                                    <th>状态</th>
-                                    <th>注册时间</th>
-                                    <th>最后登录</th>
-                                    <th>操作</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>1</td>
-                                    <td>admin</td>
-                                    <td>admin@example.com</td>
-                                    <td>
-                                        <span class="role-badge role-admin">系统管理员</span>
-                                    </td>
-                                    <td>
-                                        <span class="status-badge status-active">活跃</span>
-                                    </td>
-                                    <td>2026-01-23</td>
-                                    <td>2026-02-01 11:30</td>
-                                    <td class="action-buttons">
-                                        <button class="btn btn-info btn-sm view-btn">
-                                            <i class="fa fa-eye"></i>
-                                        </button>
-                                        <button class="btn btn-primary btn-sm edit-btn">
-                                            <i class="fa fa-edit"></i>
-                                        </button>
-                                        <button class="btn btn-warning btn-sm disable-btn">
-                                            <i class="fa fa-ban"></i>
-                                        </button>
-                                        <button class="btn btn-danger btn-sm delete-btn">
-                                            <i class="fa fa-trash"></i>
-                                        </button>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>2</td>
-                                    <td>operator1</td>
-                                    <td>operator1@example.com</td>
-                                    <td>
-                                        <span class="role-badge role-operator">运维人员</span>
-                                    </td>
-                                    <td>
-                                        <span class="status-badge status-active">活跃</span>
-                                    </td>
-                                    <td>2026-01-24</td>
-                                    <td>2026-01-31 15:45</td>
-                                    <td class="action-buttons">
-                                        <button class="btn btn-info btn-sm view-btn">
-                                            <i class="fa fa-eye"></i>
-                                        </button>
-                                        <button class="btn btn-primary btn-sm edit-btn">
-                                            <i class="fa fa-edit"></i>
-                                        </button>
-                                        <button class="btn btn-warning btn-sm disable-btn">
-                                            <i class="fa fa-ban"></i>
-                                        </button>
-                                        <button class="btn btn-danger btn-sm delete-btn">
-                                            <i class="fa fa-trash"></i>
-                                        </button>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>3</td>
-                                    <td>user1</td>
-                                    <td>user1@example.com</td>
-                                    <td>
-                                        <span class="role-badge role-user">普通用户</span>
-                                    </td>
-                                    <td>
-                                        <span class="status-badge status-active">活跃</span>
-                                    </td>
-                                    <td>2026-01-25</td>
-                                    <td>2026-01-30 09:20</td>
-                                    <td class="action-buttons">
-                                        <button class="btn btn-info btn-sm view-btn">
-                                            <i class="fa fa-eye"></i>
-                                        </button>
-                                        <button class="btn btn-primary btn-sm edit-btn">
-                                            <i class="fa fa-edit"></i>
-                                        </button>
-                                        <button class="btn btn-warning btn-sm disable-btn">
-                                            <i class="fa fa-ban"></i>
-                                        </button>
-                                        <button class="btn btn-danger btn-sm delete-btn">
-                                            <i class="fa fa-trash"></i>
-                                        </button>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>4</td>
-                                    <td>user2</td>
-                                    <td>user2@example.com</td>
-                                    <td>
-                                        <span class="role-badge role-user">普通用户</span>
-                                    </td>
-                                    <td>
-                                        <span class="status-badge status-inactive">禁用</span>
-                                    </td>
-                                    <td>2026-01-26</td>
-                                    <td>2026-01-28 14:10</td>
-                                    <td class="action-buttons">
-                                        <button class="btn btn-info btn-sm view-btn">
-                                            <i class="fa fa-eye"></i>
-                                        </button>
-                                        <button class="btn btn-primary btn-sm edit-btn">
-                                            <i class="fa fa-edit"></i>
-                                        </button>
-                                        <button class="btn btn-success btn-sm enable-btn">
-                                            <i class="fa fa-check"></i>
-                                        </button>
-                                        <button class="btn btn-danger btn-sm delete-btn">
-                                            <i class="fa fa-trash"></i>
-                                        </button>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    
-                    <div class="pagination">
-                        <button class="btn btn-secondary" disabled>
-                            <i class="fa fa-chevron-left"></i>
-                            上一页
-                        </button>
-                        <span class="page-info">第 1 页，共 1 页</span>
-                        <button class="btn btn-secondary" disabled>
-                            下一页
-                            <i class="fa fa-chevron-right"></i>
-                        </button>
-                    </div>
+                    <button class="btn btn-primary"><i class="fas fa-plus"></i> 添加用户</button>
                 </div>
+                
+                <table class="user-table">
+                    <thead>
+                        <tr>
+                            <th>用户名</th>
+                            <th>角色</th>
+                            <th>状态</th>
+                            <th>审批状态</th>
+                            <th>创建时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>wuchenghao15</td>
+                            <td><span style="background: #fef3c7; color: #d97706; padding: 4px 8px; border-radius: 6px; font-size: 12px;">硬件管理员</span></td>
+                            <td><span style="color: #10b981;">已激活</span></td>
+                            <td><span style="color: #10b981;">已审批</span></td>
+                            <td>2026-06-23</td>
+                            <td>
+                                <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 12px;">编辑</button>
+                                <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 12px;">删除</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
-            
+
             <!-- 权限设置面板 -->
-            <div class="panel" id="permissions">
-                <h2>
-                    <i class="fa fa-lock"></i>
-                    权限设置
-                </h2>
-                
-                <div class="permissions-section">
-                    <h3>权限管理</h3>
-                    
-                    <div class="permission-group">
-                        <h4>系统管理员</h4>
-                        <div class="permission-item">
-                            <div class="permission-name">
-                                系统设置
-                                <div class="permission-description">管理系统的基本设置和配置</div>
-                            </div>
-                            <input type="checkbox" checked disabled>
-                        </div>
-                        <div class="permission-item">
-                            <div class="permission-name">
-                                安全配置
-                                <div class="permission-description">管理安全相关的设置和配置</div>
-                            </div>
-                            <input type="checkbox" checked disabled>
-                        </div>
-                        <div class="permission-item">
-                            <div class="permission-name">
-                                数据库管理
-                                <div class="permission-description">管理数据库设置和操作</div>
-                            </div>
-                            <input type="checkbox" checked disabled>
-                        </div>
-                        <div class="permission-item">
-                            <div class="permission-name">
-                                AI 配置
-                                <div class="permission-description">管理 AI 模型和功能配置</div>
-                            </div>
-                            <input type="checkbox" checked disabled>
-                        </div>
-                        <div class="permission-item">
-                            <div class="permission-name">
-                                权限管理
-                                <div class="permission-description">管理用户权限和角色</div>
-                            </div>
-                            <input type="checkbox" checked disabled>
-                        </div>
-                    </div>
-                    
-                    <div class="permission-group">
-                        <h4>运维人员</h4>
-                        <div class="permission-item">
-                            <div class="permission-name">
-                                系统监控
-                                <div class="permission-description">查看系统状态和监控信息</div>
-                            </div>
-                            <input type="checkbox" checked>
-                        </div>
-                        <div class="permission-item">
-                            <div class="permission-name">
-                                日志管理
-                                <div class="permission-description">查看和管理系统日志</div>
-                            </div>
-                            <input type="checkbox" checked>
-                        </div>
-                        <div class="permission-item">
-                            <div class="permission-name">
-                                备份恢复
-                                <div class="permission-description">执行系统备份和恢复操作</div>
-                            </div>
-                            <input type="checkbox" checked>
-                        </div>
-                        <div class="permission-item">
-                            <div class="permission-name">
-                                系统设置
-                                <div class="permission-description">管理系统的基本设置和配置</div>
-                            </div>
-                            <input type="checkbox">
-                        </div>
-                    </div>
-                    
-                    <div class="permission-group">
-                        <h4>普通用户</h4>
-                        <div class="permission-item">
-                            <div class="permission-name">
-                                查看仪表盘
-                                <div class="permission-description">查看系统概览和状态</div>
-                            </div>
-                            <input type="checkbox" checked>
-                        </div>
-                        <div class="permission-item">
-                            <div class="permission-name">
-                                使用 AI 功能
-                                <div class="permission-description">使用系统提供的 AI 功能</div>
-                            </div>
-                            <input type="checkbox" checked>
-                        </div>
-                        <div class="permission-item">
-                            <div class="permission-name">
-                                系统设置
-                                <div class="permission-description">管理系统的基本设置和配置</div>
-                            </div>
-                            <input type="checkbox">
-                        </div>
-                        <div class="permission-item">
-                            <div class="permission-name">
-                                安全配置
-                                <div class="permission-description">管理安全相关的设置和配置</div>
-                            </div>
-                            <input type="checkbox">
-                        </div>
-                    </div>
+            <div class="panel" id="panel-permissions">
+                <div class="section-title"><i class="fas fa-lock text-indigo-600"></i> 权限设置</div>
+                <div class="section-subtitle">从数据库加载真实规则数据</div>
+
+                <div id="permissions-stats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 20px;">
+                    <div style="text-align: center; padding: 40px; color: #9ca3af; grid-column: 1 / -1;">加载中...</div>
                 </div>
-                
-                <div class="form-actions">
-                    <button type="submit" class="btn btn-primary">保存权限设置</button>
-                    <button type="button" class="btn btn-secondary">导入权限模板</button>
-                    <button type="button" class="btn btn-info">导出权限配置</button>
+
+                <div class="section-subtitle" style="margin-top: 20px;">权限等级体系（来自 system_rules.ROLE_HIERARCHY）</div>
+                <div class="permission-hierarchy" id="permission-hierarchy-container">
+                    <div style="text-align: center; padding: 20px; color: #9ca3af;">加载中...</div>
+                </div>
+
+                <div class="section-subtitle" style="margin-top: 20px;">规则列表（共 <span id="rules-total-count">0</span> 条，已激活 <span id="rules-active-count">0</span> 条）</div>
+                <div id="rules-list-container" style="max-height: 400px; overflow-y: auto;">
+                    <div style="text-align: center; padding: 20px; color: #9ca3af;">加载中...</div>
                 </div>
             </div>
 
-            <!-- 角色管理面板 -->
-            <div class="panel" id="roles">
-                <h2>
-                    <i class="fa fa-users"></i>
-                    角色管理
-                </h2>
-                
-                <div class="permissions-section">
-                    <h3>角色配置</h3>
-                    
-                    <div class="permission-group">
-                        <h4>系统管理员</h4>
-                        <p>拥有系统的所有权限，可以执行任何操作。</p>
-                        <div class="form-actions">
-                            <button type="button" class="btn btn-info">编辑角色</button>
-                        </div>
-                    </div>
-                    
-                    <div class="permission-group">
-                        <h4>运维人员</h4>
-                        <p>负责系统的日常维护和监控，拥有部分管理权限。</p>
-                        <div class="form-actions">
-                            <button type="button" class="btn btn-info">编辑角色</button>
-                        </div>
-                    </div>
-                    
-                    <div class="permission-group">
-                        <h4>普通用户</h4>
-                        <p>使用系统的基本功能，拥有有限的操作权限。</p>
-                        <div class="form-actions">
-                            <button type="button" class="btn btn-info">编辑角色</button>
-                        </div>
-                    </div>
+            <!-- 系统配置面板 -->
+            <div class="panel" id="panel-system-config">
+                <div class="section-title"><i class="fas fa-cog text-indigo-600"></i> 系统配置</div>
+                <div class="section-subtitle">配置系统基本参数</div>
+                <div class="table-row">
+                    <div><strong>系统名称</strong><div style="font-size: 12px; color: #6b7280;">MTSCOS AI 智能管理系统</div></div>
+                    <div style="color: #6b7280;">v5.0.0</div>
                 </div>
-                
-                <div class="form-actions">
-                    <button type="button" class="btn btn-primary">创建新角色</button>
-                    <button type="button" class="btn btn-secondary">导入角色模板</button>
-                    <button type="button" class="btn btn-info">导出角色配置</button>
+                <div class="table-row">
+                    <div><strong>开发代号</strong><div style="font-size: 12px; color: #6b7280;">系统开发版本代号</div></div>
+                    <div style="color: #6b7280;">智能系统优化版</div>
+                </div>
+                <div class="table-row">
+                    <div><strong>数据库</strong><div style="font-size: 12px; color: #6b7280;">SQLite</div></div>
+                    <div style="color: #10b981; font-weight: 600;">已连接</div>
+                </div>
+                <div class="table-row">
+                    <div><strong>SSL/TLS</strong><div style="font-size: 12px; color: #6b7280;">HTTPS加密通信</div></div>
+                    <div style="color: #10b981; font-weight: 600;">已启用</div>
                 </div>
             </div>
 
-            <!-- 操作审计面板 -->
-            <div class="panel" id="audit">
-                <h2>
-                    <i class="fa fa-history"></i>
-                    操作审计
-                </h2>
-                
-                <div class="dashboard-card">
-                    <h3>最近操作</h3>
-                    <div class="permission-item">
-                        <div class="permission-name">
-                            <div>系统启动</div>
-                            <div class="permission-description">2026-01-23 06:01:57 - 系统成功启动</div>
-                        </div>
-                        <span class="status-badge status-success">成功</span>
-                    </div>
-                    <div class="permission-item">
-                        <div class="permission-name">
-                            <div>AI 模型加载</div>
-                            <div class="permission-description">2026-01-23 06:01:58 - 成功加载 10 个 AI 模型</div>
-                        </div>
-                        <span class="status-badge status-success">成功</span>
-                    </div>
-                    <div class="permission-item">
-                        <div class="permission-name">
-                            <div>安全服务初始化</div>
-                            <div class="permission-description">2026-01-23 06:01:59 - 安全服务初始化成功</div>
-                        </div>
-                        <span class="status-badge status-success">成功</span>
-                    </div>
+            <!-- 安全设置面板 -->
+            <div class="panel" id="panel-security">
+                <div class="section-title"><i class="fas fa-shield-alt text-indigo-600"></i> 安全设置</div>
+                <div class="section-subtitle">系统安全相关配置</div>
+                <div class="table-row">
+                    <div><strong>登录失败限制</strong><div style="font-size: 12px; color: #6b7280;">超过此次数自动锁定</div></div>
+                    <div>5 次</div>
                 </div>
-                
-                <div class="form-actions">
-                    <button type="button" class="btn btn-primary">查看完整审计日志</button>
-                    <button type="button" class="btn btn-secondary">导出审计记录</button>
-                    <button type="button" class="btn btn-info">清除审计日志</button>
+                <div class="table-row">
+                    <div><strong>会话超时</strong><div style="font-size: 12px; color: #6b7280;">用户会话自动过期时间</div></div>
+                    <div>30 分钟</div>
+                </div>
+                <div class="table-row">
+                    <div><strong>IP封禁</strong><div style="font-size: 12px; color: #6b7280;">异常IP自动封禁</div></div>
+                    <div style="color: #10b981; font-weight: 600;">已启用</div>
+                </div>
+                <div class="table-row">
+                    <div><strong>SQL注入防护</strong><div style="font-size: 12px; color: #6b7280;">中间件自动防护</div></div>
+                    <div style="color: #10b981; font-weight: 600;">已启用</div>
+                </div>
+            </div>
+
+            <!-- 数据库设置面板 -->
+            <div class="panel" id="panel-database-settings">
+                <div class="section-title"><i class="fas fa-database text-indigo-600"></i> 数据库设置</div>
+                <div class="section-subtitle">数据库连接和缓存配置</div>
+                <div class="table-row">
+                    <div><strong>数据库类型</strong><div style="font-size: 12px; color: #6b7280;">当前使用的数据库</div></div>
+                    <div>SQLite</div>
+                </div>
+                <div class="table-row">
+                    <div><strong>连接池最小连接数</strong><div style="font-size: 12px; color: #6b7280;">空闲时保持的最小连接数</div></div>
+                    <div>5</div>
+                </div>
+                <div class="table-row">
+                    <div><strong>连接池最大连接数</strong><div style="font-size: 12px; color: #6b7280;">高峰期最多可扩展到的连接数</div></div>
+                    <div>50</div>
+                </div>
+                <div class="table-row">
+                    <div><strong>连接等待超时</strong><div style="font-size: 12px; color: #6b7280;">请求等待连接的超时时间</div></div>
+                    <div>10秒</div>
+                </div>
+            </div>
+
+            <!-- AI设置面板 -->
+            <div class="panel" id="panel-ai-settings">
+                <div class="section-title"><i class="fas fa-robot text-indigo-600"></i> AI设置</div>
+                <div class="section-subtitle">AI相关配置</div>
+                <div class="table-row">
+                    <div><strong>AI员工自动修复</strong><div style="font-size: 12px; color: #6b7280;">自动修复系统代码问题</div></div>
+                    <div style="color: #10b981; font-weight: 600;">已启用</div>
+                </div>
+                <div class="table-row">
+                    <div><strong>异常检测</strong><div style="font-size: 12px; color: #6b7280;">自动检测系统异常</div></div>
+                    <div style="color: #10b981; font-weight: 600;">已启用</div>
+                </div>
+                <div class="table-row">
+                    <div><strong>自动优化</strong><div style="font-size: 12px; color: #6b7280;">自动优化系统性能</div></div>
+                    <div style="color: #10b981; font-weight: 600;">已启用</div>
                 </div>
             </div>
 
             <!-- 系统日志面板 -->
-            <div class="panel" id="logs">
-                <h2>
-                    <i class="fa fa-file-alt"></i>
-                    系统日志
-                </h2>
-                
-                <div class="dashboard-card">
-                    <h3>系统日志</h3>
-                    <div class="log-container">
-                        <div class="log-entry info">
-                            <div class="log-time">06:01:57</div>
-                            <div class="log-message">系统启动成功</div>
-                        </div>
-                        <div class="log-entry info">
-                            <div class="log-time">06:01:58</div>
-                            <div class="log-message">AI 模型加载完成</div>
-                        </div>
-                        <div class="log-entry info">
-                            <div class="log-time">06:01:59</div>
-                            <div class="log-message">安全服务初始化成功</div>
-                        </div>
-                        <div class="log-entry info">
-                            <div class="log-time">06:02:00</div>
-                            <div class="log-message">监控服务启动</div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="form-actions">
-                    <button type="button" class="btn btn-primary">查看完整日志</button>
-                    <button type="button" class="btn btn-secondary">导出日志</button>
-                    <button type="button" class="btn btn-warning">清空日志</button>
+            <div class="panel" id="panel-logs">
+                <div class="section-title"><i class="fas fa-file-alt text-indigo-600"></i> 系统日志</div>
+                <div class="section-subtitle">查看系统运行日志</div>
+                <div style="background: #1f2937; color: #e0e0e0; padding: 16px; border-radius: 8px; font-family: monospace; font-size: 12px; max-height: 400px; overflow-y: auto;">
+                    <div>[2026-06-23 10:00:00] INFO - 系统启动成功</div>
+                    <div>[2026-06-23 10:00:01] INFO - 数据库连接成功</div>
+                    <div>[2026-06-23 10:00:02] INFO - AI员工初始化完成</div>
+                    <div>[2026-06-23 10:05:00] INFO - 用户登录: wuchenghao15</div>
                 </div>
             </div>
 
-            <!-- 备份恢复面板 -->
-            <div class="panel" id="backup">
-                <h2>
-                    <i class="fa fa-backup"></i>
-                    备份恢复
-                </h2>
-                
-                <div class="dashboard-grid">
-                    <div class="dashboard-card">
-                        <h3>备份管理</h3>
-                        <div class="permission-item">
-                            <div class="permission-name">自动备份</div>
-                            <input type="checkbox" checked>
-                        </div>
-                        <div class="permission-item">
-                            <div class="permission-name">备份频率</div>
-                            <select>
-                                <option value="daily">每日</option>
-                                <option value="weekly" selected>每周</option>
-                                <option value="monthly">每月</option>
-                            </select>
-                        </div>
-                        <div class="permission-item">
-                            <div class="permission-name">备份保留</div>
-                            <input type="number" value="7">
-                        </div>
-                    </div>
-                    
-                    <div class="dashboard-card">
-                        <h3>最近备份</h3>
-                        <div class="permission-item">
-                            <div class="permission-name">
-                                <div>手动备份</div>
-                                <div class="permission-description">2026-01-23 06:00:00</div>
-                            </div>
-                            <button class="btn btn-secondary">恢复</button>
-                        </div>
-                        <div class="permission-item">
-                            <div class="permission-name">
-                                <div>自动备份</div>
-                                <div class="permission-description">2026-01-22 00:00:00</div>
-                            </div>
-                            <button class="btn btn-secondary">恢复</button>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="form-actions">
-                    <button type="button" class="btn btn-primary">立即备份</button>
-                    <button type="button" class="btn btn-secondary">恢复备份</button>
-                    <button type="button" class="btn btn-info">导出备份</button>
-                    <button type="button" class="btn btn-warning">删除备份</button>
-                </div>
+            <!-- 操作审计面板 -->
+            <div class="panel" id="panel-audit">
+                <div class="section-title"><i class="fas fa-history text-indigo-600"></i> 操作审计</div>
+                <div class="section-subtitle">查看用户操作记录</div>
+                <table class="user-table">
+                    <thead>
+                        <tr>
+                            <th>时间</th>
+                            <th>用户</th>
+                            <th>操作</th>
+                            <th>IP地址</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>2026-06-23 10:05:00</td>
+                            <td>wuchenghao15</td>
+                            <td>用户登录</td>
+                            <td>127.0.0.1</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
 
-            <!-- 系统维护面板 -->
-            <div class="panel" id="maintenance">
-                <h2>
-                    <i class="fa fa-tools"></i>
-                    系统维护
-                </h2>
-                
-                <div class="dashboard-grid">
-                    <div class="dashboard-card">
-                        <h3>维护操作</h3>
-                        <div class="quick-actions">
-                            <button class="quick-action-btn">
-                                <i class="fa fa-refresh"></i>
-                                清理缓存
-                            </button>
-                            <button class="quick-action-btn">
-                                <i class="fa fa-broom"></i>
-                                清理日志
-                            </button>
-                            <button class="quick-action-btn">
-                                <i class="fa fa-undo"></i>
-                                重置服务
-                            </button>
-                            <button class="quick-action-btn">
-                                <i class="fa fa-sync"></i>
-                                同步数据
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div class="dashboard-card">
-                        <h3>系统状态</h3>
-                        <div class="info-grid">
-                            <div class="info-item">
-                                <div class="info-label">系统负载</div>
-                                <div class="info-value">1.2</div>
-                            </div>
-                            <div class="info-item">
-                                <div class="info-label">可用内存</div>
-                                <div class="info-value">12.8GB</div>
-                            </div>
-                            <div class="info-item">
-                                <div class="info-label">磁盘空间</div>
-                                <div class="info-value">211GB 可用</div>
-                            </div>
-                            <div class="info-item">
-                                <div class="info-label">服务状态</div>
-                                <div class="info-value">全部运行</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="form-actions">
-                    <button type="button" class="btn btn-primary">执行维护</button>
-                    <button type="button" class="btn btn-secondary">检查系统</button>
-                    <button type="button" class="btn btn-warning">重启系统</button>
+            <!-- 关于系统面板 -->
+            <div class="panel" id="panel-about">
+                <div class="section-title"><i class="fas fa-info-circle text-indigo-600"></i> 关于系统</div>
+                <div class="section-subtitle">系统信息和版本</div>
+                <div class="bg-gray-50 rounded-lg p-6 mt-4">
+                    <h4 style="font-size: 16px; font-weight: 600; margin-bottom: 12px;">MTSCOS AI 智能管理系统</h4>
+                    <p style="color: #6b7280; font-size: 13px; line-height: 1.8;">
+                        版本：5.0.0 智能系统优化版<br>
+                        构建日期：2026.06.23<br>
+                        技术栈：Python Flask + SQLite + Tailwind CSS<br>
+                        <br>
+                        系统集成5个AI员工：客户端监控员、代码修复员、端口监控员、行为监控员、系统优化员<br>
+                        支持SSL/TLS加密通信、自动优化与功能拓展
+                    </p>
                 </div>
             </div>
-        </main>
-    </div>
-
-    <!-- 通知组件 -->
-    <div class="notification" id="notification">
-        <button class="notification-close">&times;</button>
-        <div class="notification-content">
-            <div class="notification-message"></div>
         </div>
     </div>
 
-    <!-- JavaScript -->
-    <script src="assets/js/settings-scripts.js" async></script>
-    
-    <!-- 用户管理JavaScript -->
-    <script src="/assets/js/settings.js" async></script>
-    
-    <!-- 权限控制 -->
-    <script src="assets/js/core/permission-controller.js"></script>
+    <script>
+        const API_BASE = window.location.protocol + '//' + window.location.host;
+
+        function switchPanel(panel) {
+            document.querySelectorAll('.sidebar-item').forEach(el => {
+                el.classList.toggle('active', el.dataset.panel === panel);
+            });
+            document.querySelectorAll('.panel').forEach(el => {
+                el.classList.toggle('active', el.id === 'panel-' + panel);
+            });
+            if (panel === 'dashboard') {
+                loadSystemStatus();
+                loadAlerts();
+                loadRecentActivity();
+            } else if (panel === 'ai-overview') {
+                loadAiOverview();
+                loadTasks();
+                loadNavAnomalies();
+                loadInsights();
+            } else if (panel === 'ai-employees') {
+                loadEmployees();
+            } else if (panel === 'users') {
+                loadUsers();
+            } else if (panel === 'database-settings') {
+                loadDatabaseInfo();
+            } else if (panel === 'logs') {
+                loadLogs();
+            } else if (panel === 'audit') {
+                loadAudit();
+            } else if (panel === 'permissions') {
+                loadRules();
+            }
+        }
+
+        document.querySelectorAll('.sidebar-item').forEach(item => {
+            item.addEventListener('click', function() {
+                switchPanel(this.dataset.panel);
+            });
+        });
+
+        async function loadEmployees() {
+            try {
+                const res = await fetch(API_BASE + '/api/settings-data/employees');
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('stat-total').textContent = data.total || 0;
+                    document.getElementById('stat-running').textContent = data.running || 0;
+                    document.getElementById('stat-efficiency').textContent = (data.avg_accuracy || 0).toFixed(1) + '%';
+
+                    const container = document.getElementById('employees-container');
+                    if (container && data.employees) {
+                        container.innerHTML = data.employees.map(emp => {
+                            const isRunning = emp.status === 'active' && emp.is_enabled;
+                            const statusClass = isRunning ? 'status-running' : 'status-stopped';
+                            const statusText = isRunning ? '运行中' : '已停止';
+                            const skills = emp.top_skills ? emp.top_skills.map(s => s.skill_name).join(' · ') : emp.description;
+                            return `
+                                <div class="employee-card">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <div>
+                                            <div style="font-weight: 600; color: #1f2937;">${emp.name}</div>
+                                            <div style="font-size: 12px; color: #6b7280;">${skills || 'AI员工'}</div>
+                                        </div>
+                                        <span class="status-badge ${statusClass}"><span class="status-pulse"></span>${statusText}</span>
+                                    </div>
+                                    <div style="font-size: 11px; color: #9ca3af; margin-top: 8px; font-family: monospace;">${emp.employee_code}</div>
+                                    <div style="display: flex; gap: 12px; margin-top: 8px; font-size: 11px; color: #6b7280;">
+                                        <span>准确率: ${(emp.accuracy || 0).toFixed(1)}%</span>
+                                        <span>任务: ${emp.total_tasks || 0}</span>
+                                        <span>优先级: ${emp.priority || 0}</span>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('');
+                    }
+                }
+            } catch (e) {
+                console.error('加载AI员工失败:', e);
+            }
+        }
+
+        async function loadUsers() {
+            try {
+                const res = await fetch(API_BASE + '/api/settings-data/users');
+                const data = await res.json();
+                if (data.success && data.users) {
+                    const tbody = document.querySelector('#panel-users tbody');
+                    if (tbody) {
+                        tbody.innerHTML = data.users.map(user => {
+                            const roles = user.roles && user.roles.length > 0
+                                ? user.roles.map(r => `<span style="background: #fef3c7; color: #d97706; padding: 4px 8px; border-radius: 6px; font-size: 12px; margin-right: 4px;">${r}</span>`).join('')
+                                : '<span style="color: #9ca3af;">无角色</span>';
+                            const statusColor = user.is_active ? '#10b981' : '#ef4444';
+                            const statusText = user.is_active ? '已激活' : '已禁用';
+                            return `
+                                <tr>
+                                    <td>${user.username}</td>
+                                    <td>${roles}</td>
+                                    <td><span style="color: ${statusColor};">${statusText}</span></td>
+                                    <td><span style="color: #10b981;">已审批</span></td>
+                                    <td>${user.created_at || '--'}</td>
+                                    <td>
+                                        <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 12px;">编辑</button>
+                                        <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 12px;">删除</button>
+                                    </td>
+                                </tr>
+                            `;
+                        }).join('');
+                    }
+                }
+            } catch (e) {
+                console.error('加载用户失败:', e);
+            }
+        }
+
+        async function loadDatabaseInfo() {
+            try {
+                const res = await fetch(API_BASE + '/api/settings-data/database-info');
+                const data = await res.json();
+                if (data.success && data.database) {
+                    const db = data.database;
+                    const panel = document.getElementById('panel-database-settings');
+                    if (panel) {
+                        const stats = `
+                            <div class="stat-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 12px; margin-bottom: 16px;">
+                                <div style="font-size: 28px; font-weight: 700;">${db.total_tables}</div>
+                                <div style="font-size: 12px; opacity: 0.9;">数据表总数</div>
+                            </div>
+                            <div class="stat-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: white; padding: 20px; border-radius: 12px; margin-bottom: 16px;">
+                                <div style="font-size: 28px; font-weight: 700;">${db.size_mb} MB</div>
+                                <div style="font-size: 12px; opacity: 0.9;">数据库大小</div>
+                            </div>
+                        `;
+                        const tableInfo = db.tables.slice(0, 8).map(t =>
+                            `<div class="table-row">
+                                <div><strong>${t.name}</strong></div>
+                                <div style="color: #6b7280;">${t.rows} 条记录</div>
+                            </div>`
+                        ).join('');
+                        const target = panel.querySelector('.section-subtitle');
+                        if (target) {
+                            target.insertAdjacentHTML('afterend', stats + tableInfo);
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error('加载数据库信息失败:', e);
+            }
+        }
+
+        async function loadLogs() {
+            try {
+                const res = await fetch(API_BASE + '/api/settings-data/logs?limit=30');
+                const data = await res.json();
+                if (data.success && data.logs) {
+                    const panel = document.getElementById('panel-logs');
+                    if (panel) {
+                        const logContainer = panel.querySelector('div[style*="background: #1f2937"]');
+                        if (logContainer) {
+                            logContainer.innerHTML = data.logs.map(log => {
+                                const time = log.created_at || log.repair_time || '';
+                                const level = (log.level || 'INFO').toUpperCase();
+                                const module = log.module || log.file_path || 'system';
+                                const message = log.message || log.error_message || '';
+                                return `<div>[${time}] ${level} - ${module} - ${message}</div>`;
+                            }).join('') || '<div>暂无日志</div>';
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error('加载日志失败:', e);
+            }
+        }
+
+        async function loadAudit() {
+            try {
+                const res = await fetch(API_BASE + '/api/settings-data/audit?limit=20');
+                const data = await res.json();
+                if (data.success && data.audit) {
+                    const tbody = document.querySelector('#panel-audit tbody');
+                    if (tbody) {
+                        tbody.innerHTML = data.audit.map(a => `
+                            <tr>
+                                <td>${a.created_at || '--'}</td>
+                                <td>${a.username || '匿名'}</td>
+                                <td>${a.action || a.operation || '--'}</td>
+                                <td>${a.ip_address || '--'}</td>
+                            </tr>
+                        `).join('') || '<tr><td colspan="4" style="text-align:center; padding:20px; color:#9ca3af;">暂无审计记录</td></tr>';
+                    }
+                }
+            } catch (e) {
+                console.error('加载审计失败:', e);
+            }
+        }
+
+        async function loadRules() {
+            try {
+                const res = await fetch(API_BASE + '/api/settings-data/rules?limit=200');
+                const data = await res.json();
+                if (data.success) {
+                    // 更新统计
+                    document.getElementById('rules-total-count').textContent = data.total || 0;
+                    document.getElementById('rules-active-count').textContent = data.active_count || 0;
+
+                    // 渲染统计卡片
+                    const statsContainer = document.getElementById('permissions-stats');
+                    if (statsContainer && data.type_stats) {
+                        const colors = ['#667eea', '#43e97b', '#f59e0b', '#ef4444', '#3b82f6', '#8b5cf6', '#ec4899', '#10b981'];
+                        statsContainer.innerHTML = data.type_stats.map((stat, i) => `
+                            <div style="background: linear-gradient(135deg, ${colors[i % colors.length]} 0%, ${colors[(i+1) % colors.length]} 100%); color: white; padding: 16px; border-radius: 10px;">
+                                <div style="font-size: 24px; font-weight: 700;">${stat.count}</div>
+                                <div style="font-size: 11px; opacity: 0.9; text-transform: uppercase;">${stat.rule_type}</div>
+                            </div>
+                        `).join('');
+                    }
+
+                    // 渲染权限等级体系
+                    const hierarchyContainer = document.getElementById('permission-hierarchy-container');
+                    if (hierarchyContainer) {
+                        const hierarchyRule = data.rules.find(r => r.rule_code === 'ROLE_HIERARCHY');
+                        if (hierarchyRule) {
+                            let roles = [];
+                            try {
+                                roles = JSON.parse(hierarchyRule.rule_value);
+                            } catch (e) {
+                                roles = [hierarchyRule.rule_value];
+                            }
+                            const levelMap = {
+                                'hardware_admin': {icon: '🔴', class: 'highest', desc: '最高权限，需配合硬件加密狗使用'},
+                                'super_admin': {icon: '🟠', class: 'super', desc: '系统最高管理权限'},
+                                'admin': {icon: '🟡', class: 'admin', desc: '系统管理权限'},
+                                'designer': {icon: '🟢', class: 'user', desc: '设计师权限'},
+                                'student': {icon: '🟢', class: 'user', desc: '学生权限'},
+                                'guest': {icon: '⚪', class: 'lowest', desc: '访客，未登录用户'}
+                            };
+                            hierarchyContainer.innerHTML = roles.reverse().map(role => {
+                                const info = levelMap[role] || {icon: '⚫', class: 'user', desc: role};
+                                return `
+                                    <div class="perm-level ${info.class}">
+                                        <span style="font-size: 24px;">${info.icon}</span>
+                                        <div style="flex: 1;">
+                                            <strong style="display: block;">${role}</strong>
+                                            <span style="font-size: 12px; color: #6b7280;">${info.desc}</span>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('');
+                        } else {
+                            hierarchyContainer.innerHTML = '<div style="text-align: center; padding: 20px; color: #9ca3af;">未找到权限等级数据</div>';
+                        }
+                    }
+
+                    // 渲染规则列表
+                    const listContainer = document.getElementById('rules-list-container');
+                    if (listContainer && data.rules) {
+                        listContainer.innerHTML = data.rules.map(rule => {
+                            const activeBadge = rule.is_active
+                                ? '<span style="background: #10b981; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px;">激活</span>'
+                                : '<span style="background: #9ca3af; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px;">禁用</span>';
+                            const typeColor = {
+                                'security': '#ef4444', 'permission': '#3b82f6', 'system': '#10b981',
+                                'business': '#f59e0b', 'exam': '#8b5cf6', 'ai': '#ec4899'
+                            }[rule.rule_type] || '#6b7280';
+                            return `
+                                <div class="table-row">
+                                    <div style="flex: 1;">
+                                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                                            <strong>${rule.rule_name}</strong>
+                                            ${activeBadge}
+                                            <span style="background: ${typeColor}; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px;">${rule.rule_type}</span>
+                                        </div>
+                                        <div style="font-size: 12px; color: #6b7280;">${rule.rule_description || ''}</div>
+                                        <div style="font-size: 11px; color: #9ca3af; font-family: monospace; margin-top: 4px;">${rule.rule_code} = ${rule.rule_value}</div>
+                                    </div>
+                                    <div style="color: #9ca3af; font-size: 11px;">优先级: ${rule.priority || 100}</div>
+                                </div>
+                            `;
+                        }).join('');
+                    }
+                }
+            } catch (e) {
+                console.error('加载规则失败:', e);
+            }
+        }
+
+        async function refreshEmployees() {
+            await loadEmployees();
+        }
+
+        function loadSystemStatus() {
+            fetch(API_BASE + '/api/settings-data/system-status')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.status) {
+                        const status = data.status;
+                        document.getElementById('cpu-value').textContent = (status.cpu_usage || 0) + '%';
+                        document.getElementById('memory-value').textContent = (status.memory_usage || 0) + '%';
+                        document.getElementById('disk-value').textContent = (status.disk_usage || 0) + '%';
+
+                        updateBar('cpu-bar', status.cpu_usage || 0);
+                        updateBar('memory-bar', status.memory_usage || 0);
+                        updateBar('disk-bar', status.disk_usage || 0);
+
+                        updateStatusDot('cpu-status', status.cpu_usage || 0);
+                        updateStatusDot('memory-status', status.memory_usage || 0);
+                        updateStatusDot('disk-status', status.disk_usage || 0);
+
+                        document.getElementById('db-status-text').textContent = status.database_status || 'unknown';
+                        document.getElementById('db-status').className = 'status-dot ' + (status.database_status === 'connected' ? 'connected' : 'disconnected');
+
+                        document.getElementById('net-status-text').textContent = status.network_status || 'normal';
+                        document.getElementById('net-status').className = 'status-dot ' + (status.network_status === 'normal' ? 'normal' : 'warning');
+
+                        document.getElementById('last-check').textContent = formatTime(status.last_check);
+                        document.getElementById('uptime').textContent = status.uptime || '--';
+                        document.getElementById('api-requests').textContent = status.api_requests || '--';
+                    }
+                })
+                .catch(error => console.error('Failed to load system status:', error));
+        }
+
+        function updateBar(elementId, value) {
+            const bar = document.getElementById(elementId);
+            bar.style.width = value + '%';
+        }
+
+        function updateStatusDot(elementId, value) {
+            const dot = document.getElementById(elementId);
+            if (value >= 90) {
+                dot.className = 'status-dot disconnected';
+            } else if (value >= 70) {
+                dot.className = 'status-dot warning';
+            } else {
+                dot.className = 'status-dot normal';
+            }
+        }
+
+        function formatTime(timestamp) {
+            if (!timestamp) return '--';
+            const date = new Date(timestamp);
+            return date.toLocaleString('zh-CN');
+        }
+
+        function loadAlerts() {
+            fetch(API_BASE + '/api/settings-data/alerts?limit=10')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.alerts) {
+                        const alertList = document.getElementById('alert-list');
+                        if (alertList) {
+                            document.getElementById('alert-count').textContent = data.count || '--';
+
+                            if (data.alerts.length === 0) {
+                                alertList.innerHTML = '<div style="text-align: center; padding: 40px; color: #9ca3af;">暂无活动告警</div>';
+                                return;
+                            }
+
+                            alertList.innerHTML = data.alerts.map(alert => `
+                                <div class="alert-item ${(alert.alert_level || 'info').toLowerCase()}">
+                                    <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                                        <span style="font-weight: 600;">${alert.message || alert.level || '系统告警'}</span>
+                                        <span style="font-size: 11px; opacity: 0.7;">${formatTime(alert.created_at)}</span>
+                                    </div>
+                                </div>
+                            `).join('');
+                        }
+                    }
+                })
+                .catch(error => console.error('Failed to load alerts:', error));
+        }
+
+        function loadRecentActivity() {
+            fetch(API_BASE + '/api/settings-data/recent-activity?limit=10')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.activities) {
+                        const activityList = document.getElementById('recent-activity-list');
+                        if (activityList) {
+                            if (data.activities.length === 0) {
+                                activityList.innerHTML = '<div style="text-align: center; padding: 40px; color: #9ca3af;">暂无活动记录</div>';
+                                return;
+                            }
+
+                            const activityIcons = {
+                                'login': '🔑', 'logout': '🚪', 'dashboard_access': '📊',
+                                'settings_access': '⚙️', 'api_request': '🔌', 'alert_resolved': '✅', 'anomaly_detected': '⚠️'
+                            };
+
+                            activityList.innerHTML = data.activities.map(activity => `
+                                <div class="recent-activity-item">
+                                    <div class="activity-icon" style="background: rgba(102,126,234,0.1);">${activityIcons[activity.activity_type] || '📝'}</div>
+                                    <div>
+                                        <div style="font-size: 14px; color: #1f2937;">${activity.description || activity.message || '系统活动'}</div>
+                                        <div style="font-size: 12px; color: #9ca3af;">${formatTime(activity.created_at)}</div>
+                                    </div>
+                                </div>
+                            `).join('');
+                        }
+                    }
+                })
+                .catch(error => console.error('Failed to load recent activity:', error));
+        }
+
+        function loadAiOverview() {
+            fetch(API_BASE + '/api/settings-data/employees')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('de-decisions').textContent = data.total || 0;
+                        document.getElementById('kg-nodes').textContent = data.running || 0;
+                        document.getElementById('pr-predictions').textContent = (data.avg_accuracy || 0).toFixed(1);
+                        document.getElementById('orc-tasks').textContent = data.total || 0;
+                    }
+                })
+                .catch(error => console.error('Failed to load AI overview:', error));
+        }
+
+        function loadTasks() {
+            fetch(API_BASE + '/api/settings-data/ai-repair-stats')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.stats) {
+                        const tasks = data.stats;
+                        const taskList = document.getElementById('task-list');
+                        if (taskList) {
+                            taskList.innerHTML = `
+                                <div class="task-item">
+                                    <div style="flex: 1;">
+                                        <div style="font-weight: 600;">AI修复统计</div>
+                                        <div style="font-size: 12px; color: #6b7280;">总计: ${tasks.total_repairs || 0} | 成功: ${tasks.successful || 0} | 失败: ${tasks.failed || 0}</div>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                    }
+                })
+                .catch(error => console.error('Failed to load tasks:', error));
+        }
+
+        function loadNavAnomalies() {
+            // 导航异常功能暂未实现，使用日志代替
+            const anomalyList = document.getElementById('nav-anomaly-list');
+            if (anomalyList) {
+                anomalyList.innerHTML = '<div style="text-align: center; padding: 40px; color: #9ca3af;">暂无导航异常</div>';
+            }
+        }
+
+        function resolveNavAnomaly(anomalyId) {
+            console.log('Navigation anomaly resolution not implemented');
+        }
+
+        function loadInsights() {
+            fetch(API_BASE + '/api/settings-data/ai-repair-stats')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.stats) {
+                        const insights = data.stats.by_type || [];
+                        const insightsList = document.getElementById('insights-list');
+                        if (insightsList) {
+                            if (insights.length === 0) {
+                                insightsList.innerHTML = '<div style="text-align: center; padding: 40px; color: #9ca3af;">暂无系统洞察</div>';
+                                return;
+                            }
+
+                            insightsList.innerHTML = insights.slice(0, 5).map(insight => `
+                                <div class="alert-item info" style="border-left-color: #3b82f6; background: rgba(59,130,246,0.08);">
+                                    <div style="font-weight: 600; color: #1e40af;">💡 ${insight.error_type || '系统洞察'}</div>
+                                    <div style="font-size: 13px; color: #6b7280; margin-top: 4px;">修复次数: ${insight.count || 0}</div>
+                                </div>
+                            `).join('');
+                        }
+                    }
+                })
+                .catch(error => console.error('Failed to load insights:', error));
+        }
+
+        refreshEmployees();
+        setInterval(refreshEmployees, 30000);
+
+        loadSystemStatus();
+        setInterval(loadSystemStatus, 10000);
+
+        loadAlerts();
+        loadRecentActivity();
+        setInterval(() => {
+            loadAlerts();
+            loadRecentActivity();
+        }, 30000);
+    </script>
 </body>
 </html>

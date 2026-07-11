@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#6366f1">
+    <title>MTSCOS AI - 登录</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        :root {
+            --primary: #6366f1;
+            --secondary: #ec4899;
+            --dark: #0f0f1a;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --border: rgba(255, 255, 255, 0.08);
+            --safe-top: env(safe-area-inset-top);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif;
+            background: linear-gradient(180deg, #0f0f1a 0%, #1e1b4b 50%, #0f0f1a 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding-top: var(--safe-top);
+            display: flex;
+            flex-direction: column;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .gradient-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(ellipse at 20% 20%, rgba(99, 102, 241, 0.2) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(236, 72, 153, 0.2) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .logo-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .logo-icon {
+            width: 100px;
+            height: 100px;
+            margin-bottom: 24px;
+            filter: drop-shadow(0 0 30px rgba(99, 102, 241, 0.5));
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .logo-title {
+            font-size: 32px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #fff, #818cf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+            letter-spacing: 2px;
+        }
+
+        .logo-subtitle {
+            font-size: 14px;
+            color: var(--text-secondary);
+            letter-spacing: 1px;
+        }
+
+        .form-section {
+            position: relative;
+            z-index: 1;
+            padding: 20px;
+            background: rgba(15, 15, 26, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top-left-radius: 30px;
+            border-top-right-radius: 30px;
+            border-top: 1px solid var(--border);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .label {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            display: block;
+            font-weight: 500;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .input {
+            width: 100%;
+            padding: 16px 16px 16px 48px;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            background: rgba(0, 0, 0, 0.3);
+            color: var(--text-primary);
+            font-size: 16px;
+            outline: none;
+            transition: all 0.2s;
+            min-height: 52px;
+        }
+
+        .input:focus {
+            border-color: var(--primary);
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        .input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 18px;
+            color: var(--text-secondary);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 16px;
+            border-radius: 16px;
+            font-size: 17px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+            min-height: 52px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), #4f46e5);
+            color: white;
+            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-primary:active {
+            transform: scale(0.98);
+            box-shadow: 0 2px 10px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .forgot-link {
+            text-align: center;
+            margin-top: 16px;
+        }
+
+        .forgot-link a {
+            color: var(--text-secondary);
+            font-size: 14px;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .forgot-link a:hover {
+            color: var(--primary);
+        }
+
+        .error-message {
+            color: #f87171;
+            font-size: 13px;
+            margin-top: 8px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+            animation: shake 0.3s ease;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        .loading-spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .bottom-space {
+            height: calc(20px + env(safe-area-inset-bottom));
+        }
+    </style>
+</head>
+<body>
+    <div class="gradient-bg"></div>
+    
+    <div class="logo-section">
+        <img src="/assets/images/mtscos_logo.svg" alt="MTSCOS Logo" class="logo-icon">
+        <div class="logo-title">MTSCOS AI</div>
+        <div class="logo-subtitle">智能教育平台</div>
+    </div>
+
+    <div class="form-section">
+        <div class="form-group">
+            <label class="label">用户名</label>
+            <div class="input-wrapper">
+                <i class="fas fa-user input-icon"></i>
+                <input type="text" id="username" class="input" placeholder="请输入用户名">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="label">密码</label>
+            <div class="input-wrapper">
+                <i class="fas fa-lock input-icon"></i>
+                <input type="password" id="password" class="input" placeholder="请输入密码">
+            </div>
+            <div id="error-message" class="error-message"></div>
+        </div>
+
+        <button id="login-btn" class="btn btn-primary">
+            <span id="btn-text">登 录</span>
+            <div id="btn-loading" class="loading-spinner" style="display: none;"></div>
+        </button>
+
+        <div class="forgot-link">
+            <a href="/auth/forgot_password">忘记密码？</a>
+        </div>
+
+        <div class="bottom-space"></div>
+    </div>
+
+    <script src="/assets/font-awesome/js/all.min.js"></script>
+    <script>
+        document.getElementById('login-btn').addEventListener('click', async function() {
+            var username = document.getElementById('username').value.trim();
+            var password = document.getElementById('password').value.trim();
+            var errorDiv = document.getElementById('error-message');
+            var btnText = document.getElementById('btn-text');
+            var btnLoading = document.getElementById('btn-loading');
+            var btn = document.getElementById('login-btn');
+
+            errorDiv.classList.remove('show');
+
+            if (!username) {
+                errorDiv.textContent = '请输入用户名';
+                errorDiv.classList.add('show');
+                return;
+            }
+
+            if (!password) {
+                errorDiv.textContent = '请输入密码';
+                errorDiv.classList.add('show');
+                return;
+            }
+
+            btn.disabled = true;
+            btnText.style.display = 'none';
+            btnLoading.style.display = 'block';
+
+            try {
+                var response = await fetch('/mobile/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username: username, password: password })
+                });
+
+                var data = await response.json();
+
+                if (data.success) {
+                    window.location.href = data.redirect;
+                } else {
+                    errorDiv.textContent = data.error || '登录失败';
+                    errorDiv.classList.add('show');
+                }
+            } catch (error) {
+                errorDiv.textContent = '网络请求失败，请重试';
+                errorDiv.classList.add('show');
+            } finally {
+                btn.disabled = false;
+                btnText.style.display = 'block';
+                btnLoading.style.display = 'none';
+            }
+        });
+
+        document.getElementById('password').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                document.getElementById('login-btn').click();
+            }
+        });
+    </script>
+</body>
+</html>

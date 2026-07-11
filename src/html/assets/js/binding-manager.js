@@ -1,8 +1,6 @@
-
 // 兼容性检查和回退方案
 (function() {
     'use strict';
-    
     // 检查Array.includes支持
     if (!Array.prototype.includes) {
         Array.prototype.includes = function(searchElement, fromIndex) {
@@ -16,11 +14,9 @@
         };
     }
 })();
-
 // 兼容性检查和回退方案
 (function() {
     'use strict';
-    
     // 检查Array.includes支持
     if (!Array.prototype.includes) {
         Array.prototype.includes = function(searchElement, fromIndex) {
@@ -34,11 +30,9 @@
         };
     }
 })();
-
 // 兼容性检查和回退方案
 (function() {
     'use strict';
-    
     // 检查Array.includes支持
     if (!Array.prototype.includes) {
         Array.prototype.includes = function(searchElement, fromIndex) {
@@ -52,11 +46,9 @@
         };
     }
 })();
-
 // 兼容性检查和回退方案
 (function() {
     'use strict';
-    
     // 检查Array.includes支持
     if (!Array.prototype.includes) {
         Array.prototype.includes = function(searchElement, fromIndex) {
@@ -70,11 +62,9 @@
         };
     }
 })();
-
 // 兼容性检查和回退方案
 (function() {
     'use strict';
-    
     // 检查Array.includes支持
     if (!Array.prototype.includes) {
         Array.prototype.includes = function(searchElement, fromIndex) {
@@ -88,11 +78,9 @@
         };
     }
 })();
-
 // 兼容性检查和回退方案
 (function() {
     'use strict';
-    
     // 检查Array.includes支持
     if (!Array.prototype.includes) {
         Array.prototype.includes = function(searchElement, fromIndex) {
@@ -106,11 +94,9 @@
         };
     }
 })();
-
 // 兼容性检查和回退方案
 (function() {
     'use strict';
-    
     // 检查Array.includes支持
     if (!Array.prototype.includes) {
         Array.prototype.includes = function(searchElement, fromIndex) {
@@ -124,23 +110,19 @@
         };
     }
 })();
-
         // 切换标签
         function switchTab(tabId) {
             // 移除所有标签的活动状态
             document.querySelectorAll('.tab').forEach(tab => {
                 tab.classList.remove('active');
             });
-            
             // 移除所有内容的活动状态
             document.querySelectorAll('.tab-content').forEach(content => {
                 content.classList.remove('active');
             });
-            
             // 激活选中的标签和内容
             document.querySelector(`[onclick="switchTab('${tabId}')"]`).classList.add('active');
             document.getElementById(tabId).classList.add('active');
-            
             // 加载对应标签的内容
             if (tabId === 'config-management') {
                 loadConfigList();
@@ -150,22 +132,18 @@
                 loadUsageStats();
             }
         }
-
         // 显示加载状态
         function showLoading(elementId) {
             document.getElementById(elementId).innerHTML = '<div class="loading">加载中...</div>';
         }
-
         // 显示成功消息
         function showSuccess(elementId, message) {
             document.getElementById(elementId).innerHTML = `<div class="alert alert-success">${message}</div>`;
         }
-
         // 显示错误消息
         function showError(elementId, message) {
             document.getElementById(elementId).innerHTML = `<div class="alert alert-error">${message}</div>`;
         }
-
         // 加载配置列表
         async function loadConfigList() {
             showLoading('config-list');
@@ -194,7 +172,6 @@
                 showError('config-list', '加载配置列表失败: ' + error.message);
             }
         }
-
         // 查看配置详情
         async function viewConfig(configName) {
             showLoading('config-detail');
@@ -222,7 +199,6 @@
                 showError('config-detail', '加载配置详情失败: ' + error.message);
             }
         }
-
         // 编辑配置
         async function editConfig(configName) {
             showLoading('config-detail');
@@ -254,7 +230,6 @@
                 showError('config-detail', '加载配置详情失败: ' + error.message);
             }
         }
-
         // 更新配置
         async function updateConfig(configName) {
             const configData = document.getElementById('config-data').value;
@@ -278,7 +253,6 @@
                 showError('config-detail', '更新配置失败: ' + error.message);
             }
         }
-
         // 加载页面列表
         async function loadPageList() {
             showLoading('page-list');
@@ -306,7 +280,6 @@
                 showError('page-list', '加载页面列表失败: ' + error.message);
             }
         }
-
         // 查看页面配置
         async function viewPageConfig(pageUrl) {
             showLoading('page-config-detail');
@@ -343,7 +316,6 @@
                 showError('page-config-detail', '加载页面配置失败: ' + error.message);
             }
         }
-
         // 绑定配置到页面
         async function bindConfigToPage() {
             const pageUrl = document.getElementById('page-url').value;
@@ -367,7 +339,6 @@
                 showError('page-list', '绑定配置失败: ' + error.message);
             }
         }
-
         // 绑定所有配置到页面
         async function bindAllConfigsToPage() {
             const pageUrl = document.getElementById('page-url').value;
@@ -390,7 +361,6 @@
                 showError('page-list', '绑定所有配置失败: ' + error.message);
             }
         }
-
         // 加载使用统计
         async function loadUsageStats() {
             showLoading('usage-stats');
@@ -422,7 +392,6 @@
                 showError('usage-stats', '加载使用统计失败: ' + error.message);
             }
         }
-
         // 记录配置使用
         async function recordConfigUsage() {
             const configName = document.getElementById('usage-config-name').value;
@@ -447,7 +416,6 @@
                 showError('usage-stats', '记录使用失败: ' + error.message);
             }
         }
-
         // 扫描页面
         async function scanPages() {
             showLoading('scan-result');
@@ -473,7 +441,6 @@
                 showError('scan-result', '扫描页面失败: ' + error.message);
             }
         }
-
         // 自动绑定配置
         async function autoBindConfigs() {
             try {
@@ -495,7 +462,6 @@
                 showError('auto-binding', '自动绑定失败: ' + error.message);
             }
         }
-
         // 刷新所有配置
         async function refreshAll() {
             try {
@@ -511,9 +477,7 @@
                 showError('config-list', '刷新配置失败: ' + error.message);
             }
         }
-
         // 初始化加载
         window.onload = function() {
             loadConfigList();
         };
-    

@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <!-- 设计系统 -->
+    <link rel="stylesheet" href="/assets/css/mtscos-design-system.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>考试历史 - MTSCOS 智能考试系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-color: var(--color-primary);
+            --secondary-color: var(--color-success);
+            --accent-color: var(--color-secondary);
+            --dark-bg: var(--bg-dark);
+            --card-bg: #1e293b;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --success-color: #22c55e;
+            --danger-color: var(--color-error);
+            --warning-color: var(--color-warning);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--dark-bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3);
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-info span {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+
+        .btn-back {
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-back:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 30px;
+        }
+
+        .stats-header {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--secondary-color);
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-top: 5px;
+        }
+
+        .filter-bar {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .filter-select {
+            padding: 10px 16px;
+            background: var(--card-bg);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+
+        .filter-select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .search-input {
+            padding: 10px 16px;
+            background: var(--card-bg);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .history-list {
+            background: var(--card-bg);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .history-item {
+            padding: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.3s ease;
+        }
+
+        .history-item:hover {
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        .history-item:last-child {
+            border-bottom: none;
+        }
+
+        .history-info {
+            flex: 1;
+        }
+
+        .history-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .history-meta {
+            display: flex;
+            gap: 15px;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .history-result {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .score-display {
+            text-align: center;
+        }
+
+        .score-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .score-value.passed {
+            color: var(--success-color);
+        }
+
+        .score-value.failed {
+            color: var(--danger-color);
+        }
+
+        .score-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .status-badge {
+            padding: 6px 14px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .status-badge.passed {
+            background: rgba(34, 197, 94, 0.2);
+            color: var(--success-color);
+        }
+
+        .status-badge.failed {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--danger-color);
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+        }
+
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 15px;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+
+        .page-btn {
+            padding: 8px 16px;
+            background: var(--card-bg);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .page-btn:hover {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        .page-btn.active {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        .page-btn.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.2rem;
+            }
+            
+            .history-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+            
+            .history-result {
+                width: 100%;
+                justify-content: space-between;
+            }
+            
+            .filter-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <button class="btn-back" onclick="goBack()">← 返回考试系统</button>
+        <h1>📋 考试历史记录</h1>
+        <div class="user-info">
+            <span>{{ user.username }}</span>
+            <span>{{ user.role }}</span>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="stats-header">
+            <div class="stat-card">
+                <div class="stat-value" id="stat-total">0</div>
+                <div class="stat-label">总考试次数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="stat-passed">0</div>
+                <div class="stat-label">通过次数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="stat-failed">0</div>
+                <div class="stat-label">未通过次数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="stat-avg">0</div>
+                <div class="stat-label">平均分</div>
+            </div>
+        </div>
+
+        <div class="filter-bar">
+            <input type="text" class="search-input" id="searchInput" placeholder="搜索考试名称..." oninput="filterResults()">
+            <select class="filter-select" id="statusFilter" onchange="filterResults()">
+                <option value="all">全部状态</option>
+                <option value="passed">已通过</option>
+                <option value="failed">未通过</option>
+            </select>
+            <select class="filter-select" id="languageFilter" onchange="filterResults()">
+                <option value="all">全部语言</option>
+                <option value="zh">中文</option>
+                <option value="ja">日语</option>
+                <option value="en">英语</option>
+            </select>
+        </div>
+
+        <div class="history-list" id="history-list">
+            <div class="empty-state">
+                <div class="empty-state-icon">📝</div>
+                <div>加载中...</div>
+            </div>
+        </div>
+
+        <div class="pagination" id="pagination">
+        </div>
+    </div>
+
+    <script>
+        const LANGUAGE_MAP = {
+            'zh': '中文',
+            'ja': '日语',
+            'en': '英语',
+            'chinese': '中文',
+            'japanese': '日语',
+            'english': '英语'
+        };
+
+        let allResults = [];
+        let currentPage = 1;
+        const pageSize = 10;
+
+        function goBack() {
+            window.location.href = '/exam_system';
+        }
+
+        function loadHistory() {
+            const user_id = '{{ user.user_id }}';
+            
+            fetch(`/api/exam/results/user/${user_id}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.data) {
+                        allResults = data.data;
+                        updateStats();
+                        filterResults();
+                    } else {
+                        document.getElementById('history-list').innerHTML = `
+                            <div class="empty-state">
+                                <div class="empty-state-icon">📝</div>
+                                <div>暂无考试记录</div>
+                            </div>
+                        `;
+                    }
+                })
+                .catch(error => {
+                    console.error('加载考试历史失败:', error);
+                    document.getElementById('history-list').innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">❌</div>
+                            <div>加载失败，请重试</div>
+                        </div>
+                    `;
+                });
+        }
+
+        function updateStats() {
+            const total = allResults.length;
+            const passed = allResults.filter(r => r.passed).length;
+            const failed = total - passed;
+            const avgScore = total > 0 
+                ? Math.round(allResults.reduce((sum, r) => sum + r.total_score, 0) / total) 
+                : 0;
+
+            document.getElementById('stat-total').textContent = total;
+            document.getElementById('stat-passed').textContent = passed;
+            document.getElementById('stat-failed').textContent = failed;
+            document.getElementById('stat-avg').textContent = avgScore;
+        }
+
+        function filterResults() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const statusFilter = document.getElementById('statusFilter').value;
+            const languageFilter = document.getElementById('languageFilter').value;
+
+            let filtered = allResults;
+
+            if (searchTerm) {
+                filtered = filtered.filter(r => 
+                    (r.exam_title && r.exam_title.toLowerCase().includes(searchTerm)) ||
+                    (r.exam_id && r.exam_id.toLowerCase().includes(searchTerm))
+                );
+            }
+
+            if (statusFilter !== 'all') {
+                filtered = filtered.filter(r => r.passed === (statusFilter === 'passed'));
+            }
+
+            renderResults(filtered);
+        }
+
+        function renderResults(results) {
+            const totalPages = Math.ceil(results.length / pageSize);
+            const startIndex = (currentPage - 1) * pageSize;
+            const pageResults = results.slice(startIndex, startIndex + pageSize);
+
+            if (results.length === 0) {
+                document.getElementById('history-list').innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📝</div>
+                        <div>暂无考试记录</div>
+                    </div>
+                `;
+                document.getElementById('pagination').innerHTML = '';
+                return;
+            }
+
+            let html = '';
+            pageResults.forEach(result => {
+                const passed = result.passed;
+                const accuracy = Math.round((result.correct_count / result.total_count) * 100) || 0;
+                const timeTaken = formatTime(result.time_taken);
+
+                html += `
+                    <div class="history-item">
+                        <div class="history-info">
+                            <div class="history-title">${result.exam_title || '未知考试'}</div>
+                            <div class="history-meta">
+                                <span>正确率: ${accuracy}%</span>
+                                <span>用时: ${timeTaken}</span>
+                                <span>${result.created_at ? formatDate(result.created_at) : ''}</span>
+                            </div>
+                        </div>
+                        <div class="history-result">
+                            <div class="score-display">
+                                <div class="score-value ${passed ? 'passed' : 'failed'}">${result.total_score}</div>
+                                <div class="score-label">得分</div>
+                            </div>
+                            <span class="status-badge ${passed ? 'passed' : 'failed'}">${passed ? '通过' : '未通过'}</span>
+                            <button class="btn btn-primary" onclick="viewResult('${result.exam_paper_id}')">查看详情</button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            document.getElementById('history-list').innerHTML = html;
+            renderPagination(totalPages);
+        }
+
+        function renderPagination(totalPages) {
+            if (totalPages <= 1) {
+                document.getElementById('pagination').innerHTML = '';
+                return;
+            }
+
+            let html = '';
+            const maxVisible = 5;
+            let start = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+            let end = Math.min(totalPages, start + maxVisible - 1);
+
+            if (end - start + 1 < maxVisible) {
+                start = Math.max(1, end - maxVisible + 1);
+            }
+
+            html += `<button class="page-btn ${currentPage === 1 ? 'disabled' : ''}" onclick="goToPage(${currentPage - 1})">上一页</button>`;
+
+            for (let i = start; i <= end; i++) {
+                html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
+            }
+
+            html += `<button class="page-btn ${currentPage === totalPages ? 'disabled' : ''}" onclick="goToPage(${currentPage + 1})">下一页</button>`;
+
+            document.getElementById('pagination').innerHTML = html;
+        }
+
+        function goToPage(page) {
+            const totalPages = Math.ceil(allResults.length / pageSize);
+            if (page < 1 || page > totalPages) return;
+            
+            currentPage = page;
+            filterResults();
+        }
+
+        function viewResult(paperId) {
+            window.location.href = `/exam_results?paper_id=${paperId}`;
+        }
+
+        function formatTime(seconds) {
+            if (!seconds || seconds < 0) return '0秒';
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins}分${secs}秒`;
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return '';
+            try {
+                const date = new Date(dateString);
+                return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+            } catch {
+                return dateString;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadHistory);
+    </script>
+</body>
+</html>

@@ -8,6 +8,101 @@
     .preloader {
         display: none !important;
     }
+    
+    /* 协议弹窗样式 */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0,0,0,0.5);
+        justify-content: center;
+        align-items: center;
+    }
+    
+    .modal-content {
+        background-color: #fefefe;
+        margin: 5% auto;
+        padding: 0;
+        border-radius: 12px;
+        width: 90%;
+        max-width: 700px;
+        max-height: 80vh;
+        overflow: hidden;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    }
+    
+    .modal-header {
+        padding: 20px 24px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .modal-header h3 {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 600;
+    }
+    
+    .modal-close {
+        color: white;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+        background: none;
+        border: none;
+        cursor: pointer;
+        line-height: 1;
+    }
+    
+    .modal-close:hover,
+    .modal-close:focus {
+        color: #ddd;
+        text-decoration: none;
+        cursor: pointer;
+    }
+    
+    .modal-body {
+        padding: 24px;
+        max-height: 50vh;
+        overflow-y: auto;
+    }
+    
+    .agreement-content {
+        font-size: 0.9rem;
+        line-height: 1.8;
+        color: #4b5563;
+    }
+    
+    .agreement-content h4 {
+        color: #1f2937;
+        margin-top: 1.5rem;
+        margin-bottom: 0.5rem;
+        font-size: 1rem;
+    }
+    
+    .agreement-content h4:first-child {
+        margin-top: 0;
+    }
+    
+    .agreement-content p {
+        margin-bottom: 0.75rem;
+    }
+    
+    .modal-footer {
+        padding: 20px 24px;
+        background-color: #f9fafb;
+        border-top: 1px solid #e5e7eb;
+        display: flex;
+        justify-content: flex-end;
+    }
 </style>
 {% endblock %}
 
@@ -79,12 +174,17 @@
                 
                 <div class="form-group checkbox-group">
                     <input type="checkbox" id="agree_user_agreement" name="agree_user_agreement" required>
-                    <label for="agree_user_agreement">我已阅读并同意 <a href="#" class="text-blue-500">用户协议</a></label>
+                    <label for="agree_user_agreement">我已阅读并同意 <a href="#" class="text-blue-500 agreement-link" data-agreement="user">用户注册协议</a></label>
                 </div>
                 
                 <div class="form-group checkbox-group">
-                    <input type="checkbox" id="agree_user_manual" name="agree_user_manual" required>
-                    <label for="agree_user_manual">我已阅读并同意 <a href="#" class="text-blue-500">用户手册</a></label>
+                    <input type="checkbox" id="agree_security_agreement" name="agree_security_agreement" required>
+                    <label for="agree_security_agreement">我已阅读并同意 <a href="#" class="text-blue-500 agreement-link" data-agreement="security">安全信息协议</a></label>
+                </div>
+                
+                <div class="form-group checkbox-group">
+                    <input type="checkbox" id="agree_usage_agreement" name="agree_usage_agreement" required>
+                    <label for="agree_usage_agreement">我已阅读并同意 <a href="#" class="text-blue-500 agreement-link" data-agreement="usage">网站使用授权协议</a></label>
                 </div>
                 
                 <div class="form-group">
@@ -102,9 +202,139 @@
         </div>
     </div>
     
+    <!-- 协议弹窗 -->
+    <div id="agreementModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="agreementTitle">协议内容</h3>
+                <button class="modal-close" id="closeAgreementModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="agreementContent" class="agreement-content"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" id="confirmAgreement">我已阅读并确认</button>
+            </div>
+        </div>
+    </div>
+    
     <!-- 自动填充脚本 -->
     <script>
     document.addEventListener('DOMContentLoaded', function() {
+        const agreements = {
+            user: {
+                title: '用户注册协议',
+                content: `
+<h4>第一条 协议范围</h4>
+<p>本协议是您与MTSCOS AI智能考试系统（以下简称"本系统"）之间关于注册、使用本系统服务的协议。</p>
+
+<h4>第二条 用户注册</h4>
+<p>1. 用户需提供真实、准确的注册信息。</p>
+<p>2. 用户账号归本系统所有，用户仅拥有使用权。</p>
+<p>3. 用户需妥善保管账号密码，因保管不善造成的损失由用户自行承担。</p>
+
+<h4>第三条 服务使用</h4>
+<p>1. 用户应遵守本系统的使用规则。</p>
+<p>2. 用户不得利用本系统进行违法违规活动。</p>
+<p>3. 用户应合理使用系统资源，不得恶意占用。</p>
+
+<h4>第四条 隐私保护</h4>
+<p>1. 本系统将保护用户隐私信息。</p>
+<p>2. 未经用户同意，本系统不会向第三方披露用户信息。</p>
+
+<h4>第五条 协议变更</h4>
+<p>本系统有权随时修改本协议，用户继续使用即视为同意变更后的协议。</p>
+
+<h4>第六条 违约责任</h4>
+<p>违反本协议的用户，本系统有权暂停或终止其账号使用权。</p>
+                `
+            },
+            security: {
+                title: '安全信息协议',
+                content: `
+<h4>第一条 安全责任</h4>
+<p>用户应妥善保管账号密码，定期更换密码，确保账号安全。</p>
+
+<h4>第二条 安全措施</h4>
+<p>1. 建议使用包含大小写字母、数字和特殊字符的复杂密码。</p>
+<p>2. 不要向他人泄露账号密码。</p>
+<p>3. 在公共设备上使用后应及时退出登录。</p>
+
+<h4>第三条 安全事件</h4>
+<p>1. 用户发现账号异常应立即联系管理员。</p>
+<p>2. 因安全漏洞造成的损失，本系统将协助用户处理。</p>
+
+<h4>第四条 数据安全</h4>
+<p>本系统采用加密技术保护用户数据传输和存储安全。</p>
+
+<h4>第五条 安全监控</h4>
+<p>本系统会监控异常登录行为，保障系统安全。</p>
+                `
+            },
+            usage: {
+                title: '网站使用授权协议',
+                content: `
+<h4>第一条 使用授权</h4>
+<p>本系统授予用户非排他性、不可转让的使用授权。</p>
+
+<h4>第二条 使用范围</h4>
+<p>1. 用户可使用本系统提供的考试、学习等功能。</p>
+<p>2. 用户不得对系统进行反向工程、修改或破解。</p>
+<p>3. 用户不得复制、传播系统内容。</p>
+
+<h4>第三条 知识产权</h4>
+<p>1. 本系统的所有内容版权归本系统所有。</p>
+<p>2. 用户在本系统中生成的内容归用户所有，但本系统有权用于服务优化。</p>
+
+<h4>第四条 服务限制</h4>
+<p>本系统有权根据实际情况限制用户的使用权限和频率。</p>
+
+<h4>第五条 终止授权</h4>
+<p>用户违反本协议时，本系统有权终止使用授权。</p>
+                `
+            }
+        };
+
+        const agreementModal = document.getElementById('agreementModal');
+        const agreementTitle = document.getElementById('agreementTitle');
+        const agreementContent = document.getElementById('agreementContent');
+        const closeAgreementModal = document.getElementById('closeAgreementModal');
+        const confirmAgreement = document.getElementById('confirmAgreement');
+        let currentAgreement = null;
+
+        document.querySelectorAll('.agreement-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const type = this.getAttribute('data-agreement');
+                if (agreements[type]) {
+                    currentAgreement = type;
+                    agreementTitle.textContent = agreements[type].title;
+                    agreementContent.innerHTML = agreements[type].content;
+                    agreementModal.style.display = 'flex';
+                }
+            });
+        });
+
+        closeAgreementModal.addEventListener('click', function() {
+            agreementModal.style.display = 'none';
+        });
+
+        confirmAgreement.addEventListener('click', function() {
+            if (currentAgreement) {
+                const checkboxId = 'agree_' + currentAgreement + '_agreement';
+                const checkbox = document.getElementById(checkboxId);
+                if (checkbox) {
+                    checkbox.checked = true;
+                }
+            }
+            agreementModal.style.display = 'none';
+        });
+
+        window.addEventListener('click', function(e) {
+            if (e.target === agreementModal) {
+                agreementModal.style.display = 'none';
+            }
+        });
         // 生成随机用户名
         function generateRandomUsername() {
             const prefixes = ['user', 'dev', 'ai', 'tech', 'data', 'cloud', 'web', 'app'];
@@ -132,7 +362,7 @@
             if (password.match(/[!@#$%^&*()]/)) strength++;
             
             const strengthText = ['弱', '一般', '良好', '强', '非常强'];
-            const strengthColor = ['#ef4444', '#f59e0b', '#3b82f6', '#10b981', '#059669'];
+            const strengthColor = ['var(--color-error)', 'var(--color-warning)', 'var(--color-primary)', 'var(--color-success)', '#059669'];
             
             return {
                 level: strength,
@@ -146,7 +376,7 @@
             const username = generateRandomUsername();
             document.getElementById('username').value = username;
             document.getElementById('usernameHint').textContent = '生成的用户名: ' + username;
-            document.getElementById('usernameHint').style.color = '#10b981';
+            document.getElementById('usernameHint').style.color = 'var(--color-success)';
         });
         
         // 用户名实时验证
@@ -159,12 +389,12 @@
             
             if (username.length < 3) {
                 hint.textContent = '用户名至少需要3个字符';
-                hint.style.color = '#f59e0b';
+                hint.style.color = 'var(--color-warning)';
                 return;
             }
             
             hint.textContent = '检查用户名可用性...';
-            hint.style.color = '#3b82f6';
+            hint.style.color = 'var(--color-primary)';
             
             // 模拟服务器验证（实际项目中应该使用AJAX请求）
             usernameTimeout = setTimeout(function() {
@@ -173,10 +403,10 @@
                 
                 if (isAvailable) {
                     hint.textContent = '用户名可用';
-                    hint.style.color = '#10b981';
+                    hint.style.color = 'var(--color-success)';
                 } else {
                     hint.textContent = '用户名已被使用';
-                    hint.style.color = '#ef4444';
+                    hint.style.color = 'var(--color-error)';
                 }
             }, 500);
         });
@@ -187,7 +417,7 @@
             const email = username + '@example.com';
             document.getElementById('email').value = email;
             document.getElementById('emailHint').textContent = '建议的邮箱: ' + email;
-            document.getElementById('emailHint').style.color = '#10b981';
+            document.getElementById('emailHint').style.color = 'var(--color-success)';
         });
         
         // 邮箱格式验证
@@ -203,10 +433,10 @@
             const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
             if (emailPattern.test(email)) {
                 hint.textContent = '邮箱格式正确';
-                hint.style.color = '#10b981';
+                hint.style.color = 'var(--color-success)';
             } else {
                 hint.textContent = '请输入有效的邮箱地址';
-                hint.style.color = '#ef4444';
+                hint.style.color = 'var(--color-error)';
             }
         });
         
@@ -217,7 +447,7 @@
             updatePasswordStrength(password);
             updatePasswordRequirements(password);
             document.getElementById('passwordHint').textContent = '生成的密码已自动填充';
-            document.getElementById('passwordHint').style.color = '#10b981';
+            document.getElementById('passwordHint').style.color = 'var(--color-success)';
         });
         
         // 切换密码显示
@@ -292,10 +522,10 @@
             if (password && confirmPassword) {
                 if (password === confirmPassword) {
                     hint.textContent = '密码一致';
-                    hint.style.color = '#10b981';
+                    hint.style.color = 'var(--color-success)';
                 } else {
                     hint.textContent = '密码不一致';
-                    hint.style.color = '#ef4444';
+                    hint.style.color = 'var(--color-error)';
                 }
             } else {
                 hint.textContent = '';
@@ -315,17 +545,18 @@
             document.getElementById('password').value = password;
             document.getElementById('confirm_password').value = password;
             document.getElementById('agree_user_agreement').checked = true;
-            document.getElementById('agree_user_manual').checked = true;
+            document.getElementById('agree_security_agreement').checked = true;
+            document.getElementById('agree_usage_agreement').checked = true;
             
             // 更新提示
             document.getElementById('usernameHint').textContent = 'AI自动填充: ' + username;
-            document.getElementById('usernameHint').style.color = '#3b82f6';
+            document.getElementById('usernameHint').style.color = 'var(--color-primary)';
             document.getElementById('emailHint').textContent = 'AI自动填充: ' + email;
-            document.getElementById('emailHint').style.color = '#3b82f6';
+            document.getElementById('emailHint').style.color = 'var(--color-primary)';
             document.getElementById('passwordHint').textContent = 'AI自动填充: 已生成强密码';
-            document.getElementById('passwordHint').style.color = '#3b82f6';
+            document.getElementById('passwordHint').style.color = 'var(--color-primary)';
             document.getElementById('confirmPasswordHint').textContent = 'AI自动填充: 密码已确认';
-            document.getElementById('confirmPasswordHint').style.color = '#3b82f6';
+            document.getElementById('confirmPasswordHint').style.color = 'var(--color-primary)';
             
             // 更新密码强度和要求
             updatePasswordStrength(password);

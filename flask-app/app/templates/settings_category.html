@@ -1,0 +1,479 @@
+{% extends "base.html" %}
+{% block title %}{{ category_info.name }} - MTSCOS设置管理{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- 顶部导航 -->
+        <nav class="col-12 bg-white shadow-sm py-3 mb-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <a href="{{ url_for('integrated_settings.index') }}" class="btn btn-outline-secondary btn-sm">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M19 12H5M12 19l-7-7 7-7"/>
+                        </svg>
+                        返回设置主页
+                    </a>
+                    <span class="mx-3 text-muted">|</span>
+                    <h4 class="mb-0">{{ category_info.name }}</h4>
+                </div>
+                <div>
+                    <button class="btn btn-outline-primary btn-sm" onclick="refreshSettings()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                        </svg>
+                        刷新配置
+                    </button>
+                    <button class="btn btn-primary btn-sm" onclick="saveAllChanges()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M5 13l4 4L19 7"/>
+                        </svg>
+                        保存所有修改
+                    </button>
+                </div>
+            </div>
+        </nav>
+        
+        <!-- 主内容区 -->
+        <main class="col-12">
+            <!-- 分类描述 -->
+            <div class="alert alert-info mb-4" role="alert">
+                <strong>{{ category_info.description }}</strong>
+                <span class="ml-2 text-muted">共 {{ settings|length }} 个配置项</span>
+            </div>
+            
+            <!-- 搜索框 -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="searchInput" placeholder="搜索配置项..." onkeyup="searchSettings()">
+                        <div class="input-group-append">
+                            <button class="btn btn-outline-secondary" type="button" onclick="clearSearch()">清除</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 配置列表 -->
+            <div class="card">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">配置项列表</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="settingsTable">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th style="width: 30%">配置键</th>
+                                    <th style="width: 40%">配置值</th>
+                                    <th style="width: 20%">类型</th>
+                                    <th style="width: 10%">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for key in keys %}
+                                <tr id="row-{{ key }}" class="setting-row">
+                                    <td>
+                                        <div class="font-weight-bold">{{ key }}</div>
+                                        <small class="text-muted">配置键</small>
+                                    </td>
+                                    <td>
+                                        <div class="setting-value-container">
+                                            {% set value = settings.get(key) %}
+                                            {% if value is boolean %}
+                                            <select class="form-control form-control-sm setting-input" data-key="{{ key }}" data-type="boolean">
+                                                <option value="true" {% if value %}selected{% endif %}>True</option>
+                                                <option value="false" {% if not value %}selected{% endif %}>False</option>
+                                            </select>
+                                            {% elif value is integer %}
+                                            <input type="number" class="form-control form-control-sm setting-input" data-key="{{ key }}" data-type="integer" value="{{ value }}">
+                                            {% elif value is string and value|length > 100 %}
+                                            <textarea class="form-control form-control-sm setting-input" data-key="{{ key }}" data-type="string" rows="3">{{ value }}</textarea>
+                                            {% elif value is mapping %}
+                                            <textarea class="form-control form-control-sm setting-input" data-key="{{ key }}" data-type="json" rows="5">{{ value | tojson }}</textarea>
+                                            {% else %}
+                                            <input type="text" class="form-control form-control-sm setting-input" data-key="{{ key }}" data-type="string" value="{{ value }}">
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if value is boolean %}
+                                        <span class="badge badge-info">Boolean</span>
+                                        {% elif value is integer %}
+                                        <span class="badge badge-primary">Integer</span>
+                                        {% elif value is float %}
+                                        <span class="badge badge-success">Float</span>
+                                        {% elif value is mapping %}
+                                        <span class="badge badge-warning">JSON</span>
+                                        {% elif value is list %}
+                                        <span class="badge badge-secondary">List</span>
+                                        {% else %}
+                                        <span class="badge badge-light">String</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-success" onclick="saveSetting('{{ key }}')">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                                <path d="M5 13l4 4L19 7"/>
+                                            </svg>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-info ml-1" onclick="showHistory('{{ key }}')" title="查看历史">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                                <circle cx="12" cy="12" r="10"/>
+                                                <polyline points="12 6 12 12 16 14"/>
+                                            </svg>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 批量操作区 -->
+            <div class="card mt-4">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">批量操作</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <button class="btn btn-outline-primary btn-block" onclick="exportSettings()">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                    <polyline points="7 10 12 15 17 10"/>
+                                    <line x1="12" y1="15" x2="12" y2="3"/>
+                                </svg>
+                                导出配置
+                            </button>
+                        </div>
+                        <div class="col-md-6">
+                            <button class="btn btn-outline-secondary btn-block" onclick="importSettings()">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                    <polyline points="17 8 12 3 7 8"/>
+                                    <line x1="12" y1="3" x2="12" y2="15"/>
+                                </svg>
+                                导入配置
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<!-- 导入配置模态框 -->
+<div class="modal fade" id="importModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">导入配置</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>配置文件 (JSON格式)</label>
+                    <input type="file" class="form-control-file" id="importFile" accept=".json">
+                </div>
+                <div class="alert alert-warning">
+                    <strong>注意：</strong> 导入的配置将覆盖现有配置，请谨慎操作。
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="executeImport()">导入</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 配置历史模态框 -->
+<div class="modal fade" id="historyModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">配置变更历史</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="historyContent">
+                    <!-- 动态加载 -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 修改跟踪
+const modifiedSettings = new Set();
+const category = '{{ category }}';
+
+// 监听输入变化
+document.querySelectorAll('.setting-input').forEach(input => {
+    input.addEventListener('change', function() {
+        const key = this.getAttribute('data-key');
+        modifiedSettings.add(key);
+        
+        // 标记已修改
+        const row = document.getElementById('row-' + key);
+        if (row) {
+            row.classList.add('table-warning');
+        }
+    });
+});
+
+// 搜索配置
+function searchSettings() {
+    const query = document.getElementById('searchInput').value.toLowerCase();
+    document.querySelectorAll('.setting-row').forEach(row => {
+        const key = row.querySelector('.font-weight-bold').textContent.toLowerCase();
+        if (key.includes(query)) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
+
+// 清除搜索
+function clearSearch() {
+    document.getElementById('searchInput').value = '';
+    searchSettings();
+}
+
+// 保存单个配置
+function saveSetting(key) {
+    const input = document.querySelector('.setting-input[data-key="' + key + '"]');
+    const value = input.value;
+    const type = input.getAttribute('data-type');
+    
+    // 类型转换
+    let parsedValue = value;
+    if (type === 'boolean') {
+        parsedValue = value === 'true';
+    } else if (type === 'integer') {
+        parsedValue = parseInt(value);
+    } else if (type === 'json') {
+        try {
+            parsedValue = JSON.parse(value);
+        } catch (e) {
+            showNotification('JSON格式错误', 'error');
+            return;
+        }
+    }
+    
+    fetch('/settings/api/setting/' + key, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({value: parsedValue, category: category})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('配置 ' + key + ' 已保存', 'success');
+            modifiedSettings.delete(key);
+            
+            const row = document.getElementById('row-' + key);
+            if (row) {
+                row.classList.remove('table-warning');
+                row.classList.add('table-success');
+                setTimeout(() => row.classList.remove('table-success'), 2000);
+            }
+        } else {
+            showNotification('保存失败: ' + data.error, 'error');
+        }
+    })
+    .catch(error => {
+        showNotification('网络错误', 'error');
+    });
+}
+
+// 保存所有修改
+function saveAllChanges() {
+    if (modifiedSettings.size === 0) {
+        showNotification('没有需要保存的修改', 'info');
+        return;
+    }
+    
+    const settings = {};
+    modifiedSettings.forEach(key => {
+        const input = document.querySelector('.setting-input[data-key="' + key + '"]');
+        const value = input.value;
+        const type = input.getAttribute('data-type');
+        
+        // 类型转换
+        let parsedValue = value;
+        if (type === 'boolean') {
+            parsedValue = value === 'true';
+        } else if (type === 'integer') {
+            parsedValue = parseInt(value);
+        } else if (type === 'json') {
+            try {
+                parsedValue = JSON.parse(value);
+            } catch (e) {
+                showNotification(key + ' JSON格式错误', 'error');
+                return;
+            }
+        }
+        
+        settings[key] = parsedValue;
+    });
+    
+    fetch('/settings/api/batch', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({settings: settings, category: category})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(data.message, 'success');
+            modifiedSettings.clear();
+            
+            document.querySelectorAll('.table-warning').forEach(row => {
+                row.classList.remove('table-warning');
+                row.classList.add('table-success');
+                setTimeout(() => row.classList.remove('table-success'), 2000);
+            });
+        } else {
+            showNotification('批量保存失败: ' + data.error, 'error');
+        }
+    })
+    .catch(error => {
+        showNotification('网络错误', 'error');
+    });
+}
+
+// 刷新配置
+function refreshSettings() {
+    fetch('/settings/api/refresh', {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('配置已刷新', 'success');
+            setTimeout(() => location.reload(), 500);
+        } else {
+            showNotification('刷新失败: ' + data.error, 'error');
+        }
+    })
+    .catch(error => {
+        showNotification('网络错误', 'error');
+    });
+}
+
+// 导出配置
+function exportSettings() {
+    const settings = {};
+    document.querySelectorAll('.setting-input').forEach(input => {
+        const key = input.getAttribute('data-key');
+        const value = input.value;
+        settings[key] = value;
+    });
+    
+    const blob = new Blob([JSON.stringify(settings, null, 2)], {type: 'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = category + '_settings.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    showNotification('配置已导出', 'success');
+}
+
+// 导入配置
+function importSettings() {
+    $('#importModal').modal('show');
+}
+
+// 执行导入
+function executeImport() {
+    const file = document.getElementById('importFile').files[0];
+    if (!file) {
+        showNotification('请选择文件', 'error');
+        return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const settings = JSON.parse(e.target.result);
+            
+            fetch('/settings/api/batch', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({settings: settings, category: category})
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification(data.message, 'success');
+                    $('#importModal').modal('hide');
+                    setTimeout(() => location.reload(), 500);
+                } else {
+                    showNotification('导入失败: ' + data.error, 'error');
+                }
+            });
+        } catch (error) {
+            showNotification('文件格式错误', 'error');
+        }
+    };
+    reader.readAsText(file);
+}
+
+// 显示历史
+function showHistory(key) {
+    // 这里可以调用API获取历史记录
+    document.getElementById('historyContent').innerHTML = '<p class="text-muted">加载中...</p>';
+    $('#historyModal').modal('show');
+    
+    // 模拟历史数据
+    setTimeout(() => {
+        document.getElementById('historyContent').innerHTML = `
+            <div class="timeline">
+                <div class="timeline-item">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-content">
+                        <h6>当前值</h6>
+                        <p>${document.querySelector('.setting-input[data-key="' + key + '"]').value}</p>
+                    </div>
+                </div>
+            </div>
+        `;
+    }, 500);
+}
+
+// 显示通知
+function showNotification(message, type) {
+    const notification = document.createElement('div');
+    notification.className = `alert alert-${type === 'error' ? 'danger' : type === 'success' ? 'success' : 'info'} alert-dismissible fade show`;
+    notification.style.position = 'fixed';
+    notification.style.top = '20px';
+    notification.style.right = '20px';
+    notification.style.zIndex = '9999';
+    notification.innerHTML = `
+        ${message}
+        <button type="button" class="close" data-dismiss="alert">
+            <span>&times;</span>
+        </button>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.remove();
+    }, 3000);
+}
+</script>
+{% endblock %}

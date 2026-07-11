@@ -280,22 +280,55 @@ def init_api_routes():
         from app.api.question_bank_api import question_bank_api
         route_manager.register_api_blueprint(
             question_bank_api,
-            url_prefix="/api/question-bank",
-            description="题库管理API"
+            url_prefix="/api/question_bank",
+            description="题库管理API(CRUD、AI智能出题、统计分析、导入导出、智能组卷)"
         )
     except Exception as e:
         logger.error(f"初始化题库管理API路由失败: {str(e)}")
+    
+    # AI题库管理智能助手API（听力题系统）
+    try:
+        from app.api.question_bank_ai_api import question_bank_ai_api
+        route_manager.register_api_blueprint(
+            question_bank_ai_api,
+            url_prefix="/api/question_bank_ai",
+            description="AI题库管理智能助手API(听力题智能生成、多口音多音色、质量分析、智能推荐)"
+        )
+    except Exception as e:
+        logger.error(f"初始化AI题库管理智能助手API路由失败: {str(e)}")
+
+    # 物理引擎和数学模型API
+    try:
+        from app.api.physics_api import physics_api_bp
+        route_manager.register_api_blueprint(
+            physics_api_bp,
+            url_prefix="",
+            description="物理引擎和数学模型API"
+        )
+    except Exception as e:
+        logger.error(f"初始化物理引擎API路由失败: {str(e)}")
 
     # AI自学习系统API
     try:
         from app.api.self_learning_api import self_learning_api
         route_manager.register_api_blueprint(
             self_learning_api,
-            url_prefix="",
+            url_prefix="/api/self-learning",
             description="AI自学习系统API"
         )
     except Exception as e:
         logger.error(f"初始化AI自学习系统API路由失败: {str(e)}")
+
+    # 智能仪表盘API
+    try:
+        from app.routes.intelligent_dashboard_api import intelligent_dashboard_bp
+        route_manager.register_api_blueprint(
+            intelligent_dashboard_bp,
+            url_prefix="",
+            description="智能仪表盘API"
+        )
+    except Exception as e:
+        logger.error(f"初始化智能仪表盘API路由失败: {str(e)}")
 
     # AI线程进程管理器API
     try:
@@ -329,6 +362,61 @@ def init_api_routes():
         )
     except Exception as e:
         logger.error(f"初始化考试测试系统API路由失败: {str(e)}")
+
+    # 考试超时锁定系统API
+    try:
+        from app.api.timeout_lock_api import timeout_lock_api
+        route_manager.register_api_blueprint(
+            timeout_lock_api,
+            url_prefix="",
+            description="考试超时锁定系统API"
+        )
+    except Exception as e:
+        logger.error(f"初始化考试超时锁定系统API路由失败: {str(e)}")
+
+    # 智能考试助手AI API
+    try:
+        from app.api.exam_ai_api import exam_ai_api
+        route_manager.register_api_blueprint(
+            exam_ai_api,
+            url_prefix="",
+            description="智能考试助手AI API"
+        )
+    except Exception as e:
+        logger.error(f"初始化智能考试助手AI API路由失败: {str(e)}")
+
+    # 本地AI对话API
+    try:
+        from app.api.ai_chat_api import ai_chat_bp
+        route_manager.register_api_blueprint(
+            ai_chat_bp,
+            url_prefix="",
+            description="本地AI对话API"
+        )
+    except Exception as e:
+        logger.error(f"初始化本地AI对话API路由失败: {str(e)}")
+
+    # 用户中心API
+    try:
+        from app.api.user_center_api import user_center_bp
+        route_manager.register_api_blueprint(
+            user_center_bp,
+            url_prefix="",
+            description="用户中心API（个人资料、通知、消息）"
+        )
+    except Exception as e:
+        logger.error(f"初始化用户中心API路由失败: {str(e)}")
+
+    # 系统增强API
+    try:
+        from app.api.system_enhancement_api import system_enhancement_bp
+        route_manager.register_api_blueprint(
+            system_enhancement_bp,
+            url_prefix="",
+            description="系统增强API（文件、搜索、导出）"
+        )
+    except Exception as e:
+        logger.error(f"初始化系统增强API路由失败: {str(e)}")
 
     # 考试系统优化API
     try:
@@ -474,11 +562,61 @@ def init_view_routes():
         from app.blueprints.integrated_settings import integrated_settings_bp
         route_manager.register_view_blueprint(
             integrated_settings_bp,
-            url_prefix="",
+            url_prefix="/settings",
             description="集成设置视图"
         )
     except Exception as e:
         logger.error(f"初始化集成设置路由失败: {str(e)}")
+
+    # 物理引擎视图蓝图
+    try:
+        from app.views.physics_engine import physics_engine_bp, init_physics_permissions
+        route_manager.register_view_blueprint(
+            physics_engine_bp,
+            url_prefix="/physics-engine",
+            description="物理引擎与粒子系统视图"
+        )
+        init_physics_permissions()
+    except Exception as e:
+        logger.error(f"初始化物理引擎视图路由失败: {str(e)}")
+
+    # 考试系统视图蓝图
+    try:
+        from app.views.exam_system import exam_system_bp
+        route_manager.register_view_blueprint(
+            exam_system_bp,
+            url_prefix="",
+            description="考试系统视图"
+        )
+    except Exception as e:
+        logger.error(f"初始化考试系统视图路由失败: {str(e)}")
+
+    # 教师系统视图蓝图
+    try:
+        from app.views.teacher import teacher_bp
+        route_manager.register_view_blueprint(
+            teacher_bp,
+            url_prefix="",
+            description="教师系统视图"
+        )
+    except Exception as e:
+        logger.error(f"初始化教师系统视图路由失败: {str(e)}")
+
+    # 系统维护路由
+    try:
+        from app.routes.maintenance_routes import maintenance_bp, docs_bp
+        route_manager.register_view_blueprint(
+            maintenance_bp,
+            url_prefix="/maintenance",
+            description="系统维护路由"
+        )
+        route_manager.register_view_blueprint(
+            docs_bp,
+            url_prefix="/docs",
+            description="文档路由"
+        )
+    except Exception as e:
+        logger.error(f"初始化系统维护路由失败: {str(e)}")
 
 
 def init_routes():

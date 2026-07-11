@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <!-- 设计系统 -->
+    <link rel="stylesheet" href="/assets/css/mtscos-design-system.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="csrf-token" content="{{ csrf_token() if csrf_token is defined else '' }}">
+    <title>安全警告 - MTSCOS AI 智能管理系统</title>
+
+    <link rel="stylesheet" href="/assets/tailwind.min.css">
+    <link rel="stylesheet" href="/assets/all.min.css">
+
+    <style>
+        :root {
+            --danger-color: var(--color-error);
+            --warning-color: var(--color-warning);
+            --info-color: var(--color-primary);
+            --success-color: var(--color-success);
+            --bg-dark: var(--bg-dark);
+            --card-bg: rgba(30, 41, 59, 0.8);
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, var(--bg-dark) 0%, #1e1b4b 50%, var(--bg-dark) 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow-x: hidden;
+            color: var(--text-primary);
+        }
+
+        .background-particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            opacity: 0.3;
+            animation: float 10s ease-in-out infinite;
+        }
+
+        .particle-red { background: var(--color-error); }
+        .particle-orange { background: var(--color-warning); }
+        .particle-blue { background: var(--color-primary); }
+        .particle-green { background: var(--color-success); }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(30px, -30px) scale(1.1); }
+            50% { transform: translate(-20px, 40px) scale(0.9); }
+            75% { transform: translate(40px, 20px) scale(1.05); }
+        }
+
+        .glass-card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            padding: 48px;
+            max-width: 560px;
+            width: 100%;
+            text-align: center;
+            position: relative;
+            z-index: 10;
+            animation: slideIn 0.6s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .status-icon {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 32px;
+            font-size: 3rem;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .status-icon.locked {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.3), rgba(220, 38, 38, 0.3));
+            border: 3px solid var(--danger-color);
+            color: var(--danger-color);
+            box-shadow: 0 0 40px rgba(239, 68, 68, 0.3);
+        }
+
+        .status-icon.warning {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.3), rgba(234, 179, 8, 0.3));
+            border: 3px solid var(--warning-color);
+            color: var(--warning-color);
+            box-shadow: 0 0 40px rgba(245, 158, 11, 0.3);
+        }
+
+        .status-icon.info {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(37, 99, 235, 0.3));
+            border: 3px solid var(--info-color);
+            color: var(--info-color);
+            box-shadow: 0 0 40px rgba(59, 130, 246, 0.3);
+        }
+
+        .status-icon.success {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.3), rgba(5, 150, 105, 0.3));
+            border: 3px solid var(--success-color);
+            color: var(--success-color);
+            box-shadow: 0 0 40px rgba(16, 185, 129, 0.3);
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .status-title {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 16px;
+            color: var(--text-primary);
+        }
+
+        .status-message {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            margin-bottom: 32px;
+            line-height: 1.6;
+        }
+
+        .detail-box {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 32px;
+            text-align: left;
+        }
+
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .detail-item:last-child {
+            border-bottom: none;
+        }
+
+        .detail-label {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .detail-value {
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            font-weight: 500;
+            text-align: right;
+        }
+
+        .btn {
+            padding: 12px 32px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--danger-color), #dc2626);
+            color: white;
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(239, 68, 68, 0.5);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-info {
+            background: linear-gradient(135deg, var(--info-color), #2563eb);
+            color: white;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-info:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(59, 130, 246, 0.5);
+        }
+
+        .timer {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--danger-color);
+            font-family: 'Courier New', monospace;
+            text-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+        }
+
+        .tips-section {
+            background: rgba(245, 158, 11, 0.1);
+            border-left: 4px solid var(--warning-color);
+            border-radius: 0 12px 12px 0;
+            padding: 16px;
+            margin-top: 24px;
+            text-align: left;
+        }
+
+        .tips-title {
+            font-weight: 600;
+            color: var(--warning-color);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tips-list {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.8;
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .tips-list li {
+            margin-bottom: 4px;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .tips-list li::before {
+            content: '•';
+            position: absolute;
+            left: 4px;
+            color: var(--warning-color);
+        }
+
+        .event-id {
+            margin-top: 24px;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            word-break: break-all;
+        }
+
+        @media (max-width: 640px) {
+            .glass-card {
+                padding: 32px 20px;
+            }
+
+            .status-title {
+                font-size: 1.8rem;
+            }
+
+            .status-icon {
+                width: 80px;
+                height: 80px;
+                font-size: 2.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="background-particles" id="particles"></div>
+
+    <div class="glass-card" role="alert" aria-live="assertive">
+        <div class="status-icon {{ status_type }}" aria-hidden="true">
+            {% if status_type == 'locked' %}
+                <i class="fas fa-lock"></i>
+            {% elif status_type == 'warning' %}
+                <i class="fas fa-exclamation-triangle"></i>
+            {% elif status_type == 'success' %}
+                <i class="fas fa-check-circle"></i>
+            {% else %}
+                <i class="fas fa-shield-alt"></i>
+            {% endif %}
+        </div>
+
+        <h1 class="status-title">{{ status_title }}</h1>
+        <p class="status-message">{{ status_message }}</p>
+
+        {% if details %}
+        <div class="detail-box">
+            {% if details.username %}
+            <div class="detail-item">
+                <span class="detail-label"><i class="fas fa-user"></i> 用户名</span>
+                <span class="detail-value">{{ details.username }}</span>
+            </div>
+            {% endif %}
+            {% if details.ip %}
+            <div class="detail-item">
+                <span class="detail-label"><i class="fas fa-network-wired"></i> IP地址</span>
+                <span class="detail-value">{{ details.ip }}</span>
+            </div>
+            {% endif %}
+            {% if details.lock_time %}
+            <div class="detail-item">
+                <span class="detail-label"><i class="fas fa-clock"></i> 锁定时间</span>
+                <span class="detail-value">{{ details.lock_time }}</span>
+            </div>
+            {% endif %}
+            {% if details.unlock_time %}
+            <div class="detail-item">
+                <span class="detail-label"><i class="fas fa-unlock"></i> 预计解锁</span>
+                <span class="detail-value">{{ details.unlock_time }}</span>
+            </div>
+            {% endif %}
+            {% if details.reason %}
+            <div class="detail-item">
+                <span class="detail-label"><i class="fas fa-info-circle"></i> 原因</span>
+                <span class="detail-value">{{ details.reason }}</span>
+            </div>
+            {% endif %}
+            {% if details.remaining_time %}
+            <div class="detail-item">
+                <span class="detail-label"><i class="fas fa-hourglass-half"></i> 剩余时间</span>
+                <span class="detail-value timer">{{ details.remaining_time }}</span>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+            {% if status_type == 'locked' %}
+                <a href="/auth/login" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> 返回登录
+                </a>
+                <a href="/auth/contact-admin" class="btn btn-primary">
+                    <i class="fas fa-phone"></i> 联系管理员
+                </a>
+            {% elif status_type == 'warning' %}
+                <a href="/auth/login" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> 返回登录
+                </a>
+                <a href="/auth/login" class="btn btn-warning">
+                    <i class="fas fa-refresh"></i> 重新登录
+                </a>
+            {% else %}
+                <a href="/auth/login" class="btn btn-info">
+                    <i class="fas fa-refresh"></i> 重新登录
+                </a>
+            {% endif %}
+        </div>
+
+        {% if status_type == 'locked' %}
+        <div class="tips-section">
+            <div class="tips-title">
+                <i class="fas fa-lightbulb"></i> 安全提示
+            </div>
+            <ul class="tips-list">
+                <li>账户可能因多次登录失败或异常行为被锁定</li>
+                <li>请检查您的登录信息是否正确</li>
+                <li>若忘记密码，请联系管理员重置</li>
+                <li>请勿尝试暴力破解，这将延长锁定时间</li>
+            </ul>
+        </div>
+        {% endif %}
+
+        {% if event_id %}
+        <div class="event-id">
+            <i class="fas fa-fingerprint"></i> 事件ID: {{ event_id }}
+        </div>
+        {% endif %}
+    </div>
+
+    <script>
+        (function() {
+            'use strict';
+
+            // 动态生成背景粒子
+            var colors = ['particle-red', 'particle-orange', 'particle-blue', 'particle-green'];
+            var container = document.getElementById('particles');
+            for (var i = 0; i < 15; i++) {
+                var particle = document.createElement('div');
+                particle.className = 'particle ' + colors[i % 4];
+                particle.style.width = (4 + i * 2) + 'px';
+                particle.style.height = (4 + i * 2) + 'px';
+                particle.style.left = (5 + i * 7) + '%';
+                particle.style.top = (10 + i * 6) + '%';
+                particle.style.animationDelay = (i * 0.5) + 's';
+                container.appendChild(particle);
+            }
+
+            function updateTimer() {
+                const timerEl = document.querySelector('.timer');
+                if (!timerEl) return;
+
+                const timeStr = timerEl.textContent.trim();
+                const parts = timeStr.split(':');
+                if (parts.length !== 3) return;
+
+                let hours = parseInt(parts[0], 10);
+                let minutes = parseInt(parts[1], 10);
+                let seconds = parseInt(parts[2], 10);
+
+                if (isNaN(hours) || isNaN(minutes) || isNaN(seconds)) return;
+
+                if (seconds > 0) {
+                    seconds--;
+                } else if (minutes > 0) {
+                    minutes--;
+                    seconds = 59;
+                } else if (hours > 0) {
+                    hours--;
+                    minutes = 59;
+                    seconds = 59;
+                } else {
+                    window.location.href = '/auth/login';
+                    return;
+                }
+
+                timerEl.textContent =
+                    String(hours).padStart(2, '0') + ':' +
+                    String(minutes).padStart(2, '0') + ':' +
+                    String(seconds).padStart(2, '0');
+            }
+
+            if (document.querySelector('.timer')) {
+                setInterval(updateTimer, 1000);
+            }
+
+            document.querySelectorAll('.btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    this.style.opacity = '0.7';
+                    setTimeout(() => { this.style.opacity = '1'; }, 200);
+                });
+            });
+
+            if (window.history && window.history.pushState) {
+                window.history.pushState(null, '', window.location.href);
+                window.addEventListener('popstate', function() {
+                    window.history.pushState(null, '', window.location.href);
+                });
+            }
+        })();
+    </script>
+</body>
+</html>

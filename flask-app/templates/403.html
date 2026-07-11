@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <!-- 设计系统 -->
+    <link rel="stylesheet" href="/assets/css/mtscos-design-system.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>403 - 权限不足</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif;
+            background: linear-gradient(135deg, #2c3e50 0%, #1a252f 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            text-align: center;
+            max-width: 600px;
+            background: white;
+            padding: 50px;
+            border-radius: 30px;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.5);
+        }
+        .shield {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 30px;
+        }
+        .shield svg { width: 100%; height: 100%; }
+        .error-code {
+            font-size: 80px;
+            font-weight: 800;
+            color: #e74c3c;
+            margin-bottom: 15px;
+        }
+        .error-title {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 15px;
+        }
+        .error-message {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 20px;
+        }
+        .role-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            text-align: left;
+        }
+        .role-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .role-item:last-child { border-bottom: none; }
+        .role-label { color: #999; font-size: 14px; }
+        .role-value { color: #333; font-weight: 500; font-size: 14px; }
+        .actions { display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; }
+        .btn {
+            padding: 15px 30px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-size: 15px;
+            font-weight: 500;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-home {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+        }
+        .btn-home:hover { transform: translateY(-2px); }
+        .btn-back {
+            background: white;
+            color: #3498db;
+            border: 2px solid #3498db;
+        }
+        .btn-back:hover { background: #3498db; color: white; }
+        .upgrade-btn {
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+            color: white;
+        }
+        .upgrade-btn:hover { transform: translateY(-2px); }
+        @media (max-width: 600px) {
+            .container { padding: 30px 20px; }
+            .error-code { font-size: 60px; }
+            .actions { flex-direction: column; }
+            .btn { width: 100%; justify-content: center; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="shield">
+            <svg viewBox="0 0 100 100" fill="none">
+                <path d="M50 10 L85 25 V50 Q85 80 50 95 Q15 80 15 50 V25 Z" fill="#e74c3c"/>
+                <path d="M50 20 L75 32 V50 Q75 72 50 85 Q25 72 25 50 V32 Z" fill="#c0392b"/>
+                <circle cx="50" cy="50" r="15" fill="#fff"/>
+                <path d="M45 50 L50 55 L55 45" stroke="#e74c3c" stroke-width="3" fill="none"/>
+            </svg>
+        </div>
+        <div class="error-code">403</div>
+        <h1 class="error-title">访问受限</h1>
+        <p class="error-message">抱歉，您没有权限访问此页面。请检查您的账户角色或联系管理员。</p>
+        <div class="role-info">
+            <div class="role-item">
+                <span class="role-label">当前角色</span>
+                <span class="role-value">{{ current_role or '未登录' }}</span>
+            </div>
+            <div class="role-item">
+                <span class="role-label">需要角色</span>
+                <span class="role-value">{{ required_role or '管理员' }}</span>
+            </div>
+            <div class="role-item">
+                <span class="role-label">请求页面</span>
+                <span class="role-value">{{ request_path or '/' }}</span>
+            </div>
+        </div>
+        <div class="actions">
+            <a href="/" class="btn btn-home">🏠 返回首页</a>
+            <a href="javascript:history.back()" class="btn btn-back">↩️ 返回上一页</a>
+            <a href="/auth/login" class="btn upgrade-btn">🔑 切换账户</a>
+        </div>
+    </div>
+</body>
+</html>

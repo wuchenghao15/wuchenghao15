@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <!-- 设计系统 -->
+    <link rel="stylesheet" href="/assets/css/mtscos-design-system.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>错题本 - MTSCOS 智能考试系统</title>
+    
+    <link rel="stylesheet" href="/assets/tailwind.min.css">
+    <link rel="stylesheet" href="/assets/all.min.css">
+    
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--bg-dark) 0%, #1e293b 50%, var(--bg-dark) 100%);
+            color: #f1f5f9;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .glass-card {
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--color-error), #dc2626);
+            color: white;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(239, 68, 68, 0.5);
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #f1f5f9;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .wrong-item {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            border-left: 4px solid var(--color-error);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+            transition: all 0.3s ease;
+        }
+        
+        .wrong-item:hover {
+            background: rgba(239, 68, 68, 0.15);
+            transform: translateX(5px);
+        }
+        
+        .tag {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        
+        .tag-red { background: rgba(239, 68, 68, 0.2); color: var(--color-error); }
+        .tag-blue { background: rgba(59, 130, 246, 0.2); color: var(--color-primary); }
+        .tag-yellow { background: rgba(245, 158, 11, 0.2); color: var(--color-warning); }
+        .tag-green { background: rgba(16, 185, 129, 0.2); color: var(--color-success); }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #94a3b8;
+        }
+        
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+    </style>
+</head>
+<body>
+    <div class="max-w-4xl mx-auto">
+        <!-- 头部 -->
+        <div class="glass-card p-6 mb-6">
+            <div class="flex items-center justify-between flex-wrap gap-4">
+                <div class="flex items-center gap-4">
+                    <a href="/exam_system" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i>
+                        返回
+                    </a>
+                    <div>
+                        <h1 class="text-2xl font-bold">错题本</h1>
+                        <p class="text-gray-400 text-sm">复习错题，巩固知识</p>
+                    </div>
+                </div>
+                <div class="flex gap-3">
+                    <button class="btn btn-secondary">
+                        <i class="fas fa-filter"></i>
+                        筛选
+                    </button>
+                    <button class="btn btn-primary">
+                        <i class="fas fa-play"></i>
+                        开始复习
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 统计 -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div class="glass-card p-4 text-center">
+                <div class="text-2xl font-bold text-red-400">{{ wrong_questions|length }}</div>
+                <div class="text-sm text-gray-400">错题总数</div>
+            </div>
+            <div class="glass-card p-4 text-center">
+                <div class="text-2xl font-bold text-yellow-400">{{ wrong_questions|length }}</div>
+                <div class="text-sm text-gray-400">待复习</div>
+            </div>
+            <div class="glass-card p-4 text-center">
+                <div class="text-2xl font-bold text-green-400">0</div>
+                <div class="text-sm text-gray-400">已掌握</div>
+            </div>
+            <div class="glass-card p-4 text-center">
+                <div class="text-2xl font-bold text-blue-400">0%</div>
+                <div class="text-sm text-gray-400">正确率</div>
+            </div>
+        </div>
+        
+        <!-- 错题列表 -->
+        {% if wrong_questions %}
+            {% for q in wrong_questions %}
+            <div class="wrong-item">
+                <div class="flex items-start justify-between mb-3">
+                    <div class="flex gap-2">
+                        <span class="tag tag-red">
+                            <i class="fas fa-times mr-1"></i> 错误 {{ q.wrong_count or 1 }} 次
+                        </span>
+                        <span class="tag tag-blue">{{ q.subject or '综合' }}</span>
+                        <span class="tag tag-yellow">{{ q.type or '选择题' }}</span>
+                    </div>
+                    <button class="text-gray-400 hover:text-white">
+                        <i class="fas fa-ellipsis-v"></i>
+                    </button>
+                </div>
+                <p class="text-lg mb-4">{{ q.question_text or '题目内容' }}</p>
+                <div class="flex gap-3">
+                    <button class="btn btn-secondary text-sm">
+                        <i class="fas fa-eye"></i>
+                        查看解析
+                    </button>
+                    <button class="btn btn-primary text-sm">
+                        <i class="fas fa-redo"></i>
+                        再做一次
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="glass-card">
+                <div class="empty-state">
+                    <i class="fas fa-check-circle"></i>
+                    <h3 class="text-xl font-bold mb-2">太棒了！</h3>
+                    <p>您的错题本是空的，继续保持！</p>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</body>
+</html>

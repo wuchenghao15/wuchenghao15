@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <!-- 设计系统 -->
+    <link rel="stylesheet" href="/assets/css/mtscos-design-system.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>K12学习报告 - MTSCOS AI</title>
+    <link rel="icon" href="/assets/images/mtscos_logo.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/assets/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif; background: #f5f7fa; color: #333; }
+        
+        .header { background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.06); position: sticky; top: 0; z-index: 100; }
+        .header-inner { max-width: 1280px; margin: 0 auto; padding: 0 20px; height: 64px; display: flex; align-items: center; justify-content: space-between; }
+        .logo a { display: flex; align-items: center; gap: 10px; text-decoration: none; color: #333; font-weight: 700; font-size: 20px; }
+        .logo i { color: #667eea; font-size: 24px; }
+        .nav { display: flex; gap: 28px; }
+        .nav a { text-decoration: none; color: #555; font-size: 15px; font-weight: 500; transition: color 0.2s; padding: 20px 0; position: relative; }
+        .nav a:hover { color: #667eea; }
+        .nav a.active { color: #667eea; }
+        .nav a.active::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 3px; background: #667eea; border-radius: 2px; }
+
+        .footer { background: white; padding: 30px 20px; margin-top: 50px; border-top: 1px solid #eee; }
+        .footer .container { max-width: 1280px; margin: 0 auto; text-align: center; }
+        .footer p { color: #666; font-size: 14px; }
+        .footer .footer-sub { color: #999; font-size: 12px; margin-top: 6px; }
+
+        .report-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .report-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 20px;
+            padding: 30px 40px;
+            color: white;
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .back-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .header-content h1 {
+            font-size: 28px;
+            margin-bottom: 4px;
+        }
+
+        .header-content p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .report-period select {
+            padding: 10px 20px;
+            border-radius: 10px;
+            border: none;
+            font-size: 14px;
+            cursor: pointer;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            backdrop-filter: blur(10px);
+        }
+
+        .report-period select option {
+            color: #333;
+        }
+
+        .overview-section {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .overview-card.main {
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            color: #8b4513;
+        }
+
+        .overview-label {
+            font-size: 14px;
+            opacity: 0.8;
+            margin-bottom: 10px;
+        }
+
+        .overview-grade {
+            font-size: 72px;
+            font-weight: 800;
+            line-height: 1;
+            margin-bottom: 10px;
+        }
+
+        .overview-trend {
+            display: inline-block;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+
+        .overview-trend.up {
+            background: rgba(76, 175, 80, 0.2);
+            color: #2e7d32;
+        }
+
+        .grade-description {
+            font-size: 13px;
+            line-height: 1.5;
+            opacity: 0.8;
+        }
+
+        .overview-cards {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+
+        .mini-overview-card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        }
+
+        .mini-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+        }
+
+        .mini-icon.blue { background: linear-gradient(135deg, #4facfe, #00f2fe); }
+        .mini-icon.green { background: linear-gradient(135deg, #43e97b, #38f9d7); }
+        .mini-icon.orange { background: linear-gradient(135deg, #fa709a, #fee140); }
+        .mini-icon.purple { background: linear-gradient(135deg, #a18cd1, #fbc2eb); }
+
+        .mini-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1a1a2e;
+        }
+
+        .mini-value .unit {
+            font-size: 14px;
+            font-weight: 400;
+            color: #888;
+            margin-left: 2px;
+        }
+
+        .mini-label {
+            font-size: 13px;
+            color: #888;
+            margin: 4px 0;
+        }
+
+        .mini-trend {
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .mini-trend.up { color: #4caf50; }
+
+        .report-content {
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .left-col, .right-col {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .report-card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .card-header h3 {
+            font-size: 18px;
+            color: #1a1a2e;
+        }
+
+        .card-tabs {
+            display: flex;
+            gap: 4px;
+            background: #f5f7ff;
+            padding: 4px;
+            border-radius: 8px;
+        }
+
+        .card-tab {
+            padding: 6px 14px;
+            border: none;
+            background: transparent;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            color: #666;
+            transition: all 0.2s ease;
+        }
+
+        .card-tab.active {
+            background: white;
+            color: #667eea;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .chart-container {
+            width: 100%;
+        }
+
+        .subject-analysis {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .subject-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .subject-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100px;
+            flex-shrink: 0;
+        }
+
+        .subject-emoji {
+            font-size: 24px;
+        }
+
+        .subject-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .subject-progress {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .progress-bar-bg {
+            flex: 1;
+            height: 10px;
+            background: #f0f0f0;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 5px;
+            transition: width 0.5s ease;
+        }
+
+        .progress-text {
+            font-size: 13px;
+            color: #666;
+            width: 50px;
+            text-align: right;
+        }
+
+        .subject-score {
+            font-size: 20px;
+            font-weight: 700;
+            width: 70px;
+            text-align: right;
+        }
+
+        .badges-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+
+        .badge-item {
+            text-align: center;
+            padding: 16px 8px;
+            border-radius: 12px;
+            background: #f8f9ff;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .badge-item.earned {
+            background: linear-gradient(135deg, #fff9e6, #fff3cc);
+        }
+
+        .badge-item.locked {
+            opacity: 0.5;
+        }
+
+        .badge-icon {
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+
+        .badge-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .badge-desc {
+            font-size: 11px;
+            color: #888;
+            line-height: 1.4;
+        }
+
+        .badge-progress {
+            margin-top: 6px;
+            font-size: 11px;
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .view-all {
+            font-size: 13px;
+            color: #667eea;
+            cursor: pointer;
+        }
+
+        .weak-points-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .weak-point-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: #f8f9ff;
+            border-radius: 12px;
+        }
+
+        .wp-subject {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        .wp-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .wp-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 2px;
+        }
+
+        .wp-subject-name {
+            font-size: 12px;
+            color: #888;
+        }
+
+        .wp-mastery {
+            text-align: center;
+            margin: 0 10px;
+        }
+
+        .mastery-label {
+            font-size: 11px;
+            color: #999;
+            margin-bottom: 4px;
+        }
+
+        .mastery-bar {
+            width: 60px;
+            height: 6px;
+            background: #e0e0e0;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 4px;
+        }
+
+        .mastery-fill {
+            height: 100%;
+            border-radius: 3px;
+        }
+
+        .mastery-value {
+            font-size: 12px;
+            font-weight: 600;
+            color: #666;
+        }
+
+        .strengthen-btn {
+            padding: 8px 14px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: all 0.2s ease;
+        }
+
+        .strengthen-btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .ai-suggestion {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .ai-suggestion .card-header h3 {
+            color: white;
+        }
+
+        .suggestion-content {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .suggestion-item {
+            display: flex;
+            gap: 12px;
+            background: rgba(255,255,255,0.15);
+            padding: 14px;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+        }
+
+        .suggestion-icon {
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+
+        .suggestion-text strong {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 14px;
+        }
+
+        .suggestion-text p {
+            font-size: 13px;
+            opacity: 0.9;
+            line-height: 1.5;
+            margin: 0;
+        }
+
+        .exam-section {
+            margin-bottom: 30px;
+        }
+
+        .exam-section h2 {
+            font-size: 22px;
+            color: #1a1a2e;
+            margin-bottom: 16px;
+        }
+
+        .exam-chart-card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        }
+
+        @media (max-width: 1024px) {
+            .report-content { grid-template-columns: 1fr; }
+            .overview-section { grid-template-columns: 1fr; }
+            .overview-cards { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        @media (max-width: 768px) {
+            .nav { gap: 16px; }
+            .nav a { font-size: 13px; }
+        }
+
+        @media (max-width: 640px) {
+            .overview-cards { grid-template-columns: 1fr; }
+            .badges-grid { grid-template-columns: repeat(2, 1fr); }
+            .weak-point-item { flex-wrap: wrap; }
+            .subject-row { flex-wrap: wrap; }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-inner">
+            <div class="logo">
+                <a href="/">
+                    <i class="fas fa-robot"></i>
+                    <span>MTSCOS AI</span>
+                </a>
+            </div>
+            <nav class="nav">
+                <a href="/">首页</a>
+                <a href="/k12" class="active">K12教育</a>
+                <a href="/about/history">关于我们</a>
+                <a href="/products/features">产品功能</a>
+                <a href="/contact/contact">联系我们</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="report-container">
+        <div class="report-header">
+            <div>
+                <button class="back-btn" onclick="window.location.href='/k12'">← 返回K12首页</button>
+                <div class="header-content">
+                    <h1>📊 学习报告</h1>
+                    <p>全方位学情分析，精准把握学习动态</p>
+                </div>
+            </div>
+            <div class="report-period">
+                <select id="periodSelect" onchange="changePeriod()">
+                    <option value="week">本周</option>
+                    <option value="month" selected>本月</option>
+                    <option value="quarter">本学期</option>
+                    <option value="year">全年</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="overview-section">
+            <div class="overview-card main">
+                <div class="overview-label">综合学习能力评级</div>
+                <div class="overview-grade">A+</div>
+                <div class="overview-trend up">↑ 较上月提升 5%</div>
+                <div class="grade-description">
+                    学习状态优秀！继续保持，向更高目标迈进！
+                </div>
+            </div>
+            <div class="overview-cards">
+                <div class="mini-overview-card">
+                    <div class="mini-icon blue">⏱️</div>
+                    <div class="mini-info">
+                        <div class="mini-value">42.5<span class="unit">小时</span></div>
+                        <div class="mini-label">总学习时长</div>
+                        <div class="mini-trend up">↑ 12%</div>
+                    </div>
+                </div>
+                <div class="mini-overview-card">
+                    <div class="mini-icon green">📚</div>
+                    <div class="mini-info">
+                        <div class="mini-value">128<span class="unit">个</span></div>
+                        <div class="mini-label">掌握知识点</div>
+                        <div class="mini-trend up">↑ 24个</div>
+                    </div>
+                </div>
+                <div class="mini-overview-card">
+                    <div class="mini-icon orange">📝</div>
+                    <div class="mini-info">
+                        <div class="mini-value">1,256<span class="unit">道</span></div>
+                        <div class="mini-label">完成练习</div>
+                        <div class="mini-trend up">↑ 18%</div>
+                    </div>
+                </div>
+                <div class="mini-overview-card">
+                    <div class="mini-icon purple">🎯</div>
+                    <div class="mini-info">
+                        <div class="mini-value">87.3<span class="unit">%</span></div>
+                        <div class="mini-label">平均正确率</div>
+                        <div class="mini-trend up">↑ 3.2%</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="report-content">
+            <div class="left-col">
+                <div class="report-card">
+                    <div class="card-header">
+                        <h3>📈 学习时长趋势</h3>
+                        <div class="card-tabs">
+                            <button class="card-tab active">按天</button>
+                            <button class="card-tab">按周</button>
+                            <button class="card-tab">按月</button>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="studyTimeChart" height="250"></canvas>
+                    </div>
+                </div>
+
+                <div class="report-card">
+                    <div class="card-header">
+                        <h3>📚 各学科学习情况</h3>
+                    </div>
+                    <div class="subject-analysis">
+                        <div class="subject-row">
+                            <div class="subject-info">
+                                <span class="subject-emoji">📖</span>
+                                <span class="subject-name">语文</span>
+                            </div>
+                            <div class="subject-progress">
+                                <div class="progress-bar-bg">
+                                    <div class="progress-fill" style="width: 85%; background: #ff6b6b;"></div>
+                                </div>
+                                <span class="progress-text">85%</span>
+                            </div>
+                            <div class="subject-score" style="color: #ff6b6b;">
+                                90分
+                            </div>
+                        </div>
+
+                        <div class="subject-row">
+                            <div class="subject-info">
+                                <span class="subject-emoji">🔢</span>
+                                <span class="subject-name">数学</span>
+                            </div>
+                            <div class="subject-progress">
+                                <div class="progress-bar-bg">
+                                    <div class="progress-fill" style="width: 78%; background: #4facfe;"></div>
+                                </div>
+                                <span class="progress-text">78%</span>
+                            </div>
+                            <div class="subject-score" style="color: #4facfe;">
+                                82分
+                            </div>
+                        </div>
+
+                        <div class="subject-row">
+                            <div class="subject-info">
+                                <span class="subject-emoji">🔤</span>
+                                <span class="subject-name">英语</span>
+                            </div>
+                            <div class="subject-progress">
+                                <div class="progress-bar-bg">
+                                    <div class="progress-fill" style="width: 92%; background: #43e97b;"></div>
+                                </div>
+                                <span class="progress-text">92%</span>
+                            </div>
+                            <div class="subject-score" style="color: #43e97b;">
+                                95分
+                            </div>
+                        </div>
+
+                        <div class="subject-row">
+                            <div class="subject-info">
+                                <span class="subject-emoji">⚡</span>
+                                <span class="subject-name">物理</span>
+                            </div>
+                            <div class="subject-progress">
+                                <div class="progress-bar-bg">
+                                    <div class="progress-fill" style="width: 70%; background: #fa709a;"></div>
+                                </div>
+                                <span class="progress-text">70%</span>
+                            </div>
+                            <div class="subject-score" style="color: #fa709a;">
+                                75分
+                            </div>
+                        </div>
+
+                        <div class="subject-row">
+                            <div class="subject-info">
+                                <span class="subject-emoji">🧪</span>
+                                <span class="subject-name">化学</span>
+                            </div>
+                            <div class="subject-progress">
+                                <div class="progress-bar-bg">
+                                    <div class="progress-fill" style="width: 88%; background: #a18cd1;"></div>
+                                </div>
+                                <span class="progress-text">88%</span>
+                            </div>
+                            <div class="subject-score" style="color: #a18cd1;">
+                                91分
+                            </div>
+                        </div>
+
+                        <div class="subject-row">
+                            <div class="subject-info">
+                                <span class="subject-emoji">🧬</span>
+                                <span class="subject-name">生物</span>
+                            </div>
+                            <div class="subject-progress">
+                                <div class="progress-bar-bg">
+                                    <div class="progress-fill" style="width: 80%; background: #84fab0;"></div>
+                                </div>
+                                <span class="progress-text">80%</span>
+                            </div>
+                            <div class="subject-score" style="color: #84fab0;">
+                                85分
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="report-card">
+                    <div class="card-header">
+                        <h3>🧠 能力雷达图</h3>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="radarChart" height="280"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="right-col">
+                <div class="report-card">
+                    <div class="card-header">
+                        <h3>🏆 成就勋章</h3>
+                    </div>
+                    <div class="badges-grid">
+                        <div class="badge-item earned">
+                            <div class="badge-icon">🌟</div>
+                            <div class="badge-name">学习达人</div>
+                            <div class="badge-desc">连续学习7天</div>
+                        </div>
+                        <div class="badge-item earned">
+                            <div class="badge-icon">📖</div>
+                            <div class="badge-name">知识之星</div>
+                            <div class="badge-desc">掌握100个知识点</div>
+                        </div>
+                        <div class="badge-item earned">
+                            <div class="badge-icon">🎯</div>
+                            <div class="badge-name">精准射手</div>
+                            <div class="badge-desc">正确率达到85%</div>
+                        </div>
+                        <div class="badge-item">
+                            <div class="badge-icon">🏅</div>
+                            <div class="badge-name">学霸之路</div>
+                            <div class="badge-desc">综合评分达到90分</div>
+                            <div class="badge-progress">78%</div>
+                        </div>
+                        <div class="badge-item">
+                            <div class="badge-icon">⚡</div>
+                            <div class="badge-name">速算达人</div>
+                            <div class="badge-desc">数学限时挑战满分</div>
+                            <div class="badge-progress">45%</div>
+                        </div>
+                        <div class="badge-item locked">
+                            <div class="badge-icon">🔒</div>
+                            <div class="badge-name">???</div>
+                            <div class="badge-desc">神秘勋章</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="report-card">
+                    <div class="card-header">
+                        <h3>⚠️ 薄弱知识点</h3>
+                        <span class="view-all">查看全部 →</span>
+                    </div>
+                    <div class="weak-points-list">
+                        <div class="weak-point-item">
+                            <div class="wp-subject" style="background: #4facfe;">🔢</div>
+                            <div class="wp-info">
+                                <div class="wp-name">几何证明</div>
+                                <div class="wp-subject-name">数学</div>
+                            </div>
+                            <div class="wp-mastery">
+                                <div class="mastery-label">掌握度</div>
+                                <div class="mastery-bar">
+                                    <div class="mastery-fill" style="width: 35%; background: #ff6b6b;"></div>
+                                </div>
+                                <div class="mastery-value">35%</div>
+                            </div>
+                            <button class="strengthen-btn" onclick="strengthenPoint('1')">强化练习</button>
+                        </div>
+
+                        <div class="weak-point-item">
+                            <div class="wp-subject" style="background: #fa709a;">⚡</div>
+                            <div class="wp-info">
+                                <div class="wp-name">浮力计算</div>
+                                <div class="wp-subject-name">物理</div>
+                            </div>
+                            <div class="wp-mastery">
+                                <div class="mastery-label">掌握度</div>
+                                <div class="mastery-bar">
+                                    <div class="mastery-fill" style="width: 45%; background: #fa709a;"></div>
+                                </div>
+                                <div class="mastery-value">45%</div>
+                            </div>
+                            <button class="strengthen-btn" onclick="strengthenPoint('2')">强化练习</button>
+                        </div>
+
+                        <div class="weak-point-item">
+                            <div class="wp-subject" style="background: #ff6b6b;">📖</div>
+                            <div class="wp-info">
+                                <div class="wp-name">文言文翻译</div>
+                                <div class="wp-subject-name">语文</div>
+                            </div>
+                            <div class="wp-mastery">
+                                <div class="mastery-label">掌握度</div>
+                                <div class="mastery-bar">
+                                    <div class="mastery-fill" style="width: 55%; background: #fa709a;"></div>
+                                </div>
+                                <div class="mastery-value">55%</div>
+                            </div>
+                            <button class="strengthen-btn" onclick="strengthenPoint('3')">强化练习</button>
+                        </div>
+
+                        <div class="weak-point-item">
+                            <div class="wp-subject" style="background: #a18cd1;">🧪</div>
+                            <div class="wp-info">
+                                <div class="wp-name">化学方程式配平</div>
+                                <div class="wp-subject-name">化学</div>
+                            </div>
+                            <div class="wp-mastery">
+                                <div class="mastery-label">掌握度</div>
+                                <div class="mastery-bar">
+                                    <div class="mastery-fill" style="width: 65%; background: #43e97b;"></div>
+                                </div>
+                                <div class="mastery-value">65%</div>
+                            </div>
+                            <button class="strengthen-btn" onclick="strengthenPoint('4')">强化练习</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="report-card ai-suggestion">
+                    <div class="card-header">
+                        <h3>🤖 AI学习建议</h3>
+                    </div>
+                    <div class="suggestion-content">
+                        <div class="suggestion-item">
+                            <div class="suggestion-icon">💡</div>
+                            <div class="suggestion-text">
+                                <strong>数学几何部分有待加强</strong>
+                                <p>建议每天花20分钟进行几何专项练习，重点关注三角形和圆的综合应用。</p>
+                            </div>
+                        </div>
+                        <div class="suggestion-item">
+                            <div class="suggestion-icon">📚</div>
+                            <div class="suggestion-text">
+                                <strong>英语词汇量稳步提升</strong>
+                                <p>本月新增词汇150个，继续保持！建议增加阅读训练，提升词汇应用能力。</p>
+                            </div>
+                        </div>
+                        <div class="suggestion-item">
+                            <div class="suggestion-icon">⏰</div>
+                            <div class="suggestion-text">
+                                <strong>学习时间分布建议</strong>
+                                <p>建议将理科学习安排在上午，文科安排在下午，更符合大脑记忆规律。</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="exam-section">
+            <h2>📝 考试成绩分析</h2>
+            <div class="exam-chart-card">
+                <div class="chart-container">
+                    <canvas id="examTrendChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 MTSCOS AI System. All rights reserved.</p>
+            <p class="footer-sub">Powered by Advanced AI Technology & Distributed Architecture</p>
+        </div>
+    </footer>
+
+    <script>
+        function changePeriod() {
+            const period = document.getElementById('periodSelect').value;
+            console.log('切换周期:', period);
+            initCharts();
+        }
+
+        function strengthenPoint(pointId) {
+            alert('开始强化练习：' + pointId);
+        }
+
+        function initCharts() {
+            const studyTimeCtx = document.getElementById('studyTimeChart');
+            if (studyTimeCtx && typeof Chart !== 'undefined') {
+                if (studyTimeCtx.chart) studyTimeCtx.chart.destroy();
+                studyTimeCtx.chart = new Chart(studyTimeCtx, {
+                    type: 'line',
+                    data: {
+                        labels: ['6/1', '6/5', '6/10', '6/15', '6/20', '6/25', '6/28'],
+                        datasets: [{
+                            label: '学习时长(小时)',
+                            data: [3.2, 4.5, 3.8, 5.2, 4.0, 6.1, 5.5],
+                            borderColor: '#667eea',
+                            backgroundColor: 'rgba(102,126,234,0.1)',
+                            fill: true,
+                            tension: 0.4,
+                            pointBackgroundColor: '#667eea',
+                            pointRadius: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { beginAtZero: true, grid: { color: '#f5f5f5' } },
+                            x: { grid: { display: false } }
+                        }
+                    }
+                });
+            }
+
+            const radarCtx = document.getElementById('radarChart');
+            if (radarCtx && typeof Chart !== 'undefined') {
+                if (radarCtx.chart) radarCtx.chart.destroy();
+                radarCtx.chart = new Chart(radarCtx, {
+                    type: 'radar',
+                    data: {
+                        labels: ['逻辑思维', '记忆力', '计算能力', '阅读理解', '空间想象', '语言表达'],
+                        datasets: [{
+                            label: '当前能力',
+                            data: [85, 78, 92, 80, 75, 82],
+                            borderColor: '#667eea',
+                            backgroundColor: 'rgba(102,126,234,0.2)',
+                            pointBackgroundColor: '#667eea'
+                        }, {
+                            label: '上月能力',
+                            data: [78, 72, 85, 75, 70, 76],
+                            borderColor: '#ddd',
+                            backgroundColor: 'rgba(200,200,200,0.1)',
+                            pointBackgroundColor: '#bbb',
+                            borderDash: [5, 5]
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            r: {
+                                beginAtZero: true,
+                                max: 100,
+                                grid: { color: '#eee' },
+                                angleLines: { color: '#eee' },
+                                ticks: { display: false }
+                            }
+                        }
+                    }
+                });
+            }
+
+            const examTrendCtx = document.getElementById('examTrendChart');
+            if (examTrendCtx && typeof Chart !== 'undefined') {
+                if (examTrendCtx.chart) examTrendCtx.chart.destroy();
+                examTrendCtx.chart = new Chart(examTrendCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['第一次月考', '期中考试', '第二次月考', '期末考试'],
+                        datasets: [
+                            { label: '语文', data: [82, 85, 88, 90], backgroundColor: '#ff6b6b' },
+                            { label: '数学', data: [78, 82, 85, 88], backgroundColor: '#4facfe' },
+                            { label: '英语', data: [85, 88, 90, 92], backgroundColor: '#43e97b' },
+                            { label: '物理', data: [75, 80, 82, 85], backgroundColor: '#fa709a' },
+                            { label: '化学', data: [80, 83, 86, 89], backgroundColor: '#a18cd1' }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: { beginAtZero: true, max: 100, grid: { color: '#f5f5f5' } },
+                            x: { grid: { display: false } }
+                        }
+                    }
+                });
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof Chart === 'undefined') {
+                const script = document.createElement('script');
+                script.src = '/assets/chart.umd.min.js';
+                script.onload = initCharts;
+                document.head.appendChild(script);
+            } else {
+                initCharts();
+            }
+        });
+    </script>
+</body>
+</html>

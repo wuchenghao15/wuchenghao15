@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <link rel="stylesheet" href="/static/css/mtscos-design-system.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ error_code }} - {{ error_title }}</title>
+    <style>
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--spacing-5);
+            background: var(--bg-dark);
+        }
+
+        .error-container {
+            background: var(--bg-secondary);
+            border-radius: var(--border-radius-xl);
+            box-shadow: var(--shadow-xl);
+            max-width: 600px;
+            width: 100%;
+            padding: var(--spacing-10);
+            text-align: center;
+            border: 1px solid var(--border-color);
+            animation: slideIn 0.4s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .error-icon {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto var(--spacing-6);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            animation: pulse 2s infinite;
+        }
+
+        .error-icon.danger {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--color-error);
+        }
+
+        .error-icon.warning {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--color-warning);
+        }
+
+        .error-icon.info {
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--color-info);
+        }
+
+        .error-icon.success {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--color-success);
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+
+        .error-code {
+            font-size: 64px;
+            font-weight: 800;
+            background: var(--color-primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: var(--spacing-3);
+        }
+
+        .error-title {
+            font-size: var(--font-size-2xl);
+            font-weight: 600;
+            color: var(--text-contrast);
+            margin-bottom: var(--spacing-4);
+        }
+
+        .error-message {
+            font-size: var(--font-size-sm);
+            color: var(--text-light);
+            line-height: var(--line-height-relaxed);
+            margin-bottom: var(--spacing-5);
+        }
+
+        .error-suggestion {
+            background: rgba(59, 130, 246, 0.1);
+            border-left: 3px solid var(--color-primary);
+            padding: var(--spacing-4);
+            border-radius: 0 var(--border-radius-md) var(--border-radius-md) 0;
+            margin-bottom: var(--spacing-6);
+            text-align: left;
+        }
+
+        .error-suggestion .suggestion-icon {
+            display: inline-block;
+            margin-right: var(--spacing-2);
+            font-size: var(--font-size-sm);
+        }
+
+        .error-suggestion p {
+            margin: 0;
+            font-size: var(--font-size-sm);
+            color: var(--text-light);
+        }
+
+        .error-details {
+            background: var(--bg-dark);
+            border-radius: var(--border-radius-lg);
+            padding: var(--spacing-5);
+            margin-bottom: var(--spacing-6);
+            text-align: left;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: var(--spacing-3) 0;
+            border-bottom: 1px solid var(--border-color);
+            font-size: var(--font-size-xs);
+        }
+
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+
+        .detail-label {
+            color: var(--text-tertiary);
+            font-weight: 500;
+        }
+
+        .detail-value {
+            color: var(--text-contrast);
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+            word-break: break-all;
+        }
+
+        .ai-decision {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: var(--spacing-6);
+            padding: var(--spacing-4);
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.1));
+            border-radius: var(--border-radius-lg);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+
+        .ai-icon {
+            width: 28px;
+            height: 28px;
+            margin-right: var(--spacing-3);
+            animation: rotate 3s linear infinite;
+        }
+
+        @keyframes rotate {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .ai-text {
+            font-size: var(--font-size-sm);
+            color: var(--text-light);
+            font-weight: 500;
+        }
+
+        .ai-analysis {
+            background: var(--bg-dark);
+            border-radius: var(--border-radius-lg);
+            padding: var(--spacing-5);
+            margin-bottom: var(--spacing-6);
+            text-align: left;
+        }
+
+        .ai-analysis-title {
+            font-size: var(--font-size-base);
+            font-weight: 600;
+            color: var(--color-primary);
+            margin-bottom: var(--spacing-3);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-2);
+        }
+
+        .ai-analysis-item {
+            padding: var(--spacing-3);
+            background: rgba(16, 185, 129, 0.05);
+            border-radius: var(--border-radius-md);
+            margin-bottom: var(--spacing-3);
+            border-left: 3px solid var(--color-success);
+        }
+
+        .ai-analysis-item.warning {
+            background: rgba(245, 158, 11, 0.05);
+            border-left-color: var(--color-warning);
+        }
+
+        .ai-analysis-item.error {
+            background: rgba(239, 68, 68, 0.05);
+            border-left-color: var(--color-error);
+        }
+
+        .ai-analysis-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .ai-analysis-item .item-title {
+            font-size: var(--font-size-sm);
+            font-weight: 600;
+            color: var(--text-contrast);
+            margin-bottom: var(--spacing-1);
+        }
+
+        .ai-analysis-item .item-desc {
+            font-size: var(--font-size-xs);
+            color: var(--text-light);
+            margin-bottom: var(--spacing-2);
+        }
+
+        .ai-analysis-item .item-suggestion {
+            font-size: var(--font-size-xs);
+            color: var(--color-primary);
+            font-style: italic;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: var(--spacing-3);
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .category-badge {
+            display: inline-block;
+            padding: var(--spacing-1) var(--spacing-3);
+            border-radius: var(--border-radius-full);
+            font-size: var(--font-size-xs);
+            font-weight: 500;
+            margin-bottom: var(--spacing-4);
+        }
+
+        .category-badge.authentication {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--color-error);
+        }
+
+        .category-badge.authorization {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--color-warning);
+        }
+
+        .category-badge.validation {
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--color-info);
+        }
+
+        .category-badge.resource {
+            background: rgba(139, 92, 246, 0.1);
+            color: var(--color-secondary);
+        }
+
+        .category-badge.business {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--color-success);
+        }
+
+        .category-badge.quota {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--color-warning);
+        }
+
+        .category-badge.timeout {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--color-error);
+        }
+
+        .category-badge.integration {
+            background: rgba(139, 92, 246, 0.1);
+            color: var(--color-secondary);
+        }
+
+        .category-badge.concurrency {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--color-warning);
+        }
+
+        .category-badge.unknown {
+            background: rgba(100, 116, 139, 0.1);
+            color: var(--text-tertiary);
+        }
+
+        .auto-redirect {
+            margin-top: var(--spacing-4);
+            font-size: var(--font-size-xs);
+            color: var(--text-tertiary);
+        }
+
+        .auto-redirect a {
+            color: var(--color-primary);
+            text-decoration: none;
+        }
+
+        .auto-redirect a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            .error-container {
+                padding: var(--spacing-6) var(--spacing-5);
+            }
+
+            .error-code {
+                font-size: 48px;
+            }
+
+            .error-title {
+                font-size: var(--font-size-xl);
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .detail-row {
+                flex-direction: column;
+                gap: var(--spacing-1);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="error-container">
+        <div class="error-icon {{ 'danger' if error_code >= 500 else 'warning' if error_code >= 400 else 'info' }}">
+            {% if error_code == 401 %}🔐{% elif error_code == 403 %}🚫{% elif error_code == 404 %}🔍{% elif error_code == 429 %}⏱️{% elif error_code >= 500 %}🔥{% else %}⚠️{% endif %}
+        </div>
+
+        <div class="error-code">{{ error_code }}</div>
+        <h1 class="error-title">{{ error_title }}</h1>
+        
+        {% if category %}
+        <span class="category-badge {{ category }}">{{ category }}</span>
+        {% endif %}
+        
+        <p class="error-message">{{ error_message }}</p>
+
+        {% if suggestion %}
+        <div class="error-suggestion">
+            <p><span class="suggestion-icon">💡</span>{{ suggestion }}</p>
+        </div>
+        {% endif %}
+
+        <div class="error-details">
+            <div class="detail-row">
+                <span class="detail-label">错误编号</span>
+                <span class="detail-value">{{ error_id }}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">发生时间</span>
+                <span class="detail-value">{{ timestamp }}</span>
+            </div>
+            {% if request_info %}
+            <div class="detail-row">
+                <span class="detail-label">请求路径</span>
+                <span class="detail-value">{{ request_info.path }}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">请求方法</span>
+                <span class="detail-value">{{ request_info.method }}</span>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="ai-decision">
+            <svg class="ai-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M12 6v6l4 2"/>
+                <path d="M9.5 17.5l3.5 3.5"/>
+                <path d="M14.5 17.5l-3.5 3.5"/>
+            </svg>
+            <span class="ai-text">AI 决策引擎已分析，正在为您推荐最佳操作</span>
+        </div>
+
+        {% if ai_analysis and ai_analysis.items %}
+        <div class="ai-analysis">
+            <div class="ai-analysis-title">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                AI 错误分析报告
+            </div>
+            {% for item in ai_analysis.items %}
+            <div class="ai-analysis-item {{ item.severity }}">
+                <div class="item-title">{{ item.title }}</div>
+                <div class="item-desc">{{ item.description }}</div>
+                {% if item.suggestion %}
+                <div class="item-suggestion">💡 {{ item.suggestion }}</div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="action-buttons">
+            <button class="btn btn-primary" onclick="location.href='/super_admin_dashboard'">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                    <polyline points="9 22 9 12 15 12 15 22"/>
+                </svg>
+                管理控制台
+            </button>
+            <button class="btn btn-secondary" onclick="location.href='/'">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+                </svg>
+                返回首页
+            </button>
+            <button class="btn btn-outline" onclick="location.reload()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="23 4 23 10 17 10"/>
+                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 11l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                </svg>
+                刷新页面
+            </button>
+        </div>
+
+        {% if redirect_url %}
+        <div class="auto-redirect">
+            系统将在 <span id="countdown">5</span> 秒后自动跳转：
+            <a href="{{ redirect_url }}">{{ redirect_url }}</a>
+        </div>
+        {% endif %}
+    </div>
+
+    <script>
+        {% if redirect_url %}
+        let countdown = 5;
+        const countdownEl = document.getElementById('countdown');
+        
+        const timer = setInterval(() => {
+            countdown--;
+            countdownEl.textContent = countdown;
+            
+            if (countdown <= 0) {
+                clearInterval(timer);
+                window.location.href = '{{ redirect_url }}';
+            }
+        }, 1000);
+        {% endif %}
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                window.location.href = '/';
+            }
+        });
+    </script>
+</body>
+</html>

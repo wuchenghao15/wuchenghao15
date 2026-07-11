@@ -1,85 +1,133 @@
 # -*- coding: utf-8 -*-
 """认证API - 处理登录、注册等认证请求"""
-from flask import Blueprint, request, jsonify, session, current_app
+from flask import Blueprint, request, session
 import sqlite3
 import os
-import json
+import hashlib
+import base64
+from typing import Optional
+from app.utils.session_manager import get_session_manager
+from app.utils.role_router import get_role_router
+from app.utils.api_response import (
+    success_response,
+    validation_error,
+    authentication_error,
+    business_error,
+    system_error
+)
+from app.exceptions import AuthenticationException, ValidationException, BusinessException
 
 auth_api = Blueprint('auth_api', __name__)
 
+DATABASE_PATH_LEGACY = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+    'app.db'
+)
+
 def get_db_connection():
     """获取数据库连接"""
-    # 使用绝对路径指向flask-app目录下的app.db
-    db_path = '/Users/wuchenghao/Library/CloudStorage/OneDrive-个人/文档/MTSCOS_AI_Project/flask-app/app.db'
-    conn = sqlite3.connect(db_path)
+    conn = sqlite3.connect(DATABASE_PATH_LEGACY)
     conn.row_factory = sqlite3.Row
     return conn
 
-@auth_api.route('/api/login', methods=['POST'])
+def verify_password(stored_password: str, provided_password: str) -> bool:
+    """验证密码 - 支持PBKDF2和SHA-256哈希"""
+    try:
+        stored_bytes = base64.b64decode(stored_password)
+        
+        if len(stored_bytes) == 32:
+            provided_hash = hashlib.sha256(provided_password.encode()).digest()
+            return stored_bytes == provided_hash
+        
+        if len(stored_bytes) > 32:
+            salt = stored_bytes[:16]
+            stored_hash = stored_bytes[16:]
+            provided_hash = hashlib.pbkdf2_hmac('sha256', provided_password.encode(), salt, 100000)
+            return stored_hash == provided_hash
+            
+    except Exception:
+        pass
+    
+    return stored_password == provided_password
+
+@auth_api.route('/api/auth/login', methods=['POST'])
 def login():
     """处理登录请求"""
+    conn = None
     try:
         data = request.get_json() or request.form
         
         if not data:
-            return jsonify({'success': False, 'message': '请求数据为空'}), 400
+            raise ValidationException(message='请求数据为空')
         
         username = data.get('username', '').strip()
         password = data.get('password', '').strip()
         
         if not username or not password:
-            return jsonify({'success': False, 'message': '用户名或密码不能为空'}), 400
+            raise ValidationException(message='用户名或密码不能为空')
         
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        # 查询用户
         cursor.execute("SELECT * FROM users WHERE username = ?", (username,))
         user = cursor.fetchone()
         
         if not user:
-            return jsonify({'success': False, 'message': '用户名或密码错误'}), 401
+            raise AuthenticationException(message='用户名或密码错误')
         
-        # 验证密码(简化验证)
         stored_password = user['password']
         
-        # 简单密码验证
-        if stored_password.endswith(password):
-            # 登录成功
+        if verify_password(stored_password, password):
             session['user_id'] = user['id']
             session['username'] = user['username']
             session['role'] = user['role']
             
-            return jsonify({
-                'success': True,
-                'message': '登录成功',
+            sm = get_session_manager()
+            ip_address = request.remote_addr
+            user_agent = request.user_agent.string
+            sm.create_session(user['id'], user['username'], user['role'], ip_address, user_agent)
+            
+            router = get_role_router()
+            redirect_path = router.get_redirect_path(user['role'])
+            role_info = router.get_role_info(user['role'])
+            
+            return success_response(data={
                 'user': {
                     'id': user['id'],
                     'username': user['username'],
-                    'role': user['role']
-                }
-            })
+                    'role': user['role'],
+                    'role_name': role_info['name'],
+                    'role_description': role_info['description']
+                },
+                'redirect': redirect_path,
+                'sidebar_items': role_info['sidebar_items']
+            }, message='登录成功')
         else:
-            return jsonify({'success': False, 'message': '用户名或密码错误'}), 401
+            raise AuthenticationException(message='用户名或密码错误')
             
+    except ValidationException as e:
+        return validation_error(e.message)
+    except AuthenticationException as e:
+        return authentication_error(e.message)
     except Exception as e:
-        return jsonify({'success': False, 'message': f'登录失败: {str(e)}'}), 500
+        return system_error(f'登录失败: {str(e)}')
     finally:
         if conn:
             conn.close()
 
-@auth_api.route('/api/logout', methods=['POST'])
+@auth_api.route('/api/auth/logout', methods=['POST'])
 def logout():
     """处理登出请求"""
     try:
         session.clear()
-        return jsonify({'success': True, 'message': '登出成功'})
+        return success_response(message='登出成功')
     except Exception as e:
-        return jsonify({'success': False, 'message': f'登出失败: {str(e)}'}), 500
+        return system_error(f'登出失败: {str(e)}')
 
-@auth_api.route('/api/register', methods=['POST'])
+@auth_api.route('/api/auth/register', methods=['POST'])
 def register():
     """处理注册请求"""
+    conn = None
     try:
         data = request.get_json() or request.form
         
@@ -88,19 +136,17 @@ def register():
         email = data.get('email', '').strip()
         
         if not username or not password:
-            return jsonify({'success': False, 'message': '用户名和密码不能为空'}), 400
+            raise ValidationException(message='用户名和密码不能为空')
         
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        # 检查用户名是否已存在
         cursor.execute("SELECT COUNT(*) FROM users WHERE username = ?", (username,))
         count = cursor.fetchone()[0]
         
         if count > 0:
-            return jsonify({'success': False, 'message': '用户名已存在'}), 409
+            raise BusinessException(message='用户名已存在')
         
-        # 创建用户(简化密码存储)
         cursor.execute("""
             INSERT INTO users (username, password, email, role) 
             VALUES (?, ?, ?, 'user')
@@ -108,20 +154,23 @@ def register():
         
         conn.commit()
         
-        return jsonify({'success': True, 'message': '注册成功'}), 201
+        return success_response(message='注册成功', code=201)
         
+    except ValidationException as e:
+        return validation_error(e.message)
+    except BusinessException as e:
+        return business_error(e.message)
     except Exception as e:
-        return jsonify({'success': False, 'message': f'注册失败: {str(e)}'}), 500
+        return system_error(f'注册失败: {str(e)}')
     finally:
         if conn:
             conn.close()
 
-@auth_api.route('/api/user', methods=['GET'])
+@auth_api.route('/api/auth/user', methods=['GET'])
 def get_current_user():
     """获取当前登录用户信息"""
     if 'user_id' in session:
-        return jsonify({
-            'success': True,
+        return success_response(data={
             'user': {
                 'id': session['user_id'],
                 'username': session['username'],
@@ -129,4 +178,4 @@ def get_current_user():
             }
         })
     else:
-        return jsonify({'success': False, 'message': '未登录'}), 401
+        return authentication_error('未登录')

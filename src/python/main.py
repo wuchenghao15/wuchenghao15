@@ -202,7 +202,7 @@ class DatabaseManager:
     def _add_ai_employee(self, data: Dict) -> int:
         """添加AI员工"""
         cursor = self.conn.execute('''
-            INSERT INTO ai_employees (employee_id, name, title, description, category,
+            INSERT OR IGNORE INTO ai_employees (employee_id, name, title, description, category,
                                     capabilities, efficiency, workload, created_at, updated_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (

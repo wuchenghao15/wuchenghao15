@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <!-- 设计系统 -->
+    <link rel="stylesheet" href="/assets/css/mtscos-design-system.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#6366f1">
+    <title>MTSCOS AI - 我的</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        :root {
+            --primary: #6366f1;
+            --primary-light: #818cf8;
+            --secondary: #ec4899;
+            --success: #22c55e;
+            --warning: var(--color-warning);
+            --danger: var(--color-error);
+            --dark: #0f0f1a;
+            --glass: rgba(30, 41, 59, 0.7);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --border: rgba(255, 255, 255, 0.08);
+            --safe-top: env(safe-area-inset-top);
+            --safe-bottom: env(safe-area-inset-bottom);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif;
+            background: linear-gradient(180deg, #0f0f1a 0%, #1e1b4b 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding-top: var(--safe-top);
+            padding-bottom: calc(60px + var(--safe-bottom));
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: calc(56px + var(--safe-top));
+            padding-top: var(--safe-top);
+            background: rgba(15, 15, 26, 0.9);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-left: 16px;
+            padding-right: 16px;
+            z-index: 100;
+        }
+
+        .header-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 16px;
+        }
+
+        .page-container {
+            padding: 16px;
+            padding-top: calc(56px + var(--safe-top) + 16px);
+            max-width: 480px;
+            margin: 0 auto;
+        }
+
+        .profile-header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 20px;
+            padding: 24px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .avatar {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            font-weight: 700;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .profile-info {
+            flex: 1;
+        }
+
+        .profile-name {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .profile-role {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 8px;
+        }
+
+        .profile-tags {
+            display: flex;
+            gap: 8px;
+        }
+
+        .profile-tag {
+            padding: 4px 10px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 500;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+
+        .stats-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .stat-item {
+            flex: 1;
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 16px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary-light);
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .menu-list {
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+
+        .menu-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px;
+            cursor: pointer;
+            transition: background 0.2s;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .menu-item:last-child {
+            border-bottom: none;
+        }
+
+        .menu-item:active {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .menu-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .menu-icon.blue { background: rgba(99, 102, 241, 0.2); color: var(--primary-light); }
+        .menu-icon.green { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
+        .menu-icon.yellow { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+        .menu-icon.purple { background: rgba(168, 85, 247, 0.2); color: #c084fc; }
+        .menu-icon.red { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+        .menu-icon.gray { background: rgba(148, 163, 184, 0.2); color: var(--text-secondary); }
+
+        .menu-content {
+            flex: 1;
+        }
+
+        .menu-title {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .menu-desc {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .menu-arrow {
+            color: var(--text-secondary);
+            font-size: 16px;
+        }
+
+        .menu-badge {
+            background: var(--danger);
+            color: white;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 10px;
+            margin-left: 8px;
+        }
+
+        .btn-logout {
+            width: 100%;
+            padding: 16px;
+            border-radius: 16px;
+            font-size: 16px;
+            font-weight: 600;
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-logout:active {
+            background: rgba(239, 68, 68, 0.2);
+        }
+
+        .version-info {
+            text-align: center;
+            padding: 20px;
+            color: var(--text-secondary);
+            font-size: 12px;
+        }
+
+        .tab-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: calc(60px + var(--safe-bottom));
+            padding-bottom: var(--safe-bottom);
+            background: rgba(15, 15, 26, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            z-index: 100;
+        }
+
+        .tab-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 0;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tab-item.active {
+            color: var(--primary-light);
+        }
+
+        .tab-item-icon {
+            font-size: 22px;
+            margin-bottom: 4px;
+        }
+
+        .tab-item-text {
+            font-size: 10px;
+            color: var(--text-secondary);
+        }
+
+        .tab-item.active .tab-item-text {
+            color: var(--primary-light);
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-title">我的</div>
+        <div class="header-actions">
+            <i class="fas fa-cog" style="font-size: 20px; color: var(--text-secondary);"></i>
+        </div>
+    </div>
+
+    <div class="page-container">
+        <div class="profile-header">
+            <div class="avatar">{{ user.username[0]|upper if user.username else 'U' }}</div>
+            <div class="profile-info">
+                <div class="profile-name">{{ user.username }}</div>
+                <div class="profile-role">{{ user.role }} · {{ user.grade or '未设置年级' }}</div>
+                <div class="profile-tags">
+                    <span class="profile-tag">{{ user.student_type or '学生' }}</span>
+                    {% if user.education_system == 'adult' %}
+                    <span class="profile-tag">成人教育</span>
+                    {% else %}
+                    <span class="profile-tag">普通教育</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-row">
+            <div class="stat-item">
+                <div class="stat-value" id="stat-exams">--</div>
+                <div class="stat-label">已完成考试</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="stat-points">--</div>
+                <div class="stat-label">学习积分</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="stat-streak">--</div>
+                <div class="stat-label">连续学习</div>
+            </div>
+        </div>
+
+        <div class="section-title">
+            <i class="fas fa-clipboard-list" style="color: var(--primary);"></i>
+            学习记录
+        </div>
+
+        <div class="menu-list">
+            <div class="menu-item" onclick="location.href='/exam_history'">
+                <div class="menu-icon blue"><i class="fas fa-history"></i></div>
+                <div class="menu-content">
+                    <div class="menu-title">考试记录</div>
+                    <div class="menu-desc">查看历史考试成绩</div>
+                </div>
+                <div class="menu-arrow"><i class="fas fa-chevron-right"></i></div>
+            </div>
+            <div class="menu-item" onclick="location.href='/exam/wrong_book'">
+                <div class="menu-icon yellow"><i class="fas fa-exclamation-circle"></i></div>
+                <div class="menu-content">
+                    <div class="menu-title">错题本</div>
+                    <div class="menu-desc">复习错题，巩固知识</div>
+                </div>
+                <div class="menu-arrow"><i class="fas fa-chevron-right"></i></div>
+            </div>
+            <div class="menu-item" onclick="location.href='/learning_analysis'">
+                <div class="menu-icon purple"><i class="fas fa-chart-line"></i></div>
+                <div class="menu-content">
+                    <div class="menu-title">学习分析</div>
+                    <div class="menu-desc">查看学习数据统计</div>
+                </div>
+                <div class="menu-arrow"><i class="fas fa-chevron-right"></i></div>
+            </div>
+        </div>
+
+        <div class="section-title">
+            <i class="fas fa-cog" style="color: var(--secondary);"></i>
+            设置
+        </div>
+
+        <div class="menu-list">
+            <div class="menu-item" onclick="location.href='/user_info'">
+                <div class="menu-icon gray"><i class="fas fa-user"></i></div>
+                <div class="menu-content">
+                    <div class="menu-title">个人信息</div>
+                    <div class="menu-desc">编辑个人资料</div>
+                </div>
+                <div class="menu-arrow"><i class="fas fa-chevron-right"></i></div>
+            </div>
+            <div class="menu-item">
+                <div class="menu-icon blue"><i class="fas fa-bell"></i></div>
+                <div class="menu-content">
+                    <div class="menu-title">通知设置</div>
+                    <div class="menu-desc">管理消息通知</div>
+                </div>
+                <div class="menu-arrow"><i class="fas fa-chevron-right"></i></div>
+                <span class="menu-badge">3</span>
+            </div>
+            <div class="menu-item">
+                <div class="menu-icon green"><i class="fas fa-shield-alt"></i></div>
+                <div class="menu-content">
+                    <div class="menu-title">安全设置</div>
+                    <div class="menu-desc">修改密码、绑定手机</div>
+                </div>
+                <div class="menu-arrow"><i class="fas fa-chevron-right"></i></div>
+            </div>
+            <div class="menu-item" onclick="location.href='/system_manual'">
+                <div class="menu-icon gray"><i class="fas fa-book"></i></div>
+                <div class="menu-content">
+                    <div class="menu-title">帮助中心</div>
+                    <div class="menu-desc">系统使用说明</div>
+                </div>
+                <div class="menu-arrow"><i class="fas fa-chevron-right"></i></div>
+            </div>
+        </div>
+
+        <button class="btn-logout" onclick="logout()">
+            <i class="fas fa-sign-out-alt"></i>
+            退出登录
+        </button>
+
+        <div class="version-info">
+            MTSCOS AI 智能教育平台 v6.0.0<br>
+            <span style="opacity: 0.6;">移动端版本</span>
+        </div>
+    </div>
+
+    <div class="tab-bar">
+        <div class="tab-item" onclick="location.href='/mobile/home'">
+            <div class="tab-item-icon"><i class="fas fa-home"></i></div>
+            <div class="tab-item-text">首页</div>
+        </div>
+        <div class="tab-item" onclick="location.href='/mobile/exam'">
+            <div class="tab-item-icon"><i class="fas fa-file-alt"></i></div>
+            <div class="tab-item-text">考试</div>
+        </div>
+        <div class="tab-item" onclick="location.href='/mobile/training'">
+            <div class="tab-item-icon"><i class="fas fa-brain"></i></div>
+            <div class="tab-item-text">训练</div>
+        </div>
+        <div class="tab-item active" onclick="location.href='/mobile/profile'">
+            <div class="tab-item-icon"><i class="fas fa-user"></i></div>
+            <div class="tab-item-text">我的</div>
+        </div>
+    </div>
+
+    <script src="/assets/font-awesome/js/all.min.js"></script>
+    <script>
+        async function loadStats() {
+            try {
+                var response = await fetch('/api/exam/stats');
+                var data = await response.json();
+
+                if (data.success && data.data) {
+                    document.getElementById('stat-exams').textContent = data.data.total_exams || 0;
+                    document.getElementById('stat-points').textContent = data.data.points || 0;
+                    document.getElementById('stat-streak').textContent = (data.data.streak_days || 0) + '天';
+                }
+            } catch (error) {
+                console.error('加载数据失败:', error);
+            }
+        }
+
+        function logout() {
+            if (confirm('确定要退出登录吗？')) {
+                window.location.href = '/mobile/logout';
+            }
+        }
+
+        loadStats();
+    </script>
+</body>
+</html>

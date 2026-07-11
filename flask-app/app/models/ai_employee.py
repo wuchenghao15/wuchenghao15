@@ -479,7 +479,7 @@ def init_default_error_types(db):
                 r'null reference',
                 r'cannot read property',
                 r'\.is None',
-                r'== None'
+                r'is None'
             ],
             'auto_detect': True,
             'auto_fix': False,

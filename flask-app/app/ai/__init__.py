@@ -5,11 +5,14 @@ AI模块
 """
 
 from .question_bank_ai import (
-    QuestionBankAIEmployee,
-    QuestionAnalyzer,
-    QuestionOptimizer,
-    QuestionStatistics,
-    question_bank_ai
+    QuestionBankAIAssistant,
+    ListeningQuestion,
+    ListeningLanguage,
+    ListeningAccent,
+    ListeningVoice,
+    ListeningDifficulty,
+    ListeningTopic,
+    QuestionBankAIStats
 )
 
 from .student_learning_optimizer import (
@@ -21,13 +24,25 @@ from .student_learning_optimizer import (
     student_learning_optimizer
 )
 
+from .maintenance_ai import (
+    MaintenanceAIEmployee,
+    DatabaseCleaner,
+    LogCleaner,
+    BackupManager,
+    SystemHealthChecker,
+    maintenance_ai
+)
+
 __all__ = [
     # 题库优化
-    'QuestionBankAIEmployee',
-    'QuestionAnalyzer',
-    'QuestionOptimizer',
-    'QuestionStatistics',
-    'question_bank_ai',
+    'QuestionBankAIAssistant',
+    'ListeningQuestion',
+    'ListeningLanguage',
+    'ListeningAccent',
+    'ListeningVoice',
+    'ListeningDifficulty',
+    'ListeningTopic',
+    'QuestionBankAIStats',
     
     # 学习优化
     'StudentLearningOptimizer',
@@ -35,5 +50,13 @@ __all__ = [
     'KnowledgeGapIdentifier',
     'LearningPathOptimizer',
     'ExamStrategyAdvisor',
-    'student_learning_optimizer'
+    'student_learning_optimizer',
+    
+    # 系统维护
+    'MaintenanceAIEmployee',
+    'DatabaseCleaner',
+    'LogCleaner',
+    'BackupManager',
+    'SystemHealthChecker',
+    'maintenance_ai'
 ]

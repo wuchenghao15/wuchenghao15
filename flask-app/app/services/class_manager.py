@@ -1,3 +1,6 @@
+import logging
+logger = logging.getLogger(__name__)
+
 # -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
@@ -478,4 +481,4 @@ if __name__ == "__main__":
     student_class = manager.get_student_class(91)
     print(f"学生91所在班级: {student_class['class_name']}")
     
-    print("\n == 测试完成 ===")
+    logger.info("\n == 测试完成 ===")

@@ -1,0 +1,353 @@
+{% extends "base.html" %}
+
+{% block title %}错题智能推荐 - MTSCOS AI{% endblock %}
+
+{% block content %}
+<div class="wrong-recommend-container">
+    <div class="page-header">
+        <h1>💡 错题智能推荐</h1>
+        <p>根据您的错题类型和知识点关联，智能推荐针对性练习</p>
+    </div>
+    
+    <!-- 错题分析概览 -->
+    <div class="analysis-overview card">
+        <h2>错题分析概览</h2>
+        <button onclick="loadWrongQuestionAnalysis()" class="btn-primary">分析我的错题</button>
+        <div id="analysisOverview" class="analysis-content"></div>
+    </div>
+    
+    <!-- 推荐练习列表 -->
+    <div id="recommendations" class="recommendations-section card" style="display: none;">
+        <h2>推荐针对性练习</h2>
+        <div id="recommendList" class="recommend-list"></div>
+    </div>
+    
+    <!-- 关联知识点 -->
+    <div id="relatedKnowledge" class="related-knowledge card" style="display: none;">
+        <h2>关联知识点推荐</h2>
+        <div id="relatedList" class="related-list"></div>
+    </div>
+    
+    <!-- 复习计划生成 -->
+    <div class="review-plan card">
+        <h2>生成错题复习计划</h2>
+        <div class="plan-options">
+            <label>
+                <input type="radio" name="reviewMode" value="intensive" checked>
+                强化复习模式（快速攻克高频错题）
+            </label>
+            <label>
+                <input type="radio" name="reviewMode" value="gradual">
+                渐进复习模式（按知识点稳步推进）
+            </label>
+            <label>
+                <input type="radio" name="reviewMode" value="balanced">
+                均衡复习模式（兼顾频率和知识点）
+            </label>
+        </div>
+        <button onclick="generateReviewSchedule()" class="btn-secondary">生成复习计划</button>
+        <div id="scheduleResult" class="schedule-result"></div>
+    </div>
+    
+    <!-- 学习优先级 -->
+    <div id="studyPriority" class="study-priority card" style="display: none;">
+        <h2>学习优先级顺序</h2>
+        <div id="priorityList" class="priority-list"></div>
+    </div>
+    
+    <!-- 练习量估算 -->
+    <div id="practiceEstimate" class="practice-estimate card" style="display: none;">
+        <h2>练习量估算</h2>
+        <div id="estimateContent" class="estimate-content"></div>
+    </div>
+</div>
+
+<style>
+    .wrong-recommend-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    
+    .page-header {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+    
+    .page-header h1 {
+        font-size: 28px;
+        color: #333;
+    }
+    
+    .card {
+        background: white;
+        border-radius: 12px;
+        padding: 24px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .card h2 {
+        font-size: 20px;
+        color: #333;
+        margin-bottom: 16px;
+        border-bottom: 2px solid #667eea;
+        padding-bottom: 8px;
+    }
+    
+    .btn-primary {
+        background: #667eea;
+        color: white;
+        padding: 12px 24px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 16px;
+        margin-bottom: 16px;
+    }
+    
+    .btn-secondary {
+        background: #48bb78;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+        margin-top: 12px;
+    }
+    
+    .analysis-content {
+        margin-top: 16px;
+    }
+    
+    .stat-box {
+        display: inline-block;
+        padding: 12px 20px;
+        background: #f0f4f8;
+        border-radius: 8px;
+        margin: 8px;
+    }
+    
+    .stat-box .value {
+        font-size: 24px;
+        font-weight: bold;
+        color: #667eea;
+    }
+    
+    .stat-box .label {
+        font-size: 12px;
+        color: #666;
+    }
+    
+    .recommend-list, .related-list {
+        display: grid;
+        gap: 16px;
+    }
+    
+    .recommend-item {
+        background: #fff3cd;
+        padding: 16px;
+        border-radius: 8px;
+        border-left: 4px solid #ff9800;
+    }
+    
+    .recommend-item h3 {
+        color: #ff9800;
+        margin-bottom: 8px;
+    }
+    
+    .related-item {
+        background: #e3f2fd;
+        padding: 16px;
+        border-radius: 8px;
+    }
+    
+    .plan-options {
+        margin-bottom: 16px;
+    }
+    
+    .plan-options label {
+        display: block;
+        margin: 8px 0;
+        cursor: pointer;
+    }
+    
+    .schedule-result {
+        margin-top: 16px;
+    }
+    
+    .day-plan {
+        background: #e8f5e9;
+        padding: 12px;
+        border-radius: 6px;
+        margin: 8px 0;
+    }
+    
+    .priority-list {
+        margin-top: 16px;
+    }
+    
+    .priority-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 12px;
+        background: #fce4ec;
+        border-radius: 6px;
+        margin: 8px 0;
+    }
+    
+    .estimate-content {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 16px;
+        margin-top: 16px;
+    }
+    
+    .estimate-box {
+        background: #f5f5f5;
+        padding: 12px;
+        border-radius: 6px;
+        text-align: center;
+    }
+    
+    .estimate-box .number {
+        font-size: 28px;
+        font-weight: bold;
+        color: #667eea;
+    }
+</style>
+
+<script>
+    const userId = {{ user.user_id }};
+    
+    function loadWrongQuestionAnalysis() {
+        fetch(`/api/learning/enhancement/wrong-questions/recommend?user_id=${userId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayAnalysis(data.data);
+            }
+        });
+    }
+    
+    function displayAnalysis(data) {
+        // 显示分析概览
+        const analysis = data.error_analysis;
+        document.getElementById('analysisOverview').innerHTML = `
+            <div class="stat-box">
+                <div class="value">${analysis.total_errors}</div>
+                <div class="label">总错题数</div>
+            </div>
+            <div class="stat-box">
+                <div class="value">${analysis.most_frequent_type}</div>
+                <div class="label">最高频错误类型</div>
+            </div>
+            <div class="stat-box">
+                <div class="value">${analysis.most_difficult_knowledge}</div>
+                <div class="label">最困难知识点</div>
+            </div>
+        `;
+        
+        // 显示推荐列表
+        document.getElementById('recommendations').style.display = 'block';
+        let recommendHtml = '';
+        data.recommendations.forEach(rec => {
+            recommendHtml += `
+                <div class="recommend-item">
+                    <h3>${rec.error_type} (${rec.category})</h3>
+                    <p>频率: ${rec.frequency} 次</p>
+                    <p>难度: ${rec.difficulty_level}</p>
+                    <p>知识点: ${rec.knowledge_points.join(', ')}</p>
+                    <p>推荐练习: ${rec.recommended_practice.type}</p>
+                    <p>练习量: ${rec.recommended_practice.count} 题</p>
+                    <p>方法: ${rec.recommended_practice.method}</p>
+                    <p>时间分配: ${rec.recommended_practice.time_allocation}</p>
+                </div>
+            `;
+        });
+        document.getElementById('recommendList').innerHTML = recommendHtml;
+        
+        // 显示关联知识点
+        document.getElementById('relatedKnowledge').style.display = 'block';
+        let relatedHtml = '';
+        data.related_knowledge_points.forEach(kp => {
+            relatedHtml += `
+                <div class="related-item">
+                    <h3>${kp.knowledge_point}</h3>
+                    <p>错题数: ${kp.error_count}</p>
+                    <p>错误类型: ${kp.error_types.join(', ')}</p>
+                    <p>关联知识点: ${kp.related_points.join(', ')}</p>
+                    <p>建议: ${kp.recommended_review}</p>
+                </div>
+            `;
+        });
+        document.getElementById('relatedList').innerHTML = relatedHtml;
+        
+        // 显示学习优先级
+        document.getElementById('studyPriority').style.display = 'block';
+        let priorityHtml = '';
+        data.study_priority.forEach(p => {
+            priorityHtml += `<div class="priority-item">${p}</div>`;
+        });
+        document.getElementById('priorityList').innerHTML = priorityHtml;
+        
+        // 显示练习量估算
+        document.getElementById('practiceEstimate').style.display = 'block';
+        const estimates = data.estimated_practice_count;
+        document.getElementById('estimateContent').innerHTML = `
+            <div class="estimate-box">
+                <div class="number">${estimates.total_estimated}</div>
+                <div class="label">总练习题数</div>
+            </div>
+            <div class="estimate-box">
+                <div class="number">${estimates.recommended_daily}</div>
+                <div class="label">每日推荐</div>
+            </div>
+            <div class="estimate-box">
+                <div class="number">${estimates.estimated_completion_days}</div>
+                <div class="label">预计天数</div>
+            </div>
+        `;
+    }
+    
+    function generateReviewSchedule() {
+        const reviewMode = document.querySelector('input[name="reviewMode"]:checked').value;
+        
+        fetch('/api/learning/enhancement/wrong-questions/schedule', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                user_id: userId,
+                review_mode: reviewMode
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displaySchedule(data.data);
+            }
+        });
+    }
+    
+    function displaySchedule(scheduleData) {
+        let html = `<p>预计完成时间: ${scheduleData.estimated_duration}</p>`;
+        
+        scheduleData.schedule.forEach(day => {
+            html += `
+                <div class="day-plan">
+                    <h3>第 ${day.day} 天</h3>
+                    <p>重点: ${day.focus}</p>
+                    <p>题目数: ${day.count}</p>
+                    <p>复习方法: ${day.review_method}</p>
+                </div>
+            `;
+        });
+        
+        document.getElementById('scheduleResult').innerHTML = html;
+    }
+    
+    // 页面加载时自动分析
+    loadWrongQuestionAnalysis();
+</script>
+{% endblock %}

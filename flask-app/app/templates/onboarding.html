@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>欢迎使用 - MTSCOS AI 系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .onboarding-container {
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(102, 126, 234, 0.3);
+            max-width: 800px;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .onboarding-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .onboarding-header h1 {
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .onboarding-header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .onboarding-steps {
+            padding: 40px;
+        }
+
+        .step-indicator {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 40px;
+        }
+
+        .step-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #e0e0e0;
+            transition: all 0.3s ease;
+        }
+
+        .step-dot.active {
+            background: #667eea;
+            width: 32px;
+            border-radius: 6px;
+        }
+
+        .step-content {
+            display: none;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .step-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .step-icon {
+            font-size: 4rem;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .step-content h2 {
+            font-size: 1.5rem;
+            margin-bottom: 16px;
+            color: #333;
+            text-align: center;
+        }
+
+        .step-content p {
+            line-height: 1.8;
+            color: #666;
+            font-size: 1.1rem;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .feature-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-top: 24px;
+        }
+
+        .feature-item {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            border: 1px solid #e9ecef;
+        }
+
+        .feature-item .icon {
+            font-size: 2rem;
+            margin-bottom: 12px;
+        }
+
+        .feature-item h4 {
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 1rem;
+        }
+
+        .feature-item p {
+            font-size: 0.85rem;
+            color: #666;
+            margin: 0;
+        }
+
+        .nav-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin-top: 40px;
+        }
+
+        .btn {
+            padding: 14px 32px;
+            border-radius: 25px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #555;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .btn-skip {
+            background: transparent;
+            color: #888;
+            text-decoration: underline;
+            padding: 14px 24px;
+        }
+
+        .btn-skip:hover {
+            color: #667eea;
+            background: transparent;
+        }
+
+        .progress-bar {
+            height: 4px;
+            background: #e0e0e0;
+            border-radius: 2px;
+            margin-bottom: 40px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            width: 25%;
+            transition: width 0.3s ease;
+        }
+
+        .welcome-card {
+            background: linear-gradient(135deg, #e8f5e9 0%, #f3e5f5 100%);
+            padding: 24px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        .welcome-card h3 {
+            color: #28a745;
+            margin-bottom: 8px;
+        }
+
+        .welcome-card p {
+            color: #666;
+            margin: 0;
+            font-size: 0.95rem;
+        }
+
+        .role-badge {
+            display: inline-block;
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            margin-top: 12px;
+        }
+
+        @media (max-width: 600px) {
+            .onboarding-container {
+                border-radius: 16px;
+            }
+
+            .onboarding-header {
+                padding: 30px 20px;
+            }
+
+            .onboarding-header h1 {
+                font-size: 1.8rem;
+            }
+
+            .onboarding-steps {
+                padding: 20px;
+            }
+
+            .feature-list {
+                grid-template-columns: 1fr;
+            }
+
+            .btn {
+                padding: 12px 24px;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="onboarding-container">
+        <div class="onboarding-header">
+            <h1>🎉 欢迎使用 MTSCOS AI 系统</h1>
+            <p>让我们一起开启智能学习之旅</p>
+        </div>
+
+        <div class="onboarding-steps">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill"></div>
+            </div>
+
+            <div class="step-indicator">
+                <div class="step-dot active"></div>
+                <div class="step-dot"></div>
+                <div class="step-dot"></div>
+                <div class="step-dot"></div>
+            </div>
+
+            <div class="step-content active" id="step-1">
+                <div class="step-icon">👋</div>
+                <h2>欢迎加入我们</h2>
+                <p>感谢您选择 MTSCOS AI 系统！这是一个基于人工智能的智能教育平台，为您提供全方位的学习支持。</p>
+                <div class="welcome-card">
+                    <h3>您好，{{ username }}</h3>
+                    <p>您的角色是：{{ role_name }}</p>
+                    <span class="role-badge">{{ role }}</span>
+                </div>
+            </div>
+
+            <div class="step-content" id="step-2">
+                <div class="step-icon">✨</div>
+                <h2>系统功能介绍</h2>
+                <p>MTSCOS AI 系统提供丰富的功能模块，满足不同角色的需求。</p>
+                <div class="feature-list">
+                    <div class="feature-item">
+                        <div class="icon">📝</div>
+                        <h4>在线考试</h4>
+                        <p>支持多种考试模式，智能监考和自动阅卷</p>
+                    </div>
+                    <div class="feature-item">
+                        <div class="icon">📚</div>
+                        <h4>题库管理</h4>
+                        <p>智能题库，自动优化和难度分析</p>
+                    </div>
+                    <div class="feature-item">
+                        <div class="icon">🎓</div>
+                        <h4>学习分析</h4>
+                        <p>AI驱动的学习路径规划和个性化推荐</p>
+                    </div>
+                    <div class="feature-item">
+                        <div class="icon">🤖</div>
+                        <h4>AI员工</h4>
+                        <p>智能AI员工自动执行日常任务</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="step-content" id="step-3">
+                <div class="step-icon">📖</div>
+                <h2>使用说明</h2>
+                <p>以下是您需要了解的基本使用方法：</p>
+                <div class="feature-list">
+                    <div class="feature-item">
+                        <div class="icon">1️⃣</div>
+                        <h4>登录系统</h4>
+                        <p>使用您的账号密码登录，系统会自动跳转</p>
+                    </div>
+                    <div class="feature-item">
+                        <div class="icon">2️⃣</div>
+                        <h4>参加考试</h4>
+                        <p>在考试列表中选择考试，点击开始答题</p>
+                    </div>
+                    <div class="feature-item">
+                        <div class="icon">3️⃣</div>
+                        <h4>查看成绩</h4>
+                        <p>考试完成后自动显示成绩和分析报告</p>
+                    </div>
+                    <div class="feature-item">
+                        <div class="icon">4️⃣</div>
+                        <h4>学习提升</h4>
+                        <p>根据学习分析结果，针对性提升薄弱环节</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="step-content" id="step-4">
+                <div class="step-icon">🚀</div>
+                <h2>开始您的学习之旅</h2>
+                <p>准备好开始了吗？点击下方按钮进入系统，开始您的智能学习体验！</p>
+                <div class="welcome-card">
+                    <h3>📖 阅读说明书</h3>
+                    <p>如果您需要更详细的使用指南，可以查看系统说明书和使用说明书。</p>
+                </div>
+            </div>
+
+            <div class="nav-buttons">
+                <button class="btn btn-secondary" id="prev-btn" style="display: none;" onclick="prevStep()">上一步</button>
+                <button class="btn btn-skip" onclick="skipOnboarding()">跳过</button>
+                <button class="btn btn-primary" id="next-btn" onclick="nextStep()">下一步</button>
+                <button class="btn btn-primary" id="start-btn" style="display: none;" onclick="startUsing()">开始使用</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentStep = 1;
+        const totalSteps = 4;
+
+        function updateStep() {
+            document.querySelectorAll('.step-content').forEach((el, index) => {
+                el.classList.toggle('active', index === currentStep - 1);
+            });
+
+            document.querySelectorAll('.step-dot').forEach((el, index) => {
+                el.classList.toggle('active', index < currentStep);
+            });
+
+            const progress = (currentStep / totalSteps) * 100;
+            document.getElementById('progress-fill').style.width = `${progress}%`;
+
+            document.getElementById('prev-btn').style.display = currentStep > 1 ? 'block' : 'none';
+            document.getElementById('next-btn').style.display = currentStep < totalSteps ? 'block' : 'none';
+            document.getElementById('start-btn').style.display = currentStep === totalSteps ? 'block' : 'none';
+        }
+
+        function nextStep() {
+            if (currentStep < totalSteps) {
+                currentStep++;
+                updateStep();
+            }
+        }
+
+        function prevStep() {
+            if (currentStep > 1) {
+                currentStep--;
+                updateStep();
+            }
+        }
+
+        function skipOnboarding() {
+            completeOnboarding();
+        }
+
+        function startUsing() {
+            completeOnboarding();
+        }
+
+        function completeOnboarding() {
+            fetch('/api/onboarding/complete', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.href = data.redirect_url || '/';
+                }
+            })
+            .catch(error => {
+                console.error('完成引导失败:', error);
+                window.location.href = '/';
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            updateStep();
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'ArrowRight') {
+                nextStep();
+            } else if (e.key === 'ArrowLeft') {
+                prevStep();
+            } else if (e.key === 'Enter') {
+                if (currentStep === totalSteps) {
+                    startUsing();
+                } else {
+                    nextStep();
+                }
+            }
+        });
+    </script>
+</body>
+</html>

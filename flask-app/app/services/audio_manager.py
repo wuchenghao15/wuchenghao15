@@ -1,3 +1,6 @@
+import logging
+logger = logging.getLogger(__name__)
+
 # -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
@@ -357,4 +360,4 @@ if __name__ == '__main__':
     print('初始化音频管理器...')
     manager.create_audio_placeholder_files()
     manager.generate_sample_listening_questions()
-    print('完成!')
+    logger.info('完成!')

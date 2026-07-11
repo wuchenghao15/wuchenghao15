@@ -1,0 +1,1549 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <!-- 设计系统 -->
+    <link rel="stylesheet" href="/assets/css/mtscos-design-system.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#1e293b">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>MTSCOS 系统升级中心</title>
+    <link rel="stylesheet" href="/assets/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        :root {
+            --primary: var(--color-primary);
+            --primary-dark: #2563eb;
+            --secondary: var(--color-secondary);
+            --accent: #06b6d4;
+            --success: var(--color-success);
+            --warning: var(--color-warning);
+            --danger: var(--color-error);
+            --bg-primary: var(--bg-dark);
+            --bg-secondary: #1e293b;
+            --bg-card: #334155;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --border: rgba(148, 163, 184, 0.1);
+            --safe-top: env(safe-area-inset-top);
+            --safe-bottom: env(safe-area-inset-bottom);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding-top: calc(60px + var(--safe-top));
+            padding-bottom: calc(20px + var(--safe-bottom));
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: calc(60px + var(--safe-top));
+            padding-top: var(--safe-top);
+            background: linear-gradient(135deg, #1e293b 0%, var(--bg-dark) 100%);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-left: 20px;
+            padding-right: 20px;
+            z-index: 100;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .back-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: var(--bg-card);
+            border: none;
+            color: var(--text-primary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            transition: all 0.2s;
+        }
+
+        .back-btn:active {
+            transform: scale(0.95);
+            background: var(--primary);
+        }
+
+        .header-title {
+            font-size: 18px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #fff, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header-subtitle {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .refresh-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: var(--bg-card);
+            border: none;
+            color: var(--text-primary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            transition: all 0.2s;
+        }
+
+        .refresh-btn:active {
+            transform: scale(0.95);
+        }
+
+        .refresh-btn.spinning {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .container {
+            padding: 16px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .version-card {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(139, 92, 246, 0.15) 100%);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 16px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .version-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -20%;
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, rgba(59, 130, 246, 0.2) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .version-info {
+            position: relative;
+            z-index: 1;
+        }
+
+        .version-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .version-number {
+            font-size: 32px;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 4px;
+        }
+
+        .version-next {
+            font-size: 13px;
+            color: var(--success);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .version-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            background: var(--success);
+            color: white;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .stat-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-title-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .modules-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        @media (min-width: 768px) {
+            .modules-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .stats-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        .module-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .module-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+        }
+
+        .module-card:active {
+            transform: scale(0.98);
+        }
+
+        .module-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .module-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .module-task-count {
+            font-size: 11px;
+            color: var(--text-muted);
+            background: var(--bg-card);
+            padding: 3px 8px;
+            border-radius: 10px;
+        }
+
+        .module-desc {
+            font-size: 12px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .module-icon {
+            position: absolute;
+            right: 12px;
+            bottom: 12px;
+            font-size: 24px;
+            opacity: 0.3;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 14px 20px;
+            border: none;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--primary);
+        }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            overflow-x: auto;
+            padding-bottom: 4px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .tab {
+            padding: 8px 16px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+
+        .tab.active {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border-color: transparent;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .history-item {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 14px;
+        }
+
+        .history-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .history-version {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .history-status {
+            font-size: 11px;
+            padding: 3px 10px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+
+        .status-success {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success);
+        }
+
+        .status-failed {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--danger);
+        }
+
+        .status-running {
+            background: rgba(59, 130, 246, 0.2);
+            color: var(--primary);
+        }
+
+        .status-partial {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--warning);
+        }
+
+        .history-meta {
+            display: flex;
+            gap: 16px;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .history-summary {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid var(--border);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: var(--bg-card);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            border-radius: 3px;
+            transition: width 0.3s;
+        }
+
+        .models-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+
+        @media (min-width: 768px) {
+            .models-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .model-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 14px;
+        }
+
+        .model-name {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .model-type {
+            display: inline-block;
+            padding: 2px 8px;
+            background: var(--bg-card);
+            border-radius: 6px;
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-right: 6px;
+        }
+
+        .model-provider {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .model-capabilities {
+            margin-top: 8px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+
+        .capability-tag {
+            font-size: 10px;
+            padding: 2px 6px;
+            background: rgba(59, 130, 246, 0.2);
+            color: var(--primary);
+            border-radius: 4px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-muted);
+        }
+
+        .loading-spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid var(--bg-card);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 12px;
+        }
+
+        .toast {
+            position: fixed;
+            top: calc(80px + var(--safe-top));
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 20px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-size: 14px;
+            color: var(--text-primary);
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s, transform 0.3s;
+            pointer-events: none;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .toast.success {
+            border-color: var(--success);
+            background: rgba(16, 185, 129, 0.1);
+        }
+
+        .toast.error {
+            border-color: var(--danger);
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .permission-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .permission-item {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 14px;
+        }
+
+        .permission-name {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .permission-role {
+            font-size: 11px;
+            color: var(--primary);
+            background: rgba(59, 130, 246, 0.15);
+            padding: 2px 8px;
+            border-radius: 6px;
+            display: inline-block;
+            margin-bottom: 8px;
+        }
+
+        .permission-desc {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .ports-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .ports-table th,
+        .ports-table td {
+            padding: 10px 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .ports-table th {
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .port-status {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+
+        .port-status.active {
+            background: var(--success);
+            box-shadow: 0 0 8px var(--success);
+        }
+
+        .port-status.inactive {
+            background: var(--text-muted);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-muted);
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-left">
+            <button class="back-btn" onclick="goBack()">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+            <div>
+                <div class="header-title">系统升级中心</div>
+                <div class="header-subtitle">MTSCOS Comprehensive Upgrade</div>
+            </div>
+        </div>
+        <div class="header-right">
+            <button class="refresh-btn" id="refreshBtn" onclick="loadStatus()">
+                <i class="fas fa-sync-alt"></i>
+            </button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="version-card">
+            <div class="version-info">
+                <div class="version-label">当前版本</div>
+                <div class="version-number" id="currentVersion">--</div>
+                <div class="version-next">
+                    <span>下一版本: <strong id="nextVersion">--</strong></span>
+                    <span class="version-badge" id="statusBadge">就绪</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="moduleCount">--</div>
+                <div class="stat-label">升级模块</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="taskCount">--</div>
+                <div class="stat-label">总任务数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="historyCount">--</div>
+                <div class="stat-label">历史升级</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="modelCount">--</div>
+                <div class="stat-label">AI模型</div>
+            </div>
+        </div>
+
+        <div class="action-buttons">
+            <button class="btn btn-primary" id="upgradeAllBtn" onclick="startFullUpgrade()">
+                <i class="fas fa-rocket"></i>
+                一键全面升级
+            </button>
+            <button class="btn btn-secondary" onclick="switchTab('history')">
+                <i class="fas fa-history"></i>
+                升级历史
+            </button>
+        </div>
+
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('modules')">升级模块</div>
+            <div class="tab" onclick="switchTab('history')">历史记录</div>
+            <div class="tab" onclick="switchTab('models')">AI模型库</div>
+            <div class="tab" onclick="switchTab('permissions')">权限模板</div>
+            <div class="tab" onclick="switchTab('ports')">端口管理</div>
+            <div class="tab" onclick="switchTab('suggestions')">智能建议</div>
+            <div class="tab" onclick="switchTab('knowledge')">知识图谱</div>
+            <div class="tab" onclick="switchTab('diagnosis')">智能诊断</div>
+            <div class="tab" onclick="switchTab('components')">组件库</div>
+        </div>
+
+        <div class="tab-content active" id="tab-modules">
+            <div class="section-title">
+                <div class="section-title-icon">
+                    <i class="fas fa-puzzle-piece"></i>
+                </div>
+                升级模块列表
+            </div>
+            <div class="modules-grid" id="modulesGrid">
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    加载中...
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="tab-history">
+            <div class="section-title">
+                <div class="section-title-icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+                升级历史记录
+            </div>
+            <div class="history-list" id="historyList">
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    加载中...
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="tab-models">
+            <div class="section-title">
+                <div class="section-title-icon">
+                    <i class="fas fa-brain"></i>
+                </div>
+                AI模型库
+            </div>
+            <div class="models-grid" id="modelsGrid">
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    加载中...
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="tab-permissions">
+            <div class="section-title">
+                <div class="section-title-icon">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                权限角色模板
+            </div>
+            <div class="permission-list" id="permissionList">
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    加载中...
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="tab-ports">
+            <div class="section-title">
+                <div class="section-title-icon">
+                    <i class="fas fa-network-wired"></i>
+                </div>
+                端口管理
+            </div>
+            <div style="background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 12px; overflow-x: auto;">
+                <table class="ports-table" id="portsTable">
+                    <thead>
+                        <tr>
+                            <th>状态</th>
+                            <th>服务名称</th>
+                            <th>端口</th>
+                            <th>协议</th>
+                            <th>描述</th>
+                        </tr>
+                    </thead>
+                    <tbody id="portsBody">
+                        <tr>
+                            <td colspan="5" style="text-align: center; padding: 30px; color: var(--text-muted);">
+                                加载中...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="tab-content" id="tab-suggestions">
+            <div class="section-title">
+                <div class="section-title-icon">
+                    <i class="fas fa-lightbulb"></i>
+                </div>
+                AI智能建议
+            </div>
+            <div class="modules-grid" id="suggestionsGrid">
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    加载中...
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="tab-knowledge">
+            <div class="section-title">
+                <div class="section-title-icon">
+                    <i class="fas fa-project-diagram"></i>
+                </div>
+                知识图谱与联想推理
+            </div>
+            <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;" id="knowledgeStats">
+                <div class="loading">加载中...</div>
+            </div>
+            <div style="background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 12px; padding: 24px;" id="knowledgeContent">
+                <p style="color: var(--text-muted); text-align: center;">加载中...</p>
+            </div>
+        </div>
+
+        <div class="tab-content" id="tab-diagnosis">
+            <div class="section-title">
+                <div class="section-title-icon">
+                    <i class="fas fa-heartbeat"></i>
+                </div>
+                智能诊断与自动修复
+            </div>
+            <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;" id="diagnosisStats">
+                <div class="loading">加载中...</div>
+            </div>
+            <div style="background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 12px; overflow-x: auto;">
+                <table class="ports-table" id="diagnosisTable">
+                    <thead>
+                        <tr>
+                            <th>诊断类型</th>
+                            <th>目标系统</th>
+                            <th>状态</th>
+                            <th>置信度</th>
+                            <th>诊断结果</th>
+                            <th>时间</th>
+                        </tr>
+                    </thead>
+                    <tbody id="diagnosisBody">
+                        <tr>
+                            <td colspan="6" style="text-align: center; padding: 30px; color: var(--text-muted);">
+                                加载中...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="tab-content" id="tab-components">
+            <div class="section-title">
+                <div class="section-title-icon">
+                    <i class="fas fa-cubes"></i>
+                </div>
+                UI组件库
+            </div>
+            <div class="modules-grid" id="componentsGrid">
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    加载中...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        let currentTab = 'modules';
+        let isUpgrading = false;
+
+        function goBack() {
+            window.history.back();
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast show ${type}`;
+            setTimeout(() => {
+                toast.className = 'toast';
+            }, 3000);
+        }
+
+        function switchTab(tabName) {
+            currentTab = tabName;
+            
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+            
+            if (tabName === 'history') loadHistory();
+            if (tabName === 'models') loadModels();
+            if (tabName === 'permissions') loadPermissions();
+            if (tabName === 'ports') loadPorts();
+            if (tabName === 'suggestions') loadSuggestions();
+            if (tabName === 'knowledge') loadKnowledgeGraph();
+            if (tabName === 'diagnosis') loadDiagnosis();
+            if (tabName === 'components') loadComponents();
+        }
+
+        async function loadStatus() {
+            const refreshBtn = document.getElementById('refreshBtn');
+            refreshBtn.classList.add('spinning');
+            
+            try {
+                const response = await fetch('/api/upgrade/status');
+                const result = await response.json();
+                
+                if (result.success) {
+                    const data = result.data;
+                    document.getElementById('currentVersion').textContent = data.current_version;
+                    document.getElementById('nextVersion').textContent = data.next_version;
+                    document.getElementById('moduleCount').textContent = data.total_modules;
+                    document.getElementById('taskCount').textContent = data.total_tasks;
+                    
+                    const badge = document.getElementById('statusBadge');
+                    if (data.is_running) {
+                        badge.textContent = '升级中';
+                        badge.style.background = 'var(--primary)';
+                        isUpgrading = true;
+                        document.getElementById('upgradeAllBtn').disabled = true;
+                    } else {
+                        badge.textContent = '就绪';
+                        badge.style.background = 'var(--success)';
+                        isUpgrading = false;
+                        document.getElementById('upgradeAllBtn').disabled = false;
+                    }
+                    
+                    renderModules(data.upgrade_modules);
+                    loadHistory();
+                    loadModels();
+                } else {
+                    showToast(result.message || '加载状态失败', 'error');
+                }
+            } catch (error) {
+                console.error('加载状态失败:', error);
+                showToast('网络错误，请稍后重试', 'error');
+            } finally {
+                refreshBtn.classList.remove('spinning');
+            }
+        }
+
+        function renderModules(modules) {
+            const grid = document.getElementById('modulesGrid');
+            
+            if (!modules || modules.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📦</div>
+                        暂无升级模块
+                    </div>
+                `;
+                return;
+            }
+            
+            const icons = {
+                'brain_knowledge': '🧠',
+                'wrong_question_fix': '🔧',
+                'self_maintenance': '⚙️',
+                'database_upgrade': '🗄️',
+                'frontend_upgrade': '🎨',
+                'api_port_management': '🔌',
+                'cluster_optimization': '📊',
+                'version_upgrade': '📈',
+                'documentation_update': '📝',
+                'git_sync': '🔄',
+                'question_bank_expansion': '📚',
+                'permission_rules': '🛡️',
+                'ai_cluster': '🤖',
+                'ai_model_library': '💡',
+                'layout_optimization': '🎯',
+                'mobile_adaptation': '📱'
+            };
+            
+            grid.innerHTML = modules.map(module => `
+                <div class="module-card" onclick="upgradeModule('${module.id}')">
+                    <div class="module-header">
+                        <div class="module-name">${module.name}</div>
+                        <div class="module-task-count">${module.task_count} 任务</div>
+                    </div>
+                    <div class="module-desc">${module.description}</div>
+                    <div class="module-icon">${icons[module.id] || '📦'}</div>
+                </div>
+            `).join('');
+        }
+
+        async function startFullUpgrade() {
+            if (isUpgrading) {
+                showToast('升级正在进行中', 'error');
+                return;
+            }
+            
+            if (!confirm('确定要启动全面系统升级吗？这可能需要一些时间。')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/upgrade/start', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    showToast('全面升级已启动');
+                    isUpgrading = true;
+                    document.getElementById('upgradeAllBtn').disabled = true;
+                    document.getElementById('statusBadge').textContent = '升级中';
+                    document.getElementById('statusBadge').style.background = 'var(--primary)';
+                    
+                    setTimeout(loadStatus, 2000);
+                } else {
+                    showToast(result.message || '启动升级失败', 'error');
+                }
+            } catch (error) {
+                console.error('启动升级失败:', error);
+                showToast('网络错误，请稍后重试', 'error');
+            }
+        }
+
+        async function upgradeModule(moduleId) {
+            if (isUpgrading) {
+                showToast('升级正在进行中，请稍候', 'error');
+                return;
+            }
+            
+            if (!confirm(`确定要升级模块 "${moduleId}" 吗？`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/upgrade/start-module/${moduleId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    showToast('模块升级已启动');
+                    isUpgrading = true;
+                    document.getElementById('upgradeAllBtn').disabled = true;
+                    
+                    setTimeout(loadStatus, 2000);
+                } else {
+                    showToast(result.message || '启动升级失败', 'error');
+                }
+            } catch (error) {
+                console.error('启动模块升级失败:', error);
+                showToast('网络错误，请稍后重试', 'error');
+            }
+        }
+
+        async function loadHistory() {
+            try {
+                const response = await fetch('/api/upgrade/history?limit=10');
+                const result = await response.json();
+                
+                if (result.success) {
+                    document.getElementById('historyCount').textContent = result.total;
+                    renderHistory(result.data);
+                }
+            } catch (error) {
+                console.error('加载历史失败:', error);
+            }
+        }
+
+        function renderHistory(history) {
+            const list = document.getElementById('historyList');
+            
+            if (!history || history.length === 0) {
+                list.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📋</div>
+                        暂无升级记录
+                    </div>
+                `;
+                return;
+            }
+            
+            list.innerHTML = history.map(item => {
+                let statusClass = 'status-success';
+                let statusText = '成功';
+                if (item.status === 'failed') {
+                    statusClass = 'status-failed';
+                    statusText = '失败';
+                } else if (item.status === 'running') {
+                    statusClass = 'status-running';
+                    statusText = '进行中';
+                } else if (item.status === 'partial_success') {
+                    statusClass = 'status-partial';
+                    statusText = '部分成功';
+                }
+                
+                const date = new Date(item.started_at * 1000);
+                const dateStr = date.toLocaleString('zh-CN');
+                
+                return `
+                    <div class="history-item">
+                        <div class="history-header">
+                            <div class="history-version">${item.version_from || '-'} → ${item.version_to || '-'}</div>
+                            <span class="history-status ${statusClass}">${statusText}</span>
+                        </div>
+                        <div class="history-meta">
+                            <span>📅 ${dateStr}</span>
+                            <span>✅ ${item.success_tasks || 0}/${item.total_tasks || 0}</span>
+                            <span>⏱️ ${item.duration ? item.duration.toFixed(1) + 's' : '-'}</span>
+                        </div>
+                        <div class="history-summary">${item.summary || '-'}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function loadModels() {
+            try {
+                const response = await fetch('/api/upgrade/models');
+                const result = await response.json();
+                
+                if (result.success) {
+                    document.getElementById('modelCount').textContent = result.total;
+                    renderModels(result.data);
+                }
+            } catch (error) {
+                console.error('加载模型库失败:', error);
+            }
+        }
+
+        function renderModels(models) {
+            const grid = document.getElementById('modelsGrid');
+            
+            if (!models || models.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🤖</div>
+                        暂无AI模型
+                    </div>
+                `;
+                return;
+            }
+            
+            grid.innerHTML = models.map(model => `
+                <div class="model-card">
+                    <div class="model-name">${model.model_name}</div>
+                    <div>
+                        <span class="model-type">${model.model_type}</span>
+                        <span class="model-provider">${model.provider || '-'} · ${model.version || '-'}</span>
+                    </div>
+                    <div class="model-capabilities">
+                        ${(model.capabilities || []).map(cap => `<span class="capability-tag">${cap}</span>`).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function loadPermissions() {
+            try {
+                const response = await fetch('/api/upgrade/permissions');
+                const result = await response.json();
+                
+                if (result.success) {
+                    renderPermissions(result.data);
+                }
+            } catch (error) {
+                console.error('加载权限模板失败:', error);
+            }
+        }
+
+        function renderPermissions(permissions) {
+            const list = document.getElementById('permissionList');
+            
+            if (!permissions || permissions.length === 0) {
+                list.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🔐</div>
+                        暂无权限模板
+                    </div>
+                `;
+                return;
+            }
+            
+            list.innerHTML = permissions.map(perm => `
+                <div class="permission-item">
+                    <div class="permission-name">${perm.template_name}</div>
+                    <span class="permission-role">${perm.role_type || '-'}</span>
+                    <div class="permission-desc">${perm.description || '-'}</div>
+                </div>
+            `).join('');
+        }
+
+        async function loadPorts() {
+            try {
+                const response = await fetch('/api/upgrade/ports');
+                const result = await response.json();
+                
+                if (result.success) {
+                    renderPorts(result.data);
+                }
+            } catch (error) {
+                console.error('加载端口信息失败:', error);
+            }
+        }
+
+        function renderPorts(ports) {
+            const tbody = document.getElementById('portsBody');
+            
+            if (!ports || ports.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" style="text-align: center; padding: 30px; color: var(--text-muted);">
+                            暂无端口信息
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tbody.innerHTML = ports.map(port => `
+                <tr>
+                    <td>
+                        <span class="port-status ${port.status === 'active' ? 'active' : 'inactive'}"></span>
+                    </td>
+                    <td>${port.service_name}</td>
+                    <td>${port.port_number}</td>
+                    <td>${port.protocol || '-'}</td>
+                    <td>${port.description || '-'}</td>
+                </tr>
+            `).join('');
+        }
+
+        async function loadSuggestions() {
+            try {
+                const response = await fetch('/api/upgrade/suggestions');
+                const result = await response.json();
+                
+                if (result.success) {
+                    renderSuggestions(result.data);
+                }
+            } catch (error) {
+                console.error('加载智能建议失败:', error);
+            }
+        }
+
+        function renderSuggestions(suggestions) {
+            const grid = document.getElementById('suggestionsGrid');
+            
+            if (!suggestions || suggestions.length === 0) {
+                grid.innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 40px;">暂无智能建议</p>';
+                return;
+            }
+            
+            const priorityColors = {
+                9: 'linear-gradient(135deg, #ff6b6b, #ee5a5a)',
+                8: 'linear-gradient(135deg, #ffa502, #ff7f50)',
+                7: 'linear-gradient(135deg, #4facfe, #00f2fe)',
+                6: 'linear-gradient(135deg, #43e97b, #38f9d7)',
+            };
+            
+            grid.innerHTML = suggestions.map(s => `
+                <div class="module-card" style="background: ${priorityColors[s.priority] || 'var(--bg-secondary)'};">
+                    <div class="module-icon" style="background: rgba(255,255,255,0.2);">
+                        <i class="fas fa-lightbulb"></i>
+                    </div>
+                    <div class="module-info">
+                        <h3 style="color: white;">${s.title}</h3>
+                        <p style="color: rgba(255,255,255,0.8); font-size: 13px; margin: 8px 0;">${s.description || ''}</p>
+                        <div style="display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap;">
+                            <span style="background: rgba(255,255,255,0.2); color: white; padding: 3px 10px; border-radius: 12px; font-size: 12px;">
+                                ${s.category}
+                            </span>
+                            <span style="background: rgba(255,255,255,0.2); color: white; padding: 3px 10px; border-radius: 12px; font-size: 12px;">
+                                优先级: ${s.priority}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function loadKnowledgeGraph() {
+            try {
+                const response = await fetch('/api/upgrade/knowledge-graph');
+                const result = await response.json();
+                
+                if (result.success) {
+                    renderKnowledgeGraph(result.data);
+                }
+            } catch (error) {
+                console.error('加载知识图谱失败:', error);
+            }
+        }
+
+        function renderKnowledgeGraph(data) {
+            const statsEl = document.getElementById('knowledgeStats');
+            const contentEl = document.getElementById('knowledgeContent');
+            
+            statsEl.innerHTML = `
+                <div style="background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 12px; padding: 20px; text-align: center;">
+                    <div style="font-size: 32px; font-weight: bold; color: var(--primary);">${data.nodes_count}</div>
+                    <div style="color: var(--text-muted); font-size: 14px; margin-top: 4px;">知识节点</div>
+                </div>
+                <div style="background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 12px; padding: 20px; text-align: center;">
+                    <div style="font-size: 32px; font-weight: bold; color: #43e97b;">${data.relations_count}</div>
+                    <div style="color: var(--text-muted); font-size: 14px; margin-top: 4px;">知识关系</div>
+                </div>
+                <div style="background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 12px; padding: 20px; text-align: center;">
+                    <div style="font-size: 32px; font-weight: bold; color: #fa709a;">15</div>
+                    <div style="color: var(--text-muted); font-size: 14px; margin-top: 4px;">学科领域</div>
+                </div>
+                <div style="background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 12px; padding: 20px; text-align: center;">
+                    <div style="font-size: 32px; font-weight: bold; color: #4facfe;">8</div>
+                    <div style="color: var(--text-muted); font-size: 14px; margin-top: 4px;">推理能力</div>
+                </div>
+            `;
+            
+            const subjects = data.nodes.filter(n => n.node_type === 'subject').slice(0, 10);
+            contentEl.innerHTML = `
+                <h4 style="margin-bottom: 16px; color: var(--text-primary);">主要知识领域</h4>
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px;">
+                    ${subjects.map(n => `
+                        <div style="background: var(--bg-primary); border: 1px solid var(--border); border-radius: 8px; padding: 12px; text-align: center;">
+                            <div style="font-size: 24px; margin-bottom: 8px;">📚</div>
+                            <div style="font-weight: 600; color: var(--text-primary);">${n.node_name}</div>
+                            <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">重要度: ${Math.round((n.importance_score || 0) * 100)}%</div>
+                        </div>
+                    `).join('')}
+                </div>
+                <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border);">
+                    <h4 style="margin-bottom: 12px; color: var(--text-primary);">联想推理能力</h4>
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                        ${['类比推理', '因果推理', '演绎推理', '归纳推理', '假设检验', '知识迁移', '创意联想', '问题重构'].map(c => `
+                            <span style="background: linear-gradient(135deg, #4facfe, #00f2fe); color: white; padding: 6px 16px; border-radius: 20px; font-size: 13px;">
+                                ${c}
+                            </span>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        async function loadDiagnosis() {
+            try {
+                const response = await fetch('/api/upgrade/diagnosis');
+                const result = await response.json();
+                
+                if (result.success) {
+                    renderDiagnosis(result.data);
+                }
+            } catch (error) {
+                console.error('加载诊断记录失败:', error);
+            }
+        }
+
+        function renderDiagnosis(records) {
+            const statsEl = document.getElementById('diagnosisStats');
+            const tbody = document.getElementById('diagnosisBody');
+            
+            const normalCount = records.filter(r => r.status === '正常' || r.status === '良好').length;
+            
+            statsEl.innerHTML = `
+                <div style="background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 12px; padding: 20px; text-align: center;">
+                    <div style="font-size: 32px; font-weight: bold; color: #43e97b;">${records.length}</div>
+                    <div style="color: var(--text-muted); font-size: 14px; margin-top: 4px;">诊断项目</div>
+                </div>
+                <div style="background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 12px; padding: 20px; text-align: center;">
+                    <div style="font-size: 32px; font-weight: bold; color: #4facfe;">${normalCount}</div>
+                    <div style="color: var(--text-muted); font-size: 14px; margin-top: 4px;">正常项目</div>
+                </div>
+                <div style="background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 12px; padding: 20px; text-align: center;">
+                    <div style="font-size: 32px; font-weight: bold; color: #ffa502;">8</div>
+                    <div style="color: var(--text-muted); font-size: 14px; margin-top: 4px;">修复能力</div>
+                </div>
+                <div style="background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 12px; padding: 20px; text-align: center;">
+                    <div style="font-size: 32px; font-weight: bold; color: #fa709a;">8</div>
+                    <div style="color: var(--text-muted); font-size: 14px; margin-top: 4px;">预防维护项</div>
+                </div>
+            `;
+            
+            if (!records || records.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 30px; color: var(--text-muted);">
+                            暂无诊断记录
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tbody.innerHTML = records.map(r => {
+                const date = r.created_at ? new Date(r.created_at * 1000).toLocaleString() : '-';
+                const statusClass = (r.status === '正常' || r.status === '良好') ? 'active' : 'inactive';
+                return `
+                    <tr>
+                        <td>${r.diagnosis_type || '-'}</td>
+                        <td>${r.target_system || '-'}</td>
+                        <td><span class="port-status ${statusClass}"></span> ${r.status || '-'}</td>
+                        <td>${Math.round((r.confidence_score || 0) * 100)}%</td>
+                        <td>${r.diagnosis_result || '-'}</td>
+                        <td>${date}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        async function loadComponents() {
+            try {
+                const response = await fetch('/api/upgrade/components');
+                const result = await response.json();
+                
+                if (result.success) {
+                    renderComponents(result.data);
+                }
+            } catch (error) {
+                console.error('加载组件库失败:', error);
+            }
+        }
+
+        function renderComponents(components) {
+            const grid = document.getElementById('componentsGrid');
+            
+            if (!components || components.length === 0) {
+                grid.innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 40px;">暂无组件信息</p>';
+                return;
+            }
+            
+            const categoryIcons = {
+                'data': 'fa-table',
+                'form': 'fa-edit',
+                'feedback': 'fa-comment-dots',
+                'navigation': 'fa-compass',
+                'data-display': 'fa-chart-bar',
+                'data-entry': 'fa-keyboard',
+            };
+            
+            const categoryColors = {
+                'data': 'linear-gradient(135deg, #4facfe, #00f2fe)',
+                'form': 'linear-gradient(135deg, #43e97b, #38f9d7)',
+                'feedback': 'linear-gradient(135deg, #fa709a, #fee140)',
+                'navigation': 'linear-gradient(135deg, #a8edea, #fed6e3)',
+                'data-display': 'linear-gradient(135deg, #ff9a9e, #fecfef)',
+                'data-entry': 'linear-gradient(135deg, #a18cd1, #fbc2eb)',
+            };
+            
+            grid.innerHTML = components.map(c => `
+                <div class="module-card" style="background: ${categoryColors[c.category] || 'var(--bg-secondary)'};">
+                    <div class="module-icon" style="background: rgba(255,255,255,0.2);">
+                        <i class="fas ${categoryIcons[c.category] || 'fa-cube'}"></i>
+                    </div>
+                    <div class="module-info">
+                        <h3 style="color: white;">${c.component_name}</h3>
+                        <p style="color: rgba(255,255,255,0.8); font-size: 13px; margin: 8px 0;">
+                            ${c.usage_examples || ''}
+                        </p>
+                        <div style="display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap;">
+                            <span style="background: rgba(255,255,255,0.2); color: white; padding: 3px 10px; border-radius: 12px; font-size: 12px;">
+                                ${c.category}
+                            </span>
+                            <span style="background: rgba(255,255,255,0.2); color: white; padding: 3px 10px; border-radius: 12px; font-size: 12px;">
+                                ${c.component_type}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadStatus();
+            
+            setInterval(() => {
+                if (isUpgrading) {
+                    loadStatus();
+                }
+            }, 5000);
+        });
+    </script>
+</body>
+</html>

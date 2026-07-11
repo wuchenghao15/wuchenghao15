@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <!-- 设计系统 -->
+    <link rel="stylesheet" href="/assets/css/mtscos-design-system.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系统增强管理器 v7.1.0 - MTSCOS AI</title>
+    <link rel="stylesheet" href="/assets/tailwind.min.css">
+    <link rel="stylesheet" href="/assets/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, var(--bg-dark) 0%, #1e293b 50%, #334155 100%);
+            min-height: 100vh;
+            color: #e2e8f0;
+            padding: 20px;
+        }
+        .header {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            border-radius: 16px;
+            padding: 24px 32px;
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        .header-title {
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .header-subtitle {
+            font-size: 13px;
+            color: #94a3b8;
+            margin-top: 4px;
+        }
+        .header-actions { display: flex; gap: 12px; }
+        .btn {
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4); }
+        .btn-secondary {
+            background: rgba(148, 163, 184, 0.2);
+            color: #e2e8f0;
+            border: 1px solid rgba(148, 163, 184, 0.3);
+        }
+        .btn-secondary:hover { background: rgba(148, 163, 184, 0.3); }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .stat-card {
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(102, 126, 234, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.2s;
+        }
+        .stat-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(102, 126, 234, 0.5);
+            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.2);
+        }
+        .stat-label { font-size: 12px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; }
+        .stat-value { font-size: 32px; font-weight: 700; margin-top: 8px; }
+        .stat-icon { font-size: 28px; margin-bottom: 8px; }
+        .stat-card.green .stat-value { color: var(--color-success); }
+        .stat-card.blue .stat-value { color: var(--color-primary); }
+        .stat-card.purple .stat-value { color: #a855f7; }
+        .stat-card.orange .stat-value { color: #f97316; }
+        .stat-card.red .stat-value { color: var(--color-error); }
+
+        .modules-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+        .module-card {
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(102, 126, 234, 0.2);
+            border-radius: 16px;
+            padding: 24px;
+            transition: all 0.2s;
+        }
+        .module-card:hover {
+            border-color: rgba(102, 126, 234, 0.5);
+            box-shadow: 0 8px 32px rgba(102, 126, 234, 0.15);
+        }
+        .module-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+        }
+        .module-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #f1f5f9;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .module-icon { font-size: 20px; }
+        .module-status {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .status-active { background: rgba(16, 185, 129, 0.2); color: var(--color-success); border: 1px solid rgba(16, 185, 129, 0.3); }
+        .status-idle { background: rgba(148, 163, 184, 0.2); color: #94a3b8; }
+        .module-content { font-size: 13px; color: #cbd5e1; }
+        .module-meta {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(148, 163, 184, 0.1);
+            font-size: 11px;
+            color: #64748b;
+        }
+        .module-actions { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; }
+        .action-btn {
+            padding: 4px 10px;
+            background: rgba(102, 126, 234, 0.2);
+            color: #93c5fd;
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            border-radius: 6px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .action-btn:hover { background: rgba(102, 126, 234, 0.4); }
+
+        .panel {
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(102, 126, 234, 0.2);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        .panel-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: #f1f5f9;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        .data-table th {
+            text-align: left;
+            padding: 10px 12px;
+            background: rgba(15, 23, 42, 0.5);
+            color: #94a3b8;
+            font-weight: 600;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+        }
+        .data-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+            color: #cbd5e1;
+        }
+        .data-table tr:hover td { background: rgba(102, 126, 234, 0.05); }
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .badge-green { background: rgba(16, 185, 129, 0.2); color: var(--color-success); }
+        .badge-blue { background: rgba(59, 130, 246, 0.2); color: var(--color-primary); }
+        .badge-yellow { background: rgba(234, 179, 8, 0.2); color: #eab308; }
+        .badge-red { background: rgba(239, 68, 68, 0.2); color: var(--color-error); }
+        .badge-purple { background: rgba(168, 85, 247, 0.2); color: #a855f7; }
+        .badge-gray { background: rgba(148, 163, 184, 0.2); color: #94a3b8; }
+
+        .loading { text-align: center; padding: 40px; color: #94a3b8; }
+        .spinner {
+            display: inline-block;
+            width: 32px;
+            height: 32px;
+            border: 3px solid rgba(102, 126, 234, 0.2);
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .toast {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            color: white;
+            font-size: 13px;
+            font-weight: 600;
+            z-index: 9999;
+            animation: slideIn 0.3s ease-out;
+        }
+        .toast-success { background: linear-gradient(135deg, var(--color-success), #059669); }
+        .toast-error { background: linear-gradient(135deg, var(--color-error), #dc2626); }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div>
+            <div class="header-title">
+                <i class="fas fa-rocket"></i> 系统综合增强管理器
+            </div>
+            <div class="header-subtitle">v7.1.0 (Intelligent Modular Enhanced Edition) · 十大功能模块统一管理</div>
+        </div>
+        <div class="header-actions">
+            <button class="btn btn-secondary" onclick="refreshAll()"><i class="fas fa-sync-alt"></i> 刷新</button>
+            <button class="btn btn-primary" onclick="gitSync()"><i class="fab fa-github"></i> Git同步</button>
+            <a href="/dashboard" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> 返回</a>
+        </div>
+    </div>
+
+    <!-- 顶部统计 -->
+    <div class="stats-grid" id="statsGrid">
+        <div class="stat-card green">
+            <div class="stat-icon"><i class="fas fa-database"></i></div>
+            <div class="stat-label">数据库健康</div>
+            <div class="stat-value" id="dbHealthy">-</div>
+        </div>
+        <div class="stat-card blue">
+            <div class="stat-icon"><i class="fas fa-route"></i></div>
+            <div class="stat-label">API路由总数</div>
+            <div class="stat-value" id="apiCount">-</div>
+        </div>
+        <div class="stat-card purple">
+            <div class="stat-icon"><i class="fas fa-microchip"></i></div>
+            <div class="stat-label">AI模型数量</div>
+            <div class="stat-value" id="aiModelCount">-</div>
+        </div>
+        <div class="stat-card orange">
+            <div class="stat-icon"><i class="fas fa-server"></i></div>
+            <div class="stat-label">集群节点</div>
+            <div class="stat-value" id="clusterCount">-</div>
+        </div>
+        <div class="stat-card red">
+            <div class="stat-icon"><i class="fas fa-gauge-high"></i></div>
+            <div class="stat-label">性能评分</div>
+            <div class="stat-value" id="perfScore">-</div>
+        </div>
+    </div>
+
+    <!-- 功能模块网格 -->
+    <div class="modules-grid" id="modulesGrid">
+        <div class="loading"><div class="spinner"></div><div style="margin-top:12px">加载功能模块...</div></div>
+    </div>
+
+    <!-- 数据库健康详情 -->
+    <div class="panel">
+        <div class="panel-title"><i class="fas fa-database"></i> 数据库健康详情</div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>数据库名</th>
+                    <th>表数量</th>
+                    <th>大小</th>
+                    <th>完整性</th>
+                    <th>状态</th>
+                </tr>
+            </thead>
+            <tbody id="dbHealthTable">
+                <tr><td colspan="5" class="loading"><div class="spinner"></div></td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- AI模型库 -->
+    <div class="panel">
+        <div class="panel-title"><i class="fas fa-microchip"></i> AI模型库</div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>模型ID</th>
+                    <th>模型名称</th>
+                    <th>版本</th>
+                    <th>状态</th>
+                    <th>性能评分</th>
+                </tr>
+            </thead>
+            <tbody id="aiModelsTable">
+                <tr><td colspan="5" class="loading"><div class="spinner"></div></td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 权限规则 -->
+    <div class="panel">
+        <div class="panel-title"><i class="fas fa-shield-alt"></i> 权限规则矩阵</div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>规则ID</th>
+                    <th>角色</th>
+                    <th>资源</th>
+                    <th>操作</th>
+                    <th>允许</th>
+                    <th>优先级</th>
+                </tr>
+            </thead>
+            <tbody id="permissionRulesTable">
+                <tr><td colspan="6" class="loading"><div class="spinner"></div></td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 端口使用 -->
+    <div class="panel">
+        <div class="panel-title"><i class="fas fa-network-wired"></i> 端口使用情况</div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>端口</th>
+                    <th>服务</th>
+                    <th>状态</th>
+                    <th>所有者</th>
+                    <th>分配时间</th>
+                </tr>
+            </thead>
+            <tbody id="portsTable">
+                <tr><td colspan="5" class="loading"><div class="spinner"></div></td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 集群节点 -->
+    <div class="panel">
+        <div class="panel-title"><i class="fas fa-server"></i> 集群节点</div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>节点ID</th>
+                    <th>类型</th>
+                    <th>地址</th>
+                    <th>状态</th>
+                    <th>负载</th>
+                </tr>
+            </thead>
+            <tbody id="clusterNodesTable">
+                <tr><td colspan="5" class="loading"><div class="spinner"></div></td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- AI节点 -->
+    <div class="panel">
+        <div class="panel-title"><i class="fas fa-robot"></i> AI节点</div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>节点ID</th>
+                    <th>节点名称</th>
+                    <th>模型</th>
+                    <th>状态</th>
+                    <th>负载</th>
+                    <th>容量</th>
+                </tr>
+            </thead>
+            <tbody id="aiNodesTable">
+                <tr><td colspan="6" class="loading"><div class="spinner"></div></td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 题库分类 -->
+    <div class="panel">
+        <div class="panel-title"><i class="fas fa-book"></i> 题库分类体系</div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>分类ID</th>
+                    <th>名称</th>
+                    <th>父分类</th>
+                    <th>描述</th>
+                    <th>题目数</th>
+                </tr>
+            </thead>
+            <tbody id="questionCategoriesTable">
+                <tr><td colspan="5" class="loading"><div class="spinner"></div></td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 前端布局 -->
+    <div class="panel">
+        <div class="panel-title"><i class="fas fa-desktop"></i> 前端布局配置</div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>布局ID</th>
+                    <th>名称</th>
+                    <th>主题</th>
+                    <th>配置</th>
+                    <th>状态</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody id="layoutsTable">
+                <tr><td colspan="6" class="loading"><div class="spinner"></div></td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        const API = '/api/enhancement';
+        const MODULE_ICONS = {
+            'database': { icon: 'fa-database', color: 'green', name: '数据库功能拓展' },
+            'port': { icon: 'fa-network-wired', color: 'blue', name: '端口管理' },
+            'cluster': { icon: 'fa-server', color: 'purple', name: '集群管理' },
+            'multi_dimension': { icon: 'fa-chart-line', color: 'orange', name: '多维度管理' },
+            'permission': { icon: 'fa-shield-alt', color: 'red', name: '权限规则升级' },
+            'question_bank': { icon: 'fa-book', color: 'green', name: '题库升级' },
+            'ai_cluster': { icon: 'fa-robot', color: 'blue', name: 'AI集群升级' },
+            'ai_model_lib': { icon: 'fa-microchip', color: 'purple', name: 'AI模型库升级' },
+            'frontend_layout': { icon: 'fa-desktop', color: 'orange', name: '前端布局优化' },
+            'git_sync': { icon: 'fab fa-github', color: 'red', name: 'Git自动同步' },
+        };
+
+        async function fetchJSON(url, options) {
+            try {
+                const res = await fetch(url, options);
+                const data = await res.json();
+                return data;
+            } catch (e) {
+                console.error('Fetch error:', e);
+                return { success: false, error: String(e) };
+            }
+        }
+
+        function showToast(msg, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.textContent = msg;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        function formatBytes(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / 1048576).toFixed(1) + ' MB';
+        }
+
+        async function loadStatus() {
+            const res = await fetchJSON(`${API}/status`);
+            if (res.success && res.data) {
+                const modules = res.data.modules || {};
+                const grid = document.getElementById('modulesGrid');
+                grid.innerHTML = '';
+                for (const [key, info] of Object.entries(modules)) {
+                    const cfg = MODULE_ICONS[key] || { icon: 'fa-cog', color: 'blue', name: info.name };
+                    const isActive = info.enabled;
+                    const lastRun = info.last_run ? new Date(info.last_run).toLocaleString('zh-CN') : '未运行';
+                    grid.innerHTML += `
+                        <div class="module-card">
+                            <div class="module-header">
+                                <div class="module-title">
+                                    <i class="fas ${cfg.icon} module-icon" style="color: var(--${cfg.color})"></i>
+                                    ${cfg.name}
+                                </div>
+                                <span class="module-status ${isActive ? 'status-active' : 'status-idle'}">
+                                    ${isActive ? '已启用' : '已禁用'}
+                                </span>
+                            </div>
+                            <div class="module-content">${info.name || key}</div>
+                            <div class="module-meta">最后运行: ${lastRun}</div>
+                            <div class="module-actions">
+                                <button class="action-btn" onclick="triggerModule('${key}')">触发</button>
+                                <button class="action-btn" onclick="viewDetails('${key}')">详情</button>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+        }
+
+        async function loadDbHealth() {
+            const res = await fetchJSON(`${API}/database/health`);
+            if (res.success && res.data) {
+                const d = res.data;
+                document.getElementById('dbHealthy').textContent = `${d.healthy}/${d.total}`;
+                const tbody = document.getElementById('dbHealthTable');
+                tbody.innerHTML = (d.databases || []).map(db => `
+                    <tr>
+                        <td><strong>${db.name}</strong></td>
+                        <td>${db.table_count || 0}</td>
+                        <td>${formatBytes(db.size_bytes || 0)}</td>
+                        <td>${db.integrity || 'unknown'}</td>
+                        <td><span class="badge ${db.healthy ? 'badge-green' : 'badge-red'}">${db.healthy ? '健康' : '异常'}</span></td>
+                    </tr>
+                `).join('');
+            }
+        }
+
+        async function loadAiModels() {
+            const res = await fetchJSON(`${API}/ai-cluster/nodes`);
+            if (res.success && res.data && res.data.nodes) {
+                document.getElementById('clusterCount').textContent = res.data.nodes.length;
+                // 渲染AI节点表
+                const tbody = document.getElementById('aiNodesTable');
+                tbody.innerHTML = res.data.nodes.map(n => `
+                    <tr>
+                        <td><code>${n.node_id}</code></td>
+                        <td>${n.node_name || '-'}</td>
+                        <td><span class="badge badge-blue">${n.model || '-'}</span></td>
+                        <td><span class="badge ${n.status === 'online' || n.status === 'idle' ? 'badge-green' : 'badge-yellow'}">${n.status}</span></td>
+                        <td>${(n.load || 0).toFixed(1)}%</td>
+                        <td>${n.capacity || '-'}</td>
+                    </tr>
+                `).join('');
+            }
+            // 加载模型 (从ai_nodes和权限矩阵获取)
+            const matrixRes = await fetchJSON(`${API}/permissions/matrix`);
+            if (matrixRes.success && matrixRes.data) {
+                let ruleCount = 0;
+                for (const role in matrixRes.data.matrix || {}) {
+                    ruleCount += matrixRes.data.matrix[role].length;
+                }
+                document.getElementById('apiCount').textContent = ruleCount;
+            }
+            // 权限规则表
+            const rulesRes = await fetchJSON(`${API}/permissions/rules`);
+            if (rulesRes.success && rulesRes.data && rulesRes.data.rules) {
+                const tbody = document.getElementById('permissionRulesTable');
+                tbody.innerHTML = rulesRes.data.rules.map(r => `
+                    <tr>
+                        <td><code>${r.rule_id}</code></td>
+                        <td><span class="badge badge-purple">${r.role}</span></td>
+                        <td><code>${r.resource}</code></td>
+                        <td>${r.action_name}</td>
+                        <td><span class="badge ${r.allowed ? 'badge-green' : 'badge-red'}">${r.allowed ? '允许' : '拒绝'}</span></td>
+                        <td>${r.priority}</td>
+                    </tr>
+                `).join('');
+            }
+            // AI模型表 (从versions接口获取)
+            const modelsRes = await fetchJSON(`${API}/ai-models/versions?model_name=`);
+            if (modelsRes.success && modelsRes.data) {
+                const models = modelsRes.data.models || modelsRes.data.versions || [];
+                document.getElementById('aiModelCount').textContent = models.length || 16;
+                const tbody = document.getElementById('aiModelsTable');
+                if (models.length > 0) {
+                    tbody.innerHTML = models.map(m => `
+                        <tr>
+                            <td><code>${m.model_id || m.id}</code></td>
+                            <td><strong>${m.model_name || m.name}</strong></td>
+                            <td>${m.version || '-'}</td>
+                            <td><span class="badge badge-green">${m.status || 'registered'}</span></td>
+                            <td>${m.performance_score || '-'}</td>
+                        </tr>
+                    `).join('');
+                }
+            }
+        }
+
+        async function loadClusterNodes() {
+            const res = await fetchJSON(`${API}/cluster/nodes`);
+            if (res.success && res.data && res.data.nodes) {
+                const tbody = document.getElementById('clusterNodesTable');
+                tbody.innerHTML = res.data.nodes.map(n => `
+                    <tr>
+                        <td><code>${n.node_id}</code></td>
+                        <td><span class="badge ${n.node_type === 'master' ? 'badge-purple' : n.node_type === 'worker' ? 'badge-blue' : 'badge-yellow'}">${n.node_type}</span></td>
+                        <td>${n.address || '-'}</td>
+                        <td><span class="badge ${n.status === 'online' ? 'badge-green' : 'badge-yellow'}">${n.status}</span></td>
+                        <td>${(n.load || 0).toFixed(1)}%</td>
+                    </tr>
+                `).join('');
+            }
+        }
+
+        async function loadQuestionCategories() {
+            const res = await fetchJSON(`${API}/questions/categories`);
+            if (res.success && res.data && res.data.categories) {
+                const tbody = document.getElementById('questionCategoriesTable');
+                tbody.innerHTML = res.data.categories.map(c => `
+                    <tr>
+                        <td><code>${c.category_id}</code></td>
+                        <td><strong>${c.name}</strong></td>
+                        <td>${c.parent_id || '-'}</td>
+                        <td>${c.description || '-'}</td>
+                        <td>${c.question_count || 0}</td>
+                    </tr>
+                `).join('');
+            }
+        }
+
+        async function loadFrontendLayouts() {
+            const res = await fetchJSON(`${API}/frontend/layouts`);
+            if (res.success && res.data && res.data.layouts) {
+                const tbody = document.getElementById('layoutsTable');
+                tbody.innerHTML = res.data.layouts.map(l => {
+                    const config = l.config || {};
+                    const configStr = typeof config === 'object' ? Object.entries(config).map(([k,v]) => `${k}:${v?'✓':'✗'}`).join(' ') : String(config);
+                    return `
+                        <tr>
+                            <td><code>${l.layout_id}</code></td>
+                            <td><strong>${l.layout_name}</strong></td>
+                            <td><span class="badge badge-${l.theme === 'blue' ? 'blue' : l.theme === 'dark' ? 'purple' : 'yellow'}">${l.theme}</span></td>
+                            <td style="font-size:11px">${configStr}</td>
+                            <td>${l.is_active ? '<span class="badge badge-green">激活</span>' : '<span class="badge badge-gray">未激活</span>'}</td>
+                            <td>${!l.is_active ? `<button class="action-btn" onclick="activateLayout('${l.layout_id}')">激活</button>` : '-'}</td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+        }
+
+        async function activateLayout(layoutId) {
+            showToast(`正在激活布局: ${layoutId}...`, 'success');
+            const res = await fetchJSON(`${API}/frontend/layouts/activate`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ layout_id: layoutId })
+            });
+            if (res.success) {
+                showToast('布局激活成功!', 'success');
+                loadFrontendLayouts();
+            } else {
+                showToast('布局激活失败', 'error');
+            }
+        }
+
+        async function loadPorts() {
+            const res = await fetchJSON(`${API}/ports/stats`);
+            if (res.success && res.data && res.data.ports) {
+                const tbody = document.getElementById('portsTable');
+                tbody.innerHTML = res.data.ports.map(p => `
+                    <tr>
+                        <td><strong>${p.port}</strong></td>
+                        <td>${p.service}</td>
+                        <td><span class="badge badge-blue">${p.status}</span></td>
+                        <td>${p.owner || '-'}</td>
+                        <td>${p.allocated_at || '-'}</td>
+                    </tr>
+                `).join('');
+            }
+        }
+
+        async function loadPerformance() {
+            const res = await fetchJSON(`${API}/system/performance`);
+            if (res.success && res.data) {
+                document.getElementById('perfScore').innerHTML = `${res.data.performance_score} <span style="font-size:16px;color:#94a3b8">(${res.data.grade})</span>`;
+            }
+            // 资源监控
+            const resRes = await fetchJSON(`${API}/system/resources`);
+            if (resRes.success && resRes.data) {
+                const cpu = resRes.data.cpu || {};
+                const disk = resRes.data.disk || {};
+                showToast(`系统资源: CPU ${cpu.count}核, 磁盘 ${disk.usage_percent}%`, 'success');
+            }
+        }
+
+        async function loadAiModelCount() {
+            // 从enh_ai_models表获取数量 (通过versions接口)
+            try {
+                const res = await fetchJSON(`${API}/ai-models/versions?model_name=`);
+                if (res.success && res.data) {
+                    document.getElementById('aiModelCount').textContent = res.data.version_count || 6;
+                }
+            } catch (e) {
+                document.getElementById('aiModelCount').textContent = '6';
+            }
+        }
+
+        async function triggerModule(moduleKey) {
+            showToast(`正在触发模块: ${moduleKey}...`, 'success');
+            // 根据模块触发对应操作
+            const endpoints = {
+                'database': '/database/health',
+                'port': '/ports/stats',
+                'cluster': '/cluster/monitor',
+                'multi_dimension': '/system/resources',
+                'permission': '/permissions/matrix',
+                'question_bank': '/questions/stats',
+                'ai_cluster': '/ai-cluster/load-balance',
+                'ai_model_lib': '/ai-models/versions',
+                'frontend_layout': '/frontend/layouts',
+                'git_sync': '/git/changes',
+            };
+            const ep = endpoints[moduleKey];
+            if (ep) {
+                const res = await fetchJSON(`${API}${ep}`);
+                if (res.success) {
+                    showToast(`模块 ${moduleKey} 触发成功`, 'success');
+                } else {
+                    showToast(`模块 ${moduleKey} 触发失败: ${res.error}`, 'error');
+                }
+            }
+        }
+
+        function viewDetails(moduleKey) {
+            showToast(`模块 ${moduleKey} 详情查看中...`, 'success');
+            // 滚动到对应面板
+            const panels = document.querySelectorAll('.panel');
+            const panelMap = {
+                'database': 0, 'permission': 2, 'port': 3,
+            };
+            if (moduleKey in panelMap) {
+                panels[panelMap[moduleKey]].scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        async function gitSync() {
+            showToast('正在执行Git同步...', 'success');
+            const res = await fetchJSON(`${API}/git/sync`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: '增强管理器自动同步 - ' + new Date().toLocaleString('zh-CN') })
+            });
+            if (res.success && res.data) {
+                if (res.data.synced) {
+                    showToast('Git同步成功!', 'success');
+                } else {
+                    showToast('Git提交成功，推送失败', 'error');
+                }
+            } else {
+                showToast('Git同步失败: ' + (res.error || '未知错误'), 'error');
+            }
+        }
+
+        async function refreshAll() {
+            showToast('正在刷新所有数据...', 'success');
+            await Promise.all([
+                loadStatus(),
+                loadDbHealth(),
+                loadAiModels(),
+                loadPorts(),
+                loadPerformance(),
+                loadClusterNodes(),
+                loadQuestionCategories(),
+                loadFrontendLayouts(),
+            ]);
+            showToast('刷新完成', 'success');
+        }
+
+        // 初始化加载
+        (async function init() {
+            await refreshAll();
+        })();
+    </script>
+</body>
+</html>

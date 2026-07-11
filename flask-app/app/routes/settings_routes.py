@@ -5,6 +5,7 @@ Settings Routes with Permission Control
 设置页面路由(带权限控制)
 """
 
+import os
 from flask import Blueprint, render_template, request, redirect, url_for, jsonify, session
 import logging
 logger = logging.getLogger(__name__)
@@ -18,13 +19,16 @@ from app.utils.session_manager import get_session_manager, login_required
 from app.middlewares.access_control import require_admin, require_super_admin
 import sys
 
+app_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+DATABASE_PATH = os.path.join(app_root, 'app.db')
+
 settings_bp = Blueprint('settings', __name__)
 
 
 def log_unauthorized_access(request, resource):
     """记录未授权访问尝试到数据库"""
     try:
-        with sqlite3.connect(sqlite3.connect('/Users/wuchenghao/Library/CloudStorage/OneDrive-个人/文档/MTSCOS_AI_Project/flask-app/app.db')) as conn:
+        with sqlite3.connect(DATABASE_PATH) as conn:
             conn_cursor = conn.cursor()
             cursor = conn.cursor()
             
@@ -41,7 +45,7 @@ def log_unauthorized_access(request, resource):
 def log_error(error_type, message, details=''):
     """记录错误到数据库供AI学习"""
     try:
-        with sqlite3.connect(sqlite3.connect('/Users/wuchenghao/Library/CloudStorage/OneDrive-个人/文档/MTSCOS_AI_Project/flask-app/app.db')) as conn:
+        with sqlite3.connect(DATABASE_PATH) as conn:
             conn_cursor = conn.cursor()
             cursor = conn.cursor()
             
@@ -90,7 +94,7 @@ def settings_page():
 def get_general_settings():
     """获取通用设置 - 需要管理员权限"""
     try:
-        with sqlite3.connect(sqlite3.connect('/Users/wuchenghao/Library/CloudStorage/OneDrive-个人/文档/MTSCOS_AI_Project/flask-app/app.db')) as conn:
+        with sqlite3.connect(DATABASE_PATH) as conn:
             conn_cursor = conn.cursor()
             cursor = conn.cursor()
             
@@ -117,7 +121,7 @@ def update_general_settings():
     try:
         data = request.get_json()
         
-        with sqlite3.connect(sqlite3.connect('/Users/wuchenghao/Library/CloudStorage/OneDrive-个人/文档/MTSCOS_AI_Project/flask-app/app.db')) as conn:
+        with sqlite3.connect(DATABASE_PATH) as conn:
             conn_cursor = conn.cursor()
             cursor = conn.cursor()
             
@@ -286,7 +290,7 @@ def update_user_role(user_id):
 def get_errors_for_ai():
     """获取错误列表供AI学习 - 需要管理员权限"""
     try:
-        with sqlite3.connect(sqlite3.connect('/Users/wuchenghao/Library/CloudStorage/OneDrive-个人/文档/MTSCOS_AI_Project/flask-app/app.db')) as conn:
+        with sqlite3.connect(DATABASE_PATH) as conn:
             conn_cursor = conn.cursor()
             cursor = conn.cursor()
             
@@ -328,7 +332,7 @@ def update_error_status(error_id):
     """更新错误状态 - 需要管理员权限"""
     try:
         data = request.get_json()
-        with sqlite3.connect(sqlite3.connect('/Users/wuchenghao/Library/CloudStorage/OneDrive-个人/文档/MTSCOS_AI_Project/flask-app/app.db')) as conn:
+        with sqlite3.connect(DATABASE_PATH) as conn:
             conn_cursor = conn.cursor()
             cursor = conn.cursor()
             

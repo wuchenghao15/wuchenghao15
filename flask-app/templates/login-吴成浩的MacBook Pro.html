@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <!-- 设计系统 -->
+    <link rel="stylesheet" href="/assets/css/mtscos-design-system.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="var(--color-primary)">
+    <meta name="description" content="MTSCOS AI 系统登录">
+    <title>登录/注册 - MTSCOS AI 系统</title>
+    
+    <!-- AI主题管理器样式 -->
+    <link rel="stylesheet" href="/static/css/theme.css">
+    
+    <!-- AI主题管理器脚本 -->
+    <script src="/static/js/theme-manager.js"></script>
+    
+    <!-- 图标库 -->
+    <!-- FontAwesome CDN removed -->
+    <!-- 字体 -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* 登录页面专用样式 */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .auth-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            max-width: 480px;
+        }
+        
+        .auth-ai-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+            padding: 40px;
+            width: 100%;
+            animation: slideUp 0.6s ease-out;
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .auth-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .auth-header h2 {
+            color: var(--text-primary);
+            font-size: 28px;
+            font-weight: 700;
+            margin: 0 0 8px 0;
+        }
+        
+        .auth-header p {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin: 0;
+        }
+        
+        .auth-tabs {
+            display: flex;
+            margin-bottom: 24px;
+            background: #f7fafc;
+            border-radius: 12px;
+            padding: 4px;
+        }
+        
+        .auth-tab {
+            flex: 1;
+            padding: 12px 24px;
+            text-align: center;
+            border: none;
+            background: transparent;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: var(--text-secondary);
+        }
+        
+        .auth-tab.active {
+            background: white;
+            color: var(--color-primary);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .auth-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .form-group label {
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--text-primary);
+        }
+        
+        .form-group input {
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: #fafafa;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            background: white;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .btn {
+            padding: 14px 24px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3);
+        }
+        
+        .w-full {
+            width: 100%;
+        }
+        
+        .auth-footer {
+            text-align: center;
+            margin-top: 24px;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+        
+        .auth-footer a {
+            color: var(--color-primary);
+            font-weight: 600;
+            text-decoration: none;
+        }
+        
+        .auth-footer a:hover {
+            text-decoration: underline;
+        }
+        
+        .error-message {
+            background: #fed7d7;
+            color: #c53030;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-bottom: 20px;
+            border: 1px solid #feb2b2;
+        }
+        
+        .success-message {
+            background: #c6f6d5;
+            color: #22543d;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-bottom: 20px;
+            border: 1px solid #9ae6b4;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .auth-container {
+                padding: 10px;
+            }
+            
+            .auth-ai-card {
+                padding: 24px;
+            }
+            
+            .auth-header h2 {
+                font-size: 24px;
+            }
+        }
+        
+        /* 密码输入框样式 */
+        .password-input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        
+        .password-input-wrapper input {
+            width: 100%;
+            padding-right: 45px;
+        }
+        
+        .password-toggle {
+            position: absolute;
+            right: 12px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 5px;
+            color: var(--text-secondary);
+            transition: color 0.2s;
+        }
+        
+        .password-toggle:hover {
+            color: var(--color-primary);
+        }
+        
+        .password-strength {
+            margin-top: 8px;
+        }
+        
+        .strength-bar {
+            height: 4px;
+            background: #e2e8f0;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        
+        .strength-fill {
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s, background-color 0.3s;
+        }
+        
+        .strength-text {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+            display: block;
+        }
+        
+        .password-suggestions {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border: 1px solid var(--color-warning);
+            border-radius: 8px;
+            margin-top: 10px;
+            padding: 12px;
+        }
+        
+        .suggestion-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: #92400e;
+            font-size: 13px;
+        }
+        
+        .close-suggestions {
+            background: none;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+            color: #92400e;
+            padding: 0 5px;
+        }
+        
+        .suggestion-list {
+            font-size: 12px;
+            color: #78350f;
+        }
+        
+        .suggestion-item {
+            display: flex;
+            align-items: center;
+            padding: 6px 8px;
+            margin: 4px 0;
+            background: rgba(255,255,255,0.5);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .suggestion-item:hover {
+            background: rgba(255,255,255,0.8);
+        }
+        
+        .quick-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        
+        .quick-action-btn {
+            flex: 1;
+            padding: 8px 12px;
+            background: linear-gradient(135deg, var(--color-warning) 0%, #d97706 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .quick-action-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+        }
+        
+        .password-hints {
+            margin-top: 8px;
+            padding: 8px 12px;
+            background: #f0fdf4;
+            border: 1px solid #86efac;
+            border-radius: 6px;
+            font-size: 12px;
+            color: #166534;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .password-hints kbd {
+            background: #dcfce7;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 11px;
+            border: 1px solid #86efac;
+        }
+    </style>
+
+<style>
+.svg-icon {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    vertical-align: -0.125em;
+    fill: currentColor;
+}
+</style>
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-ai-card">
+            <div class="auth-header">
+                <h2>登录/注册</h2>
+                <p>MTSCOS AI 智能教育平台 <span class="text-xs px-2 py-0.5 bg-blue-600 text-white rounded-full">v6.0.0</span> <span class="text-xs px-2 py-0.5 bg-indigo-500 text-white rounded-full ml-2">分布式数据库</span></p>
+            </div>
+            
+            {% if error %}
+            <div class="error-message">{{ error }}</div>
+            {% endif %}
+            
+            {% if success %}
+            <div class="success-message">{{ success }}</div>
+            {% endif %}
+            
+            <div class="auth-tabs">
+                <button class="auth-tab active" id="login-tab" onclick="switchTab('login')">登录</button>
+                <button class="auth-tab" id="register-tab" onclick="switchTab('register')">注册</button>
+            </div>
+            
+            <!-- 登录表单 -->
+            <form class="auth-form" id="login-form">
+                <div class="form-group">
+                    <label for="username">用户名</label>
+                    <input type="text" id="username" name="username" required placeholder="请输入用户名">
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">密码</label>
+                    <div class="password-input-wrapper">
+                        <input type="password" id="password" name="password" required placeholder="请输入密码" 
+                               autocomplete="current-password"
+                               oninput="handlePasswordInput()"
+                               onfocus="handlePasswordFocus()"
+                               onblur="handlePasswordBlur()">
+                        <button type="button" id="toggle-password" class="password-toggle" onclick="togglePasswordVisibility()" title="显示/隐藏密码">
+                            <svg id="eye-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                            <svg id="eye-off-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: none;">
+                                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                                <line x1="1" y1="1" x2="23" y2="23"></line>
+                            </svg>
+                        </button>
+                    </div>
+                    <!-- 密码强度指示器 -->
+                    <div id="password-strength" class="password-strength" style="display: none;">
+                        <div class="strength-bar">
+                            <div id="strength-fill" class="strength-fill"></div>
+                        </div>
+                        <span id="strength-text" class="strength-text">密码强度</span>
+                    </div>
+                    <!-- AI密码建议 -->
+                    <div id="password-suggestions" class="password-suggestions" style="display: none;">
+                        <div class="suggestion-header">
+                            <span>🔐 AI智能密码建议</span>
+                            <button type="button" class="close-suggestions" onclick="hidePasswordSuggestions()">×</button>
+                        </div>
+                        <div id="suggestion-list" class="suggestion-list"></div>
+                        <div class="quick-actions">
+                            <button type="button" class="quick-action-btn" onclick="generateStrongPassword()">
+                                🎲 生成强密码
+                            </button>
+                        </div>
+                    </div>
+                    <!-- 智能提示 -->
+                    <div id="password-hints" class="password-hints" style="display: none;">
+                        <span id="hint-text"></span>
+                        <kbd>Tab</kbd> + <kbd>Enter</kbd> 快速登录
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="remember" id="remember-label" class="checkbox-wrapper">
+                        <input type="checkbox" id="remember" name="remember" onchange="handleRememberChange()">
+                        记住我 <span id="ai-hint" style="color: var(--text-secondary); font-size: 12px; display: none;">✓ AI增强模式</span>
+                    </label>
+                </div>
+                
+                <!-- AI增强面板 -->
+                <div id="ai-enhance-panel" style="display: none; background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-radius: 10px; padding: 16px; margin-top: 10px; border: 1px solid #bae6fd;">
+                    <div style="display: flex; align-items: center; margin-bottom: 12px;">
+                        <span style="font-size: 20px; margin-right: 8px;">🤖</span>
+                        <span style="font-weight: 600; color: #0369a1; font-size: 14px;">AI智能增强</span>
+                        <span id="ai-status" style="margin-left: auto; background: #22c55e; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px;">已启用</span>
+                    </div>
+                    <div id="ai-suggestions" style="font-size: 13px; color: #475569;">
+                        <div style="margin-bottom: 8px;">🔍 正在分析您的使用习惯...</div>
+                    </div>
+                    <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #bae6fd;">
+                        <label style="font-size: 12px; color: #64748b; display: flex; align-items: center; cursor: pointer;">
+                            <input type="checkbox" id="ai-auto-login" checked style="margin-right: 6px;">
+                            自动登录（AI优化）
+                        </label>
+                        <label style="font-size: 12px; color: #64748b; display: flex; align-items: center; cursor: pointer; margin-top: 6px;">
+                            <input type="checkbox" id="ai-smart-suggest" checked style="margin-right: 6px;">
+                            智能功能推荐
+                        </label>
+                    </div>
+                </div>
+                
+                <button type="button" class="btn btn-primary w-full" onclick="handleLogin()">登录</button>
+            </form>
+            
+            <!-- 注册表单 -->
+            <form class="auth-form" id="register-form" style="display: none;">
+                <div class="form-group">
+                    <label for="reg_username">用户名</label>
+                    <input type="text" id="reg_username" name="username" required placeholder="请输入用户名">
+                </div>
+                
+                <div class="form-group">
+                    <label for="reg_email">邮箱</label>
+                    <input type="email" id="reg_email" name="email" required placeholder="请输入邮箱">
+                </div>
+                
+                <div class="form-group">
+                    <label for="reg_password">密码</label>
+                    <input type="password" id="reg_password" name="password" required placeholder="请输入密码">
+                </div>
+                
+                <div class="form-group">
+                    <label for="reg_confirm_password">确认密码</label>
+                    <input type="password" id="reg_confirm_password" name="confirm_password" required placeholder="请确认密码">
+                </div>
+                
+                <button type="button" class="btn btn-primary w-full" onclick="handleRegister()">注册</button>
+            </form>
+            
+            <div class="auth-footer">
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function switchTab(tabName) {
+            // 切换标签样式
+            document.querySelectorAll('.auth-tab').forEach(tab => tab.classList.remove('active'));
+            document.getElementById(tabName + '-tab').classList.add('active');
+            
+            // 切换表单显示
+            document.getElementById('login-form').style.display = tabName === 'login' ? 'flex' : 'none';
+            document.getElementById('register-form').style.display = tabName === 'register' ? 'flex' : 'none';
+            
+            // 清除消息
+            clearMessages();
+        }
+        
+        function clearMessages() {
+            const messages = document.querySelectorAll('.error-message, .success-message');
+            messages.forEach(msg => msg.remove());
+        }
+        
+        function showMessage(type, message) {
+            clearMessages();
+            const container = document.querySelector('.auth-ai-card');
+            const header = document.querySelector('.auth-header');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = type === 'error' ? 'error-message' : 'success-message';
+            messageDiv.textContent = message;
+            container.insertBefore(messageDiv, header.nextSibling);
+        }
+        
+        // AI增强模式切换
+        function handleRememberChange() {
+            const rememberCheckbox = document.getElementById('remember');
+            const aiPanel = document.getElementById('ai-enhance-panel');
+            const aiHint = document.getElementById('ai-hint');
+            
+            if (rememberCheckbox && aiPanel) {
+                if (rememberCheckbox.checked) {
+                    aiPanel.style.display = 'block';
+                    if (aiHint) aiHint.style.display = 'inline';
+                    loadAISuggestions();
+                    localStorage.setItem('ai_enhance_enabled', 'true');
+                    const savedUsername = localStorage.getItem('saved_username');
+                    if (savedUsername) {
+                        document.getElementById('username').value = savedUsername;
+                    }
+                } else {
+                    aiPanel.style.display = 'none';
+                    if (aiHint) aiHint.style.display = 'none';
+                    localStorage.setItem('ai_enhance_enabled', 'false');
+                }
+            }
+        }
+        
+        // 加载AI建议
+        async function loadAISuggestions() {
+            const aiSuggestions = document.getElementById('ai-suggestions');
+            if (!aiSuggestions) return;
+            
+            const suggestions = [
+                { icon: '⚡', text: '根据您的使用习惯，推荐开启快捷登录模式' },
+                { icon: '🔔', text: '您经常使用考试系统，已为您预设快速入口' },
+                { icon: '📊', text: '检测到您偏好数据分析视图，已优化界面显示' },
+                { icon: '🔒', text: '已启用智能安全检测，保护您的账号安全' }
+            ];
+            
+            aiSuggestions.innerHTML = '';
+            for (let i = 0; i < suggestions.length; i++) {
+                await new Promise(resolve => setTimeout(resolve, 300));
+                const div = document.createElement('div');
+                div.style.marginBottom = '8px';
+                div.style.opacity = '0';
+                div.style.transition = 'opacity 0.3s';
+                div.innerHTML = `${suggestions[i].icon} ${suggestions[i].text}`;
+                aiSuggestions.appendChild(div);
+                setTimeout(() => div.style.opacity = '1', 50);
+            }
+            
+            const extendBtn = document.createElement('button');
+            extendBtn.style.cssText = 'width: 100%; margin-top: 12px; padding: 10px; background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 13px;';
+            extendBtn.textContent = '🚀 根据AI建议拓展更多功能';
+            extendBtn.onclick = () => extendFunctions();
+            aiSuggestions.appendChild(extendBtn);
+        }
+        
+        // AI建议的功能拓展
+        function extendFunctions() {
+            const aiSuggestions = document.getElementById('ai-suggestions');
+            if (!aiSuggestions) return;
+            
+            const extensions = [
+                { name: '智能记住上次访问时间', enabled: true },
+                { name: '自动填充历史表单数据', enabled: true },
+                { name: '智能推荐常用功能', enabled: true }
+            ];
+            
+            let extensionHtml = '<div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid #bae6fd;"><div style="font-weight: 600; margin-bottom: 10px; color: #0369a1;">✨ AI推荐功能:</div>';
+            
+            extensions.forEach(ext => {
+                extensionHtml += `
+                    <label style="display: flex; align-items: center; margin-bottom: 8px; font-size: 12px; color: #475569; cursor: pointer;">
+                        <input type="checkbox" checked style="margin-right: 8px;">
+                        ${ext.name}
+                    </label>
+                `;
+            });
+            
+            extensionHtml += '</div>';
+            aiSuggestions.innerHTML = extensionHtml;
+        }
+        
+        // 页面加载时恢复AI增强模式
+        document.addEventListener('DOMContentLoaded', function() {
+            const aiEnabled = localStorage.getItem('ai_enhance_enabled') === 'true';
+            if (aiEnabled) {
+                const rememberCheckbox = document.getElementById('remember');
+                if (rememberCheckbox) {
+                    rememberCheckbox.checked = true;
+                    handleRememberChange();
+                }
+            }
+        });
+        
+        // 密码可见性切换
+        function togglePasswordVisibility() {
+            const passwordInput = document.getElementById('password');
+            const eyeIcon = document.getElementById('eye-icon');
+            const eyeOffIcon = document.getElementById('eye-off-icon');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                eyeIcon.style.display = 'none';
+                eyeOffIcon.style.display = 'block';
+            } else {
+                passwordInput.type = 'password';
+                eyeIcon.style.display = 'block';
+                eyeOffIcon.style.display = 'none';
+            }
+        }
+        
+        // 密码输入处理
+        function handlePasswordInput() {
+            const password = document.getElementById('password').value;
+            const strengthDiv = document.getElementById('password-strength');
+            const strengthFill = document.getElementById('strength-fill');
+            const strengthText = document.getElementById('strength-text');
+            const hintsDiv = document.getElementById('password-hints');
+            const hintText = document.getElementById('hint-text');
+            
+            if (password.length > 0) {
+                strengthDiv.style.display = 'block';
+                hintsDiv.style.display = 'flex';
+                
+                const strength = calculatePasswordStrength(password);
+                strengthFill.style.width = `${strength.score}%`;
+                
+                if (strength.score < 30) {
+                    strengthFill.style.backgroundColor = 'var(--color-error)';
+                    strengthText.textContent = `弱 - ${strength.suggestions[0] || ''}`;
+                    hintText.textContent = '⚠️ 密码强度较弱，建议包含特殊字符';
+                } else if (strength.score < 60) {
+                    strengthFill.style.backgroundColor = 'var(--color-warning)';
+                    strengthText.textContent = '中等';
+                    hintText.textContent = '💡 可以添加数字和特殊字符增强安全性';
+                } else if (strength.score < 80) {
+                    strengthFill.style.backgroundColor = '#22c55e';
+                    strengthText.textContent = '良好';
+                    hintText.textContent = '👍 密码强度良好';
+                } else {
+                    strengthFill.style.backgroundColor = 'var(--color-success)';
+                    strengthText.textContent = '强';
+                    hintText.textContent = '🔒 密码强度很高！';
+                }
+                
+                if (password.length >= 8 && !strength.hasUpperCase) {
+                    showPasswordSuggestion('建议添加大写字母增加复杂性');
+                }
+                if (password.length >= 8 && !strength.hasNumber) {
+                    showPasswordSuggestion('建议添加数字使密码更安全');
+                }
+                if (password.length >= 8 && !strength.hasSpecial) {
+                    showPasswordSuggestion('建议添加特殊字符（!@#$%等）');
+                }
+            } else {
+                strengthDiv.style.display = 'none';
+                hintsDiv.style.display = 'none';
+            }
+        }
+        
+        // 密码强度计算
+        function calculatePasswordStrength(password) {
+            let score = 0;
+            const hasUpperCase = /[A-Z]/.test(password);
+            const hasLowerCase = /[a-z]/.test(password);
+            const hasNumber = /[0-9]/.test(password);
+            const hasSpecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+            
+            if (password.length >= 8) score += 20;
+            if (password.length >= 12) score += 15;
+            if (password.length >= 16) score += 10;
+            if (hasUpperCase) score += 15;
+            if (hasLowerCase) score += 10;
+            if (hasNumber) score += 15;
+            if (hasSpecial) score += 25;
+            if (hasUpperCase && hasLowerCase) score += 5;
+            if (hasNumber && hasSpecial) score += 5;
+            
+            return {
+                score: Math.min(100, score),
+                hasUpperCase, hasLowerCase, hasNumber, hasSpecial,
+                suggestions: [
+                    password.length < 8 ? '密码长度至少8位' : null,
+                    !hasUpperCase ? '添加大写字母' : null,
+                    !hasNumber ? '添加数字' : null,
+                    !hasSpecial ? '添加特殊字符' : null
+                ].filter(Boolean)
+            };
+        }
+        
+        // 显示密码建议
+        function showPasswordSuggestion(text) {
+            const suggestionsDiv = document.getElementById('password-suggestions');
+            const listDiv = document.getElementById('suggestion-list');
+            
+            if (!suggestionsDiv || !listDiv) return;
+            suggestionsDiv.style.display = 'block';
+            
+            const item = document.createElement('div');
+            item.className = 'suggestion-item';
+            item.innerHTML = `💡 ${text}`;
+            item.onclick = () => document.getElementById('password').focus();
+            
+            const existingItems = listDiv.querySelectorAll('.suggestion-item');
+            for (let existing of existingItems) {
+                if (existing.textContent.includes(text.substring(0, 10))) return;
+            }
+            
+            listDiv.appendChild(item);
+        }
+        
+        // 隐藏密码建议
+        function hidePasswordSuggestions() {
+            const suggestionsDiv = document.getElementById('password-suggestions');
+            if (suggestionsDiv) suggestionsDiv.style.display = 'none';
+        }
+        
+        // 生成强密码
+        function generateStrongPassword() {
+            const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+            let password = '';
+            password += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[Math.floor(Math.random() * 26)];
+            password += 'abcdefghijklmnopqrstuvwxyz'[Math.floor(Math.random() * 26)];
+            password += '0123456789'[Math.floor(Math.random() * 10)];
+            password += '!@#$%^&*'[Math.floor(Math.random() * 8)];
+            for (let i = password.length; i < 16; i++) {
+                password += chars[Math.floor(Math.random() * chars.length)];
+            }
+            password = password.split('').sort(() => Math.random() - 0.5).join('');
+            
+            const passwordInput = document.getElementById('password');
+            if (passwordInput) {
+                passwordInput.value = password;
+                passwordInput.type = 'text';
+                handlePasswordInput();
+                showMessage('success', '已生成16位强密码，建议复制并妥善保管！');
+            }
+        }
+        
+        // 密码框聚焦处理
+        function handlePasswordFocus() {
+            const password = document.getElementById('password').value;
+            const hintsDiv = document.getElementById('password-hints');
+            if (password.length === 0 && hintsDiv) {
+                hintsDiv.style.display = 'flex';
+                const hintText = document.getElementById('hint-text');
+                if (hintText) hintText.textContent = '🤖 输入密码时AI会实时分析强度';
+            } else if (password.length > 0 && hintsDiv) {
+                hintsDiv.style.display = 'flex';
+            }
+        }
+        
+        // 密码框失焦处理
+        function handlePasswordBlur() {
+            setTimeout(() => {
+                const hintsDiv = document.getElementById('password-hints');
+                const suggestionsDiv = document.getElementById('password-suggestions');
+                if (hintsDiv && suggestionsDiv && 
+                    !suggestionsDiv.matches(':hover') && !hintsDiv.matches(':hover')) {
+                    // hintsDiv.style.display = 'none';
+                }
+            }, 200);
+        }
+        
+        // 键盘快捷键
+        document.addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                const loginForm = document.getElementById('login-form');
+                if (loginForm && loginForm.style.display !== 'none') {
+                    handleLogin();
+                }
+            }
+        });
+        
+        async function handleLogin() {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+            
+            if (!username || !password) {
+                showMessage('error', '用户名和密码不能为空');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showMessage('success', '登录成功！正在跳转...');
+                    setTimeout(() => {
+                        // 优先使用 next 参数（原请求页面），其次使用后端返回的角色重定向地址
+                        const urlParams = new URLSearchParams(window.location.search);
+                        const nextUrl = urlParams.get('next');
+                        const redirectUrl = nextUrl || data.redirect || data.redirect_url || '/';
+                        window.location.href = redirectUrl;
+                    }, 1500);
+                } else {
+                    showMessage('error', data.message || '登录失败');
+                }
+            } catch (error) {
+                showMessage('error', '网络错误，请稍后重试');
+                console.error('Login error:', error);
+            }
+        }
+        
+        async function handleRegister() {
+            const username = document.getElementById('reg_username').value.trim();
+            const email = document.getElementById('reg_email').value.trim();
+            const password = document.getElementById('reg_password').value;
+            const confirmPassword = document.getElementById('reg_confirm_password').value;
+            
+            if (!username || !email || !password) {
+                showMessage('error', '请填写完整信息');
+                return;
+            }
+            
+            if (password !== confirmPassword) {
+                showMessage('error', '两次输入的密码不一致');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username, email, password })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showMessage('success', '注册成功！请登录');
+                    setTimeout(() => {
+                        switchTab('login');
+                    }, 1500);
+                } else {
+                    showMessage('error', data.message || '注册失败');
+                }
+            } catch (error) {
+                showMessage('error', '网络错误，请稍后重试');
+                console.error('Register error:', error);
+            }
+        }
+        
+        // 自动检测URL参数中的错误类型，切换到对应标签
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const error = urlParams.get('error');
+            
+            if (error === 'register') {
+                switchTab('register');
+            }
+        });
+        
+        // 键盘事件
+        document.getElementById('login-form').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                handleLogin();
+            }
+        });
+        
+        document.getElementById('register-form').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                handleRegister();
+            }
+        });
+        
+        // 初始化AI主题管理器
+        if (window.ThemeManager && typeof window.ThemeManager.init === 'function') {
+            window.ThemeManager.init();
+        }
+    </script>
+    
+</body>
+</html>

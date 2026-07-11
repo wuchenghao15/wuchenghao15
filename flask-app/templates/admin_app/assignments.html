@@ -1,0 +1,417 @@
+{% extends 'admin_app/base.html' %}
+
+{% block title %}作业管理{% endblock %}
+
+{% block content %}
+    <div class="page-header">
+        <h1>作业管理</h1>
+        <p>管理学生作业和测验</p>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">作业列表</div>
+            <button class="btn btn-primary" onclick="openCreateModal()">
+                <i class="fas fa-plus"></i>
+                添加作业
+            </button>
+        </div>
+        <div class="card-body">
+            <div class="search-bar">
+                <input type="text" class="form-control" id="searchKeyword" placeholder="搜索作业..." onkeyup="handleSearch()">
+                <select class="form-control" id="statusFilter" onchange="loadAssignments()">
+                    <option value="">全部状态</option>
+                    <option value="draft">草稿</option>
+                    <option value="published">已发布</option>
+                    <option value="closed">已关闭</option>
+                </select>
+                <select class="form-control" id="subjectFilter" onchange="loadAssignments()">
+                    <option value="">全部科目</option>
+                    <option value="math">数学</option>
+                    <option value="english">英语</option>
+                    <option value="chinese">语文</option>
+                    <option value="physics">物理</option>
+                    <option value="chemistry">化学</option>
+                </select>
+            </div>
+            
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>作业名称</th>
+                            <th>类型</th>
+                            <th>科目</th>
+                            <th>总分</th>
+                            <th>状态</th>
+                            <th>截止日期</th>
+                            <th>提交/完成</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="assignmentList">
+                        <tr>
+                            <td colspan="9" class="text-center">加载中...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="pagination" id="pagination">
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="createModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">添加作业</h3>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="assignmentForm">
+                    <input type="hidden" id="assignmentId">
+                    <div class="form-group">
+                        <label class="form-label">作业名称 *</label>
+                        <input type="text" class="form-control" id="title" placeholder="输入作业名称" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">作业描述</label>
+                        <textarea class="form-control" id="description" rows="4" placeholder="输入作业描述"></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">作业类型</label>
+                            <select class="form-control" id="assignmentType">
+                                <option value="homework">家庭作业</option>
+                                <option value="quiz">测验</option>
+                                <option value="exam">考试</option>
+                                <option value="project">项目作业</option>
+                                <option value="essay">论文</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">科目</label>
+                            <select class="form-control" id="subject">
+                                <option value="">请选择科目</option>
+                                <option value="math">数学</option>
+                                <option value="english">英语</option>
+                                <option value="chinese">语文</option>
+                                <option value="physics">物理</option>
+                                <option value="chemistry">化学</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">年级</label>
+                            <select class="form-control" id="grade">
+                                <option value="">请选择年级</option>
+                                <option value="g1">一年级</option>
+                                <option value="g2">二年级</option>
+                                <option value="g3">三年级</option>
+                                <option value="g4">四年级</option>
+                                <option value="g5">五年级</option>
+                                <option value="g6">六年级</option>
+                                <option value="g7">初一</option>
+                                <option value="g8">初二</option>
+                                <option value="g9">初三</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">总分</label>
+                            <input type="number" class="form-control" id="totalScore" placeholder="总分" value="100" min="1">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">截止日期</label>
+                            <input type="datetime-local" class="form-control" id="dueDate">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">最大尝试次数</label>
+                            <input type="number" class="form-control" id="maxAttempts" placeholder="最大尝试次数" value="1" min="1">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">允许迟交</label>
+                        <input type="checkbox" id="allowLateSubmission">
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-lg w-full">保存作业</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentPage = 1;
+        let totalPages = 1;
+
+        async function loadAssignments() {
+            const status = document.getElementById('statusFilter').value;
+            const subject = document.getElementById('subjectFilter').value;
+            
+            try {
+                const response = await fetch(`/api/assignments?status=${status}&subject=${subject}&page=${currentPage}&limit=10`);
+                const data = await response.json();
+                
+                if (data.code === 200) {
+                    renderAssignmentList(data.data);
+                }
+            } catch (error) {
+                console.error('加载作业失败:', error);
+            }
+        }
+
+        function renderAssignmentList(assignments) {
+            const tbody = document.getElementById('assignmentList');
+            
+            if (assignments.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" class="text-center">暂无作业</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = assignments.map(assignment => `
+                <tr>
+                    <td>${assignment.id}</td>
+                    <td>${assignment.title}</td>
+                    <td>${getAssignmentTypeName(assignment.assignment_type)}</td>
+                    <td>${getSubjectName(assignment.subject)}</td>
+                    <td>${assignment.total_score}</td>
+                    <td><span class="badge ${getStatusClass(assignment.status)}">${getStatusName(assignment.status)}</span></td>
+                    <td>${formatDate(assignment.due_date)}</td>
+                    <td>${assignment.submission_count}/${assignment.completed_count}</td>
+                    <td>
+                        <button class="btn btn-sm btn-secondary" onclick="editAssignment(${assignment.id})">编辑</button>
+                        ${assignment.status === 'draft' ? `<button class="btn btn-sm btn-success" onclick="publishAssignment(${assignment.id})">发布</button>` : ''}
+                        ${assignment.status === 'published' ? `<button class="btn btn-sm btn-warning" onclick="closeAssignment(${assignment.id})">关闭</button>` : ''}
+                        <button class="btn btn-sm btn-danger" onclick="deleteAssignment(${assignment.id})">删除</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function getAssignmentTypeName(type) {
+            const types = {
+                'homework': '作业',
+                'quiz': '测验',
+                'exam': '考试',
+                'project': '项目',
+                'essay': '论文'
+            };
+            return types[type] || type;
+        }
+
+        function getSubjectName(subject) {
+            const subjects = {
+                'math': '数学',
+                'english': '英语',
+                'chinese': '语文',
+                'physics': '物理',
+                'chemistry': '化学'
+            };
+            return subjects[subject] || subject || '-';
+        }
+
+        function getStatusName(status) {
+            const statuses = {
+                'draft': '草稿',
+                'published': '已发布',
+                'closed': '已关闭'
+            };
+            return statuses[status] || status;
+        }
+
+        function getStatusClass(status) {
+            const classes = {
+                'draft': 'badge-warning',
+                'published': 'badge-success',
+                'closed': 'badge-secondary'
+            };
+            return classes[status] || 'badge-secondary';
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return '-';
+            try {
+                const date = new Date(dateStr);
+                return date.toLocaleString('zh-CN', {
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            } catch {
+                return dateStr;
+            }
+        }
+
+        function openCreateModal() {
+            document.getElementById('modalTitle').textContent = '添加作业';
+            document.getElementById('assignmentForm').reset();
+            document.getElementById('assignmentId').value = '';
+            document.getElementById('totalScore').value = '100';
+            document.getElementById('maxAttempts').value = '1';
+            document.getElementById('createModal').style.display = 'block';
+        }
+
+        function closeModal() {
+            document.getElementById('createModal').style.display = 'none';
+        }
+
+        async function editAssignment(id) {
+            try {
+                const response = await fetch(`/api/assignments/${id}`);
+                const data = await response.json();
+                
+                if (data.code === 200) {
+                    const assignment = data.data;
+                    document.getElementById('modalTitle').textContent = '编辑作业';
+                    document.getElementById('assignmentId').value = assignment.id;
+                    document.getElementById('title').value = assignment.title;
+                    document.getElementById('description').value = assignment.description || '';
+                    document.getElementById('assignmentType').value = assignment.assignment_type;
+                    document.getElementById('subject').value = assignment.subject || '';
+                    document.getElementById('grade').value = assignment.grade || '';
+                    document.getElementById('totalScore').value = assignment.total_score;
+                    document.getElementById('dueDate').value = assignment.due_date ? 
+                        new Date(assignment.due_date).toISOString().slice(0, 16) : '';
+                    document.getElementById('maxAttempts').value = assignment.max_attempts;
+                    document.getElementById('allowLateSubmission').checked = assignment.allow_late_submission;
+                    document.getElementById('createModal').style.display = 'block';
+                }
+            } catch (error) {
+                console.error('获取作业失败:', error);
+            }
+        }
+
+        document.getElementById('assignmentForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const assignmentId = document.getElementById('assignmentId').value;
+            const data = {
+                title: document.getElementById('title').value,
+                description: document.getElementById('description').value,
+                assignment_type: document.getElementById('assignmentType').value,
+                subject: document.getElementById('subject').value,
+                grade: document.getElementById('grade').value,
+                total_score: parseInt(document.getElementById('totalScore').value) || 100,
+                due_date: document.getElementById('dueDate').value,
+                max_attempts: parseInt(document.getElementById('maxAttempts').value) || 1,
+                allow_late_submission: document.getElementById('allowLateSubmission').checked
+            };
+            
+            try {
+                let response;
+                if (assignmentId) {
+                    response = await fetch(`/api/assignments/${assignmentId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+                } else {
+                    response = await fetch('/api/assignments', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+                }
+                
+                const result = await response.json();
+                if (result.code === 200 || result.code === 201) {
+                    closeModal();
+                    loadAssignments();
+                    showToast('success', assignmentId ? '作业更新成功' : '作业创建成功');
+                } else {
+                    showToast('error', result.message || '操作失败');
+                }
+            } catch (error) {
+                console.error('保存作业失败:', error);
+                showToast('error', '保存失败');
+            }
+        });
+
+        async function publishAssignment(id) {
+            if (!confirm('确定发布此作业吗？')) return;
+            
+            try {
+                const response = await fetch(`/api/assignments/${id}/publish`, { method: 'POST' });
+                const data = await response.json();
+                
+                if (data.code === 200) {
+                    loadAssignments();
+                    showToast('success', '作业发布成功');
+                } else {
+                    showToast('error', data.message || '发布失败');
+                }
+            } catch (error) {
+                console.error('发布作业失败:', error);
+            }
+        }
+
+        async function closeAssignment(id) {
+            if (!confirm('确定关闭此作业吗？')) return;
+            
+            try {
+                const response = await fetch(`/api/assignments/${id}/close`, { method: 'POST' });
+                const data = await response.json();
+                
+                if (data.code === 200) {
+                    loadAssignments();
+                    showToast('success', '作业关闭成功');
+                } else {
+                    showToast('error', data.message || '关闭失败');
+                }
+            } catch (error) {
+                console.error('关闭作业失败:', error);
+            }
+        }
+
+        async function deleteAssignment(id) {
+            if (!confirm('确定删除此作业吗？此操作不可恢复。')) return;
+            
+            try {
+                const response = await fetch(`/api/assignments/${id}`, { method: 'DELETE' });
+                const data = await response.json();
+                
+                if (data.code === 200) {
+                    loadAssignments();
+                    showToast('success', '作业删除成功');
+                } else {
+                    showToast('error', data.message || '删除失败');
+                }
+            } catch (error) {
+                console.error('删除作业失败:', error);
+            }
+        }
+
+        function handleSearch() {
+            const keyword = document.getElementById('searchKeyword').value;
+            if (keyword.length >= 2) {
+                searchAssignments(keyword);
+            } else {
+                loadAssignments();
+            }
+        }
+
+        async function searchAssignments(keyword) {
+            try {
+                const response = await fetch(`/api/assignments/search?keyword=${encodeURIComponent(keyword)}&page=1&limit=10`);
+                const data = await response.json();
+                
+                if (data.code === 200) {
+                    renderAssignmentList(data.data);
+                }
+            } catch (error) {
+                console.error('搜索作业失败:', error);
+            }
+        }
+
+        window.onclick = function(e) {
+            if (e.target === document.getElementById('createModal')) {
+                closeModal();
+            }
+        }
+
+        loadAssignments();
+    </script>
+{% endblock %}

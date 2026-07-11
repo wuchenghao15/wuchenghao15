@@ -257,6 +257,26 @@
             font-size: 0.85rem;
         }
 
+        .exam-type-tag {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .exam-type-real {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            border: 1px solid #ef4444;
+        }
+
+        .exam-type-simulation {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+            border: 1px solid #10b981;
+        }
+
         .footer {
             text-align: center;
             padding: 30px;
@@ -431,16 +451,17 @@
                     {% for exam in exams %}
                     <div class="exam-item" data-exam-id="{{ exam.id }}">
                         <div class="exam-info">
-                            <h3>{{ exam.name }}</h3>
-                            <p>时长: {{ exam.duration }}分钟 | 题目: {{ exam.total_questions }}道 | 难度: {{ exam.difficulty_level }}</p>
-                            {% if exam.audio_type %}
-                            <p style="font-size: 0.85rem; color: #94a3b8;">发音类型: {{ exam.audio_type }}</p>
-                            {% endif %}
+                            <h3>{{ exam.title if exam.title else exam.name }}
+                                <span class="exam-type-tag {{ 'exam-type-real' if (exam.exam_type == 'real') else 'exam-type-simulation' }}">
+                                    {{ exam.exam_type_label if exam.exam_type_label else '拟真试题' }}
+                                </span>
+                            </h3>
+                            <p>时长: {{ exam.duration }}分钟 | 题目: {{ exam.question_count if exam.question_count else exam.total_questions }}道 | 难度: {{ exam.level if exam.level else exam.difficulty_level }}</p>
                         </div>
                         <div class="exam-actions">
-                            <button class="btn btn-primary" onclick="startExam({{ exam.id }})">开始考试</button>
-                            <button class="btn btn-secondary" onclick="showExamDetail({{ exam.id }})">详情</button>
-                            <button class="btn btn-danger" onclick="confirmDeleteExam({{ exam.id }}, '{{ exam.name }}')">删除</button>
+                            <button class="btn btn-primary" onclick="startExam('{{ exam.id }}')">开始考试</button>
+                            <button class="btn btn-secondary" onclick="showExamDetail('{{ exam.id }}')">详情</button>
+                            <button class="btn btn-danger" onclick="confirmDeleteExam('{{ exam.id }}', '{{ exam.title if exam.title else exam.name }}')">删除</button>
                         </div>
                     </div>
                     {% endfor %}
@@ -617,6 +638,13 @@
                     <label>题目数量</label>
                     <input type="number" id="examQuestions" placeholder="50" value="50">
                 </div>
+                <div class="form-group">
+                    <label>考试类型</label>
+                    <select id="examType">
+                        <option value="simulation">拟真试题（AI生成模拟题）</option>
+                        <option value="real">历年真题（真实考试题目）</option>
+                    </select>
+                </div>
                 <button type="submit" class="btn btn-primary" style="width: 100%;">创建考试</button>
             </form>
         </div>
@@ -660,6 +688,10 @@
                     <label>发音类型</label>
                     <div id="detailAudio" style="padding: 12px; background: rgba(255,255,255,0.1); border-radius: 8px;"></div>
                 </div>
+                <div class="form-group">
+                    <label>考试类型</label>
+                    <div id="detailExamType" style="padding: 12px; background: rgba(255,255,255,0.1); border-radius: 8px;"></div>
+                </div>
             </div>
             <button class="btn btn-primary" style="width: 100%; margin-top: 20px;" onclick="startExamFromDetail()">开始考试</button>
         </div>
@@ -694,19 +726,20 @@
 
         function showExamDetail(examId) {
             currentExamId = examId;
-            fetch(`/api/exams/${examId}`)
+            fetch(`/api/exam/exams/${examId}`)
                 .then(response => response.json())
                 .then(data => {
                     if (data.success && data.data) {
                         const exam = data.data;
-                        document.getElementById('detailName').textContent = exam.name;
+                        document.getElementById('detailName').textContent = exam.title || exam.name;
                         document.getElementById('detailDesc').textContent = exam.description || '暂无描述';
                         document.getElementById('detailDuration').textContent = `${exam.duration} 分钟`;
-                        document.getElementById('detailQuestions').textContent = `${exam.total_questions} 道`;
+                        document.getElementById('detailQuestions').textContent = `${exam.question_count || exam.total_questions} 道`;
                         document.getElementById('detailScore').textContent = `${exam.passing_score} 分`;
                         document.getElementById('detailLanguage').textContent = exam.language;
-                        document.getElementById('detailLevel').textContent = exam.difficulty_level;
+                        document.getElementById('detailLevel').textContent = exam.level || exam.difficulty_level;
                         document.getElementById('detailAudio').textContent = exam.audio_type || '无';
+                        document.getElementById('detailExamType').textContent = exam.exam_type_label || (exam.exam_type === 'real' ? '历年真题' : '拟真试题');
                     }
                 })
                 .catch(error => {
@@ -727,7 +760,7 @@
         }
 
         function deleteExam(examId) {
-            fetch(`/api/exams/${examId}`, {
+            fetch(`/api/exam/exams/${examId}`, {
                 method: 'DELETE'
             })
             .then(response => response.json())
@@ -754,10 +787,11 @@
                 difficulty_level: document.getElementById('examLevel').value,
                 duration: parseInt(document.getElementById('examDuration').value),
                 total_questions: parseInt(document.getElementById('examQuestions').value),
+                exam_type: document.getElementById('examType').value,
                 description: '通过考试系统创建'
             };
 
-            fetch('/api/exams', {
+            fetch('/api/exam/exams', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -788,7 +822,7 @@
         }
 
         function loadExams() {
-            fetch('/api/exams')
+            fetch('/api/exam/exams')
                 .then(response => response.json())
                 .then(data => {
                     if (data.success && data.data) {
@@ -798,16 +832,20 @@
                             const examItem = document.createElement('div');
                             examItem.className = 'exam-item';
                             examItem.dataset.examId = exam.id;
+                            const examType = exam.exam_type || 'simulation';
+                            const examTypeLabel = exam.exam_type_label || '拟真试题';
+                            const examTypeClass = examType === 'real' ? 'exam-type-real' : 'exam-type-simulation';
                             examItem.innerHTML = `
                                 <div class="exam-info">
-                                    <h3>${exam.name}</h3>
-                                    <p>时长: ${exam.duration}分钟 | 题目: ${exam.total_questions}道 | 难度: ${exam.difficulty_level}</p>
-                                    ${exam.audio_type ? `<p style="font-size: 0.85rem; color: #94a3b8;">发音类型: ${exam.audio_type}</p>` : ''}
+                                    <h3>${exam.title || exam.name}
+                                        <span class="exam-type-tag ${examTypeClass}">${examTypeLabel}</span>
+                                    </h3>
+                                    <p>时长: ${exam.duration}分钟 | 题目: ${exam.question_count || exam.total_questions}道 | 难度: ${exam.level || exam.difficulty_level}</p>
                                 </div>
                                 <div class="exam-actions">
-                                    <button class="btn btn-primary" onclick="startExam(${exam.id})">开始考试</button>
-                                    <button class="btn btn-secondary" onclick="showExamDetail(${exam.id})">详情</button>
-                                    <button class="btn btn-danger" onclick="confirmDeleteExam(${exam.id}, '${exam.name}')">删除</button>
+                                    <button class="btn btn-primary" onclick="startExam('${exam.id}')">开始考试</button>
+                                    <button class="btn btn-secondary" onclick="showExamDetail('${exam.id}')">详情</button>
+                                    <button class="btn btn-danger" onclick="confirmDeleteExam('${exam.id}', '${exam.title || exam.name}')">删除</button>
                                 </div>
                             `;
                             examList.appendChild(examItem);

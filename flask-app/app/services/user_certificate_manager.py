@@ -1,3 +1,6 @@
+import logging
+logger = logging.getLogger(__name__)
+
 # -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
@@ -468,4 +471,4 @@ if __name__ == "__main__":
     result2 = manager.create_certificate(1001, "张三")
     print(f"\n重复创建证书: {result2}")
     
-    print("\n == 测试完成 ===")
+    logger.info("\n == 测试完成 ===")

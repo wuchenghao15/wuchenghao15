@@ -143,7 +143,7 @@ class SystemEnhancementAI:
             import requests
             response = requests.get('http://localhost:5001', timeout=2)
             status = response.status_code
-        except:
+        except Exception:
             status = None
 
         issues = []
@@ -449,7 +449,7 @@ DATABASE_PATH = "data/mtscos_ai_project.db"
                 with open(brain_file, 'r', encoding='utf-8') as f:
                     try:
                         existing_cases = json.load(f)
-                    except:
+                    except Exception:
                         existing_cases = []
 
             all_cases = existing_cases + error_cases

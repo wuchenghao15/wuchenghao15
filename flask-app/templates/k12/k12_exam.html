@@ -1,0 +1,1162 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <!-- 设计系统 -->
+    <link rel="stylesheet" href="/assets/css/mtscos-design-system.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>K12考试中心 - MTSCOS AI</title>
+    <link rel="icon" href="/assets/images/mtscos_logo.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/assets/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif; background: #f5f7fa; color: #333; }
+        
+        .header { background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.06); position: sticky; top: 0; z-index: 100; }
+        .header-inner { max-width: 1280px; margin: 0 auto; padding: 0 20px; height: 64px; display: flex; align-items: center; justify-content: space-between; }
+        .logo a { display: flex; align-items: center; gap: 10px; text-decoration: none; color: #333; font-weight: 700; font-size: 20px; }
+        .logo i { color: #667eea; font-size: 24px; }
+        .nav { display: flex; gap: 28px; }
+        .nav a { text-decoration: none; color: #555; font-size: 15px; font-weight: 500; transition: color 0.2s; padding: 20px 0; position: relative; }
+        .nav a:hover { color: #667eea; }
+        .nav a.active { color: #667eea; }
+        .nav a.active::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 3px; background: #667eea; border-radius: 2px; }
+
+        .footer { background: white; padding: 30px 20px; margin-top: 50px; border-top: 1px solid #eee; }
+        .footer .container { max-width: 1280px; margin: 0 auto; text-align: center; }
+        .footer p { color: #666; font-size: 14px; }
+        .footer .footer-sub { color: #999; font-size: 12px; margin-top: 6px; }
+
+        .exam-center-container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .exam-center-header {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            border-radius: 20px;
+            padding: 30px 40px;
+            color: white;
+            margin-bottom: 24px;
+        }
+
+        .back-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-bottom: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .header-content h1 {
+            font-size: 32px;
+            margin-bottom: 6px;
+        }
+
+        .header-content p {
+            opacity: 0.9;
+            font-size: 15px;
+        }
+
+        .exam-filter-bar {
+            background: white;
+            border-radius: 16px;
+            padding: 20px 24px;
+            margin-bottom: 24px;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            flex-wrap: wrap;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .filter-group label {
+            font-size: 14px;
+            color: #666;
+            font-weight: 500;
+        }
+
+        .filter-group select {
+            padding: 8px 14px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            background: white;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 10px 16px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .exam-stats-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        }
+
+        .stat-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+        }
+
+        .stat-icon.blue { background: linear-gradient(135deg, #4facfe, #00f2fe); }
+        .stat-icon.green { background: linear-gradient(135deg, #43e97b, #38f9d7); }
+        .stat-icon.orange { background: linear-gradient(135deg, #fa709a, #fee140); }
+        .stat-icon.purple { background: linear-gradient(135deg, #a18cd1, #fbc2eb); }
+
+        .stat-num {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1a1a2e;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: #888;
+        }
+
+        .exam-tabs {
+            display: flex;
+            gap: 4px;
+            background: white;
+            padding: 6px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        }
+
+        .exam-tab-btn {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            background: transparent;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: #666;
+            transition: all 0.2s ease;
+        }
+
+        .exam-tab-btn:hover {
+            background: #f5f7ff;
+            color: #667eea;
+        }
+
+        .exam-tab-btn.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .exam-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+        }
+
+        .exam-card {
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+            transition: all 0.3s ease;
+            border: 1px solid #f0f0f0;
+        }
+
+        .exam-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 32px rgba(0,0,0,0.12);
+        }
+
+        .exam-card-header {
+            padding: 14px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #f5f5f5;
+        }
+
+        .exam-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .exam-badge.unit { background: #e3f2fd; color: #1976d2; }
+        .exam-badge.midterm { background: #fff3e0; color: #f57c00; }
+        .exam-badge.final { background: #fce4ec; color: #c2185b; }
+        .exam-badge.mock { background: #f3e5f5; color: #7b1fa2; }
+        .exam-badge.special { background: #e8f5e9; color: #388e3c; }
+        .exam-badge.ongoing { background: #fff3e0; color: #f57c00; }
+
+        .exam-difficulty {
+            font-size: 12px;
+            padding: 4px 10px;
+            border-radius: 6px;
+        }
+
+        .exam-difficulty.easy { background: #e8f5e9; color: #388e3c; }
+        .exam-difficulty.medium { background: #fff3e0; color: #f57c00; }
+        .exam-difficulty.hard { background: #ffebee; color: #d32f2f; }
+
+        .exam-time-remaining {
+            background: #fff3e0;
+            color: #f57c00;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .exam-card-body {
+            padding: 20px;
+        }
+
+        .exam-subject-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+        }
+
+        .exam-title {
+            font-size: 18px;
+            color: #1a1a2e;
+            margin-bottom: 8px;
+        }
+
+        .exam-desc {
+            font-size: 13px;
+            color: #888;
+            line-height: 1.5;
+            margin-bottom: 14px;
+            height: 38px;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+
+        .exam-meta {
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+            font-size: 12px;
+            color: #999;
+        }
+
+        .progress-section {
+            margin-top: 12px;
+        }
+
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .progress-bar-large {
+            height: 8px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        .exam-card-footer {
+            padding: 16px 20px;
+            border-top: 1px solid #f5f5f5;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .exam-participants {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .start-exam-btn, .continue-exam-btn {
+            padding: 10px 22px;
+            background: linear-gradient(135deg, #fa709a, #fee140);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .start-exam-btn:hover, .continue-exam-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(250,112,154,0.4);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+            background: white;
+            border-radius: 16px;
+        }
+
+        .empty-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+
+        .empty-state h3 {
+            font-size: 20px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .empty-state p {
+            color: #888;
+        }
+
+        .upcoming-exam-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .upcoming-exam-item {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+            transition: all 0.3s ease;
+        }
+
+        .upcoming-exam-item:hover {
+            transform: translateX(4px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        .upcoming-exam-info {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .upcoming-exam-subject {
+            width: 64px;
+            height: 64px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            flex-shrink: 0;
+        }
+
+        .upcoming-exam-detail h3 {
+            font-size: 18px;
+            color: #1a1a2e;
+            margin-bottom: 8px;
+        }
+
+        .upcoming-exam-detail p {
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .upcoming-exam-meta {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            font-size: 13px;
+            color: #888;
+        }
+
+        .upcoming-exam-action {
+            text-align: right;
+        }
+
+        .countdown {
+            margin-bottom: 12px;
+        }
+
+        .countdown-label {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 4px;
+        }
+
+        .countdown-time {
+            font-size: 20px;
+            font-weight: 700;
+            color: #fa709a;
+        }
+
+        .signup-btn {
+            padding: 10px 24px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .signup-btn:hover {
+            background: #5a6fd6;
+            transform: translateY(-2px);
+        }
+
+        .history-exam-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .history-exam-item {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            display: flex;
+            gap: 24px;
+            align-items: center;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        }
+
+        .score-circle {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .score-circle.excellent { background: linear-gradient(135deg, #43e97b, #38f9d7); }
+        .score-circle.good { background: linear-gradient(135deg, #4facfe, #00f2fe); }
+        .score-circle.pass { background: linear-gradient(135deg, #fa709a, #fee140); }
+        .score-circle.fail { background: linear-gradient(135deg, #ff6b6b, #ee5a24); }
+
+        .score-num {
+            font-size: 32px;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .score-total {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .history-exam-info {
+            flex: 1;
+        }
+
+        .history-exam-info h3 {
+            font-size: 18px;
+            color: #1a1a2e;
+            margin-bottom: 10px;
+        }
+
+        .history-exam-meta {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            font-size: 13px;
+            color: #888;
+            margin-bottom: 12px;
+        }
+
+        .history-exam-analysis {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .analysis-tag {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+        }
+
+        .analysis-tag.correct { background: #e8f5e9; color: #388e3c; }
+        .analysis-tag.wrong { background: #ffebee; color: #d32f2f; }
+        .analysis-tag.unattempted { background: #f5f5f5; color: #999; }
+
+        .history-exam-action {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .view-analysis-btn {
+            padding: 10px 20px;
+            background: #f5f7ff;
+            color: #667eea;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .view-analysis-btn:hover {
+            background: #e8ebff;
+        }
+
+        .retake-btn {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .retake-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(102,126,234,0.4);
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 30px;
+        }
+
+        .page-btn {
+            padding: 8px 16px;
+            border: 1px solid #e0e0e0;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+
+        .page-btn:hover {
+            border-color: #667eea;
+            color: #667eea;
+        }
+
+        .page-btn.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-color: transparent;
+        }
+
+        .exam-tab-panel {
+            display: none;
+        }
+
+        .exam-tab-panel.active {
+            display: block;
+        }
+
+        @media (max-width: 900px) {
+            .exam-stats-row { grid-template-columns: repeat(2, 1fr); }
+            .upcoming-exam-item, .history-exam-item { flex-direction: column; text-align: center; }
+            .upcoming-exam-action, .history-exam-action { text-align: center; }
+            .upcoming-exam-info { flex-direction: column; }
+        }
+
+        @media (max-width: 768px) {
+            .nav { gap: 16px; }
+            .nav a { font-size: 13px; }
+        }
+
+        @media (max-width: 600px) {
+            .exam-stats-row { grid-template-columns: 1fr; }
+            .exam-grid { grid-template-columns: 1fr; }
+            .exam-filter-bar { flex-direction: column; align-items: stretch; }
+            .search-box { min-width: auto; }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-inner">
+            <div class="logo">
+                <a href="/">
+                    <i class="fas fa-robot"></i>
+                    <span>MTSCOS AI</span>
+                </a>
+            </div>
+            <nav class="nav">
+                <a href="/">首页</a>
+                <a href="/k12" class="active">K12教育</a>
+                <a href="/about/history">关于我们</a>
+                <a href="/products/features">产品功能</a>
+                <a href="/contact/contact">联系我们</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="exam-center-container">
+        <div class="exam-center-header">
+            <button class="back-btn" onclick="window.location.href='/k12'">← 返回K12首页</button>
+            <div class="header-content">
+                <h1>📝 K12考试中心</h1>
+                <p>多场景考试测评，精准检验学习成果</p>
+            </div>
+        </div>
+
+        <div class="exam-filter-bar">
+            <div class="filter-group">
+                <label>考试类型：</label>
+                <select id="examTypeFilter" onchange="filterExams()">
+                    <option value="all">全部类型</option>
+                    <option value="unit">单元测试</option>
+                    <option value="midterm">期中考试</option>
+                    <option value="final">期末考试</option>
+                    <option value="mock">模拟考试</option>
+                    <option value="special">专项训练</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>学科：</label>
+                <select id="subjectFilter" onchange="filterExams()">
+                    <option value="all">全部学科</option>
+                    <option value="chinese">语文</option>
+                    <option value="math">数学</option>
+                    <option value="english">英语</option>
+                    <option value="physics">物理</option>
+                    <option value="chemistry">化学</option>
+                    <option value="biology">生物</option>
+                    <option value="history">历史</option>
+                    <option value="geography">地理</option>
+                    <option value="politics">道法</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>难度：</label>
+                <select id="difficultyFilter" onchange="filterExams()">
+                    <option value="all">全部难度</option>
+                    <option value="easy">简单</option>
+                    <option value="medium">中等</option>
+                    <option value="hard">困难</option>
+                </select>
+            </div>
+            <div class="search-box">
+                <input type="text" id="examSearch" placeholder="搜索考试名称..." oninput="filterExams()">
+            </div>
+        </div>
+
+        <div class="exam-stats-row">
+            <div class="stat-card">
+                <div class="stat-icon blue">📋</div>
+                <div class="stat-info">
+                    <div class="stat-num">28</div>
+                    <div class="stat-label">可参加考试</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green">✅</div>
+                <div class="stat-info">
+                    <div class="stat-num">15</div>
+                    <div class="stat-label">已完成考试</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon orange">🏆</div>
+                <div class="stat-info">
+                    <div class="stat-num">85.6分</div>
+                    <div class="stat-label">平均分数</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon purple">📊</div>
+                <div class="stat-info">
+                    <div class="stat-num">78%</div>
+                    <div class="stat-label">超越考生</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="exam-tabs">
+            <button class="exam-tab-btn active" data-tab="recommend" onclick="switchExamTab('recommend')">
+                🎯 推荐考试
+            </button>
+            <button class="exam-tab-btn" data-tab="ongoing" onclick="switchExamTab('ongoing')">
+                ⏳ 进行中
+            </button>
+            <button class="exam-tab-btn" data-tab="upcoming" onclick="switchExamTab('upcoming')">
+                📅 即将开始
+            </button>
+            <button class="exam-tab-btn" data-tab="history" onclick="switchExamTab('history')">
+                📜 历史记录
+            </button>
+        </div>
+
+        <div class="exam-list-container">
+            <div id="recommend-tab" class="exam-tab-panel active">
+                <div class="exam-grid">
+                    <div class="exam-card" data-type="unit" data-subject="math" data-difficulty="medium">
+                        <div class="exam-card-header">
+                            <span class="exam-badge unit">单元测试</span>
+                            <span class="exam-difficulty medium">中等</span>
+                        </div>
+                        <div class="exam-card-body">
+                            <div class="exam-subject-icon math">🔢</div>
+                            <h3 class="exam-title">有理数单元测试</h3>
+                            <p class="exam-desc">全面检测有理数章节的掌握情况，包含基础题和提升题</p>
+                            <div class="exam-meta">
+                                <span>📋 20题</span>
+                                <span>⏱️ 45分钟</span>
+                                <span>🎯 100分</span>
+                            </div>
+                        </div>
+                        <div class="exam-card-footer">
+                            <div class="exam-participants">
+                                <span>👥 1,256人已考</span>
+                            </div>
+                            <button class="start-exam-btn" onclick="enterExam('1')">
+                                开始考试 →
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="exam-card" data-type="midterm" data-subject="chinese" data-difficulty="medium">
+                        <div class="exam-card-header">
+                            <span class="exam-badge midterm">期中考试</span>
+                            <span class="exam-difficulty medium">中等</span>
+                        </div>
+                        <div class="exam-card-body">
+                            <div class="exam-subject-icon chinese">📖</div>
+                            <h3 class="exam-title">七年级上册语文期中测试</h3>
+                            <p class="exam-desc">覆盖前四单元内容，考查阅读理解、写作等综合能力</p>
+                            <div class="exam-meta">
+                                <span>📋 25题</span>
+                                <span>⏱️ 90分钟</span>
+                                <span>🎯 120分</span>
+                            </div>
+                        </div>
+                        <div class="exam-card-footer">
+                            <div class="exam-participants">
+                                <span>👥 3,420人已考</span>
+                            </div>
+                            <button class="start-exam-btn" onclick="enterExam('2')">
+                                开始考试 →
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="exam-card" data-type="special" data-subject="english" data-difficulty="easy">
+                        <div class="exam-card-header">
+                            <span class="exam-badge special">专项训练</span>
+                            <span class="exam-difficulty easy">简单</span>
+                        </div>
+                        <div class="exam-card-body">
+                            <div class="exam-subject-icon english">🔤</div>
+                            <h3 class="exam-title">英语词汇专项训练</h3>
+                            <p class="exam-desc">针对本学期核心词汇的专项练习，巩固词汇基础</p>
+                            <div class="exam-meta">
+                                <span>📋 50题</span>
+                                <span>⏱️ 30分钟</span>
+                                <span>🎯 100分</span>
+                            </div>
+                        </div>
+                        <div class="exam-card-footer">
+                            <div class="exam-participants">
+                                <span>👥 2,180人已考</span>
+                            </div>
+                            <button class="start-exam-btn" onclick="enterExam('3')">
+                                开始考试 →
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="exam-card" data-type="mock" data-subject="physics" data-difficulty="hard">
+                        <div class="exam-card-header">
+                            <span class="exam-badge mock">模拟考试</span>
+                            <span class="exam-difficulty hard">困难</span>
+                        </div>
+                        <div class="exam-card-body">
+                            <div class="exam-subject-icon physics">⚡</div>
+                            <h3 class="exam-title">物理力学综合模拟</h3>
+                            <p class="exam-desc">力学部分综合模拟考试，难度接近中考水平</p>
+                            <div class="exam-meta">
+                                <span>📋 30题</span>
+                                <span>⏱️ 60分钟</span>
+                                <span>🎯 100分</span>
+                            </div>
+                        </div>
+                        <div class="exam-card-footer">
+                            <div class="exam-participants">
+                                <span>👥 980人已考</span>
+                            </div>
+                            <button class="start-exam-btn" onclick="enterExam('4')">
+                                开始考试 →
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="exam-card" data-type="final" data-subject="math" data-difficulty="medium">
+                        <div class="exam-card-header">
+                            <span class="exam-badge final">期末考试</span>
+                            <span class="exam-difficulty medium">中等</span>
+                        </div>
+                        <div class="exam-card-body">
+                            <div class="exam-subject-icon math">🔢</div>
+                            <h3 class="exam-title">七年级上册数学期末测试</h3>
+                            <p class="exam-desc">全册内容综合考查，检验学期学习成果</p>
+                            <div class="exam-meta">
+                                <span>📋 28题</span>
+                                <span>⏱️ 90分钟</span>
+                                <span>🎯 120分</span>
+                            </div>
+                        </div>
+                        <div class="exam-card-footer">
+                            <div class="exam-participants">
+                                <span>👥 5,600人已考</span>
+                            </div>
+                            <button class="start-exam-btn" onclick="enterExam('5')">
+                                开始考试 →
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="exam-card" data-type="unit" data-subject="chemistry" data-difficulty="easy">
+                        <div class="exam-card-header">
+                            <span class="exam-badge unit">单元测试</span>
+                            <span class="exam-difficulty easy">简单</span>
+                        </div>
+                        <div class="exam-card-body">
+                            <div class="exam-subject-icon chemistry">🧪</div>
+                            <h3 class="exam-title">化学实验基本操作</h3>
+                            <p class="exam-desc">化学实验基本操作规范考查，确保实验安全</p>
+                            <div class="exam-meta">
+                                <span>📋 15题</span>
+                                <span>⏱️ 20分钟</span>
+                                <span>🎯 100分</span>
+                            </div>
+                        </div>
+                        <div class="exam-card-footer">
+                            <div class="exam-participants">
+                                <span>👥 760人已考</span>
+                            </div>
+                            <button class="start-exam-btn" onclick="enterExam('6')">
+                                开始考试 →
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="ongoing-tab" class="exam-tab-panel">
+                <div class="exam-grid">
+                    <div class="exam-card ongoing">
+                        <div class="exam-card-header">
+                            <span class="exam-badge ongoing">进行中</span>
+                            <span class="exam-time-remaining">剩余 25:30</span>
+                        </div>
+                        <div class="exam-card-body">
+                            <h3 class="exam-title">七年级上册语文期中测试</h3>
+                            <div class="progress-section">
+                                <div class="progress-info">
+                                    <span>答题进度</span>
+                                    <span>18/25</span>
+                                </div>
+                                <div class="progress-bar-large">
+                                    <div class="progress-fill" style="width: 72%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="exam-card-footer">
+                            <button class="continue-exam-btn" onclick="continueExam('101')">
+                                继续答题 →
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="upcoming-tab" class="exam-tab-panel">
+                <div class="upcoming-exam-list">
+                    <div class="upcoming-exam-item">
+                        <div class="upcoming-exam-info">
+                            <div class="upcoming-exam-subject math">🔢</div>
+                            <div class="upcoming-exam-detail">
+                                <h3>八年级数学月考</h3>
+                                <p>本月学习内容检测，重点考查三角形全等与轴对称</p>
+                                <div class="upcoming-exam-meta">
+                                    <span>📅 2026-07-05 09:00</span>
+                                    <span>⏱️ 90分钟</span>
+                                    <span>🎯 120分</span>
+                                    <span>👥 1,256人已报名</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="upcoming-exam-action">
+                            <div class="countdown" data-time="1688515200">
+                                <div class="countdown-label">距开始还有</div>
+                                <div class="countdown-time">7天 12小时</div>
+                            </div>
+                            <button class="signup-btn" onclick="signupExam('201')">
+                                立即报名
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="upcoming-exam-item">
+                        <div class="upcoming-exam-info">
+                            <div class="upcoming-exam-subject english">🔤</div>
+                            <div class="upcoming-exam-detail">
+                                <h3>英语听力专项竞赛</h3>
+                                <p>全校英语听力竞赛，提升听力理解能力</p>
+                                <div class="upcoming-exam-meta">
+                                    <span>📅 2026-07-10 14:00</span>
+                                    <span>⏱️ 45分钟</span>
+                                    <span>🎯 100分</span>
+                                    <span>👥 890人已报名</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="upcoming-exam-action">
+                            <div class="countdown" data-time="1688947200">
+                                <div class="countdown-label">距开始还有</div>
+                                <div class="countdown-time">12天 18小时</div>
+                            </div>
+                            <button class="signup-btn" onclick="signupExam('202')">
+                                立即报名
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="history-tab" class="exam-tab-panel">
+                <div class="history-exam-list">
+                    <div class="history-exam-item">
+                        <div class="history-exam-score">
+                            <div class="score-circle excellent">
+                                <span class="score-num">95</span>
+                                <span class="score-total">/100</span>
+                            </div>
+                        </div>
+                        <div class="history-exam-info">
+                            <h3>有理数单元测试</h3>
+                            <div class="history-exam-meta">
+                                <span>📅 2026-06-20</span>
+                                <span>⏱️ 用时38分钟</span>
+                                <span>📊 排名第12名</span>
+                            </div>
+                            <div class="history-exam-analysis">
+                                <span class="analysis-tag correct">正确 19题</span>
+                                <span class="analysis-tag wrong">错误 1题</span>
+                                <span class="analysis-tag unattempted">未答 0题</span>
+                            </div>
+                        </div>
+                        <div class="history-exam-action">
+                            <button class="view-analysis-btn" onclick="viewAnalysis('301')">
+                                查看解析
+                            </button>
+                            <button class="retake-btn" onclick="retakeExam('301')">
+                                再考一次
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="history-exam-item">
+                        <div class="history-exam-score">
+                            <div class="score-circle good">
+                                <span class="score-num">82</span>
+                                <span class="score-total">/100</span>
+                            </div>
+                        </div>
+                        <div class="history-exam-info">
+                            <h3>英语词汇专项训练</h3>
+                            <div class="history-exam-meta">
+                                <span>📅 2026-06-18</span>
+                                <span>⏱️ 用时25分钟</span>
+                                <span>📊 排名第156名</span>
+                            </div>
+                            <div class="history-exam-analysis">
+                                <span class="analysis-tag correct">正确 41题</span>
+                                <span class="analysis-tag wrong">错误 7题</span>
+                                <span class="analysis-tag unattempted">未答 2题</span>
+                            </div>
+                        </div>
+                        <div class="history-exam-action">
+                            <button class="view-analysis-btn" onclick="viewAnalysis('302')">
+                                查看解析
+                            </button>
+                            <button class="retake-btn" onclick="retakeExam('302')">
+                                再考一次
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="history-exam-item">
+                        <div class="history-exam-score">
+                            <div class="score-circle pass">
+                                <span class="score-num">72</span>
+                                <span class="score-total">/100</span>
+                            </div>
+                        </div>
+                        <div class="history-exam-info">
+                            <h3>物理力学综合模拟</h3>
+                            <div class="history-exam-meta">
+                                <span>📅 2026-06-15</span>
+                                <span>⏱️ 用时55分钟</span>
+                                <span>📊 排名第342名</span>
+                            </div>
+                            <div class="history-exam-analysis">
+                                <span class="analysis-tag correct">正确 22题</span>
+                                <span class="analysis-tag wrong">错误 6题</span>
+                                <span class="analysis-tag unattempted">未答 2题</span>
+                            </div>
+                        </div>
+                        <div class="history-exam-action">
+                            <button class="view-analysis-btn" onclick="viewAnalysis('303')">
+                                查看解析
+                            </button>
+                            <button class="retake-btn" onclick="retakeExam('303')">
+                                再考一次
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="pagination">
+                    <button class="page-btn">上一页</button>
+                    <button class="page-btn active">1</button>
+                    <button class="page-btn">2</button>
+                    <button class="page-btn">3</button>
+                    <button class="page-btn">下一页</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 MTSCOS AI System. All rights reserved.</p>
+            <p class="footer-sub">Powered by Advanced AI Technology & Distributed Architecture</p>
+        </div>
+    </footer>
+
+    <script>
+        function switchExamTab(tabName) {
+            document.querySelectorAll('.exam-tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.exam-tab-panel').forEach(panel => panel.classList.remove('active'));
+            
+            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+            document.getElementById(tabName + '-tab').classList.add('active');
+        }
+
+        function filterExams() {
+            const type = document.getElementById('examTypeFilter').value;
+            const subject = document.getElementById('subjectFilter').value;
+            const difficulty = document.getElementById('difficultyFilter').value;
+            const search = document.getElementById('examSearch').value.toLowerCase();
+            
+            document.querySelectorAll('#recommend-tab .exam-card').forEach(card => {
+                const cardType = card.dataset.type;
+                const cardSubject = card.dataset.subject;
+                const cardDifficulty = card.dataset.difficulty;
+                const title = card.querySelector('.exam-title').textContent.toLowerCase();
+                
+                let show = true;
+                if (type !== 'all' && cardType !== type) show = false;
+                if (subject !== 'all' && cardSubject !== subject) show = false;
+                if (difficulty !== 'all' && cardDifficulty !== difficulty) show = false;
+                if (search && !title.includes(search)) show = false;
+                
+                card.style.display = show ? 'block' : 'none';
+            });
+        }
+
+        function enterExam(examId) {
+            if (confirm('确定进入考试吗？\n\n考试须知：\n1. 考试过程中请勿离开页面\n2. 切屏超过3次将自动交卷\n3. 请确保网络连接稳定')) {
+                window.location.href = '/exam_page/' + examId;
+            }
+        }
+
+        function continueExam(examId) {
+            window.location.href = '/exam_page/' + examId;
+        }
+
+        function signupExam(examId) {
+            if (confirm('确定报名参加本次考试吗？')) {
+                alert('报名成功！考试开始前会有提醒通知。');
+            }
+        }
+
+        function viewAnalysis(examId) {
+            alert('查看考试解析功能开发中...');
+        }
+
+        function retakeExam(examId) {
+            if (confirm('确定重新参加本次考试吗？')) {
+                window.location.href = '/exam_page/' + examId;
+            }
+        }
+    </script>
+</body>
+</html>

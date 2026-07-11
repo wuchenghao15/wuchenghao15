@@ -1,3 +1,6 @@
+import logging
+logger = logging.getLogger(__name__)
+
 # -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
@@ -426,4 +429,4 @@ if __name__ == "__main__":
     for i, q in enumerate(result['validated_questions'], 1):
         print(f"\n题目{i}: {q['question_text']}")
         print(f"  选项: {q['options']}")
-        print(f"  正确答案: {q['correct_answer']}")
+        logger.info(f"  正确答案: {q['correct_answer']}")

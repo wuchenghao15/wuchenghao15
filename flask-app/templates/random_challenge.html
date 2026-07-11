@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <!-- 设计系统 -->
+    <link rel="stylesheet" href="/assets/css/mtscos-design-system.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>随机有奖测试 - MTSCOS 智能考试系统</title>
+    
+    <link rel="stylesheet" href="/assets/tailwind.min.css">
+    <link rel="stylesheet" href="/assets/all.min.css">
+    
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--bg-dark) 0%, #1e293b 50%, var(--bg-dark) 100%);
+            color: #f1f5f9;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .glass-card {
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--color-warning), #d97706);
+            color: white;
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(245, 158, 11, 0.5);
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #f1f5f9;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .option-btn {
+            width: 100%;
+            padding: 16px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: #f1f5f9;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: left;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .option-btn:hover {
+            background: rgba(59, 130, 246, 0.2);
+            border-color: var(--color-primary);
+            transform: translateX(5px);
+        }
+        
+        .option-btn.correct {
+            background: rgba(16, 185, 129, 0.2);
+            border-color: var(--color-success);
+        }
+        
+        .option-btn.wrong {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: var(--color-error);
+        }
+        
+        .option-label {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+        
+        .result-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        .result-modal.show {
+            display: flex;
+        }
+        
+        .tag {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        
+        .tag-yellow { background: rgba(245, 158, 11, 0.2); color: var(--color-warning); }
+        .tag-blue { background: rgba(59, 130, 246, 0.2); color: var(--color-primary); }
+    </style>
+</head>
+<body>
+    <div class="glass-card p-8 max-w-2xl w-full">
+        <div class="text-center mb-8">
+            <div class="w-20 h-20 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-yellow-500 to-orange-500 flex items-center justify-center">
+                <i class="fas fa-gift text-3xl text-white"></i>
+            </div>
+            <h1 class="text-2xl font-bold mb-2">随机有奖测试</h1>
+            <p class="text-gray-400">答对赢取学习积分！</p>
+        </div>
+        
+        <div class="flex justify-between items-center mb-6">
+            <div class="flex gap-3">
+                <span class="tag tag-yellow">
+                    <i class="fas fa-coins mr-1"></i> {{ question.points }} 积分
+                </span>
+                <span class="tag tag-blue">
+                    <i class="fas fa-book mr-1"></i> {{ question.subject }}
+                </span>
+            </div>
+            <a href="/exam_system" class="btn btn-secondary text-sm">
+                <i class="fas fa-arrow-left"></i> 返回
+            </a>
+        </div>
+        
+        <div class="mb-8">
+            <h2 class="text-xl font-bold mb-6">{{ question.question }}</h2>
+            
+            <div class="space-y-3" id="options-container">
+                {% for option in question.options %}
+                <button class="option-btn" onclick="selectOption({{ loop.index0 }})">
+                    <span class="option-label">{{ 'ABCD'[loop.index0] }}</span>
+                    <span>{{ option }}</span>
+                </button>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <div class="flex gap-4">
+            <button onclick="submitAnswer()" class="btn btn-primary flex-1">
+                <i class="fas fa-check"></i>
+                提交答案
+            </button>
+            <button onclick="nextQuestion()" class="btn btn-secondary">
+                <i class="fas fa-redo"></i>
+                换一题
+            </button>
+        </div>
+    </div>
+    
+    <!-- 结果弹窗 -->
+    <div class="result-modal" id="result-modal">
+        <div class="glass-card p-8 max-w-md w-full mx-4 text-center">
+            <div id="result-icon" class="w-20 h-20 mx-auto mb-4 rounded-full flex items-center justify-center text-4xl">
+                <i class="fas fa-check text-white"></i>
+            </div>
+            <h2 class="text-2xl font-bold mb-2" id="result-title">恭喜！答对了！</h2>
+            <p class="text-gray-400 mb-4" id="result-message">获得 10 积分奖励</p>
+            <div class="flex gap-4">
+                <button onclick="closeModal()" class="btn btn-secondary flex-1">
+                    关闭
+                </button>
+                <button onclick="nextQuestion()" class="btn btn-primary flex-1">
+                    下一题
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let selectedOption = null;
+        const correctAnswer = {{ question.answer }};
+        const questionPoints = {{ question.points }};
+        
+        function selectOption(index) {
+            selectedOption = index;
+            const buttons = document.querySelectorAll('.option-btn');
+            buttons.forEach((btn, i) => {
+                btn.style.borderColor = i === index ? 'var(--color-primary)' : 'rgba(255, 255, 255, 0.1)';
+                btn.style.background = i === index ? 'rgba(59, 130, 246, 0.2)' : 'rgba(255, 255, 255, 0.05)';
+            });
+        }
+        
+        function submitAnswer() {
+            if (selectedOption === null) {
+                alert('请先选择一个答案！');
+                return;
+            }
+            
+            const buttons = document.querySelectorAll('.option-btn');
+            buttons.forEach((btn, i) => {
+                btn.disabled = true;
+                if (i === correctAnswer) {
+                    btn.classList.add('correct');
+                } else if (i === selectedOption && i !== correctAnswer) {
+                    btn.classList.add('wrong');
+                }
+            });
+            
+            const isCorrect = selectedOption === correctAnswer;
+            showResult(isCorrect);
+            
+            // 提交到服务器
+            fetch('/api/exam/random_challenge/submit', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    answer: selectedOption,
+                    correct_answer: correctAnswer,
+                    points: questionPoints
+                })
+            }).then(res => res.json())
+              .then(data => console.log(data))
+              .catch(err => console.error(err));
+        }
+        
+        function showResult(isCorrect) {
+            const modal = document.getElementById('result-modal');
+            const icon = document.getElementById('result-icon');
+            const title = document.getElementById('result-title');
+            const message = document.getElementById('result-message');
+            
+            if (isCorrect) {
+                icon.style.background = 'linear-gradient(135deg, var(--color-success), #059669)';
+                icon.innerHTML = '<i class="fas fa-trophy text-white"></i>';
+                title.textContent = '恭喜！答对了！';
+                message.textContent = `获得 ${questionPoints} 积分奖励！`;
+            } else {
+                icon.style.background = 'linear-gradient(135deg, var(--color-error), #dc2626)';
+                icon.innerHTML = '<i class="fas fa-times text-white"></i>';
+                title.textContent = '很遗憾，答错了';
+                message.textContent = '没关系，继续加油！';
+            }
+            
+            modal.classList.add('show');
+        }
+        
+        function closeModal() {
+            document.getElementById('result-modal').classList.remove('show');
+        }
+        
+        function nextQuestion() {
+            closeModal();
+            location.reload();
+        }
+    </script>
+</body>
+</html>

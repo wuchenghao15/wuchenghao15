@@ -1,3 +1,6 @@
+import logging
+logger = logging.getLogger(__name__)
+
 # -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
@@ -303,4 +306,4 @@ if __name__ == "__main__":
         print("生成新的自签名证书...")
         manager.generate_self_signed_certificate()
         validity = manager.check_certificate_validity()
-        print("新证书状态:", validity)
+        logger.info("新证书状态:", validity)

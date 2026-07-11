@@ -1,8 +1,6 @@
-
 // 兼容性检查和回退方案
 (function() {
     'use strict';
-    
     // 检查Array.includes支持
     if (!Array.prototype.includes) {
         Array.prototype.includes = function(searchElement, fromIndex) {
@@ -16,11 +14,9 @@
         };
     }
 })();
-
 // 兼容性检查和回退方案
 (function() {
     'use strict';
-    
     // 检查Array.includes支持
     if (!Array.prototype.includes) {
         Array.prototype.includes = function(searchElement, fromIndex) {
@@ -34,11 +30,9 @@
         };
     }
 })();
-
 // 兼容性检查和回退方案
 (function() {
     'use strict';
-    
     // 检查Array.includes支持
     if (!Array.prototype.includes) {
         Array.prototype.includes = function(searchElement, fromIndex) {
@@ -57,16 +51,13 @@ if (typeof Promise === "undefined") {
     // 这里可以添加具体的polyfill代码
     console.warn("This browser requires a polyfill for ES6+ features");
 }
-
 // 检查用户是否为管理员，管理员不得访问日语考试页面
 async function checkAdminAccess() {
     try {
         // 获取当前用户信息
         const userInfo = await fetch('/api/auth/user').then(res => res.json());
-        
         if (userInfo.success && userInfo.data) {
             const userId = userInfo.data.id;
-            
             // 检查用户权限
             const permissionCheck = await fetch('/api/auth/check-permission', {
                 method: 'POST',
@@ -78,7 +69,6 @@ async function checkAdminAccess() {
                     permissionType: 'dashboard_access'
                 })
             }).then(res => res.json());
-            
             if (permissionCheck.success && permissionCheck.data.hasPermission) {
                 // 管理员不得访问日语考试页面
                 alert('管理员不得参加日语考试');
@@ -89,6 +79,5 @@ async function checkAdminAccess() {
         console.error('权限检查失败:', error);
     }
 }
-
 // 页面加载时检查
 window.addEventListener('load', checkAdminAccess);

@@ -1,3 +1,6 @@
+import logging
+logger = logging.getLogger(__name__)
+
 # -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
@@ -635,4 +638,4 @@ if __name__ == '__main__':
     firmwares = ota_adapter.ota_service.get_firmware_list()
     print(f"   固件数量: {firmwares['count']}")
     
-    print("\n == 测试完成 ===")
+    logger.info("\n == 测试完成 ===")

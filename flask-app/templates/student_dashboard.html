@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <!-- 设计系统 -->
+    <link rel="stylesheet" href="/assets/css/mtscos-design-system.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MTSCOS 智能考试系统 - 学生首页</title>
+    
+    <!-- Tailwind CSS 本地版本 -->
+    <link rel="stylesheet" href="/assets/tailwind.min.css">
+    <!-- Font Awesome 本地版本 -->
+    <link rel="stylesheet" href="/assets/all.min.css">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary-color: var(--color-primary);
+            --secondary-color: var(--color-success);
+            --accent-color: var(--color-secondary);
+            --warning-color: var(--color-warning);
+            --danger-color: var(--color-error);
+            --dark-bg: var(--bg-dark);
+            --card-bg: rgba(30, 41, 59, 0.8);
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--bg-dark) 0%, #1e293b 50%, var(--bg-dark) 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+        
+        /* 科技感背景 */
+        .tech-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(59, 130, 246, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(59, 130, 246, 0.05) 1px, transparent 1px);
+            background-size: 60px 60px;
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        /* 浮动光球 */
+        .floating-orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.3;
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        .orb-1 {
+            width: 400px;
+            height: 400px;
+            background: var(--primary-color);
+            top: -100px;
+            right: -100px;
+            animation: float1 20s ease-in-out infinite;
+        }
+        
+        .orb-2 {
+            width: 300px;
+            height: 300px;
+            background: var(--accent-color);
+            bottom: -50px;
+            left: -50px;
+            animation: float2 25s ease-in-out infinite;
+        }
+        
+        @keyframes float1 {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(-50px, 50px); }
+        }
+        
+        @keyframes float2 {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(50px, -50px); }
+        }
+        
+        /* 毛玻璃卡片 */
+        .glass-card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .glass-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            border-color: rgba(59, 130, 246, 0.3);
+        }
+        
+        /* 渐变边框卡片 */
+        .gradient-border {
+            position: relative;
+            background: rgba(30, 41, 59, 0.7);
+            border-radius: 16px;
+            padding: 2px;
+        }
+        
+        .gradient-border::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            border-radius: 18px;
+            z-index: -1;
+            opacity: 0.5;
+        }
+        
+        .gradient-border:hover::before {
+            opacity: 1;
+        }
+        
+        /* 按钮样式 */
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color), #2563eb);
+            color: white;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .btn-accent {
+            background: linear-gradient(135deg, var(--accent-color), #7c3aed);
+            color: white;
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+        }
+        
+        .btn-accent:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(139, 92, 246, 0.5);
+        }
+        
+        .btn-warning {
+            background: linear-gradient(135deg, var(--warning-color), #d97706);
+            color: white;
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+        }
+        
+        .btn-warning:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(245, 158, 11, 0.5);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, var(--secondary-color), #059669);
+            color: white;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+        }
+        
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5);
+        }
+        
+        /* 统计卡片 */
+        .stat-card {
+            text-align: center;
+            padding: 24px 16px;
+        }
+        
+        .stat-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 12px;
+            font-size: 1.5rem;
+        }
+        
+        .stat-icon.blue { background: rgba(59, 130, 246, 0.2); color: var(--primary-color); }
+        .stat-icon.green { background: rgba(16, 185, 129, 0.2); color: var(--secondary-color); }
+        .stat-icon.purple { background: rgba(139, 92, 246, 0.2); color: var(--accent-color); }
+        .stat-icon.yellow { background: rgba(245, 158, 11, 0.2); color: var(--warning-color); }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+        
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+        
+        /* 进度条 */
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 1s ease;
+        }
+        
+        /* 考试卡片 */
+        .exam-card {
+            padding: 20px;
+            border-left: 4px solid var(--primary-color);
+            margin-bottom: 12px;
+        }
+        
+        .exam-card.upcoming {
+            border-left-color: var(--warning-color);
+        }
+        
+        .exam-card.practice {
+            border-left-color: var(--secondary-color);
+        }
+        
+        /* 标签 */
+        .tag {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        
+        .tag-blue { background: rgba(59, 130, 246, 0.2); color: var(--primary-color); }
+        .tag-green { background: rgba(16, 185, 129, 0.2); color: var(--secondary-color); }
+        .tag-yellow { background: rgba(245, 158, 11, 0.2); color: var(--warning-color); }
+        .tag-purple { background: rgba(139, 92, 246, 0.2); color: var(--accent-color); }
+        .tag-red { background: rgba(239, 68, 68, 0.2); color: var(--danger-color); }
+        
+        /* 头像 */
+        .avatar {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: white;
+        }
+        
+        .avatar-lg {
+            width: 80px;
+            height: 80px;
+            font-size: 2rem;
+        }
+        
+        /* 动画 */
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .animate-slide-up {
+            animation: slideUp 0.5s ease forwards;
+        }
+        
+        /* 滚动条 */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: var(--dark-bg);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        /* 随机测试转盘 */
+        .wheel-container {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            margin: 0 auto;
+        }
+        
+        .wheel {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: conic-gradient(
+                var(--primary-color) 0deg 60deg,
+                var(--secondary-color) 60deg 120deg,
+                var(--accent-color) 120deg 180deg,
+                var(--warning-color) 180deg 240deg,
+                var(--danger-color) 240deg 300deg,
+                #ec4899 300deg 360deg
+            );
+            animation: spin 4s ease-out forwards;
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(1800deg); }
+        }
+        
+        .wheel-pointer {
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-top: 25px solid white;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+    <div class="tech-grid"></div>
+    <div class="floating-orb orb-1"></div>
+    <div class="floating-orb orb-2"></div>
+    
+    <!-- 顶部导航 -->
+    <nav class="relative z-10 px-6 py-4" style="background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(16px); border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                    <i class="fas fa-graduation-cap text-white text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold flex items-center gap-2">
+                        MTSCOS 智能考试系统
+                        <span class="px-2 py-0.5 text-xs font-semibold bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-full">v6.0.0</span>
+                    </h1>
+                    <p class="text-sm text-gray-400">{{ education_type_label }} · 分布式数据库版</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-6">
+                <div class="flex items-center gap-3">
+                    <div class="avatar">
+                        {{ user.username[0]|upper if user.username else 'U' }}
+                    </div>
+                    <div>
+                        <p class="font-medium">{{ user.username }}</p>
+                        {% if education_type != 'adult' %}
+                        <p class="text-sm text-gray-400">{{ user.grade or '未设置年级' }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                <a href="/auth/logout" class="btn btn-secondary">
+                    <i class="fas fa-sign-out-alt"></i>
+                    退出
+                </a>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- 主内容区 -->
+    <main class="relative z-10 max-w-7xl mx-auto px-6 py-8">
+        
+        <!-- 欢迎区 -->
+        <div class="glass-card p-8 mb-8 animate-slide-up" style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(139, 92, 246, 0.2));">
+            <div class="flex items-center justify-between flex-wrap gap-6">
+                <div class="flex items-center gap-6">
+                    <div class="avatar avatar-lg">
+                        {{ user.username[0]|upper if user.username else 'U' }}
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-bold mb-2">欢迎回来，{{ user.username }}！ 👋</h2>
+                        <p class="text-gray-300 mb-3">
+                            {% if education_type == 'nine_year' %}
+                                <i class="fas fa-school mr-2"></i>九年制义务教育阶段
+                            {% elif education_type == 'adult' %}
+                                <i class="fas fa-university mr-2"></i>成人教育阶段
+                            {% else %}
+                                <i class="fas fa-user-graduate mr-2"></i>通用学习阶段
+                            {% endif %}
+                        </p>
+                        <div class="flex gap-3 flex-wrap">
+                            <span class="tag tag-blue"><i class="fas fa-user-tag mr-1"></i>{{ user.student_type or '学生' }}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex gap-3">
+                    {% if education_type == 'nine_year' %}
+                    <a href="/exam/major_placement_test" class="btn btn-accent">
+                        <i class="fas fa-trophy"></i>
+                        摸底测试
+                    </a>
+                    {% elif education_type == 'adult' %}
+                    <a href="/exam/adult_placement_test" class="btn btn-accent">
+                        <i class="fas fa-trophy"></i>
+                        摸底测试
+                    </a>
+                    {% else %}
+                    <a href="/exam/exam_center" class="btn btn-accent">
+                        <i class="fas fa-trophy"></i>
+                        摸底测试
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- 学习入口导航 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div class="glass-card p-6 cursor-pointer hover:border-blue-500/30 transition-all" onclick="location.href='/exam_system/exams'">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <div class="w-16 h-16 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+                            <i class="fas fa-file-alt text-white text-2xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold">考试系统</h3>
+                            <p class="text-gray-400 text-sm">正式考试、模拟考试、能力评估</p>
+                        </div>
+                    </div>
+                    <i class="fas fa-arrow-right text-gray-500 text-xl"></i>
+                </div>
+                <div class="mt-4 flex gap-4">
+                    <div class="flex-1 text-center p-3 bg-white/5 rounded-lg">
+                        <div class="text-2xl font-bold text-blue-400">{{ stats.total_exams or 0 }}</div>
+                        <div class="text-xs text-gray-400">可用考试</div>
+                    </div>
+                    <div class="flex-1 text-center p-3 bg-white/5 rounded-lg">
+                        <div class="text-2xl font-bold text-green-400">{{ stats.passed_exams or 0 }}</div>
+                        <div class="text-xs text-gray-400">已通过</div>
+                    </div>
+                    <div class="flex-1 text-center p-3 bg-white/5 rounded-lg">
+                        <div class="text-2xl font-bold text-yellow-400">{{ stats.average_score or 0 }}</div>
+                        <div class="text-xs text-gray-400">平均分</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="glass-card p-6 cursor-pointer hover:border-green-500/30 transition-all" onclick="location.href='/exam_system/tests'">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <div class="w-16 h-16 rounded-xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center">
+                            <i class="fas fa-pencil-alt text-white text-2xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold">测试系统</h3>
+                            <p class="text-gray-400 text-sm">日常练习、专项训练、错题巩固</p>
+                        </div>
+                    </div>
+                    <i class="fas fa-arrow-right text-gray-500 text-xl"></i>
+                </div>
+                <div class="mt-4 flex gap-4">
+                    <div class="flex-1 text-center p-3 bg-white/5 rounded-lg">
+                        <div class="text-2xl font-bold text-green-400">{{ stats.today_practice or 0 }}</div>
+                        <div class="text-xs text-gray-400">今日练习</div>
+                    </div>
+                    <div class="flex-1 text-center p-3 bg-white/5 rounded-lg">
+                        <div class="text-2xl font-bold text-purple-400">{{ stats.wrong_count or 0 }}</div>
+                        <div class="text-xs text-gray-400">错题数量</div>
+                    </div>
+                    <div class="flex-1 text-center p-3 bg-white/5 rounded-lg">
+                        <div class="text-2xl font-bold text-blue-400">{{ stats.streak_days or 0 }}</div>
+                        <div class="text-xs text-gray-400">连续学习</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 统计卡片 -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+            <div class="glass-card stat-card animate-slide-up" style="animation-delay: 0.1s;">
+                <div class="stat-icon blue">
+                    <i class="fas fa-book"></i>
+                </div>
+                <div class="stat-value">{{ stats.total_exams }}</div>
+                <div class="stat-label">已完成考试</div>
+            </div>
+            <div class="glass-card stat-card animate-slide-up" style="animation-delay: 0.2s;">
+                <div class="stat-icon green">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div class="stat-value">{{ stats.average_score }}%</div>
+                <div class="stat-label">平均正确率</div>
+            </div>
+            <div class="glass-card stat-card animate-slide-up" style="animation-delay: 0.3s;">
+                <div class="stat-icon yellow">
+                    <i class="fas fa-times-circle"></i>
+                </div>
+                <div class="stat-value">{{ stats.wrong_questions }}</div>
+                <div class="stat-label">待复习错题</div>
+            </div>
+            <div class="glass-card stat-card animate-slide-up" style="animation-delay: 0.4s;">
+                <div class="stat-icon purple">
+                    <i class="fas fa-coins"></i>
+                </div>
+                <div class="stat-value">{{ stats.points }}</div>
+                <div class="stat-label">学习积分</div>
+            </div>
+        </div>
+        
+        <!-- 主要功能区 -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+            
+            <!-- 左侧：即将开始的考试 -->
+            <div class="lg:col-span-2">
+                <div class="glass-card p-6 animate-slide-up" style="animation-delay: 0.5s;">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-xl font-bold flex items-center gap-2">
+                            <i class="fas fa-calendar-alt text-yellow-500"></i>
+                            即将开始的考试
+                        </h3>
+                        <a href="/exam" class="text-blue-400 hover:text-blue-300 text-sm">
+                            查看全部 <i class="fas fa-arrow-right ml-1"></i>
+                        </a>
+                    </div>
+                    
+                    {% if upcoming_exams %}
+                        {% for exam in upcoming_exams %}
+                        <div class="exam-card upcoming glass-card">
+                            <div class="flex items-start justify-between">
+                                <div class="flex-1">
+                                    <h4 class="font-bold text-lg mb-2">{{ exam.title }}</h4>
+                                    <div class="flex gap-3 mb-3 flex-wrap">
+                                        <span class="tag tag-yellow">
+                                            <i class="fas fa-clock mr-1"></i>{{ exam.duration }}分钟
+                                        </span>
+                                        <span class="tag tag-blue">
+                                            <i class="fas fa-question-circle mr-1"></i>{{ exam.question_count }}题
+                                        </span>
+                                        <span class="tag tag-green">
+                                            <i class="fas fa-star mr-1"></i>{{ exam.total_points }}分
+                                        </span>
+                                    </div>
+                                    <p class="text-gray-400 text-sm">{{ exam.description }}</p>
+                                </div>
+                                <a href="/exam/start/{{ exam.id }}" class="btn btn-primary">
+                                    开始考试
+                                    <i class="fas fa-arrow-right"></i>
+                                </a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-12 text-gray-400">
+                            <i class="fas fa-calendar-check text-5xl mb-4 opacity-30"></i>
+                            <p>暂无即将开始的考试</p>
+                            <p class="text-sm mt-2">您可以查看全部考试列表</p>
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <!-- 错题本 -->
+                <div class="glass-card p-6 mt-8 animate-slide-up" style="animation-delay: 0.6s;">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-xl font-bold flex items-center gap-2">
+                            <i class="fas fa-exclamation-circle text-red-500"></i>
+                            错题本
+                        </h3>
+                        <a href="/exam/wrong_book" class="text-blue-400 hover:text-blue-300 text-sm">
+                            查看全部 <i class="fas fa-arrow-right ml-1"></i>
+                        </a>
+                    </div>
+                    
+                    {% if wrong_questions %}
+                        <div class="space-y-3">
+                            {% for q in wrong_questions[:3] %}
+                            <div class="p-4 rounded-lg bg-red-500/10 border border-red-500/20">
+                                <div class="flex items-start justify-between">
+                                    <div class="flex-1">
+                                        <p class="text-sm text-gray-300 mb-2">{{ q.subject or '综合' }} · {{ q.type or '选择题' }}</p>
+                                        <p class="line-clamp-2">{{ q.question_text }}</p>
+                                    </div>
+                                    <span class="tag tag-red ml-3">{{ q.wrong_count }}次错误</span>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-12 text-gray-400">
+                            <i class="fas fa-check-circle text-5xl mb-4 opacity-30 text-green-500"></i>
+                            <p>太棒了！暂无错题</p>
+                            <p class="text-sm mt-2">继续保持，加油！</p>
+                        </div>
+                    {% endif %}
+                    
+                    {% if wrong_questions %}
+                    <div class="mt-6">
+                        <a href="/exam/wrong_book/practice" class="btn btn-warning w-full justify-center">
+                            <i class="fas fa-redo"></i>
+                            开始错题复习
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- 右侧：快捷功能 -->
+            <div class="space-y-8">
+                
+                <!-- 摸底测试入口 -->
+                <div class="gradient-border animate-slide-up" style="animation-delay: 0.5s;">
+                    <div class="p-6">
+                        <div class="text-center mb-4">
+                            <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                                <i class="fas fa-brain text-2xl text-white"></i>
+                            </div>
+                            <h3 class="text-lg font-bold mb-2">智能摸底测试</h3>
+                            <p class="text-sm text-gray-400 mb-4">评估您的知识水平，定制学习计划</p>
+                        </div>
+                        <div class="space-y-2 mb-4 text-sm text-gray-300">
+                            <div class="flex justify-between">
+                                <span>测试时长</span>
+                                <span>30-60分钟</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>题目数量</span>
+                                <span>20-50题</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>生成报告</span>
+                                <span>能力分析报告</span>
+                            </div>
+                        </div>
+                        <a href="{% if education_type == 'nine_year' %}/exam/major_placement_test{% elif education_type == 'adult' %}/exam/adult_placement_test{% else %}/exam/exam_center{% endif %}" class="btn btn-accent w-full justify-center">
+                            <i class="fas fa-rocket"></i>
+                            立即测试
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- 随机有奖测试 -->
+                <div class="glass-card p-6 animate-slide-up" style="animation-delay: 0.6s;">
+                    <div class="text-center mb-4">
+                        <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-yellow-500 to-orange-500 flex items-center justify-center">
+                            <i class="fas fa-gift text-2xl text-white"></i>
+                        </div>
+                        <h3 class="text-lg font-bold mb-2">随机有奖测试</h3>
+                        <p class="text-sm text-gray-400">每日随机挑战，赢取学习积分</p>
+                    </div>
+                    
+                    <div class="space-y-3 mb-5">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
+                                <i class="fas fa-check text-green-500 text-sm"></i>
+                            </div>
+                            <span class="text-sm text-gray-300">每天3次免费机会</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
+                                <i class="fas fa-check text-green-500 text-sm"></i>
+                            </div>
+                            <span class="text-sm text-gray-300">答对赢取10-100积分</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
+                                <i class="fas fa-check text-green-500 text-sm"></i>
+                            </div>
+                            <span class="text-sm text-gray-300">题目随机生成</span>
+                        </div>
+                    </div>
+                    
+                    <button onclick="startRandomTest()" class="btn btn-warning w-full justify-center">
+                        <i class="fas fa-dice"></i>
+                        开始挑战
+                    </button>
+                    
+                    <p class="text-center text-xs text-gray-500 mt-3">
+                        今日剩余机会：<span id="daily-chances" data-chances="{{ stats.daily_chances }}" class="text-yellow-400 font-bold">{{ stats.daily_chances }}</span> 次
+                    </p>
+                </div>
+                
+                <!-- 学习进度 -->
+                <div class="glass-card p-6 animate-slide-up" style="animation-delay: 0.7s;">
+                    <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                        <i class="fas fa-chart-bar text-green-500"></i>
+                        学习进度
+                    </h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <div class="flex justify-between text-sm mb-2">
+                                <span>整体进度</span>
+                                <span class="text-blue-400">{{ stats.overall_progress }}%</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill bg-gradient-to-r from-blue-500 to-blue-400" id="overall-progress" data-progress="{{ stats.overall_progress }}"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-sm mb-2">
+                                <span>本周目标</span>
+                                <span class="text-green-400">{{ stats.weekly_progress }}%</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill bg-gradient-to-r from-green-500 to-green-400" id="weekly-progress" data-progress="{{ stats.weekly_progress }}"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <!-- 推荐考试 -->
+        <div class="glass-card p-6 mb-8 animate-slide-up" style="animation-delay: 0.7s;">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-xl font-bold flex items-center gap-2">
+                    <i class="fas fa-star text-yellow-500"></i>
+                    推荐考试
+                </h3>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {% for exam in recommended_exams %}
+                <div class="glass-card p-5 hover:border-blue-500/30 cursor-pointer" onclick="location.href='/exam/start/{{ exam.id }}'">
+                    <div class="flex items-start justify-between mb-3">
+                        <span class="tag tag-{{ ['blue', 'green', 'purple', 'yellow'][loop.index0 % 4] }}">
+                            {{ exam.language_label or exam.language or '综合' }}
+                        </span>
+                        <span class="text-gray-400 text-sm">
+                            <i class="fas fa-clock mr-1"></i>{{ exam.duration }}分钟
+                        </span>
+                    </div>
+                    <h4 class="font-bold mb-2">{{ exam.title }}</h4>
+                    <p class="text-sm text-gray-400 line-clamp-2 mb-3">{{ exam.description }}</p>
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="text-gray-400">
+                            <i class="fas fa-question-circle mr-1"></i>{{ exam.question_count }}题
+                        </span>
+                        <span class="text-yellow-400">
+                            <i class="fas fa-star mr-1"></i>{{ exam.level_label or exam.level or '初级' }}
+                        </span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- 推荐测试 -->
+        <div class="glass-card p-6 mb-8 animate-slide-up">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-xl font-bold flex items-center gap-2">
+                    <i class="fas fa-pencil-alt text-green-500"></i>
+                    推荐测试
+                </h3>
+                <a href="/exam_system/tests" class="text-blue-400 text-sm flex items-center gap-1 hover:text-blue-300">
+                    查看全部 <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {% for test in recommended_tests %}
+                <div class="glass-card p-5 hover:border-green-500/30 cursor-pointer" onclick="location.href='/exam/start/{{ test.id }}'">
+                    <div class="flex items-start justify-between mb-3">
+                        <span class="tag tag-green">
+                            {{ test.language_label or test.language or '综合' }}
+                        </span>
+                        <span class="text-gray-400 text-sm">
+                            <i class="fas fa-clock mr-1"></i>{{ test.duration }}分钟
+                        </span>
+                    </div>
+                    <h4 class="font-bold mb-2">{{ test.title }}</h4>
+                    <p class="text-sm text-gray-400 line-clamp-2 mb-3">{{ test.description }}</p>
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="text-gray-400">
+                            <i class="fas fa-question-circle mr-1"></i>{{ test.question_count }}题
+                        </span>
+                        <span class="text-green-400">
+                            <i class="fas fa-check-circle mr-1"></i>{{ test.level_label or test.level or '初级' }}
+                        </span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+    </main>
+    
+    <!-- 底部 -->
+    <footer class="relative z-10 text-center py-6 text-gray-500 text-sm border-t border-white/5">
+        <p>&copy; 2026 MTSCOS AI 智能教育平台 - 让学习更高效</p>
+    </footer>
+    
+    <script>
+        // 随机有奖测试
+        function startRandomTest() {
+            var chancesElement = document.getElementById('daily-chances');
+            var chances = chancesElement ? parseInt(chancesElement.dataset.chances) : 3;
+            if (chances <= 0) {
+                alert('今日挑战次数已用完，请明天再来！');
+                return;
+            }
+
+            if (confirm('确定要开始随机有奖测试吗？答对可获得积分奖励！')) {
+                window.location.href = '/exam/random_challenge';
+            }
+        }
+
+        // 页面加载动画
+        document.addEventListener('DOMContentLoaded', function() {
+            // 设置进度条宽度
+            var overallProgress = document.getElementById('overall-progress');
+            var weeklyProgress = document.getElementById('weekly-progress');
+            if (overallProgress) {
+                overallProgress.style.width = overallProgress.dataset.progress + '%';
+            }
+            if (weeklyProgress) {
+                weeklyProgress.style.width = weeklyProgress.dataset.progress + '%';
+            }
+
+            const cards = document.querySelectorAll('.animate-slide-up');
+            cards.forEach((card, index) => {
+                card.style.opacity = '0';
+                setTimeout(() => {
+                    card.style.animation = 'slideUp 0.5s ease forwards';
+                }, index * 100);
+            });
+        });
+        
+        // 数字动画
+        function animateNumber(element, target, duration = 1000) {
+            let start = 0;
+            const increment = target / (duration / 16);
+            const timer = setInterval(() => {
+                start += increment;
+                if (start >= target) {
+                    start = target;
+                    clearInterval(timer);
+                }
+                element.textContent = Math.floor(start);
+            }, 16);
+        }
+    </script>
+</body>
+</html>

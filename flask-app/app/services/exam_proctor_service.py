@@ -1,3 +1,6 @@
+import logging
+logger = logging.getLogger(__name__)
+
 # -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
@@ -429,4 +432,4 @@ if __name__ == "__main__":
     
     print("\n" + "=" * 60)
     print("所有测试通过!")
-    print("=" * 60)
+    logger.info("=" * 60)

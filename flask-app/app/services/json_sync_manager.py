@@ -1,3 +1,6 @@
+import logging
+logger = logging.getLogger(__name__)
+
 # -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
@@ -386,4 +389,4 @@ if __name__ == "__main__":
     # 清理测试文件
     os.remove(test_file)
     
-    print("\n == 测试完成 ===")
+    logger.info("\n == 测试完成 ===")

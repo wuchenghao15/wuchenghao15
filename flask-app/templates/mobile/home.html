@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <!-- 设计系统 -->
+    <link rel="stylesheet" href="/assets/css/mtscos-design-system.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#6366f1">
+    <title>MTSCOS AI - 首页</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        :root {
+            --primary: #6366f1;
+            --primary-light: #818cf8;
+            --secondary: #ec4899;
+            --accent: #14b8a6;
+            --success: #22c55e;
+            --warning: var(--color-warning);
+            --danger: var(--color-error);
+            --dark: #0f0f1a;
+            --glass: rgba(30, 41, 59, 0.7);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --border: rgba(255, 255, 255, 0.08);
+            --safe-top: env(safe-area-inset-top);
+            --safe-bottom: env(safe-area-inset-bottom);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif;
+            background: linear-gradient(180deg, #0f0f1a 0%, #1e1b4b 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding-top: var(--safe-top);
+            padding-bottom: calc(60px + var(--safe-bottom));
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: calc(56px + var(--safe-top));
+            padding-top: var(--safe-top);
+            background: rgba(15, 15, 26, 0.9);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-left: 16px;
+            padding-right: 16px;
+            z-index: 100;
+        }
+
+        .header-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .header-right {
+            display: flex;
+            gap: 16px;
+        }
+
+        .page-container {
+            padding: 16px;
+            padding-top: calc(56px + var(--safe-top) + 16px);
+            max-width: 480px;
+            margin: 0 auto;
+        }
+
+        .greeting-card {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 20px;
+            padding: 24px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .avatar {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: 700;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .greeting-content {
+            flex: 1;
+        }
+
+        .greeting-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .greeting-subtitle {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .stat-card {
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 16px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #fff, var(--text-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .action-card {
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .action-card:active {
+            transform: scale(0.98);
+        }
+
+        .action-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .action-icon.blue { background: rgba(99, 102, 241, 0.2); color: var(--primary-light); }
+        .action-icon.green { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
+        .action-icon.yellow { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+        .action-icon.purple { background: rgba(168, 85, 247, 0.2); color: #c084fc; }
+
+        .action-title {
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        .action-desc {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .exam-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .exam-card {
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-left: 4px solid var(--primary);
+        }
+
+        .exam-card:active {
+            transform: scale(0.98);
+        }
+
+        .exam-card.upcoming {
+            border-left-color: var(--warning);
+        }
+
+        .exam-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
+
+        .exam-title {
+            font-size: 15px;
+            font-weight: 600;
+            flex: 1;
+        }
+
+        .exam-tag {
+            padding: 2px 8px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .exam-tag.blue { background: rgba(99, 102, 241, 0.2); color: var(--primary-light); }
+        .exam-tag.green { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
+        .exam-tag.yellow { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+
+        .exam-info {
+            display: flex;
+            gap: 16px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .exam-info-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .tab-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: calc(60px + var(--safe-bottom));
+            padding-bottom: var(--safe-bottom);
+            background: rgba(15, 15, 26, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            z-index: 100;
+        }
+
+        .tab-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 0;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tab-item.active {
+            color: var(--primary-light);
+        }
+
+        .tab-item-icon {
+            font-size: 22px;
+            margin-bottom: 4px;
+        }
+
+        .tab-item-text {
+            font-size: 10px;
+            color: var(--text-secondary);
+        }
+
+        .tab-item.active .tab-item-text {
+            color: var(--primary-light);
+            font-weight: 600;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-title">首页</div>
+        <div class="header-right">
+            <i class="fas fa-bell" style="font-size: 20px; color: var(--text-secondary);"></i>
+        </div>
+    </div>
+
+    <div class="page-container">
+        <div class="greeting-card">
+            <div class="avatar">{{ user.username[0]|upper if user.username else 'U' }}</div>
+            <div class="greeting-content">
+                <div class="greeting-title">欢迎回来，{{ user.username }}</div>
+                <div class="greeting-subtitle">{{ user.grade or '学生' }} · {{ user.role }}</div>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="stat-exams">--</div>
+                <div class="stat-label">已完成考试</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="stat-score">--%</div>
+                <div class="stat-label">正确率</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="stat-wrong">--</div>
+                <div class="stat-label">待复习错题</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="stat-points">--</div>
+                <div class="stat-label">学习积分</div>
+            </div>
+        </div>
+
+        <div class="quick-actions">
+            <div class="action-card" onclick="location.href='/exam/exam_center'">
+                <div class="action-icon blue"><i class="fas fa-file-alt"></i></div>
+                <div class="action-title">开始考试</div>
+                <div class="action-desc">进入考试中心</div>
+            </div>
+            <div class="action-card" onclick="location.href='/exam/wrong_book'">
+                <div class="action-icon yellow"><i class="fas fa-exclamation-circle"></i></div>
+                <div class="action-title">错题复习</div>
+                <div class="action-desc">巩固薄弱知识点</div>
+            </div>
+            <div class="action-card" onclick="location.href='/listening_training'">
+                <div class="action-icon purple"><i class="fas fa-headphones"></i></div>
+                <div class="action-title">听力训练</div>
+                <div class="action-desc">提升听力能力</div>
+            </div>
+            <div class="action-card" onclick="location.href='/math_training'">
+                <div class="action-icon green"><i class="fas fa-calculator"></i></div>
+                <div class="action-title">数学训练</div>
+                <div class="action-desc">AI智能解题</div>
+            </div>
+        </div>
+
+        <div class="section-title">
+            <i class="fas fa-calendar-alt" style="color: var(--warning);"></i>
+            即将开始的考试
+        </div>
+
+        <div id="exam-list" class="exam-list">
+            <div class="loading">
+                <div class="spinner"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-bar">
+        <div class="tab-item active" onclick="location.href='/mobile/home'">
+            <div class="tab-item-icon"><i class="fas fa-home"></i></div>
+            <div class="tab-item-text">首页</div>
+        </div>
+        <div class="tab-item" onclick="location.href='/mobile/exam'">
+            <div class="tab-item-icon"><i class="fas fa-file-alt"></i></div>
+            <div class="tab-item-text">考试</div>
+        </div>
+        <div class="tab-item" onclick="location.href='/mobile/training'">
+            <div class="tab-item-icon"><i class="fas fa-brain"></i></div>
+            <div class="tab-item-text">训练</div>
+        </div>
+        <div class="tab-item" onclick="location.href='/mobile/profile'">
+            <div class="tab-item-icon"><i class="fas fa-user"></i></div>
+            <div class="tab-item-text">我的</div>
+        </div>
+    </div>
+
+    <script src="/assets/font-awesome/js/all.min.js"></script>
+    <script>
+        async function loadData() {
+            try {
+                var [statsRes, examsRes] = await Promise.all([
+                    fetch('/api/exam/stats'),
+                    fetch('/api/exams')
+                ]);
+
+                var stats = await statsRes.json();
+                var exams = await examsRes.json();
+
+                if (stats.success && stats.data) {
+                    document.getElementById('stat-exams').textContent = stats.data.total_exams || 0;
+                    document.getElementById('stat-score').textContent = (stats.data.average_score || 0) + '%';
+                    document.getElementById('stat-wrong').textContent = stats.data.wrong_questions || 0;
+                    document.getElementById('stat-points').textContent = stats.data.points || 0;
+                }
+
+                if (exams.success && exams.data) {
+                    var examList = document.getElementById('exam-list');
+                    examList.innerHTML = '';
+
+                    var upcomingExams = exams.data.filter(function(e) {
+                        return e.status !== 'completed';
+                    }).slice(0, 3);
+
+                    if (upcomingExams.length === 0) {
+                        examList.innerHTML = `
+                            <div style="text-align: center; padding: 30px; color: var(--text-secondary);">
+                                <i class="fas fa-calendar-check" style="font-size: 48px; margin-bottom: 12px; opacity: 0.5;"></i>
+                                <div>暂无即将开始的考试</div>
+                            </div>
+                        `;
+                    } else {
+                        upcomingExams.forEach(function(exam) {
+                            var card = document.createElement('div');
+                            card.className = 'exam-card' + (exam.status === 'upcoming' ? ' upcoming' : '');
+                            card.onclick = function() {
+                                window.location.href = '/exam/start/' + exam.id;
+                            };
+                            card.innerHTML = `
+                                <div class="exam-header">
+                                    <div class="exam-title">${exam.title}</div>
+                                    <span class="exam-tag ${exam.difficulty === 'hard' ? 'yellow' : 'blue'}">${exam.difficulty || '初级'}</span>
+                                </div>
+                                <div class="exam-info">
+                                    <div class="exam-info-item">
+                                        <i class="fas fa-clock"></i>${exam.duration}分钟
+                                    </div>
+                                    <div class="exam-info-item">
+                                        <i class="fas fa-question-circle"></i>${exam.question_count}题
+                                    </div>
+                                    <div class="exam-info-item">
+                                        <i class="fas fa-star"></i>${exam.total_points}分
+                                    </div>
+                                </div>
+                            `;
+                            examList.appendChild(card);
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error('加载数据失败:', error);
+            }
+        }
+
+        loadData();
+    </script>
+</body>
+</html>

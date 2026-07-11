@@ -56,3 +56,13 @@ class AIBrainMiddleware:
             return response
         
         return app
+
+
+def init_ai_brain_middleware(app):
+    """初始化AI大脑中间件"""
+    AIBrainMiddleware.request_logger(app)
+    AIBrainMiddleware.response_logger(app)
+    AIBrainMiddleware.api_rate_limiter(app)
+    AIBrainMiddleware.cors_middleware(app)
+    logger.info("AI大脑中间件已注册")
+    return app

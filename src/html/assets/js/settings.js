@@ -1,8 +1,6 @@
-
 // 兼容性检查和回退方案
 (function() {
     'use strict';
-    
     // 检查Array.includes支持
     if (!Array.prototype.includes) {
         Array.prototype.includes = function(searchElement, fromIndex) {
@@ -16,11 +14,9 @@
         };
     }
 })();
-
 // 兼容性检查和回退方案
 (function() {
     'use strict';
-    
     // 检查Array.includes支持
     if (!Array.prototype.includes) {
         Array.prototype.includes = function(searchElement, fromIndex) {
@@ -34,11 +30,9 @@
         };
     }
 })();
-
 // 兼容性检查和回退方案
 (function() {
     'use strict';
-    
     // 检查Array.includes支持
     if (!Array.prototype.includes) {
         Array.prototype.includes = function(searchElement, fromIndex) {
@@ -52,13 +46,11 @@
         };
     }
 })();
-
         // 用户管理功能
         document.addEventListener('DOMContentLoaded', function() {
             // 绑定用户管理事件
             bindUserManagementEvents();
         });
-        
         function bindUserManagementEvents() {
             // 添加用户按钮
             const addUserBtn = document.getElementById('add-user-btn');
@@ -67,7 +59,6 @@
                     alert('添加用户功能开发中...');
                 });
             }
-            
             // 搜索按钮
             const searchBtn = document.querySelector('.search-btn');
             if (searchBtn) {
@@ -75,7 +66,6 @@
                     performUserSearch();
                 });
             }
-            
             // 搜索输入框回车事件
             const searchInput = document.querySelector('.search-input');
             if (searchInput) {
@@ -85,7 +75,6 @@
                     }
                 });
             }
-            
             // 筛选按钮
             const filterBtn = document.querySelector('.filter-btn');
             if (filterBtn) {
@@ -93,7 +82,6 @@
                     performUserFilter();
                 });
             }
-            
             // 查看用户按钮
             const viewBtns = document.querySelectorAll('.view-btn');
             viewBtns.forEach(btn => {
@@ -101,7 +89,6 @@
                     alert('查看用户详情功能开发中...');
                 });
             });
-            
             // 编辑用户按钮
             const editBtns = document.querySelectorAll('.edit-btn');
             editBtns.forEach(btn => {
@@ -109,7 +96,6 @@
                     alert('编辑用户功能开发中...');
                 });
             });
-            
             // 禁用用户按钮
             const disableBtns = document.querySelectorAll('.disable-btn');
             disableBtns.forEach(btn => {
@@ -120,7 +106,6 @@
                     }
                 });
             });
-            
             // 启用用户按钮
             const enableBtns = document.querySelectorAll('.enable-btn');
             enableBtns.forEach(btn => {
@@ -131,7 +116,6 @@
                     }
                 });
             });
-            
             // 删除用户按钮
             const deleteBtns = document.querySelectorAll('.delete-btn');
             deleteBtns.forEach(btn => {
@@ -143,14 +127,12 @@
                 });
             });
         }
-        
         function performUserSearch() {
             const searchInput = document.querySelector('.search-input');
             const searchTerm = searchInput ? searchInput.value.trim() : '';
             console.log('搜索用户:', searchTerm);
             // 这里可以添加实际的搜索逻辑
         }
-        
         function performUserFilter() {
             const roleFilter = document.querySelector('.role-filter');
             const statusFilter = document.querySelector('.status-filter');
@@ -159,4 +141,3 @@
             console.log('筛选用户:', { role, status });
             // 这里可以添加实际的筛选逻辑
         }
-    

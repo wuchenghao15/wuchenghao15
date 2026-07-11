@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <!-- 设计系统 -->
+    <link rel="stylesheet" href="/assets/css/mtscos-design-system.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MTSCOS 考试系统 - 正式考试</title>
+    
+    <link rel="stylesheet" href="/assets/tailwind.min.css">
+    <link rel="stylesheet" href="/assets/all.min.css">
+    <link rel="stylesheet" href="/assets/responsive_layout.css">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary-color: var(--color-primary);
+            --secondary-color: var(--color-success);
+            --accent-color: var(--color-secondary);
+            --warning-color: var(--color-warning);
+            --danger-color: var(--color-error);
+            --dark-bg: var(--bg-dark);
+            --card-bg: rgba(30, 41, 59, 0.8);
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--bg-dark) 0%, #1e293b 50%, var(--bg-dark) 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+        
+        .tech-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(59, 130, 246, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(59, 130, 246, 0.05) 1px, transparent 1px);
+            background-size: 60px 60px;
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        .floating-orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.3;
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        .orb-1 {
+            width: 400px;
+            height: 400px;
+            background: var(--primary-color);
+            top: -100px;
+            right: -100px;
+        }
+        
+        .glass-card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .glass-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            border-color: rgba(59, 130, 246, 0.3);
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color), #2563eb);
+            color: white;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .tag {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        
+        .tag-blue { background: rgba(59, 130, 246, 0.2); color: var(--primary-color); }
+        .tag-green { background: rgba(16, 185, 129, 0.2); color: var(--secondary-color); }
+        .tag-yellow { background: rgba(245, 158, 11, 0.2); color: var(--warning-color); }
+        .tag-purple { background: rgba(139, 92, 246, 0.2); color: var(--accent-color); }
+        
+        .avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="tech-grid"></div>
+    <div class="floating-orb orb-1"></div>
+    
+    <!-- 顶部导航 -->
+    <nav class="relative z-10 px-6 py-4" style="background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(16px); border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                    <i class="fas fa-graduation-cap text-white text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold">MTSCOS 考试系统</h1>
+                    <p class="text-sm text-gray-400">正式考试中心</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-6">
+                <div class="flex items-center gap-3">
+                    <div class="avatar">
+                        {{ user.username[0]|upper if user.username else 'U' }}
+                    </div>
+                    <div>
+                        <p class="font-medium">{{ user.username }}</p>
+                        {% if grade %}
+                        <p class="text-sm text-gray-400">{{ grade }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                <a href="/auth/logout" class="btn btn-secondary">
+                    <i class="fas fa-sign-out-alt"></i>
+                    退出
+                </a>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- 面包屑导航 -->
+    <div class="relative z-10 max-w-7xl mx-auto px-6 py-4">
+        <nav class="flex items-center gap-2 text-gray-400 text-sm">
+            <a href="/exam_system" class="hover:text-blue-400">首页</a>
+            <i class="fas fa-chevron-right"></i>
+            <span class="text-blue-400">考试系统</span>
+        </nav>
+    </div>
+    
+    <!-- 主内容区 -->
+    <main class="relative z-10 max-w-7xl mx-auto px-6 py-8">
+        
+        <!-- 页面标题 -->
+        <div class="mb-8">
+            <h2 class="text-3xl font-bold mb-2">正式考试</h2>
+            <p class="text-gray-400">选择您要参加的正式考试，完成能力评估</p>
+            
+            {% if is_final_exam_period %}
+            <div class="mt-4 p-4 rounded-lg" style="background: rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3);">
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-alert-circle text-red-400 text-xl"></i>
+                    <div>
+                        <div class="font-bold text-red-400">期末考试期间</div>
+                        <div class="text-sm text-gray-400">当前处于期末考试期间，仅显示期末相关考试。非考试期间将恢复周测、单元测试等日常考试。</div>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="mt-4 p-4 rounded-lg" style="background: rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.3);">
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-check-circle text-green-400 text-xl"></i>
+                    <div>
+                        <div class="font-bold text-green-400">日常考试模式</div>
+                        <div class="text-sm text-gray-400">当前为日常学习阶段，可参加周测、单元测试、专项训练等考试。期末考试将在指定时间开放。</div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- 考试列表 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for exam in exams %}
+            <div class="glass-card p-6 hover:border-blue-500/30 cursor-pointer" onclick="location.href='/exam/start/{{ exam.id }}'">
+                <div class="flex items-start justify-between mb-4">
+                    <div class="flex items-center gap-2">
+                        <span class="tag tag-blue">
+                            {{ exam.language_label or exam.language or '综合' }}
+                        </span>
+                        {% if exam.exam_type == 'final' %}
+                        <span class="tag tag-red">
+                            <i class="fas fa-graduation-cap mr-1"></i>期末考试
+                        </span>
+                        {% else %}
+                        <span class="tag tag-green">
+                            <i class="fas fa-calendar-check mr-1"></i>日常考试
+                        </span>
+                        {% endif %}
+                    </div>
+                    <span class="text-gray-400 text-sm">
+                        <i class="fas fa-clock mr-1"></i>{{ exam.duration }}分钟
+                    </span>
+                </div>
+                <h3 class="text-lg font-bold mb-2">{{ exam.title }}</h3>
+                <p class="text-sm text-gray-400 line-clamp-2 mb-4">{{ exam.description or '暂无描述' }}</p>
+                <div class="flex items-center justify-between text-sm mb-4">
+                    <span class="text-gray-400">
+                        <i class="fas fa-question-circle mr-1"></i>{{ exam.question_count }}题
+                    </span>
+                    <span class="text-yellow-400">
+                        <i class="fas fa-star mr-1"></i>{{ exam.level_label or exam.level or '初级' }}
+                    </span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-gray-500 text-xs">总分: {{ exam.total_score or 100 }}分</span>
+                    <span class="text-gray-500 text-xs">及格: {{ exam.passing_score or 60 }}分</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        {% if not exams %}
+        <div class="glass-card p-12 text-center">
+            <i class="fas fa-file-alt text-gray-500 text-4xl mb-4"></i>
+            <h3 class="text-xl font-bold mb-2">暂无可用考试</h3>
+            <p class="text-gray-400">请稍后再试，或联系管理员获取更多考试资源</p>
+        </div>
+        {% endif %}
+        
+        <!-- 返回首页 -->
+        <div class="mt-8 text-center">
+            <a href="/exam_system" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i>
+                返回首页
+            </a>
+        </div>
+        
+    </main>
+    
+    <!-- 底部 -->
+    <footer class="relative z-10 text-center py-6 text-gray-500 text-sm border-t border-white/5 mt-12">
+        <p>&copy; 2026 MTSCOS AI 智能教育平台 - 让学习更高效</p>
+    </footer>
+    
+    <script src="/assets/layout_adapter.js"></script>
+</body>
+</html>

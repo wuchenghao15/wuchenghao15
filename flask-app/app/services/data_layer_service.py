@@ -8,7 +8,7 @@
 import json
 import os
 import shutil
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Dict, List, Optional, Any, Union
 from uuid import uuid4
 
@@ -244,7 +244,7 @@ class DataLayerService:
         deleted_count = 0
         try:
             temp_dir = os.path.join(self._data_dir, 'temp')
-            cutoff = datetime.now(timezone.utc) - datetime.timedelta(days=days_to_keep)
+            cutoff = datetime.now(timezone.utc) - timedelta(days=days_to_keep)
 
             for filename in os.listdir(temp_dir):
                 filepath = os.path.join(temp_dir, filename)

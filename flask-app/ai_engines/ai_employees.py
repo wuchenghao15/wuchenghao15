@@ -58,7 +58,11 @@ def init_ai_employees():
         AIEmployee('ai_security_001', 'AI安全专家', 'security', ['网络安全', '渗透测试', '安全审计']),
         AIEmployee('ai_ops_001', 'AI运维工程师', 'operations', ['系统运维', 'DevOps', '云服务']),
         AIEmployee('ai_writer_001', 'AI文案撰写师', 'writer', ['内容创作', '技术文档', 'SEO优化']),
-        AIEmployee('ai_manager_001', 'AI项目经理', 'manager', ['项目管理', '团队协调', '进度跟踪'])
+        AIEmployee('ai_manager_001', 'AI项目经理', 'manager', ['项目管理', '团队协调', '进度跟踪']),
+        AIEmployee('version_agent_001', '系统版本管理Agent', 'version_manager', 
+                   ['版本监控', '规则维护', '版本显示', '版本存储', '更新触发', '处罚规则', '自动维护']),
+        AIEmployee('automation_plan_agent_001', '自动化计划拓展Agent', 'automation_planner', 
+                   ['计划分析', '功能拓展', '计划优化', '自动补全', '计划创建', '效率提升', '智能调度'])
     ]
     for emp in employees:
         ai_employee_manager.add_employee(emp)

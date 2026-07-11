@@ -1,3 +1,6 @@
+import logging
+logger = logging.getLogger(__name__)
+
 # -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
@@ -20,7 +23,7 @@ import requests
 from typing import Dict, List, Any, Optional
 from datetime import datetime
 
-__version__ = "2.0.0"
+__version__ = "7.2.0"
 __author__ = "MTSCOS AI Team"
 __license__ = "MIT"
 
@@ -99,7 +102,7 @@ class BaseSDK:
         
         except requests.exceptions.RequestException as e:
             if self.parent.config.debug:
-                print(f"API请求失败: {e}")
+                logger.info(f"API请求失败: {e}")
             return {'success': False, 'error': str(e)}
 
 

@@ -2,15 +2,16 @@
 #!/usr/bin/env python3
 """考题分析讲解系统 - 智能分析和讲解题目"""
 
+import os
 import sqlite3
 from contextlib import contextmanager
 import uuid
 import json
 from datetime import datetime
 from typing import List, Dict, Optional
-import os
 
-DATABASE_PATH = '/Users/wuchenghao/Library/CloudStorage/OneDrive-个人/文档/MTSCOS_AI_Project/flask-app/app.db'
+app_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+DATABASE_PATH = os.path.join(app_root, 'app.db')
 
 
 class QuestionAnalysisService:

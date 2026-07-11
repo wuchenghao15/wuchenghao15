@@ -1,3 +1,6 @@
+import logging
+logger = logging.getLogger(__name__)
+
 # -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
@@ -493,4 +496,4 @@ if __name__ == "__main__":
     for h in history:
         print(f"  [{h['time']}] {h['module']}: {h['before']:.1f} -> {h['after']:.1f} ({h['improvement']:.1f}%)")
     
-    print("\n == 测试完成 ===")
+    logger.info("\n == 测试完成 ===")

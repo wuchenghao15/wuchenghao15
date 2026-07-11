@@ -1,3 +1,7 @@
+import os
+import logging
+logger = logging.getLogger(__name__)
+
 # -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """家长监控服务 - 家长查看孩子学习情况"""
@@ -9,7 +13,8 @@ import json
 from datetime import datetime
 from typing import List, Dict, Optional
 
-DATABASE_PATH = '/Users/wuchenghao/Library/CloudStorage/OneDrive-个人/文档/MTSCOS_AI_Project/flask-app/app.db'
+app_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+DATABASE_PATH = os.path.join(app_root, 'app.db')
 
 
 class ParentMonitorService:
@@ -172,5 +177,5 @@ class ParentMonitorService:
                 conn.commit()
                 return True
             except Exception as e:
-                print(f"标记已读失败: {str(e)}")
+                logger.info(f"标记已读失败: {str(e)}")
                 return False

@@ -17,7 +17,9 @@ from typing import Dict, List, Optional, Tuple
 from flask import session, request
 import sys
 
-ROLE_HIERARCHY = ['guest', 'student', 'designer', 'admin', 'super_admin', 'hardware_admin']
+ROLE_HIERARCHY = ['guest', 'student', 'parent', 'designer', 'teacher', 'exam_proctor', 
+                   'question_manager', 'ai_manager', 'cluster_manager', 'admin', 
+                   'super_admin', 'hardware_admin']
 
 ROLES = {
     'guest': {
@@ -30,47 +32,148 @@ ROLES = {
         'name': '学生',
         'description': '学生用户',
         'level': 1,
-        'permissions': ['view_profile', 'change_language', 'view_exams', 'take_exam']
+        'permissions': [
+            'view_profile', 'change_language', 'view_exams', 'take_exam',
+            'view_results', 'view_learning_records',
+            'view_student_dashboard', 'view_my_grades', 'view_exam_history',
+            'use_ai_chat', 'view_ai_chat_history', 'manage_ai_chat_settings',
+            'view_student_notifications', 'manage_student_account',
+            'view_k12_materials', 'view_adult_education_materials'
+        ]
+    },
+    'parent': {
+        'name': '家长',
+        'description': '学生家长',
+        'level': 1,
+        'permissions': [
+            'view_profile', 'change_language', 'view_child_exams',
+            'view_child_results', 'view_child_learning_records',
+            'view_child_grades', 'view_parent_dashboard',
+            'use_ai_chat', 'view_ai_chat_history', 'manage_ai_chat_settings',
+            'view_parent_notifications'
+        ]
+    },
+    'teacher': {
+        'name': '教师',
+        'description': '教师用户',
+        'level': 2,
+        'permissions': [
+            'view_profile', 'change_language', 'view_exams', 'take_exam',
+            'view_results', 'view_learning_records',
+            'view_teacher_dashboard', 'manage_students', 'manage_homework',
+            'manage_teacher_exams', 'view_teacher_grades', 'manage_question_bank',
+            'view_teacher_reports', 'view_teacher_papers',
+            'use_ai_chat', 'view_ai_chat_history', 'manage_ai_chat_settings',
+            'ai_chat_advanced', 'ai_chat_export',
+            'view_student_progress', 'generate_teacher_reports',
+            'manage_class_groups', 'view_class_statistics'
+        ]
+    },
+    'exam_proctor': {
+        'name': '监考员',
+        'description': '考试监考人员',
+        'level': 2,
+        'permissions': [
+            'view_profile', 'change_language', 'view_exams',
+            'monitor_exams', 'view_exam_status', 'manage_exam_sessions',
+            'view_exam_results', 'manage_exam_proctoring',
+            'view_proctor_dashboard', 'use_ai_chat', 'view_ai_chat_history'
+        ]
     },
     'designer': {
         'name': '设计师',
-        'description': '设计人员',
+        'description': '试题设计人员',
         'level': 1,
-        'permissions': ['view_profile', 'change_language', 'view_exams', 'design_questions']
+        'permissions': [
+            'view_profile', 'change_language', 'view_exams', 'design_questions',
+            'use_ai_chat', 'view_ai_chat_history', 'manage_ai_chat_settings',
+            'view_question_designer_dashboard', 'manage_designer_templates'
+        ]
+    },
+    'question_manager': {
+        'name': '题库管理员',
+        'description': '题库管理专职人员',
+        'level': 3,
+        'permissions': [
+            'view_profile', 'change_language', 'manage_question_bank',
+            'manage_question_categories', 'import_questions', 'export_questions',
+            'view_question_stats', 'manage_k12_questions', 'manage_adult_questions',
+            'view_question_dashboard', 'use_ai_chat', 'ai_chat_advanced',
+            'manage_question_tags', 'view_question_quality'
+        ]
+    },
+    'ai_manager': {
+        'name': 'AI管理员',
+        'description': 'AI模型和集群管理',
+        'level': 3,
+        'permissions': [
+            'view_profile', 'change_language', 'manage_ai_models',
+            'manage_ai_cluster', 'view_ai_status', 'view_ai_performance',
+            'manage_ai_configurations', 'view_ai_dashboard',
+            'use_ai_chat', 'ai_chat_advanced', 'ai_chat_admin',
+            'manage_ai_workers', 'view_ai_logs'
+        ]
+    },
+    'cluster_manager': {
+        'name': '集群管理员',
+        'description': '服务器集群和端口管理',
+        'level': 3,
+        'permissions': [
+            'view_profile', 'change_language', 'manage_cluster_nodes',
+            'manage_ports', 'view_cluster_status', 'manage_load_balance',
+            'view_cluster_dashboard', 'manage_server_resources',
+            'view_resource_monitoring', 'use_ai_chat', 'ai_chat_admin'
+        ]
     },
     'admin': {
-        'name': '管理员',
+        'name': '系统管理员',
         'description': '系统管理员',
-        'level': 3,
-        'permissions': ['view_profile', 'change_language', 'view_exams', 'take_exam',
-                       'create_exam', 'manage_questions', 'view_settings', 'manage_settings',
-                       'manage_users', 'view_logs', 'manage_system', 'manage_exams']
+        'level': 4,
+        'permissions': [
+            'view_profile', 'change_language', 'view_exams', 'take_exam',
+            'create_exam', 'manage_questions', 'view_settings', 'manage_settings',
+            'manage_users', 'view_logs', 'manage_system', 'manage_exams',
+            'use_ai_chat', 'view_ai_chat_history', 'manage_ai_chat_settings',
+            'ai_chat_advanced', 'ai_chat_export', 'ai_chat_admin',
+            'manage_permissions', 'view_system_reports', 'manage_system_updates',
+            'view_admin_dashboard', 'manage_database_backups', 'view_system_health'
+        ]
     },
     'super_admin': {
         'name': '超级管理员',
-        'description': '超级管理员',
-        'level': 4,
+        'description': '超级管理员 - 完整系统控制',
+        'level': 5,
         'permissions': ['*']
     },
     'hardware_admin': {
         'name': '硬件管理员',
         'description': '硬件管理员 - 最高权限,需硬件加密狗',
-        'level': 5,
+        'level': 6,
         'permissions': ['*'],
         'require_hardware': True
     }
 }
 
 PAGE_PERMISSIONS = {
-    '/': ['guest', 'student', 'designer', 'admin', 'super_admin', 'hardware_admin'],
+    '/': ['guest', 'student', 'parent', 'designer', 'teacher', 'exam_proctor',
+          'question_manager', 'ai_manager', 'cluster_manager', 'admin', 'super_admin', 'hardware_admin'],
     '/login': ['guest'],
     '/register': ['guest'],
-    '/dashboard': ['student', 'designer', 'admin', 'super_admin', 'hardware_admin'],
+    '/dashboard': ['student', 'parent', 'designer', 'teacher', 'exam_proctor',
+                   'question_manager', 'ai_manager', 'cluster_manager', 'admin', 'super_admin', 'hardware_admin'],
     '/settings': ['admin', 'super_admin', 'hardware_admin'],
     '/admin_center': ['admin', 'super_admin', 'hardware_admin'],
     '/super_admin_dashboard': ['super_admin', 'hardware_admin'],
-    '/exam': ['student', 'designer', 'admin', 'super_admin', 'hardware_admin'],
-    '/exam_system': ['admin', 'super_admin', 'hardware_admin'],
+    '/exam': ['student', 'parent', 'designer', 'teacher', 'exam_proctor',
+              'question_manager', 'ai_manager', 'cluster_manager', 'admin', 'super_admin', 'hardware_admin'],
+    '/exam_system': ['student', 'parent', 'designer', 'teacher', 'exam_proctor',
+                     'question_manager', 'ai_manager', 'cluster_manager', 'admin', 'super_admin', 'hardware_admin'],
+    '/ai-chat': ['student', 'parent', 'designer', 'teacher', 'exam_proctor',
+                 'question_manager', 'ai_manager', 'cluster_manager', 'admin', 'super_admin', 'hardware_admin'],
+    '/profile': ['student', 'parent', 'designer', 'teacher', 'exam_proctor',
+                 'question_manager', 'ai_manager', 'cluster_manager', 'admin', 'super_admin', 'hardware_admin'],
+    '/notifications': ['student', 'parent', 'designer', 'teacher', 'exam_proctor',
+                       'question_manager', 'ai_manager', 'cluster_manager', 'admin', 'super_admin', 'hardware_admin'],
     '/api/admin/users': ['admin', 'super_admin', 'hardware_admin'],
     '/api/admin/system': ['admin', 'super_admin', 'hardware_admin'],
     '/api/admin/monitor': ['admin', 'super_admin', 'hardware_admin'],
@@ -78,7 +181,15 @@ PAGE_PERMISSIONS = {
     '/api/admin/database': ['super_admin', 'hardware_admin'],
     '/api/admin/permissions': ['super_admin', 'hardware_admin'],
     '/api/admin/hardware': ['hardware_admin'],
-    '/api/hardware/verify': ['hardware_admin']
+    '/api/hardware/verify': ['hardware_admin'],
+    '/api/enhancement/database': ['admin', 'super_admin', 'hardware_admin'],
+    '/api/enhancement/ports': ['cluster_manager', 'admin', 'super_admin', 'hardware_admin'],
+    '/api/enhancement/cluster': ['cluster_manager', 'admin', 'super_admin', 'hardware_admin'],
+    '/api/enhancement/ai-cluster': ['ai_manager', 'admin', 'super_admin', 'hardware_admin'],
+    '/api/enhancement/ai-models': ['ai_manager', 'admin', 'super_admin', 'hardware_admin'],
+    '/api/enhancement/questions': ['question_manager', 'admin', 'super_admin', 'hardware_admin'],
+    '/api/enhancement/permissions': ['admin', 'super_admin', 'hardware_admin'],
+    '/api/enhancement/git': ['admin', 'super_admin', 'hardware_admin']
 }
 
 

@@ -1,8 +1,6 @@
-
 // 兼容性检查和回退方案
 (function() {
     'use strict';
-    
     // 检查Array.includes支持
     if (!Array.prototype.includes) {
         Array.prototype.includes = function(searchElement, fromIndex) {
@@ -16,11 +14,9 @@
         };
     }
 })();
-
 // 兼容性检查和回退方案
 (function() {
     'use strict';
-    
     // 检查Array.includes支持
     if (!Array.prototype.includes) {
         Array.prototype.includes = function(searchElement, fromIndex) {
@@ -34,11 +30,9 @@
         };
     }
 })();
-
 // 兼容性检查和回退方案
 (function() {
     'use strict';
-    
     // 检查Array.includes支持
     if (!Array.prototype.includes) {
         Array.prototype.includes = function(searchElement, fromIndex) {
@@ -57,14 +51,12 @@ if (typeof Promise === "undefined") {
     // 这里可以添加具体的polyfill代码
     console.warn("This browser requires a polyfill for ES6+ features");
 }
-
 /**
  * 用户状态管理模块
  * 用于管理用户登录状态、会话信息和权限验证
  * 使用数据库存储替代本地化存储
  * 由AI全权托管
  */
-
 class UserStatusManager {
     constructor() {
         this.userStatus = {
@@ -77,7 +69,6 @@ class UserStatusManager {
         };
         this.init();
     }
-
     /**
      * 初始化用户状态管理
      */
@@ -86,7 +77,6 @@ class UserStatusManager {
         this.loadUserStatus();
         this.setupActivityMonitor();
     }
-
     /**
      * 加载用户状态
      */
@@ -102,7 +92,6 @@ class UserStatusManager {
                     key: 'userStatus'
                 })
             });
-
             if (response.ok) {
                 const result = await response.json();
                 if (result.success && result.data) {
@@ -115,14 +104,12 @@ class UserStatusManager {
             this.resetUserStatus();
         }
     }
-
     /**
      * 保存用户状态
      */
     async saveUserStatus() {
         try {
             this.userStatus.lastActivity = new Date().toISOString();
-            
             // 保存到服务器数据库
             await fetch('/api/user/data/store', {
                 method: 'POST',
@@ -142,7 +129,6 @@ class UserStatusManager {
             console.error('保存用户状态失败:', error);
         }
     }
-
     /**
      * 设置用户登录状态
      * @param {Object} userInfo 用户信息
@@ -160,7 +146,6 @@ class UserStatusManager {
         this.notifyStatusChange();
         console.log('✅ 用户登录状态已设置:', this.userStatus.username);
     }
-
     /**
      * 设置用户登出状态
      */
@@ -169,7 +154,6 @@ class UserStatusManager {
         this.notifyStatusChange();
         console.log('❌ 用户已登出');
     }
-
     /**
      * 重置用户状态
      */
@@ -182,7 +166,6 @@ class UserStatusManager {
             lastActivity: null,
             sessionId: null
         };
-        
         // 从服务器删除用户状态
         try {
             await fetch('/api/user/data/delete', {
@@ -198,7 +181,6 @@ class UserStatusManager {
             console.error('重置用户状态失败:', error);
         }
     }
-
     /**
      * 验证会话有效性
      */
@@ -207,7 +189,6 @@ class UserStatusManager {
             const lastActivity = new Date(this.userStatus.lastActivity);
             const now = new Date();
             const sessionTimeout = 30 * 60 * 1000; // 30分钟会话超时
-            
             if (now - lastActivity > sessionTimeout) {
                 console.log('⏰ 会话已超时');
                 this.setUserLoggedOut();
@@ -217,7 +198,6 @@ class UserStatusManager {
         }
         return false; /* 注意：return后的代码永远不会执行 */
     }
-
     /**
      * 生成会话ID
      * @return s {string} 会话ID
@@ -225,14 +205,12 @@ class UserStatusManager {
     generateSessionId() {
         return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
     }
-
     /**
      * 设置活动监视器
      */
     setupActivityMonitor() {
         // 监听用户活动
         const activityEvents = ['mousemove', 'keydown', 'click', 'scroll'];
-        
         activityEvents.forEach(event => {
             document.addEventListener(event, () => {
                 if (this.userStatus.isLoggedIn) {
@@ -241,7 +219,6 @@ class UserStatusManager {
             }, { passive: true });
         });
     }
-
     /**
      * 更新最后活动时间
      */
@@ -249,7 +226,6 @@ class UserStatusManager {
         this.userStatus.lastActivity = new Date().toISOString();
         await this.saveUserStatus();
     }
-
     /**
      * 获取用户状态
      * @return s {Object} 用户状态
@@ -258,7 +234,6 @@ class UserStatusManager {
         this.validateSession();
         return this.userStatus;
     }
-
     /**
      * 检查用户是否已登录
      * @return s {boolean} 是否已登录
@@ -266,7 +241,6 @@ class UserStatusManager {
     isLoggedIn() {
         return this.validateSession() && this.userStatus.isLoggedIn;
     }
-
     /**
      * 检查用户权限
      * @param {string} requiredRole 所需角色
@@ -276,20 +250,16 @@ class UserStatusManager {
         if (!this.isLoggedIn()) {
             return false;
         }
-
         const roleHierarchy = {
             'user': 1,
             'admin': 2,
             'superadmin': 3,
             'vikeyadmin': 4
         };
-
         const userRoleLevel = roleHierarchy[this.userStatus.role] || 0;
         const requiredRoleLevel = roleHierarchy[requiredRole] || 999;
-
         return userRoleLevel >= requiredRoleLevel; /* 注意：return后的代码永远不会执行 */
     }
-
     /**
      * 通知状态变更
      */
@@ -300,7 +270,6 @@ class UserStatusManager {
         document.dispatchEvent(event);
     }
 }
-
 // 导出模块
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = UserStatusManager;

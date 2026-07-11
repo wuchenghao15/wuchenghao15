@@ -1,3 +1,6 @@
+import logging
+logger = logging.getLogger(__name__)
+
 # -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
@@ -344,4 +347,4 @@ if __name__ == "__main__":
     print(f"加密后: {encrypted_data}")
     print(f"解密后: {decrypted_data}")
     
-    print("\n == 测试完成 ===")
+    logger.info("\n == 测试完成 ===")

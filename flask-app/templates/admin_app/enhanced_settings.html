@@ -1,0 +1,586 @@
+{% extends 'admin_app/base.html' %}
+
+{% block title %}系统设置增强 - MTSCOS{% endblock %}
+
+{% block content %}
+    <div class="page-header">
+        <h1>系统设置增强</h1>
+        <p>安全配置、日志管理、性能优化</p>
+    </div>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('security')">安全设置</button>
+        <button class="tab-btn" onclick="switchTab('logging')">日志管理</button>
+        <button class="tab-btn" onclick="switchTab('performance')">性能优化</button>
+        <button class="tab-btn" onclick="switchTab('api')">API管理</button>
+    </div>
+
+    <div class="tab-content" id="security-tab">
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">密码安全策略</div>
+            </div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label class="form-label">最小密码长度</label>
+                    <input type="number" class="form-control" id="minPasswordLength" value="8" min="6" max="32">
+                    <small class="form-hint">建议设置为8-16位</small>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">密码有效期(天)</label>
+                    <input type="number" class="form-control" id="passwordExpiryDays" value="90" min="0">
+                    <small class="form-hint">0表示永不过期</small>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">登录失败锁定次数</label>
+                    <input type="number" class="form-control" id="maxLoginAttempts" value="5" min="3" max="20">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">锁定时长(分钟)</label>
+                    <input type="number" class="form-control" id="lockoutDuration" value="15" min="5" max="60">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">启用密码复杂度检查</label>
+                        <input type="checkbox" id="enablePasswordComplexity" checked>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">启用验证码</label>
+                        <input type="checkbox" id="enableCaptcha" checked>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">启用双因素认证</label>
+                        <input type="checkbox" id="enable2FA">
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="saveSecuritySettings()">保存安全设置</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">访问控制</div>
+            </div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label class="form-label">允许的IP范围</label>
+                    <textarea class="form-control" id="allowedIPs" rows="3" placeholder="192.168.1.0/24&#10;10.0.0.0/8"></textarea>
+                    <small class="form-hint">每行一个IP或CIDR范围，留空则允许所有IP</small>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">禁用的IP列表</label>
+                    <textarea class="form-control" id="blockedIPs" rows="3" placeholder="192.168.1.100&#10;10.0.0.50"></textarea>
+                    <small class="form-hint">每行一个IP地址</small>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">启用IP白名单</label>
+                        <input type="checkbox" id="enableIPWhitelist">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">启用IP黑名单</label>
+                        <input type="checkbox" id="enableIPBlacklist">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">强制HTTPS</label>
+                        <input type="checkbox" id="forceHTTPS">
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="saveAccessControlSettings()">保存访问控制设置</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-content" id="logging-tab" style="display: none;">
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">日志级别设置</div>
+            </div>
+            <div class="card-body">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">应用日志级别</label>
+                        <select class="form-control" id="appLogLevel">
+                            <option value="DEBUG">DEBUG</option>
+                            <option value="INFO" selected>INFO</option>
+                            <option value="WARNING">WARNING</option>
+                            <option value="ERROR">ERROR</option>
+                            <option value="CRITICAL">CRITICAL</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">API日志级别</label>
+                        <select class="form-control" id="apiLogLevel">
+                            <option value="DEBUG">DEBUG</option>
+                            <option value="INFO" selected>INFO</option>
+                            <option value="WARNING">WARNING</option>
+                            <option value="ERROR">ERROR</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">数据库日志级别</label>
+                        <select class="form-control" id="dbLogLevel">
+                            <option value="DEBUG">DEBUG</option>
+                            <option value="INFO">INFO</option>
+                            <option value="WARNING" selected>WARNING</option>
+                            <option value="ERROR">ERROR</option>
+                        </select>
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="saveLogSettings()">保存日志设置</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">日志存储配置</div>
+            </div>
+            <div class="card-body">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">日志保留天数</label>
+                        <input type="number" class="form-control" id="logRetentionDays" value="30" min="7" max="365">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">单个日志文件大小(MB)</label>
+                        <input type="number" class="form-control" id="logFileSize" value="50" min="10" max="500">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">备份文件数量</label>
+                        <input type="number" class="form-control" id="logBackupCount" value="10" min="3" max="50">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">启用日志轮换</label>
+                        <input type="checkbox" id="enableLogRotation" checked>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">启用日志压缩</label>
+                        <input type="checkbox" id="enableLogCompression" checked>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">发送错误日志到邮箱</label>
+                        <input type="checkbox" id="sendErrorLogs">
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="saveLogStorageSettings()">保存日志存储设置</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-content" id="performance-tab" style="display: none;">
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">缓存设置</div>
+            </div>
+            <div class="card-body">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">缓存类型</label>
+                        <select class="form-control" id="cacheType">
+                            <option value="memory">内存缓存</option>
+                            <option value="redis">Redis</option>
+                            <option value="file">文件缓存</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">缓存过期时间(秒)</label>
+                        <input type="number" class="form-control" id="cacheTTL" value="3600" min="60" max="86400">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">启用页面缓存</label>
+                        <input type="checkbox" id="enablePageCache" checked>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">启用API缓存</label>
+                        <input type="checkbox" id="enableAPICache" checked>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">启用数据库查询缓存</label>
+                        <input type="checkbox" id="enableDBQueryCache">
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="saveCacheSettings()">保存缓存设置</button>
+                <button class="btn btn-secondary" onclick="clearCache()">清除缓存</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">并发设置</div>
+            </div>
+            <div class="card-body">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">最大并发连接数</label>
+                        <input type="number" class="form-control" id="maxConnections" value="1000" min="100" max="10000">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">线程池大小</label>
+                        <input type="number" class="form-control" id="threadPoolSize" value="10" min="4" max="100">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">请求超时时间(秒)</label>
+                        <input type="number" class="form-control" id="requestTimeout" value="30" min="10" max="120">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">启用请求限流</label>
+                        <input type="checkbox" id="enableRateLimit" checked>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">限流阈值(次/分钟)</label>
+                        <input type="number" class="form-control" id="rateLimitThreshold" value="60" min="10" max="1000">
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="saveConcurrencySettings()">保存并发设置</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-content" id="api-tab" style="display: none;">
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">API访问设置</div>
+            </div>
+            <div class="card-body">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">API密钥过期时间(天)</label>
+                        <input type="number" class="form-control" id="apiKeyExpiryDays" value="30" min="1" max="365">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">请求大小限制(MB)</label>
+                        <input type="number" class="form-control" id="maxRequestSize" value="10" min="1" max="100">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">启用API认证</label>
+                        <input type="checkbox" id="enableAPIAuth" checked>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">启用CORS</label>
+                        <input type="checkbox" id="enableCORS" checked>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">启用API文档</label>
+                        <input type="checkbox" id="enableAPIDocs">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">允许的跨域来源</label>
+                    <textarea class="form-control" id="corsOrigins" rows="2" placeholder="https://example.com&#10;https://api.example.com"></textarea>
+                    <small class="form-hint">每行一个域名，留空则允许所有来源</small>
+                </div>
+                <button class="btn btn-primary" onclick="saveAPISettings()">保存API设置</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">API密钥管理</div>
+                <button class="btn btn-sm btn-primary" onclick="generateAPIKey()">生成新密钥</button>
+            </div>
+            <div class="card-body">
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>密钥名称</th>
+                                <th>密钥值</th>
+                                <th>创建时间</th>
+                                <th>过期时间</th>
+                                <th>状态</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="apiKeyList">
+                            <tr>
+                                <td colspan="6" class="text-center">加载中...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.style.display = 'none');
+            
+            event.target.classList.add('active');
+            document.getElementById(tabName + '-tab').style.display = 'block';
+            
+            if (tabName === 'api') {
+                loadAPIKeys();
+            }
+        }
+
+        function saveSecuritySettings() {
+            const settings = {
+                min_password_length: parseInt(document.getElementById('minPasswordLength').value),
+                password_expiry_days: parseInt(document.getElementById('passwordExpiryDays').value),
+                max_login_attempts: parseInt(document.getElementById('maxLoginAttempts').value),
+                lockout_duration: parseInt(document.getElementById('lockoutDuration').value),
+                enable_password_complexity: document.getElementById('enablePasswordComplexity').checked,
+                enable_captcha: document.getElementById('enableCaptcha').checked,
+                enable_2fa: document.getElementById('enable2FA').checked
+            };
+            saveSettings('security', settings);
+        }
+
+        function saveAccessControlSettings() {
+            const settings = {
+                allowed_ips: document.getElementById('allowedIPs').value,
+                blocked_ips: document.getElementById('blockedIPs').value,
+                enable_ip_whitelist: document.getElementById('enableIPWhitelist').checked,
+                enable_ip_blacklist: document.getElementById('enableIPBlacklist').checked,
+                force_https: document.getElementById('forceHTTPS').checked
+            };
+            saveSettings('access_control', settings);
+        }
+
+        function saveLogSettings() {
+            const settings = {
+                app_log_level: document.getElementById('appLogLevel').value,
+                api_log_level: document.getElementById('apiLogLevel').value,
+                db_log_level: document.getElementById('dbLogLevel').value
+            };
+            saveSettings('logging', settings);
+        }
+
+        function saveLogStorageSettings() {
+            const settings = {
+                log_retention_days: parseInt(document.getElementById('logRetentionDays').value),
+                log_file_size: parseInt(document.getElementById('logFileSize').value),
+                log_backup_count: parseInt(document.getElementById('logBackupCount').value),
+                enable_log_rotation: document.getElementById('enableLogRotation').checked,
+                enable_log_compression: document.getElementById('enableLogCompression').checked,
+                send_error_logs: document.getElementById('sendErrorLogs').checked
+            };
+            saveSettings('log_storage', settings);
+        }
+
+        function saveCacheSettings() {
+            const settings = {
+                cache_type: document.getElementById('cacheType').value,
+                cache_ttl: parseInt(document.getElementById('cacheTTL').value),
+                enable_page_cache: document.getElementById('enablePageCache').checked,
+                enable_api_cache: document.getElementById('enableAPICache').checked,
+                enable_db_query_cache: document.getElementById('enableDBQueryCache').checked
+            };
+            saveSettings('cache', settings);
+        }
+
+        function saveConcurrencySettings() {
+            const settings = {
+                max_connections: parseInt(document.getElementById('maxConnections').value),
+                thread_pool_size: parseInt(document.getElementById('threadPoolSize').value),
+                request_timeout: parseInt(document.getElementById('requestTimeout').value),
+                enable_rate_limit: document.getElementById('enableRateLimit').checked,
+                rate_limit_threshold: parseInt(document.getElementById('rateLimitThreshold').value)
+            };
+            saveSettings('concurrency', settings);
+        }
+
+        function saveAPISettings() {
+            const settings = {
+                api_key_expiry_days: parseInt(document.getElementById('apiKeyExpiryDays').value),
+                max_request_size: parseInt(document.getElementById('maxRequestSize').value),
+                enable_api_auth: document.getElementById('enableAPIAuth').checked,
+                enable_cors: document.getElementById('enableCORS').checked,
+                enable_api_docs: document.getElementById('enableAPIDocs').checked,
+                cors_origins: document.getElementById('corsOrigins').value
+            };
+            saveSettings('api', settings);
+        }
+
+        async function saveSettings(category, settings) {
+            try {
+                const response = await fetch('/api/system/settings/save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ category, settings })
+                });
+                const data = await response.json();
+                
+                if (data.success || data.code === 200) {
+                    showToast('设置保存成功', 'success');
+                } else {
+                    showToast(data.message || '保存失败', 'error');
+                }
+            } catch (error) {
+                console.error('保存设置失败:', error);
+                showToast('保存失败', 'error');
+            }
+        }
+
+        async function clearCache() {
+            try {
+                const response = await fetch('/api/system/cache/clear', { method: 'POST' });
+                const data = await response.json();
+                
+                if (data.success || data.code === 200) {
+                    showToast('缓存已清除', 'success');
+                } else {
+                    showToast(data.message || '清除失败', 'error');
+                }
+            } catch (error) {
+                console.error('清除缓存失败:', error);
+                showToast('清除失败', 'error');
+            }
+        }
+
+        async function generateAPIKey() {
+            try {
+                const response = await fetch('/api/system/api_key/generate', { method: 'POST' });
+                const data = await response.json();
+                
+                if (data.success || data.code === 200) {
+                    showToast('API密钥生成成功', 'success');
+                    loadAPIKeys();
+                } else {
+                    showToast(data.message || '生成失败', 'error');
+                }
+            } catch (error) {
+                console.error('生成API密钥失败:', error);
+                showToast('生成失败', 'error');
+            }
+        }
+
+        async function loadAPIKeys() {
+            try {
+                const response = await fetch('/api/system/api_keys');
+                const data = await response.json();
+                
+                if (data.success || data.code === 200) {
+                    const keys = data.data || [];
+                    const tbody = document.getElementById('apiKeyList');
+                    
+                    if (keys.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="6" class="text-center">暂无API密钥</td></tr>';
+                    } else {
+                        tbody.innerHTML = keys.map(key => `
+                            <tr>
+                                <td>${key.name}</td>
+                                <td>${key.key}</td>
+                                <td>${key.created_at}</td>
+                                <td>${key.expires_at}</td>
+                                <td><span class="badge ${key.status === 'active' ? 'badge-success' : 'badge-secondary'}">${key.status === 'active' ? '启用' : '禁用'}</span></td>
+                                <td>
+                                    <button class="btn btn-sm btn-secondary" onclick="toggleAPIKey(${key.id})">切换状态</button>
+                                    <button class="btn btn-sm btn-danger" onclick="deleteAPIKey(${key.id})">删除</button>
+                                </td>
+                            </tr>
+                        `).join('');
+                    }
+                }
+            } catch (error) {
+                console.error('加载API密钥失败:', error);
+            }
+        }
+
+        async function toggleAPIKey(id) {
+            try {
+                const response = await fetch(`/api/system/api_key/${id}/toggle`, { method: 'POST' });
+                const data = await response.json();
+                
+                if (data.success || data.code === 200) {
+                    showToast('状态已切换', 'success');
+                    loadAPIKeys();
+                } else {
+                    showToast(data.message || '操作失败', 'error');
+                }
+            } catch (error) {
+                console.error('切换API密钥状态失败:', error);
+                showToast('操作失败', 'error');
+            }
+        }
+
+        async function deleteAPIKey(id) {
+            if (!confirm('确定删除此API密钥吗？')) return;
+            
+            try {
+                const response = await fetch(`/api/system/api_key/${id}`, { method: 'DELETE' });
+                const data = await response.json();
+                
+                if (data.success || data.code === 200) {
+                    showToast('API密钥已删除', 'success');
+                    loadAPIKeys();
+                } else {
+                    showToast(data.message || '删除失败', 'error');
+                }
+            } catch (error) {
+                console.error('删除API密钥失败:', error);
+                showToast('删除失败', 'error');
+            }
+        }
+    </script>
+
+    <style>
+        .tabs {
+            display: flex;
+            gap: var(--spacing-2);
+            margin-bottom: var(--spacing-4);
+            border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+            padding-bottom: var(--spacing-2);
+        }
+
+        .tab-btn {
+            padding: var(--spacing-3) var(--spacing-5);
+            background: transparent;
+            border: none;
+            border-radius: var(--border-radius-sm);
+            cursor: pointer;
+            font-weight: 500;
+            color: var(--text-secondary);
+            transition: all 0.2s;
+        }
+
+        .tab-btn:hover {
+            background: rgba(64, 158, 255, 0.1);
+            color: var(--color-primary);
+        }
+
+        .tab-btn.active {
+            background: var(--color-primary);
+            color: white;
+        }
+
+        .tab-content {
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: var(--spacing-4);
+            margin-bottom: var(--spacing-4);
+        }
+
+        .form-hint {
+            color: var(--text-muted);
+            font-size: 12px;
+            margin-top: 4px;
+            display: block;
+        }
+
+        input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+    </style>
+{% endblock %}

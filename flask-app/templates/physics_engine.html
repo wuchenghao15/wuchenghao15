@@ -1,0 +1,1748 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <!-- 设计系统 -->
+    <link rel="stylesheet" href="/assets/css/mtscos-design-system.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>物理引擎与粒子系统 - MTSCOS AI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-color: #667eea;
+            --secondary-color: #764ba2;
+            --success-color: #28a745;
+            --warning-color: var(--color-warning);
+            --danger-color: #dc3545;
+            --info-color: #17a2b8;
+            --physics-color: #f97316;
+            --particle-color: var(--color-secondary);
+            --render-color: #06b6d4;
+            --dark-bg: #0f0f1a;
+            --dark-card: #1a1a2e;
+            --dark-border: #2a2a4a;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 50%, #16213e 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #e0e0e0;
+        }
+
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            padding: 25px 35px;
+            border-radius: 16px;
+            margin-bottom: 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 8px 30px rgba(102, 126, 234, 0.3);
+            animation: headerGlow 3s ease-in-out infinite alternate;
+        }
+
+        @keyframes headerGlow {
+            from { box-shadow: 0 8px 30px rgba(102, 126, 234, 0.3); }
+            to { box-shadow: 0 8px 40px rgba(102, 126, 234, 0.5); }
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .logo-icon {
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulse 2s ease-in-out infinite;
+        
+        }
+        .logo-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .header-title {
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(90deg, white, rgba(255,255,255,0.8));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header-subtitle {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.7);
+            margin-top: 3px;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 10px;
+        }
+
+        .nav-tab {
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .nav-tab:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-2px);
+        }
+
+        .nav-tab.active {
+            background: white;
+            color: var(--primary-color);
+        }
+
+        .back-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 10px 22px;
+            border-radius: 10px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .back-btn:hover {
+            background: white;
+            color: var(--primary-color);
+            transform: translateY(-2px);
+        }
+
+        .content-section {
+            display: none;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, var(--dark-card) 0%, #252540 100%);
+            padding: 25px;
+            border-radius: 16px;
+            border: 1px solid var(--dark-border);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--physics-color), var(--particle-color));
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(249, 115, 22, 0.2);
+            border-color: var(--physics-color);
+        }
+
+        .stat-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin-bottom: 15px;
+        }
+
+        .stat-icon.physics { background: linear-gradient(135deg, rgba(249, 115, 22, 0.2), rgba(234, 88, 12, 0.2)); }
+        .stat-icon.particle { background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(124, 58, 237, 0.2)); }
+        .stat-icon.render { background: linear-gradient(135deg, rgba(6, 182, 212, 0.2), rgba(8, 145, 178, 0.2)); }
+        .stat-icon.math { background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(22, 163, 74, 0.2)); }
+
+        .stat-value {
+            font-size: 36px;
+            font-weight: 700;
+            background: linear-gradient(135deg, white, #b8b8d0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: #888;
+            margin-top: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .panel {
+            background: var(--dark-card);
+            border-radius: 16px;
+            border: 1px solid var(--dark-border);
+            overflow: hidden;
+            margin-bottom: 25px;
+            transition: all 0.3s ease;
+        }
+
+        .panel:hover {
+            border-color: rgba(102, 126, 234, 0.5);
+        }
+
+        .panel-header {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 20px 25px;
+            border-bottom: 1px solid var(--dark-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .panel-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #e0e0e0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .panel-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .panel-content {
+            padding: 25px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-physics {
+            background: linear-gradient(135deg, var(--physics-color) 0%, #ea580c 100%);
+            color: white;
+        }
+
+        .btn-physics:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(249, 115, 22, 0.4);
+        }
+
+        .btn-particle {
+            background: linear-gradient(135deg, var(--particle-color) 0%, #7c3aed 100%);
+            color: white;
+        }
+
+        .btn-particle:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4);
+        }
+
+        .btn-render {
+            background: linear-gradient(135deg, var(--render-color) 0%, #0891b2 100%);
+            color: white;
+        }
+
+        .btn-render:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(6, 182, 212, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #e0e0e0;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #b0b0c0;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--dark-border);
+            border-radius: 10px;
+            color: #e0e0e0;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .form-group input::placeholder {
+            color: #666;
+        }
+
+        .two-columns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+        }
+
+        @media (max-width: 1200px) {
+            .two-columns {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .result-area {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+            border: 1px solid var(--dark-border);
+            min-height: 100px;
+        }
+
+        .result-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #e0e0e0;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .formula-card {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border: 1px solid var(--dark-border);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .formula-card:hover {
+            background: rgba(102, 126, 234, 0.08);
+            border-color: rgba(102, 126, 234, 0.3);
+            transform: translateX(5px);
+        }
+
+        .formula-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #e0e0e0;
+            margin-bottom: 8px;
+        }
+
+        .formula-expression {
+            font-size: 18px;
+            color: var(--physics-color);
+            font-family: 'Times New Roman', serif;
+            margin-bottom: 8px;
+            font-style: italic;
+        }
+
+        .formula-desc {
+            font-size: 13px;
+            color: #888;
+        }
+
+        .constant-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 10px;
+            margin-bottom: 8px;
+            border: 1px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .constant-item:hover {
+            background: rgba(139, 92, 246, 0.08);
+            border-color: rgba(139, 92, 246, 0.3);
+        }
+
+        .constant-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .constant-name {
+            font-weight: 600;
+            color: #e0e0e0;
+        }
+
+        .constant-symbol {
+            font-size: 18px;
+            color: var(--particle-color);
+            font-family: 'Times New Roman', serif;
+            font-style: italic;
+        }
+
+        .constant-value {
+            font-family: 'Courier New', monospace;
+            color: var(--success-color);
+            font-weight: 600;
+        }
+
+        .render-canvas {
+            width: 100%;
+            min-height: 500px;
+            background: #0a0a15;
+            border-radius: 12px;
+            border: 1px solid var(--dark-border);
+            margin-top: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .render-canvas svg {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .preset-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .preset-btn {
+            padding: 10px 18px;
+            background: rgba(255, 255, 255, 0.08);
+            color: #e0e0e0;
+            border: 1px solid var(--dark-border);
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .preset-btn:hover {
+            background: linear-gradient(135deg, var(--particle-color) 0%, #7c3aed 100%);
+            color: white;
+            border-color: var(--particle-color);
+            transform: translateY(-2px);
+        }
+
+        .particle-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .particle-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 10px;
+            margin-bottom: 8px;
+            border-left: 3px solid var(--particle-color);
+        }
+
+        .particle-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .particle-dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+        }
+
+        .permission-warning {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(217, 119, 6, 0.1) 100%);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .permission-warning.hidden {
+            display: none;
+        }
+
+        .warning-icon {
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+
+        .warning-content h4 {
+            color: var(--color-warning);
+            margin-bottom: 5px;
+        }
+
+        .warning-content p {
+            color: #d97706;
+            font-size: 13px;
+        }
+
+        .simulation-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-badge.running {
+            background: rgba(40, 167, 69, 0.2);
+            color: #28a745;
+        }
+
+        .status-badge.stopped {
+            background: rgba(108, 117, 125, 0.2);
+            color: #6c757d;
+        }
+
+        .chart-container {
+            margin-top: 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .tab-content-scroll {
+            max-height: 500px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+
+        .tab-content-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .tab-content-scroll::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 3px;
+        }
+
+        .tab-content-scroll::-webkit-scrollbar-thumb {
+            background: rgba(102, 126, 234, 0.5);
+            border-radius: 3px;
+        }
+
+        .math-model-card {
+            background: rgba(34, 197, 94, 0.05);
+            border: 1px solid rgba(34, 197, 94, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .math-model-card:hover {
+            background: rgba(34, 197, 94, 0.1);
+            border-color: rgba(34, 197, 94, 0.4);
+        }
+
+        .model-type {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        .model-type.algebra { background: rgba(34, 197, 94, 0.2); color: #22c55e; }
+        .model-type.differential { background: rgba(59, 130, 246, 0.2); color: var(--color-primary); }
+        .model-type.probability { background: rgba(236, 72, 153, 0.2); color: #ec4899; }
+        .model-type.statistics { background: rgba(245, 158, 11, 0.2); color: var(--color-warning); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-left">
+                <div class="logo-icon"><img src="/assets/images/mtscos_logo.svg" alt="MTSCOS Logo"></div>
+                <div>
+                    <h1 class="header-title">物理引擎与粒子系统</h1>
+                    <p class="header-subtitle">物理模拟 · 粒子系统 · 数学模型 · 实时渲染</p>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="nav-tabs">
+                    <button class="nav-tab active" onclick="switchTab('physics')">🔬 物理引擎</button>
+                    <button class="nav-tab" onclick="switchTab('particle')">✨ 粒子系统</button>
+                    <button class="nav-tab" onclick="switchTab('render')">🎨 渲染引擎</button>
+                    <button class="nav-tab" onclick="switchTab('math')">📐 数学模型</button>
+                </div>
+                <a href="/dashboard" class="back-btn">← 返回仪表盘</a>
+            </div>
+        </div>
+
+        <div id="permission-warning" class="permission-warning hidden">
+            <span class="warning-icon">⚠️</span>
+            <div class="warning-content">
+                <h4>权限受限</h4>
+                <p>您当前的角色权限有限，部分高级功能可能无法使用。如需完整功能，请联系管理员提升权限。</p>
+            </div>
+        </div>
+
+        <!-- 物理引擎标签页 -->
+        <div id="tab-physics" class="content-section active">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon physics">📐</div>
+                    <div class="stat-value" id="formula-count">--</div>
+                    <div class="stat-label">物理公式</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon particle">🔢</div>
+                    <div class="stat-value" id="constant-count">--</div>
+                    <div class="stat-label">物理常数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon render">🔄</div>
+                    <div class="stat-value" id="sim-count">0</div>
+                    <div class="stat-label">已运行模拟</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon math">📊</div>
+                    <div class="stat-value" id="calc-count">0</div>
+                    <div class="stat-label">公式计算</div>
+                </div>
+            </div>
+
+            <div class="two-columns">
+                <div>
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3 class="panel-title">📐 物理公式库</h3>
+                            <div class="panel-actions">
+                                <button class="btn btn-secondary" onclick="loadFormulas()">刷新</button>
+                            </div>
+                        </div>
+                        <div class="panel-content tab-content-scroll" id="formula-list">
+                            <div style="text-align: center; padding: 40px; color: #666;">加载中...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3 class="panel-title">🔢 物理常数</h3>
+                            <div class="panel-actions">
+                                <button class="btn btn-secondary" onclick="loadConstants()">刷新</button>
+                            </div>
+                        </div>
+                        <div class="panel-content tab-content-scroll" id="constant-list">
+                            <div style="text-align: center; padding: 40px; color: #666;">加载中...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">
+                    <h3 class="panel-title">🎯 公式计算器</h3>
+                </div>
+                <div class="panel-content">
+                    <div class="form-grid" id="calculator-form">
+                        <div class="form-group">
+                            <label>选择公式</label>
+                            <select id="calc-formula" onchange="loadFormulaVariables()">
+                                <option value="">请选择公式...</option>
+                            </select>
+                        </div>
+                        <div id="calc-variables"></div>
+                    </div>
+                    <button class="btn btn-physics" onclick="calculateFormula()">
+                        🧮 计算
+                    </button>
+                    <div class="result-area" id="calc-result" style="display: none;">
+                        <div class="result-title">📊 计算结果</div>
+                        <div id="calc-result-content"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">
+                    <h3 class="panel-title">🔬 单摆模拟</h3>
+                </div>
+                <div class="panel-content">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>摆长 (米)</label>
+                            <input type="number" id="pendulum-length" value="1.0" step="0.1" min="0.1">
+                        </div>
+                        <div class="form-group">
+                            <label>初始角度 (度)</label>
+                            <input type="number" id="pendulum-angle" value="45" step="5" min="1" max="90">
+                        </div>
+                        <div class="form-group">
+                            <label>模拟时长 (秒)</label>
+                            <input type="number" id="pendulum-duration" value="10" step="1" min="1" max="60">
+                        </div>
+                        <div class="form-group">
+                            <label>重力加速度 (m/s²)</label>
+                            <input type="number" id="pendulum-gravity" value="9.81" step="0.1">
+                        </div>
+                    </div>
+                    <button class="btn btn-physics" onclick="simulatePendulum()">
+                        ▶️ 运行单摆模拟
+                    </button>
+                    <div id="pendulum-result"></div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">
+                    <h3 class="panel-title">🚀 抛体运动模拟</h3>
+                </div>
+                <div class="panel-content">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>初速度 (m/s)</label>
+                            <input type="number" id="projectile-velocity" value="30" step="1" min="1">
+                        </div>
+                        <div class="form-group">
+                            <label>发射角度 (度)</label>
+                            <input type="number" id="projectile-angle" value="45" step="5" min="1" max="89">
+                        </div>
+                        <div class="form-group">
+                            <label>初始高度 (米)</label>
+                            <input type="number" id="projectile-height" value="0" step="1" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label>重力加速度 (m/s²)</label>
+                            <input type="number" id="projectile-gravity" value="9.81" step="0.1">
+                        </div>
+                    </div>
+                    <button class="btn btn-physics" onclick="simulateProjectile()">
+                        ▶️ 运行抛体模拟
+                    </button>
+                    <div id="projectile-result"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 粒子系统标签页 -->
+        <div id="tab-particle" class="content-section">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon particle">✨</div>
+                    <div class="stat-value" id="particle-type-count">--</div>
+                    <div class="stat-label">粒子类型</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon physics">🌌</div>
+                    <div class="stat-value" id="system-count">0</div>
+                    <div class="stat-label">粒子系统</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon render">🔮</div>
+                    <div class="stat-value" id="total-particles">0</div>
+                    <div class="stat-label">活跃粒子</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon math">⚡</div>
+                    <div class="stat-value" id="sim-frames">0</div>
+                    <div class="stat-label">模拟帧数</div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">
+                    <h3 class="panel-title">🎬 预设场景</h3>
+                </div>
+                <div class="panel-content">
+                    <div class="preset-buttons">
+                        <button class="preset-btn" onclick="createPreset('solar-system')">🌞 太阳系</button>
+                        <button class="preset-btn" onclick="createPreset('gas-molecules')">💨 气体分子</button>
+                        <button class="preset-btn" onclick="createPreset('electric-field')">⚡ 电场</button>
+                        <button class="preset-btn" onclick="createPreset('magnetic-field')">🧲 磁场</button>
+                        <button class="preset-btn" onclick="createPreset('brownian-motion')">🌪️ 布朗运动</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="two-columns">
+                <div>
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3 class="panel-title">✨ 创建粒子系统</h3>
+                        </div>
+                        <div class="panel-content">
+                            <div class="form-group">
+                                <label>系统名称</label>
+                                <input type="text" id="ps-name" placeholder="我的粒子系统">
+                            </div>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label>积分方法</label>
+                                    <select id="ps-integrator">
+                                        <option value="euler">Euler (快速)</option>
+                                        <option value="verlet" selected>Verlet (能量守恒)</option>
+                                        <option value="rk4">RK4 (高精度)</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>时间步长</label>
+                                    <input type="number" id="ps-timestep" value="0.01" step="0.001" min="0.001">
+                                </div>
+                                <div class="form-group">
+                                    <label>边界条件</label>
+                                    <select id="ps-boundary">
+                                        <option value="none">无边界</option>
+                                        <option value="bounce" selected>弹性边界</option>
+                                        <option value="wrap">周期性边界</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>边界大小</label>
+                                    <input type="number" id="ps-boundary-size" value="50" step="5" min="10">
+                                </div>
+                            </div>
+                            <button class="btn btn-particle" onclick="createParticleSystem()">
+                                ✨ 创建粒子系统
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3 class="panel-title">🌌 粒子系统列表</h3>
+                            <div class="panel-actions">
+                                <button class="btn btn-secondary" onclick="loadParticleSystems()">刷新</button>
+                            </div>
+                        </div>
+                        <div class="panel-content particle-list" id="ps-list">
+                            <div style="text-align: center; padding: 40px; color: #666;">暂无粒子系统</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3 class="panel-title">🔮 当前系统: <span id="current-ps-name">未选择</span></h3>
+                            <div class="panel-actions">
+                                <span id="ps-status" class="status-badge stopped">未运行</span>
+                            </div>
+                        </div>
+                        <div class="panel-content">
+                            <div id="no-ps-selected" style="text-align: center; padding: 40px; color: #666;">
+                                请创建或选择一个粒子系统
+                            </div>
+                            <div id="ps-controls" style="display: none;">
+                                <div class="form-group">
+                                    <label>添加粒子类型</label>
+                                    <select id="particle-type-select">
+                                        <option value="">选择粒子类型...</option>
+                                    </select>
+                                </div>
+                                <div class="form-grid">
+                                    <div class="form-group">
+                                        <label>X位置</label>
+                                        <input type="number" id="p-pos-x" value="0" step="1">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Y位置</label>
+                                        <input type="number" id="p-pos-y" value="0" step="1">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>X速度</label>
+                                        <input type="number" id="p-vel-x" value="0" step="0.1">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Y速度</label>
+                                        <input type="number" id="p-vel-y" value="0" step="0.1">
+                                    </div>
+                                </div>
+                                <button class="btn btn-particle" onclick="addParticle()">
+                                    ➕ 添加粒子
+                                </button>
+
+                                <hr style="margin: 20px 0; border-color: var(--dark-border);">
+
+                                <div class="form-group">
+                                    <label>添加力场</label>
+                                    <select id="force-field-type">
+                                        <option value="">选择力场类型...</option>
+                                        <option value="gravity">重力场</option>
+                                        <option value="point_gravity">点重力场</option>
+                                        <option value="electric">匀强电场</option>
+                                        <option value="magnetic">匀强磁场</option>
+                                        <option value="drag">阻力场</option>
+                                    </select>
+                                </div>
+                                <button class="btn btn-secondary" onclick="addForceField()">
+                                    ⚡ 添加力场
+                                </button>
+
+                                <hr style="margin: 20px 0; border-color: var(--dark-border);">
+
+                                <div class="form-grid">
+                                    <div class="form-group">
+                                        <label>模拟步数</label>
+                                        <input type="number" id="sim-steps" value="100" step="50" min="10">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>采样间隔</label>
+                                        <input type="number" id="sample-interval" value="10" step="5" min="1">
+                                    </div>
+                                </div>
+                                <div class="simulation-controls">
+                                    <button class="btn btn-particle" onclick="runSimulation()">
+                                        ▶️ 运行模拟
+                                    </button>
+                                    <button class="btn btn-render" onclick="renderCurrentSystem()">
+                                        🎨 渲染
+                                    </button>
+                                    <button class="btn btn-secondary" onclick="deleteCurrentSystem()">
+                                        🗑️ 删除
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">
+                    <h3 class="panel-title">🎨 粒子渲染视图</h3>
+                </div>
+                <div class="panel-content">
+                    <div class="render-canvas" id="particle-render-area">
+                        <div style="color: #666;">运行模拟后将显示粒子可视化</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 渲染引擎标签页 -->
+        <div id="tab-render" class="content-section">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon render">🎨</div>
+                    <div class="stat-value" id="render-count">0</div>
+                    <div class="stat-label">渲染次数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon physics">📊</div>
+                    <div class="stat-value" id="chart-count">0</div>
+                    <div class="stat-label">图表生成</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon particle">🖼️</div>
+                    <div class="stat-value">SVG</div>
+                    <div class="stat-label">输出格式</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon math">⚡</div>
+                    <div class="stat-value">实时</div>
+                    <div class="stat-label">渲染模式</div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">
+                    <h3 class="panel-title">📈 通用图表渲染</h3>
+                </div>
+                <div class="panel-content">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>图表类型</label>
+                            <select id="chart-type">
+                                <option value="line">折线图</option>
+                                <option value="bar">柱状图</option>
+                                <option value="area">面积图</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>图表标题</label>
+                            <input type="text" id="chart-title" value="示例数据图表">
+                        </div>
+                        <div class="form-group">
+                            <label>X轴标签</label>
+                            <input type="text" id="chart-xlabel" value="时间 (s)">
+                        </div>
+                        <div class="form-group">
+                            <label>Y轴标签</label>
+                            <input type="text" id="chart-ylabel" value="数值">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>数据 (JSON格式，x:数组, y:数组或series数组)</label>
+                        <textarea id="chart-data" rows="4" style="font-family: monospace;">{
+  "x": [0, 1, 2, 3, 4, 5],
+  "series": [
+    {"name": "正弦波", "y": [0, 0.84, 0.91, 0.14, -0.76, -0.96], "color": "#667eea"},
+    {"name": "余弦波", "y": [1, 0.54, -0.42, -0.99, -0.65, 0.28], "color": "#f97316"}
+  ]
+}</textarea>
+                    </div>
+                    <button class="btn btn-render" onclick="renderChart()">
+                        🎨 渲染图表
+                    </button>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">
+                    <h3 class="panel-title">🖼️ 渲染结果</h3>
+                </div>
+                <div class="panel-content">
+                    <div class="render-canvas" id="chart-render-area">
+                        <div style="color: #666;">点击"渲染图表"按钮生成可视化</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 数学模型标签页 -->
+        <div id="tab-math" class="content-section">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon math">📐</div>
+                    <div class="stat-value" id="math-model-count">--</div>
+                    <div class="stat-label">数学模型</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon physics">🧮</div>
+                    <div class="stat-value" id="algebra-count">--</div>
+                    <div class="stat-label">代数模型</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon render">📊</div>
+                    <div class="stat-value" id="diff-count">--</div>
+                    <div class="stat-label">微分方程</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon particle">🎲</div>
+                    <div class="stat-value" id="prob-count">--</div>
+                    <div class="stat-label">概率/统计</div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">
+                    <h3 class="panel-title">📚 数学模型库</h3>
+                    <div class="panel-actions">
+                        <button class="btn btn-secondary" onclick="loadMathModels()">刷新</button>
+                    </div>
+                </div>
+                <div class="panel-content tab-content-scroll" id="math-model-list">
+                    <div style="text-align: center; padding: 40px; color: #666;">加载中...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentSystemId = null;
+        let simulationCount = 0;
+        let calculationCount = 0;
+        let renderCount = 0;
+        let chartCount = 0;
+        let simFrameCount = 0;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            checkPermissions();
+            loadStats();
+            loadFormulas();
+            loadConstants();
+            loadParticleTypes();
+            loadParticleSystems();
+            loadMathModels();
+        });
+
+        function checkPermissions() {
+            const userRole = '{{ role }}';
+            const restrictedRoles = ['guest'];
+            if (restrictedRoles.includes(userRole)) {
+                document.getElementById('permission-warning').classList.remove('hidden');
+            }
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById('tab-' + tabName).classList.add('active');
+        }
+
+        async function loadStats() {
+            try {
+                const [physicsRes, particleRes] = await Promise.all([
+                    fetch('/api/physics/stats'),
+                    fetch('/api/physics/particles/stats')
+                ]);
+                const physicsData = await physicsRes.json();
+                const particleData = await particleRes.json();
+                
+                if (physicsData.success) {
+                    document.getElementById('formula-count').textContent = physicsData.stats.formula_count || '--';
+                    document.getElementById('constant-count').textContent = physicsData.stats.constant_count || '--';
+                    document.getElementById('math-model-count').textContent = physicsData.stats.math_model_count || '--';
+                    
+                    const models = physicsData.stats.math_models_by_type || {};
+                    document.getElementById('algebra-count').textContent = models.algebraic || models.algebra || '--';
+                    document.getElementById('diff-count').textContent = models.differential || '--';
+                    document.getElementById('prob-count').textContent = (models.probability || 0) + (models.statistics || 0);
+                }
+                
+                if (particleData.success) {
+                    document.getElementById('particle-type-count').textContent = particleData.stats.particle_type_count || '--';
+                }
+            } catch (e) {
+                console.error('加载统计失败:', e);
+            }
+        }
+
+        async function loadFormulas() {
+            try {
+                const res = await fetch('/api/physics/formulas');
+                const data = await res.json();
+                if (data.success) {
+                    const list = document.getElementById('formula-list');
+                    const select = document.getElementById('calc-formula');
+                    select.innerHTML = '<option value="">请选择公式...</option>';
+                    
+                    list.innerHTML = data.formulas.map(f => `
+                        <div class="formula-card" onclick="selectFormula('${f.id}')">
+                            <div class="formula-name">${f.name}</div>
+                            <div class="formula-expression">${f.formula_latex || f.formula}</div>
+                            <div class="formula-desc">${f.description || ''}</div>
+                        </div>
+                    `).join('');
+                    
+                    data.formulas.forEach(f => {
+                        const opt = document.createElement('option');
+                        opt.value = f.id;
+                        opt.textContent = f.name;
+                        select.appendChild(opt);
+                    });
+                }
+            } catch (e) {
+                console.error('加载公式失败:', e);
+            }
+        }
+
+        function selectFormula(id) {
+            document.getElementById('calc-formula').value = id;
+            loadFormulaVariables();
+        }
+
+        async function loadFormulaVariables() {
+            const formulaId = document.getElementById('calc-formula').value;
+            if (!formulaId) {
+                document.getElementById('calc-variables').innerHTML = '';
+                return;
+            }
+            
+            try {
+                const res = await fetch(`/api/physics/formulas/${formulaId}`);
+                const data = await res.json();
+                if (data.success) {
+                    const vars = data.formula.variables || [];
+                    const container = document.getElementById('calc-variables');
+                    container.innerHTML = vars.map(v => `
+                        <div class="form-group">
+                            <label>${v.name} (${v.symbol || ''}) - ${v.unit || ''}</label>
+                            <input type="number" id="var-${v.symbol}" step="any" placeholder="${v.description || ''}">
+                        </div>
+                    `).join('');
+                }
+            } catch (e) {
+                console.error('加载变量失败:', e);
+            }
+        }
+
+        async function calculateFormula() {
+            const formulaId = document.getElementById('calc-formula').value;
+            if (!formulaId) {
+                alert('请先选择一个公式');
+                return;
+            }
+            
+            const variables = {};
+            document.querySelectorAll('#calc-variables input').forEach(input => {
+                const symbol = input.id.replace('var-', '');
+                const value = parseFloat(input.value);
+                if (!isNaN(value)) {
+                    variables[symbol] = value;
+                }
+            });
+            
+            try {
+                const res = await fetch(`/api/physics/formulas/${formulaId}/calculate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ variables })
+                });
+                const data = await res.json();
+                
+                document.getElementById('calc-result').style.display = 'block';
+                if (data.success) {
+                    calculationCount++;
+                    document.getElementById('calc-count').textContent = calculationCount;
+                    document.getElementById('calc-result-content').innerHTML = `
+                        <div style="font-size: 24px; color: #22c55e; font-weight: 700; margin-bottom: 10px;">
+                            结果: ${data.result.value} ${data.result.unit || ''}
+                        </div>
+                        <div style="color: #888; font-size: 13px;">
+                            计算时间: ${data.calculation_time || '--'}
+                        </div>
+                    `;
+                } else {
+                    document.getElementById('calc-result-content').innerHTML = `
+                        <div style="color: #dc3545;">❌ ${data.error || '计算失败'}</div>
+                    `;
+                }
+            } catch (e) {
+                console.error('计算失败:', e);
+            }
+        }
+
+        async function loadConstants() {
+            try {
+                const res = await fetch('/api/physics/constants');
+                const data = await res.json();
+                if (data.success) {
+                    const list = document.getElementById('constant-list');
+                    list.innerHTML = data.constants.map(c => `
+                        <div class="constant-item">
+                            <div class="constant-info">
+                                <span class="constant-name">${c.name}</span>
+                                <span class="constant-symbol">${c.symbol}</span>
+                            </div>
+                            <span class="constant-value">${c.value} ${c.unit || ''}</span>
+                        </div>
+                    `).join('');
+                }
+            } catch (e) {
+                console.error('加载常数失败:', e);
+            }
+        }
+
+        async function simulatePendulum() {
+            const params = {
+                length: parseFloat(document.getElementById('pendulum-length').value),
+                initial_angle: parseFloat(document.getElementById('pendulum-angle').value),
+                duration: parseFloat(document.getElementById('pendulum-duration').value),
+                gravity: parseFloat(document.getElementById('pendulum-gravity').value)
+            };
+            
+            try {
+                const res = await fetch('/api/physics/simulate/pendulum', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(params)
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    simulationCount++;
+                    document.getElementById('sim-count').textContent = simulationCount;
+                    
+                    const props = data.properties;
+                    document.getElementById('pendulum-result').innerHTML = `
+                        <div class="result-area">
+                            <div class="result-title">🔬 单摆模拟结果</div>
+                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px;">
+                                <div style="text-align: center; padding: 15px; background: rgba(102,126,234,0.1); border-radius: 10px;">
+                                    <div style="font-size: 12px; color: #888;">周期 T</div>
+                                    <div style="font-size: 24px; font-weight: 700; color: #667eea;">${props.period} s</div>
+                                </div>
+                                <div style="text-align: center; padding: 15px; background: rgba(249,115,22,0.1); border-radius: 10px;">
+                                    <div style="font-size: 12px; color: #888;">频率 f</div>
+                                    <div style="font-size: 24px; font-weight: 700; color: #f97316;">${props.frequency} Hz</div>
+                                </div>
+                                <div style="text-align: center; padding: 15px; background: rgba(139,92,246,0.1); border-radius: 10px;">
+                                    <div style="font-size: 12px; color: #888;">角频率 ω</div>
+                                    <div style="font-size: 24px; font-weight: 700; color: var(--color-secondary);">${props.angular_frequency} rad/s</div>
+                                </div>
+                            </div>
+                            <div style="color: #888; font-size: 13px;">
+                                共 ${data.total_steps} 个模拟数据点
+                            </div>
+                        </div>
+                    `;
+                }
+            } catch (e) {
+                console.error('单摆模拟失败:', e);
+            }
+        }
+
+        async function simulateProjectile() {
+            const params = {
+                initial_velocity: parseFloat(document.getElementById('projectile-velocity').value),
+                angle: parseFloat(document.getElementById('projectile-angle').value),
+                initial_height: parseFloat(document.getElementById('projectile-height').value),
+                gravity: parseFloat(document.getElementById('projectile-gravity').value)
+            };
+            
+            try {
+                const res = await fetch('/api/physics/simulate/projectile', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(params)
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    simulationCount++;
+                    document.getElementById('sim-count').textContent = simulationCount;
+                    
+                    const props = data.properties;
+                    document.getElementById('projectile-result').innerHTML = `
+                        <div class="result-area">
+                            <div class="result-title">🚀 抛体运动模拟结果</div>
+                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
+                                <div style="text-align: center; padding: 15px; background: rgba(34,197,94,0.1); border-radius: 10px;">
+                                    <div style="font-size: 12px; color: #888;">飞行时间</div>
+                                    <div style="font-size: 24px; font-weight: 700; color: #22c55e;">${props.flight_time.toFixed(3)} s</div>
+                                </div>
+                                <div style="text-align: center; padding: 15px; background: rgba(6,182,212,0.1); border-radius: 10px;">
+                                    <div style="font-size: 12px; color: #888;">最大高度</div>
+                                    <div style="font-size: 24px; font-weight: 700; color: #06b6d4;">${props.max_height.toFixed(3)} m</div>
+                                </div>
+                                <div style="text-align: center; padding: 15px; background: rgba(249,115,22,0.1); border-radius: 10px;">
+                                    <div style="font-size: 12px; color: #888;">射程</div>
+                                    <div style="font-size: 24px; font-weight: 700; color: #f97316;">${props.range.toFixed(3)} m</div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            } catch (e) {
+                console.error('抛体模拟失败:', e);
+            }
+        }
+
+        async function loadParticleTypes() {
+            try {
+                const res = await fetch('/api/physics/particles/types');
+                const data = await res.json();
+                if (data.success) {
+                    const select = document.getElementById('particle-type-select');
+                    select.innerHTML = '<option value="">选择粒子类型...</option>';
+                    data.particle_types.forEach(t => {
+                        const opt = document.createElement('option');
+                        opt.value = t.id;
+                        opt.textContent = `${t.name} (m=${t.mass}, q=${t.charge || 0})`;
+                        opt.dataset.color = t.color || '#ffffff';
+                        select.appendChild(opt);
+                    });
+                }
+            } catch (e) {
+                console.error('加载粒子类型失败:', e);
+            }
+        }
+
+        async function loadParticleSystems() {
+            try {
+                const res = await fetch('/api/physics/particles/systems');
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('system-count').textContent = data.systems.length;
+                    let totalParticles = 0;
+                    
+                    const list = document.getElementById('ps-list');
+                    if (data.systems.length === 0) {
+                        list.innerHTML = '<div style="text-align: center; padding: 40px; color: #666;">暂无粒子系统</div>';
+                    } else {
+                        list.innerHTML = data.systems.map(s => {
+                            totalParticles += s.particle_count || 0;
+                            return `
+                                <div class="particle-item" onclick="selectSystem('${s.id}')" style="cursor: pointer;">
+                                    <div class="particle-info">
+                                        <div class="particle-dot" style="background: ${s.integrator === 'verlet' ? 'var(--color-secondary)' : '#667eea'};"></div>
+                                        <div>
+                                            <div style="font-weight: 600;">${s.name}</div>
+                                            <div style="font-size: 12px; color: #888;">${s.particle_count} 粒子 · ${s.integrator}</div>
+                                        </div>
+                                    </div>
+                                    <span class="status-badge stopped">就绪</span>
+                                </div>
+                            `;
+                        }).join('');
+                    }
+                    document.getElementById('total-particles').textContent = totalParticles;
+                }
+            } catch (e) {
+                console.error('加载粒子系统失败:', e);
+            }
+        }
+
+        async function createPreset(presetName) {
+            try {
+                const endpoints = {
+                    'solar-system': '/api/physics/particles/presets/solar-system',
+                    'gas-molecules': '/api/physics/particles/presets/gas-molecules',
+                    'electric-field': '/api/physics/particles/presets/electric-field',
+                    'magnetic-field': '/api/physics/particles/presets/magnetic-field',
+                    'brownian-motion': '/api/physics/particles/presets/brownian-motion'
+                };
+                
+                const res = await fetch(endpoints[presetName], { method: 'POST' });
+                const data = await res.json();
+                if (data.success) {
+                    currentSystemId = data.system_id;
+                    document.getElementById('current-ps-name').textContent = data.name || presetName;
+                    document.getElementById('no-ps-selected').style.display = 'none';
+                    document.getElementById('ps-controls').style.display = 'block';
+                    document.getElementById('ps-status').textContent = '已创建';
+                    document.getElementById('ps-status').className = 'status-badge running';
+                    loadParticleSystems();
+                    
+                    const steps = presetName === 'solar-system' ? 1000 : 100;
+                    await runSimulationWithSteps(steps, 10);
+                }
+            } catch (e) {
+                console.error('创建预设失败:', e);
+            }
+        }
+
+        async function createParticleSystem() {
+            const name = document.getElementById('ps-name').value || '粒子系统';
+            const params = {
+                name: name,
+                integrator: document.getElementById('ps-integrator').value,
+                time_step: parseFloat(document.getElementById('ps-timestep').value),
+                boundary_condition: document.getElementById('ps-boundary').value,
+                boundary_size: parseFloat(document.getElementById('ps-boundary-size').value)
+            };
+            
+            try {
+                const res = await fetch('/api/physics/particles/systems', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(params)
+                });
+                const data = await res.json();
+                if (data.success) {
+                    currentSystemId = data.system_id;
+                    document.getElementById('current-ps-name').textContent = name;
+                    document.getElementById('no-ps-selected').style.display = 'none';
+                    document.getElementById('ps-controls').style.display = 'block';
+                    loadParticleSystems();
+                }
+            } catch (e) {
+                console.error('创建粒子系统失败:', e);
+            }
+        }
+
+        function selectSystem(id) {
+            currentSystemId = id;
+            document.getElementById('no-ps-selected').style.display = 'none';
+            document.getElementById('ps-controls').style.display = 'block';
+            document.getElementById('current-ps-name').textContent = '系统 #' + id.substring(0, 8);
+        }
+
+        async function addParticle() {
+            if (!currentSystemId) {
+                alert('请先选择或创建粒子系统');
+                return;
+            }
+            
+            const typeId = document.getElementById('particle-type-select').value;
+            if (!typeId) {
+                alert('请选择粒子类型');
+                return;
+            }
+            
+            const particle = {
+                type_id: typeId,
+                x: parseFloat(document.getElementById('p-pos-x').value),
+                y: parseFloat(document.getElementById('p-pos-y').value),
+                vx: parseFloat(document.getElementById('p-vel-x').value),
+                vy: parseFloat(document.getElementById('p-vel-y').value)
+            };
+            
+            try {
+                await fetch(`/api/physics/particles/systems/${currentSystemId}/particles`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(particle)
+                });
+                loadParticleSystems();
+            } catch (e) {
+                console.error('添加粒子失败:', e);
+            }
+        }
+
+        async function addForceField() {
+            if (!currentSystemId) {
+                alert('请先选择或创建粒子系统');
+                return;
+            }
+            
+            const fieldType = document.getElementById('force-field-type').value;
+            if (!fieldType) return;
+            
+            try {
+                await fetch(`/api/physics/particles/systems/${currentSystemId}/force-fields`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ type: fieldType })
+                });
+            } catch (e) {
+                console.error('添加力场失败:', e);
+            }
+        }
+
+        async function runSimulation() {
+            const steps = parseInt(document.getElementById('sim-steps').value);
+            const sampleInterval = parseInt(document.getElementById('sample-interval').value);
+            await runSimulationWithSteps(steps, sampleInterval);
+        }
+
+        async function runSimulationWithSteps(steps, sampleInterval) {
+            if (!currentSystemId) {
+                alert('请先选择或创建粒子系统');
+                return;
+            }
+            
+            document.getElementById('ps-status').textContent = '模拟中...';
+            document.getElementById('ps-status').className = 'status-badge running';
+            
+            try {
+                const res = await fetch(`/api/physics/particles/systems/${currentSystemId}/run`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ steps, sample_interval: sampleInterval })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    simFrameCount += data.frames?.length || 0;
+                    document.getElementById('sim-frames').textContent = simFrameCount;
+                    document.getElementById('ps-status').textContent = '已完成';
+                    renderCurrentSystem();
+                }
+            } catch (e) {
+                console.error('模拟失败:', e);
+                document.getElementById('ps-status').textContent = '错误';
+            }
+        }
+
+        async function renderCurrentSystem() {
+            if (!currentSystemId) return;
+            
+            try {
+                const res = await fetch(`/api/physics/render/particles/${currentSystemId}?show_velocity=true&show_grid=true`);
+                const data = await res.json();
+                if (data.success) {
+                    renderCount++;
+                    document.getElementById('render-count').textContent = renderCount;
+                    document.getElementById('particle-render-area').innerHTML = data.svg;
+                }
+            } catch (e) {
+                console.error('渲染失败:', e);
+            }
+        }
+
+        async function deleteCurrentSystem() {
+            if (!currentSystemId) return;
+            if (!confirm('确定要删除这个粒子系统吗？')) return;
+            
+            try {
+                await fetch(`/api/physics/particles/systems/${currentSystemId}`, { method: 'DELETE' });
+                currentSystemId = null;
+                document.getElementById('current-ps-name').textContent = '未选择';
+                document.getElementById('no-ps-selected').style.display = 'block';
+                document.getElementById('ps-controls').style.display = 'none';
+                document.getElementById('particle-render-area').innerHTML = '<div style="color: #666;">运行模拟后将显示粒子可视化</div>';
+                loadParticleSystems();
+            } catch (e) {
+                console.error('删除失败:', e);
+            }
+        }
+
+        async function renderChart() {
+            const params = {
+                chart_type: document.getElementById('chart-type').value,
+                title: document.getElementById('chart-title').value,
+                xlabel: document.getElementById('chart-xlabel').value,
+                ylabel: document.getElementById('chart-ylabel').value
+            };
+            
+            try {
+                const dataInput = JSON.parse(document.getElementById('chart-data').value);
+                params.data = dataInput;
+                
+                const res = await fetch('/api/physics/render/chart', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(params)
+                });
+                const data = await res.json();
+                if (data.success) {
+                    chartCount++;
+                    document.getElementById('chart-count').textContent = chartCount;
+                    renderCount++;
+                    document.getElementById('render-count').textContent = renderCount;
+                    document.getElementById('chart-render-area').innerHTML = data.svg;
+                }
+            } catch (e) {
+                alert('数据格式错误: ' + e.message);
+            }
+        }
+
+        async function loadMathModels() {
+            try {
+                const res = await fetch('/api/physics/math-models');
+                const data = await res.json();
+                if (data.success) {
+                    const list = document.getElementById('math-model-list');
+                    const typeLabels = {
+                        'algebraic': '代数', 'algebra': '代数',
+                        'differential': '微分方程',
+                        'probability': '概率',
+                        'statistics': '统计'
+                    };
+                    
+                    list.innerHTML = data.models.map(m => `
+                        <div class="math-model-card">
+                            <span class="model-type ${m.category || 'algebra'}">${typeLabels[m.category] || m.category || '模型'}</span>
+                            <div style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">${m.name}</div>
+                            <div style="font-size: 16px; color: #22c55e; font-family: 'Times New Roman', serif; font-style: italic; margin-bottom: 8px;">
+                                ${m.equation_latex || m.equation || ''}
+                            </div>
+                            <div style="font-size: 13px; color: #888;">${m.description || ''}</div>
+                        </div>
+                    `).join('');
+                }
+            } catch (e) {
+                console.error('加载数学模型失败:', e);
+            }
+        }
+    </script>
+</body>
+</html>

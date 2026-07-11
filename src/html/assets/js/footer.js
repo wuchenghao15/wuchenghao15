@@ -1,7 +1,6 @@
 // 兼容性检查和回退方案
 (function() {
     'use strict';
-
     // 检查Array.includes支持
     if (!Array.prototype.includes) {
         Array.prototype.includes = function(searchElement, fromIndex) {
@@ -14,19 +13,14 @@
             return false;
         };
     }
-
+})();
     // 确保页脚始终在页面底部
     function adjustFooter() {
         const body = document.body;
         const html = document.documentElement;
         const footer = document.querySelector('.footer');
         if (!footer) return;
-        const height = Math.max(
-            body.scrollHeight,
-            body.offsetHeight,
-            html.scrollHeight,
-            html.offsetHeight
-        );
+        const height = Math.max(body.scrollHeight, body.offsetHeight, html.clientHeight, html.scrollHeight, html.offsetHeight);
         if (height <= window.innerHeight) {
             footer.style.position = 'fixed';
             footer.style.bottom = '0';
@@ -35,11 +29,5 @@
             footer.style.position = 'relative';
         }
     }
-
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', adjustFooter);
-    } else {
-        adjustFooter();
-    }
+    window.addEventListener('load', adjustFooter);
     window.addEventListener('resize', adjustFooter);
-})();

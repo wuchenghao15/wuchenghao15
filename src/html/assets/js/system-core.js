@@ -1,9 +1,5 @@
-
-// 兼容性检查和回退方案
 (function() {
     'use strict';
-    
-    // 检查Array.includes支持
     if (!Array.prototype.includes) {
         Array.prototype.includes = function(searchElement, fromIndex) {
             fromIndex = parseInt(fromIndex) || 0;
@@ -16,208 +12,217 @@
         };
     }
 })();
-
-// 兼容性检查和回退方案
-(function() {
-    'use strict';
-    
-    // 检查Array.includes支持
-    if (!Array.prototype.includes) {
-        Array.prototype.includes = function(searchElement, fromIndex) {
-            fromIndex = parseInt(fromIndex) || 0;
-            for (let i = fromIndex; i < this.length; i++) {
-                if (this[i] === searchElement) {
-                    return true;
-                }
-            }
-            return false;
-        };
-    }
-})();
-
-// 兼容性检查和回退方案
-(function() {
-    'use strict';
-    
-    // 检查Array.includes支持
-    if (!Array.prototype.includes) {
-        Array.prototype.includes = function(searchElement, fromIndex) {
-            fromIndex = parseInt(fromIndex) || 0;
-            for (let i = fromIndex; i < this.length; i++) {
-                if (this[i] === searchElement) {
-                    return true;
-                }
-            }
-            return false;
-        };
-    }
-})();
-
-// 兼容性检查和回退方案
-(function() {
-    'use strict';
-    
-    // 检查Array.includes支持
-    if (!Array.prototype.includes) {
-        Array.prototype.includes = function(searchElement, fromIndex) {
-            fromIndex = parseInt(fromIndex) || 0;
-            for (let i = fromIndex; i < this.length; i++) {
-                if (this[i] === searchElement) {
-                    return true;
-                }
-            }
-            return false;
-        };
-    }
-})();
-
-// 兼容性检查和回退方案
-(function() {
-    'use strict';
-    
-    // 检查Array.includes支持
-    if (!Array.prototype.includes) {
-        Array.prototype.includes = function(searchElement, fromIndex) {
-            fromIndex = parseInt(fromIndex) || 0;
-            for (let i = fromIndex; i < this.length; i++) {
-                if (this[i] === searchElement) {
-                    return true;
-                }
-            }
-            return false;
-        };
-    }
-})();
-// 添加ES6+兼容性支持
 if (typeof Promise === "undefined") {
-    // 这里可以添加具体的polyfill代码
     console.warn("This browser requires a polyfill for ES6+ features");
 }
-
-// AI 修复建议
-// 以下是针对您代码问题的修复方案
-
-// 问题分析：
-// 1. 检测到语法错误或逻辑问题
-// 2. 提供优化建议
-// 3. 确保代码符合最佳实践
-
-// 修复后的代码示例：;
 function fixIssue() {
     const config = {
         version: '1.0.0',
         features: ['AI驱动', '实时响应', '智能优化']
     };
-    
     return {
         init: () => console.log('系统初始化完成'),
         process: (data) => data.map(item => ({ ...item, processed: true })),
         export: () => config.features.join(', ')
     };
 }
-
-// 使用示例;
-const solution = fixIssue();
-solution.init();
-const results = solution.process([{ id: 1, name: '测试' }]);
-console.log(results);
-console.log(solution.export());
-// 主题切换功能
 class ThemeManager {
     constructor() {
         this.themeToggle = null;
-        this.body = document.body;
+        this.html = document.documentElement;
+        this.themeInfo = document.getElementById('theme-info');
+        this.themeIcon = document.querySelector('.theme-icon');
         this.init();
     }
-    
     init() {
-        this.themeToggle = document.getElementById('themeToggle');
-        if (this.themeToggle) {
-            this.loadTheme();
-            this.bindEvents();
-        }
+        this.loadTheme();
+        this.bindEvents();
     }
-    
     loadTheme() {
-        // 检查本地存储中的主题设置
         const savedTheme = localStorage.getItem('theme');
-        if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            this.body.classList.add('dark-theme');
-            this.updateToggleIcon(true);
+        if (savedTheme) {
+            this.setTheme(savedTheme);
+        } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            this.setTheme('dark');
         } else {
-            this.body.classList.remove('dark-theme');
-            this.updateToggleIcon(false);
+            this.setTheme('light');
         }
     }
-    
     bindEvents() {
-        this.themeToggle.addEventListener('click', () => {
-            this.toggleTheme();
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        if (themeToggleBtn) {
+            themeToggleBtn.addEventListener('click', () => {
+                this.toggleThemeMenu();
+            });
+        }
+        document.addEventListener('click', (e) => {
+            const themeMenu = document.getElementById('theme-menu');
+            const themeBtn = document.getElementById('theme-toggle');
+            if (themeMenu && themeBtn && !themeMenu.contains(e.target) && !themeBtn.contains(e.target)) {
+                themeMenu.style.display = 'none';
+            }
         });
-        
-        // 监听系统主题变化
         window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
             const savedTheme = localStorage.getItem('theme');
             if (!savedTheme) {
-                if (e.matches) {
-                    this.body.classList.add('dark-theme');
-                    this.updateToggleIcon(true);
-                } else {
-                    this.body.classList.remove('dark-theme');
-                    this.updateToggleIcon(false);
-                }
+                this.setTheme(e.matches ? 'dark' : 'light');
             }
         });
     }
-    
-    toggleTheme() {
-        const isDark = this.body.classList.toggle('dark-theme');
-        localStorage.setItem('theme', isDark ? 'dark' : 'light');
-        this.updateToggleIcon(isDark);
-    }
-    
-    updateToggleIcon(isDark) {
-        if (this.themeToggle) {
-            this.themeToggle.innerHTML = isDark ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+    toggleThemeMenu() {
+        const themeMenu = document.getElementById('theme-menu');
+        if (themeMenu) {
+            themeMenu.style.display = themeMenu.style.display === 'block' ? 'none' : 'block';
         }
     }
-    
     setTheme(theme) {
-        if (theme === 'dark') {
-            this.body.classList.add('dark-theme');
-            this.updateToggleIcon(true);
-        } else {
-            this.body.classList.remove('dark-theme');
-            this.updateToggleIcon(false);
-        }
+        this.html.setAttribute('data-theme', theme);
         localStorage.setItem('theme', theme);
+        this.updateThemeInfo(theme);
+        this.updateThemeIcon(theme);
+        this.updateThemePreview(theme);
+        const themeMenu = document.getElementById('theme-menu');
+        if (themeMenu) {
+            themeMenu.style.display = 'none';
+        }
     }
-    
+    getThemeColors(theme) {
+        const colors = {
+            'light': { primary: '#3b82f6', secondary: '#a855f7', accent: '#14b8a6', bg: '#ffffff' },
+            'dark': { primary: '#3b82f6', secondary: '#a855f7', accent: '#14b8a6', bg: '#0f172a' },
+            'sunset': { primary: '#e94560', secondary: '#533483', accent: '#fbbf24', bg: '#1a1a2e' },
+            'teal': { primary: '#14b8a6', secondary: '#06b6d4', accent: '#f472b6', bg: '#0f172a' },
+            'gray': { primary: '#64748b', secondary: '#94a3b8', accent: '#94a3b8', bg: '#fafafa' },
+            'festive': { primary: '#dc2626', secondary: '#d97706', accent: '#f97316', bg: '#fef2f2' }
+        };
+        return colors[theme] || colors['light'];
+    }
+    getThemeDescription(theme) {
+        const descriptions = {
+            'light': '明亮清爽的浅色主题，适合白天使用',
+            'dark': '护眼舒适的深色主题，适合夜间使用',
+            'sunset': '温暖浪漫的日落主题，红紫渐变配色',
+            'teal': '清新自然的深青色主题，绿色系配色',
+            'gray': '庄重肃穆的灰色主题，适合公祭日',
+            'festive': '喜庆热烈的节日主题，适合国庆春节'
+        };
+        return descriptions[theme] || '未定义主题';
+    }
+    updateThemeInfo(theme) {
+        const themeNames = {
+            'light': '浅色主题',
+            'dark': '深色主题',
+            'sunset': '日落主题',
+            'teal': '深青色主题',
+            'gray': '灰色主题',
+            'festive': '喜庆主题'
+        };
+        const colors = this.getThemeColors(theme);
+        const description = this.getThemeDescription(theme);
+        const savedTheme = localStorage.getItem('theme');
+        const isSystemDefault = !savedTheme;
+        if (this.themeInfo) {
+            this.themeInfo.textContent = `主题: ${themeNames[theme] || theme}`;
+            this.themeInfo.setAttribute('data-theme', theme);
+            this.themeInfo.setAttribute('data-primary-color', colors.primary);
+            this.themeInfo.setAttribute('data-secondary-color', colors.secondary);
+            this.themeInfo.setAttribute('data-accent-color', colors.accent);
+            this.themeInfo.setAttribute('data-bg-color', colors.bg);
+            this.themeInfo.setAttribute('data-theme-description', description);
+            this.themeInfo.setAttribute('data-is-system-default', isSystemDefault);
+            this.themeInfo.setAttribute('data-theme-source', isSystemDefault ? 'system' : 'user');
+        }
+    }
+    updateThemeIcon(theme) {
+        if (this.themeIcon) {
+            const icons = {
+                'light': 'fa-sun',
+                'dark': 'fa-moon',
+                'sunset': 'fa-sunset',
+                'teal': 'fa-water',
+                'gray': 'fa-cloud',
+                'festive': 'fa-star'
+            };
+            const currentIcon = this.themeIcon.classList[1];
+            this.themeIcon.classList.remove(currentIcon);
+            this.themeIcon.classList.add(icons[theme] || 'fa-moon');
+        }
+    }
+    updateThemePreview(theme) {
+        const colors = this.getThemeColors(theme);
+        if (this.themeInfo) {
+            this.themeInfo.style.color = colors.primary;
+        }
+        const colorPreview = document.getElementById('theme-color-preview');
+        if (colorPreview) {
+            colorPreview.style.background = `linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 50%, ${colors.accent} 100%)`;
+            colorPreview.style.borderColor = colors.primary;
+        }
+    }
     getTheme() {
-        return this.body.classList.contains('dark-theme') ? 'dark' : 'light';
+        return this.html.getAttribute('data-theme') || 'light';
+    }
+    getCurrentThemeInfo() {
+        const theme = this.getTheme();
+        const colors = this.getThemeColors(theme);
+        const description = this.getThemeDescription(theme);
+        const savedTheme = localStorage.getItem('theme');
+        return {
+            theme: theme,
+            name: this.getThemeName(theme),
+            colors: colors,
+            description: description,
+            isSystemDefault: !savedTheme,
+            source: savedTheme ? 'user' : 'system'
+        };
+    }
+    getThemeName(theme) {
+        const themeNames = {
+            'light': '浅色主题',
+            'dark': '深色主题',
+            'sunset': '日落主题',
+            'teal': '深青色主题',
+            'gray': '灰色主题',
+            'festive': '喜庆主题'
+        };
+        return themeNames[theme] || theme;
+    }
+    getAvailableThemes() {
+        return [
+            { id: 'light', name: '浅色主题', icon: 'fa-sun', description: '明亮清爽的浅色主题' },
+            { id: 'dark', name: '深色主题', icon: 'fa-moon', description: '护眼舒适的深色主题' },
+            { id: 'sunset', name: '日落主题', icon: 'fa-sunset', description: '温暖浪漫的日落主题' },
+            { id: 'teal', name: '深青色主题', icon: 'fa-water', description: '清新自然的深青色主题' },
+            { id: 'gray', name: '灰色主题', icon: 'fa-cloud', description: '庄重肃穆的灰色主题' },
+            { id: 'festive', name: '喜庆主题', icon: 'fa-star', description: '喜庆热烈的节日主题' }
+        ];
+    }
+    resetToSystemDefault() {
+        localStorage.removeItem('theme');
+        if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            this.setTheme('dark');
+        } else {
+            this.setTheme('light');
+        }
     }
 }
-
-// 初始化主题管理器
+window.switchTheme = function(theme) {
+    if (window.themeManager) {
+        window.themeManager.setTheme(theme);
+    }
+};
 document.addEventListener('DOMContentLoaded', () => {
     window.themeManager = new ThemeManager();
 });
-
-// 性能优化功能
 class PerformanceOptimizer {
     constructor() {
         this.init();
     }
-    
     init() {
         this.lazyLoad();
         this.optimizeImages();
-        this.minifyCSS();
     }
-    
-    // 懒加载
     lazyLoad() {
-        // 图片懒加载
         if ('IntersectionObserver' in window) {
             const imageObserver = new IntersectionObserver((entries, observer) => {
                 entries.forEach(entry => {
@@ -228,14 +233,11 @@ class PerformanceOptimizer {
                     }
                 });
             });
-            
             const images = document.querySelectorAll('img[data-src]');
             images.forEach(image => {
                 imageObserver.observe(image);
             });
         }
-        
-        // 视频懒加载
         if ('IntersectionObserver' in window) {
             const videoObserver = new IntersectionObserver((entries, observer) => {
                 entries.forEach(entry => {
@@ -246,117 +248,20 @@ class PerformanceOptimizer {
                     }
                 });
             });
-            
             const videos = document.querySelectorAll('video[data-src]');
             videos.forEach(video => {
                 videoObserver.observe(video);
             });
         }
     }
-    
-    // 图片优化
     optimizeImages() {
-        // 确保图片使用适当的格式和大小
         const images = document.querySelectorAll('img');
         images.forEach(image => {
-            // 检查图片是否使用了适当的格式
             if (!image.src.includes('.webp') && !image.src.includes('.avif')) {
-                // 可以在这里添加图片格式转换逻辑
             }
-            
-            // 确保图片有适当的alt属性
             if (!image.alt) {
                 image.alt = '未命名图片';
             }
         });
     }
-    
-    // CSS优化
-    minifyCSS() {
-        // 可以在这里添加CSS minification逻辑
-    }
 }
-
-// 初始化性能优化器
-document.addEventListener('DOMContentLoaded', () => {
-    window.performanceOptimizer = new PerformanceOptimizer();
-});
-
-// 性能优化功能
-class PerformanceOptimizer {
-    constructor() {
-        this.init();
-    }
-    
-    init() {
-        this.lazyLoad();
-        this.optimizeImages();
-        this.minifyCSS();
-    }
-    
-    // 懒加载
-    lazyLoad() {
-        // 图片懒加载
-        if ('IntersectionObserver' in window) {
-            const imageObserver = new IntersectionObserver((entries, observer) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        const image = entry.target;
-                        image.src = image.dataset.src;
-                        imageObserver.unobserve(image);
-                    }
-                });
-            });
-            
-            const images = document.querySelectorAll('img[data-src]');
-            images.forEach(image => {
-                imageObserver.observe(image);
-            });
-        }
-        
-        // 视频懒加载
-        if ('IntersectionObserver' in window) {
-            const videoObserver = new IntersectionObserver((entries, observer) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        const video = entry.target;
-                        video.src = video.dataset.src;
-                        videoObserver.unobserve(video);
-                    }
-                });
-            });
-            
-            const videos = document.querySelectorAll('video[data-src]');
-            videos.forEach(video => {
-                videoObserver.observe(video);
-            });
-        }
-    }
-    
-    // 图片优化
-    optimizeImages() {
-        // 确保图片使用适当的格式和大小
-        const images = document.querySelectorAll('img');
-        images.forEach(image => {
-            // 检查图片是否使用了适当的格式
-            if (!image.src.includes('.webp') && !image.src.includes('.avif')) {
-                // 可以在这里添加图片格式转换逻辑
-            }
-            
-            // 确保图片有适当的alt属性
-            if (!image.alt) {
-                image.alt = '未命名图片';
-            }
-        });
-    }
-    
-    // CSS优化
-    minifyCSS() {
-        // 可以在这里添加CSS minification逻辑
-    }
-}
-
-// 初始化性能优化器
-document.addEventListener('DOMContentLoaded', () => {
-    window.performanceOptimizer = new PerformanceOptimizer();
-});

@@ -1,0 +1,1190 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <!-- 设计系统 -->
+    <link rel="stylesheet" href="/assets/css/mtscos-design-system.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>K12学科学习 - MTSCOS AI</title>
+    <link rel="icon" href="/assets/images/mtscos_logo.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/assets/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif; background: #f5f7fa; color: #333; }
+        
+        .header { background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.06); position: sticky; top: 0; z-index: 100; }
+        .header-inner { max-width: 1280px; margin: 0 auto; padding: 0 20px; height: 64px; display: flex; align-items: center; justify-content: space-between; }
+        .logo a { display: flex; align-items: center; gap: 10px; text-decoration: none; color: #333; font-weight: 700; font-size: 20px; }
+        .logo i { color: #667eea; font-size: 24px; }
+        .nav { display: flex; gap: 28px; }
+        .nav a { text-decoration: none; color: #555; font-size: 15px; font-weight: 500; transition: color 0.2s; padding: 20px 0; position: relative; }
+        .nav a:hover { color: #667eea; }
+        .nav a.active { color: #667eea; }
+        .nav a.active::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 3px; background: #667eea; border-radius: 2px; }
+
+        .footer { background: white; padding: 30px 20px; margin-top: 50px; border-top: 1px solid #eee; }
+        .footer .container { max-width: 1280px; margin: 0 auto; text-align: center; }
+        .footer p { color: #666; font-size: 14px; }
+        .footer .footer-sub { color: #999; font-size: 12px; margin-top: 6px; }
+
+        .subject-page-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .subject-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 20px;
+            padding: 30px 40px;
+            color: white;
+            margin-bottom: 24px;
+            position: relative;
+        }
+
+        .back-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-bottom: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .subject-title-section {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            margin-bottom: 16px;
+        }
+
+        .subject-icon-large {
+            width: 80px;
+            height: 80px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            background: rgba(255,255,255,0.2);
+            backdrop-filter: blur(10px);
+        }
+
+        .subject-title-text h1 {
+            font-size: 32px;
+            margin-bottom: 6px;
+        }
+
+        .subject-title-text p {
+            opacity: 0.9;
+            font-size: 15px;
+        }
+
+        .subject-stats {
+            display: flex;
+            gap: 32px;
+        }
+
+        .mini-stat {
+            text-align: center;
+        }
+
+        .mini-stat-value {
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .mini-stat-label {
+            font-size: 13px;
+            opacity: 0.85;
+        }
+
+        .subject-content {
+            display: flex;
+            gap: 24px;
+        }
+
+        .left-sidebar {
+            width: 300px;
+            flex-shrink: 0;
+        }
+
+        .chapter-nav {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+            position: sticky;
+            top: 20px;
+        }
+
+        .chapter-nav h3 {
+            font-size: 16px;
+            color: #333;
+            margin-bottom: 16px;
+        }
+
+        .chapter-list {
+            max-height: calc(100vh - 200px);
+            overflow-y: auto;
+        }
+
+        .chapter-item {
+            display: flex;
+            gap: 12px;
+            padding: 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-bottom: 6px;
+        }
+
+        .chapter-item:hover {
+            background: #f5f7ff;
+        }
+
+        .chapter-item.active {
+            background: #eef0ff;
+            border-left: 3px solid #667eea;
+        }
+
+        .chapter-number {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #f0f2ff;
+            color: #667eea;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .chapter-item.active .chapter-number {
+            background: #667eea;
+            color: white;
+        }
+
+        .chapter-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .chapter-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .chapter-meta {
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 6px;
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .progress-dot {
+            color: #ccc;
+        }
+
+        .progress-bar {
+            height: 4px;
+            background: #eee;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 2px;
+            transition: width 0.3s ease;
+        }
+
+        .main-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .content-tabs {
+            display: flex;
+            gap: 4px;
+            background: white;
+            padding: 6px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            background: transparent;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: #666;
+            transition: all 0.2s ease;
+        }
+
+        .tab-btn:hover {
+            background: #f5f7ff;
+            color: #667eea;
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .tab-panel {
+            display: none;
+        }
+
+        .tab-panel.active {
+            display: block;
+        }
+
+        .knowledge-section h2 {
+            font-size: 22px;
+            color: #1a1a2e;
+            margin-bottom: 20px;
+        }
+
+        .knowledge-list {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .knowledge-card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        }
+
+        .knowledge-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        .kp-type {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .kp-type.concept { background: #e3f2fd; color: #1976d2; }
+        .kp-type.formula { background: #f3e5f5; color: #7b1fa2; }
+        .kp-type.theorem { background: #fff3e0; color: #f57c00; }
+        .kp-type.method { background: #e8f5e9; color: #388e3c; }
+
+        .knowledge-header h3 {
+            font-size: 18px;
+            color: #1a1a2e;
+            flex: 1;
+        }
+
+        .kp-difficulty {
+            font-size: 13px;
+            color: #999;
+        }
+
+        .knowledge-content {
+            color: #444;
+            line-height: 1.8;
+            margin-bottom: 20px;
+        }
+
+        .formula-box {
+            background: #f8f9ff;
+            border-left: 4px solid #667eea;
+            padding: 16px 20px;
+            border-radius: 0 8px 8px 0;
+            margin: 16px 0;
+        }
+
+        .formula-label {
+            font-size: 13px;
+            color: #667eea;
+            font-weight: 600;
+            margin-right: 8px;
+        }
+
+        .formula-box code {
+            font-size: 16px;
+            color: #333;
+            background: transparent;
+            padding: 0;
+        }
+
+        .example-box {
+            background: #f5f7ff;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 16px 0;
+        }
+
+        .example-title {
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 12px;
+        }
+
+        .example-question {
+            color: #333;
+            line-height: 1.7;
+            margin-bottom: 12px;
+        }
+
+        .show-answer-btn {
+            background: transparent;
+            border: 1px solid #667eea;
+            color: #667eea;
+            padding: 6px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s ease;
+        }
+
+        .show-answer-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .example-answer {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px dashed #ddd;
+        }
+
+        .answer-text {
+            color: #388e3c;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .analysis-text {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.7;
+        }
+
+        .knowledge-actions {
+            display: flex;
+            gap: 10px;
+            padding-top: 16px;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        .action-btn {
+            padding: 8px 18px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            background: #667eea;
+            color: white;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .action-btn.secondary {
+            background: #f5f7ff;
+            color: #667eea;
+        }
+
+        .action-btn.secondary:hover {
+            background: #e8ebff;
+        }
+
+        .video-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .video-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        }
+
+        .video-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+        }
+
+        .video-thumbnail {
+            position: relative;
+            height: 160px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .play-icon {
+            width: 56px;
+            height: 56px;
+            background: rgba(255,255,255,0.9);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: #667eea;
+        }
+
+        .video-duration {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        .video-info {
+            padding: 16px;
+        }
+
+        .video-info h4 {
+            font-size: 15px;
+            color: #333;
+            margin-bottom: 6px;
+        }
+
+        .video-info p {
+            font-size: 13px;
+            color: #888;
+            margin-bottom: 10px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .video-meta {
+            display: flex;
+            gap: 16px;
+            font-size: 12px;
+            color: #999;
+        }
+
+        .practice-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .practice-header h2 {
+            font-size: 22px;
+            color: #1a1a2e;
+        }
+
+        .practice-config {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .practice-config select {
+            padding: 8px 14px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .start-practice-btn {
+            padding: 10px 24px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .start-practice-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102,126,234,0.4);
+        }
+
+        .practice-stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 30px;
+        }
+
+        .practice-stat-item {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        }
+
+        .stat-icon {
+            font-size: 32px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1a1a2e;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: #888;
+        }
+
+        .exam-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .exam-card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+            transition: all 0.3s ease;
+        }
+
+        .exam-card:hover {
+            transform: translateX(4px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        .exam-info h3 {
+            font-size: 18px;
+            color: #1a1a2e;
+            margin-bottom: 8px;
+        }
+
+        .exam-info p {
+            color: #666;
+            margin-bottom: 12px;
+        }
+
+        .exam-meta {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            font-size: 13px;
+            color: #888;
+        }
+
+        .exam-action {
+            text-align: right;
+        }
+
+        .best-score {
+            margin-bottom: 12px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .best-score strong {
+            color: #f57c00;
+            font-size: 18px;
+        }
+
+        .start-exam-btn {
+            padding: 12px 28px;
+            background: linear-gradient(135deg, #fa709a, #fee140);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .start-exam-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(250,112,154,0.4);
+        }
+
+        @media (max-width: 1024px) {
+            .left-sidebar { display: none; }
+            .practice-stats { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        @media (max-width: 768px) {
+            .nav { gap: 16px; }
+            .nav a { font-size: 13px; }
+        }
+
+        @media (max-width: 640px) {
+            .subject-header { padding: 20px; }
+            .subject-title-section { flex-direction: column; text-align: center; }
+            .subject-stats { justify-content: center; flex-wrap: wrap; gap: 16px; }
+            .content-tabs { flex-wrap: wrap; }
+            .tab-btn { flex: none; padding: 10px 14px; }
+            .practice-stats { grid-template-columns: 1fr; }
+            .exam-card { flex-direction: column; gap: 16px; text-align: center; }
+            .exam-action { text-align: center; }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-inner">
+            <div class="logo">
+                <a href="/">
+                    <i class="fas fa-robot"></i>
+                    <span>MTSCOS AI</span>
+                </a>
+            </div>
+            <nav class="nav">
+                <a href="/">首页</a>
+                <a href="/k12" class="active">K12教育</a>
+                <a href="/about/history">关于我们</a>
+                <a href="/products/features">产品功能</a>
+                <a href="/contact/contact">联系我们</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="subject-page-container">
+        <div class="subject-header">
+            <button class="back-btn" onclick="window.location.href='/k12'">← 返回K12首页</button>
+            <div class="subject-title-section">
+                <div class="subject-icon-large math">🔢</div>
+                <div class="subject-title-text">
+                    <h1>数学</h1>
+                    <p>代数·几何·函数·概率统计</p>
+                </div>
+            </div>
+            <div class="subject-stats">
+                <div class="mini-stat">
+                    <div class="mini-stat-value">12</div>
+                    <div class="mini-stat-label">章节</div>
+                </div>
+                <div class="mini-stat">
+                    <div class="mini-stat-value">86</div>
+                    <div class="mini-stat-label">知识点</div>
+                </div>
+                <div class="mini-stat">
+                    <div class="mini-stat-value">1280</div>
+                    <div class="mini-stat-label">题目</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="subject-content">
+            <div class="left-sidebar">
+                <div class="chapter-nav">
+                    <h3>📚 章节列表</h3>
+                    <div class="chapter-list">
+                        <div class="chapter-item active" onclick="selectChapter(this, '1')">
+                            <div class="chapter-number">1</div>
+                            <div class="chapter-info">
+                                <div class="chapter-name">有理数</div>
+                                <div class="chapter-meta">
+                                    <span>8个知识点</span>
+                                    <span class="progress-dot">•</span>
+                                    <span>75%</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: 75%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="chapter-item" onclick="selectChapter(this, '2')">
+                            <div class="chapter-number">2</div>
+                            <div class="chapter-info">
+                                <div class="chapter-name">整式的加减</div>
+                                <div class="chapter-meta">
+                                    <span>6个知识点</span>
+                                    <span class="progress-dot">•</span>
+                                    <span>60%</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: 60%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="chapter-item" onclick="selectChapter(this, '3')">
+                            <div class="chapter-number">3</div>
+                            <div class="chapter-info">
+                                <div class="chapter-name">一元一次方程</div>
+                                <div class="chapter-meta">
+                                    <span>10个知识点</span>
+                                    <span class="progress-dot">•</span>
+                                    <span>45%</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: 45%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="chapter-item" onclick="selectChapter(this, '4')">
+                            <div class="chapter-number">4</div>
+                            <div class="chapter-info">
+                                <div class="chapter-name">几何图形初步</div>
+                                <div class="chapter-meta">
+                                    <span>7个知识点</span>
+                                    <span class="progress-dot">•</span>
+                                    <span>30%</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: 30%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="chapter-item" onclick="selectChapter(this, '5')">
+                            <div class="chapter-number">5</div>
+                            <div class="chapter-info">
+                                <div class="chapter-name">相交线与平行线</div>
+                                <div class="chapter-meta">
+                                    <span>9个知识点</span>
+                                    <span class="progress-dot">•</span>
+                                    <span>20%</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: 20%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="chapter-item" onclick="selectChapter(this, '6')">
+                            <div class="chapter-number">6</div>
+                            <div class="chapter-info">
+                                <div class="chapter-name">实数</div>
+                                <div class="chapter-meta">
+                                    <span>5个知识点</span>
+                                    <span class="progress-dot">•</span>
+                                    <span>0%</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="main-content">
+                <div class="content-tabs">
+                    <button class="tab-btn active" data-tab="knowledge" onclick="switchTab('knowledge')">
+                        📖 知识点
+                    </button>
+                    <button class="tab-btn" data-tab="video" onclick="switchTab('video')">
+                        🎬 视频讲解
+                    </button>
+                    <button class="tab-btn" data-tab="practice" onclick="switchTab('practice')">
+                        ✍️ 同步练习
+                    </button>
+                    <button class="tab-btn" data-tab="exam" onclick="switchTab('exam')">
+                        📝 章节测试
+                    </button>
+                </div>
+
+                <div class="tab-content">
+                    <div id="knowledge-tab" class="tab-panel active">
+                        <div class="knowledge-section">
+                            <h2>第一章 · 知识点精讲</h2>
+                            <div class="knowledge-list">
+                                <div class="knowledge-card">
+                                    <div class="knowledge-header">
+                                        <span class="kp-type concept">概念</span>
+                                        <h3>有理数的定义</h3>
+                                        <span class="kp-difficulty">难度：简单</span>
+                                    </div>
+                                    <div class="knowledge-content">
+                                        <p>整数和分数统称为有理数。有理数可以用分数的形式表示，其中分子和分母都是整数，且分母不为零。</p>
+                                        <div class="example-box">
+                                            <div class="example-title">📌 典型例题</div>
+                                            <div class="example-question">下列各数中，哪些是有理数？-3, 0, 1/2, 0.25, π</div>
+                                            <button class="show-answer-btn" onclick="toggleAnswer(this)">查看解析</button>
+                                            <div class="example-answer" style="display: none;">
+                                                <div class="answer-text">答案：-3, 0, 1/2, 0.25 是有理数</div>
+                                                <div class="analysis-text">
+                                                    <strong>解析：</strong>根据有理数的定义，整数和分数统称为有理数。-3是负整数，0是整数，1/2是分数，0.25可以表示为1/4也是分数，它们都是有理数。而π是无限不循环小数，不能表示为分数形式，所以不是有理数。
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="knowledge-actions">
+                                        <button class="action-btn" onclick="markMastered(this)">
+                                            ✓ 标记已掌握
+                                        </button>
+                                        <button class="action-btn secondary">
+                                            💾 加入收藏
+                                        </button>
+                                        <button class="action-btn secondary">
+                                            ❓ 我有疑问
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="knowledge-card">
+                                    <div class="knowledge-header">
+                                        <span class="kp-type formula">公式</span>
+                                        <h3>有理数的加法法则</h3>
+                                        <span class="kp-difficulty">难度：中等</span>
+                                    </div>
+                                    <div class="knowledge-content">
+                                        <p>同号两数相加，取相同的符号，并把绝对值相加；异号两数相加，取绝对值较大的数的符号，并用较大的绝对值减去较小的绝对值；互为相反数的两个数相加得0；一个数同0相加，仍得这个数。</p>
+                                        <div class="formula-box">
+                                            <span class="formula-label">加法法则：</span>
+                                            <code>a + b = b + a (交换律)<br>(a + b) + c = a + (b + c) (结合律)</code>
+                                        </div>
+                                        <div class="example-box">
+                                            <div class="example-title">📌 典型例题</div>
+                                            <div class="example-question">计算：(-3) + (+5) + (-7) + (+9)</div>
+                                            <button class="show-answer-btn" onclick="toggleAnswer(this)">查看解析</button>
+                                            <div class="example-answer" style="display: none;">
+                                                <div class="answer-text">答案：4</div>
+                                                <div class="analysis-text">
+                                                    <strong>解析：</strong>方法一：按顺序计算<br>
+                                                    (-3) + (+5) = +2<br>
+                                                    (+2) + (-7) = -5<br>
+                                                    (-5) + (+9) = +4<br><br>
+                                                    方法二：运用加法交换律和结合律，把同号的数结合在一起<br>
+                                                    [(-3) + (-7)] + [(+5) + (+9)]<br>
+                                                    = (-10) + (+14)<br>
+                                                    = +4
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="knowledge-actions">
+                                        <button class="action-btn" onclick="markMastered(this)">
+                                            ✓ 标记已掌握
+                                        </button>
+                                        <button class="action-btn secondary">
+                                            💾 加入收藏
+                                        </button>
+                                        <button class="action-btn secondary">
+                                            ❓ 我有疑问
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="knowledge-card">
+                                    <div class="knowledge-header">
+                                        <span class="kp-type method">方法</span>
+                                        <h3>绝对值的化简方法</h3>
+                                        <span class="kp-difficulty">难度：中等</span>
+                                    </div>
+                                    <div class="knowledge-content">
+                                        <p>正数的绝对值是它本身，负数的绝对值是它的相反数，0的绝对值是0。在化简含有绝对值的表达式时，首先要判断绝对值符号内的数或式的正负性，然后根据绝对值的定义去掉绝对值符号。</p>
+                                        <div class="formula-box">
+                                            <span class="formula-label">绝对值定义：</span>
+                                            <code>|a| = { a (a≥0) ; -a (a&lt;0) }</code>
+                                        </div>
+                                    </div>
+                                    <div class="knowledge-actions">
+                                        <button class="action-btn" onclick="markMastered(this)">
+                                            ✓ 标记已掌握
+                                        </button>
+                                        <button class="action-btn secondary">
+                                            💾 加入收藏
+                                        </button>
+                                        <button class="action-btn secondary">
+                                            ❓ 我有疑问
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="video-tab" class="tab-panel">
+                        <div class="video-section">
+                            <h2>🎬 视频课程</h2>
+                            <div class="video-grid">
+                                <div class="video-card" onclick="playVideo('1')">
+                                    <div class="video-thumbnail">
+                                        <div class="play-icon">▶</div>
+                                        <span class="video-duration">15:30</span>
+                                    </div>
+                                    <div class="video-info">
+                                        <h4>有理数的概念与分类</h4>
+                                        <p>系统讲解有理数的定义、分类方法及常见易错点</p>
+                                        <div class="video-meta">
+                                            <span>👁️ 2,356次观看</span>
+                                            <span>⭐ 4.9</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="video-card" onclick="playVideo('2')">
+                                    <div class="video-thumbnail">
+                                        <div class="play-icon">▶</div>
+                                        <span class="video-duration">20:45</span>
+                                    </div>
+                                    <div class="video-info">
+                                        <h4>数轴与相反数</h4>
+                                        <p>数轴的三要素、相反数的几何意义与代数意义</p>
+                                        <div class="video-meta">
+                                            <span>👁️ 1,890次观看</span>
+                                            <span>⭐ 4.8</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="video-card" onclick="playVideo('3')">
+                                    <div class="video-thumbnail">
+                                        <div class="play-icon">▶</div>
+                                        <span class="video-duration">25:10</span>
+                                    </div>
+                                    <div class="video-info">
+                                        <h4>绝对值专题精讲</h4>
+                                        <p>绝对值的定义、性质及化简方法全面解析</p>
+                                        <div class="video-meta">
+                                            <span>👁️ 3,120次观看</span>
+                                            <span>⭐ 4.9</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="video-card" onclick="playVideo('4')">
+                                    <div class="video-thumbnail">
+                                        <div class="play-icon">▶</div>
+                                        <span class="video-duration">18:20</span>
+                                    </div>
+                                    <div class="video-info">
+                                        <h4>有理数的加法运算</h4>
+                                        <p>加法法则详解及运算技巧分享</p>
+                                        <div class="video-meta">
+                                            <span>👁️ 2,560次观看</span>
+                                            <span>⭐ 4.7</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="practice-tab" class="tab-panel">
+                        <div class="practice-section">
+                            <div class="practice-header">
+                                <h2>✍️ 同步练习</h2>
+                                <div class="practice-config">
+                                    <select id="difficultySelect">
+                                        <option value="all">全部难度</option>
+                                        <option value="easy">简单</option>
+                                        <option value="medium">中等</option>
+                                        <option value="hard">困难</option>
+                                    </select>
+                                    <select id="questionTypeSelect">
+                                        <option value="all">全部题型</option>
+                                        <option value="choice">选择题</option>
+                                        <option value="fill">填空题</option>
+                                        <option value="answer">解答题</option>
+                                    </select>
+                                    <button class="start-practice-btn" onclick="startPractice()">开始练习</button>
+                                </div>
+                            </div>
+                            <div class="practice-stats">
+                                <div class="practice-stat-item">
+                                    <div class="stat-icon">📝</div>
+                                    <div>
+                                        <div class="stat-value">256</div>
+                                        <div class="stat-label">总练习题</div>
+                                    </div>
+                                </div>
+                                <div class="practice-stat-item">
+                                    <div class="stat-icon">✅</div>
+                                    <div>
+                                        <div class="stat-value">168</div>
+                                        <div class="stat-label">已完成</div>
+                                    </div>
+                                </div>
+                                <div class="practice-stat-item">
+                                    <div class="stat-icon">🎯</div>
+                                    <div>
+                                        <div class="stat-value">82.5%</div>
+                                        <div class="stat-label">正确率</div>
+                                    </div>
+                                </div>
+                                <div class="practice-stat-item">
+                                    <div class="stat-icon">⏱️</div>
+                                    <div>
+                                        <div class="stat-value">3.5分</div>
+                                        <div class="stat-label">平均用时</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="exam-tab" class="tab-panel">
+                        <div class="exam-section">
+                            <h2>📝 章节测试</h2>
+                            <div class="exam-list">
+                                <div class="exam-card">
+                                    <div class="exam-info">
+                                        <h3>第一章 有理数 单元测试</h3>
+                                        <p>全面检测有理数章节的掌握情况，包含基础题和提升题</p>
+                                        <div class="exam-meta">
+                                            <span>📋 20题</span>
+                                            <span>⏱️ 45分钟</span>
+                                            <span>🎯 满分100分</span>
+                                            <span>📊 难度：中等</span>
+                                        </div>
+                                    </div>
+                                    <div class="exam-action">
+                                        <div class="best-score">
+                                            <span>最高分：</span>
+                                            <strong>92分</strong>
+                                        </div>
+                                        <button class="start-exam-btn" onclick="startExam('1')">
+                                            再考一次
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="exam-card">
+                                    <div class="exam-info">
+                                        <h3>有理数运算专项训练</h3>
+                                        <p>针对有理数加减乘除运算的专项练习，提升计算能力</p>
+                                        <div class="exam-meta">
+                                            <span>📋 30题</span>
+                                            <span>⏱️ 60分钟</span>
+                                            <span>🎯 满分100分</span>
+                                            <span>📊 难度：简单</span>
+                                        </div>
+                                    </div>
+                                    <div class="exam-action">
+                                        <button class="start-exam-btn" onclick="startExam('2')">
+                                            开始考试
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="exam-card">
+                                    <div class="exam-info">
+                                        <h3>绝对值与相反数 提高卷</h3>
+                                        <p>绝对值化简、相反数应用等重难点题型的强化训练</p>
+                                        <div class="exam-meta">
+                                            <span>📋 15题</span>
+                                            <span>⏱️ 40分钟</span>
+                                            <span>🎯 满分100分</span>
+                                            <span>📊 难度：困难</span>
+                                        </div>
+                                    </div>
+                                    <div class="exam-action">
+                                        <button class="start-exam-btn" onclick="startExam('3')">
+                                            开始考试
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 MTSCOS AI System. All rights reserved.</p>
+            <p class="footer-sub">Powered by Advanced AI Technology & Distributed Architecture</p>
+        </div>
+    </footer>
+
+    <script>
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
+            
+            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+            document.getElementById(tabName + '-tab').classList.add('active');
+        }
+
+        function selectChapter(el, chapterId) {
+            document.querySelectorAll('.chapter-item').forEach(item => item.classList.remove('active'));
+            el.classList.add('active');
+            loadChapterContent(chapterId);
+        }
+
+        function loadChapterContent(chapterId) {
+            console.log('加载章节内容:', chapterId);
+        }
+
+        function toggleAnswer(btn) {
+            const answerBox = btn.nextElementSibling;
+            if (answerBox.style.display === 'none') {
+                answerBox.style.display = 'block';
+                btn.textContent = '收起解析';
+            } else {
+                answerBox.style.display = 'none';
+                btn.textContent = '查看解析';
+            }
+        }
+
+        function markMastered(btn) {
+            btn.textContent = '✓ 已掌握';
+            btn.style.background = '#43e97b';
+            btn.disabled = true;
+        }
+
+        function playVideo(videoId) {
+            alert('视频播放功能即将上线：' + videoId);
+        }
+
+        function startPractice() {
+            const difficulty = document.getElementById('difficultySelect').value;
+            const type = document.getElementById('questionTypeSelect').value;
+            alert('开始练习\n难度：' + difficulty + '\n题型：' + type);
+        }
+
+        function startExam(examId) {
+            if (confirm('确定开始考试吗？考试过程中请不要离开页面。')) {
+                window.location.href = '/exam_page/' + examId;
+            }
+        }
+    </script>
+</body>
+</html>

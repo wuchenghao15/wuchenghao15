@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MTSCOS - 数学模型与解题训练系统</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif; background: linear-gradient(135deg, #1e3a5f 0%, #0d1b2a 100%); min-height: 100vh; padding: 20px; color: #fff; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .header h1 { font-size: 2.2em; margin-bottom: 8px; background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .header p { color: #94a3b8; }
+        .tabs { display: flex; gap: 10px; margin-bottom: 25px; border-bottom: 2px solid rgba(255,255,255,0.1); padding-bottom: 0; }
+        .tab { padding: 12px 24px; background: transparent; border: none; color: #94a3b8; cursor: pointer; font-size: 1em; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all 0.3s; }
+        .tab.active { color: #3b82f6; border-bottom-color: #3b82f6; }
+        .tab:hover { color: #fff; }
+        .stats-bar { display: grid; grid-template-columns: repeat(6, 1fr); gap: 15px; margin-bottom: 25px; }
+        .stat-card { background: rgba(255,255,255,0.08); border-radius: 12px; padding: 18px; text-align: center; border: 1px solid rgba(255,255,255,0.1); }
+        .stat-value { font-size: 1.8em; font-weight: bold; color: #3b82f6; }
+        .stat-label { font-size: 0.85em; color: #94a3b8; margin-top: 5px; }
+        .filter-bar { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
+        .filter-group { display: flex; gap: 8px; align-items: center; }
+        .filter-group label { color: #94a3b8; font-size: 0.9em; }
+        select, input { padding: 8px 14px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: #fff; font-size: 0.9em; }
+        select option { background: #1e3a5f; color: #fff; }
+        .btn { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-size: 0.95em; transition: all 0.3s; }
+        .btn-primary { background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%); color: white; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(59,130,246,0.4); }
+        .btn-secondary { background: rgba(255,255,255,0.1); color: #fff; border: 1px solid rgba(255,255,255,0.2); }
+        .btn-secondary:hover { background: rgba(255,255,255,0.15); }
+        .content-area { display: none; }
+        .content-area.active { display: block; }
+        .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+        .card { background: rgba(255,255,255,0.08); border-radius: 12px; padding: 20px; border: 1px solid rgba(255,255,255,0.1); transition: all 0.3s; }
+        .card:hover { border-color: rgba(59,130,246,0.5); transform: translateY(-3px); }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .card-title { font-size: 1.1em; font-weight: 600; }
+        .card-tag { padding: 4px 10px; background: rgba(59,130,246,0.2); color: #60a5fa; border-radius: 20px; font-size: 0.8em; }
+        .card-desc { color: #94a3b8; font-size: 0.9em; margin-bottom: 12px; line-height: 1.5; }
+        .card-meta { display: flex; gap: 15px; font-size: 0.85em; color: #64748b; margin-top: 12px; }
+        .problem-card { background: rgba(255,255,255,0.08); border-radius: 12px; padding: 25px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.1); }
+        .problem-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .problem-id { background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+        .problem-content { font-size: 1.15em; line-height: 1.8; margin-bottom: 20px; }
+        .problem-answer { margin-bottom: 15px; }
+        .problem-answer input { width: 100%; padding: 12px 15px; font-size: 1.05em; background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.2); border-radius: 8px; color: #fff; }
+        .problem-answer input:focus { outline: none; border-color: #3b82f6; }
+        .problem-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+        .hints-box { background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.3); border-radius: 8px; padding: 12px; margin: 10px 0; }
+        .hints-box h4 { color: #fbbf24; margin-bottom: 8px; }
+        .hints-box ul { list-style: none; padding-left: 0; }
+        .hints-box li { color: #fde68a; padding: 4px 0; font-size: 0.9em; }
+        .solution-box { background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.3); border-radius: 8px; padding: 15px; margin: 10px 0; }
+        .solution-box h4 { color: #22c55e; margin-bottom: 10px; }
+        .solution-step { padding: 6px 0; color: #bbf7d0; font-size: 0.9em; }
+        .solution-formula { font-family: 'Courier New', monospace; color: #86efac; background: rgba(34,197,94,0.1); padding: 4px 8px; border-radius: 4px; display: inline-block; margin: 4px 0; }
+        .correct { color: #22c55e; }
+        .wrong { color: #ef4444; }
+        .difficulty-1 { color: #22c55e; }
+        .difficulty-2 { color: #fbbf24; }
+        .difficulty-3 { color: #f97316; }
+        .difficulty-4 { color: #ef4444; }
+        .difficulty-5 { color: #a855f7; }
+        .empty-state { text-align: center; padding: 60px 20px; color: #64748b; }
+        .empty-state-icon { font-size: 3em; margin-bottom: 15px; }
+        .ai-badge { background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%); color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.75em; margin-left: 8px; }
+        .nav-back { display: inline-flex; align-items: center; gap: 5px; color: #94a3b8; text-decoration: none; margin-bottom: 15px; cursor: pointer; }
+        .nav-back:hover { color: #fff; }
+        .loading { text-align: center; padding: 40px; color: #64748b; }
+        .spinner { border: 3px solid rgba(255,255,255,0.1); border-top: 3px solid #3b82f6; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 15px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a class="nav-back" onclick="history.back()">← 返回</a>
+        
+        <div class="header">
+            <h1>📐 数学模型与解题训练系统</h1>
+            <p>智能题库 · AI生成 · 多种解法 · 步骤解析</p>
+        </div>
+
+        <div class="stats-bar" id="stats-bar">
+            <div class="stat-card"><div class="stat-value" id="stat-concepts">-</div><div class="stat-label">数学概念</div></div>
+            <div class="stat-card"><div class="stat-value" id="stat-methods">-</div><div class="stat-label">解题方法</div></div>
+            <div class="stat-card"><div class="stat-value" id="stat-problems">-</div><div class="stat-label">题目总数</div></div>
+            <div class="stat-card"><div class="stat-value" id="stat-solved">-</div><div class="stat-label">已解题数</div></div>
+            <div class="stat-card"><div class="stat-value" id="stat-accuracy">-</div><div class="stat-label">正确率</div></div>
+            <div class="stat-card"><div class="stat-value" id="stat-avgtime">-</div><div class="stat-label">平均用时</div></div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('problems')">📝 题目训练</button>
+            <button class="tab" onclick="switchTab('concepts')">📚 数学概念</button>
+            <button class="tab" onclick="switchTab('methods')">💡 解题方法</button>
+            <button class="tab" onclick="switchTab('history')">📊 我的记录</button>
+        </div>
+
+        <div id="tab-problems" class="content-area active">
+            <div class="filter-bar">
+                <div class="filter-group">
+                    <label>分类:</label>
+                    <select id="filter-category" onchange="loadProblems()">
+                        <option value="all">全部</option>
+                        <option value="algebra">代数</option>
+                        <option value="geometry">几何</option>
+                        <option value="probability">概率统计</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>难度:</label>
+                    <select id="filter-difficulty" onchange="loadProblems()">
+                        <option value="">全部难度</option>
+                        <option value="1">⭐ 简单</option>
+                        <option value="2">⭐⭐ 中等</option>
+                        <option value="3">⭐⭐⭐ 较难</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>数量:</label>
+                    <select id="filter-limit" onchange="loadProblems()">
+                        <option value="5">5题</option>
+                        <option value="10" selected>10题</option>
+                        <option value="20">20题</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary" onclick="loadProblems()">🔄 获取题目</button>
+                <button class="btn btn-secondary" onclick="generateProblems()">🤖 AI生成</button>
+            </div>
+            <div id="problems-container"></div>
+        </div>
+
+        <div id="tab-concepts" class="content-area">
+            <div class="filter-bar">
+                <div class="filter-group">
+                    <label>分类:</label>
+                    <select id="concept-category" onchange="loadConcepts()">
+                        <option value="">全部</option>
+                        <option value="algebra">代数</option>
+                        <option value="geometry">几何</option>
+                        <option value="calculus">微积分</option>
+                        <option value="probability">概率统计</option>
+                        <option value="number_theory">数论</option>
+                        <option value="combinatorics">组合数学</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>搜索:</label>
+                    <input type="text" id="concept-search" placeholder="搜索概念..." onkeyup="if(event.key==='Enter')loadConcepts()">
+                </div>
+            </div>
+            <div id="concepts-container" class="card-grid"></div>
+        </div>
+
+        <div id="tab-methods" class="content-area">
+            <div class="filter-bar">
+                <div class="filter-group">
+                    <label>分类:</label>
+                    <select id="method-category" onchange="loadMethods()">
+                        <option value="">全部</option>
+                        <option value="algebra">代数方法</option>
+                        <option value="geometry">几何方法</option>
+                        <option value="general">通用方法</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>类型:</label>
+                    <select id="method-type" onchange="loadMethods()">
+                        <option value="">全部类型</option>
+                        <option value="formula_based">公式法</option>
+                        <option value="transformation">转化法</option>
+                        <option value="classification">分类讨论</option>
+                        <option value="constructive">构造法</option>
+                        <option value="reverse">反证法</option>
+                        <option value="graphical">数形结合</option>
+                    </select>
+                </div>
+            </div>
+            <div id="methods-container" class="card-grid"></div>
+        </div>
+
+        <div id="tab-history" class="content-area">
+            <div id="history-container"></div>
+        </div>
+    </div>
+
+    <script>
+        var currentTab = 'problems';
+        var problems = [];
+        var answers = {};
+        var startTime = null;
+        var timerInterval = null;
+
+        window.onload = function() {
+            loadStats();
+            loadProblems();
+        };
+
+        function switchTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+            event.target.classList.add('active');
+            document.querySelectorAll('.content-area').forEach(function(c) { c.classList.remove('active'); });
+            document.getElementById('tab-' + tab).classList.add('active');
+
+            if (tab === 'concepts') loadConcepts();
+            if (tab === 'methods') loadMethods();
+            if (tab === 'history') loadHistory();
+        }
+
+        function loadStats() {
+            fetch('/api/math/stats')
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data.success) {
+                        document.getElementById('stat-concepts').textContent = data.data.concepts_count || 0;
+                        document.getElementById('stat-methods').textContent = data.data.methods_count || 0;
+                        document.getElementById('stat-problems').textContent = data.data.problems_count || 0;
+                        document.getElementById('stat-solved').textContent = data.data.user_total_solved || 0;
+                        document.getElementById('stat-accuracy').textContent = (data.data.user_accuracy || 0) + '%';
+                        document.getElementById('stat-avgtime').textContent = (data.data.user_avg_time || 0) + 's';
+                    }
+                });
+        }
+
+        function loadProblems() {
+            var category = document.getElementById('filter-category').value;
+            var difficulty = document.getElementById('filter-difficulty').value;
+            var limit = document.getElementById('filter-limit').value;
+
+            document.getElementById('problems-container').innerHTML = '<div class="loading"><div class="spinner"></div>加载中...</div>';
+
+            fetch('/api/math/problems?category=' + category + '&difficulty=' + difficulty + '&limit=' + limit)
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data.success && data.data.length > 0) {
+                        problems = data.data;
+                        renderProblems();
+                        startTime = Date.now();
+                    } else {
+                        document.getElementById('problems-container').innerHTML = '<div class="empty-state"><div class="empty-state-icon">📝</div><p>暂无题目，点击AI生成</p></div>';
+                    }
+                })
+                .catch(function(e) {
+                    document.getElementById('problems-container').innerHTML = '<div class="empty-state"><div class="empty-state-icon">❌</div><p>加载失败: ' + e.message + '</p></div>';
+                });
+        }
+
+        function generateProblems() {
+            var category = document.getElementById('filter-category').value;
+            var difficulty = document.getElementById('filter-difficulty').value || '2';
+            if (category === 'all') category = 'algebra';
+
+            document.getElementById('problems-container').innerHTML = '<div class="loading"><div class="spinner"></div>AI正在生成题目...</div>';
+
+            fetch('/api/math/generate', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({count: 5, category: category, difficulty: parseInt(difficulty), save_to_db: true})
+            })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data.success && data.data.length > 0) {
+                        problems = data.data;
+                        renderProblems();
+                        startTime = Date.now();
+                        loadStats();
+                    }
+                });
+        }
+
+        function renderProblems() {
+            var html = '';
+            problems.forEach(function(p, idx) {
+                var diffClass = 'difficulty-' + p.difficulty;
+                var diffStars = '⭐'.repeat(p.difficulty);
+                var isGen = p.source === 'ai_generated' || p.id && p.id.startsWith('mp_gen_');
+                html += '<div class="problem-card" id="problem-' + p.id + '">' +
+                    '<div class="problem-header">' +
+                        '<div style="display:flex;align-items:center;gap:15px;">' +
+                            '<div class="problem-id">' + (idx + 1) + '</div>' +
+                            '<span class="' + diffClass + '">' + diffStars + '</span>' +
+                            '<span style="color:#64748b;font-size:0.85em;">' + getCategoryName(p.category) + ' · ' + p.subcategory + '</span>' +
+                            (isGen ? '<span class="ai-badge">AI生成</span>' : '') +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="problem-content">' + p.content + '</div>' +
+                    '<div class="problem-answer">' +
+                        '<input type="text" id="answer-' + p.id + '" placeholder="输入你的答案..." onkeydown="if(event.key===\'Enter\')submitAnswer(\'' + p.id + '\')">' +
+                    '</div>' +
+                    '<div class="problem-actions">' +
+                        '<button class="btn btn-primary" onclick="submitAnswer(\'' + p.id + '\')">✓ 提交答案</button>' +
+                        '<button class="btn btn-secondary" onclick="showHints(\'' + p.id + '\')">💡 提示</button>' +
+                        '<button class="btn btn-secondary" onclick="showSolution(\'' + p.id + '\')">📖 查看解法</button>' +
+                        '<button class="btn btn-secondary" onclick="aiSolve(\'' + p.id + '\')">🤖 AI解题</button>' +
+                    '</div>' +
+                    '<div id="hints-' + p.id + '" style="display:none;"></div>' +
+                    '<div id="result-' + p.id + '" style="display:none;"></div>' +
+                    '<div id="solution-' + p.id + '" style="display:none;"></div>' +
+                '</div>';
+            });
+            document.getElementById('problems-container').innerHTML = html;
+        }
+
+        function getCategoryName(cat) {
+            var names = {algebra: '代数', geometry: '几何', probability: '概率统计', calculus: '微积分', number_theory: '数论', combinatorics: '组合数学'};
+            return names[cat] || cat;
+        }
+
+        function submitAnswer(problemId) {
+            var answer = document.getElementById('answer-' + problemId).value;
+            if (!answer) { alert('请输入答案'); return; }
+
+            var timeSpent = (Date.now() - startTime) / 1000;
+
+            fetch('/api/math/submit', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({problem_id: problemId, user_answer: answer, time_spent: timeSpent})
+            })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data.success) {
+                        var resultDiv = document.getElementById('result-' + problemId);
+                        var resultHtml = '<div class="solution-box">' +
+                            '<h4>' + (data.is_correct ? '✅ 回答正确！' : '❌ 回答错误') + '</h4>' +
+                            '<p><strong>正确答案:</strong> ' + data.correct_answer + '</p>' +
+                            '<p><strong>解析:</strong> ' + data.explanation + '</p></div>';
+                        resultDiv.innerHTML = resultHtml;
+                        resultDiv.style.display = 'block';
+                        loadStats();
+                    }
+                });
+        }
+
+        function showHints(problemId) {
+            var problem = problems.find(function(p) { return p.id === problemId; });
+            if (!problem || !problem.hints || problem.hints.length === 0) {
+                alert('暂无提示');
+                return;
+            }
+            var hintsDiv = document.getElementById('hints-' + problemId);
+            if (hintsDiv.style.display === 'none') {
+                var html = '<div class="hints-box"><h4>💡 提示</h4><ul>';
+                problem.hints.forEach(function(h) { html += '<li>• ' + h + '</li>'; });
+                html += '</ul></div>';
+                hintsDiv.innerHTML = html;
+                hintsDiv.style.display = 'block';
+            } else {
+                hintsDiv.style.display = 'none';
+            }
+        }
+
+        function showSolution(problemId) {
+            var problem = problems.find(function(p) { return p.id === problemId; });
+            if (!problem || !problem.solution_steps || problem.solution_steps.length === 0) {
+                alert('暂无详细解法');
+                return;
+            }
+            var solDiv = document.getElementById('solution-' + problemId);
+            if (solDiv.style.display === 'none') {
+                var html = '<div class="solution-box"><h4>📖 解题步骤</h4>';
+                problem.solution_steps.forEach(function(s) {
+                    html += '<div class="solution-step">';
+                    html += '<strong>第' + s.step + '步: ' + s.description + '</strong>';
+                    if (s.formula) html += '<br><span class="solution-formula">' + s.formula + '</span>';
+                    html += '</div>';
+                });
+                html += '</div>';
+                solDiv.innerHTML = html;
+                solDiv.style.display = 'block';
+            } else {
+                solDiv.style.display = 'none';
+            }
+        }
+
+        function aiSolve(problemId) {
+            var solDiv = document.getElementById('solution-' + problemId);
+            solDiv.innerHTML = '<div class="loading"><div class="spinner"></div>AI正在解题...</div>';
+            solDiv.style.display = 'block';
+
+            fetch('/api/math/solve', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({problem_id: problemId})
+            })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data.success) {
+                        var html = '<div class="solution-box">' +
+                            '<h4>🤖 AI解题结果</h4>' +
+                            '<p><strong>方法:</strong> ' + data.method + '</p>' +
+                            '<p><strong>答案:</strong> <span class="solution-formula">' + data.answer + '</span></p>' +
+                            '<h5 style="margin:10px 0 5px;">解题步骤:</h5>';
+                        (data.steps || []).forEach(function(s) {
+                            html += '<div class="solution-step"><strong>第' + s.step + '步: ' + s.description + '</strong>';
+                            if (s.formula) html += '<br><span class="solution-formula">' + s.formula + '</span>';
+                            html += '</div>';
+                        });
+                        html += '</div>';
+                        solDiv.innerHTML = html;
+                    } else {
+                        solDiv.innerHTML = '<div class="solution-box" style="border-color:#ef4444;"><h4 style="color:#ef4444;">❌ 解题失败</h4><p>' + data.error + '</p></div>';
+                    }
+                });
+        }
+
+        function loadConcepts() {
+            var category = document.getElementById('concept-category').value;
+            var keyword = document.getElementById('concept-search').value;
+
+            document.getElementById('concepts-container').innerHTML = '<div class="loading"><div class="spinner"></div>加载中...</div>';
+
+            fetch('/api/math/concepts?category=' + category + '&keyword=' + keyword + '&limit=50')
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data.success && data.data.length > 0) {
+                        var html = '';
+                        data.data.forEach(function(c) {
+                            html += '<div class="card">' +
+                                '<div class="card-header">' +
+                                    '<span class="card-title">' + c.name + '</span>' +
+                                    '<span class="card-tag">' + getCategoryName(c.category) + '</span>' +
+                                '</div>' +
+                                '<div class="card-desc">' + c.description + '</div>' +
+                                '<div class="card-meta">' +
+                                    '<span>难度: ' + '⭐'.repeat(c.difficulty) + '</span>' +
+                                    '<span>级别: L' + c.level + '</span>' +
+                                '</div>';
+                            if (c.formulas && c.formulas.length > 0) {
+                                html += '<div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.1);">';
+                                html += '<p style="color:#60a5fa;font-size:0.85em;margin-bottom:6px;">📐 核心公式:</p>';
+                                c.formulas.slice(0, 3).forEach(function(f) {
+                                    html += '<code style="background:rgba(59,130,246,0.1);padding:3px 8px;border-radius:4px;font-size:0.85em;color:#93c5fd;display:inline-block;margin:3px;">' + f + '</code>';
+                                });
+                                html += '</div>';
+                            }
+                            html += '</div>';
+                        });
+                        document.getElementById('concepts-container').innerHTML = html;
+                    } else {
+                        document.getElementById('concepts-container').innerHTML = '<div class="empty-state"><div class="empty-state-icon">📚</div><p>暂无相关概念</p></div>';
+                    }
+                });
+        }
+
+        function loadMethods() {
+            var category = document.getElementById('method-category').value;
+            var methodType = document.getElementById('method-type').value;
+
+            document.getElementById('methods-container').innerHTML = '<div class="loading"><div class="spinner"></div>加载中...</div>';
+
+            fetch('/api/math/methods?category=' + category + '&method_type=' + methodType + '&limit=50')
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data.success && data.data.length > 0) {
+                        var html = '';
+                        data.data.forEach(function(m) {
+                            html += '<div class="card">' +
+                                '<div class="card-header">' +
+                                    '<span class="card-title">' + m.name + '</span>' +
+                                    '<span class="card-tag">' + getMethodTypeName(m.method_type) + '</span>' +
+                                '</div>' +
+                                '<div class="card-desc">' + m.description + '</div>';
+                            if (m.steps && m.steps.length > 0) {
+                                html += '<div style="margin-top:10px;">';
+                                html += '<p style="color:#8b5cf6;font-size:0.85em;margin-bottom:6px;">📝 解题步骤:</p>';
+                                m.steps.forEach(function(s, i) {
+                                    html += '<div style="font-size:0.85em;color:#cbd5e1;padding:3px 0;">' + (i+1) + '. ' + s + '</div>';
+                                });
+                                html += '</div>';
+                            }
+                            if (m.applicable_topics && m.applicable_topics.length > 0) {
+                                html += '<div class="card-meta">';
+                                html += '<span>适用: ' + m.applicable_topics.slice(0, 3).join('、') + '</span>';
+                                html += '</div>';
+                            }
+                            html += '</div>';
+                        });
+                        document.getElementById('methods-container').innerHTML = html;
+                    } else {
+                        document.getElementById('methods-container').innerHTML = '<div class="empty-state"><div class="empty-state-icon">💡</div><p>暂无相关解题方法</p></div>';
+                    }
+                });
+        }
+
+        function getMethodTypeName(type) {
+            var names = {
+                general: '通用方法', formula_based: '公式法', transformation: '转化法',
+                classification: '分类讨论', reduction: '化归法', constructive: '构造法',
+                induction: '数学归纳法', reverse: '反证法', graphical: '数形结合', algebraic: '代数法'
+            };
+            return names[type] || type;
+        }
+
+        function loadHistory() {
+            document.getElementById('history-container').innerHTML = '<div class="loading"><div class="spinner"></div>加载中...</div>';
+
+            fetch('/api/math/user/history?limit=20')
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data.success && data.data.length > 0) {
+                        var html = '';
+                        data.data.forEach(function(h) {
+                            html += '<div class="problem-card">' +
+                                '<div class="problem-header">' +
+                                    '<span class="' + (h.is_correct ? 'correct' : 'wrong') + '">' +
+                                        (h.is_correct ? '✅ 正确' : '❌ 错误') +
+                                    '</span>' +
+                                    '<span style="color:#64748b;font-size:0.85em;">' + new Date(h.created_at).toLocaleString() + '</span>' +
+                                '</div>' +
+                                '<div class="problem-content" style="font-size:1em;">' + h.problem_content + '</div>' +
+                                '<div class="card-meta" style="display:flex;gap:20px;font-size:0.85em;color:#64748b;">' +
+                                    '<span>难度: ' + '⭐'.repeat(h.difficulty) + '</span>' +
+                                    '<span>方法: ' + (h.solution_method_name || '-') + '</span>' +
+                                    '<span>用时: ' + h.time_spent + 's</span>' +
+                                    '<span>答案: ' + h.final_answer + '</span>' +
+                                '</div>' +
+                            '</div>';
+                        });
+                        document.getElementById('history-container').innerHTML = html;
+                    } else {
+                        document.getElementById('history-container').innerHTML = '<div class="empty-state"><div class="empty-state-icon">📊</div><p>暂无解题记录，开始做题吧！</p></div>';
+                    }
+                })
+                .catch(function() {
+                    document.getElementById('history-container').innerHTML = '<div class="empty-state"><div class="empty-state-icon">📊</div><p>请登录后查看解题记录</p></div>';
+                });
+        }
+    </script>
+</body>
+</html>

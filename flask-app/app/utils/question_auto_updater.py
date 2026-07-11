@@ -1,3 +1,6 @@
+import logging
+logger = logging.getLogger(__name__)
+
 # -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 import sqlite3
@@ -295,4 +298,4 @@ if __name__ == '__main__':
             update_result = updater.update_question_bank()
             print(f"更新结果: {update_result}")
     
-    print("\n更新状态:", updater.get_update_status())
+    logger.info("\n更新状态:", updater.get_update_status())

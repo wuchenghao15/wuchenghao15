@@ -53,3 +53,9 @@ class GuestPermissionMiddleware:
                 return f(*args, **kwargs)
             return decorated_function
         return decorator
+
+
+def guest_permission_middleware(app):
+    """初始化游客权限中间件"""
+    logger.info("游客权限中间件已注册")
+    return app

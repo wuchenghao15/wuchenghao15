@@ -57,6 +57,10 @@ class NetworkOptimizer:
 
     def rate_limit_check(self, client_ip):
         """检查是否超过速率限制"""
+        # 本地IP完全跳过速率限制
+        if client_ip in ['127.0.0.1', 'localhost', '::1']:
+            return False
+        
         with self.lock:
             current_time = datetime.now().timestamp()
             minute_key = f"{client_ip}:{int(current_time // 60)}"

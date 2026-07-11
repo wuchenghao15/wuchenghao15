@@ -1,237 +1,222 @@
-# 项目规范化计划
+# MTSCOS AI 项目目录规范
 
-## 1. 项目结构重构
+## 项目根目录
 
-### 当前结构问题
-- app.py文件过大（532KB），包含所有功能
-- 缺乏清晰的模块化结构
-- 代码复用性和可维护性差
+```
+MTSCOS_AI_Project/
+├── .project                  # HBuilderX项目配置文件
+├── .gitignore               # Git忽略配置
+├── README.md                # 项目说明文档
+└── flask-app/              # Flask应用主目录
+```
 
-### 目标结构
+## Flask应用目录结构
+
 ```
 flask-app/
-├── app/                   # 主应用目录
-│   ├── __init__.py        # 应用初始化
-│   ├── config.py          # 配置管理
-│   ├── models/           # 数据模型
+├── app.py                  # ✅ Flask应用主入口
+├── requirements.txt        # ✅ Python依赖清单
+├── .env                    # ✅ 环境变量配置（数据库、密钥等）
+├── .flaskenv               # Flask环境配置
+├── config.py               # 应用配置文件
+
+├── app/                    # ✅ 应用核心代码目录
+│   ├── __init__.py         # 应用初始化（创建Flask实例）
+│   ├── routes/             # ✅ 路由定义
 │   │   ├── __init__.py
-│   │   ├── user.py
-│   │   └── ai.py
-│   ├── views/            # 视图和路由
+│   │   ├── admin_api.py    # 管理员API路由
+│   │   ├── auth.py         # 认证路由（登录/注册）
+│   │   ├── dashboard.py    # 仪表盘路由
+│   │   └── exam.py         # 考试系统路由
+│   ├── models/             # ✅ 数据模型（SQLAlchemy）
 │   │   ├── __init__.py
-│   │   ├── auth.py
-│   │   ├── ai.py
-│   │   └── monitoring.py
-│   ├── services/         # 业务逻辑
+│   │   ├── user.py         # 用户模型
+│   │   ├── exam.py         # 考试模型
+│   │   └── ...
+│   ├── services/           # ✅ 业务服务层
 │   │   ├── __init__.py
 │   │   ├── auth_service.py
-│   │   ├── ai_service.py
-│   │   └── monitoring_service.py
-│   ├── utils/           # 工具函数
+│   │   ├── exam_service.py
+│   │   └── ...
+│   ├── exceptions/         # ✅ 自定义异常体系
+│   │   ├── __init__.py     # AppException基类及具体异常
+│   │   ├── handler.py      # 统一异常处理中间件
+│   │   └── ai_decision_engine.py  # AI决策跳转引擎
+│   ├── ai_engines/         # ✅ AI引擎模块
 │   │   ├── __init__.py
-│   │   ├── security.py
-│   │   ├── encryption.py
-│   │   └── logging.py
-│   ├── ai/              # AI相关模块
+│   │   └── ...
+│   ├── utils/              # ✅ 工具函数
 │   │   ├── __init__.py
-│   │   ├── instances.py
-│   │   ├── monitoring.py
-│   │   └── learning.py
-│   └── middlewares/     # 中间件
-│       ├── __init__.py
-│       └── monitoring.py
-├── static/              # 静态资源
-├── templates/           # 模板文件
-├── tests/               # 测试文件
-├── scripts/             # 辅助脚本
-├── docs/                # 文档
-├── Dockerfile           # Docker配置
-├── requirements.txt     # 依赖管理
-└── README.md            # 项目说明
+│   │   ├── decorators.py   # 装饰器（权限验证等）
+│   │   └── helpers.py      # 通用辅助函数
+│   └── extensions.py       # Flask扩展初始化（SQLAlchemy等）
+
+├── templates/              # ✅ Jinja2模板目录
+│   ├── base.html           # 基础模板
+│   ├── login.html          # 登录页面
+│   ├── register.html       # 注册页面
+│   ├── dashboard.html      # 仪表盘页面
+│   ├── admin_ui_login.html # 管理端登录页面
+│   ├── unified_error.html  # 统一错误页面
+│   ├── admin_app/          # 管理后台页面
+│   ├── mobile/             # 移动端页面
+│   ├── about/              # 关于页面
+│   ├── k12/                # K12相关页面
+│   ├── contact/            # 联系页面
+│   ├── security/           # 安全相关页面
+│   └── includes/           # 模板片段（侧边栏、头部等）
+
+├── src/html/               # ✅ 静态资源目录（设计系统）
+│   └── assets/
+│       ├── css/            # 样式文件
+│       │   ├── mtscos-design-system.css  # ✅ 设计系统（Element Plus适配）
+│       │   ├── theme.css   # 主题配置
+│       │   ├── dashboard.css
+│       │   ├── style.css
+│       │   ├── preloader.css
+│       │   └── page_styles/ # 页面特定样式
+│       ├── js/             # JavaScript文件
+│       │   ├── admin_app.js
+│       │   ├── theme-manager.js
+│       │   ├── chart.umd.min.js
+│       │   └── ...
+│       ├── images/         # 图片资源
+│       │   ├── logo.svg
+│       │   └── mtscos_logo.svg
+│       ├── font-awesome/   # Font Awesome图标库（本地）
+│       │   ├── css/
+│       │   │   └── all.min.css
+│       │   ├── js/
+│       │   │   └── all.min.js
+│       │   └── webfonts/
+│       ├── audio/          # 音频资源
+│       └── admin_ui.css    # ✅ 管理端UI样式（Element Plus适配）
+
+├── static/                 # ✅ Flask静态文件目录
+│   ├── css/
+│   ├── js/
+│   ├── images/
+│   └── favicon.ico
+
+├── scripts/                # ✅ 辅助脚本
+│   ├── generate_adult_questions.py
+│   └── ...
+
+├── tests/                  # ✅ 测试目录
+│   ├── __init__.py
+│   ├── test_auth.py
+│   └── ...
+
+├── backups/                # 备份目录（自动生成）
+└── __pycache__/            # Python缓存（自动生成）
 ```
 
-## 2. 代码规范
+## 目录职责说明
 
-### 命名规范
-- 类名：使用PascalCase
-- 函数名：使用snake_case
-- 变量名：使用snake_case
-- 常量名：使用ALL_CAPS
-- 文件名：使用snake_case
+| 目录 | 职责 | 状态 |
+|------|------|------|
+| `app/` | 核心应用代码，包含路由、模型、服务、异常处理 | ✅ 规范 |
+| `templates/` | Jinja2模板文件，所有页面HTML | ✅ 规范 |
+| `src/html/assets/` | 设计系统和静态资源，统一使用Element Plus变量 | ✅ 规范 |
+| `static/` | Flask默认静态文件目录 | ✅ 规范 |
+| `scripts/` | 辅助脚本（数据生成、迁移等） | ✅ 规范 |
+| `tests/` | 单元测试和集成测试 | ✅ 规范 |
+| `backups/` | 自动备份文件，不纳入版本控制 | ✅ 规范 |
 
-### 代码风格
-- 遵循PEP 8规范
-- 每行不超过100个字符
-- 函数长度不超过50行
-- 适当的注释和文档字符串
-- 使用类型提示
+## 设计系统规范
 
-### 文档规范
-- 每个模块、类、函数都要有文档字符串
-- 文档字符串使用Google风格
-- 定期更新CHANGELOG.md
+### 颜色变量（Element Plus适配）
 
-## 3. 权限管理规范化
+```css
+:root {
+    --el-color-primary: #409eff;      /* 主色调 */
+    --el-color-success: #67c23a;      /* 成功色 */
+    --el-color-warning: #e6a23c;      /* 警告色 */
+    --el-color-danger: #f56c6c;       /* 危险色 */
+    --el-color-info: #909399;         /* 信息色 */
+}
+```
 
-### 角色层级
-- super_admin：超级管理员，拥有所有权限
-- admin：管理员，管理系统配置和用户
-- hardware_vikey_admin：硬件管理员
-- user：普通用户
-- guest：游客
+### 字体规范
 
-### 权限控制
-- 使用装饰器实现权限检查
-- 基于角色的访问控制（RBAC）
-- 细粒度的权限管理
+- 字体家族：`-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`
+- 基础字号：14px (`--el-font-size-base`)
 
-## 4. 数据库安全与规范
+### 间距规范
 
-### 安全措施
-- 防止SQL注入
-- 使用参数化查询
-- 定期备份数据库
-- 敏感数据加密存储
+- 基准单位：8px
+- 使用变量：`--spacing-1` ~ `--spacing-32`
 
-### 规范要求
-- 表名使用小写字母和下划线
-- 字段名使用小写字母和下划线
-- 每个表必须有主键
-- 建立适当的索引
-- 使用外键约束确保数据完整性
+## HBuilderX配置说明
 
-## 5. 通讯安全与规范
+### 打开项目
 
-### 安全措施
-- 使用HTTPS（生产环境）
-- 实现CSRF保护
-- 防止XSS攻击
-- 防止点击劫持
-- 合理设置CORS策略
+1. 打开HBuilderX
+2. 文件 → 打开目录 → 选择 `MTSCOS_AI_Project` 目录
 
-### 规范要求
-- API响应格式统一
-- 错误信息格式统一
-- 使用JSON格式传输数据
-- 实现请求限速
+### 运行项目
 
-## 6. 数据加密解密规范
+1. 确保安装Python依赖：`pip install -r flask-app/requirements.txt`
+2. 在HBuilderX中右键 `flask-app/app.py` → 运行
+3. 访问：`http://localhost:8888`
 
-### 加密策略
-- 密码使用PBKDF2算法加密
-- 敏感数据使用AES加密
-- 传输数据使用TLS加密
+### 代码格式化
 
-### 密钥管理
-- 密钥定期轮换
-- 密钥安全存储
-- 实现密钥备份和恢复机制
+- 缩进：4个空格
+- 编码：UTF-8
+- 行尾：LF
 
-## 7. AI集成与部署规范
+## 新增文件规范
 
-### 集成规范
-- AI实例统一管理
-- 标准化AI接口
-- 实现AI资源监控
+### 新增路由
 
-### 部署规范
-- 使用Docker容器化部署
-- 实现CI/CD自动化部署
-- 支持灰度发布
-- 实现自动回滚机制
+1. 在 `app/routes/` 目录下创建新文件
+2. 在 `app/routes/__init__.py` 中注册蓝图
 
-## 8. AI自我学习与升级
+### 新增模板
 
-### 学习机制
-- 实现AI模型自动训练
-- 支持增量学习
-- 实现模型版本管理
+1. 在 `templates/` 目录下创建新HTML文件
+2. 继承 `base.html` 或相关基础模板
+3. 使用设计系统CSS变量，禁止硬编码颜色
 
-### 升级机制
-- 自动检测模型更新
-- 实现无缝模型切换
-- 支持模型回滚
+### 新增样式
 
-## 9. 项目维护与运行
+1. 在 `src/html/assets/css/` 目录下创建新CSS文件
+2. 使用设计系统变量，遵循Element Plus规范
 
-### 维护规范
-- 定期进行代码审查
-- 实现自动化测试
-- 建立完善的监控体系
-- 实现日志集中管理
+## Git忽略规则
 
-### 运行规范
-- 实现健康检查
-- 建立告警机制
-- 实现性能监控
-- 定期进行安全审计
+```
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
 
-## 10. 各维度层级因子融合与配合
+# 环境变量
+.env
+.env.local
 
-### 融合机制
-- 实现各模块间的无缝协作
-- 建立统一的数据交换格式
-- 实现事件驱动架构
+# 备份
+backups/
 
-### 配合机制
-- 建立服务注册与发现机制
-- 实现服务间通信协议
-- 建立统一的配置中心
+# 日志
+*.log
 
-## 11. 深度适配与管理
+# 编辑器
+.vscode/
+.idea/
+.DS_Store
 
-### 适配机制
-- 支持多环境部署
-- 实现配置动态加载
-- 支持不同硬件平台
+# 构建产物
+dist/
+build/
+```
 
-### 管理机制
-- 实现统一的管理界面
-- 建立完善的API文档
-- 实现自动化运维
+## 注意事项
 
-## 实施计划
-
-### 阶段1：项目结构重构（1-2周）
-- 拆分app.py为多个模块
-- 建立清晰的模块化结构
-- 实现模块间的依赖管理
-
-### 阶段2：代码规范实施（1周）
-- 统一代码风格
-- 添加类型提示
-- 完善文档字符串
-
-### 阶段3：安全机制增强（1-2周）
-- 加强权限管理
-- 完善数据库安全
-- 实现通讯安全
-- 完善数据加密
-
-### 阶段4：AI功能增强（2-3周）
-- 完善AI集成与部署
-- 实现AI自我学习
-- 增强AI监控
-
-### 阶段5：项目维护与运行（持续进行）
-- 建立自动化测试体系
-- 实现CI/CD自动化部署
-- 建立监控和告警机制
-
-## 预期效果
-
-1. 项目结构清晰，模块化程度高
-2. 代码质量提升，可维护性增强
-3. 安全机制完善，系统更加可靠
-4. AI功能强大，支持自我学习和升级
-5. 部署和维护更加便捷
-6. 系统扩展性强，支持未来功能拓展
-
-## 监控与评估
-
-- 定期评估系统性能
-- 监控安全事件
-- 收集用户反馈
-- 持续优化和改进
-
-通过以上规范化措施，将使项目各功能更加强大和优秀，拓展项目的可能性和可拓展性，实现各维度层级因子的深度融合与配合。
+1. **禁止硬编码颜色**：所有颜色必须使用设计系统CSS变量
+2. **禁止移动目录**：保持现有目录结构不变
+3. **统一设计系统**：所有页面必须引入 `mtscos-design-system.css`
+4. **API规范**：后端API使用统一异常处理，返回标准JSON格式
+5. **安全规范**：敏感信息（密钥、密码等）必须通过环境变量配置

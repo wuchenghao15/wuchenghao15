@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <!-- 设计系统 -->
+    <link rel="stylesheet" href="/assets/css/mtscos-design-system.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>K12智慧教育 - MTSCOS AI 智能管理系统</title>
+    <link rel="icon" href="/assets/images/mtscos_logo.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/assets/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif; background: #f5f7fa; color: #333; }
+        
+        .header { background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.06); position: sticky; top: 0; z-index: 100; }
+        .header-inner { max-width: 1280px; margin: 0 auto; padding: 0 20px; height: 64px; display: flex; align-items: center; justify-content: space-between; }
+        .logo a { display: flex; align-items: center; gap: 10px; text-decoration: none; color: #333; font-weight: 700; font-size: 20px; }
+        .logo i { color: #667eea; font-size: 24px; }
+        .nav { display: flex; gap: 28px; }
+        .nav a { text-decoration: none; color: #555; font-size: 15px; font-weight: 500; transition: color 0.2s; padding: 20px 0; position: relative; }
+        .nav a:hover { color: #667eea; }
+        .nav a.active { color: #667eea; }
+        .nav a.active::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 3px; background: #667eea; border-radius: 2px; }
+        
+        .user-panel { display: flex; align-items: center; gap: 16px; }
+        .user-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: #f8f9ff;
+            border-radius: 20px;
+            font-size: 14px;
+            color: #667eea;
+            font-weight: 500;
+        }
+        .user-status.visitor { color: #888; background: #f5f5f5; }
+        .user-grade {
+            padding: 2px 10px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 10px;
+            font-size: 12px;
+            margin-left: 6px;
+        }
+        .user-grade.no-grade {
+            background: #ff9800;
+        }
+        .user-link {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+        .user-link.login-btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+        .user-link.login-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(102,126,234,0.4);
+        }
+        .user-link:not(.login-btn) {
+            color: #666;
+            background: #f5f5f5;
+        }
+        .user-link:not(.login-btn):hover {
+            background: #eee;
+        }
+        
+        .permission-banner {
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            color: white;
+            padding: 12px 20px;
+        }
+        .permission-banner.grade-banner {
+            background: linear-gradient(90deg, #ff9800, #ffc107);
+        }
+        .banner-content {
+            max-width: 1280px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 14px;
+        }
+        .banner-content i { font-size: 18px; }
+        .banner-content span { flex: 1; }
+        .banner-btn {
+            padding: 8px 20px;
+            background: white;
+            color: #667eea;
+            border-radius: 20px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        .banner-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        
+        .k12-container { max-width: 1280px; margin: 0 auto; padding: 20px; }
+
+        .k12-hero {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 24px;
+            padding: 60px 50px;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 50px;
+            position: relative;
+            overflow: hidden;
+        }
+        .k12-hero::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -10%;
+            width: 500px;
+            height: 500px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 50%;
+        }
+        .hero-content { max-width: 600px; z-index: 1; }
+        .hero-badge {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            padding: 8px 20px;
+            border-radius: 30px;
+            font-size: 14px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+        }
+        .hero-content h1 { font-size: 48px; font-weight: 700; margin-bottom: 16px; line-height: 1.2; }
+        .hero-subtitle { font-size: 18px; opacity: 0.9; margin-bottom: 32px; line-height: 1.6; }
+        .hero-stats { display: flex; gap: 32px; }
+        .stat-item { text-align: center; }
+        .stat-number { font-size: 32px; font-weight: 700; margin-bottom: 4px; }
+        .stat-label { font-size: 14px; opacity: 0.85; }
+
+        .hero-illustration { position: relative; width: 300px; height: 300px; }
+        .floating-card {
+            position: absolute;
+            background: rgba(255,255,255,0.95);
+            color: #333;
+            padding: 16px 24px;
+            border-radius: 12px;
+            font-weight: 600;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+            animation: float 3s ease-in-out infinite;
+        }
+        .card-1 { top: 0; left: 50%; transform: translateX(-50%); animation-delay: 0s; }
+        .card-2 { top: 30%; right: 0; animation-delay: 0.5s; }
+        .card-3 { bottom: 30%; left: 0; animation-delay: 1s; }
+        .card-4 { bottom: 0; left: 50%; transform: translateX(-50%); animation-delay: 1.5s; }
+        @keyframes float {
+            0%, 100% { transform: translateY(0) translateX(-50%); }
+            50% { transform: translateY(-10px) translateX(-50%); }
+        }
+        .card-2, .card-3 { animation-name: floatSide; }
+        @keyframes floatSide {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .section-header { text-align: center; margin-bottom: 40px; }
+        .section-header h2 { font-size: 32px; color: #1a1a2e; margin-bottom: 10px; }
+        .section-header p { color: #666; font-size: 16px; }
+
+        .grade-selector-section {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 50px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+        }
+        .grade-tabs { margin-bottom: 24px; }
+        .grade-group { margin-bottom: 20px; }
+        .group-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 12px;
+            padding-left: 8px;
+            border-left: 4px solid #667eea;
+        }
+        .grade-buttons { display: flex; gap: 10px; flex-wrap: wrap; }
+        .grade-btn {
+            padding: 10px 24px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            background: white;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: #555;
+            transition: all 0.3s ease;
+        }
+        .grade-btn:hover { border-color: #667eea; color: #667eea; background: #f8f9ff; }
+        .grade-btn.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-color: transparent;
+            transform: scale(1.05);
+        }
+        .current-grade-display {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 24px;
+            background: #f8f9ff;
+            border-radius: 12px;
+            margin-top: 20px;
+        }
+        #currentGradeText { font-size: 16px; color: #333; font-weight: 500; }
+        .confirm-grade-btn {
+            padding: 10px 30px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .confirm-grade-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(102,126,234,0.4); }
+
+        .subjects-section { margin-bottom: 50px; }
+        .subjects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+        }
+        .subject-card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+            border: 2px solid transparent;
+        }
+        .subject-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 28px rgba(0,0,0,0.12);
+            border-color: #667eea;
+        }
+        .subject-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            flex-shrink: 0;
+        }
+        .subject-icon.chinese { background: linear-gradient(135deg, #ff6b6b, #ee5a24); }
+        .subject-icon.math { background: linear-gradient(135deg, #4facfe, #00f2fe); }
+        .subject-icon.english { background: linear-gradient(135deg, #43e97b, #38f9d7); }
+        .subject-icon.physics { background: linear-gradient(135deg, #fa709a, #fee140); }
+        .subject-icon.chemistry { background: linear-gradient(135deg, #a18cd1, #fbc2eb); }
+        .subject-icon.biology { background: linear-gradient(135deg, #84fab0, #8fd3f4); }
+        .subject-icon.history { background: linear-gradient(135deg, #fccb90, #d57eeb); }
+        .subject-icon.geography { background: linear-gradient(135deg, #a1c4fd, #c2e9fb); }
+        .subject-icon.politics { background: linear-gradient(135deg, #ffecd2, #fcb69f); }
+        .subject-info { flex: 1; min-width: 0; }
+        .subject-info h3 { font-size: 18px; color: #1a1a2e; margin-bottom: 6px; }
+        .subject-info p { font-size: 13px; color: #888; margin-bottom: 10px; }
+        .subject-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+        .subject-tags span {
+            font-size: 11px;
+            padding: 3px 10px;
+            background: #f0f2ff;
+            color: #667eea;
+            border-radius: 20px;
+        }
+        .subject-arrow { font-size: 20px; color: #ccc; transition: all 0.3s ease; }
+        .subject-card:hover .subject-arrow { color: #667eea; transform: translateX(4px); }
+
+        .learning-center-section { margin-bottom: 50px; }
+        .learning-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        .learning-card {
+            background: white;
+            border-radius: 16px;
+            padding: 32px 24px;
+            text-align: center;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+            transition: all 0.3s ease;
+            border-top: 4px solid transparent;
+        }
+        .learning-card:hover { transform: translateY(-6px); box-shadow: 0 12px 32px rgba(0,0,0,0.12); }
+        .learning-card.sync-learning { border-top-color: #667eea; }
+        .learning-card.practice { border-top-color: #43e97b; }
+        .learning-card.exam { border-top-color: #fa709a; }
+        .learning-card.wrong { border-top-color: #ff6b6b; }
+        .learning-card.report { border-top-color: #fccb90; }
+        .learning-card.ai-tutor { border-top-color: #a18cd1; }
+        .learning-icon { font-size: 48px; margin-bottom: 16px; }
+        .learning-card h3 { font-size: 20px; color: #1a1a2e; margin-bottom: 10px; }
+        .learning-card p { font-size: 14px; color: #666; line-height: 1.6; margin-bottom: 20px; }
+        .learning-btn {
+            padding: 10px 24px;
+            background: #f8f9ff;
+            color: #667eea;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .learning-btn:hover { background: #667eea; color: white; }
+
+        .features-section {
+            background: #f8f9ff;
+            border-radius: 20px;
+            padding: 50px 40px;
+            margin-bottom: 30px;
+        }
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 24px;
+        }
+        .feature-item {
+            background: white;
+            border-radius: 16px;
+            padding: 28px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        .feature-item:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
+        .feature-icon { font-size: 40px; margin-bottom: 16px; }
+        .feature-item h4 { font-size: 18px; color: #1a1a2e; margin-bottom: 10px; }
+        .feature-item p { font-size: 14px; color: #666; line-height: 1.6; }
+
+        .footer { background: white; padding: 30px 20px; margin-top: 50px; border-top: 1px solid #eee; }
+        .footer .container { max-width: 1280px; margin: 0 auto; text-align: center; }
+        .footer p { color: #666; font-size: 14px; }
+        .footer .footer-sub { color: #999; font-size: 12px; margin-top: 6px; }
+
+        @media (max-width: 768px) {
+            .k12-hero { flex-direction: column; text-align: center; padding: 40px 24px; }
+            .hero-content h1 { font-size: 32px; }
+            .hero-stats { justify-content: center; flex-wrap: wrap; gap: 20px; }
+            .hero-illustration { display: none; }
+            .subjects-grid, .learning-grid, .features-grid { grid-template-columns: 1fr; }
+            .section-header h2 { font-size: 24px; }
+            .nav { gap: 16px; }
+            .nav a { font-size: 13px; }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-inner">
+            <div class="logo">
+                <a href="/">
+                    <i class="fas fa-robot"></i>
+                    <span>MTSCOS AI</span>
+                </a>
+            </div>
+            <nav class="nav">
+                <a href="/">首页</a>
+                <a href="/k12" class="active">K12教育</a>
+                <a href="/about/history">关于我们</a>
+                <a href="/products/features">产品功能</a>
+                <a href="/contact/contact">联系我们</a>
+            </nav>
+            <div class="user-panel">
+                {% if user_info.is_logged_in %}
+                    {% if user_info.can_access_k12 %}
+                        <span class="user-status">
+                            <i class="fas fa-user-graduate"></i>
+                            {{ user_info.username }}
+                            {% if user_info.grade %}
+                                <span class="user-grade">{{ user_info.grade }}</span>
+                            {% else %}
+                                <span class="user-grade no-grade">未设置年级</span>
+                            {% endif %}
+                        </span>
+                        <a href="/logout" class="user-link">
+                            <i class="fas fa-sign-out-alt"></i> 退出
+                        </a>
+                    {% else %}
+                        <span class="user-status visitor">
+                            <i class="fas fa-eye"></i> 访客
+                        </span>
+                        <a href="/login" class="user-link login-btn">
+                            <i class="fas fa-sign-in-alt"></i> 登录
+                        </a>
+                    {% endif %}
+                {% else %}
+                    <span class="user-status visitor">
+                        <i class="fas fa-eye"></i> 访客
+                    </span>
+                    <a href="/login" class="user-link login-btn">
+                        <i class="fas fa-sign-in-alt"></i> 登录
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </header>
+    
+    {% if show_login_prompt %}
+    <div class="permission-banner">
+        <div class="banner-content">
+            <i class="fas fa-info-circle"></i>
+            <span>登录后即可享受完整K12学习功能，包括同步学习、考试测评、个性化报告等</span>
+            <a href="/login" class="banner-btn">立即登录</a>
+        </div>
+    </div>
+    {% endif %}
+    
+    {% if show_grade_prompt %}
+    <div class="permission-banner grade-banner">
+        <div class="banner-content">
+            <i class="fas fa-graduation-cap"></i>
+            <span>请设置您的年级，以便获取个性化的学习内容</span>
+            <a href="/set_grade" class="banner-btn">设置年级</a>
+        </div>
+    </div>
+    {% endif %}
+
+    <main class="k12-container">
+        <div class="k12-hero">
+            <div class="hero-content">
+                <div class="hero-badge">🏫 K12智慧教育平台</div>
+                <h1>AI赋能 · 因材施教</h1>
+                <p class="hero-subtitle">覆盖小学、初中、高中全学段，智能学习路径规划，让每个孩子都能高效学习</p>
+                <div class="hero-stats">
+                    <div class="stat-item">
+                        <div class="stat-number">12</div>
+                        <div class="stat-label">年级覆盖</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">9</div>
+                        <div class="stat-label">学科门类</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">100万+</div>
+                        <div class="stat-label">精选题库</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">AI</div>
+                        <div class="stat-label">智能辅导</div>
+                    </div>
+                </div>
+            </div>
+            <div class="hero-illustration">
+                <div class="floating-card card-1">📚 智能学习</div>
+                <div class="floating-card card-2">📝 精准测评</div>
+                <div class="floating-card card-3">🎯 个性辅导</div>
+                <div class="floating-card card-4">📊 学情分析</div>
+            </div>
+        </div>
+
+        <div class="grade-selector-section">
+            <div class="section-header">
+                <h2>📐 选择年级</h2>
+                <p>选择当前年级，获取专属学习内容</p>
+            </div>
+            <div class="grade-tabs">
+                <div class="grade-group">
+                    <div class="group-title">小学</div>
+                    <div class="grade-buttons">
+                        <button class="grade-btn" data-grade="小学1年级">一年级</button>
+                        <button class="grade-btn" data-grade="小学2年级">二年级</button>
+                        <button class="grade-btn" data-grade="小学3年级">三年级</button>
+                        <button class="grade-btn" data-grade="小学4年级">四年级</button>
+                        <button class="grade-btn" data-grade="小学5年级">五年级</button>
+                        <button class="grade-btn" data-grade="小学6年级">六年级</button>
+                    </div>
+                </div>
+                <div class="grade-group">
+                    <div class="group-title">初中</div>
+                    <div class="grade-buttons">
+                        <button class="grade-btn" data-grade="初中1年级">初一</button>
+                        <button class="grade-btn" data-grade="初中2年级">初二</button>
+                        <button class="grade-btn" data-grade="初中3年级">初三</button>
+                    </div>
+                </div>
+                <div class="grade-group">
+                    <div class="group-title">高中</div>
+                    <div class="grade-buttons">
+                        <button class="grade-btn" data-grade="高中1年级">高一</button>
+                        <button class="grade-btn" data-grade="高中2年级">高二</button>
+                        <button class="grade-btn" data-grade="高中3年级">高三</button>
+                    </div>
+                </div>
+            </div>
+            <div class="current-grade-display">
+                <span id="currentGradeText">当前年级：未选择</span>
+                <button class="confirm-grade-btn" onclick="confirmGrade()">确认年级</button>
+            </div>
+        </div>
+
+        <div class="subjects-section">
+            <div class="section-header">
+                <h2>📚 学科中心</h2>
+                <p>九大核心学科，全面发展</p>
+            </div>
+            <div class="subjects-grid">
+                <div class="subject-card" onclick="enterSubject('chinese')">
+                    <div class="subject-icon chinese">📖</div>
+                    <div class="subject-info">
+                        <h3>语文</h3>
+                        <p>阅读·写作·文言文·古诗词</p>
+                        <div class="subject-tags">
+                            <span>阅读理解</span>
+                            <span>作文写作</span>
+                            <span>古诗文</span>
+                        </div>
+                    </div>
+                    <div class="subject-arrow">→</div>
+                </div>
+                <div class="subject-card" onclick="enterSubject('math')">
+                    <div class="subject-icon math">🔢</div>
+                    <div class="subject-info">
+                        <h3>数学</h3>
+                        <p>代数·几何·函数·概率统计</p>
+                        <div class="subject-tags">
+                            <span>计算能力</span>
+                            <span>逻辑思维</span>
+                            <span>应用题</span>
+                        </div>
+                    </div>
+                    <div class="subject-arrow">→</div>
+                </div>
+                <div class="subject-card" onclick="enterSubject('english')">
+                    <div class="subject-icon english">🔤</div>
+                    <div class="subject-info">
+                        <h3>英语</h3>
+                        <p>听说读写·语法·词汇</p>
+                        <div class="subject-tags">
+                            <span>单词记忆</span>
+                            <span>语法精讲</span>
+                            <span>阅读理解</span>
+                        </div>
+                    </div>
+                    <div class="subject-arrow">→</div>
+                </div>
+                <div class="subject-card" onclick="enterSubject('physics')">
+                    <div class="subject-icon physics">⚡</div>
+                    <div class="subject-info">
+                        <h3>物理</h3>
+                        <p>力学·电学·光学·热学</p>
+                        <div class="subject-tags">
+                            <span>实验探究</span>
+                            <span>公式应用</span>
+                            <span>物理解题</span>
+                        </div>
+                    </div>
+                    <div class="subject-arrow">→</div>
+                </div>
+                <div class="subject-card" onclick="enterSubject('chemistry')">
+                    <div class="subject-icon chemistry">🧪</div>
+                    <div class="subject-info">
+                        <h3>化学</h3>
+                        <p>元素·反应·有机·无机</p>
+                        <div class="subject-tags">
+                            <span>化学方程式</span>
+                            <span>实验操作</span>
+                            <span>周期表</span>
+                        </div>
+                    </div>
+                    <div class="subject-arrow">→</div>
+                </div>
+                <div class="subject-card" onclick="enterSubject('biology')">
+                    <div class="subject-icon biology">🧬</div>
+                    <div class="subject-info">
+                        <h3>生物</h3>
+                        <p>细胞·遗传·生态·生理</p>
+                        <div class="subject-tags">
+                            <span>细胞结构</span>
+                            <span>遗传变异</span>
+                            <span>生态系统</span>
+                        </div>
+                    </div>
+                    <div class="subject-arrow">→</div>
+                </div>
+                <div class="subject-card" onclick="enterSubject('history')">
+                    <div class="subject-icon history">🏛️</div>
+                    <div class="subject-info">
+                        <h3>历史</h3>
+                        <p>中国史·世界史·年代记</p>
+                        <div class="subject-tags">
+                            <span>时间线</span>
+                            <span>重大事件</span>
+                            <span>历史人物</span>
+                        </div>
+                    </div>
+                    <div class="subject-arrow">→</div>
+                </div>
+                <div class="subject-card" onclick="enterSubject('geography')">
+                    <div class="subject-icon geography">🌍</div>
+                    <div class="subject-info">
+                        <h3>地理</h3>
+                        <p>自然地理·人文地理·区域</p>
+                        <div class="subject-tags">
+                            <span>地图技能</span>
+                            <span>气候地形</span>
+                            <span>区域地理</span>
+                        </div>
+                    </div>
+                    <div class="subject-arrow">→</div>
+                </div>
+                <div class="subject-card" onclick="enterSubject('politics')">
+                    <div class="subject-icon politics">⚖️</div>
+                    <div class="subject-info">
+                        <h3>道德与法治</h3>
+                        <p>道法·国情·法律·道德</p>
+                        <div class="subject-tags">
+                            <span>法律常识</span>
+                            <span>国情教育</span>
+                            <span>道德修养</span>
+                        </div>
+                    </div>
+                    <div class="subject-arrow">→</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="learning-center-section">
+            <div class="section-header">
+                <h2>🎯 学习中心</h2>
+                <p>多样化学习方式，全方位提升</p>
+            </div>
+            <div class="learning-grid">
+                <div class="learning-card sync-learning">
+                    <div class="learning-icon">📚</div>
+                    <h3>同步学习</h3>
+                    <p>与教材同步的知识点精讲，课前预习、课后复习一站式解决</p>
+                    <button class="learning-btn" onclick="goToSyncLearning()">开始学习 →</button>
+                </div>
+                <div class="learning-card practice">
+                    <div class="learning-icon">✍️</div>
+                    <h3>智能练习</h3>
+                    <p>AI智能出题，根据薄弱点针对性练习，高效巩固知识</p>
+                    <button class="learning-btn" onclick="goToPractice()">开始练习 →</button>
+                </div>
+                <div class="learning-card exam">
+                    <div class="learning-icon">📝</div>
+                    <h3>考试测评</h3>
+                    <p>单元测试、期中期末、模拟考试，真实模拟考试环境</p>
+                    <button class="learning-btn" onclick="goToExam()">进入考场 →</button>
+                </div>
+                <div class="learning-card wrong">
+                    <div class="learning-icon">❌</div>
+                    <h3>错题本</h3>
+                    <p>自动收集错题，智能分析错因，举一反三攻克薄弱点</p>
+                    <button class="learning-btn" onclick="goToWrongBook()">查看错题 →</button>
+                </div>
+                <div class="learning-card report">
+                    <div class="learning-icon">📊</div>
+                    <h3>学习报告</h3>
+                    <p>多维度学情分析，可视化展示学习进度与能力成长</p>
+                    <button class="learning-btn" onclick="goToReport()">查看报告 →</button>
+                </div>
+                <div class="learning-card ai-tutor">
+                    <div class="learning-icon">🤖</div>
+                    <h3>AI辅导</h3>
+                    <p>24小时在线AI老师，随时答疑解惑，个性化学习辅导</p>
+                    <button class="learning-btn" onclick="goToAITutor()">AI辅导 →</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="features-section">
+            <div class="section-header">
+                <h2>✨ 核心优势</h2>
+                <p>为什么选择我们的K12智慧教育平台</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-item">
+                    <div class="feature-icon">🎯</div>
+                    <h4>精准学情诊断</h4>
+                    <p>AI智能测评，精准定位知识薄弱点，生成个性化学习方案</p>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">🚀</div>
+                    <h4>自适应学习路径</h4>
+                    <p>根据学习进度和能力水平，智能调整学习内容和难度</p>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">📈</div>
+                    <h4>学习数据可视化</h4>
+                    <p>全方位学习数据追踪，直观展示成长轨迹与进步空间</p>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">👨‍👩‍👧</div>
+                    <h4>家校共育</h4>
+                    <p>家长端实时查看学习情况，家校联动助力孩子成长</p>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">🏆</div>
+                    <h4>题库实时更新</h4>
+                    <p>海量精选题库，紧跟教材改革，覆盖各类考试题型</p>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">🔒</div>
+                    <h4>安全护眼模式</h4>
+                    <p>学习时长提醒，护眼模式保护视力，健康学习两不误</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 MTSCOS AI System. All rights reserved.</p>
+            <p class="footer-sub">Powered by Advanced AI Technology & Distributed Architecture</p>
+        </div>
+    </footer>
+
+    <script>
+        let selectedGrade = null;
+        const userInfo = {{ user_info | tojson | safe }};
+
+        document.querySelectorAll('.grade-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.grade-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                selectedGrade = this.dataset.grade;
+                document.getElementById('currentGradeText').textContent = '当前年级：' + selectedGrade;
+            });
+        });
+
+        function checkPermission(feature) {
+            if (!userInfo.is_logged_in) {
+                return { allowed: false, message: '请先登录', redirect: '/login' };
+            }
+            if (!userInfo.can_access_k12) {
+                return { allowed: false, message: '您的角色无法访问K12功能', redirect: null };
+            }
+            return { allowed: true };
+        }
+
+        function requirePermission(feature, callback) {
+            const check = checkPermission(feature);
+            if (!check.allowed) {
+                if (confirm(check.message + '，是否前往登录？')) {
+                    window.location.href = check.redirect || '/login';
+                }
+                return false;
+            }
+            if (callback) callback();
+            return true;
+        }
+
+        function confirmGrade() {
+            if (!userInfo.is_logged_in) {
+                alert('请先登录');
+                window.location.href = '/login';
+                return;
+            }
+            
+            if (!userInfo.can_access_k12) {
+                alert('您的角色无法使用K12功能');
+                return;
+            }
+
+            if (!selectedGrade) {
+                alert('请先选择年级');
+                return;
+            }
+            
+            fetch('/api/k12/set_grade', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({grade: selectedGrade})
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    alert('年级设置成功：' + selectedGrade);
+                    location.reload();
+                } else {
+                    alert('设置失败：' + (data.error || '未知错误'));
+                }
+            })
+            .catch(err => {
+                console.error('设置年级失败:', err);
+                alert('设置失败，请稍后重试');
+            });
+        }
+
+        function enterSubject(subject) {
+            if (!userInfo.is_logged_in) {
+                if (confirm('登录后即可访问学科学习功能，是否前往登录？')) {
+                    window.location.href = '/login?next=/k12/subject/' + subject;
+                }
+                return;
+            }
+            if (!userInfo.can_access_k12) {
+                alert('您的角色无法访问K12功能');
+                return;
+            }
+            window.location.href = '/k12/subject/' + subject;
+        }
+
+        function goToSyncLearning() {
+            if (!userInfo.is_logged_in) {
+                if (confirm('登录后即可开始学习，是否前往登录？')) {
+                    window.location.href = '/login?next=/learning_system';
+                }
+                return;
+            }
+            window.location.href = '/learning_system';
+        }
+
+        function goToPractice() {
+            if (!userInfo.is_logged_in) {
+                if (confirm('登录后即可开始练习，是否前往登录？')) {
+                    window.location.href = '/login?next=/k12/practice';
+                }
+                return;
+            }
+            if (!userInfo.can_access_k12) {
+                alert('您的角色无法访问K12功能');
+                return;
+            }
+            window.location.href = '/k12/practice';
+        }
+
+        function goToExam() {
+            if (!userInfo.is_logged_in) {
+                if (confirm('登录后即可参加考试，是否前往登录？')) {
+                    window.location.href = '/login?next=/k12/exam';
+                }
+                return;
+            }
+            if (!userInfo.can_access_k12) {
+                alert('您的角色无法访问考试功能');
+                return;
+            }
+            if (!userInfo.has_grade) {
+                if (confirm('请先设置年级，是否前往设置？')) {
+                    window.location.href = '/set_grade?next=/k12/exam';
+                }
+                return;
+            }
+            window.location.href = '/k12/exam';
+        }
+
+        function goToWrongBook() {
+            if (!userInfo.is_logged_in) {
+                if (confirm('登录后即可查看错题本，是否前往登录？')) {
+                    window.location.href = '/login?next=/learning/wrong_questions';
+                }
+                return;
+            }
+            window.location.href = '/learning/wrong_questions';
+        }
+
+        function goToReport() {
+            if (!userInfo.is_logged_in) {
+                if (confirm('登录后即可查看学习报告，是否前往登录？')) {
+                    window.location.href = '/login?next=/k12/report';
+                }
+                return;
+            }
+            if (!userInfo.can_access_k12) {
+                alert('您的角色无法访问学习报告');
+                return;
+            }
+            if (!userInfo.has_grade) {
+                if (confirm('请先设置年级，是否前往设置？')) {
+                    window.location.href = '/set_grade?next=/k12/report';
+                }
+                return;
+            }
+            window.location.href = '/k12/report';
+        }
+
+        function goToAITutor() {
+            if (!userInfo.is_logged_in) {
+                if (confirm('登录后即可使用AI辅导，是否前往登录？')) {
+                    window.location.href = '/login';
+                }
+                return;
+            }
+            alert('AI辅导功能即将上线，敬请期待！');
+        }
+
+        console.log('[K12] 用户信息:', userInfo);
+    </script>
+</body>
+</html>

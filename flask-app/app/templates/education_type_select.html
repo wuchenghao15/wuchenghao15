@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>选择教育类型 - MTSCOS 智能考试系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(102, 126, 234, 0.3);
+            max-width: 700px;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .type-card {
+            background: #f8f9fa;
+            border: 2px solid transparent;
+            border-radius: 16px;
+            padding: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 24px;
+        }
+
+        .type-card:hover {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.05);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.15);
+        }
+
+        .type-card.selected {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .type-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            flex-shrink: 0;
+        }
+
+        .type-icon.compulsory {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+
+        .type-icon.adult {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .type-info {
+            flex: 1;
+        }
+
+        .type-info h3 {
+            font-size: 1.3rem;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .type-info p {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 12px;
+        }
+
+        .type-info ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .type-info li {
+            padding: 6px 0;
+            padding-left: 24px;
+            position: relative;
+            color: #555;
+            font-size: 0.9rem;
+        }
+
+        .type-info li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        .btn {
+            padding: 14px 40px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            width: 100%;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .selected-badge {
+            font-size: 1.5rem;
+            color: #667eea;
+        }
+
+        .warning-box {
+            background: #fff3cd;
+            border: 1px solid #ffeeba;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .warning-box i {
+            color: #856404;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .warning-box p {
+            color: #856404;
+            margin: 0;
+            font-size: 0.95rem;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                border-radius: 16px;
+            }
+
+            .header {
+                padding: 30px 20px;
+            }
+
+            .header h1 {
+                font-size: 1.6rem;
+            }
+
+            .content {
+                padding: 20px;
+            }
+
+            .type-card {
+                padding: 20px;
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .type-icon {
+                width: 56px;
+                height: 56px;
+                font-size: 2rem;
+            }
+
+            .type-info li {
+                padding-left: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎓 选择您的教育类型</h1>
+            <p>请选择您所属的教育体系，以便我们为您提供合适的摸底测试</p>
+        </div>
+
+        <div class="content">
+            <div class="warning-box">
+                <i class="fas fa-info-circle"></i>
+                <p>此选择将影响您的摸底测试内容和后续学习路径，请根据实际情况选择。</p>
+            </div>
+
+            <div class="type-card" onclick="selectType('compulsory')" id="card-compulsory">
+                <div class="type-icon compulsory">📚</div>
+                <div class="type-info">
+                    <h3>九年制义务教育</h3>
+                    <p>适用于小学、初中学生，按照国家课程标准进行摸底测试。</p>
+                    <ul>
+                        <li>涵盖语文、数学、英语、物理、化学、生物等必修科目</li>
+                        <li>所有科目都需要参加测试</li>
+                        <li>根据年级自动匹配测试难度</li>
+                    </ul>
+                </div>
+                <div class="selected-badge" id="badge-compulsory" style="display: none;">✓</div>
+            </div>
+
+            <div class="type-card" onclick="selectType('adult')" id="card-adult">
+                <div class="type-icon adult">🎯</div>
+                <div class="type-info">
+                    <h3>成人教育/职业教育</h3>
+                    <p>适用于成人高考、职业培训、语言考试等学习需求。</p>
+                    <ul>
+                        <li>可手动选择测试项目（日语、英语、成人大学等）</li>
+                        <li>根据个人目标定制测试内容</li>
+                        <li>支持多种职业技能评估</li>
+                    </ul>
+                </div>
+                <div class="selected-badge" id="badge-adult" style="display: none;">✓</div>
+            </div>
+
+            <button class="btn btn-primary" id="confirm-btn" disabled onclick="confirmSelection()">
+                <i class="fas fa-check"></i>
+                确认选择
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let selectedType = null;
+
+        function selectType(type) {
+            selectedType = type;
+
+            document.querySelectorAll('.type-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+
+            document.getElementById(`card-${type}`).classList.add('selected');
+
+            document.getElementById('badge-compulsory').style.display = type === 'compulsory' ? 'block' : 'none';
+            document.getElementById('badge-adult').style.display = type === 'adult' ? 'block' : 'none';
+
+            document.getElementById('confirm-btn').disabled = false;
+        }
+
+        function confirmSelection() {
+            if (!selectedType) return;
+
+            fetch('/api/education/set-type', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ type: selectedType })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.href = '/exam/placement_test';
+                } else {
+                    alert('设置失败，请重试');
+                }
+            })
+            .catch(error => {
+                console.error('设置教育类型失败:', error);
+                alert('设置失败，请重试');
+            });
+        }
+    </script>
+</body>
+</html>

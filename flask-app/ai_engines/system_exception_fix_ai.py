@@ -122,7 +122,7 @@ class SystemExceptionFixAI:
             try:
                 import urllib.request
                 urllib.request.urlopen('http://localhost:5000', timeout=2)
-            except:
+            except Exception:
                 exceptions.append({
                     'type': 'services',
                     'severity': 'medium',
@@ -276,7 +276,7 @@ class SystemExceptionFixAI:
                         with open(config_file, 'w', encoding='utf-8') as f:
                             f.write('''# 系统配置
 SYSTEM_NAME = "MTSCOS AI Project"
-SYSTEM_VERSION = "2.0.0"
+SYSTEM_VERSION = "7.4.0"
 DEBUG_MODE = False
 LOG_LEVEL = "INFO"
 ''')
@@ -419,7 +419,7 @@ APP_PORT = 5000
                 with open(brain_file, 'r', encoding='utf-8') as f:
                     try:
                         existing_cases = json.load(f)
-                    except:
+                    except Exception:
                         existing_cases = []
 
             all_cases = existing_cases + error_cases
