@@ -111,11 +111,181 @@
     }
 
     function viewExamDetail(id) {
-        showToast('考试ID: ' + id);
+        fetch('/api/exam/' + id)
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
+                if (data.exam) {
+                    var exam = data.exam;
+                    var detailHtml = '<div style="padding: 10px 0;">' +
+                        '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">' +
+                        '<div style="background: var(--bg-secondary); padding: 12px; border-radius: 8px;">' +
+                        '<div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">考试名称</div>' +
+                        '<div style="font-weight: bold;">' + (exam.exam_name || '未命名') + '</div>' +
+                        '</div>' +
+                        '<div style="background: var(--bg-secondary); padding: 12px; border-radius: 8px;">' +
+                        '<div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">科目/级别</div>' +
+                        '<div style="font-weight: bold;">' + (exam.language_level || '-') + '</div>' +
+                        '</div>' +
+                        '</div>' +
+                        '<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px;">' +
+                        '<div style="background: var(--bg-secondary); padding: 12px; border-radius: 8px;">' +
+                        '<div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">时长</div>' +
+                        '<div style="font-weight: bold;">' + (exam.duration || 60) + '分钟</div>' +
+                        '</div>' +
+                        '<div style="background: var(--bg-secondary); padding: 12px; border-radius: 8px;">' +
+                        '<div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">总分</div>' +
+                        '<div style="font-weight: bold;">' + (exam.total_score || 100) + '分</div>' +
+                        '</div>' +
+                        '<div style="background: var(--bg-secondary); padding: 12px; border-radius: 8px;">' +
+                        '<div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">状态</div>' +
+                        '<div style="font-weight: bold;">' + getStatusText(exam.status) + '</div>' +
+                        '</div>' +
+                        '<div style="background: var(--bg-secondary); padding: 12px; border-radius: 8px;">' +
+                        '<div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">题目数</div>' +
+                        '<div style="font-weight: bold;">' + (exam.question_count || 0) + '题</div>' +
+                        '</div>' +
+                        '</div>' +
+                        '<div style="margin-bottom: 16px;">' +
+                        '<div style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">考试说明</div>' +
+                        '<div style="background: var(--bg-secondary); padding: 12px; border-radius: 8px; min-height: 60px;">' +
+                        (exam.description || '无') + '</div>' +
+                        '</div>' +
+                        '<div style="margin-bottom: 16px;">' +
+                        '<div style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">创建时间</div>' +
+                        '<div style="background: var(--bg-secondary); padding: 12px; border-radius: 8px;">' +
+                        (exam.created_at || '-') + '</div>' +
+                        '</div>';
+                    
+                    showModal('考试详情 - ' + (exam.exam_name || '未命名'), detailHtml, {
+                        showFooter: true,
+                        confirmText: '关闭',
+                        onConfirm: function() { hideModal(); }
+                    });
+                } else {
+                    showToast('获取考试详情失败', 3000);
+                }
+            })
+            .catch(function(error) {
+                showToast('网络错误，请重试', 3000);
+            });
+    }
+
+    function getStatusText(status) {
+        if (status === 'published') return '进行中';
+        if (status === 'draft') return '草稿';
+        if (status === 'closed') return '已结束';
+        return '未开始';
     }
 
     function manageExam(id) {
-        showToast('考试管理: ' + id);
+        fetch('/api/exam/' + id)
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
+                if (data.exam) {
+                    var exam = data.exam;
+                    var contentHtml = '<div style="padding: 10px 0;">' +
+                        '<div style="margin-bottom: 16px;">' +
+                        '<label style="display: block; font-size: 14px; color: var(--text-secondary); margin-bottom: 8px;">考试名称</label>' +
+                        '<input type="text" id="edit-exam-name" value="' + (exam.exam_name || '') + '" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); font-size: 14px; box-sizing: border-box;">' +
+                        '</div>' +
+                        '<div style="margin-bottom: 16px;">' +
+                        '<label style="display: block; font-size: 14px; color: var(--text-secondary); margin-bottom: 8px;">科目</label>' +
+                        '<select id="edit-exam-level" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); font-size: 14px; box-sizing: border-box;">' +
+                        '<option value="">请选择科目</option>' +
+                        '<option value="语文-小学">' + (exam.language_level === '语文-小学' ? 'selected ' : '') + '语文-小学</option>' +
+                        '<option value="数学-小学">' + (exam.language_level === '数学-小学' ? 'selected ' : '') + '数学-小学</option>' +
+                        '<option value="英语-小学">' + (exam.language_level === '英语-小学' ? 'selected ' : '') + '英语-小学</option>' +
+                        '<option value="语文-初中">' + (exam.language_level === '语文-初中' ? 'selected ' : '') + '语文-初中</option>' +
+                        '<option value="数学-初中">' + (exam.language_level === '数学-初中' ? 'selected ' : '') + '数学-初中</option>' +
+                        '<option value="英语-初中">' + (exam.language_level === '英语-初中' ? 'selected ' : '') + '英语-初中</option>' +
+                        '<option value="物理-初中">' + (exam.language_level === '物理-初中' ? 'selected ' : '') + '物理-初中</option>' +
+                        '<option value="化学-初中">' + (exam.language_level === '化学-初中' ? 'selected ' : '') + '化学-初中</option>' +
+                        '<option value="语文-高中">' + (exam.language_level === '语文-高中' ? 'selected ' : '') + '语文-高中</option>' +
+                        '<option value="数学-高中">' + (exam.language_level === '数学-高中' ? 'selected ' : '') + '数学-高中</option>' +
+                        '<option value="英语-高中">' + (exam.language_level === '英语-高中' ? 'selected ' : '') + '英语-高中</option>' +
+                        '<option value="物理-高中">' + (exam.language_level === '物理-高中' ? 'selected ' : '') + '物理-高中</option>' +
+                        '<option value="化学-高中">' + (exam.language_level === '化学-高中' ? 'selected ' : '') + '化学-高中</option>' +
+                        '<option value="生物-高中">' + (exam.language_level === '生物-高中' ? 'selected ' : '') + '生物-高中</option>' +
+                        '<option value="历史-高中">' + (exam.language_level === '历史-高中' ? 'selected ' : '') + '历史-高中</option>' +
+                        '<option value="地理-高中">' + (exam.language_level === '地理-高中' ? 'selected ' : '') + '地理-高中</option>' +
+                        '</select>' +
+                        '</div>' +
+                        '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">' +
+                        '<div>' +
+                        '<label style="display: block; font-size: 14px; color: var(--text-secondary); margin-bottom: 8px;">时长(分钟)</label>' +
+                        '<input type="number" id="edit-exam-duration" value="' + (exam.duration || 60) + '" min="1" max="300" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); font-size: 14px; box-sizing: border-box;">' +
+                        '</div>' +
+                        '<div>' +
+                        '<label style="display: block; font-size: 14px; color: var(--text-secondary); margin-bottom: 8px;">总分</label>' +
+                        '<input type="number" id="edit-exam-score" value="' + (exam.total_score || 100) + '" min="1" max="1000" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); font-size: 14px; box-sizing: border-box;">' +
+                        '</div>' +
+                        '</div>' +
+                        '<div style="margin-bottom: 16px;">' +
+                        '<label style="display: block; font-size: 14px; color: var(--text-secondary); margin-bottom: 8px;">考试说明</label>' +
+                        '<textarea id="edit-exam-desc" rows="3" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); font-size: 14px; resize: none; box-sizing: border-box;">' + (exam.description || '') + '</textarea>' +
+                        '</div>' +
+                        '<div style="margin-bottom: 16px;">' +
+                        '<label style="display: block; font-size: 14px; color: var(--text-secondary); margin-bottom: 8px;">状态</label>' +
+                        '<select id="edit-exam-status" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); font-size: 14px; box-sizing: border-box;">' +
+                        '<option value="draft"' + (exam.status === 'draft' ? ' selected' : '') + '>草稿</option>' +
+                        '<option value="published"' + (exam.status === 'published' ? ' selected' : '') + '>发布(进行中)</option>' +
+                        '<option value="closed"' + (exam.status === 'closed' ? ' selected' : '') + '>已结束</option>' +
+                        '</select>' +
+                        '</div>';
+                    
+                    showModal('编辑考试', contentHtml, {
+                        showFooter: true,
+                        confirmText: '保存',
+                        cancelText: '取消',
+                        onConfirm: function() {
+                            var name = document.getElementById('edit-exam-name').value.trim();
+                            var level = document.getElementById('edit-exam-level').value;
+                            var duration = parseInt(document.getElementById('edit-exam-duration').value) || 60;
+                            var totalScore = parseInt(document.getElementById('edit-exam-score').value) || 100;
+                            var description = document.getElementById('edit-exam-desc').value.trim();
+                            var status = document.getElementById('edit-exam-status').value;
+                            
+                            if (!name) {
+                                showToast('请输入考试名称', 3000);
+                                return;
+                            }
+                            
+                            showLoading();
+                            var formData = new FormData();
+                            formData.append('title', name);
+                            formData.append('language_level', level);
+                            formData.append('duration', duration);
+                            formData.append('total_score', totalScore);
+                            formData.append('description', description);
+                            formData.append('status', status);
+                            
+                            fetch('/api/exam/' + id, {
+                                method: 'PUT',
+                                body: formData
+                            })
+                            .then(function(response) { return response.json(); })
+                            .then(function(data) {
+                                hideLoading();
+                                if (data.success) {
+                                    showToast('考试更新成功！', 2000);
+                                    setTimeout(function() { location.reload(); }, 1500);
+                                } else {
+                                    showToast(data.error || '更新失败', 3000);
+                                }
+                            })
+                            .catch(function(error) {
+                                hideLoading();
+                                showToast('网络错误，请重试', 3000);
+                            });
+                        }
+                    });
+                } else {
+                    showToast('获取考试信息失败', 3000);
+                }
+            })
+            .catch(function(error) {
+                showToast('网络错误，请重试', 3000);
+            });
     }
 
     function showCreateExamModal() {

@@ -102,47 +102,186 @@
         });
     }
 
-    function showUserDetail(user) {
-        var statusColor = user.is_active == 1 ? '#34d399' : '#f87171';
-        var statusText = user.is_active == 1 ? '正常' : '已禁用';
-        var createdAt = user.created_at ? user.created_at.split('T')[0] : '-';
-        var emailText = user.email || '未设置邮箱';
-        var initial = user.username.charAt(0).toUpperCase();
+    function showUserDetail(userId) {
+        fetch('/api/users/' + userId)
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
+                if (data.user) {
+                    var user = data.user;
+                    var statusColor = user.is_active == 1 ? '#34d399' : '#f87171';
+                    var statusText = user.is_active == 1 ? '正常' : '已禁用';
+                    var createdAt = user.created_at ? user.created_at.split('T')[0] : '-';
+                    var emailText = user.email || '未设置邮箱';
+                    var initial = user.username.charAt(0).toUpperCase();
+                    
+                    var contentHtml = '<div style="text-align: center; margin-bottom: 20px;">' +
+                        '<div style="width: 72px; height: 72px; border-radius: 20px; background: linear-gradient(135deg, var(--color-primary), var(--color-secondary)); display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 700; color: white; margin: 0 auto 16px;">' +
+                        initial + '</div>' +
+                        '<div style="font-size: 20px; font-weight: 700; margin-bottom: 4px;">' + user.username + '</div>' +
+                        '<div style="font-size: 13px; color: var(--text-muted);">' + emailText + '</div></div>' +
+                        '<div class="stat-row" style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border);">' +
+                        '<span style="color: var(--text-secondary); font-size: 14px;">用户ID</span>' +
+                        '<span style="font-weight: 600; font-size: 14px;">' + user.id + '</span></div>' +
+                        '<div class="stat-row" style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border);">' +
+                        '<span style="color: var(--text-secondary); font-size: 14px;">角色</span>' +
+                        '<span style="font-weight: 600; font-size: 14px;">' + getRoleName(user.role) + '</span></div>' +
+                        '<div class="stat-row" style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border);">' +
+                        '<span style="color: var(--text-secondary); font-size: 14px;">状态</span>' +
+                        '<span style="font-weight: 600; font-size: 14px; color: ' + statusColor + ';">' + statusText + '</span></div>' +
+                        '<div class="stat-row" style="display: flex; justify-content: space-between; padding: 12px 0;">' +
+                        '<span style="color: var(--text-secondary); font-size: 14px;">注册时间</span>' +
+                        '<span style="font-weight: 600; font-size: 14px;">' + createdAt + '</span></div>' +
+                        '<div style="margin-top: 20px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">' +
+                        '<button onclick="editUser(' + user.id + ')" style="padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); font-size: 13px; cursor: pointer;">' +
+                        '<i class="fas fa-edit"></i> 编辑</button>' +
+                        '<button onclick="toggleUserStatus(' + user.id + ', ' + user.is_active + ')" style="padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: ' + (user.is_active == 1 ? '#fef2f2' : '#ecfdf5') + '; color: ' + (user.is_active == 1 ? '#dc2626' : '#059669') + '; font-size: 13px; cursor: pointer;">' +
+                        '<i class="fas ' + (user.is_active == 1 ? 'fa-ban' : 'fa-check-circle') + '"></i> ' + (user.is_active == 1 ? '禁用' : '启用') + '</button>' +
+                        '<button onclick="deleteUser(' + user.id + ')" style="padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: #fef2f2; color: #dc2626; font-size: 13px; cursor: pointer;">' +
+                        '<i class="fas fa-trash"></i> 删除</button>' +
+                        '</div>';
+                    
+                    showModal('用户详情 - ' + user.username, contentHtml, {
+                        showFooter: true,
+                        confirmText: '关闭',
+                        onConfirm: function() { hideModal(); }
+                    });
+                } else {
+                    showToast('获取用户详情失败', 3000);
+                }
+            })
+            .catch(function(error) {
+                showToast('网络错误，请重试', 3000);
+            });
+    }
+
+    function editUser(userId) {
+        fetch('/api/users/' + userId)
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
+                if (data.user) {
+                    var user = data.user;
+                    var contentHtml = '<div style="padding: 10px 0;">' +
+                        '<div style="margin-bottom: 16px;">' +
+                        '<label style="display: block; font-size: 14px; color: var(--text-secondary); margin-bottom: 8px;">用户名</label>' +
+                        '<input type="text" id="edit-username" value="' + user.username + '" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); font-size: 14px; box-sizing: border-box;">' +
+                        '</div>' +
+                        '<div style="margin-bottom: 16px;">' +
+                        '<label style="display: block; font-size: 14px; color: var(--text-secondary); margin-bottom: 8px;">邮箱</label>' +
+                        '<input type="email" id="edit-email" value="' + (user.email || '') + '" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); font-size: 14px; box-sizing: border-box;">' +
+                        '</div>' +
+                        '<div style="margin-bottom: 16px;">' +
+                        '<label style="display: block; font-size: 14px; color: var(--text-secondary); margin-bottom: 8px;">角色</label>' +
+                        '<select id="edit-role" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); font-size: 14px; box-sizing: border-box;">' +
+                        '<option value="student"' + (user.role === 'student' ? ' selected' : '') + '>学生</option>' +
+                        '<option value="teacher"' + (user.role === 'teacher' ? ' selected' : '') + '>教师</option>' +
+                        '<option value="admin"' + (user.role === 'admin' ? ' selected' : '') + '>管理员</option>' +
+                        '<option value="designer"' + (user.role === 'designer' ? ' selected' : '') + '>设计师</option>' +
+                        '<option value="hardware_admin"' + (user.role === 'hardware_admin' ? ' selected' : '') + '>硬件管理员</option>' +
+                        '</select>' +
+                        '</div>';
+                    
+                    hideModal();
+                    showModal('编辑用户', contentHtml, {
+                        showFooter: true,
+                        confirmText: '保存',
+                        cancelText: '取消',
+                        onConfirm: function() {
+                            var username = document.getElementById('edit-username').value.trim();
+                            var email = document.getElementById('edit-email').value.trim();
+                            var role = document.getElementById('edit-role').value;
+                            
+                            if (!username) {
+                                showToast('请输入用户名', 3000);
+                                return;
+                            }
+                            
+                            showLoading();
+                            var formData = new FormData();
+                            formData.append('username', username);
+                            formData.append('email', email);
+                            formData.append('role', role);
+                            
+                            fetch('/api/users/' + userId, {
+                                method: 'PUT',
+                                body: formData
+                            })
+                            .then(function(response) { return response.json(); })
+                            .then(function(data) {
+                                hideLoading();
+                                if (data.success) {
+                                    showToast('用户更新成功！', 2000);
+                                    setTimeout(function() { location.reload(); }, 1500);
+                                } else {
+                                    showToast(data.error || '更新失败', 3000);
+                                }
+                            })
+                            .catch(function(error) {
+                                hideLoading();
+                                showToast('网络错误，请重试', 3000);
+                            });
+                        }
+                    });
+                }
+            });
+    }
+
+    function toggleUserStatus(userId, isActive) {
+        var newStatus = isActive == 1 ? 0 : 1;
+        var actionText = newStatus == 1 ? '启用' : '禁用';
         
-        var contentHtml = '<div style="text-align: center; margin-bottom: 20px;">' +
-            '<div style="width: 72px; height: 72px; border-radius: 20px; background: linear-gradient(135deg, var(--color-primary), var(--color-secondary)); display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 700; color: white; margin: 0 auto 16px;">' +
-            initial + '</div>' +
-            '<div style="font-size: 20px; font-weight: 700; margin-bottom: 4px;">' + user.username + '</div>' +
-            '<div style="font-size: 13px; color: var(--text-muted);">' + emailText + '</div></div>' +
-            '<div class="stat-row" style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border);">' +
-            '<span style="color: var(--text-secondary); font-size: 14px;">用户ID</span>' +
-            '<span style="font-weight: 600; font-size: 14px;">' + user.id + '</span></div>' +
-            '<div class="stat-row" style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border);">' +
-            '<span style="color: var(--text-secondary); font-size: 14px;">角色</span>' +
-            '<span style="font-weight: 600; font-size: 14px;">' + getRoleName(user.role) + '</span></div>' +
-            '<div class="stat-row" style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border);">' +
-            '<span style="color: var(--text-secondary); font-size: 14px;">状态</span>' +
-            '<span style="font-weight: 600; font-size: 14px; color: ' + statusColor + ';">' + statusText + '</span></div>' +
-            '<div class="stat-row" style="display: flex; justify-content: space-between; padding: 12px 0;">' +
-            '<span style="color: var(--text-secondary); font-size: 14px;">注册时间</span>' +
-            '<span style="font-weight: 600; font-size: 14px;">' + createdAt + '</span></div>';
+        if (!confirm('确定要' + actionText + '该用户吗？')) return;
         
-        showModal('用户详情', contentHtml, {
-            showFooter: false
+        showLoading();
+        var formData = new FormData();
+        formData.append('is_active', newStatus);
+        
+        fetch('/api/users/' + userId + '/status', {
+            method: 'PUT',
+            body: formData
+        })
+        .then(function(response) { return response.json(); })
+        .then(function(data) {
+            hideLoading();
+            if (data.success) {
+                showToast('用户已' + actionText + '！', 2000);
+                setTimeout(function() { location.reload(); }, 1500);
+            } else {
+                showToast(data.error || '操作失败', 3000);
+            }
+        })
+        .catch(function(error) {
+            hideLoading();
+            showToast('网络错误，请重试', 3000);
+        });
+    }
+
+    function deleteUser(userId) {
+        if (!confirm('确定要删除该用户吗？此操作不可恢复！')) return;
+        
+        showLoading();
+        fetch('/api/users/' + userId, {
+            method: 'DELETE'
+        })
+        .then(function(response) { return response.json(); })
+        .then(function(data) {
+            hideLoading();
+            if (data.success) {
+                showToast('用户已删除！', 2000);
+                setTimeout(function() { location.reload(); }, 1500);
+            } else {
+                showToast(data.error || '删除失败', 3000);
+            }
+        })
+        .catch(function(error) {
+            hideLoading();
+            showToast('网络错误，请重试', 3000);
         });
     }
 
     document.querySelectorAll('.user-card').forEach(function(card) {
         card.addEventListener('click', function() {
-            var user = {
-                id: this.getAttribute('data-username'),
-                username: this.getAttribute('data-username'),
-                email: this.getAttribute('data-email'),
-                role: this.getAttribute('data-role'),
-                is_active: 1,
-                created_at: '2024-01-01'
-            };
-            showUserDetail(user);
+            var userId = this.getAttribute('data-username');
+            showUserDetail(userId);
         });
     });
 </script>

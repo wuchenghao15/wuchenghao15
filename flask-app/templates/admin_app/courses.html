@@ -175,9 +175,11 @@
                     <td>${course.view_count}</td>
                     <td>${course.enrollment_count}</td>
                     <td>
+                        <button class="btn btn-sm btn-secondary" onclick="viewCourse(${course.id})">详情</button>
                         <button class="btn btn-sm btn-secondary" onclick="editCourse(${course.id})">编辑</button>
                         ${course.status === 'draft' ? `<button class="btn btn-sm btn-success" onclick="publishCourse(${course.id})">发布</button>` : ''}
                         ${course.status === 'published' ? `<button class="btn btn-sm btn-warning" onclick="archiveCourse(${course.id})">归档</button>` : ''}
+                        ${course.status !== 'draft' ? `<button class="btn btn-sm btn-info" onclick="manageChapters(${course.id})">章节管理</button>` : ''}
                         <button class="btn btn-sm btn-danger" onclick="deleteCourse(${course.id})">删除</button>
                     </td>
                 </tr>
@@ -384,6 +386,212 @@
         window.onclick = function(e) {
             if (e.target === document.getElementById('createModal')) {
                 closeModal();
+            }
+        }
+
+        async function viewCourse(id) {
+            try {
+                const response = await fetch(`/api/courses/${id}`);
+                const data = await response.json();
+                
+                if (data.code === 200) {
+                    const course = data.data;
+                    const modalHtml = `
+                        <div class="modal" id="detailModal" style="display:block;">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h3>课程详情 - ${course.title}</h3>
+                                    <button class="modal-close" onclick="document.getElementById('detailModal').style.display='none';">&times;</button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label class="form-label">类型</label>
+                                            <input type="text" class="form-control" value="${getCourseTypeName(course.course_type)}" readonly>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">科目</label>
+                                            <input type="text" class="form-control" value="${getSubjectName(course.subject)}" readonly>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">状态</label>
+                                            <input type="text" class="form-control" value="${getStatusName(course.status)}" readonly>
+                                        </div>
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label class="form-label">时长</label>
+                                            <input type="text" class="form-control" value="${course.duration || 0}分钟" readonly>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">价格</label>
+                                            <input type="text" class="form-control" value="${course.is_free ? '免费' : '¥' + (course.price || 0)}" readonly>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">年级</label>
+                                            <input type="text" class="form-control" value="${course.grade ? course.grade.replace('g', '') + '年级' : '-'}" readonly>
+                                        </div>
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label class="form-label">浏览量</label>
+                                            <input type="text" class="form-control" value="${course.view_count || 0}" readonly>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">报名人数</label>
+                                            <input type="text" class="form-control" value="${course.enrollment_count || 0}" readonly>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">描述</label>
+                                        <textarea class="form-control" rows="4" readonly>${course.description || '无'}</textarea>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button class="btn btn-secondary" onclick="document.getElementById('detailModal').style.display='none';">关闭</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    document.body.insertAdjacentHTML('beforeend', modalHtml);
+                }
+            } catch (error) {
+                console.error('获取课程详情失败:', error);
+            }
+        }
+
+        async function manageChapters(courseId) {
+            try {
+                const response = await fetch(`/api/courses/${courseId}/chapters`);
+                const data = await response.json();
+                
+                const chapters = data.code === 200 ? data.data : [];
+                const modalHtml = `
+                    <div class="modal" id="chapterModal" style="display:block;">
+                        <div class="modal-content" style="width:90%; max-width:800px;">
+                            <div class="modal-header">
+                                <h3>章节管理</h3>
+                                <button class="modal-close" onclick="document.getElementById('chapterModal').style.display='none';">&times;</button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="form-group" style="margin-bottom: 20px;">
+                                    <label class="form-label">添加章节</label>
+                                    <div style="display: flex; gap: 10px;">
+                                        <input type="text" id="chapterTitle" class="form-control" placeholder="章节标题" style="flex:1;">
+                                        <input type="number" id="chapterOrder" class="form-control" placeholder="排序" value="1" min="1" style="width:80px;">
+                                        <button class="btn btn-primary" onclick="addChapter(${courseId})">添加</button>
+                                    </div>
+                                </div>
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>序号</th>
+                                            <th>章节标题</th>
+                                            <th>排序</th>
+                                            <th>操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${chapters.length === 0 ? '<tr><td colspan="4" class="text-center">暂无章节</td></tr>' : 
+                                            chapters.map((ch, idx) => `
+                                                <tr>
+                                                    <td>${idx + 1}</td>
+                                                    <td>${ch.title}</td>
+                                                    <td>${ch.order || idx + 1}</td>
+                                                    <td>
+                                                        <button class="btn btn-sm btn-secondary" onclick="editChapter(${courseId}, ${ch.id}, '${ch.title}', ${ch.order || idx + 1})">编辑</button>
+                                                        <button class="btn btn-sm btn-danger" onclick="deleteChapter(${courseId}, ${ch.id})">删除</button>
+                                                    </td>
+                                                </tr>
+                                            `).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="modal-footer">
+                                <button class="btn btn-secondary" onclick="document.getElementById('chapterModal').style.display='none';">关闭</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.body.insertAdjacentHTML('beforeend', modalHtml);
+            } catch (error) {
+                console.error('获取章节失败:', error);
+            }
+        }
+
+        async function addChapter(courseId) {
+            const title = document.getElementById('chapterTitle').value.trim();
+            const order = parseInt(document.getElementById('chapterOrder').value) || 1;
+            
+            if (!title) {
+                showToast('error', '请输入章节标题');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/courses/${courseId}/chapters`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title, order })
+                });
+                
+                const data = await response.json();
+                if (data.code === 200) {
+                    showToast('success', '章节添加成功');
+                    document.getElementById('chapterTitle').value = '';
+                    document.getElementById('chapterOrder').value = '1';
+                    document.getElementById('chapterModal').style.display = 'none';
+                } else {
+                    showToast('error', data.message || '添加失败');
+                }
+            } catch (error) {
+                console.error('添加章节失败:', error);
+                showToast('error', '添加失败');
+            }
+        }
+
+        async function editChapter(courseId, chapterId, title, order) {
+            const newTitle = prompt('请输入章节标题:', title);
+            if (newTitle === null) return;
+            
+            try {
+                const response = await fetch(`/api/courses/${courseId}/chapters/${chapterId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title: newTitle.trim(), order })
+                });
+                
+                const data = await response.json();
+                if (data.code === 200) {
+                    showToast('success', '章节更新成功');
+                    document.getElementById('chapterModal').style.display = 'none';
+                } else {
+                    showToast('error', data.message || '更新失败');
+                }
+            } catch (error) {
+                console.error('更新章节失败:', error);
+                showToast('error', '更新失败');
+            }
+        }
+
+        async function deleteChapter(courseId, chapterId) {
+            if (!confirm('确定删除此章节吗？')) return;
+            
+            try {
+                const response = await fetch(`/api/courses/${courseId}/chapters/${chapterId}`, {
+                    method: 'DELETE'
+                });
+                
+                const data = await response.json();
+                if (data.code === 200) {
+                    showToast('success', '章节删除成功');
+                    document.getElementById('chapterModal').style.display = 'none';
+                } else {
+                    showToast('error', data.message || '删除失败');
+                }
+            } catch (error) {
+                console.error('删除章节失败:', error);
+                showToast('error', '删除失败');
             }
         }
 

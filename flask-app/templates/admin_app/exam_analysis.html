@@ -2,6 +2,10 @@
 
 {% block title %}考试数据分析{% endblock %}
 
+{% block extra_head %}
+    <script src="/assets/js/chart.umd.min.js"></script>
+{% endblock %}
+
 {% block content %}
     <div class="page-header">
         <h1>考试数据分析</h1>
@@ -105,39 +109,68 @@ function renderAnalysis(data) {
     const rangeKeys = Object.keys(scoreRanges);
     const rangeData = rangeKeys.map(k => ({ name: scoreRanges[k].label, value: scoreRanges[k].percentage || 0 }));
     
+    const excellentCount = data.excellent_count || 0;
+    const goodCount = data.good_count || 0;
+    const passCount = data.pass_count || 0;
+    const failCount = data.fail_count || 0;
+    const totalCount = excellentCount + goodCount + passCount + failCount || 1;
+    
     document.getElementById('analysisContent').innerHTML = `
-        <div class="grid grid-2">
+        <div class="grid grid-4">
             <div class="stat-card">
-                <div class="stat-icon bg-primary"><i class="fas fa-chart-line"></i></div>
+                <div class="stat-icon blue"><i class="fas fa-chart-line"></i></div>
                 <div class="stat-info">
                     <div class="stat-value">${data.mean ? data.mean.toFixed(1) : '-'}</div>
                     <div class="stat-label">平均分</div>
                 </div>
             </div>
             <div class="stat-card">
-                <div class="stat-icon bg-success"><i class="fas fa-medal"></i></div>
+                <div class="stat-icon green"><i class="fas fa-medal"></i></div>
                 <div class="stat-info">
                     <div class="stat-value">${data.max_score || '-'}</div>
                     <div class="stat-label">最高分</div>
                 </div>
             </div>
             <div class="stat-card">
-                <div class="stat-icon bg-danger"><i class="fas fa-minus-circle"></i></div>
+                <div class="stat-icon red"><i class="fas fa-minus-circle"></i></div>
                 <div class="stat-info">
                     <div class="stat-value">${data.min_score || '-'}</div>
                     <div class="stat-label">最低分</div>
                 </div>
             </div>
             <div class="stat-card">
-                <div class="stat-icon bg-warning"><i class="fas fa-percentage"></i></div>
+                <div class="stat-icon purple"><i class="fas fa-users"></i></div>
                 <div class="stat-info">
-                    <div class="stat-value">${data.std_dev ? data.std_dev.toFixed(1) : '-'}</div>
-                    <div class="stat-label">标准差</div>
+                    <div class="stat-value">${data.total_students || totalCount}</div>
+                    <div class="stat-label">参考人数</div>
                 </div>
             </div>
         </div>
 
-        <div class="section-title">成绩分布</div>
+        <div class="grid grid-2">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">成绩分布统计</div>
+                </div>
+                <div class="card-body">
+                    <div style="height: 300px;">
+                        <canvas id="scoreDistributionChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">等级分布</div>
+                </div>
+                <div class="card-body">
+                    <div style="height: 300px;">
+                        <canvas id="gradeDistributionChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-title">成绩分布详情</div>
         <div class="card">
             <div class="card-body">
                 <div class="chart-container">
@@ -157,7 +190,37 @@ function renderAnalysis(data) {
         <div class="section-title">统计详情</div>
         <div class="card">
             <div class="card-body">
-                <div class="detail-grid">
+                <div class="grid grid-4">
+                    <div class="stat-card">
+                        <div class="stat-icon bg-success"><i class="fas fa-check-circle"></i></div>
+                        <div class="stat-info">
+                            <div class="stat-value">${((passCount + excellentCount + goodCount) / totalCount * 100).toFixed(1)}%</div>
+                            <div class="stat-label">及格率</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon bg-primary"><i class="fas fa-star"></i></div>
+                        <div class="stat-info">
+                            <div class="stat-value">${(excellentCount / totalCount * 100).toFixed(1)}%</div>
+                            <div class="stat-label">优秀率</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon bg-warning"><i class="fas fa-square-root-alt"></i></div>
+                        <div class="stat-info">
+                            <div class="stat-value">${data.std_dev ? data.std_dev.toFixed(1) : '-'}</div>
+                            <div class="stat-label">标准差</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon bg-danger"><i class="fas fa-arrow-up-down"></i></div>
+                        <div class="stat-info">
+                            <div class="stat-value">${data.range || '-'}</div>
+                            <div class="stat-label">极差</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="detail-grid" style="margin-top: 20px;">
                     <div class="detail-item">
                         <span class="detail-label">中位数</span>
                         <span class="detail-value">${data.median || '-'}</span>
@@ -174,10 +237,139 @@ function renderAnalysis(data) {
                         <span class="detail-label">75分位数</span>
                         <span class="detail-value">${data.percentile_75 || '-'}</span>
                     </div>
+                    <div class="detail-item">
+                        <span class="detail-label">偏度</span>
+                        <span class="detail-value">${data.skewness ? data.skewness.toFixed(2) : '-'}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">峰度</span>
+                        <span class="detail-value">${data.kurtosis ? data.kurtosis.toFixed(2) : '-'}</span>
+                    </div>
                 </div>
             </div>
         </div>
+
+        <div class="section-title">知识点掌握分析</div>
+        <div class="card">
+            <div class="card-body">
+                ${data.knowledge_points ? `
+                    <div class="grid grid-2" style="gap: 15px;">
+                        ${data.knowledge_points.map(kp => `
+                            <div style="background: var(--bg-secondary); padding: 15px; border-radius: 8px;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                    <span style="font-weight: 600;">${kp.name}</span>
+                                    <span style="color: ${kp.mastery_rate >= 70 ? '#059669' : kp.mastery_rate >= 40 ? '#d97706' : '#dc2626'};">
+                                        ${kp.mastery_rate.toFixed(1)}%
+                                    </span>
+                                </div>
+                                <div style="height: 8px; background: var(--border); border-radius: 4px; overflow: hidden;">
+                                    <div style="height: 100%; width: ${kp.mastery_rate}%; background: ${kp.mastery_rate >= 70 ? '#059669' : kp.mastery_rate >= 40 ? '#d97706' : '#dc2626'}; border-radius: 4px;"></div>
+                                </div>
+                                <div style="margin-top: 8px; font-size: 12px; color: var(--text-muted);">
+                                    正确率: ${kp.correct_rate ? kp.correct_rate.toFixed(1) + '%' : '-'} | 人数: ${kp.student_count || 0}
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                ` : `<div class="empty-state"><i class="fas fa-book-open"></i><h3>暂无知识点分析数据</h3></div>`}
+            </div>
+        </div>
+
+        <div class="section-title">难度分析</div>
+        <div class="card">
+            <div class="card-body">
+                ${data.difficulty_analysis ? `
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <span class="detail-label">整体难度</span>
+                            <span class="detail-value">${data.difficulty_analysis.overall || '-'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">区分度</span>
+                            <span class="detail-value">${data.difficulty_analysis.discrimination ? data.difficulty_analysis.discrimination.toFixed(2) : '-'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">信度</span>
+                            <span class="detail-value">${data.difficulty_analysis.reliability ? data.difficulty_analysis.reliability.toFixed(2) : '-'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">效度</span>
+                            <span class="detail-value">${data.difficulty_analysis.validity ? data.difficulty_analysis.validity.toFixed(2) : '-'}</span>
+                        </div>
+                    </div>
+                ` : `<div class="empty-state"><i class="fas fa-bar-chart"></i><h3>暂无难度分析数据</h3></div>`}
+            </div>
+        </div>
     `;
+    
+    setTimeout(() => {
+        renderCharts(data, rangeData, excellentCount, goodCount, passCount, failCount);
+    }, 100);
+}
+
+function renderCharts(data, rangeData, excellentCount, goodCount, passCount, failCount) {
+    try {
+        const ctx1 = document.getElementById('scoreDistributionChart');
+        if (ctx1) {
+            new Chart(ctx1, {
+                type: 'bar',
+                data: {
+                    labels: rangeData.map(r => r.name),
+                    datasets: [{
+                        label: '占比(%)',
+                        data: rangeData.map(r => r.value),
+                        backgroundColor: [
+                            'rgba(239, 68, 68, 0.7)',
+                            'rgba(245, 158, 11, 0.7)',
+                            'rgba(34, 197, 94, 0.7)',
+                            'rgba(59, 130, 246, 0.7)',
+                            'rgba(139, 92, 246, 0.7)'
+                        ],
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, max: 100 }
+                    }
+                }
+            });
+        }
+
+        const ctx2 = document.getElementById('gradeDistributionChart');
+        if (ctx2) {
+            new Chart(ctx2, {
+                type: 'doughnut',
+                data: {
+                    labels: ['优秀', '良好', '及格', '不及格'],
+                    datasets: [{
+                        data: [excellentCount, goodCount, passCount, failCount],
+                        backgroundColor: [
+                            'rgba(34, 197, 94, 0.8)',
+                            'rgba(59, 130, 246, 0.8)',
+                            'rgba(245, 158, 11, 0.8)',
+                            'rgba(239, 68, 68, 0.8)'
+                        ],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right' }
+                    }
+                }
+            });
+        }
+    } catch (e) {
+        console.error('渲染图表失败:', e);
+    }
 }
 
 window.onload = loadExams;

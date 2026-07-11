@@ -12,8 +12,13 @@
         <div class="card">
             <div class="card-header">
                 <div class="card-title">发送通知</div>
+                <div class="flex gap-2">
+                    <button class="btn btn-secondary btn-sm" onclick="switchSendMode('single')">单用户</button>
+                    <button class="btn btn-secondary btn-sm" onclick="switchSendMode('batch')">批量发送</button>
+                    <button class="btn btn-secondary btn-sm" onclick="switchSendMode('template')">使用模板</button>
+                </div>
             </div>
-            <div class="card-body">
+            <div class="card-body" id="sendForm">
                 <div class="form-group">
                     <label class="form-label">用户ID</label>
                     <input type="number" class="form-control" id="user_id" placeholder="输入用户ID">
@@ -185,6 +190,264 @@
                     document.getElementById('user_id').value = '';
                     document.getElementById('title').value = '';
                     document.getElementById('content').value = '';
+                    loadNotifications();
+                } else {
+                    alert(data.message || '发送失败');
+                }
+            } catch (error) {
+                console.error('发送通知失败:', error);
+                alert('发送失败');
+            }
+        }
+
+        function switchSendMode(mode) {
+            const form = document.getElementById('sendForm');
+            if (mode === 'single') {
+                form.innerHTML = `
+                    <div class="form-group">
+                        <label class="form-label">用户ID</label>
+                        <input type="number" class="form-control" id="user_id" placeholder="输入用户ID">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">通知标题</label>
+                        <input type="text" class="form-control" id="title" placeholder="输入通知标题">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">通知内容</label>
+                        <textarea class="form-control" id="content" rows="4" placeholder="输入通知内容"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">通知类型</label>
+                        <select class="form-control" id="type">
+                            <option value="system">系统通知</option>
+                            <option value="exam">考试通知</option>
+                            <option value="learning">学习通知</option>
+                            <option value="alert">告警通知</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary btn-lg w-full" onclick="sendNotification()">
+                        <i class="fas fa-paper-plane"></i>
+                        发送通知
+                    </button>
+                `;
+            } else if (mode === 'batch') {
+                form.innerHTML = `
+                    <div class="form-group">
+                        <label class="form-label">发送范围</label>
+                        <select class="form-control" id="batchScope">
+                            <option value="all">所有用户</option>
+                            <option value="students">所有学生</option>
+                            <option value="teachers">所有教师</option>
+                            <option value="role">按角色</option>
+                            <option value="custom">自定义用户ID</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="roleSelect" style="display:none;">
+                        <label class="form-label">角色</label>
+                        <select class="form-control" id="batchRole">
+                            <option value="student">学生</option>
+                            <option value="teacher">教师</option>
+                            <option value="admin">管理员</option>
+                            <option value="designer">设计师</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="customIds" style="display:none;">
+                        <label class="form-label">用户ID列表</label>
+                        <textarea class="form-control" id="batchUserIds" rows="3" placeholder="每行一个用户ID"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">通知标题</label>
+                        <input type="text" class="form-control" id="batchTitle" placeholder="输入通知标题">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">通知内容</label>
+                        <textarea class="form-control" id="batchContent" rows="4" placeholder="输入通知内容"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">通知类型</label>
+                        <select class="form-control" id="batchType">
+                            <option value="system">系统通知</option>
+                            <option value="exam">考试通知</option>
+                            <option value="learning">学习通知</option>
+                            <option value="alert">告警通知</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary btn-lg w-full" onclick="sendBatchNotification()">
+                        <i class="fas fa-paper-plane"></i>
+                        批量发送
+                    </button>
+                `;
+                document.getElementById('batchScope').addEventListener('change', function() {
+                    document.getElementById('roleSelect').style.display = this.value === 'role' ? 'block' : 'none';
+                    document.getElementById('customIds').style.display = this.value === 'custom' ? 'block' : 'none';
+                });
+            } else if (mode === 'template') {
+                form.innerHTML = `
+                    <div class="form-group">
+                        <label class="form-label">选择模板</label>
+                        <select class="form-control" id="templateSelect" onchange="loadTemplate()">
+                            <option value="">请选择模板</option>
+                            <option value="exam_reminder">考试提醒</option>
+                            <option value="homework_reminder">作业提醒</option>
+                            <option value="course_reminder">课程提醒</option>
+                            <option value="system_update">系统更新</option>
+                            <option value="birthday">生日祝福</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">用户ID</label>
+                        <input type="number" class="form-control" id="templateUserId" placeholder="输入用户ID">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">模板参数</label>
+                        <div id="templateParams"></div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">预览</label>
+                        <div id="templatePreview" style="background: var(--bg-secondary); padding: 15px; border-radius: 8px; min-height: 80px;">选择模板后预览</div>
+                    </div>
+                    <button class="btn btn-primary btn-lg w-full" onclick="sendTemplateNotification()">
+                        <i class="fas fa-paper-plane"></i>
+                        发送通知
+                    </button>
+                `;
+            }
+        }
+
+        async function sendBatchNotification() {
+            const scope = document.getElementById('batchScope').value;
+            const role = document.getElementById('batchRole') ? document.getElementById('batchRole').value : '';
+            const userIds = document.getElementById('batchUserIds') ? document.getElementById('batchUserIds').value : '';
+            const title = document.getElementById('batchTitle').value;
+            const content = document.getElementById('batchContent').value;
+            const type = document.getElementById('batchType').value;
+            
+            if (!title || !content) {
+                alert('请填写标题和内容');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/notifications/batch', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        scope,
+                        role,
+                        user_ids: userIds ? userIds.split('\n').map(id => parseInt(id.trim())).filter(id => !isNaN(id)) : [],
+                        title,
+                        content,
+                        type,
+                        priority: 10
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.code === 200) {
+                    alert(`成功发送 ${data.data.count || 0} 条通知`);
+                    loadNotifications();
+                } else {
+                    alert(data.message || '发送失败');
+                }
+            } catch (error) {
+                console.error('批量发送失败:', error);
+                alert('发送失败');
+            }
+        }
+
+        function loadTemplate() {
+            const template = document.getElementById('templateSelect').value;
+            const params = document.getElementById('templateParams');
+            const preview = document.getElementById('templatePreview');
+            
+            const templates = {
+                'exam_reminder': {
+                    title: '考试提醒',
+                    content: '尊敬的{name}同学，您有一场考试即将开始：{exam_name}，请准时参加！',
+                    params: [{ name: 'name', label: '学生姓名' }, { name: 'exam_name', label: '考试名称' }]
+                },
+                'homework_reminder': {
+                    title: '作业提醒',
+                    content: '尊敬的{name}同学，您有作业{homework_name}即将到期，请及时完成！',
+                    params: [{ name: 'name', label: '学生姓名' }, { name: 'homework_name', label: '作业名称' }]
+                },
+                'course_reminder': {
+                    title: '课程提醒',
+                    content: '尊敬的{name}同学，您订阅的课程{course_name}即将开始，请准时参加！',
+                    params: [{ name: 'name', label: '学生姓名' }, { name: 'course_name', label: '课程名称' }]
+                },
+                'system_update': {
+                    title: '系统更新通知',
+                    content: '系统已更新至{version}版本，新增功能：{features}，请及时体验！',
+                    params: [{ name: 'version', label: '版本号' }, { name: 'features', label: '新功能' }]
+                },
+                'birthday': {
+                    title: '生日快乐！',
+                    content: '尊敬的{name}同学，今天是您的生日，祝您生日快乐！学习进步！',
+                    params: [{ name: 'name', label: '用户姓名' }]
+                }
+            };
+            
+            const tpl = templates[template];
+            if (tpl) {
+                params.innerHTML = tpl.params.map(p => `
+                    <div class="form-group">
+                        <label class="form-label">${p.label}</label>
+                        <input type="text" class="form-control" id="param_${p.name}" placeholder="输入${p.label}">
+                    </div>
+                `).join('');
+                
+                preview.innerHTML = `<strong>标题:</strong> ${tpl.title}<br><strong>内容:</strong> ${tpl.content}`;
+            } else {
+                params.innerHTML = '';
+                preview.innerHTML = '选择模板后预览';
+            }
+        }
+
+        async function sendTemplateNotification() {
+            const template = document.getElementById('templateSelect').value;
+            const userId = document.getElementById('templateUserId').value;
+            
+            if (!template || !userId) {
+                alert('请选择模板并输入用户ID');
+                return;
+            }
+            
+            const templates = {
+                'exam_reminder': { title: '考试提醒', content: '尊敬的{name}同学，您有一场考试即将开始：{exam_name}，请准时参加！' },
+                'homework_reminder': { title: '作业提醒', content: '尊敬的{name}同学，您有作业{homework_name}即将到期，请及时完成！' },
+                'course_reminder': { title: '课程提醒', content: '尊敬的{name}同学，您订阅的课程{course_name}即将开始，请准时参加！' },
+                'system_update': { title: '系统更新通知', content: '系统已更新至{version}版本，新增功能：{features}，请及时体验！' },
+                'birthday': { title: '生日快乐！', content: '尊敬的{name}同学，今天是您的生日，祝您生日快乐！学习进步！' }
+            };
+            
+            const tpl = templates[template];
+            let title = tpl.title;
+            let content = tpl.content;
+            
+            document.querySelectorAll('[id^="param_"]').forEach(input => {
+                const paramName = input.id.replace('param_', '');
+                const paramValue = input.value || '{'+paramName+'}';
+                title = title.replace('{'+paramName+'}', paramValue);
+                content = content.replace('{'+paramName+'}', paramValue);
+            });
+            
+            try {
+                const response = await fetch('/api/notifications', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: parseInt(userId),
+                        title,
+                        content,
+                        type: 'system',
+                        priority: 10
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.code === 200) {
+                    alert('通知发送成功');
                     loadNotifications();
                 } else {
                     alert(data.message || '发送失败');
