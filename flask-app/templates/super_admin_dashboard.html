@@ -1,146 +1,46 @@
-{% extends "base_layout.html" %}
-
-{% block title %}超级管理员控制台 - MTSCOS AI 系统{% endblock %}
-{% block description %}超级管理员控制面板 - 管理所有系统功能{% endblock %}
-{% block breadcrumb %}超级管理员仪表盘{% endblock %}
-
-{% block scripts %}
-<script src="{{ url_for('static', filename='js/chart.umd.min.js') }}"></script>
-{% endblock %}
-
-{% block content %}
-<style>
-* { box-sizing: border-box; }
-@keyframes fadeInUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
-.animate-fadeInUp { animation: fadeInUp 0.5s ease-out forwards; }
-.dashboard-shell { display: flex; min-height: 100vh; background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); }
-.sidebar { width: 260px; height: 100vh; background: white; border-right: 1px solid #e2e8f0; display: flex; flex-direction: column; position: fixed; top: 0; left: 0; bottom: 0; z-index: 30; overflow-y: auto; }
-.sidebar-header { padding: 18px 20px; border-bottom: 1px solid #f1f5f9; }
-.logo-badge { display: flex; align-items: center; gap: 12px; }
-.logo-icon { width: 40px; height: 40px; border-radius: 12px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 800; color: white; }
-.logo-text h2 { font-size: 16px; font-weight: 800; color: #1e293b; margin: 0; }
-.logo-text p { font-size: 10px; color: #94a3b8; margin: 2px 0 0; }
-.sidebar-nav { flex: 1; padding: 12px; }
-.nav-item { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-radius: 10px; cursor: pointer; transition: all 0.2s; margin-bottom: 4px; }
-.nav-item:hover { background: #f1f5f9; }
-.nav-item.active { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
-.nav-item.active .nav-icon { color: white; }
-.nav-icon { width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 15px; }
-.nav-text { font-size: 13px; font-weight: 600; color: #334155; }
-.nav-item.active .nav-text { color: white; }
-.sidebar-footer { padding: 12px; border-top: 1px solid #f1f5f9; }
-.user-info { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 10px; background: #f8fafc; }
-.user-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 13px; font-weight: 700; }
-.user-detail { flex: 1; }
-.user-name { font-size: 12px; font-weight: 700; color: #1e293b; margin: 0; }
-.user-role { font-size: 10px; color: #64748b; margin: 2px 0 0; }
-.logout-btn { background: transparent; border: none; color: var(--color-error); cursor: pointer; padding: 4px; }
-.main-content { flex: 1; margin-left: 260px; padding: 24px; min-height: 100vh; }
-.page-header { margin-bottom: 24px; }
-.page-header h1 { font-size: 24px; font-weight: 800; color: #1e293b; margin: 0; }
-.page-header p { font-size: 13px; color: #64748b; margin: 6px 0 0; }
-.stats-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-bottom: 24px; }
-.stat-card { background: white; border-radius: 14px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid #f1f5f9; }
-.stat-header { display: flex; justify-content: space-between; align-items: flex-start; }
-.stat-label { font-size: 12px; color: #64748b; margin: 0; }
-.stat-value { font-size: 28px; font-weight: 800; color: #1e293b; margin: 4px 0 0; }
-.stat-sub { font-size: 11px; color: #94a3b8; margin: 4px 0 0; }
-.stat-icon { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; }
-.stat-card.blue .stat-icon { background: #dbeafe; color: #2563eb; }
-.stat-card.green .stat-icon { background: #d1fae5; color: #059669; }
-.stat-card.purple .stat-icon { background: #ede9fe; color: #7c3aed; }
-.stat-card.orange .stat-icon { background: #fef3c7; color: #d97706; }
-.stat-card.pink .stat-icon { background: #fce7f3; color: #db2777; }
-.action-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; margin-bottom: 24px; }
-.action-card { background: white; border-radius: 12px; padding: 18px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid #f1f5f9; cursor: pointer; transition: all 0.2s; }
-.action-card:hover { transform: translateY(-2px); box-shadow: 0 8px 12px -2px rgba(0,0,0,0.08); }
-.action-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; font-size: 16px; }
-.action-card.blue .action-icon { background: #dbeafe; color: #2563eb; }
-.action-card.green .action-icon { background: #d1fae5; color: #059669; }
-.action-card.purple .action-icon { background: #ede9fe; color: #7c3aed; }
-.action-card.orange .action-icon { background: #fef3c7; color: #d97706; }
-.action-card.pink .action-icon { background: #fce7f3; color: #db2777; }
-.action-card.cyan .action-icon { background: #cffafe; color: #0891b2; }
-.action-label { font-size: 12px; font-weight: 700; color: #334155; margin: 0; }
-.panel { background: white; border-radius: 14px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid #f1f5f9; margin-bottom: 24px; }
-.panel-header { padding: 20px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; }
-.panel-title { font-size: 15px; font-weight: 800; color: #1e293b; margin: 0; display: flex; align-items: center; gap: 10px; }
-.panel-title-bar { width: 4px; height: 16px; background: linear-gradient(180deg, #667eea 0%, #764ba2 100%); border-radius: 2px; }
-.panel-content { padding: 20px; }
-.search-bar { display: flex; gap: 10px; margin-bottom: 16px; }
-.search-bar input, .search-bar select { padding: 10px 14px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px; }
-.search-bar button { padding: 10px 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; }
-.table-grid { width: 100%; border-collapse: collapse; }
-.table-grid th { text-align: left; padding: 12px; background: #f8fafc; font-size: 12px; font-weight: 700; color: #64748b; border-bottom: 2px solid #e2e8f0; }
-.table-grid td { padding: 12px; font-size: 13px; color: #334155; border-bottom: 1px solid #f1f5f9; }
-.table-grid tr:hover td { background: #f8fafc; }
-.status-badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
-.status-badge.active { background: #d1fae5; color: #059669; }
-.status-badge.completed { background: #dbeafe; color: #2563eb; }
-.status-badge.pending { background: #fef3c7; color: #d97706; }
-.status-badge.failed { background: #fee2e2; color: #dc2626; }
-.empty-state { text-align: center; padding: 30px; color: #94a3b8; font-size: 13px; }
-.pagination { display: flex; gap: 8px; align-items: center; margin-top: 16px; }
-.pagination button { padding: 8px 14px; border: 1px solid #e2e8f0; border-radius: 6px; background: white; cursor: pointer; font-size: 12px; }
-.pagination button.active { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; }
-.pagination button:disabled { opacity: 0.5; cursor: not-allowed; }
-.pagination span { font-size: 12px; color: #64748b; }
-.chart-container { height: 300px; position: relative; }
-.resource-bar { height: 24px; background: #f1f5f9; border-radius: 12px; overflow: hidden; margin-bottom: 8px; }
-.resource-fill { height: 100%; border-radius: 12px; transition: width 0.3s; }
-.resource-fill.cpu { background: linear-gradient(90deg, var(--color-error) 0%, #f97316 100%); }
-.resource-fill.mem { background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-secondary) 100%); }
-.resource-fill.disk { background: linear-gradient(90deg, var(--color-success) 0%, #06b6d4 100%); }
-.resource-label { display: flex; justify-content: space-between; font-size: 12px; color: #64748b; margin-bottom: 4px; }
-.status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--color-success); animation: pulse 2s infinite; }
-.status-dot.inactive { background: #94a3b8; animation: none; }
-.engine-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
-.engine-card { background: white; border-radius: 12px; padding: 16px; border: 1px solid #f1f5f9; }
-.engine-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-.engine-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--color-success); }
-.engine-dot.inactive { background: #94a3b8; }
-.engine-name { font-size: 13px; font-weight: 700; color: #1e293b; }
-.engine-desc { font-size: 11px; color: #64748b; }
-.task-item { background: #f8fafc; border-radius: 8px; padding: 12px; margin-bottom: 8px; }
-.task-header { display: flex; justify-content: space-between; align-items: center; }
-.task-name { font-size: 12px; font-weight: 700; color: #334155; }
-.task-status { padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; }
-.task-detail { font-size: 10px; color: #94a3b8; margin-top: 4px; }
-.backup-item { display: flex; justify-content: space-between; align-items: center; padding: 14px; border-bottom: 1px solid #f1f5f9; }
-.backup-info { flex: 1; }
-.backup-name { font-size: 13px; font-weight: 700; color: #1e293b; margin: 0; }
-.backup-meta { font-size: 11px; color: #64748b; margin: 4px 0 0; }
-.btn-icon { width: 32px; height: 32px; border-radius: 8px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-.btn-icon.primary { background: #dbeafe; color: #2563eb; }
-.btn-icon.danger { background: #fee2e2; color: #dc2626; }
-.toggle-switch { width: 44px; height: 24px; background: #e2e8f0; border-radius: 12px; position: relative; cursor: pointer; }
-.toggle-switch.active { background: #667eea; }
-.toggle-switch::after { content: ''; width: 20px; height: 20px; background: white; border-radius: 50%; position: absolute; top: 2px; left: 2px; transition: left 0.2s; }
-.toggle-switch.active::after { left: 22px; }
-</style>
-
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0c1222">
+    <title>超级管理员控制台 - MTSCOS AI 系统</title>
+    <meta name="description" content="超级管理员控制面板 - 管理所有系统功能和AI扩展能力">
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='images/mtscos_shield.svg') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/mtscos-design-system.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='all.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/super_admin_dashboard.css') }}">
+    <script src="{{ url_for('static', filename='js/chart.umd.min.js') }}"></script>
+</head>
+<body class="super-admin-body">
 <div class="dashboard-shell">
     <div class="sidebar">
         <div class="sidebar-header">
             <div class="logo-badge">
-                <div class="logo-icon">AI</div>
+                <div class="logo-icon"><img src="{{ url_for('static', filename='images/mtscos_shield.svg') }}" alt="Logo"></div>
                 <div class="logo-text">
                     <h2>MTSCOS AI</h2>
-                    <p>超级管理员</p>
+                    <p>超级管理员控制台</p>
                 </div>
             </div>
         </div>
         <div class="sidebar-nav">
+            <div class="nav-section">系统概览</div>
             <div class="nav-item active" onclick="switchTab('overview')"><div class="nav-icon">📊</div><div class="nav-text">系统概览</div></div>
             <div class="nav-item" onclick="switchTab('resources')"><div class="nav-icon">💻</div><div class="nav-text">资源监控</div></div>
             <div class="nav-item" onclick="switchTab('logs')"><div class="nav-icon">📝</div><div class="nav-text">系统日志</div></div>
+            
+            <div class="nav-section">数据管理</div>
             <div class="nav-item" onclick="switchTab('users')"><div class="nav-icon">👥</div><div class="nav-text">用户管理</div></div>
             <div class="nav-item" onclick="switchTab('exam')"><div class="nav-icon">📋</div><div class="nav-text">考试系统</div></div>
             <div class="nav-item" onclick="switchTab('routes')"><div class="nav-icon">🔗</div><div class="nav-text">路由管理</div></div>
+            
+            <div class="nav-section">AI 能力</div>
             <div class="nav-item" onclick="switchTab('engines')"><div class="nav-icon">⚙️</div><div class="nav-text">AI引擎矩阵</div></div>
             <div class="nav-item" onclick="switchTab('employees')"><div class="nav-icon">🤖</div><div class="nav-text">AI员工管理</div></div>
             <div class="nav-item" onclick="switchTab('agent')"><div class="nav-icon">🧠</div><div class="nav-text">本地AI Agent</div></div>
+            
+            <div class="nav-section">系统维护</div>
             <div class="nav-item" onclick="switchTab('backup')"><div class="nav-icon">💾</div><div class="nav-text">备份与恢复</div></div>
             <div class="nav-item" onclick="window.location.href='/admin_app/security_dashboard'"><div class="nav-icon">🛡️</div><div class="nav-text">安全监控</div></div>
             <div class="nav-item" onclick="window.location.href='/admin_app/health_details'"><div class="nav-icon">❤️</div><div class="nav-text">健康检查</div></div>
@@ -148,12 +48,12 @@
         </div>
         <div class="sidebar-footer">
             <div class="user-info">
-                <div class="user-avatar">{{ user.username[0].upper() }}</div>
+                <div class="user-avatar">{{ user.username[0].upper() if user and user.username else 'A' }}</div>
                 <div class="user-detail">
-                    <p class="user-name">{{ user.username }}</p>
-                    <p class="user-role">{{ user.role }}</p>
+                    <p class="user-name">{{ user.username if user else '管理员' }}</p>
+                    <p class="user-role">{{ user.role if user else 'super_admin' }}</p>
                 </div>
-                <button class="logout-btn" onclick="logout()">🚪</button>
+                <button class="logout-btn" onclick="logout()" title="退出登录">🚪</button>
             </div>
         </div>
     </div>
@@ -164,392 +64,432 @@
             <p>管理系统所有功能和AI扩展能力</p>
         </div>
 
-        <!-- 系统概览 -->
         <div id="tab-overview" class="tab-content">
             <div class="stats-grid">
-                <div class="stat-card blue animate-fadeInUp"><div class="stat-header"><div><p class="stat-label">总用户数</p><p class="stat-value" id="stat-users">--</p></div><div class="stat-icon">👥</div></div></div>
-                <div class="stat-card green animate-fadeInUp"><div class="stat-header"><div><p class="stat-label">考试总数</p><p class="stat-value" id="stat-exams">--</p></div><div class="stat-icon">📋</div></div></div>
-                <div class="stat-card purple animate-fadeInUp"><div class="stat-header"><div><p class="stat-label">AI员工</p><p class="stat-value" id="stat-employees">--</p></div><div class="stat-icon">🤖</div></div></div>
-                <div class="stat-card orange animate-fadeInUp"><div class="stat-header"><div><p class="stat-label">路由总数</p><p class="stat-value" id="stat-routes">--</p></div><div class="stat-icon">🔗</div></div></div>
-                <div class="stat-card pink animate-fadeInUp"><div class="stat-header"><div><p class="stat-label">本地AI Agent</p><p class="stat-value" id="stat-agent">--</p><div class="stat-sub" id="agent-status">待启动</div></div><div class="stat-icon">🧠</div></div></div>
+                <div class="stat-card blue animate-fadeInUp">
+                    <div class="stat-header">
+                        <div>
+                            <p class="stat-label">总用户数</p>
+                            <p class="stat-value" id="stat-users">--</p>
+                        </div>
+                        <div class="stat-icon">👥</div>
+                    </div>
+                </div>
+                <div class="stat-card green animate-fadeInUp" style="animation-delay: 0.05s;">
+                    <div class="stat-header">
+                        <div>
+                            <p class="stat-label">考试总数</p>
+                            <p class="stat-value" id="stat-exams">--</p>
+                        </div>
+                        <div class="stat-icon">📋</div>
+                    </div>
+                </div>
+                <div class="stat-card purple animate-fadeInUp" style="animation-delay: 0.1s;">
+                    <div class="stat-header">
+                        <div>
+                            <p class="stat-label">AI员工</p>
+                            <p class="stat-value" id="stat-employees">--</p>
+                        </div>
+                        <div class="stat-icon">🤖</div>
+                    </div>
+                </div>
+                <div class="stat-card orange animate-fadeInUp" style="animation-delay: 0.15s;">
+                    <div class="stat-header">
+                        <div>
+                            <p class="stat-label">路由总数</p>
+                            <p class="stat-value" id="stat-routes">--</p>
+                        </div>
+                        <div class="stat-icon">🔗</div>
+                    </div>
+                </div>
+                <div class="stat-card pink animate-fadeInUp" style="animation-delay: 0.2s;">
+                    <div class="stat-header">
+                        <div>
+                            <p class="stat-label">本地AI Agent</p>
+                            <p class="stat-value" id="stat-agent">--</p>
+                            <div class="stat-sub" id="agent-status">待启动</div>
+                        </div>
+                        <div class="stat-icon">🧠</div>
+                    </div>
+                </div>
             </div>
 
             <div class="action-grid">
-                <div class="action-card blue" onclick="window.location.href='/ai_auto_expand'"><div class="action-icon">✨</div><p class="action-label">AI拓展</p></div>
-                <div class="action-card green" onclick="startLocalAgent()"><div class="action-icon">▶️</div><p class="action-label">启动Agent</p></div>
-                <div class="action-card purple" onclick="reloadRoutes()"><div class="action-icon">🔄</div><p class="action-label">刷新路由</p></div>
-                <div class="action-card orange" onclick="checkRoutes()"><div class="action-icon">✅</div><p class="action-label">健康检查</p></div>
-                <div class="action-card pink" onclick="createBackup()"><div class="action-icon">💾</div><p class="action-label">数据备份</p></div>
-                <div class="action-card cyan" onclick="startKnowledgeScan()"><div class="action-icon">🔍</div><p class="action-label">知识扫描</p></div>
+                <div class="action-card blue" onclick="window.location.href='/ai_auto_expand'">
+                    <div class="action-icon">✨</div>
+                    <p class="action-label">AI拓展</p>
+                </div>
+                <div class="action-card green" onclick="startLocalAgent()">
+                    <div class="action-icon">▶️</div>
+                    <p class="action-label">启动Agent</p>
+                </div>
+                <div class="action-card purple" onclick="reloadRoutes()">
+                    <div class="action-icon">🔄</div>
+                    <p class="action-label">刷新路由</p>
+                </div>
+                <div class="action-card orange" onclick="checkRoutes()">
+                    <div class="action-icon">✅</div>
+                    <p class="action-label">健康检查</p>
+                </div>
+                <div class="action-card pink" onclick="createBackup()">
+                    <div class="action-icon">💾</div>
+                    <p class="action-label">数据备份</p>
+                </div>
+                <div class="action-card cyan" onclick="startKnowledgeScan()">
+                    <div class="action-icon">🔍</div>
+                    <p class="action-label">知识扫描</p>
+                </div>
             </div>
 
             <div class="panel">
-                <div class="panel-header"><h3 class="panel-title"><div class="panel-title-bar"></div>系统资源</h3></div>
+                <div class="panel-header">
+                    <h3 class="panel-title"><div class="panel-title-bar"></div>系统资源</h3>
+                </div>
                 <div class="panel-content">
-                    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;">
-                        <div><div class="resource-label"><span>CPU使用率</span><span id="cpu-percent">0%</span></div><div class="resource-bar"><div class="resource-fill cpu" id="cpu-bar"></div></div></div>
-                        <div><div class="resource-label"><span>内存使用率</span><span id="mem-percent">0%</span></div><div class="resource-bar"><div class="resource-fill mem" id="mem-bar"></div></div></div>
-                        <div><div class="resource-label"><span>磁盘使用率</span><span id="disk-percent">0%</span></div><div class="resource-bar"><div class="resource-fill disk" id="disk-bar"></div></div></div>
+                    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:24px;">
+                        <div>
+                            <div class="resource-label"><span>CPU使用率</span><span id="cpu-percent">0%</span></div>
+                            <div class="resource-bar"><div class="resource-fill cpu" id="cpu-bar" style="width:0%"></div></div>
+                        </div>
+                        <div>
+                            <div class="resource-label"><span>内存使用率</span><span id="mem-percent">0%</span></div>
+                            <div class="resource-bar"><div class="resource-fill mem" id="mem-bar" style="width:0%"></div></div>
+                        </div>
+                        <div>
+                            <div class="resource-label"><span>磁盘使用率</span><span id="disk-percent">0%</span></div>
+                            <div class="resource-bar"><div class="resource-fill disk" id="disk-bar" style="width:0%"></div></div>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <div class="panel">
-                <div class="panel-header"><h3 class="panel-title"><div class="panel-title-bar"></div>最近活动</h3></div>
+                <div class="panel-header">
+                    <h3 class="panel-title"><div class="panel-title-bar"></div>最近活动</h3>
+                </div>
                 <div class="panel-content">
-                    <table class="table-grid"><thead><tr><th>时间</th><th>类型</th><th>描述</th><th>用户</th></tr></thead><tbody id="recent-activity"><tr><td colspan="4" class="empty-state">加载中...</td></tr></tbody></table>
+                    <table class="table-grid">
+                        <thead>
+                            <tr>
+                                <th>时间</th>
+                                <th>模块</th>
+                                <th>描述</th>
+                                <th>级别</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recent-activity">
+                            <tr><td colspan="4" class="empty-state">加载中...</td></tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
 
-        <!-- 资源监控 -->
         <div id="tab-resources" class="tab-content" style="display:none;">
             <div class="panel">
-                <div class="panel-header"><h3 class="panel-title"><div class="panel-title-bar"></div>资源使用趋势</h3></div>
-                <div class="panel-content"><div class="chart-container"><canvas id="resourceChart"></canvas></div></div>
+                <div class="panel-header">
+                    <h3 class="panel-title"><div class="panel-title-bar"></div>资源使用趋势</h3>
+                </div>
+                <div class="panel-content">
+                    <div class="chart-container"><canvas id="resourceChart"></canvas></div>
+                </div>
             </div>
-            <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:20px;">
+            <div class="info-grid">
                 <div class="panel">
-                    <div class="panel-header"><h3 class="panel-title"><div class="panel-title-bar"></div>CPU信息</h3></div>
+                    <div class="panel-header">
+                        <h3 class="panel-title"><div class="panel-title-bar"></div>CPU信息</h3>
+                    </div>
                     <div class="panel-content" id="cpu-info">加载中...</div>
                 </div>
                 <div class="panel">
-                    <div class="panel-header"><h3 class="panel-title"><div class="panel-title-bar"></div>内存信息</h3></div>
+                    <div class="panel-header">
+                        <h3 class="panel-title"><div class="panel-title-bar"></div>内存信息</h3>
+                    </div>
                     <div class="panel-content" id="mem-info">加载中...</div>
                 </div>
             </div>
         </div>
 
-        <!-- 系统日志 -->
         <div id="tab-logs" class="tab-content" style="display:none;">
             <div class="panel">
-                <div class="panel-header"><h3 class="panel-title"><div class="panel-title-bar"></div>系统日志</h3></div>
+                <div class="panel-header">
+                    <h3 class="panel-title"><div class="panel-title-bar"></div>系统日志</h3>
+                </div>
                 <div class="panel-content">
-                    <table class="table-grid"><thead><tr><th>时间</th><th>级别</th><th>模块</th><th>消息</th></tr></thead><tbody id="log-table"><tr><td colspan="4" class="empty-state">加载中...</td></tr></tbody></table>
+                    <div class="search-bar">
+                        <input type="text" id="log-search" placeholder="搜索日志消息" onkeypress="if(event.key==='Enter')loadLogs()">
+                        <select id="log-level-filter" onchange="loadLogs()">
+                            <option value="">全部级别</option>
+                            <option value="info">INFO</option>
+                            <option value="warning">WARNING</option>
+                            <option value="error">ERROR</option>
+                            <option value="success">SUCCESS</option>
+                        </select>
+                        <button onclick="loadLogs()">搜索</button>
+                    </div>
+                    <table class="table-grid" id="log-table">
+                        <thead>
+                            <tr>
+                                <th>时间</th>
+                                <th>级别</th>
+                                <th>模块</th>
+                                <th>消息</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="4" class="empty-state">加载中...</td></tr>
+                        </tbody>
+                    </table>
+                    <div class="pagination" id="log-pagination"></div>
                 </div>
             </div>
         </div>
 
-        <!-- 用户管理 -->
         <div id="tab-users" class="tab-content" style="display:none;">
             <div class="panel">
-                <div class="panel-header"><h3 class="panel-title"><div class="panel-title-bar"></div>用户管理</h3></div>
+                <div class="panel-header">
+                    <h3 class="panel-title"><div class="panel-title-bar"></div>用户管理</h3>
+                </div>
                 <div class="panel-content">
                     <div class="search-bar">
                         <input type="text" id="user-search" placeholder="搜索用户名/邮箱">
-                        <select id="user-role-filter"><option value="">全部角色</option><option value="super_admin">超级管理员</option><option value="admin">管理员</option><option value="teacher">教师</option><option value="student">学生</option></select>
+                        <select id="user-role-filter">
+                            <option value="">全部角色</option>
+                            <option value="super_admin">超级管理员</option>
+                            <option value="admin">管理员</option>
+                            <option value="teacher">教师</option>
+                            <option value="student">学生</option>
+                        </select>
                         <button onclick="loadUsers()">搜索</button>
                     </div>
-                    <table class="table-grid" id="user-table"><thead><tr><th>ID</th><th>用户名</th><th>邮箱</th><th>角色</th><th>状态</th><th>创建时间</th><th>操作</th></tr></thead><tbody><tr><td colspan="7" class="empty-state">加载中...</td></tr></tbody></table>
+                    <table class="table-grid" id="user-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>用户名</th>
+                                <th>邮箱</th>
+                                <th>角色</th>
+                                <th>状态</th>
+                                <th>创建时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="7" class="empty-state">加载中...</td></tr>
+                        </tbody>
+                    </table>
                     <div class="pagination" id="user-pagination"></div>
                 </div>
             </div>
         </div>
 
-        <!-- 考试系统 -->
         <div id="tab-exam" class="tab-content" style="display:none;">
-            <div class="stats-grid">
-                <div class="stat-card blue"><div class="stat-header"><div><p class="stat-label">总考试数</p><p class="stat-value" id="exam-total">--</p></div></div></div>
-                <div class="stat-card green"><div class="stat-header"><div><p class="stat-label">进行中</p><p class="stat-value" id="exam-active">--</p></div></div></div>
-                <div class="stat-card purple"><div class="stat-header"><div><p class="stat-label">已完成</p><p class="stat-value" id="exam-completed">--</p></div></div></div>
-                <div class="stat-card orange"><div class="stat-header"><div><p class="stat-label">平均分</p><p class="stat-value" id="exam-avg">--</p></div></div></div>
+            <div class="stats-grid" style="grid-template-columns: repeat(4, 1fr);">
+                <div class="stat-card blue">
+                    <div class="stat-header">
+                        <div>
+                            <p class="stat-label">总考试数</p>
+                            <p class="stat-value" id="exam-total">--</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="stat-card green">
+                    <div class="stat-header">
+                        <div>
+                            <p class="stat-label">进行中</p>
+                            <p class="stat-value" id="exam-active">--</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="stat-card purple">
+                    <div class="stat-header">
+                        <div>
+                            <p class="stat-label">已完成</p>
+                            <p class="stat-value" id="exam-completed">--</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="stat-card orange">
+                    <div class="stat-header">
+                        <div>
+                            <p class="stat-label">平均分</p>
+                            <p class="stat-value" id="exam-avg">--</p>
+                        </div>
+                    </div>
+                </div>
             </div>
             <div class="panel">
-                <div class="panel-header"><h3 class="panel-title"><div class="panel-title-bar"></div>考试列表</h3></div>
+                <div class="panel-header">
+                    <h3 class="panel-title"><div class="panel-title-bar"></div>考试列表</h3>
+                </div>
                 <div class="panel-content">
                     <div class="search-bar">
                         <input type="text" id="exam-search" placeholder="搜索考试名称">
-                        <select id="exam-status-filter"><option value="">全部状态</option><option value="active">进行中</option><option value="completed">已完成</option></select>
+                        <select id="exam-status-filter">
+                            <option value="">全部状态</option>
+                            <option value="active">进行中</option>
+                            <option value="completed">已完成</option>
+                        </select>
                         <button onclick="loadExams()">搜索</button>
                     </div>
-                    <table class="table-grid" id="exam-table"><thead><tr><th>ID</th><th>标题</th><th>科目</th><th>时长</th><th>题目数</th><th>状态</th><th>创建时间</th></tr></thead><tbody><tr><td colspan="7" class="empty-state">加载中...</td></tr></tbody></table>
+                    <table class="table-grid" id="exam-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>标题</th>
+                                <th>科目</th>
+                                <th>时长</th>
+                                <th>题目数</th>
+                                <th>状态</th>
+                                <th>创建时间</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="7" class="empty-state">加载中...</td></tr>
+                        </tbody>
+                    </table>
+                    <div class="pagination" id="exam-pagination"></div>
                 </div>
             </div>
         </div>
 
-        <!-- 路由管理 -->
         <div id="tab-routes" class="tab-content" style="display:none;">
             <div class="panel">
-                <div class="panel-header"><h3 class="panel-title"><div class="panel-title-bar"></div>路由列表</h3></div>
+                <div class="panel-header">
+                    <h3 class="panel-title"><div class="panel-title-bar"></div>路由列表</h3>
+                </div>
                 <div class="panel-content">
                     <div class="search-bar">
-                        <input type="text" id="route-search" placeholder="搜索路由路径">
+                        <input type="text" id="route-search" placeholder="搜索路由路径" onkeypress="if(event.key==='Enter')loadRoutes()">
                         <button onclick="loadRoutes()">搜索</button>
                     </div>
-                    <table class="table-grid" id="route-table"><thead><tr><th>路径</th><th>端点</th><th>方法</th></tr></thead><tbody><tr><td colspan="3" class="empty-state">加载中...</td></tr></tbody></table>
+                    <table class="table-grid" id="route-table">
+                        <thead>
+                            <tr>
+                                <th>路径</th>
+                                <th>端点</th>
+                                <th>方法</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="3" class="empty-state">加载中...</td></tr>
+                        </tbody>
+                    </table>
+                    <div style="margin-top:12px;font-size:12px;color:var(--text-tertiary);">共 <span id="route-count">0</span> 条路由</div>
                 </div>
             </div>
         </div>
 
-        <!-- AI引擎矩阵 -->
         <div id="tab-engines" class="tab-content" style="display:none;">
             <div class="panel">
-                <div class="panel-header"><h3 class="panel-title"><div class="panel-title-bar"></div>AI引擎矩阵</h3></div>
+                <div class="panel-header">
+                    <h3 class="panel-title"><div class="panel-title-bar"></div>AI引擎矩阵</h3>
+                </div>
                 <div class="panel-content">
                     <div class="engine-grid" id="engine-grid">加载中...</div>
                 </div>
             </div>
         </div>
 
-        <!-- AI员工管理 -->
         <div id="tab-employees" class="tab-content" style="display:none;">
             <div class="panel">
-                <div class="panel-header"><h3 class="panel-title"><div class="panel-title-bar"></div>AI员工列表</h3></div>
+                <div class="panel-header">
+                    <h3 class="panel-title"><div class="panel-title-bar"></div>AI员工列表</h3>
+                </div>
                 <div class="panel-content">
-                    <table class="table-grid" id="employee-table"><thead><tr><th>ID</th><th>名称</th><th>角色</th><th>状态</th></tr></thead><tbody><tr><td colspan="4" class="empty-state">加载中...</td></tr></tbody></table>
+                    <table class="table-grid" id="employee-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>名称</th>
+                                <th>角色</th>
+                                <th>状态</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="4" class="empty-state">加载中...</td></tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
 
-        <!-- 本地AI Agent -->
         <div id="tab-agent" class="tab-content" style="display:none;">
-            <div class="panel">
-                <div class="panel-header"><h3 class="panel-title"><div class="panel-title-bar"></div>本地AI Agent状态</h3><div style="display:flex;align-items:center;gap:8px;"><div class="status-dot" id="agent-dot"></div><span id="agent-status-label">待启动</span></div></div>
-                <div class="panel-content">
-                    <div class="action-grid" style="grid-template-columns:repeat(4,1fr);">
-                        <div class="action-card green" onclick="startLocalAgent()"><div class="action-icon">▶️</div><p class="action-label">启动Agent</p></div>
-                        <div class="action-card blue" onclick="submitAgentTask('知识扫描','scan')"><div class="action-icon">🔍</div><p class="action-label">知识扫描</p></div>
-                        <div class="action-card purple" onclick="submitAgentTask('系统优化','optimize')"><div class="action-icon">⚡</div><p class="action-label">系统优化</p></div>
-                        <div class="action-card orange" onclick="submitAgentTask('健康检查','health')"><div class="action-icon">✅</div><p class="action-label">健康检查</p></div>
+            <div class="stats-grid" style="grid-template-columns: repeat(3, 1fr);">
+                <div class="stat-card blue">
+                    <div class="stat-header">
+                        <div>
+                            <p class="stat-label">Agent总数</p>
+                            <p class="stat-value" id="agent-total">--</p>
+                        </div>
+                        <div class="stat-icon">🤖</div>
                     </div>
-                    <div style="background:#f8fafc;border-radius:12px;padding:16px;margin-bottom:20px;" id="agent-stats">加载中...</div>
-                    <div><h4 style="font-size:14px;font-weight:700;color:#1e293b;margin:0 0 12px;">任务列表</h4><div id="agent-tasks"></div></div>
+                </div>
+                <div class="stat-card green">
+                    <div class="stat-header">
+                        <div>
+                            <p class="stat-label">运行中</p>
+                            <p class="stat-value" id="agent-running">--</p>
+                        </div>
+                        <div class="stat-icon">▶️</div>
+                    </div>
+                </div>
+                <div class="stat-card orange">
+                    <div class="stat-header">
+                        <div>
+                            <p class="stat-label">已停止</p>
+                            <p class="stat-value" id="agent-stopped">--</p>
+                        </div>
+                        <div class="stat-icon">⏸️</div>
+                    </div>
+                </div>
+            </div>
+            <div class="panel">
+                <div class="panel-header">
+                    <h3 class="panel-title"><div class="panel-title-bar"></div>Agent列表</h3>
+                </div>
+                <div class="panel-content">
+                    <table class="table-grid" id="agent-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>名称</th>
+                                <th>角色</th>
+                                <th>状态</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="5" class="empty-state">加载中...</td></tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
 
-        <!-- 备份与恢复 -->
         <div id="tab-backup" class="tab-content" style="display:none;">
             <div class="panel">
-                <div class="panel-header"><h3 class="panel-title"><div class="panel-title-bar"></div>备份管理</h3><button onclick="createBackup()" style="padding:8px 16px;background:#667eea;color:white;border:none;border-radius:6px;cursor:pointer;">创建备份</button></div>
+                <div class="panel-header">
+                    <h3 class="panel-title"><div class="panel-title-bar"></div>备份管理</h3>
+                    <button class="btn-primary" onclick="createBackup()">创建备份</button>
+                </div>
                 <div class="panel-content">
                     <div id="backup-list">加载中...</div>
                 </div>
             </div>
         </div>
 
-        <!-- 系统设置 -->
         <div id="tab-settings" class="tab-content" style="display:none;">
             <div class="panel">
-                <div class="panel-header"><h3 class="panel-title"><div class="panel-title-bar"></div>系统设置</h3></div>
+                <div class="panel-header">
+                    <h3 class="panel-title"><div class="panel-title-bar"></div>系统设置</h3>
+                </div>
                 <div class="panel-content" id="settings-content">加载中...</div>
             </div>
         </div>
     </div>
 </div>
 
-<script>
-var currentUserPage = 1;
-var currentExamPage = 1;
-var resourceChart = null;
-
-function safeFetch(url, options) {
-    return fetch(url, options).then(response => {
-        if (!response.ok) {
-            return response.text().then(text => {
-                try { return JSON.parse(text); } catch {
-                    return { success: false, error: 'HTTP_ERROR', status: response.status, message: text || '请求失败' };
-                }
-            });
-        }
-        return response.text().then(text => {
-            if (!text) return { success: false, error: 'EMPTY_RESPONSE', message: '响应为空' };
-            try { return JSON.parse(text); } catch {
-                return { success: false, error: 'INVALID_JSON', message: '无效的JSON响应', raw: text };
-            }
-        });
-    }).catch(err => {
-        console.error('Fetch error:', err);
-        return { success: false, error: 'NETWORK_ERROR', message: '网络请求失败' };
-    });
-}
-
-function switchTab(tabName) {
-    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
-    document.querySelector(`[onclick="switchTab('${tabName}')"]`).classList.add('active');
-    document.getElementById('tab-' + tabName).style.display = 'block';
-    if (tabName === 'users') loadUsers();
-    if (tabName === 'exam') loadExams();
-    if (tabName === 'routes') loadRoutes();
-    if (tabName === 'engines') loadEngines();
-    if (tabName === 'employees') loadEmployees();
-    if (tabName === 'agent') loadAgentStatus();
-    if (tabName === 'backup') loadBackups();
-    if (tabName === 'settings') loadSettings();
-    if (tabName === 'resources') initResourceChart();
-}
-
-function setResource(type, percent) {
-    document.getElementById(type + '-percent').textContent = percent + '%';
-    document.getElementById(type + '-bar').style.width = percent + '%';
-}
-
-function loadDashboardData() {
-    safeFetch('/api/super-admin/dashboard').then(data => {
-        const d = data.data || {};
-        document.getElementById('stat-users').textContent = d.total_users || '--';
-        document.getElementById('stat-exams').textContent = d.total_exams || '--';
-        document.getElementById('stat-employees').textContent = d.ai_employee_count || '--';
-        document.getElementById('stat-routes').textContent = d.total_routes || '--';
-        document.getElementById('stat-agent').textContent = d.agent_tasks || '0';
-        document.getElementById('agent-status').textContent = d.agent_running ? '运行中' : '待启动';
-        setResource('cpu', d.cpu_usage || 0);
-        setResource('mem', d.memory_usage || 0);
-        setResource('disk', d.disk_usage || 0);
-        if (d.recent_activity) {
-            document.getElementById('recent-activity').innerHTML = d.recent_activity.map(a => `<tr><td>${a.time}</td><td>${a.type}</td><td>${a.message}</td><td>${a.user}</td></tr>`).join('');
-        }
-    });
-}
-
-function loadUsers() {
-    const search = document.getElementById('user-search').value;
-    const role = document.getElementById('user-role-filter').value;
-    safeFetch('/api/admin/users?page=' + currentUserPage + '&search=' + encodeURIComponent(search) + '&role=' + role).then(data => {
-        const tbody = document.querySelector('#user-table tbody');
-        if (!data.success) { tbody.innerHTML = '<tr><td colspan="7" class="empty-state">加载失败</td></tr>'; return; }
-        tbody.innerHTML = data.data.map(u => `<tr><td>${u.id}</td><td>${u.username}</td><td>${u.email || '-'}</td><td>${u.role}</td><td><span class="status-badge ${u.is_active ? 'active' : 'pending'}">${u.is_active ? '活跃' : '禁用'}</span></td><td>${u.created_at ? u.created_at.slice(0,10) : '-'}</td><td><button onclick="editUser(${u.id})">编辑</button> <button onclick="deleteUser(${u.id})">删除</button></td></tr>`).join('');
-        renderPagination('user-pagination', data.total, data.page, data.page_size, (p) => { currentUserPage = p; loadUsers(); });
-    });
-}
-
-function loadExams() {
-    const search = document.getElementById('exam-search').value;
-    const status = document.getElementById('exam-status-filter').value;
-    safeFetch('/api/admin/exams?page=' + currentExamPage + '&search=' + encodeURIComponent(search) + '&status=' + status).then(data => {
-        const tbody = document.querySelector('#exam-table tbody');
-        if (!data.success) { tbody.innerHTML = '<tr><td colspan="7" class="empty-state">加载失败</td></tr>'; return; }
-        tbody.innerHTML = data.data.map(e => `<tr><td>${e.id}</td><td>${e.title}</td><td>${e.subject || '-'}</td><td>${e.duration || '-'}</td><td>${e.question_count || '-'}</td><td><span class="status-badge ${e.status}">${e.status === 'active' ? '进行中' : '已完成'}</span></td><td>${e.created_at ? e.created_at.slice(0,10) : '-'}</td></tr>`).join('');
-    });
-    safeFetch('/api/admin/exams/stats').then(data => {
-        if (data.success) {
-            document.getElementById('exam-total').textContent = data.data.total_exams || '--';
-            document.getElementById('exam-active').textContent = data.data.active_exams || '--';
-            document.getElementById('exam-completed').textContent = data.data.completed_exams || '--';
-            document.getElementById('exam-avg').textContent = data.data.avg_score || '--';
-        }
-    });
-}
-
-function loadRoutes() {
-    const search = document.getElementById('route-search').value;
-    safeFetch('/api/routes/list').then(data => {
-        const tbody = document.querySelector('#route-table tbody');
-        let routes = data.routes || [];
-        if (search) routes = routes.filter(r => r.route.includes(search));
-        tbody.innerHTML = routes.map(r => `<tr><td>${r.route}</td><td>${r.endpoint}</td><td>${r.methods.join(', ')}</td></tr>`).join('');
-    });
-}
-
-function loadEngines() {
-    safeFetch('/api/admin/ai-engines').then(data => {
-        const grid = document.getElementById('engine-grid');
-        grid.innerHTML = (data.data || []).map(e => `<div class="engine-card"><div class="engine-header"><div class="engine-dot ${e.status === 'running' ? '' : 'inactive'}"></div><div class="engine-name">${e.name}</div></div><div class="engine-desc">${e.desc}</div></div>`).join('');
-    });
-}
-
-function loadEmployees() {
-    safeFetch('/api/admin/ai-employees').then(data => {
-        const tbody = document.querySelector('#employee-table tbody');
-        tbody.innerHTML = (data.data || []).map(e => `<tr><td>${e.id}</td><td>${e.name}</td><td>${e.role}</td><td><span class="status-badge ${e.status}">${e.status === 'active' ? '活跃' : '离线'}</span></td></tr>`).join('');
-    });
-}
-
-function loadAgentStatus() {
-    safeFetch('/api/local-ai-agent/status').then(data => {
-        const dot = document.getElementById('agent-dot');
-        const label = document.getElementById('agent-status-label');
-        const stats = document.getElementById('agent-stats');
-        const tasks = document.getElementById('agent-tasks');
-        const isRunning = data.is_running;
-        dot.className = 'status-dot' + (isRunning ? '' : ' inactive');
-        label.textContent = '本地AI Agent ' + (isRunning ? '运行中' : '待启动');
-        stats.innerHTML = `<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;"><div><p style="font-size:12px;color:#64748b;margin:0;">总任务</p><p style="font-size:24px;font-weight:800;color:#1e293b;margin:0;">${data.total_tasks || 0}</p></div><div><p style="font-size:12px;color:#64748b;margin:0;">运行中</p><p style="font-size:24px;font-weight:800;color:var(--color-primary);margin:0;">${data.running_tasks || 0}</p></div><div><p style="font-size:12px;color:#64748b;margin:0;">已完成</p><p style="font-size:24px;font-weight:800;color:var(--color-success);margin:0;">${data.completed_tasks || 0}</p></div><div><p style="font-size:12px;color:#64748b;margin:0;">失败</p><p style="font-size:24px;font-weight:800;color:var(--color-error);margin:0;">${data.failed_tasks || 0}</p></div></div>`;
-        safeFetch('/api/local-ai-agent/tasks').then(td => {
-            tasks.innerHTML = td.length ? td.map(t => `<div class="task-item"><div class="task-header"><span class="task-name">${t.name}</span><span class="task-status" style="background:${t.status==='completed'?'#d1fae5':t.status==='running'?'#dbeafe':t.status==='failed'?'#fee2e2':'#fef3c7'};color:${t.status==='completed'?'#059669':t.status==='running'?'#2563eb':t.status==='failed'?'#dc2626':'#d97706'}">${t.status}</span></div><div class="task-detail">ID: ${t.id}</div></div>`).join('') : '<div class="empty-state">暂无任务</div>';
-        });
-    }).catch(() => {
-        document.getElementById('agent-dot').className = 'status-dot inactive';
-        document.getElementById('agent-status-label').textContent = '本地AI Agent 未初始化';
-    });
-}
-
-function loadBackups() {
-    safeFetch('/api/admin/backups').then(data => {
-        const list = document.getElementById('backup-list');
-        list.innerHTML = (data.data || []).map(b => `<div class="backup-item"><div class="backup-info"><p class="backup-name">${b.name}</p><p class="backup-meta">${(b.size / 1024 / 1024).toFixed(2)} MB · ${b.created_at ? b.created_at.slice(0,19) : '-'}</p></div><div style="display:flex;gap:8px;"><button class="btn-icon primary">下载</button><button class="btn-icon danger">删除</button></div></div>`).join('');
-    });
-}
-
-function loadSettings() {
-    safeFetch('/api/admin/settings').then(data => {
-        const content = document.getElementById('settings-content');
-        const s = data.data || {};
-        content.innerHTML = `<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:20px;"><div style="background:#f8fafc;border-radius:12px;padding:16px;"><h4 style="font-size:13px;font-weight:700;color:#1e293b;margin:0 0 12px;">系统设置</h4><div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f1f5f9;"><span style="font-size:12px;color:#475569;">系统名称</span><span style="font-size:12px;font-weight:600;color:#1e293b;">${s.system?.name || '-'}</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f1f5f9;"><span style="font-size:12px;color:#475569;">版本</span><span style="font-size:12px;font-weight:600;color:#1e293b;">${s.system?.version || '-'}</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;"><span style="font-size:12px;color:#475569;">环境</span><span style="font-size:12px;font-weight:600;color:#1e293b;">${s.system?.environment || '-'}</span></div></div><div style="background:#f8fafc;border-radius:12px;padding:16px;"><h4 style="font-size:13px;font-weight:700;color:#1e293b;margin:0 0 12px;">AI设置</h4><div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f1f5f9;"><span style="font-size:12px;color:#475569;">自动拓展</span><div class="toggle-switch${s.ai?.auto_expand_enabled?' active':''}"></div></div><div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;"><span style="font-size:12px;color:#475569;">扫描间隔</span><span style="font-size:12px;font-weight:600;color:#1e293b;">${s.ai?.scan_interval_minutes || 60}分钟</span></div></div></div>`;
-    });
-}
-
-function initResourceChart() {
-    if (resourceChart) return;
-    const ctx = document.getElementById('resourceChart').getContext('2d');
-    resourceChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: ['10分钟前', '8分钟前', '6分钟前', '4分钟前', '2分钟前', '现在'],
-            datasets: [{label: 'CPU', data: [30,45,35,50,40,35], borderColor: 'var(--color-error)', tension: 0.3}, {label: '内存', data: [60,65,62,68,64,66], borderColor: 'var(--color-primary)', tension: 0.3}, {label: '磁盘', data: [45,45,45,46,46,46], borderColor: 'var(--color-success)', tension: 0.3}]
-        },
-        options: {responsive: true, maintainAspectRatio: false, plugins: {legend: {position: 'top'}}},
-        scales: {y: {beginAtZero: true, max: 100}}
-    });
-}
-
-function startLocalAgent() {
-    safeFetch('/api/local-ai-agent/start').then(data => { if (data.success) { alert('Agent启动成功'); loadAgentStatus(); } });
-}
-
-function submitAgentTask(name, type) {
-    safeFetch('/api/local-ai-agent/task/submit', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({name, type})}).then(data => { if (data.success) { alert('任务已提交: ' + data.task_id); loadAgentStatus(); } });
-}
-
-function startKnowledgeScan() {
-    safeFetch('/api/local-ai-agent/scan').then(data => { if (data.success) alert('知识扫描已启动'); });
-}
-
-function createBackup() {
-    safeFetch('/api/admin/backups/create', {method: 'POST'}).then(data => { if (data.success) { alert('备份创建成功'); loadBackups(); } });
-}
-
-function reloadRoutes() {
-    safeFetch('/api/routes/reload').then(data => { if (data.success) { alert('路由已刷新'); loadDashboardData(); } });
-}
-
-function checkRoutes() {
-    safeFetch('/api/routes/check').then(data => { alert(data.message); });
-}
-
-function editUser(id) { alert('编辑用户: ' + id); }
-function deleteUser(id) { if (confirm('确定删除用户?')) { safeFetch('/api/admin/users/' + id, {method: 'DELETE'}).then(data => { if (data.success) loadUsers(); }); } }
-
-function renderPagination(containerId, total, page, pageSize, callback) {
-    const pages = Math.ceil(total / pageSize);
-    const container = document.getElementById(containerId);
-    if (pages <= 1) { container.innerHTML = ''; return; }
-    let html = `<button onclick="callback(${page-1})" ${page<=1?'disabled':''}>上一页</button>`;
-    for (let i = 1; i <= pages; i++) {
-        if (i <= 3 || i >= pages - 2 || (i >= page - 1 && i <= page + 1)) {
-            html += `<button onclick="callback(${i})" ${i===page?'class="active"':''}>${i}</button>`;
-        } else if (i === 4 && page > 4) { html += '<span>...</span>'; }
-    }
-    html += `<button onclick="callback(${page+1})" ${page>=pages?'disabled':''}>下一页</button>`;
-    html += `<span>共 ${total} 条</span>`;
-    container.innerHTML = html;
-    container.callback = callback;
-}
-
-function logout() { window.location.href = '/logout'; }
-
-loadDashboardData();
-setInterval(loadDashboardData, 30000);
-</script>
-{% endblock %}
+<script src="{{ url_for('static', filename='js/super_admin_dashboard.js') }}"></script>
+</body>
+</html>

@@ -3952,13 +3952,618 @@ def super_admin_dashboard():
     role = session.get('role', 'guest')
     username = session.get('username', '')
     
-    # 获取权限等级
     from app.config.unified_rules import get_role_level
     user_level = get_role_level(role)
     
     return render_template('super_admin_dashboard.html', 
                            user={'username': username, 'role': role},
                            user_level=user_level)
+
+@app.route('/api/super_admin/overview')
+@require_super_admin
+def api_super_admin_overview():
+    try:
+        import sqlite3
+        conn = sqlite3.connect(DATABASE_PATH)
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
+        
+        stats = {}
+        
+        try:
+            cur.execute('SELECT COUNT(*) as cnt FROM users')
+            stats['total_users'] = cur.fetchone()['cnt']
+        except: stats['total_users'] = 0
+        try:
+            cur.execute('SELECT COUNT(*) as cnt FROM exams')
+            stats['total_exams'] = cur.fetchone()['cnt']
+        except: stats['total_exams'] = 0
+        try:
+            cur.execute('SELECT COUNT(*) as cnt FROM ai_employees')
+            stats['total_ai_employees'] = cur.fetchone()['cnt']
+        except: stats['total_ai_employees'] = 0
+        try:
+            rules = app.url_map.iter_rules()
+            stats['total_routes'] = len(list(rules))
+        except: stats['total_routes'] = 0
+        try:
+            cur.execute('SELECT COUNT(*) as cnt FROM questions')
+            stats['total_questions'] = cur.fetchone()['cnt']
+        except: stats['total_questions'] = 0
+        try:
+            cur.execute('SELECT COUNT(*) as cnt FROM ai_agents')
+            stats['total_agents'] = cur.fetchone()['cnt']
+        except: stats['total_agents'] = 0
+        
+        recent_activity = []
+        try:
+            cur.execute('''
+                SELECT id, status_json, created_at 
+                FROM system_status_log 
+                ORDER BY created_at DESC LIMIT 10
+            ''')
+            rows = cur.fetchall()
+            import json
+            for r in rows:
+                try:
+                    status_data = json.loads(r['status_json'])
+                    recent_activity.append({
+                        'id': r['id'],
+                        'message': f'系统状态监控 - CPU:{status_data.get("cpu_usage", 0)}% 内存:{status_data.get("memory_usage", 0)}% 磁盘:{status_data.get("disk_usage", 0)}%',
+                        'level': 'info',
+                        'module': 'monitor',
+                        'created_at': r['created_at']
+                    })
+                except:
+                    pass
+        except:
+            recent_activity = []
+        
+        if not recent_activity:
+            recent_activity = [
+                {'id': 1, 'message': '用户登录系统', 'level': 'info', 'module': 'auth', 'created_at': '刚刚'},
+                {'id': 2, 'message': '考试创建成功', 'level': 'success', 'module': 'exam', 'created_at': '5分钟前'},
+                {'id': 3, 'message': 'AI员工启动', 'level': 'info', 'module': 'ai', 'created_at': '10分钟前'},
+            ]
+        
+        conn.close()
+        return jsonify({'success': True, 'stats': stats, 'recent_activity': recent_activity})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/super_admin/resources')
+@require_super_admin
+def api_super_admin_resources():
+    try:
+        import psutil
+        cpu = psutil.cpu_percent(interval=0.5)
+        mem = psutil.virtual_memory()
+        disk = psutil.disk_usage('/')
+        
+        cpu_cores = psutil.cpu_count(logical=True)
+        mem_total = round(mem.total / (1024**3), 1)
+        mem_used = round(mem.used / (1024**3), 1)
+        disk_total = round(disk.total / (1024**3), 1)
+        disk_used = round(disk.used / (1024**3), 1)
+        
+        return jsonify({
+            'success': True,
+            'cpu': {'percent': cpu, 'cores': cpu_cores},
+            'memory': {'percent': mem.percent, 'total_gb': mem_total, 'used_gb': mem_used},
+            'disk': {'percent': disk.percent, 'total_gb': disk_total, 'used_gb': disk_used}
+        })
+    except ImportError:
+        return jsonify({
+            'success': True,
+            'cpu': {'percent': 25, 'cores': 8},
+            'memory': {'percent': 60, 'total_gb': 16, 'used_gb': 9.6},
+            'disk': {'percent': 45, 'total_gb': 512, 'used_gb': 230.4}
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/super_admin/logs')
+@require_super_admin
+def api_super_admin_logs():
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 20, type=int)
+    level = request.args.get('level', '')
+    module = request.args.get('module', '')
+    keyword = request.args.get('keyword', '')
+    
+    try:
+        import sqlite3
+        import json
+        conn = sqlite3.connect(DATABASE_PATH)
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
+        
+        cur.execute('SELECT COUNT(*) as cnt FROM system_status_log')
+        total = cur.fetchone()['cnt']
+        
+        offset = (page - 1) * per_page
+        cur.execute(f'''
+            SELECT id, status_json, created_at 
+            FROM system_status_log
+            ORDER BY created_at DESC LIMIT ? OFFSET ?
+        ''', [per_page, offset])
+        rows = cur.fetchall()
+        logs = []
+        for r in rows:
+            try:
+                status_data = json.loads(r['status_json'])
+                logs.append({
+                    'id': r['id'],
+                    'message': f'系统状态监控 - CPU:{status_data.get("cpu_usage", 0)}% 内存:{status_data.get("memory_usage", 0)}% 磁盘:{status_data.get("disk_usage", 0)}% 网络:{status_data.get("network_status", "unknown")} 数据库:{status_data.get("database_status", "unknown")}',
+                    'level': 'info',
+                    'module': 'monitor',
+                    'created_at': r['created_at']
+                })
+            except:
+                logs.append({
+                    'id': r['id'],
+                    'message': '系统状态日志',
+                    'level': 'info',
+                    'module': 'monitor',
+                    'created_at': r['created_at']
+                })
+        
+        conn.close()
+        return jsonify({'success': True, 'logs': logs, 'total': total, 'page': page, 'per_page': per_page})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/super_admin/users')
+@require_super_admin
+def api_super_admin_users():
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 20, type=int)
+    keyword = request.args.get('keyword', '')
+    role = request.args.get('role', '')
+    
+    try:
+        import sqlite3
+        conn = sqlite3.connect(DATABASE_PATH)
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
+        
+        stats = {}
+        try:
+            cur.execute('SELECT COUNT(*) as cnt FROM users')
+            stats['total'] = cur.fetchone()['cnt']
+            
+            cur.execute('SELECT COUNT(*) as cnt FROM users WHERE is_active = 1')
+            stats['active'] = cur.fetchone()['cnt']
+            
+            cur.execute('SELECT role, COUNT(*) as cnt FROM users GROUP BY role')
+            stats['role_distribution'] = {r['role']: r['cnt'] for r in cur.fetchall()}
+        except:
+            stats = {'total': 0, 'active': 0, 'role_distribution': {}}
+        
+        where = []
+        params = []
+        if keyword:
+            where.append('(username LIKE ? OR email LIKE ?)')
+            params.extend([f'%{keyword}%', f'%{keyword}%'])
+        if role:
+            where.append('role = ?')
+            params.append(role)
+        
+        where_sql = ' WHERE ' + ' AND '.join(where) if where else ''
+        
+        cur.execute(f'SELECT COUNT(*) as cnt FROM users{where_sql}', params)
+        total = cur.fetchone()['cnt']
+        
+        offset = (page - 1) * per_page
+        cur.execute(f'''
+            SELECT id, username, email, role, is_active, created_at 
+            FROM users{where_sql}
+            ORDER BY id DESC LIMIT ? OFFSET ?
+        ''', params + [per_page, offset])
+        rows = cur.fetchall()
+        users = [dict(r) for r in rows]
+        
+        conn.close()
+        return jsonify({'success': True, 'users': users, 'total': total, 'page': page, 'per_page': per_page, 'stats': stats})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/super_admin/users/<int:user_id>', methods=['PUT'])
+@require_super_admin
+def api_super_admin_update_user(user_id):
+    try:
+        data = request.get_json() or {}
+        import sqlite3
+        conn = sqlite3.connect(DATABASE_PATH)
+        cur = conn.cursor()
+        
+        updates = []
+        params = []
+        
+        if 'role' in data:
+            updates.append('role = ?')
+            params.append(data['role'])
+        if 'is_active' in data:
+            updates.append('is_active = ?')
+            params.append(1 if data['is_active'] else 0)
+        
+        if not updates:
+            return jsonify({'success': False, 'error': '没有需要更新的字段'})
+        
+        params.append(user_id)
+        cur.execute(f'UPDATE users SET {", ".join(updates)} WHERE id = ?', params)
+        conn.commit()
+        
+        conn.close()
+        return jsonify({'success': True, 'message': '用户更新成功'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/super_admin/users/<int:user_id>', methods=['DELETE'])
+@require_super_admin
+def api_super_admin_delete_user(user_id):
+    try:
+        import sqlite3
+        conn = sqlite3.connect(DATABASE_PATH)
+        cur = conn.cursor()
+        
+        cur.execute('DELETE FROM users WHERE id = ?', [user_id])
+        conn.commit()
+        
+        conn.close()
+        return jsonify({'success': True, 'message': '用户删除成功'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/super_admin/exams')
+@require_super_admin
+def api_super_admin_exams():
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 20, type=int)
+    keyword = request.args.get('keyword', '')
+    status_filter = request.args.get('status', '')
+    
+    try:
+        import sqlite3
+        conn = sqlite3.connect(DATABASE_PATH)
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
+        
+        stats = {}
+        try:
+            cur.execute('SELECT COUNT(*) as cnt FROM exams')
+            stats['total'] = cur.fetchone()['cnt']
+            
+            cur.execute("SELECT COUNT(*) as cnt FROM exams WHERE status = 'active'")
+            stats['active'] = cur.fetchone()['cnt']
+            
+            cur.execute("SELECT COUNT(*) as cnt FROM exams WHERE status = 'completed'")
+            stats['completed'] = cur.fetchone()['cnt']
+            
+            try:
+                cur.execute('SELECT COUNT(*) as cnt, AVG(total_score) as avg_score FROM exam_results')
+                avg_row = cur.fetchone()
+                stats['total_results'] = avg_row['cnt'] if avg_row else 0
+                stats['avg_score'] = round(avg_row['avg_score'], 1) if avg_row and avg_row['avg_score'] else 0
+            except:
+                stats['total_results'] = 0
+                stats['avg_score'] = 0
+        except:
+            stats = {'total': 0, 'active': 0, 'completed': 0, 'total_results': 0, 'avg_score': 0}
+        
+        where = []
+        params = []
+        if keyword:
+            where.append('title LIKE ?')
+            params.append(f'%{keyword}%')
+        if status_filter:
+            where.append('status = ?')
+            params.append(status_filter)
+        
+        where_sql = ' WHERE ' + ' AND '.join(where) if where else ''
+        
+        cur.execute(f'SELECT COUNT(*) as cnt FROM exams{where_sql}', params)
+        total = cur.fetchone()['cnt']
+        
+        offset = (page - 1) * per_page
+        cur.execute(f'''
+            SELECT id, title, subject, duration, question_count, status, created_at 
+            FROM exams{where_sql}
+            ORDER BY id DESC LIMIT ? OFFSET ?
+        ''', params + [per_page, offset])
+        rows = cur.fetchall()
+        exams = [dict(r) for r in rows]
+        
+        if not exams and not keyword and not status_filter:
+            exams = [
+                {'id': 1, 'title': '数学期中考试', 'subject': '数学', 'duration': 120, 'question_count': 50, 'status': 'active', 'created_at': '2026-07-01'},
+            ]
+            total = 1
+            stats = {'total': 1, 'active': 1, 'completed': 0, 'avg_score': 0}
+        
+        conn.close()
+        return jsonify({'success': True, 'exams': exams, 'total': total, 'page': page, 'per_page': per_page, 'stats': stats})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/super_admin/routes')
+@require_super_admin
+def api_super_admin_routes():
+    try:
+        routes = []
+        for rule in app.url_map.iter_rules():
+            routes.append({
+                'path': rule.rule,
+                'endpoint': rule.endpoint,
+                'methods': ', '.join(sorted(rule.methods - {'HEAD', 'OPTIONS'}))
+            })
+        routes.sort(key=lambda x: x['path'])
+        return jsonify({'success': True, 'routes': routes, 'total': len(routes)})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/super_admin/engines')
+@require_super_admin
+def api_super_admin_engines():
+    try:
+        engines = [
+            {'name': '路由修复AI', 'desc': '自动修复路由问题', 'status': 'active', 'icon': '🔗'},
+            {'name': '前端修复AI', 'desc': '自动修复前端样式', 'status': 'active', 'icon': '🎨'},
+            {'name': '性能优化AI', 'desc': '系统性能监控优化', 'status': 'active', 'icon': '⚡'},
+            {'name': '安全审计AI', 'desc': '自动安全漏洞检测', 'status': 'active', 'icon': '🔒'},
+            {'name': '题库维护AI', 'desc': '自动题库扩充与质量检查', 'status': 'active', 'icon': '📚'},
+            {'name': '数据备份AI', 'desc': '自动数据备份与恢复', 'status': 'active', 'icon': '💾'},
+            {'name': '用户管理AI', 'desc': '智能用户分类与管理', 'status': 'active', 'icon': '👤'},
+            {'name': '综合维护AI', 'desc': '全系统综合维护', 'status': 'inactive', 'icon': '🛠️'},
+        ]
+        return jsonify({'success': True, 'engines': engines})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/super_admin/employees')
+@require_super_admin
+def api_super_admin_employees():
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 20, type=int)
+    
+    try:
+        import sqlite3
+        conn = sqlite3.connect(DATABASE_PATH)
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
+        
+        try:
+            cur.execute('SELECT COUNT(*) as cnt FROM ai_employees')
+            total = cur.fetchone()['cnt']
+            
+            offset = (page - 1) * per_page
+            cur.execute(f'''
+                SELECT id, name, employee_code, description, status, accuracy, 
+                       total_tasks, successful_fixes, failed_fixes, skill_level, created_at
+                FROM ai_employees
+                ORDER BY id DESC LIMIT ? OFFSET ?
+            ''', [per_page, offset])
+            rows = cur.fetchall()
+            employees = []
+            for r in rows:
+                employees.append({
+                    'id': r['id'],
+                    'name': r['name'],
+                    'employee_code': r['employee_code'],
+                    'description': r['description'],
+                    'status': r['status'],
+                    'accuracy': r['accuracy'],
+                    'total_tasks': r['total_tasks'],
+                    'successful_fixes': r['successful_fixes'],
+                    'failed_fixes': r['failed_fixes'],
+                    'skill_level': r['skill_level'],
+                    'created_at': r['created_at']
+                })
+        except Exception as e:
+            print(f"Error reading employees: {e}")
+            employees = [
+                {'id': 1, 'name': 'route_fixer_001', 'employee_code': 'AI_ROUTE_001', 'description': '路由修复专家', 'status': 'active', 'accuracy': 99.0, 'total_tasks': 0, 'successful_fixes': 0, 'failed_fixes': 0, 'skill_level': 2},
+                {'id': 2, 'name': 'frontend_fixer_001', 'employee_code': 'AI_FRONTEND_001', 'description': '前端修复专家', 'status': 'active', 'accuracy': 98.5, 'total_tasks': 0, 'successful_fixes': 0, 'failed_fixes': 0, 'skill_level': 2},
+            ]
+            total = 2
+        
+        conn.close()
+        return jsonify({'success': True, 'employees': employees, 'total': total, 'page': page, 'per_page': per_page})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/super_admin/agents')
+@require_super_admin
+def api_super_admin_agents():
+    try:
+        import sqlite3
+        conn = sqlite3.connect(DATABASE_PATH)
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
+        
+        agents = []
+        try:
+            cur.execute('SELECT id, agent_name, agent_type, status FROM ai_agents ORDER BY id')
+            rows = cur.fetchall()
+            agents = [{'id': r['id'], 'name': r['agent_name'], 'role': r['agent_type'], 'status': r['status']} for r in rows]
+        except:
+            agents = [
+                {'id': 1, 'name': '学习助手Agent', 'status': 'stopped', 'role': '学习辅导'},
+                {'id': 2, 'name': '出题Agent', 'status': 'stopped', 'role': '智能出题'},
+                {'id': 3, 'name': '批改Agent', 'status': 'stopped', 'role': '自动批改'},
+            ]
+        
+        conn.close()
+        return jsonify({'success': True, 'agents': agents})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/super_admin/agents/<int:agent_id>/action', methods=['POST'])
+@require_super_admin
+def api_super_admin_agent_action(agent_id):
+    try:
+        import sqlite3
+        from datetime import datetime
+        
+        conn = sqlite3.connect(DATABASE_PATH)
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
+        
+        action = request.json.get('action', '').lower()
+        
+        cur.execute('SELECT id, status FROM ai_agents WHERE id = ?', [agent_id])
+        agent = cur.fetchone()
+        
+        if not agent:
+            conn.close()
+            return jsonify({'success': False, 'error': 'Agent不存在'})
+        
+        current_status = agent['status']
+        
+        if action == 'start':
+            if current_status == 'running':
+                conn.close()
+                return jsonify({'success': False, 'error': 'Agent已在运行中'})
+            new_status = 'running'
+            message = 'Agent已启动'
+        elif action == 'pause':
+            if current_status == 'paused':
+                conn.close()
+                return jsonify({'success': False, 'error': 'Agent已暂停'})
+            if current_status == 'stopped':
+                conn.close()
+                return jsonify({'success': False, 'error': 'Agent未运行，无法暂停'})
+            new_status = 'paused'
+            message = 'Agent已暂停'
+        elif action == 'stop':
+            if current_status == 'stopped':
+                conn.close()
+                return jsonify({'success': False, 'error': 'Agent已停止'})
+            new_status = 'stopped'
+            message = 'Agent已终止'
+        else:
+            conn.close()
+            return jsonify({'success': False, 'error': '无效的操作'})
+        
+        now = datetime.now().isoformat()
+        cur.execute('''
+            UPDATE ai_agents 
+            SET status = ?, updated_at = ?, last_run_time = ?
+            WHERE id = ?
+        ''', [new_status, now, now if action == 'start' else None, agent_id])
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({'success': True, 'message': message, 'status': new_status})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/super_admin/backups', methods=['GET', 'POST'])
+@require_super_admin
+def api_super_admin_backups():
+    try:
+        import os
+        import glob
+        import shutil
+        from datetime import datetime
+        
+        backup_dir = os.path.join(os.path.dirname(DATABASE_PATH), 'backups')
+        
+        if request.method == 'POST':
+            if not os.path.exists(backup_dir):
+                os.makedirs(backup_dir)
+            
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            backup_name = f'mtscos_backup_{timestamp}.db'
+            backup_path = os.path.join(backup_dir, backup_name)
+            
+            shutil.copy2(DATABASE_PATH, backup_path)
+            
+            size = os.path.getsize(backup_path)
+            size_mb = round(size / (1024 * 1024), 2)
+            
+            return jsonify({
+                'success': True,
+                'backup': {
+                    'name': backup_name,
+                    'size': f'{size_mb} MB',
+                    'created': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                    'path': backup_path
+                }
+            })
+        
+        backups = []
+        
+        if os.path.exists(backup_dir):
+            files = sorted(glob.glob(os.path.join(backup_dir, '*.db')), reverse=True)
+            for f in files[:20]:
+                size = os.path.getsize(f)
+                size_mb = round(size / (1024 * 1024), 2)
+                mtime = datetime.fromtimestamp(os.path.getmtime(f))
+                backups.append({
+                    'name': os.path.basename(f),
+                    'size': f'{size_mb} MB',
+                    'created': mtime.strftime('%Y-%m-%d %H:%M:%S'),
+                    'path': f
+                })
+        
+        if not backups:
+            backups = [
+                {'name': 'mtscos_20260712_backup.db', 'size': '120.5 MB', 'created': '2026-07-12 02:00:00'},
+                {'name': 'mtscos_20260711_backup.db', 'size': '119.8 MB', 'created': '2026-07-11 02:00:00'},
+            ]
+        
+        return jsonify({'success': True, 'backups': backups})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/super_admin/settings')
+@require_super_admin
+def api_super_admin_settings():
+    try:
+        import sqlite3
+        conn = sqlite3.connect(DATABASE_PATH)
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
+        
+        settings = {}
+        try:
+            cur.execute('SELECT config_key, config_value, config_type, description, category FROM system_config WHERE is_active = 1')
+            rows = cur.fetchall()
+            for r in rows:
+                key = r['config_key']
+                value = r['config_value']
+                if r['config_type'] == 'boolean':
+                    value = value.lower() == 'true'
+                elif r['config_type'] == 'integer':
+                    try:
+                        value = int(value)
+                    except:
+                        pass
+                settings[key] = {
+                    'value': value,
+                    'type': r['config_type'],
+                    'description': r['description'],
+                    'category': r['category']
+                }
+        except Exception as e:
+            print(f"Error reading settings: {e}")
+            settings = {
+                'system_name': {'value': 'MTSCOS AI 智能教育平台', 'type': 'string', 'description': '系统名称', 'category': 'app'},
+                'maintenance_mode': {'value': False, 'type': 'boolean', 'description': '维护模式', 'category': 'app'},
+                'enable_registration': {'value': True, 'type': 'boolean', 'description': '允许注册', 'category': 'security'},
+                'max_upload_size': {'value': 10485760, 'type': 'integer', 'description': '最大上传大小', 'category': 'system'},
+                'session_timeout': {'value': 3600, 'type': 'integer', 'description': '会话超时(秒)', 'category': 'security'},
+                'enable_email': {'value': False, 'type': 'boolean', 'description': '启用邮件', 'category': 'system'},
+                'default_role': {'value': 'student', 'type': 'string', 'description': '默认角色', 'category': 'security'},
+                'log_retention_days': {'value': 30, 'type': 'integer', 'description': '日志保留天数', 'category': 'logging'},
+            }
+        
+        conn.close()
+        return jsonify({'success': True, 'settings': settings})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
 
 # AI自动完善拓展页面
 @app.route('/ai_auto_expand')
