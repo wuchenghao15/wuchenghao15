@@ -422,7 +422,7 @@ def reset_param():
         
         default_values = {
             'system.general.name': 'MTSCOS AI',
-            'system.general.version': '7.9.0',
+            'system.general.version': '8.0.0',
             'security.auth.session_timeout': 1800,
             'security.password.min_length': 8,
             'security.password.max_length': 32,
@@ -539,7 +539,7 @@ def batch_operation():
                     
                     default_values = {
                         'system.general.name': 'MTSCOS AI',
-                        'system.general.version': '7.9.0',
+                        'system.general.version': '8.0.0',
                         'security.auth.session_timeout': 1800,
                         'security.password.min_length': 8
                     }
@@ -810,3 +810,67 @@ def get_data_types():
     ]
     
     return create_response(200, 'success', {'data_types': data_types})
+
+
+@system_params_bp.route('/backups', methods=['GET'])
+def list_backups():
+    """获取备份列表"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('SELECT backup_id, backup_time, operator, LENGTH(backup_data) as data_size FROM param_backups ORDER BY backup_time DESC')
+        rows = cursor.fetchall()
+        
+        backups = []
+        for row in rows:
+            try:
+                cursor.execute('SELECT COUNT(*) as cnt FROM system_settings WHERE is_active = 1')
+                param_count = cursor.fetchone()['cnt']
+            except:
+                param_count = 0
+            
+            backups.append({
+                'backup_id': row['backup_id'],
+                'backup_time': row['backup_time'],
+                'operator': row['operator'],
+                'param_count': param_count
+            })
+        
+        conn.close()
+        
+        return create_response(200, 'success', backups)
+    
+    except Exception as e:
+        error_id = generate_error_id()
+        logger.error(f"[系统参数] 获取备份列表失败: {e} error_id={error_id}")
+        return create_response(500, '获取备份列表失败', None, error_id, 'SYSTEM_ERROR', '请稍后重试')
+
+
+@system_params_bp.route('/delete_backup', methods=['DELETE'])
+def delete_backup():
+    """删除备份"""
+    try:
+        data = request.get_json() or {}
+        backup_id = data.get('backup_id')
+        
+        if not backup_id:
+            return create_response(400, '备份ID不能为空', None, generate_error_id(), 'VALIDATION_ERROR', '请提供备份ID')
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('DELETE FROM param_backups WHERE backup_id = ?', (backup_id,))
+        affected = cursor.rowcount
+        conn.commit()
+        conn.close()
+        
+        if affected == 0:
+            return create_response(404, '备份不存在', None, generate_error_id(), 'RESOURCE_NOT_FOUND', '请检查备份ID是否正确')
+        
+        return create_response(200, '备份删除成功')
+    
+    except Exception as e:
+        error_id = generate_error_id()
+        logger.error(f"[系统参数] 删除备份失败: {e} error_id={error_id}")
+        return create_response(500, '删除备份失败', None, error_id, 'SYSTEM_ERROR', '请稍后重试')

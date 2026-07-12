@@ -2,6 +2,7 @@ var currentUserPage = 1;
 var currentExamPage = 1;
 var currentLogPage = 1;
 var currentParamPage = 1;
+var currentParamLogPage = 1;
 var resourceChart = null;
 
 function safeFetch(url, options) {
@@ -48,6 +49,8 @@ function switchTab(tabName) {
     if (tabName === 'resources') loadResources();
     if (tabName === 'logs') loadLogs();
     if (tabName === 'params') loadParams();
+    if (tabName === 'param-logs') loadParamLogs();
+    if (tabName === 'param-backup') loadParamBackups();
 }
 
 function setResource(type, percent) {
@@ -542,6 +545,125 @@ function deleteParam(key) {
         if (data.code === 200) {
             alert('参数删除成功');
             loadParams();
+        } else {
+            alert('删除失败: ' + (data.message || '未知错误'));
+        }
+    });
+}
+
+function resetParamModal() {
+    var key = prompt('请输入要重置的参数键：');
+    if (!key) return;
+    
+    safeFetch('/api/system_params/reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: key })
+    }).then(function(data) {
+        if (data.code === 200) {
+            alert('参数已重置为默认值');
+            loadParams();
+        } else {
+            alert('重置失败: ' + (data.message || '未知错误'));
+        }
+    });
+}
+
+function loadParamLogs() {
+    var search = document.getElementById('param-log-search').value;
+    var operation = document.getElementById('param-log-operation').value;
+    
+    safeFetch('/api/system_params/logs?page=' + currentParamLogPage + '&setting_key=' + encodeURIComponent(search) + '&operation=' + operation).then(function(data) {
+        if (data.code !== 200) {
+            document.querySelector('#param-log-table tbody').innerHTML = '<tr><td colspan="8" class="empty-state">加载失败</td></tr>';
+            return;
+        }
+        
+        var logs = data.data ? data.data.logs : [];
+        var tbody = document.querySelector('#param-log-table tbody');
+        
+        tbody.innerHTML = logs.map(function(log) {
+            var oldValue = log.old_value !== null ? (typeof log.old_value === 'object' ? JSON.stringify(log.old_value) : String(log.old_value)) : '-';
+            var newValue = log.new_value !== null ? (typeof log.new_value === 'object' ? JSON.stringify(log.new_value) : String(log.new_value)) : '-';
+            if (oldValue.length > 30) oldValue = oldValue.substring(0, 30) + '...';
+            if (newValue.length > 30) newValue = newValue.substring(0, 30) + '...';
+            
+            var opClass = { 'create': 'badge-success', 'update': 'badge-primary', 'delete': 'badge-danger', 'reset': 'badge-warning' }[log.operation] || 'badge-gray';
+            var opText = { 'create': '创建', 'update': '修改', 'delete': '删除', 'reset': '重置' }[log.operation] || log.operation;
+            
+            return '<tr><td>' + (log.timestamp || '-') + '</td><td><span class="badge ' + opClass + '">' + opText + '</span></td><td>' + (log.setting_key || '-') + '</td><td>' + oldValue + '</td><td>' + newValue + '</td><td>' + (log.operator || '-') + '</td><td>' + (log.operator_role || '-') + '</td><td>' + (log.ip_address || '-') + '</td></tr>';
+        }).join('');
+        
+        var total = data.data ? data.data.total : 0;
+        var perPage = data.data ? data.data.per_page : 20;
+        renderPagination('param-log-pagination', total, currentParamLogPage, perPage, function(p) { 
+            currentParamLogPage = p; 
+            loadParamLogs(); 
+        });
+    });
+}
+
+function loadParamBackups() {
+    safeFetch('/api/system_params/backups').then(function(data) {
+        var container = document.getElementById('param-backup-list');
+        
+        if (data.code !== 200 || !data.data || data.data.length === 0) {
+            container.innerHTML = '<div class="empty-state">暂无备份记录</div>';
+            return;
+        }
+        
+        var backups = data.data;
+        container.innerHTML = backups.map(function(b) {
+            return '<div class="backup-item"><div class="backup-info"><p><strong>备份ID:</strong> ' + b.backup_id + '</p><p><strong>备份时间:</strong> ' + b.backup_time + '</p><p><strong>参数数量:</strong> ' + b.param_count + '</p></div><div class="backup-actions"><button class="btn-sm btn-primary" onclick="restoreParamBackup(\'' + b.backup_id + '\')">恢复</button><button class="btn-sm btn-danger" onclick="deleteParamBackup(\'' + b.backup_id + '\')">删除</button></div></div>';
+        }).join('');
+    }).catch(function() {
+        document.getElementById('param-backup-list').innerHTML = '<div class="empty-state">加载失败</div>';
+    });
+}
+
+function createParamBackup() {
+    safeFetch('/api/system_params/backup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+    }).then(function(data) {
+        if (data.code === 200) {
+            alert('参数备份成功，备份ID: ' + data.data.backup_id);
+            loadParamBackups();
+        } else {
+            alert('备份失败: ' + (data.message || '未知错误'));
+        }
+    });
+}
+
+function restoreParamBackup(backupId) {
+    if (!confirm('确定恢复此备份？此操作将覆盖当前参数设置！')) return;
+    
+    safeFetch('/api/system_params/restore', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ backup_id: backupId })
+    }).then(function(data) {
+        if (data.code === 200) {
+            alert('参数恢复成功，已恢复 ' + data.data.restored_count + ' 个参数');
+            loadParamBackups();
+            loadParams();
+        } else {
+            alert('恢复失败: ' + (data.message || '未知错误'));
+        }
+    });
+}
+
+function deleteParamBackup(backupId) {
+    if (!confirm('确定删除此备份？')) return;
+    
+    safeFetch('/api/system_params/delete_backup', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ backup_id: backupId })
+    }).then(function(data) {
+        if (data.code === 200) {
+            alert('备份删除成功');
+            loadParamBackups();
         } else {
             alert('删除失败: ' + (data.message || '未知错误'));
         }

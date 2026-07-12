@@ -42,7 +42,9 @@
             
             <div class="nav-section">系统维护</div>
             <div class="nav-item" onclick="switchTab('params')"><div class="nav-icon">🔧</div><div class="nav-text">系统参数</div></div>
-            <div class="nav-item" onclick="switchTab('backup')"><div class="nav-icon">💾</div><div class="nav-text">备份与恢复</div></div>
+            <div class="nav-item" onclick="switchTab('param-logs')"><div class="nav-icon">📝</div><div class="nav-text">参数变更日志</div></div>
+            <div class="nav-item" onclick="switchTab('param-backup')"><div class="nav-icon">💾</div><div class="nav-text">参数备份恢复</div></div>
+            <div class="nav-item" onclick="switchTab('backup')"><div class="nav-icon">🗄️</div><div class="nav-text">数据备份</div></div>
             <div class="nav-item" onclick="window.location.href='/admin_app/security_dashboard'"><div class="nav-icon">🛡️</div><div class="nav-text">安全监控</div></div>
             <div class="nav-item" onclick="window.location.href='/admin_app/health_details'"><div class="nav-icon">❤️</div><div class="nav-text">健康检查</div></div>
             <div class="nav-item" onclick="switchTab('settings')"><div class="nav-icon">⚙️</div><div class="nav-text">系统设置</div></div>
@@ -484,7 +486,10 @@
             <div class="panel">
                 <div class="panel-header">
                     <h3 class="panel-title"><div class="panel-title-bar"></div>系统参数管理</h3>
-                    <button class="btn-primary" onclick="showAddParamModal()">+ 新增参数</button>
+                    <div>
+                        <button class="btn-primary" onclick="showAddParamModal()">+ 新增参数</button>
+                        <button class="btn-secondary" onclick="resetParamModal()">↺ 重置参数</button>
+                    </div>
                 </div>
                 <div class="panel-content">
                     <div class="search-bar">
@@ -514,6 +519,57 @@
                         </tbody>
                     </table>
                     <div class="pagination" id="param-pagination"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-param-logs" class="tab-content" style="display:none;">
+            <div class="panel">
+                <div class="panel-header">
+                    <h3 class="panel-title"><div class="panel-title-bar"></div>参数变更日志</h3>
+                </div>
+                <div class="panel-content">
+                    <div class="search-bar">
+                        <input type="text" id="param-log-search" placeholder="搜索参数键" onkeypress="if(event.key==='Enter')loadParamLogs()">
+                        <select id="param-log-operation" onchange="loadParamLogs()">
+                            <option value="">全部操作</option>
+                            <option value="create">创建</option>
+                            <option value="update">修改</option>
+                            <option value="delete">删除</option>
+                            <option value="reset">重置</option>
+                        </select>
+                        <button onclick="loadParamLogs()">搜索</button>
+                    </div>
+                    <table class="table-grid" id="param-log-table">
+                        <thead>
+                            <tr>
+                                <th>时间</th>
+                                <th>操作类型</th>
+                                <th>参数键</th>
+                                <th>旧值</th>
+                                <th>新值</th>
+                                <th>操作人</th>
+                                <th>角色</th>
+                                <th>IP地址</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="8" class="empty-state">加载中...</td></tr>
+                        </tbody>
+                    </table>
+                    <div class="pagination" id="param-log-pagination"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-param-backup" class="tab-content" style="display:none;">
+            <div class="panel">
+                <div class="panel-header">
+                    <h3 class="panel-title"><div class="panel-title-bar"></div>参数备份恢复</h3>
+                    <button class="btn-primary" onclick="createParamBackup()">+ 创建备份</button>
+                </div>
+                <div class="panel-content">
+                    <div id="param-backup-list">加载中...</div>
                 </div>
             </div>
         </div>
