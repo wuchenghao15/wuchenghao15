@@ -1,6 +1,7 @@
 var currentUserPage = 1;
 var currentExamPage = 1;
 var currentLogPage = 1;
+var currentParamPage = 1;
 var resourceChart = null;
 
 function safeFetch(url, options) {
@@ -46,6 +47,7 @@ function switchTab(tabName) {
     if (tabName === 'settings') loadSettings();
     if (tabName === 'resources') loadResources();
     if (tabName === 'logs') loadLogs();
+    if (tabName === 'params') loadParams();
 }
 
 function setResource(type, percent) {
@@ -391,6 +393,159 @@ function renderPagination(containerId, total, page, pageSize, callback) {
     html += '<span style="margin-left:8px;">共 ' + total + ' 条</span>';
     container.innerHTML = html;
     window['__pageCallback_' + containerId] = callback;
+}
+
+var paramCategories = [];
+var paramScopes = [];
+
+function loadParams() {
+    var search = document.getElementById('param-search').value;
+    var category = document.getElementById('param-category-filter').value;
+    var scope = document.getElementById('param-scope-filter').value;
+    
+    safeFetch('/api/system_params/list?page=' + currentParamPage + '&keyword=' + encodeURIComponent(search) + 
+              '&category=' + category + '&scope=' + scope).then(function(data) {
+        if (data.code !== 200) {
+            document.querySelector('#param-table tbody').innerHTML = '<tr><td colspan="7" class="empty-state">加载失败</td></tr>';
+            return;
+        }
+        
+        var params = data.data ? data.data.params : [];
+        var tbody = document.querySelector('#param-table tbody');
+        
+        tbody.innerHTML = params.map(function(p) {
+            var valueDisplay = typeof p.value === 'object' ? JSON.stringify(p.value) : String(p.value);
+            if (valueDisplay.length > 50) valueDisplay = valueDisplay.substring(0, 50) + '...';
+            
+            return '<tr><td>' + p.setting_key + '</td><td>' + valueDisplay + '</td><td>' + 
+                   (p.category || '-') + '</td><td>' + (p.data_type || '-') + '</td><td>' + 
+                   (p.scope || '-') + '</td><td>' + (p.description || '-') + '</td><td>' +
+                   '<button class="btn-sm btn-secondary" onclick="editParam(\'' + p.setting_key + '\')">编辑</button> ' +
+                   '<button class="btn-sm btn-danger" onclick="deleteParam(\'' + p.setting_key + '\')">删除</button></td></tr>';
+        }).join('');
+        
+        var total = data.data ? data.data.total : 0;
+        var perPage = data.data ? data.data.per_page : 20;
+        renderPagination('param-pagination', total, currentParamPage, perPage, function(p) { 
+            currentParamPage = p; 
+            loadParams(); 
+        });
+        
+        loadParamFilters();
+    });
+}
+
+function loadParamFilters() {
+    if (paramCategories.length === 0) {
+        safeFetch('/api/system_params/categories').then(function(data) {
+            if (data.code === 200 && data.data) {
+                paramCategories = data.data.categories || [];
+                var categorySelect = document.getElementById('param-category-filter');
+                categorySelect.innerHTML = '<option value="">全部分类</option>' + 
+                    paramCategories.map(function(c) { 
+                        return '<option value="' + c + '">' + c + '</option>'; 
+                    }).join('');
+            }
+        });
+    }
+    
+    if (paramScopes.length === 0) {
+        safeFetch('/api/system_params/scopes').then(function(data) {
+            if (data.code === 200 && data.data) {
+                paramScopes = data.data.scopes || [];
+                var scopeSelect = document.getElementById('param-scope-filter');
+                scopeSelect.innerHTML = '<option value="">全部作用域</option>' + 
+                    paramScopes.map(function(s) { 
+                        return '<option value="' + s.value + '">' + s.name + '</option>'; 
+                    }).join('');
+            }
+        });
+    }
+}
+
+function showAddParamModal() {
+    var key = prompt('请输入参数键（格式：category.name）：');
+    if (!key) return;
+    
+    var value = prompt('请输入参数值：');
+    if (value === null) return;
+    
+    var category = key.split('.')[0] || 'general';
+    var description = prompt('请输入参数描述：', '');
+    var dataType = prompt('请输入数据类型（string/integer/float/boolean/json/list/datetime）：', 'string');
+    
+    safeFetch('/api/system_params/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            key: key,
+            value: value,
+            category: category,
+            description: description || '',
+            data_type: dataType || 'string',
+            scope: 'global'
+        })
+    }).then(function(data) {
+        if (data.code === 200 || data.code === 201) {
+            alert('参数创建成功');
+            loadParams();
+        } else {
+            alert('创建失败: ' + (data.message || '未知错误'));
+        }
+    });
+}
+
+function editParam(key) {
+    safeFetch('/api/system_params/get?key=' + encodeURIComponent(key)).then(function(data) {
+        if (data.code !== 200) {
+            alert('获取参数失败');
+            return;
+        }
+        
+        var param = data.data;
+        var currentValue = typeof param.value === 'object' ? JSON.stringify(param.value) : String(param.value);
+        var newValue = prompt('请输入新的参数值：', currentValue);
+        
+        if (newValue === null) return;
+        
+        var parsedValue = newValue;
+        try {
+            parsedValue = JSON.parse(newValue);
+        } catch(e) {}
+        
+        safeFetch('/api/system_params/set', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                key: key,
+                value: parsedValue
+            })
+        }).then(function(data) {
+            if (data.code === 200) {
+                alert('参数更新成功');
+                loadParams();
+            } else {
+                alert('更新失败: ' + (data.message || '未知错误'));
+            }
+        });
+    });
+}
+
+function deleteParam(key) {
+    if (!confirm('确定删除参数 "' + key + '"？此操作不可恢复！')) return;
+    
+    safeFetch('/api/system_params/delete', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: key })
+    }).then(function(data) {
+        if (data.code === 200) {
+            alert('参数删除成功');
+            loadParams();
+        } else {
+            alert('删除失败: ' + (data.message || '未知错误'));
+        }
+    });
 }
 
 function logout() { window.location.href = '/logout'; }

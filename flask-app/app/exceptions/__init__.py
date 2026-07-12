@@ -62,17 +62,15 @@ class AppException(Exception):
         self.stack_trace = traceback.format_exc()
     
     def to_dict(self) -> dict:
-        """转换为字典格式"""
+        """转换为字典格式 - 符合API规范"""
         return {
-            'success': False,
+            'code': self.error_code,
+            'message': self.message,
             'error_id': self.error_id,
             'timestamp': self.timestamp,
-            'error_code': self.error_code,
-            'error_type': self.error_type,
-            'category': self.category,
-            'message': self.message,
+            'category': self.category.upper() if isinstance(self.category, str) else self.category,
+            'error_type': self.error_type.upper() if isinstance(self.error_type, str) else self.error_type,
             'suggestion': self.suggestion,
-            'redirect_url': self.redirect_url,
             'details': self.details
         }
     

@@ -121,13 +121,12 @@ class ExceptionHandler:
         )
         
         response_data = {
-            'success': False,
+            'code': 500,
+            'message': '系统内部错误，请稍后重试',
             'error_id': error_id,
             'timestamp': timestamp,
-            'error_code': 500,
-            'error_type': 'system_error',
-            'category': 'unknown',
-            'message': '系统内部错误，请稍后重试',
+            'category': 'UNKNOWN',
+            'error_type': 'SYSTEM_ERROR',
             'suggestion': '如果问题持续存在，请联系管理员',
             'details': {}
         }
