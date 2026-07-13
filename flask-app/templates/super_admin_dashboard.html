@@ -40,13 +40,17 @@
             <div class="nav-item" onclick="switchTab('employees')"><div class="nav-icon">🤖</div><div class="nav-text">AI员工管理</div></div>
             <div class="nav-item" onclick="switchTab('agent')"><div class="nav-icon">🧠</div><div class="nav-text">本地AI Agent</div></div>
             
+            <div class="nav-section">安全监控</div>
+            <div class="nav-item" onclick="switchTab('security')"><div class="nav-icon">🛡️</div><div class="nav-text">安全监控中心</div></div>
+            <div class="nav-item" onclick="switchTab('ai-analytics')"><div class="nav-icon">📊</div><div class="nav-text">AI智能分析</div></div>
             <div class="nav-section">系统维护</div>
             <div class="nav-item" onclick="switchTab('params')"><div class="nav-icon">🔧</div><div class="nav-text">系统参数</div></div>
             <div class="nav-item" onclick="switchTab('param-logs')"><div class="nav-icon">📝</div><div class="nav-text">参数变更日志</div></div>
             <div class="nav-item" onclick="switchTab('param-backup')"><div class="nav-icon">💾</div><div class="nav-text">参数备份恢复</div></div>
             <div class="nav-item" onclick="switchTab('backup')"><div class="nav-icon">🗄️</div><div class="nav-text">数据备份</div></div>
-            <div class="nav-item" onclick="window.location.href='/admin_app/security_dashboard'"><div class="nav-icon">🛡️</div><div class="nav-text">安全监控</div></div>
-            <div class="nav-item" onclick="window.location.href='/admin_app/health_details'"><div class="nav-icon">❤️</div><div class="nav-text">健康检查</div></div>
+            <div class="nav-item" onclick="switchTab('notifications')"><div class="nav-icon">�</div><div class="nav-text">通知管理</div></div>
+            <div class="nav-item" onclick="switchTab('announcements')"><div class="nav-icon">📢</div><div class="nav-text">公告管理</div></div>
+            <div class="nav-item" onclick="switchTab('export')"><div class="nav-icon">📤</div><div class="nav-text">数据导出</div></div>
             <div class="nav-item" onclick="switchTab('settings')"><div class="nav-icon">⚙️</div><div class="nav-text">系统设置</div></div>
         </div>
         <div class="sidebar-footer">
@@ -580,6 +584,173 @@
                     <h3 class="panel-title"><div class="panel-title-bar"></div>系统设置</h3>
                 </div>
                 <div class="panel-content" id="settings-content">加载中...</div>
+            </div>
+        </div>
+
+        <div id="tab-security" class="tab-content" style="display:none;">
+            <div class="stats-grid" style="grid-template-columns: repeat(4, 1fr);">
+                <div class="stat-card red">
+                    <div class="stat-header">
+                        <div>
+                            <p class="stat-label">SQL注入攻击</p>
+                            <p class="stat-value" id="security-sql-injection">--</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="stat-card orange">
+                    <div class="stat-header">
+                        <div>
+                            <p class="stat-label">访问拒绝</p>
+                            <p class="stat-value" id="security-access-denied">--</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="stat-card yellow">
+                    <div class="stat-header">
+                        <div>
+                            <p class="stat-label">今日登录失败</p>
+                            <p class="stat-value" id="security-failed-login">--</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="stat-card blue">
+                    <div class="stat-header">
+                        <div>
+                            <p class="stat-label">可疑IP</p>
+                            <p class="stat-value" id="security-suspicious-ips">--</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="panel">
+                <div class="panel-header">
+                    <h3 class="panel-title"><div class="panel-title-bar"></div>安全审计日志</h3>
+                </div>
+                <div class="panel-content">
+                    <table class="table-grid" id="security-audit-table">
+                        <thead>
+                            <tr>
+                                <th>时间</th>
+                                <th>操作</th>
+                                <th>目标</th>
+                                <th>操作人</th>
+                                <th>IP地址</th>
+                                <th>状态</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="6" class="empty-state">加载中...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-ai-analytics" class="tab-content" style="display:none;">
+            <div class="panel">
+                <div class="panel-header">
+                    <h3 class="panel-title"><div class="panel-title-bar"></div>学习数据分析</h3>
+                </div>
+                <div class="panel-content">
+                    <div id="learning-analytics">加载中...</div>
+                </div>
+            </div>
+            <div class="panel">
+                <div class="panel-header">
+                    <h3 class="panel-title"><div class="panel-title-bar"></div>考试数据分析</h3>
+                </div>
+                <div class="panel-content">
+                    <div id="exam-analytics">加载中...</div>
+                </div>
+            </div>
+            <div class="panel">
+                <div class="panel-header">
+                    <h3 class="panel-title"><div class="panel-title-bar"></div>用户行为分析</h3>
+                </div>
+                <div class="panel-content">
+                    <div id="behavior-analytics">加载中...</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-notifications" class="tab-content" style="display:none;">
+            <div class="panel">
+                <div class="panel-header">
+                    <h3 class="panel-title"><div class="panel-title-bar"></div>通知管理</h3>
+                    <button class="btn-primary" onclick="showAddNotificationModal()">+ 发送通知</button>
+                </div>
+                <div class="panel-content">
+                    <table class="table-grid" id="notification-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>标题</th>
+                                <th>类型</th>
+                                <th>状态</th>
+                                <th>创建时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="6" class="empty-state">加载中...</td></tr>
+                        </tbody>
+                    </table>
+                    <div class="pagination" id="notification-pagination"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-announcements" class="tab-content" style="display:none;">
+            <div class="panel">
+                <div class="panel-header">
+                    <h3 class="panel-title"><div class="panel-title-bar"></div>公告管理</h3>
+                    <button class="btn-primary" onclick="showAddAnnouncementModal()">+ 发布公告</button>
+                </div>
+                <div class="panel-content">
+                    <table class="table-grid" id="announcement-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>标题</th>
+                                <th>状态</th>
+                                <th>发布时间</th>
+                                <th>创建时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="6" class="empty-state">加载中...</td></tr>
+                        </tbody>
+                    </table>
+                    <div class="pagination" id="announcement-pagination"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-export" class="tab-content" style="display:none;">
+            <div class="panel">
+                <div class="panel-header">
+                    <h3 class="panel-title"><div class="panel-title-bar"></div>数据导出</h3>
+                </div>
+                <div class="panel-content">
+                    <div class="export-grid">
+                        <div class="export-card" onclick="exportUsers()">
+                            <div class="export-icon">👥</div>
+                            <p class="export-label">导出用户数据</p>
+                            <p class="export-desc">导出所有用户信息到CSV文件</p>
+                        </div>
+                        <div class="export-card" onclick="exportExams()">
+                            <div class="export-icon">📝</div>
+                            <p class="export-label">导出考试数据</p>
+                            <p class="export-desc">导出所有考试信息到CSV文件</p>
+                        </div>
+                        <div class="export-card" onclick="exportLogs()">
+                            <div class="export-icon">📋</div>
+                            <p class="export-label">导出日志数据</p>
+                            <p class="export-desc">导出系统日志到CSV文件（最近1000条）</p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

@@ -759,7 +759,7 @@ def get_system_settings():
     """获取系统设置"""
     settings = {
         'system_name': 'MTSCOS AI 智能学习评估系统',
-        'version': "8.0.0",
+        'version': "8.1.0",
         'description': '基于AI的智能学习评估系统,提供个性化学习体验和智能评估功能.',
         'admin_email': 'admin@example.com',
         'maintenance_mode': False,
@@ -4960,7 +4960,7 @@ def get_dashboard_stats_public():
 # 系统状态
 @app.route('/api/system/status')
 def system_status():
-    return jsonify({'status': 'running', 'version': "8.0.0", 'timestamp': datetime.now().isoformat()})
+    return jsonify({'status': 'running', 'version': "8.1.0", 'timestamp': datetime.now().isoformat()})
 
 # 用户信息API - 改用/api/users/info避免路由冲突
 @app.route('/api/users/info/<username>')
@@ -18339,6 +18339,13 @@ try:
     logger.info("✓ 注册蓝图: system_params_bp")
 except Exception as e:
     logger.error(f"✗ 注册蓝图 system_params_bp 失败: {e}")
+
+try:
+    from app.api.super_admin_api import super_admin_api
+    app.register_blueprint(super_admin_api)
+    logger.info("✓ 注册蓝图: super_admin_api")
+except Exception as e:
+    logger.error(f"✗ 注册蓝图 super_admin_api 失败: {e}")
 
 # ==================== AI布局管理员工模块 ====================
 

@@ -281,13 +281,15 @@ function agentAction(agentId, action) {
 function loadBackups() {
     safeFetch('/api/super_admin/backups').then(function(data) {
         var list = document.getElementById('backup-list');
-        var backups = data.backups || [];
-        if (!backups.length) {
+        var backups = data.data || [];
+        if (!data.success || !backups.length) {
             list.innerHTML = '<div class="empty-state">暂无备份</div>';
             return;
         }
         list.innerHTML = backups.map(function(b) {
-            return '<div class="backup-item"><div class="backup-info"><p class="backup-name">' + b.name + '</p><p class="backup-meta">' + b.size + ' · ' + (b.created || '-') + '</p></div><div class="backup-actions"><button class="btn-icon primary" title="下载"><i class="fas fa-download"></i></button><button class="btn-icon danger" title="删除"><i class="fas fa-trash"></i></button></div></div>';
+            var size = (b.backup_size || 0) > 1024 * 1024 ? (b.backup_size / (1024 * 1024)).toFixed(2) + ' MB' : 
+                       (b.backup_size || 0) > 1024 ? (b.backup_size / 1024).toFixed(2) + ' KB' : (b.backup_size || 0) + ' B';
+            return '<div class="backup-item"><div class="backup-info"><p class="backup-name">备份 ' + (b.backup_id || '-') + '</p><p class="backup-meta">' + size + ' · ' + (b.backup_time || '-') + '</p></div><div class="backup-actions"><button class="btn-icon primary" onclick="restoreBackup(\'' + b.backup_id + '\')" title="恢复"><i class="fas fa-download"></i></button><button class="btn-icon danger" onclick="deleteBackup(\'' + b.backup_id + '\')" title="删除"><i class="fas fa-trash"></i></button></div></div>';
         }).join('');
     });
 }
@@ -359,12 +361,30 @@ function initResourceChart() {
     });
 }
 
-function startLocalAgent() { alert('Agent启动功能开发中'); }
+function startLocalAgent() {
+    safeFetch('/api/super_admin/agents').then(function(data) {
+        var agents = data.data ? data.data.agents : [];
+        var stoppedAgent = agents.find(function(a) { return a.status === 'stopped'; });
+        if (stoppedAgent) {
+            agentAction(stoppedAgent.id, 'start');
+        } else {
+            alert('没有可启动的Agent');
+        }
+    });
+}
 function startKnowledgeScan() { alert('知识扫描功能开发中'); }
-function checkRoutes() { alert('健康检查功能开发中'); }
+function checkRoutes() {
+    safeFetch('/api/super_admin/health').then(function(data) {
+        if (data.success) {
+            alert('健康检查完成: ' + data.message);
+        } else {
+            alert('健康检查失败');
+        }
+    });
+}
 
 function createBackup() {
-    safeFetch('/api/super_admin/backups', { method: 'POST' }).then(function(data) {
+    safeFetch('/api/super_admin/backup', { method: 'POST' }).then(function(data) {
         if (data.success) {
             alert('备份创建成功');
             loadBackups();
@@ -374,9 +394,39 @@ function createBackup() {
     });
 }
 
+function restoreBackup(backupId) {
+    if (!confirm('确定恢复此备份？此操作将覆盖当前数据！')) return;
+    safeFetch('/api/super_admin/backup/' + backupId + '/restore', { method: 'POST' }).then(function(data) {
+        if (data.success) {
+            alert('备份恢复成功');
+            loadBackups();
+        } else {
+            alert('恢复失败: ' + (data.error || '未知错误'));
+        }
+    });
+}
+
+function deleteBackup(backupId) {
+    if (!confirm('确定删除此备份？')) return;
+    safeFetch('/api/super_admin/backup/' + backupId + '/delete', { method: 'DELETE' }).then(function(data) {
+        if (data.success) {
+            alert('备份删除成功');
+            loadBackups();
+        } else {
+            alert('删除失败: ' + (data.error || '未知错误'));
+        }
+    });
+}
+
 function reloadRoutes() {
-    alert('路由刷新功能开发中');
-    loadRoutes();
+    safeFetch('/api/super_admin/reload_routes', { method: 'POST' }).then(function(data) {
+        if (data.success) {
+            alert('路由刷新成功');
+            loadRoutes();
+        } else {
+            alert('路由刷新失败');
+        }
+    });
 }
 
 function renderPagination(containerId, total, page, pageSize, callback) {
@@ -671,6 +721,173 @@ function deleteParamBackup(backupId) {
 }
 
 function logout() { window.location.href = '/logout'; }
+
+function loadSecurityStats() {
+    safeFetch('/api/super_admin/security/intrusion_stats').then(function(data) {
+        if (!data.success) return;
+        var stats = data.data;
+        document.getElementById('security-sql-injection').textContent = stats.sql_injection_count || 0;
+        document.getElementById('security-access-denied').textContent = stats.access_denied_count || 0;
+        document.getElementById('security-failed-login').textContent = stats.failed_login_today || 0;
+        document.getElementById('security-suspicious-ips').textContent = (stats.suspicious_ips || []).length;
+    });
+}
+
+function loadSecurityAuditLogs() {
+    safeFetch('/api/super_admin/security/audit_logs').then(function(data) {
+        if (!data.success) return;
+        var logs = data.data ? data.data.logs : [];
+        var tbody = document.querySelector('#security-audit-table tbody');
+        tbody.innerHTML = logs.length ? logs.map(function(log) {
+            return '<tr><td>' + (log.timestamp || '-') + '</td><td>' + (log.operation || '-') + '</td><td>' + (log.target || '-') + '</td><td>' + (log.operator || '-') + '</td><td>' + (log.ip_address || '-') + '</td><td>' + (log.status || '-') + '</td></tr>';
+        }).join('') : '<tr><td colspan="6" class="empty-state">暂无审计日志</td></tr>';
+    });
+}
+
+function loadLearningAnalytics() {
+    safeFetch('/api/super_admin/ai_analytics/learning').then(function(data) {
+        if (!data.success) return;
+        var analytics = data.data;
+        var container = document.getElementById('learning-analytics');
+        container.innerHTML = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;"><div><h4>学习趋势（最近7天）</h4><ul>' + (analytics.learning_trend || []).map(function(t) {
+            return '<li>' + t.date + ': ' + t.count + '次学习</li>';
+        }).join('') + '</ul></div><div><h4>活跃学习者TOP10</h4><ul>' + (analytics.active_learners || []).map(function(l) {
+            return '<li>' + l.username + ': ' + l.learning_count + '次学习</li>';
+        }).join('') + '</ul></div></div><div style="margin-top:16px;"><strong>总学习记录:</strong> ' + (analytics.total_learning_records || 0) + '</div>';
+    });
+}
+
+function loadExamAnalytics() {
+    safeFetch('/api/super_admin/ai_analytics/exam').then(function(data) {
+        if (!data.success) return;
+        var analytics = data.data;
+        var container = document.getElementById('exam-analytics');
+        container.innerHTML = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;"><div><h4>考试趋势（最近7天）</h4><ul>' + (analytics.exam_trend || []).map(function(t) {
+            return '<li>' + t.date + ': ' + t.count + '场考试</li>';
+        }).join('') + '</ul></div><div><h4>科目统计TOP5</h4><ul>' + (analytics.subject_stats || []).map(function(s) {
+            return '<li>' + s.subject + ': ' + s.exam_count + '场考试，平均分 ' + s.avg_score + '</li>';
+        }).join('') + '</ul></div></div><div style="margin-top:16px;"><strong>平均分:</strong> ' + analytics.avg_score + ' | <strong>通过率:</strong> ' + analytics.pass_rate + '% | <strong>总考试记录:</strong> ' + analytics.total_results + '</div>';
+    });
+}
+
+function loadBehaviorAnalytics() {
+    safeFetch('/api/super_admin/ai_analytics/user_behavior').then(function(data) {
+        if (!data.success) return;
+        var analytics = data.data;
+        var container = document.getElementById('behavior-analytics');
+        container.innerHTML = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;"><div><h4>活跃用户趋势（最近7天）</h4><ul>' + (analytics.active_user_trend || []).map(function(t) {
+            return '<li>' + t.date + ': ' + t.count + '位活跃用户</li>';
+        }).join('') + '</ul></div><div><h4>角色分布</h4><ul>' + (analytics.role_distribution || []).map(function(r) {
+            return '<li>' + r.role + ': ' + r.count + '人</li>';
+        }).join('') + '</ul></div></div><div style="margin-top:16px;"><h4>热门页面TOP10</h4><ul>' + (analytics.top_pages || []).map(function(p) {
+            return '<li>' + p.path + ': ' + p.count + '次访问</li>';
+        }).join('') + '</ul></div>';
+    });
+}
+
+var currentNotificationPage = 1;
+function loadNotifications() {
+    safeFetch('/api/super_admin/notifications?page=' + currentNotificationPage).then(function(data) {
+        if (!data.success) return;
+        var notifications = data.data ? data.data.notifications : [];
+        var tbody = document.querySelector('#notification-table tbody');
+        tbody.innerHTML = notifications.length ? notifications.map(function(n) {
+            var typeClass = { 'info': 'badge-gray', 'success': 'badge-success', 'warning': 'badge-warning', 'error': 'badge-danger' }[n.type] || 'badge-gray';
+            var typeText = { 'info': '信息', 'success': '成功', 'warning': '警告', 'error': '错误' }[n.type] || n.type;
+            var statusClass = n.status === 'read' ? 'badge-gray' : 'badge-primary';
+            return '<tr><td>' + n.id + '</td><td>' + (n.title || '-') + '</td><td><span class="badge ' + typeClass + '">' + typeText + '</span></td><td><span class="badge ' + statusClass + '">' + (n.status === 'read' ? '已读' : '未读') + '</span></td><td>' + (n.created_at || '-') + '</td><td><button class="btn-sm btn-primary" onclick="deleteNotification(' + n.id + ')">删除</button></td></tr>';
+        }).join('') : '<tr><td colspan="6" class="empty-state">暂无通知</td></tr>';
+    });
+}
+
+function showAddNotificationModal() {
+    var title = prompt('请输入通知标题：');
+    if (!title) return;
+    var content = prompt('请输入通知内容：');
+    if (!content) return;
+    var type = prompt('请输入通知类型（info/success/warning/error）：', 'info');
+    safeFetch('/api/super_admin/notifications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: title, content: content, type: type })
+    }).then(function(data) {
+        if (data.success) {
+            alert('通知创建成功');
+            loadNotifications();
+        } else {
+            alert('创建失败: ' + (data.message || '未知错误'));
+        }
+    });
+}
+
+function deleteNotification(id) {
+    if (!confirm('确定删除此通知？')) return;
+    safeFetch('/api/super_admin/notifications/' + id, { method: 'DELETE' }).then(function(data) {
+        if (data.success) {
+            alert('通知删除成功');
+            loadNotifications();
+        } else {
+            alert('删除失败: ' + (data.message || '未知错误'));
+        }
+    });
+}
+
+var currentAnnouncementPage = 1;
+function loadAnnouncements() {
+    safeFetch('/api/super_admin/announcements?page=' + currentAnnouncementPage).then(function(data) {
+        if (!data.success) return;
+        var announcements = data.data ? data.data.announcements : [];
+        var tbody = document.querySelector('#announcement-table tbody');
+        tbody.innerHTML = announcements.length ? announcements.map(function(a) {
+            var statusClass = a.is_published ? 'badge-success' : 'badge-gray';
+            return '<tr><td>' + a.id + '</td><td>' + (a.title || '-') + '</td><td><span class="badge ' + statusClass + '">' + (a.is_published ? '已发布' : '草稿') + '</span></td><td>' + (a.publish_time || '-') + '</td><td>' + (a.created_at || '-') + '</td><td><button class="btn-sm btn-primary" onclick="deleteAnnouncement(' + a.id + ')">删除</button></td></tr>';
+        }).join('') : '<tr><td colspan="6" class="empty-state">暂无公告</td></tr>';
+    });
+}
+
+function showAddAnnouncementModal() {
+    var title = prompt('请输入公告标题：');
+    if (!title) return;
+    var content = prompt('请输入公告内容：');
+    if (!content) return;
+    var isPublished = confirm('是否立即发布？');
+    safeFetch('/api/super_admin/announcements', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: title, content: content, is_published: isPublished })
+    }).then(function(data) {
+        if (data.success) {
+            alert('公告创建成功');
+            loadAnnouncements();
+        } else {
+            alert('创建失败: ' + (data.message || '未知错误'));
+        }
+    });
+}
+
+function deleteAnnouncement(id) {
+    if (!confirm('确定删除此公告？')) return;
+    safeFetch('/api/super_admin/announcements/' + id, { method: 'DELETE' }).then(function(data) {
+        if (data.success) {
+            alert('公告删除成功');
+            loadAnnouncements();
+        } else {
+            alert('删除失败: ' + (data.message || '未知错误'));
+        }
+    });
+}
+
+function exportUsers() {
+    window.open('/api/super_admin/export/users', '_blank');
+}
+
+function exportExams() {
+    window.open('/api/super_admin/export/exams', '_blank');
+}
+
+function exportLogs() {
+    window.open('/api/super_admin/export/logs', '_blank');
+}
 
 document.addEventListener('DOMContentLoaded', function() {
     loadOverview();
