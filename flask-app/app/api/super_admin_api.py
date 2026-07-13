@@ -41,7 +41,7 @@ def create_tables():
                 content TEXT NOT NULL,
                 type TEXT DEFAULT 'info',
                 status TEXT DEFAULT 'unread',
-                user_id INTEGER,
+                recipient_id INTEGER,
                 created_at TEXT DEFAULT CURRENT_TIMESTAMP
             )
         ''')
@@ -96,14 +96,14 @@ def create_tables():
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS security_audit_logs (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                operation TEXT NOT NULL,
-                target TEXT,
-                operator TEXT,
-                operator_role TEXT,
+                action TEXT NOT NULL,
+                resource TEXT,
+                username TEXT,
+                user_id INTEGER,
                 ip_address TEXT,
-                timestamp TEXT DEFAULT CURRENT_TIMESTAMP,
-                status TEXT DEFAULT 'success',
-                details TEXT
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                success INTEGER DEFAULT 1,
+                error_message TEXT
             )
         ''')
 
@@ -198,7 +198,7 @@ def create_tables():
         ''')
 
         cursor.execute('''
-            CREATE TABLE IF NOT EXISTS health_check_results (
+            CREATE TABLE IF NOT EXISTS super_admin_health_checks (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 module_name TEXT NOT NULL,
                 status TEXT DEFAULT 'healthy',
@@ -1410,7 +1410,7 @@ def create_notification():
         cursor = conn.cursor()
 
         cursor.execute('''
-            INSERT INTO notifications (title, content, type, status, created_at, user_id)
+            INSERT INTO notifications (title, content, type, status, created_at, recipient_id)
             VALUES (?, ?, ?, ?, ?, ?)
         ''', (title, content, notification_type, 'unread', datetime.now().isoformat(), user_id))
         conn.commit()
@@ -1700,7 +1700,7 @@ def announcement_detail(announcement_id):
 def health_check_all():
     """系统健康监控 - 执行全面健康检查"""
     try:
-        modules = ['database', 'redis', 'api', 'celery', 'cache', 'file_system']
+        modules = ['database', 'api', 'file_system']
         results = []
         
         conn = get_db_connection()
@@ -1718,11 +1718,7 @@ def health_check_all():
                     response_time = (datetime.now() - start).total_seconds() * 1000
                 elif module == 'api':
                     start = datetime.now()
-                    cursor.execute('SELECT COUNT(*) FROM system_status_log LIMIT 1')
-                    response_time = (datetime.now() - start).total_seconds() * 1000
-                elif module == 'cache':
-                    start = datetime.now()
-                    cursor.execute('SELECT COUNT(*) FROM search_cache LIMIT 1')
+                    cursor.execute('SELECT COUNT(*) FROM super_admin_health_checks LIMIT 1')
                     response_time = (datetime.now() - start).total_seconds() * 1000
                 elif module == 'file_system':
                     start = datetime.now()
@@ -1744,7 +1740,7 @@ def health_check_all():
             })
             
             cursor.execute('''
-                INSERT INTO health_check_results (module_name, status, response_time, error_message, checked_at)
+                INSERT INTO super_admin_health_checks (module_name, status, response_time, error_message, checked_at)
                 VALUES (?, ?, ?, ?, ?)
             ''', (module, status, response_time, error_message, datetime.now().isoformat()))
         
@@ -1787,13 +1783,13 @@ def health_history():
         
         where_sql = 'WHERE ' + ' AND '.join(where_clauses) if where_clauses else ''
         
-        cursor.execute(f'SELECT COUNT(*) FROM health_check_results {where_sql}', params)
+        cursor.execute(f'SELECT COUNT(*) FROM super_admin_health_checks {where_sql}', params)
         total = cursor.fetchone()[0] or 0
         
         offset = (page - 1) * per_page
         cursor.execute(f'''
             SELECT id, module_name, status, response_time, error_message, checked_at
-            FROM health_check_results
+            FROM super_admin_health_checks
             {where_sql}
             ORDER BY checked_at DESC
             LIMIT ? OFFSET ?

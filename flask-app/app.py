@@ -759,7 +759,7 @@ def get_system_settings():
     """获取系统设置"""
     settings = {
         'system_name': 'MTSCOS AI 智能学习评估系统',
-        'version': "8.4.0",
+        'version': "8.5.0",
         'description': '基于AI的智能学习评估系统,提供个性化学习体验和智能评估功能.',
         'admin_email': 'admin@example.com',
         'maintenance_mode': False,
@@ -3791,6 +3791,27 @@ def login():
             sm = get_session_manager()
             sm.create_session(user['id'], username, user['role'], request.remote_addr, request.user_agent.string)
             
+            # 记录会话到user_sessions表（用于超级管理员会话管理）
+            try:
+                from app.api.super_admin_api import get_db_connection
+                conn = get_db_connection()
+                cursor = conn.cursor()
+                
+                expires_at = (datetime.now() + timedelta(days=30)).isoformat() if remember else (datetime.now() + timedelta(minutes=30)).isoformat()
+                
+                cursor.execute('''
+                    INSERT INTO user_sessions (session_id, user_id, username, role, login_time, 
+                                               last_activity, expires_at, ip_address, user_agent, status)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (session_id, user['id'], username, user['role'], datetime.now().isoformat(), 
+                      datetime.now().isoformat(), expires_at, request.remote_addr, 
+                      request.user_agent.string, 'active'))
+                
+                conn.commit()
+                conn.close()
+            except Exception as e:
+                logger.warning(f"记录会话到user_sessions表失败: {e}")
+            
             # 根据用户角色确定登录后重定向页面
             redirect_url = get_redirect_url_by_role(user['role'])
             
@@ -3867,6 +3888,16 @@ def logout():
             logout_actions.append('会话已清除')
         except Exception as e:
             logger.error(f"清除会话失败: {e}")
+        
+        try:
+            from app.api.super_admin_api import get_db_connection
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            cursor.execute('UPDATE user_sessions SET status = "expired" WHERE session_id = ?', (session_id,))
+            conn.commit()
+            conn.close()
+        except Exception as e:
+            logger.warning(f"更新user_sessions表失败: {e}")
     
     if role == 'hardware_admin':
         hardware_session = session.get('hardware_session_id')
@@ -4960,7 +4991,7 @@ def get_dashboard_stats_public():
 # 系统状态
 @app.route('/api/system/status')
 def system_status():
-    return jsonify({'status': 'running', 'version': "8.4.0", 'timestamp': datetime.now().isoformat()})
+    return jsonify({'status': 'running', 'version': "8.5.0", 'timestamp': datetime.now().isoformat()})
 
 # 用户信息API - 改用/api/users/info避免路由冲突
 @app.route('/api/users/info/<username>')
