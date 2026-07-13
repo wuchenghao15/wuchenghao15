@@ -9,20 +9,28 @@ function safeFetch(url, options) {
     return fetch(url, options).then(response => {
         if (!response.ok) {
             return response.text().then(text => {
-                try { return JSON.parse(text); } catch {
-                    return { success: false, error: 'HTTP_ERROR', status: response.status, message: text || '请求失败' };
+                try { 
+                    var result = JSON.parse(text);
+                    result.success = result.code === 200;
+                    return result; 
+                } catch {
+                    return { success: false, error: 'HTTP_ERROR', status: response.status, message: text || '请求失败', code: 500 };
                 }
             });
         }
         return response.text().then(text => {
-            if (!text) return { success: false, error: 'EMPTY_RESPONSE', message: '响应为空' };
-            try { return JSON.parse(text); } catch {
-                return { success: false, error: 'INVALID_JSON', message: '无效的JSON响应', raw: text };
+            if (!text) return { success: false, error: 'EMPTY_RESPONSE', message: '响应为空', code: 500 };
+            try { 
+                var result = JSON.parse(text);
+                result.success = result.code === 200 || result.success === true;
+                return result; 
+            } catch {
+                return { success: false, error: 'INVALID_JSON', message: '无效的JSON响应', raw: text, code: 500 };
             }
         });
     }).catch(err => {
         console.error('Fetch error:', err);
-        return { success: false, error: 'NETWORK_ERROR', message: '网络请求失败' };
+        return { success: false, error: 'NETWORK_ERROR', message: '网络请求失败', code: 500 };
     });
 }
 
@@ -51,6 +59,10 @@ function switchTab(tabName) {
     if (tabName === 'params') loadParams();
     if (tabName === 'param-logs') loadParamLogs();
     if (tabName === 'param-backup') loadParamBackups();
+    if (tabName === 'security') { loadSecurityStats(); loadSecurityAuditLogs(); }
+    if (tabName === 'ai-analytics') { loadLearningAnalytics(); loadExamAnalytics(); loadBehaviorAnalytics(); }
+    if (tabName === 'notifications') loadNotifications();
+    if (tabName === 'announcements') loadAnnouncements();
 }
 
 function setResource(type, percent) {

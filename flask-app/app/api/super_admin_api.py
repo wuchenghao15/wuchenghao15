@@ -5,6 +5,7 @@
 """
 
 from flask import Blueprint, jsonify, request, session, current_app
+from app.middlewares.permission_decorators import require_super_admin
 import sqlite3
 import logging
 import os
@@ -27,12 +28,95 @@ def get_db_connection():
     return conn
 
 
-def success_response(data=None, message='操作成功'):
-    return jsonify({'success': True, 'message': message, 'data': data})
+def create_tables():
+    """创建所需的数据库表"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS notifications (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT NOT NULL,
+                content TEXT NOT NULL,
+                type TEXT DEFAULT 'info',
+                status TEXT DEFAULT 'unread',
+                user_id INTEGER,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS announcements (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT NOT NULL,
+                content TEXT NOT NULL,
+                is_published INTEGER DEFAULT 0,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                publish_time TEXT
+            )
+        ''')
+
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS backup_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                backup_time TEXT NOT NULL,
+                backup_path TEXT NOT NULL,
+                backup_size INTEGER DEFAULT 0,
+                status TEXT DEFAULT 'success',
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS learning_records (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                course_id INTEGER,
+                activity TEXT,
+                duration INTEGER DEFAULT 0,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            )
+        ''')
+
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS exam_records (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                exam_id INTEGER NOT NULL,
+                status TEXT DEFAULT 'in_progress',
+                started_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                completed_at TEXT,
+                FOREIGN KEY (user_id) REFERENCES users(id),
+                FOREIGN KEY (exam_id) REFERENCES exams(id)
+            )
+        ''')
+
+        conn.commit()
+        conn.close()
+        logger.info("✓ 超级管理员API表创建完成")
+    except Exception as e:
+        logger.error(f"✗ 创建超级管理员API表失败: {e}")
 
 
-def error_response(error, message='操作失败'):
-    return jsonify({'success': False, 'error': str(error), 'message': message})
+create_tables()
+
+
+def create_response(code=200, message='success', data=None, error_id=None, error_type=None, suggestion=None):
+    """统一响应格式"""
+    response = {
+        'code': code,
+        'message': message,
+        'data': data
+    }
+    if error_id:
+        response['error_id'] = error_id
+    if error_type:
+        response['error_type'] = error_type
+    if suggestion:
+        response['suggestion'] = suggestion
+    return jsonify(response)
 
 
 def paginate(data, page, per_page, total):
@@ -46,6 +130,7 @@ def paginate(data, page, per_page, total):
 
 
 @super_admin_api.route('/api/super_admin/overview', methods=['GET'])
+@require_super_admin
 def overview():
     """系统概览 - 获取仪表盘统计数据"""
     try:
@@ -90,7 +175,7 @@ def overview():
 
         conn.close()
 
-        return success_response({
+        return create_response(200, 'success', {
             'stats': {
                 'total_users': total_users,
                 'total_exams': total_exams,
@@ -107,10 +192,11 @@ def overview():
 
     except Exception as e:
         logger.error(f"获取系统概览失败: {e}")
-        return error_response(e)
+        return create_response(500, '获取系统概览失败')
 
 
 @super_admin_api.route('/api/super_admin/resources', methods=['GET'])
+@require_super_admin
 def resources():
     """资源监控 - 获取系统资源使用情况"""
     try:
@@ -129,7 +215,7 @@ def resources():
         disk_used_gb = round(disk.used / (1024**3), 2)
         disk_total_gb = round(disk.total / (1024**3), 2)
 
-        return success_response({
+        return create_response(200, 'success', {
             'cpu': {
                 'percent': round(cpu_percent, 1),
                 'cores': cpu_cores
@@ -147,17 +233,18 @@ def resources():
         })
 
     except ImportError:
-        return success_response({
+        return create_response(200, 'success', {
             'cpu': {'percent': 0, 'cores': 0},
             'memory': {'percent': 0, 'used_gb': 0, 'total_gb': 0},
             'disk': {'percent': 0, 'used_gb': 0, 'total_gb': 0}
         })
     except Exception as e:
         logger.error(f"获取系统资源失败: {e}")
-        return error_response(e)
+        return create_response(500, '获取系统资源失败')
 
 
 @super_admin_api.route('/api/super_admin/logs', methods=['GET'])
+@require_super_admin
 def logs():
     """系统日志 - 获取分页日志列表"""
     try:
@@ -205,7 +292,7 @@ def logs():
 
         conn.close()
 
-        return success_response({
+        return create_response(200, 'success', {
             'logs': logs,
             'total': total,
             'page': page,
@@ -214,10 +301,11 @@ def logs():
 
     except Exception as e:
         logger.error(f"获取系统日志失败: {e}")
-        return error_response(e)
+        return create_response(500, '获取系统日志失败')
 
 
 @super_admin_api.route('/api/super_admin/users', methods=['GET'])
+@require_super_admin
 def users():
     """用户管理 - 获取分页用户列表"""
     try:
@@ -266,7 +354,7 @@ def users():
 
         conn.close()
 
-        return success_response({
+        return create_response(200, 'success', {
             'users': users,
             'total': total,
             'page': page,
@@ -275,10 +363,11 @@ def users():
 
     except Exception as e:
         logger.error(f"获取用户列表失败: {e}")
-        return error_response(e)
+        return create_response(500, '获取用户列表失败')
 
 
 @super_admin_api.route('/api/super_admin/users/<int:user_id>', methods=['GET', 'PUT', 'DELETE'])
+@require_super_admin
 def user_detail(user_id):
     """用户管理 - 用户详情/修改/删除"""
     try:
@@ -290,7 +379,7 @@ def user_detail(user_id):
             row = cursor.fetchone()
             if not row:
                 conn.close()
-                return error_response('用户不存在')
+                return create_response(404, '用户不存在')
             user = {
                 'id': row['id'],
                 'username': row['username'] or '',
@@ -300,7 +389,7 @@ def user_detail(user_id):
                 'created_at': row['created_at'] or ''
             }
             conn.close()
-            return success_response(user)
+            return create_response(200, 'success', user)
 
         elif request.method == 'PUT':
             data = request.get_json() or {}
@@ -319,13 +408,13 @@ def user_detail(user_id):
 
             if not updates:
                 conn.close()
-                return error_response('没有可更新的字段')
+                return create_response(400, '没有可更新的字段')
 
             params.append(user_id)
             cursor.execute(f'UPDATE users SET {", ".join(updates)} WHERE id = ?', params)
             conn.commit()
             conn.close()
-            return success_response(message='用户更新成功')
+            return create_response(200, '用户更新成功')
 
         elif request.method == 'DELETE':
             cursor.execute('DELETE FROM users WHERE id = ?', (user_id,))
@@ -333,15 +422,16 @@ def user_detail(user_id):
             affected = cursor.rowcount
             conn.close()
             if affected == 0:
-                return error_response('用户不存在')
-            return success_response(message='用户删除成功')
+                return create_response(404, '用户不存在')
+            return create_response(200, '用户删除成功')
 
     except Exception as e:
         logger.error(f"用户操作失败: {e}")
-        return error_response(e)
+        return create_response(500, '用户操作失败')
 
 
 @super_admin_api.route('/api/super_admin/exams', methods=['GET'])
+@require_super_admin
 def exams():
     """考试管理 - 获取分页考试列表"""
     try:
@@ -403,7 +493,7 @@ def exams():
 
         conn.close()
 
-        return success_response({
+        return create_response(200, 'success', {
             'exams': exams,
             'total': total,
             'page': page,
@@ -418,10 +508,11 @@ def exams():
 
     except Exception as e:
         logger.error(f"获取考试列表失败: {e}")
-        return error_response(e)
+        return create_response(500, '获取考试列表失败')
 
 
 @super_admin_api.route('/api/super_admin/routes', methods=['GET'])
+@require_super_admin
 def routes():
     """路由管理 - 获取所有路由列表"""
     try:
@@ -432,26 +523,28 @@ def routes():
                 'endpoint': rule.endpoint,
                 'methods': list(rule.methods)
             })
-        return success_response({
+        return create_response(200, 'success', {
             'routes': routes,
             'total': len(routes)
         })
     except Exception as e:
         logger.error(f"获取路由列表失败: {e}")
-        return error_response(e)
+        return create_response(500, '获取路由列表失败')
 
 
 @super_admin_api.route('/api/super_admin/reload_routes', methods=['POST'])
+@require_super_admin
 def reload_routes():
     """路由管理 - 刷新路由"""
     try:
-        return success_response(message='路由刷新成功')
+        return create_response(200, '路由刷新成功')
     except Exception as e:
         logger.error(f"刷新路由失败: {e}")
-        return error_response(e)
+        return create_response(500, '刷新路由失败')
 
 
 @super_admin_api.route('/api/super_admin/backup', methods=['POST'])
+@require_super_admin
 def create_backup():
     """数据备份 - 创建备份"""
     try:
@@ -473,19 +566,20 @@ def create_backup():
         conn.commit()
         conn.close()
 
-        return success_response({
+        return create_response(200, '备份创建成功', {
             'backup_id': timestamp,
             'backup_path': backup_path,
             'backup_size': backup_size,
             'backup_time': datetime.now().isoformat()
-        }, message='备份创建成功')
+        })
 
     except Exception as e:
         logger.error(f"创建备份失败: {e}")
-        return error_response(e)
+        return create_response(500, '创建备份失败')
 
 
 @super_admin_api.route('/api/super_admin/backups', methods=['GET'])
+@require_super_admin
 def backups():
     """数据备份 - 获取备份列表"""
     try:
@@ -504,14 +598,15 @@ def backups():
             })
 
         conn.close()
-        return success_response(backups)
+        return create_response(200, 'success', backups)
 
     except Exception as e:
         logger.error(f"获取备份列表失败: {e}")
-        return error_response(e)
+        return create_response(500, '获取备份列表失败')
 
 
 @super_admin_api.route('/api/super_admin/backup/<string:backup_id>/restore', methods=['POST'])
+@require_super_admin
 def restore_backup(backup_id):
     """数据备份 - 恢复备份"""
     try:
@@ -519,18 +614,19 @@ def restore_backup(backup_id):
         backup_path = os.path.join(backup_dir, f'mtscos_backup_{backup_id}.db')
 
         if not os.path.exists(backup_path):
-            return error_response('备份文件不存在')
+            return create_response(404, '备份文件不存在')
 
         shutil.copy2(backup_path, DB_PATH)
 
-        return success_response(message='备份恢复成功')
+        return create_response(200, '备份恢复成功')
 
     except Exception as e:
         logger.error(f"恢复备份失败: {e}")
-        return error_response(e)
+        return create_response(500, '恢复备份失败')
 
 
 @super_admin_api.route('/api/super_admin/backup/<string:backup_id>/delete', methods=['DELETE'])
+@require_super_admin
 def delete_backup(backup_id):
     """数据备份 - 删除备份"""
     try:
@@ -546,14 +642,15 @@ def delete_backup(backup_id):
         conn.commit()
         conn.close()
 
-        return success_response(message='备份删除成功')
+        return create_response(200, '备份删除成功')
 
     except Exception as e:
         logger.error(f"删除备份失败: {e}")
-        return error_response(e)
+        return create_response(500, '删除备份失败')
 
 
 @super_admin_api.route('/api/super_admin/clear_cache', methods=['POST'])
+@require_super_admin
 def clear_cache():
     """系统维护 - 清除缓存"""
     try:
@@ -583,14 +680,15 @@ def clear_cache():
         except Exception as e:
             logger.warning(f"清除Jinja2缓存失败: {e}")
 
-        return success_response({'cleared_count': cache_cleared}, message=f'缓存已清除，共清理 {cache_cleared} 项')
+        return create_response(200, f'缓存已清除，共清理 {cache_cleared} 项', {'cleared_count': cache_cleared})
 
     except Exception as e:
         logger.error(f"清除缓存失败: {e}")
-        return error_response(e)
+        return create_response(500, '清除缓存失败')
 
 
 @super_admin_api.route('/api/super_admin/health', methods=['GET'])
+@require_super_admin
 def health_check():
     """系统维护 - 健康检查"""
     try:
@@ -600,21 +698,22 @@ def health_check():
         user_count = cursor.fetchone()[0]
         conn.close()
 
-        return success_response({
+        return create_response(200, '系统健康', {
             'database': 'connected',
             'user_count': user_count,
             'status': 'healthy'
-        }, message='系统健康')
+        })
 
     except Exception as e:
         logger.error(f"健康检查失败: {e}")
-        return success_response({
+        return create_response(200, '系统异常', {
             'database': 'error',
             'status': 'unhealthy'
-        }, message='系统异常')
+        })
 
 
 @super_admin_api.route('/api/super_admin/engines', methods=['GET'])
+@require_super_admin
 def engines():
     """AI引擎矩阵 - 获取所有AI引擎状态"""
     try:
@@ -628,14 +727,15 @@ def engines():
             {'name': '路由优化引擎', 'icon': '🔗', 'desc': 'API路由智能管理', 'status': 'active'},
             {'name': '安全监控引擎', 'icon': '🛡️', 'desc': '系统安全防护', 'status': 'active'}
         ]
-        return success_response({'engines': engines})
+        return create_response(200, 'success', {'engines': engines})
 
     except Exception as e:
         logger.error(f"获取AI引擎列表失败: {e}")
-        return error_response(e)
+        return create_response(500, '获取AI引擎列表失败')
 
 
 @super_admin_api.route('/api/super_admin/employees', methods=['GET'])
+@require_super_admin
 def employees():
     """AI员工管理 - 获取AI员工列表"""
     try:
@@ -656,14 +756,15 @@ def employees():
             })
 
         conn.close()
-        return success_response({'employees': employees})
+        return create_response(200, 'success', {'employees': employees})
 
     except Exception as e:
         logger.error(f"获取AI员工列表失败: {e}")
-        return error_response(e)
+        return create_response(500, '获取AI员工列表失败')
 
 
 @super_admin_api.route('/api/super_admin/agents', methods=['GET'])
+@require_super_admin
 def agents():
     """本地AI Agent - 获取Agent列表"""
     try:
@@ -681,14 +782,15 @@ def agents():
             })
 
         conn.close()
-        return success_response({'agents': agents})
+        return create_response(200, 'success', {'agents': agents})
 
     except Exception as e:
         logger.error(f"获取Agent列表失败: {e}")
-        return error_response(e)
+        return create_response(500, '获取Agent列表失败')
 
 
 @super_admin_api.route('/api/super_admin/agents/<int:agent_id>/action', methods=['POST'])
+@require_super_admin
 def agent_action(agent_id):
     """本地AI Agent - 执行Agent操作（启动/暂停/终止）"""
     try:
@@ -696,7 +798,7 @@ def agent_action(agent_id):
         action = data.get('action', '')
 
         if action not in ['start', 'pause', 'stop']:
-            return error_response('无效的操作类型')
+            return create_response(400, '无效的操作类型')
 
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -710,17 +812,18 @@ def agent_action(agent_id):
         conn.close()
 
         if affected == 0:
-            return error_response('Agent不存在')
+            return create_response(404, 'Agent不存在')
 
         action_text = {'start': '启动', 'pause': '暂停', 'stop': '终止'}
-        return success_response(message=f'Agent{action_text[action]}成功')
+        return create_response(200, f'Agent{action_text[action]}成功')
 
     except Exception as e:
         logger.error(f"Agent操作失败: {e}")
-        return error_response(e)
+        return create_response(500, 'Agent操作失败')
 
 
 @super_admin_api.route('/api/super_admin/settings', methods=['GET'])
+@require_super_admin
 def settings():
     """系统设置 - 获取系统设置信息"""
     try:
@@ -736,14 +839,15 @@ def settings():
             }
 
         conn.close()
-        return success_response({'settings': settings})
+        return create_response(200, 'success', {'settings': settings})
 
     except Exception as e:
         logger.error(f"获取系统设置失败: {e}")
-        return error_response(e)
+        return create_response(500, '获取系统设置失败')
 
 
 @super_admin_api.route('/api/super_admin/security/audit_logs', methods=['GET'])
+@require_super_admin
 def security_audit_logs():
     """安全监控 - 获取安全审计日志"""
     try:
@@ -791,7 +895,7 @@ def security_audit_logs():
             })
 
         conn.close()
-        return success_response({
+        return create_response(200, 'success', {
             'logs': logs,
             'total': total,
             'page': page,
@@ -800,10 +904,11 @@ def security_audit_logs():
 
     except Exception as e:
         logger.error(f"获取安全审计日志失败: {e}")
-        return error_response(e)
+        return create_response(500, '获取安全审计日志失败')
 
 
 @super_admin_api.route('/api/super_admin/security/access_logs', methods=['GET'])
+@require_super_admin
 def security_access_logs():
     """安全监控 - 获取访问控制日志"""
     try:
@@ -841,7 +946,7 @@ def security_access_logs():
             })
 
         conn.close()
-        return success_response({
+        return create_response(200, 'success', {
             'logs': logs,
             'total': total,
             'page': page,
@@ -850,10 +955,11 @@ def security_access_logs():
 
     except Exception as e:
         logger.error(f"获取访问控制日志失败: {e}")
-        return error_response(e)
+        return create_response(500, '获取访问控制日志失败')
 
 
 @super_admin_api.route('/api/super_admin/security/intrusion_stats', methods=['GET'])
+@require_super_admin
 def security_intrusion_stats():
     """安全监控 - 获取入侵检测统计"""
     try:
@@ -889,7 +995,7 @@ def security_intrusion_stats():
             })
 
         conn.close()
-        return success_response({
+        return create_response(200, 'success', {
             'sql_injection_count': sql_injection_count,
             'access_denied_count': access_denied_count,
             'failed_login_today': failed_login_today,
@@ -898,10 +1004,11 @@ def security_intrusion_stats():
 
     except Exception as e:
         logger.error(f"获取入侵检测统计失败: {e}")
-        return error_response(e)
+        return create_response(500, '获取入侵检测统计失败')
 
 
 @super_admin_api.route('/api/super_admin/ai_analytics/learning', methods=['GET'])
+@require_super_admin
 def ai_analytics_learning():
     """AI智能分析 - 学习数据分析"""
     try:
@@ -943,7 +1050,7 @@ def ai_analytics_learning():
         total_learning_records = cursor.fetchone()[0] or 0
 
         conn.close()
-        return success_response({
+        return create_response(200, 'success', {
             'learning_trend': learning_trend,
             'active_learners': active_learners,
             'total_learning_records': total_learning_records
@@ -951,10 +1058,11 @@ def ai_analytics_learning():
 
     except Exception as e:
         logger.error(f"获取学习数据分析失败: {e}")
-        return error_response(e)
+        return create_response(500, '获取学习数据分析失败')
 
 
 @super_admin_api.route('/api/super_admin/ai_analytics/exam', methods=['GET'])
+@require_super_admin
 def ai_analytics_exam():
     """AI智能分析 - 考试数据分析"""
     try:
@@ -1003,7 +1111,7 @@ def ai_analytics_exam():
             })
 
         conn.close()
-        return success_response({
+        return create_response(200, 'success', {
             'exam_trend': exam_trend,
             'avg_score': round(avg_score, 2),
             'pass_rate': pass_rate,
@@ -1013,10 +1121,11 @@ def ai_analytics_exam():
 
     except Exception as e:
         logger.error(f"获取考试数据分析失败: {e}")
-        return error_response(e)
+        return create_response(500, '获取考试数据分析失败')
 
 
 @super_admin_api.route('/api/super_admin/ai_analytics/user_behavior', methods=['GET'])
+@require_super_admin
 def ai_analytics_user_behavior():
     """AI智能分析 - 用户行为分析"""
     try:
@@ -1065,7 +1174,7 @@ def ai_analytics_user_behavior():
             })
 
         conn.close()
-        return success_response({
+        return create_response(200, 'success', {
             'active_user_trend': active_user_trend,
             'role_distribution': role_distribution,
             'top_pages': top_pages
@@ -1073,10 +1182,11 @@ def ai_analytics_user_behavior():
 
     except Exception as e:
         logger.error(f"获取用户行为分析失败: {e}")
-        return error_response(e)
+        return create_response(500, '获取用户行为分析失败')
 
 
 @super_admin_api.route('/api/super_admin/notifications', methods=['GET'])
+@require_super_admin
 def notifications():
     """通知管理 - 获取通知列表"""
     try:
@@ -1110,7 +1220,7 @@ def notifications():
             })
 
         conn.close()
-        return success_response({
+        return create_response(200, 'success', {
             'notifications': notifications,
             'total': total,
             'page': page,
@@ -1119,10 +1229,11 @@ def notifications():
 
     except Exception as e:
         logger.error(f"获取通知列表失败: {e}")
-        return error_response(e)
+        return create_response(500, '获取通知列表失败')
 
 
 @super_admin_api.route('/api/super_admin/notifications', methods=['POST'])
+@require_super_admin
 def create_notification():
     """通知管理 - 创建通知"""
     try:
@@ -1133,7 +1244,7 @@ def create_notification():
         user_id = data.get('user_id')
 
         if not title or not content:
-            return error_response('标题和内容不能为空')
+            return create_response(400, '标题和内容不能为空')
 
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -1146,16 +1257,15 @@ def create_notification():
         notification_id = cursor.lastrowid
         conn.close()
 
-        return success_response({
-            'notification_id': notification_id
-        }, message='通知创建成功')
+        return create_response(200, '通知创建成功', {'notification_id': notification_id})
 
     except Exception as e:
         logger.error(f"创建通知失败: {e}")
-        return error_response(e)
+        return create_response(500, '创建通知失败')
 
 
 @super_admin_api.route('/api/super_admin/notifications/<int:notification_id>', methods=['PUT', 'DELETE'])
+@require_super_admin
 def notification_detail(notification_id):
     """通知管理 - 更新/删除通知"""
     try:
@@ -1171,7 +1281,7 @@ def notification_detail(notification_id):
                 conn.commit()
             
             conn.close()
-            return success_response(message='通知更新成功')
+            return create_response(200, '通知更新成功')
 
         elif request.method == 'DELETE':
             cursor.execute('DELETE FROM notifications WHERE id = ?', (notification_id,))
@@ -1180,15 +1290,16 @@ def notification_detail(notification_id):
             conn.close()
             
             if affected == 0:
-                return error_response('通知不存在')
-            return success_response(message='通知删除成功')
+                return create_response(404, '通知不存在')
+            return create_response(200, '通知删除成功')
 
     except Exception as e:
         logger.error(f"通知操作失败: {e}")
-        return error_response(e)
+        return create_response(500, '通知操作失败')
 
 
 @super_admin_api.route('/api/super_admin/export/users', methods=['GET'])
+@require_super_admin
 def export_users():
     """数据导出 - 导出用户数据"""
     try:
@@ -1220,10 +1331,11 @@ def export_users():
 
     except Exception as e:
         logger.error(f"导出用户数据失败: {e}")
-        return error_response(e)
+        return create_response(500, '导出用户数据失败')
 
 
 @super_admin_api.route('/api/super_admin/export/exams', methods=['GET'])
+@require_super_admin
 def export_exams():
     """数据导出 - 导出考试数据"""
     try:
@@ -1254,10 +1366,11 @@ def export_exams():
 
     except Exception as e:
         logger.error(f"导出考试数据失败: {e}")
-        return error_response(e)
+        return create_response(500, '导出考试数据失败')
 
 
 @super_admin_api.route('/api/super_admin/export/logs', methods=['GET'])
+@require_super_admin
 def export_logs():
     """数据导出 - 导出日志数据"""
     try:
@@ -1288,10 +1401,11 @@ def export_logs():
 
     except Exception as e:
         logger.error(f"导出日志数据失败: {e}")
-        return error_response(e)
+        return create_response(500, '导出日志数据失败')
 
 
 @super_admin_api.route('/api/super_admin/announcements', methods=['GET'])
+@require_super_admin
 def announcements():
     """公告管理 - 获取公告列表"""
     try:
@@ -1324,7 +1438,7 @@ def announcements():
             })
 
         conn.close()
-        return success_response({
+        return create_response(200, 'success', {
             'announcements': announcements,
             'total': total,
             'page': page,
@@ -1333,10 +1447,11 @@ def announcements():
 
     except Exception as e:
         logger.error(f"获取公告列表失败: {e}")
-        return error_response(e)
+        return create_response(500, '获取公告列表失败')
 
 
 @super_admin_api.route('/api/super_admin/announcements', methods=['POST'])
+@require_super_admin
 def create_announcement():
     """公告管理 - 创建公告"""
     try:
@@ -1346,7 +1461,7 @@ def create_announcement():
         is_published = data.get('is_published', False)
 
         if not title or not content:
-            return error_response('标题和内容不能为空')
+            return create_response(400, '标题和内容不能为空')
 
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -1360,16 +1475,15 @@ def create_announcement():
         announcement_id = cursor.lastrowid
         conn.close()
 
-        return success_response({
-            'announcement_id': announcement_id
-        }, message='公告创建成功')
+        return create_response(200, '公告创建成功', {'announcement_id': announcement_id})
 
     except Exception as e:
         logger.error(f"创建公告失败: {e}")
-        return error_response(e)
+        return create_response(500, '创建公告失败')
 
 
 @super_admin_api.route('/api/super_admin/announcements/<int:announcement_id>', methods=['PUT', 'DELETE'])
+@require_super_admin
 def announcement_detail(announcement_id):
     """公告管理 - 更新/删除公告"""
     try:
@@ -1404,7 +1518,7 @@ def announcement_detail(announcement_id):
                 conn.commit()
 
             conn.close()
-            return success_response(message='公告更新成功')
+            return create_response(200, '公告更新成功')
 
         elif request.method == 'DELETE':
             cursor.execute('DELETE FROM announcements WHERE id = ?', (announcement_id,))
@@ -1413,9 +1527,9 @@ def announcement_detail(announcement_id):
             conn.close()
 
             if affected == 0:
-                return error_response('公告不存在')
-            return success_response(message='公告删除成功')
+                return create_response(404, '公告不存在')
+            return create_response(200, '公告删除成功')
 
     except Exception as e:
         logger.error(f"公告操作失败: {e}")
-        return error_response(e)
+        return create_response(500, '公告操作失败')
