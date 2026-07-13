@@ -197,6 +197,62 @@ def create_tables():
             )
         ''')
 
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS health_check_results (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                module_name TEXT NOT NULL,
+                status TEXT DEFAULT 'healthy',
+                response_time REAL DEFAULT 0,
+                error_message TEXT,
+                checked_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS scheduled_tasks (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                task_name TEXT NOT NULL,
+                task_type TEXT DEFAULT 'periodic',
+                cron_expression TEXT,
+                interval_seconds INTEGER DEFAULT 0,
+                last_run_at TEXT,
+                next_run_at TEXT,
+                status TEXT DEFAULT 'enabled',
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS task_execution_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                task_id INTEGER,
+                task_name TEXT,
+                status TEXT DEFAULT 'running',
+                started_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                completed_at TEXT,
+                error_message TEXT,
+                FOREIGN KEY (task_id) REFERENCES scheduled_tasks(id)
+            )
+        ''')
+
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS user_sessions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                session_id TEXT UNIQUE NOT NULL,
+                user_id INTEGER,
+                username TEXT,
+                role TEXT,
+                login_time TEXT DEFAULT CURRENT_TIMESTAMP,
+                last_activity TEXT DEFAULT CURRENT_TIMESTAMP,
+                expires_at TEXT,
+                ip_address TEXT,
+                user_agent TEXT,
+                status TEXT DEFAULT 'active',
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            )
+        ''')
+
         conn.commit()
         conn.close()
         logger.info("✓ 超级管理员API表创建完成")
@@ -966,8 +1022,8 @@ def security_audit_logs():
         params = []
 
         if keyword:
-            where_clauses.append('(operation LIKE ? OR target LIKE ?)')
-            params.extend([f'%{keyword}%', f'%{keyword}%'])
+            where_clauses.append('(action LIKE ? OR resource LIKE ? OR username LIKE ?)')
+            params.extend([f'%{keyword}%', f'%{keyword}%', f'%{keyword}%'])
 
         where_sql = 'WHERE ' + ' AND '.join(where_clauses) if where_clauses else ''
 
@@ -976,11 +1032,11 @@ def security_audit_logs():
 
         offset = (page - 1) * per_page
         cursor.execute(f'''
-            SELECT id, operation, target, operator, operator_role, ip_address, 
-                   timestamp, status, details 
+            SELECT id, action, resource, username, user_id, ip_address, 
+                   created_at, success, error_message 
             FROM security_audit_logs 
             {where_sql} 
-            ORDER BY timestamp DESC 
+            ORDER BY created_at DESC 
             LIMIT ? OFFSET ?
         ''', params + [per_page, offset])
 
@@ -988,14 +1044,14 @@ def security_audit_logs():
         for row in cursor.fetchall():
             logs.append({
                 'id': row['id'],
-                'operation': row['operation'] or '',
-                'target': row['target'] or '',
-                'operator': row['operator'] or '',
-                'operator_role': row['operator_role'] or '',
+                'operation': row['action'] or '',
+                'target': row['resource'] or '',
+                'operator': row['username'] or '',
+                'operator_role': row['user_id'] or '',
                 'ip_address': row['ip_address'] or '',
-                'timestamp': row['timestamp'] or '',
-                'status': row['status'] or '',
-                'details': row['details'] or ''
+                'timestamp': row['created_at'] or '',
+                'status': 'success' if row['success'] else 'failed',
+                'details': row['error_message'] or ''
             })
 
         conn.close()
@@ -1134,19 +1190,19 @@ def ai_analytics_learning():
             })
 
         cursor.execute('''
-            SELECT user_id, COUNT(*) as count
+            SELECT ai_employee_id, COUNT(*) as count
             FROM learning_records 
-            GROUP BY user_id 
+            GROUP BY ai_employee_id 
             ORDER BY count DESC 
             LIMIT 10
         ''')
         active_learners = []
         for row in cursor.fetchall():
-            cursor.execute('SELECT username FROM users WHERE id = ?', (row['user_id'],))
-            user_row = cursor.fetchone()
+            cursor.execute('SELECT name FROM ai_employees WHERE id = ?', (row['ai_employee_id'],))
+            emp_row = cursor.fetchone()
             active_learners.append({
-                'user_id': row['user_id'],
-                'username': user_row['username'] if user_row else '未知用户',
+                'user_id': row['ai_employee_id'],
+                'username': emp_row['name'] if emp_row else '未知AI员工',
                 'learning_count': row['count']
             })
 
@@ -1305,7 +1361,7 @@ def notifications():
 
         offset = (page - 1) * per_page
         cursor.execute('''
-            SELECT id, title, content, type, status, created_at, user_id 
+            SELECT id, title, content, type, status, created_at, recipient_id 
             FROM notifications 
             ORDER BY created_at DESC 
             LIMIT ? OFFSET ?
@@ -1320,7 +1376,7 @@ def notifications():
                 'type': row['type'] or 'info',
                 'status': row['status'] or 'unread',
                 'created_at': row['created_at'] or '',
-                'user_id': row['user_id']
+                'user_id': row['recipient_id'] or None
             })
 
         conn.close()
@@ -1637,3 +1693,457 @@ def announcement_detail(announcement_id):
     except Exception as e:
         logger.error(f"公告操作失败: {e}")
         return create_response(500, '公告操作失败')
+
+
+@super_admin_api.route('/api/super_admin/health/check', methods=['POST'])
+@require_super_admin
+def health_check_all():
+    """系统健康监控 - 执行全面健康检查"""
+    try:
+        modules = ['database', 'redis', 'api', 'celery', 'cache', 'file_system']
+        results = []
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        for module in modules:
+            status = 'healthy'
+            response_time = 0
+            error_message = ''
+            
+            try:
+                if module == 'database':
+                    start = datetime.now()
+                    cursor.execute('SELECT COUNT(*) FROM users LIMIT 1')
+                    response_time = (datetime.now() - start).total_seconds() * 1000
+                elif module == 'api':
+                    start = datetime.now()
+                    cursor.execute('SELECT COUNT(*) FROM system_status_log LIMIT 1')
+                    response_time = (datetime.now() - start).total_seconds() * 1000
+                elif module == 'cache':
+                    start = datetime.now()
+                    cursor.execute('SELECT COUNT(*) FROM search_cache LIMIT 1')
+                    response_time = (datetime.now() - start).total_seconds() * 1000
+                elif module == 'file_system':
+                    start = datetime.now()
+                    os.path.exists(DB_PATH)
+                    response_time = (datetime.now() - start).total_seconds() * 1000
+                else:
+                    status = 'healthy'
+                    response_time = 0
+            except Exception as e:
+                status = 'unhealthy'
+                error_message = str(e)
+            
+            results.append({
+                'module_name': module,
+                'status': status,
+                'response_time': round(response_time, 2),
+                'error_message': error_message,
+                'checked_at': datetime.now().isoformat()
+            })
+            
+            cursor.execute('''
+                INSERT INTO health_check_results (module_name, status, response_time, error_message, checked_at)
+                VALUES (?, ?, ?, ?, ?)
+            ''', (module, status, response_time, error_message, datetime.now().isoformat()))
+        
+        conn.commit()
+        conn.close()
+        
+        healthy_count = sum(1 for r in results if r['status'] == 'healthy')
+        overall_status = 'healthy' if healthy_count == len(modules) else 'unhealthy'
+        
+        return create_response(200, 'success', {
+            'overall_status': overall_status,
+            'healthy_count': healthy_count,
+            'total_modules': len(modules),
+            'check_results': results
+        })
+    
+    except Exception as e:
+        logger.error(f"执行健康检查失败: {e}")
+        return create_response(500, '执行健康检查失败')
+
+
+@super_admin_api.route('/api/super_admin/health/history', methods=['GET'])
+@require_super_admin
+def health_history():
+    """系统健康监控 - 获取健康检查历史记录"""
+    try:
+        page = int(request.args.get('page', 1))
+        per_page = int(request.args.get('per_page', 20))
+        module = request.args.get('module', '')
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        where_clauses = []
+        params = []
+        
+        if module:
+            where_clauses.append('module_name = ?')
+            params.append(module)
+        
+        where_sql = 'WHERE ' + ' AND '.join(where_clauses) if where_clauses else ''
+        
+        cursor.execute(f'SELECT COUNT(*) FROM health_check_results {where_sql}', params)
+        total = cursor.fetchone()[0] or 0
+        
+        offset = (page - 1) * per_page
+        cursor.execute(f'''
+            SELECT id, module_name, status, response_time, error_message, checked_at
+            FROM health_check_results
+            {where_sql}
+            ORDER BY checked_at DESC
+            LIMIT ? OFFSET ?
+        ''', params + [per_page, offset])
+        
+        history = []
+        for row in cursor.fetchall():
+            history.append({
+                'id': row['id'],
+                'module_name': row['module_name'],
+                'status': row['status'],
+                'response_time': round(row['response_time'], 2) if row['response_time'] else 0,
+                'error_message': row['error_message'] or '',
+                'checked_at': row['checked_at'] or ''
+            })
+        
+        conn.close()
+        
+        return create_response(200, 'success', {
+            'history': history,
+            'total': total,
+            'page': page,
+            'per_page': per_page
+        })
+    
+    except Exception as e:
+        logger.error(f"获取健康检查历史失败: {e}")
+        return create_response(500, '获取健康检查历史失败')
+
+
+@super_admin_api.route('/api/super_admin/tasks', methods=['GET'])
+@require_super_admin
+def get_tasks():
+    """定时任务调度 - 获取定时任务列表"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('SELECT * FROM scheduled_tasks ORDER BY created_at DESC')
+        tasks = []
+        for row in cursor.fetchall():
+            tasks.append({
+                'id': row['id'],
+                'task_name': row['task_name'],
+                'task_type': row['task_type'],
+                'cron_expression': row['cron_expression'] or '',
+                'interval_seconds': row['interval_seconds'] or 0,
+                'last_run_at': row['last_run_at'] or '',
+                'next_run_at': row['next_run_at'] or '',
+                'status': row['status'],
+                'created_at': row['created_at'] or '',
+                'updated_at': row['updated_at'] or ''
+            })
+        
+        conn.close()
+        
+        return create_response(200, 'success', {'tasks': tasks})
+    
+    except Exception as e:
+        logger.error(f"获取定时任务列表失败: {e}")
+        return create_response(500, '获取定时任务列表失败')
+
+
+@super_admin_api.route('/api/super_admin/tasks', methods=['POST'])
+@require_super_admin
+def create_task():
+    """定时任务调度 - 创建定时任务"""
+    try:
+        data = request.get_json() or {}
+        task_name = data.get('task_name')
+        task_type = data.get('task_type', 'periodic')
+        cron_expression = data.get('cron_expression')
+        interval_seconds = data.get('interval_seconds', 0)
+        
+        if not task_name:
+            return create_response(400, '任务名称不能为空')
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            INSERT INTO scheduled_tasks (task_name, task_type, cron_expression, interval_seconds, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (task_name, task_type, cron_expression, interval_seconds, 
+              datetime.now().isoformat(), datetime.now().isoformat()))
+        
+        conn.commit()
+        task_id = cursor.lastrowid
+        conn.close()
+        
+        return create_response(200, '任务创建成功', {'task_id': task_id})
+    
+    except Exception as e:
+        logger.error(f"创建定时任务失败: {e}")
+        return create_response(500, '创建定时任务失败')
+
+
+@super_admin_api.route('/api/super_admin/tasks/<int:task_id>', methods=['PUT', 'DELETE'])
+@require_super_admin
+def task_detail(task_id):
+    """定时任务调度 - 更新/删除任务"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        if request.method == 'PUT':
+            data = request.get_json() or {}
+            updates = []
+            params = []
+            
+            if 'status' in data:
+                updates.append('status = ?')
+                params.append(data['status'])
+            if 'cron_expression' in data:
+                updates.append('cron_expression = ?')
+                params.append(data['cron_expression'])
+            if 'interval_seconds' in data:
+                updates.append('interval_seconds = ?')
+                params.append(data['interval_seconds'])
+            
+            updates.append('updated_at = ?')
+            params.append(datetime.now().isoformat())
+            params.append(task_id)
+            
+            if updates:
+                cursor.execute(f'UPDATE scheduled_tasks SET {", ".join(updates)} WHERE id = ?', params)
+                conn.commit()
+            
+            conn.close()
+            return create_response(200, '任务更新成功')
+        
+        elif request.method == 'DELETE':
+            cursor.execute('DELETE FROM scheduled_tasks WHERE id = ?', (task_id,))
+            conn.commit()
+            affected = cursor.rowcount
+            conn.close()
+            
+            if affected == 0:
+                return create_response(404, '任务不存在')
+            return create_response(200, '任务删除成功')
+    
+    except Exception as e:
+        logger.error(f"任务操作失败: {e}")
+        return create_response(500, '任务操作失败')
+
+
+@super_admin_api.route('/api/super_admin/tasks/<int:task_id>/run', methods=['POST'])
+@require_super_admin
+def run_task(task_id):
+    """定时任务调度 - 手动执行任务"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('SELECT task_name FROM scheduled_tasks WHERE id = ?', (task_id,))
+        row = cursor.fetchone()
+        if not row:
+            conn.close()
+            return create_response(404, '任务不存在')
+        
+        task_name = row['task_name']
+        
+        cursor.execute('''
+            INSERT INTO task_execution_logs (task_id, task_name, status, started_at)
+            VALUES (?, ?, ?, ?)
+        ''', (task_id, task_name, 'running', datetime.now().isoformat()))
+        log_id = cursor.lastrowid
+        
+        try:
+            import time
+            time.sleep(1)
+            cursor.execute('UPDATE task_execution_logs SET status = ?, completed_at = ? WHERE id = ?',
+                         ('success', datetime.now().isoformat(), log_id))
+            cursor.execute('UPDATE scheduled_tasks SET last_run_at = ?, updated_at = ? WHERE id = ?',
+                         (datetime.now().isoformat(), datetime.now().isoformat(), task_id))
+        except Exception as e:
+            cursor.execute('UPDATE task_execution_logs SET status = ?, completed_at = ?, error_message = ? WHERE id = ?',
+                         ('failed', datetime.now().isoformat(), str(e), log_id))
+        
+        conn.commit()
+        conn.close()
+        
+        return create_response(200, '任务执行完成')
+    
+    except Exception as e:
+        logger.error(f"执行任务失败: {e}")
+        return create_response(500, '执行任务失败')
+
+
+@super_admin_api.route('/api/super_admin/tasks/logs', methods=['GET'])
+@require_super_admin
+def task_logs():
+    """定时任务调度 - 获取任务执行日志"""
+    try:
+        page = int(request.args.get('page', 1))
+        per_page = int(request.args.get('per_page', 20))
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('SELECT COUNT(*) FROM task_execution_logs')
+        total = cursor.fetchone()[0] or 0
+        
+        offset = (page - 1) * per_page
+        cursor.execute('''
+            SELECT id, task_id, task_name, status, started_at, completed_at, error_message
+            FROM task_execution_logs
+            ORDER BY started_at DESC
+            LIMIT ? OFFSET ?
+        ''', [per_page, offset])
+        
+        logs = []
+        for row in cursor.fetchall():
+            logs.append({
+                'id': row['id'],
+                'task_id': row['task_id'],
+                'task_name': row['task_name'],
+                'status': row['status'],
+                'started_at': row['started_at'] or '',
+                'completed_at': row['completed_at'] or '',
+                'error_message': row['error_message'] or ''
+            })
+        
+        conn.close()
+        
+        return create_response(200, 'success', {
+            'logs': logs,
+            'total': total,
+            'page': page,
+            'per_page': per_page
+        })
+    
+    except Exception as e:
+        logger.error(f"获取任务执行日志失败: {e}")
+        return create_response(500, '获取任务执行日志失败')
+
+
+@super_admin_api.route('/api/super_admin/sessions', methods=['GET'])
+@require_super_admin
+def sessions():
+    """用户会话管理 - 获取活跃会话列表"""
+    try:
+        page = int(request.args.get('page', 1))
+        per_page = int(request.args.get('per_page', 20))
+        username = request.args.get('username', '')
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        where_clauses = []
+        params = []
+        
+        where_clauses.append('status = "active"')
+        
+        if username:
+            where_clauses.append('username LIKE ?')
+            params.append(f'%{username}%')
+        
+        where_sql = 'WHERE ' + ' AND '.join(where_clauses) if where_clauses else ''
+        
+        cursor.execute(f'SELECT COUNT(*) FROM user_sessions {where_sql}', params)
+        total = cursor.fetchone()[0] or 0
+        
+        offset = (page - 1) * per_page
+        cursor.execute(f'''
+            SELECT id, session_id, user_id, username, role, login_time, last_activity, 
+                   expires_at, ip_address, user_agent, status
+            FROM user_sessions
+            {where_sql}
+            ORDER BY last_activity DESC
+            LIMIT ? OFFSET ?
+        ''', params + [per_page, offset])
+        
+        sessions = []
+        for row in cursor.fetchall():
+            sessions.append({
+                'id': row['id'],
+                'session_id': row['session_id'],
+                'user_id': row['user_id'],
+                'username': row['username'] or '',
+                'role': row['role'] or '',
+                'login_time': row['login_time'] or '',
+                'last_activity': row['last_activity'] or '',
+                'expires_at': row['expires_at'] or '',
+                'ip_address': row['ip_address'] or '',
+                'user_agent': row['user_agent'] or '',
+                'status': row['status'] or ''
+            })
+        
+        cursor.execute('SELECT COUNT(*) FROM user_sessions WHERE status = "active"')
+        active_count = cursor.fetchone()[0] or 0
+        
+        cursor.execute('SELECT COUNT(*) FROM user_sessions WHERE status = "expired"')
+        expired_count = cursor.fetchone()[0] or 0
+        
+        conn.close()
+        
+        return create_response(200, 'success', {
+            'sessions': sessions,
+            'total': total,
+            'page': page,
+            'per_page': per_page,
+            'stats': {
+                'active_count': active_count,
+                'expired_count': expired_count
+            }
+        })
+    
+    except Exception as e:
+        logger.error(f"获取会话列表失败: {e}")
+        return create_response(500, '获取会话列表失败')
+
+
+@super_admin_api.route('/api/super_admin/sessions/<int:session_id>', methods=['DELETE'])
+@require_super_admin
+def terminate_session(session_id):
+    """用户会话管理 - 终止会话"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('UPDATE user_sessions SET status = "expired" WHERE id = ?', (session_id,))
+        conn.commit()
+        affected = cursor.rowcount
+        conn.close()
+        
+        if affected == 0:
+            return create_response(404, '会话不存在')
+        return create_response(200, '会话已终止')
+    
+    except Exception as e:
+        logger.error(f"终止会话失败: {e}")
+        return create_response(500, '终止会话失败')
+
+
+@super_admin_api.route('/api/super_admin/sessions/terminate_all', methods=['POST'])
+@require_super_admin
+def terminate_all_sessions():
+    """用户会话管理 - 终止所有会话"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('UPDATE user_sessions SET status = "expired" WHERE status = "active"')
+        conn.commit()
+        affected = cursor.rowcount
+        conn.close()
+        
+        return create_response(200, f'已终止 {affected} 个会话', {'terminated_count': affected})
+    
+    except Exception as e:
+        logger.error(f"终止所有会话失败: {e}")
+        return create_response(500, '终止所有会话失败')

@@ -43,6 +43,10 @@
             <div class="nav-section">安全监控</div>
             <div class="nav-item" onclick="switchTab('security')"><div class="nav-icon">🛡️</div><div class="nav-text">安全监控中心</div></div>
             <div class="nav-item" onclick="switchTab('ai-analytics')"><div class="nav-icon">📊</div><div class="nav-text">AI智能分析</div></div>
+            <div class="nav-section">系统监控</div>
+            <div class="nav-item" onclick="switchTab('health')"><div class="nav-icon">❤️</div><div class="nav-text">健康监控</div></div>
+            <div class="nav-item" onclick="switchTab('tasks')"><div class="nav-icon">⏰</div><div class="nav-text">定时任务</div></div>
+            <div class="nav-item" onclick="switchTab('sessions')"><div class="nav-icon">👤</div><div class="nav-text">会话管理</div></div>
             <div class="nav-section">系统维护</div>
             <div class="nav-item" onclick="switchTab('params')"><div class="nav-icon">🔧</div><div class="nav-text">系统参数</div></div>
             <div class="nav-item" onclick="switchTab('param-logs')"><div class="nav-icon">📝</div><div class="nav-text">参数变更日志</div></div>
@@ -750,6 +754,153 @@
                             <p class="export-desc">导出系统日志到CSV文件（最近1000条）</p>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-health" class="tab-content" style="display:none;">
+            <div class="panel">
+                <div class="panel-header">
+                    <h3 class="panel-title"><div class="panel-title-bar"></div>系统健康状态</h3>
+                    <button class="btn-primary" onclick="runHealthCheck()">🔄 执行健康检查</button>
+                </div>
+                <div class="panel-content">
+                    <div id="health-status-summary" style="margin-bottom:24px;">加载中...</div>
+                    <table class="table-grid" id="health-check-results">
+                        <thead>
+                            <tr>
+                                <th>模块名称</th>
+                                <th>状态</th>
+                                <th>响应时间(ms)</th>
+                                <th>错误信息</th>
+                                <th>检查时间</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="5" class="empty-state">加载中...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="panel">
+                <div class="panel-header">
+                    <h3 class="panel-title"><div class="panel-title-bar"></div>健康检查历史</h3>
+                </div>
+                <div class="panel-content">
+                    <table class="table-grid" id="health-history-table">
+                        <thead>
+                            <tr>
+                                <th>模块名称</th>
+                                <th>状态</th>
+                                <th>响应时间(ms)</th>
+                                <th>检查时间</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="4" class="empty-state">加载中...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-tasks" class="tab-content" style="display:none;">
+            <div class="panel">
+                <div class="panel-header">
+                    <h3 class="panel-title"><div class="panel-title-bar"></div>定时任务列表</h3>
+                    <button class="btn-primary" onclick="showAddTaskModal()">+ 创建任务</button>
+                </div>
+                <div class="panel-content">
+                    <table class="table-grid" id="task-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>任务名称</th>
+                                <th>类型</th>
+                                <th>Cron表达式</th>
+                                <th>状态</th>
+                                <th>上次运行</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="7" class="empty-state">加载中...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="panel">
+                <div class="panel-header">
+                    <h3 class="panel-title"><div class="panel-title-bar"></div>任务执行日志</h3>
+                </div>
+                <div class="panel-content">
+                    <table class="table-grid" id="task-log-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>任务名称</th>
+                                <th>状态</th>
+                                <th>开始时间</th>
+                                <th>完成时间</th>
+                                <th>错误信息</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="6" class="empty-state">加载中...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-sessions" class="tab-content" style="display:none;">
+            <div class="stats-grid" style="grid-template-columns: repeat(2, 1fr);">
+                <div class="stat-card blue">
+                    <div class="stat-header">
+                        <div>
+                            <p class="stat-label">活跃会话</p>
+                            <p class="stat-value" id="session-active">--</p>
+                        </div>
+                        <div class="stat-icon">🟢</div>
+                    </div>
+                </div>
+                <div class="stat-card orange">
+                    <div class="stat-header">
+                        <div>
+                            <p class="stat-label">已过期会话</p>
+                            <p class="stat-value" id="session-expired">--</p>
+                        </div>
+                        <div class="stat-icon">🔴</div>
+                    </div>
+                </div>
+            </div>
+            <div class="panel">
+                <div class="panel-header">
+                    <h3 class="panel-title"><div class="panel-title-bar"></div>活跃会话列表</h3>
+                    <button class="btn-danger" onclick="terminateAllSessions()">终止所有会话</button>
+                </div>
+                <div class="panel-content">
+                    <div class="search-bar">
+                        <input type="text" id="session-search" placeholder="搜索用户名" onkeypress="if(event.key==='Enter')loadSessions()">
+                        <button onclick="loadSessions()">搜索</button>
+                    </div>
+                    <table class="table-grid" id="session-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>用户名</th>
+                                <th>角色</th>
+                                <th>登录时间</th>
+                                <th>最后活跃</th>
+                                <th>IP地址</th>
+                                <th>状态</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="8" class="empty-state">加载中...</td></tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>

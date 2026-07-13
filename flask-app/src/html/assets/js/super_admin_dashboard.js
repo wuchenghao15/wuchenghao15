@@ -62,8 +62,11 @@ function switchTab(tabName) {
     if (tabName === 'security') { loadSecurityStats(); loadSecurityAuditLogs(); }
     if (tabName === 'ai-analytics') { loadLearningAnalytics(); loadExamAnalytics(); loadBehaviorAnalytics(); }
     if (tabName === 'notifications') loadNotifications();
-    if (tabName === 'announcements') loadAnnouncements();
-}
+        if (tabName === 'announcements') loadAnnouncements();
+        if (tabName === 'health') { runHealthCheck(); loadHealthHistory(); }
+        if (tabName === 'tasks') { loadTasks(); loadTaskLogs(); }
+        if (tabName === 'sessions') loadSessions();
+    }
 
 function setResource(type, percent) {
     var pctEl = document.getElementById(type + '-percent');
@@ -912,6 +915,193 @@ function exportExams() {
 
 function exportLogs() {
     window.open('/api/super_admin/export/logs', '_blank');
+}
+
+function runHealthCheck() {
+    safeFetch('/api/super_admin/health/check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+    }).then(function(data) {
+        if (!data.success) {
+            document.getElementById('health-status-summary').innerHTML = '<div style="color:var(--color-danger);">健康检查失败</div>';
+            return;
+        }
+        var d = data.data || {};
+        var summaryEl = document.getElementById('health-status-summary');
+        var statusClass = d.overall_status === 'healthy' ? 'badge-success' : 'badge-danger';
+        var statusText = d.overall_status === 'healthy' ? '健康' : '异常';
+        summaryEl.innerHTML = '<div><span class="badge ' + statusClass + '">' + statusText + '</span> <strong>整体状态</strong>: ' + d.healthy_count + '/' + d.total_modules + ' 模块健康</div>';
+        
+        var tbody = document.querySelector('#health-check-results tbody');
+        tbody.innerHTML = (d.check_results || []).map(function(r) {
+            var statusClass = r.status === 'healthy' ? 'badge-success' : 'badge-danger';
+            var statusText = r.status === 'healthy' ? '健康' : '异常';
+            return '<tr><td>' + r.module_name + '</td><td><span class="badge ' + statusClass + '">' + statusText + '</span></td><td>' + r.response_time + '</td><td>' + (r.error_message || '-') + '</td><td>' + (r.checked_at || '-') + '</td></tr>';
+        }).join('');
+    });
+}
+
+function loadHealthHistory() {
+    safeFetch('/api/super_admin/health/history').then(function(data) {
+        if (!data.success) return;
+        var d = data.data || {};
+        var tbody = document.querySelector('#health-history-table tbody');
+        tbody.innerHTML = (d.history || []).slice(0, 20).map(function(h) {
+            var statusClass = h.status === 'healthy' ? 'badge-success' : 'badge-danger';
+            var statusText = h.status === 'healthy' ? '健康' : '异常';
+            return '<tr><td>' + h.module_name + '</td><td><span class="badge ' + statusClass + '">' + statusText + '</span></td><td>' + h.response_time + '</td><td>' + (h.checked_at || '-') + '</td></tr>';
+        }).join('');
+    });
+}
+
+function loadTasks() {
+    safeFetch('/api/super_admin/tasks').then(function(data) {
+        if (!data.success) return;
+        var d = data.data || {};
+        var tbody = document.querySelector('#task-table tbody');
+        tbody.innerHTML = (d.tasks || []).map(function(t) {
+            var statusClass = t.status === 'enabled' ? 'badge-success' : 'badge-warning';
+            var statusText = t.status === 'enabled' ? '启用' : '禁用';
+            var actions = '';
+            if (t.status === 'enabled') {
+                actions = '<button class="btn-sm btn-primary" onclick="runTask(' + t.id + ')">执行</button> ' +
+                          '<button class="btn-sm btn-warning" onclick="toggleTaskStatus(' + t.id + ', \'disabled\')">禁用</button> ' +
+                          '<button class="btn-sm btn-danger" onclick="deleteTask(' + t.id + ')">删除</button>';
+            } else {
+                actions = '<button class="btn-sm btn-success" onclick="toggleTaskStatus(' + t.id + ', \'enabled\')">启用</button> ' +
+                          '<button class="btn-sm btn-danger" onclick="deleteTask(' + t.id + ')">删除</button>';
+            }
+            return '<tr><td>' + t.id + '</td><td>' + t.task_name + '</td><td>' + (t.task_type || '-') + '</td><td>' + (t.cron_expression || '-') + '</td><td><span class="badge ' + statusClass + '">' + statusText + '</span></td><td>' + (t.last_run_at || '-') + '</td><td>' + actions + '</td></tr>';
+        }).join('');
+    });
+}
+
+function showAddTaskModal() {
+    var taskName = prompt('请输入任务名称：');
+    if (!taskName) return;
+    var taskType = prompt('请输入任务类型（periodic/cron）：', 'periodic');
+    var cronExpr = prompt('请输入Cron表达式（留空则使用间隔）：');
+    var interval = prompt('请输入间隔秒数（0表示不使用）：', '3600');
+    
+    safeFetch('/api/super_admin/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            task_name: taskName,
+            task_type: taskType,
+            cron_expression: cronExpr,
+            interval_seconds: parseInt(interval) || 0
+        })
+    }).then(function(data) {
+        if (data.success) {
+            alert('任务创建成功');
+            loadTasks();
+        } else {
+            alert('创建失败: ' + (data.message || '未知错误'));
+        }
+    });
+}
+
+function runTask(taskId) {
+    if (!confirm('确定执行此任务？')) return;
+    safeFetch('/api/super_admin/tasks/' + taskId + '/run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+    }).then(function(data) {
+        if (data.success) {
+            alert('任务执行完成');
+            loadTasks();
+            loadTaskLogs();
+        } else {
+            alert('执行失败: ' + (data.message || '未知错误'));
+        }
+    });
+}
+
+function toggleTaskStatus(taskId, status) {
+    safeFetch('/api/super_admin/tasks/' + taskId, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: status })
+    }).then(function(data) {
+        if (data.success) {
+            loadTasks();
+        } else {
+            alert('操作失败: ' + (data.message || '未知错误'));
+        }
+    });
+}
+
+function deleteTask(taskId) {
+    if (!confirm('确定删除此任务？')) return;
+    safeFetch('/api/super_admin/tasks/' + taskId, { method: 'DELETE' }).then(function(data) {
+        if (data.success) {
+            alert('任务删除成功');
+            loadTasks();
+        } else {
+            alert('删除失败: ' + (data.message || '未知错误'));
+        }
+    });
+}
+
+function loadTaskLogs() {
+    safeFetch('/api/super_admin/tasks/logs').then(function(data) {
+        if (!data.success) return;
+        var d = data.data || {};
+        var tbody = document.querySelector('#task-log-table tbody');
+        tbody.innerHTML = (d.logs || []).slice(0, 20).map(function(l) {
+            var statusClass = l.status === 'success' ? 'badge-success' : (l.status === 'failed' ? 'badge-danger' : 'badge-warning');
+            var statusText = l.status === 'success' ? '成功' : (l.status === 'failed' ? '失败' : '运行中');
+            return '<tr><td>' + l.id + '</td><td>' + l.task_name + '</td><td><span class="badge ' + statusClass + '">' + statusText + '</span></td><td>' + (l.started_at || '-') + '</td><td>' + (l.completed_at || '-') + '</td><td>' + (l.error_message || '-') + '</td></tr>';
+        }).join('');
+    });
+}
+
+function loadSessions() {
+    var search = document.getElementById('session-search').value;
+    safeFetch('/api/super_admin/sessions?username=' + encodeURIComponent(search)).then(function(data) {
+        if (!data.success) return;
+        var d = data.data || {};
+        var stats = d.stats || {};
+        var activeEl = document.getElementById('session-active');
+        var expiredEl = document.getElementById('session-expired');
+        if (activeEl) activeEl.textContent = stats.active_count || 0;
+        if (expiredEl) expiredEl.textContent = stats.expired_count || 0;
+        
+        var tbody = document.querySelector('#session-table tbody');
+        tbody.innerHTML = (d.sessions || []).map(function(s) {
+            var statusClass = s.status === 'active' ? 'badge-success' : 'badge-gray';
+            var statusText = s.status === 'active' ? '活跃' : '已过期';
+            return '<tr><td>' + s.id + '</td><td>' + s.username + '</td><td>' + s.role + '</td><td>' + (s.login_time || '-') + '</td><td>' + (s.last_activity || '-') + '</td><td>' + (s.ip_address || '-') + '</td><td><span class="badge ' + statusClass + '">' + statusText + '</span></td><td><button class="btn-sm btn-danger" onclick="terminateSession(' + s.id + ')">终止</button></td></tr>';
+        }).join('');
+    });
+}
+
+function terminateSession(sessionId) {
+    if (!confirm('确定终止此会话？用户将被强制退出登录。')) return;
+    safeFetch('/api/super_admin/sessions/' + sessionId, { method: 'DELETE' }).then(function(data) {
+        if (data.success) {
+            alert('会话已终止');
+            loadSessions();
+        } else {
+            alert('操作失败: ' + (data.message || '未知错误'));
+        }
+    });
+}
+
+function terminateAllSessions() {
+    if (!confirm('确定终止所有活跃会话？所有用户将被强制退出登录！')) return;
+    safeFetch('/api/super_admin/sessions/terminate_all', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+    }).then(function(data) {
+        if (data.success) {
+            alert(data.message);
+            loadSessions();
+        } else {
+            alert('操作失败: ' + (data.message || '未知错误'));
+        }
+    });
 }
 
 document.addEventListener('DOMContentLoaded', function() {
