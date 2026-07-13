@@ -75,7 +75,8 @@ function setResource(type, percent) {
 function loadOverview() {
     safeFetch('/api/super_admin/overview').then(function(data) {
         if (!data.success) return;
-        var s = data.stats || {};
+        var d = data.data || {};
+        var s = d.stats || {};
         var statUsers = document.getElementById('stat-users');
         if (statUsers) statUsers.textContent = s.total_users || '--';
         var statExams = document.getElementById('stat-exams');
@@ -86,7 +87,7 @@ function loadOverview() {
         if (statRoutes) statRoutes.textContent = s.total_routes || '--';
         var statAgent = document.getElementById('stat-agent');
         if (statAgent) statAgent.textContent = s.total_questions || '--';
-        var activity = data.recent_activity || [];
+        var activity = d.recent_activity || [];
         var tbody = document.getElementById('recent-activity');
         if (tbody && activity.length) {
             tbody.innerHTML = activity.map(function(a) {
@@ -99,13 +100,14 @@ function loadOverview() {
 function loadResources() {
     safeFetch('/api/super_admin/resources').then(function(data) {
         if (!data.success) return;
-        setResource('cpu', (data.cpu && data.cpu.percent) || 0);
-        setResource('mem', (data.memory && data.memory.percent) || 0);
-        setResource('disk', (data.disk && data.disk.percent) || 0);
+        var d = data.data || {};
+        setResource('cpu', (d.cpu && d.cpu.percent) || 0);
+        setResource('mem', (d.memory && d.memory.percent) || 0);
+        setResource('disk', (d.disk && d.disk.percent) || 0);
         var cpuInfo = document.getElementById('cpu-info');
         var memInfo = document.getElementById('mem-info');
-        if (cpuInfo && data.cpu) cpuInfo.innerHTML = '<div class="info-card-value">' + (data.cpu.cores || 0) + ' 核心</div><div class="info-card-title">CPU 核心数</div>';
-        if (memInfo && data.memory) memInfo.innerHTML = '<div class="info-card-value">' + data.memory.used_gb + ' / ' + data.memory.total_gb + ' GB</div><div class="info-card-title">内存使用</div>';
+        if (cpuInfo && d.cpu) cpuInfo.innerHTML = '<div class="info-card-value">' + (d.cpu.cores || 0) + ' 核心</div><div class="info-card-title">CPU 核心数</div>';
+        if (memInfo && d.memory) memInfo.innerHTML = '<div class="info-card-value">' + d.memory.used_gb + ' / ' + d.memory.total_gb + ' GB</div><div class="info-card-title">内存使用</div>';
     });
     initResourceChart();
 }
@@ -116,10 +118,11 @@ function loadLogs() {
     safeFetch('/api/super_admin/logs?page=' + currentLogPage + '&keyword=' + encodeURIComponent(keyword) + '&level=' + level).then(function(data) {
         var tbody = document.querySelector('#log-table tbody');
         if (!data.success) { tbody.innerHTML = '<tr><td colspan="4" class="empty-state">加载失败</td></tr>'; return; }
-        tbody.innerHTML = data.logs.map(function(l) {
+        var d = data.data || {};
+        tbody.innerHTML = (d.logs || []).map(function(l) {
             return '<tr><td>' + (l.created_at || '-') + '</td><td><span class="status-badge ' + (l.level || 'info') + '">' + (l.level || '-') + '</span></td><td>' + (l.module || '-') + '</td><td>' + l.message + '</td></tr>';
         }).join('');
-        renderPagination('log-pagination', data.total, data.page, data.per_page, function(p) { currentLogPage = p; loadLogs(); });
+        renderPagination('log-pagination', d.total || 0, d.page || 1, d.per_page || 20, function(p) { currentLogPage = p; loadLogs(); });
     });
 }
 
@@ -129,10 +132,11 @@ function loadUsers() {
     safeFetch('/api/super_admin/users?page=' + currentUserPage + '&keyword=' + encodeURIComponent(search) + '&role=' + role).then(function(data) {
         var tbody = document.querySelector('#user-table tbody');
         if (!data.success) { tbody.innerHTML = '<tr><td colspan="7" class="empty-state">加载失败</td></tr>'; return; }
-        tbody.innerHTML = data.users.map(function(u) {
+        var d = data.data || {};
+        tbody.innerHTML = (d.users || []).map(function(u) {
             return '<tr><td>' + u.id + '</td><td>' + u.username + '</td><td>' + (u.email || '-') + '</td><td>' + u.role + '</td><td><span class="status-badge ' + (u.is_active ? 'active' : 'pending') + '">' + (u.is_active ? '活跃' : '禁用') + '</span></td><td>' + (u.created_at ? u.created_at.slice(0,10) : '-') + '</td><td><button class="btn-secondary" style="width:auto;display:inline;padding:4px 10px;margin-right:4px;" onclick="editUser(' + u.id + ')">编辑</button><button class="btn-secondary" style="width:auto;display:inline;padding:4px 10px;margin-right:4px;" onclick="toggleUserStatus(' + u.id + ', ' + (u.is_active ? 0 : 1) + ')">' + (u.is_active ? '禁用' : '启用') + '</button><button class="btn-secondary" style="width:auto;display:inline;padding:4px 10px;" onclick="deleteUser(' + u.id + ')">删除</button></td></tr>';
         }).join('');
-        renderPagination('user-pagination', data.total, data.page, data.per_page, function(p) { currentUserPage = p; loadUsers(); });
+        renderPagination('user-pagination', d.total || 0, d.page || 1, d.per_page || 20, function(p) { currentUserPage = p; loadUsers(); });
     });
 }
 
@@ -186,8 +190,9 @@ function loadExams() {
     safeFetch('/api/super_admin/exams?page=' + currentExamPage + '&keyword=' + encodeURIComponent(search) + '&status=' + status).then(function(data) {
         var tbody = document.querySelector('#exam-table tbody');
         if (!data.success) { tbody.innerHTML = '<tr><td colspan="7" class="empty-state">加载失败</td></tr>'; return; }
+        var d = data.data || {};
         
-        var stats = data.stats || {};
+        var stats = d.stats || {};
         var examTotal = document.getElementById('exam-total');
         var examActive = document.getElementById('exam-active');
         var examCompleted = document.getElementById('exam-completed');
@@ -197,10 +202,10 @@ function loadExams() {
         if (examCompleted) examCompleted.textContent = stats.completed || '--';
         if (examAvg) examAvg.textContent = stats.avg_score || '--';
         
-        tbody.innerHTML = data.exams.map(function(e) {
+        tbody.innerHTML = (d.exams || []).map(function(e) {
             return '<tr><td>' + e.id + '</td><td>' + e.title + '</td><td>' + (e.subject || '-') + '</td><td>' + (e.duration || '-') + '分钟</td><td>' + (e.question_count || '-') + '</td><td><span class="status-badge ' + (e.status === 'active' ? 'active' : 'completed') + '">' + (e.status === 'active' ? '进行中' : '已完成') + '</span></td><td>' + (e.created_at ? e.created_at.slice(0,10) : '-') + '</td></tr>';
         }).join('');
-        renderPagination('exam-pagination', data.total, data.page, data.per_page, function(p) { currentExamPage = p; loadExams(); });
+        renderPagination('exam-pagination', d.total || 0, d.page || 1, d.per_page || 20, function(p) { currentExamPage = p; loadExams(); });
     });
 }
 
@@ -208,20 +213,22 @@ function loadRoutes() {
     var search = document.getElementById('route-search').value;
     safeFetch('/api/super_admin/routes').then(function(data) {
         var tbody = document.querySelector('#route-table tbody');
-        var routes = data.routes || [];
+        var d = data.data || {};
+        var routes = d.routes || [];
         if (search) routes = routes.filter(function(r) { return r.path.indexOf(search) !== -1; });
         tbody.innerHTML = routes.map(function(r) {
             return '<tr><td>' + r.path + '</td><td>' + r.endpoint + '</td><td>' + r.methods + '</td></tr>';
         }).join('');
         var routeCount = document.getElementById('route-count');
-        if (routeCount) routeCount.textContent = data.total || 0;
+        if (routeCount) routeCount.textContent = d.total || 0;
     });
 }
 
 function loadEngines() {
     safeFetch('/api/super_admin/engines').then(function(data) {
         var grid = document.getElementById('engine-grid');
-        grid.innerHTML = (data.engines || []).map(function(e) {
+        var d = data.data || {};
+        grid.innerHTML = (d.engines || []).map(function(e) {
             return '<div class="engine-card"><div class="engine-header"><div class="engine-dot ' + (e.status === 'active' ? '' : 'inactive') + '"></div><div class="engine-name">' + (e.icon || '⚙️') + ' ' + e.name + '</div></div><div class="engine-desc">' + e.desc + '</div></div>';
         }).join('');
     });
@@ -231,7 +238,8 @@ function loadEmployees() {
     safeFetch('/api/super_admin/employees').then(function(data) {
         var tbody = document.querySelector('#employee-table tbody');
         if (!data.success) { tbody.innerHTML = '<tr><td colspan="6" class="empty-state">加载失败</td></tr>'; return; }
-        tbody.innerHTML = data.employees.map(function(e) {
+        var d = data.data || {};
+        tbody.innerHTML = (d.employees || []).map(function(e) {
             return '<tr><td>' + e.id + '</td><td>' + e.name + '</td><td>' + (e.employee_code || '-') + '</td><td>' + (e.accuracy || '-') + '%</td><td>' + (e.total_tasks || 0) + '</td><td><span class="status-badge ' + (e.status === 'active' ? 'active' : 'pending') + '">' + (e.status === 'active' ? '活跃' : '离线') + '</span></td></tr>';
         }).join('');
     });
@@ -239,7 +247,8 @@ function loadEmployees() {
 
 function loadAgentStatus() {
     safeFetch('/api/super_admin/agents').then(function(data) {
-        var agents = data.agents || [];
+        var d = data.data || {};
+        var agents = d.agents || [];
         var running = agents.filter(function(a) { return a.status === 'running'; }).length;
         var stopped = agents.filter(function(a) { return a.status === 'stopped'; }).length;
         var agentTotal = document.getElementById('agent-total');
@@ -293,12 +302,12 @@ function agentAction(agentId, action) {
 function loadBackups() {
     safeFetch('/api/super_admin/backups').then(function(data) {
         var list = document.getElementById('backup-list');
-        var backups = data.data || [];
-        if (!data.success || !backups.length) {
+        var d = data.data || [];
+        if (!data.success || !d.length) {
             list.innerHTML = '<div class="empty-state">暂无备份</div>';
             return;
         }
-        list.innerHTML = backups.map(function(b) {
+        list.innerHTML = d.map(function(b) {
             var size = (b.backup_size || 0) > 1024 * 1024 ? (b.backup_size / (1024 * 1024)).toFixed(2) + ' MB' : 
                        (b.backup_size || 0) > 1024 ? (b.backup_size / 1024).toFixed(2) + ' KB' : (b.backup_size || 0) + ' B';
             return '<div class="backup-item"><div class="backup-info"><p class="backup-name">备份 ' + (b.backup_id || '-') + '</p><p class="backup-meta">' + size + ' · ' + (b.backup_time || '-') + '</p></div><div class="backup-actions"><button class="btn-icon primary" onclick="restoreBackup(\'' + b.backup_id + '\')" title="恢复"><i class="fas fa-download"></i></button><button class="btn-icon danger" onclick="deleteBackup(\'' + b.backup_id + '\')" title="删除"><i class="fas fa-trash"></i></button></div></div>';
@@ -309,7 +318,8 @@ function loadBackups() {
 function loadSettings() {
     safeFetch('/api/super_admin/settings').then(function(data) {
         var content = document.getElementById('settings-content');
-        var s = data.settings || {};
+        var d = data.data || {};
+        var s = d.settings || {};
         var settingsHtml = '<div class="settings-grid">';
         settingsHtml += '<div class="settings-card"><h4>系统设置</h4>';
         var entries = Object.entries(s);
@@ -737,18 +747,19 @@ function logout() { window.location.href = '/logout'; }
 function loadSecurityStats() {
     safeFetch('/api/super_admin/security/intrusion_stats').then(function(data) {
         if (!data.success) return;
-        var stats = data.data;
-        document.getElementById('security-sql-injection').textContent = stats.sql_injection_count || 0;
-        document.getElementById('security-access-denied').textContent = stats.access_denied_count || 0;
-        document.getElementById('security-failed-login').textContent = stats.failed_login_today || 0;
-        document.getElementById('security-suspicious-ips').textContent = (stats.suspicious_ips || []).length;
+        var d = data.data || {};
+        document.getElementById('security-sql-injection').textContent = d.sql_injection_count || 0;
+        document.getElementById('security-access-denied').textContent = d.access_denied_count || 0;
+        document.getElementById('security-failed-login').textContent = d.failed_login_today || 0;
+        document.getElementById('security-suspicious-ips').textContent = (d.suspicious_ips || []).length;
     });
 }
 
 function loadSecurityAuditLogs() {
     safeFetch('/api/super_admin/security/audit_logs').then(function(data) {
         if (!data.success) return;
-        var logs = data.data ? data.data.logs : [];
+        var d = data.data || {};
+        var logs = d.logs || [];
         var tbody = document.querySelector('#security-audit-table tbody');
         tbody.innerHTML = logs.length ? logs.map(function(log) {
             return '<tr><td>' + (log.timestamp || '-') + '</td><td>' + (log.operation || '-') + '</td><td>' + (log.target || '-') + '</td><td>' + (log.operator || '-') + '</td><td>' + (log.ip_address || '-') + '</td><td>' + (log.status || '-') + '</td></tr>';
@@ -759,39 +770,39 @@ function loadSecurityAuditLogs() {
 function loadLearningAnalytics() {
     safeFetch('/api/super_admin/ai_analytics/learning').then(function(data) {
         if (!data.success) return;
-        var analytics = data.data;
+        var d = data.data || {};
         var container = document.getElementById('learning-analytics');
-        container.innerHTML = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;"><div><h4>学习趋势（最近7天）</h4><ul>' + (analytics.learning_trend || []).map(function(t) {
+        container.innerHTML = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;"><div><h4>学习趋势（最近7天）</h4><ul>' + (d.learning_trend || []).map(function(t) {
             return '<li>' + t.date + ': ' + t.count + '次学习</li>';
-        }).join('') + '</ul></div><div><h4>活跃学习者TOP10</h4><ul>' + (analytics.active_learners || []).map(function(l) {
+        }).join('') + '</ul></div><div><h4>活跃学习者TOP10</h4><ul>' + (d.active_learners || []).map(function(l) {
             return '<li>' + l.username + ': ' + l.learning_count + '次学习</li>';
-        }).join('') + '</ul></div></div><div style="margin-top:16px;"><strong>总学习记录:</strong> ' + (analytics.total_learning_records || 0) + '</div>';
+        }).join('') + '</ul></div></div><div style="margin-top:16px;"><strong>总学习记录:</strong> ' + (d.total_learning_records || 0) + '</div>';
     });
 }
 
 function loadExamAnalytics() {
     safeFetch('/api/super_admin/ai_analytics/exam').then(function(data) {
         if (!data.success) return;
-        var analytics = data.data;
+        var d = data.data || {};
         var container = document.getElementById('exam-analytics');
-        container.innerHTML = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;"><div><h4>考试趋势（最近7天）</h4><ul>' + (analytics.exam_trend || []).map(function(t) {
+        container.innerHTML = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;"><div><h4>考试趋势（最近7天）</h4><ul>' + (d.exam_trend || []).map(function(t) {
             return '<li>' + t.date + ': ' + t.count + '场考试</li>';
-        }).join('') + '</ul></div><div><h4>科目统计TOP5</h4><ul>' + (analytics.subject_stats || []).map(function(s) {
+        }).join('') + '</ul></div><div><h4>科目统计TOP5</h4><ul>' + (d.subject_stats || []).map(function(s) {
             return '<li>' + s.subject + ': ' + s.exam_count + '场考试，平均分 ' + s.avg_score + '</li>';
-        }).join('') + '</ul></div></div><div style="margin-top:16px;"><strong>平均分:</strong> ' + analytics.avg_score + ' | <strong>通过率:</strong> ' + analytics.pass_rate + '% | <strong>总考试记录:</strong> ' + analytics.total_results + '</div>';
+        }).join('') + '</ul></div></div><div style="margin-top:16px;"><strong>平均分:</strong> ' + d.avg_score + ' | <strong>通过率:</strong> ' + d.pass_rate + '% | <strong>总考试记录:</strong> ' + d.total_results + '</div>';
     });
 }
 
 function loadBehaviorAnalytics() {
     safeFetch('/api/super_admin/ai_analytics/user_behavior').then(function(data) {
         if (!data.success) return;
-        var analytics = data.data;
+        var d = data.data || {};
         var container = document.getElementById('behavior-analytics');
-        container.innerHTML = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;"><div><h4>活跃用户趋势（最近7天）</h4><ul>' + (analytics.active_user_trend || []).map(function(t) {
+        container.innerHTML = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;"><div><h4>活跃用户趋势（最近7天）</h4><ul>' + (d.active_user_trend || []).map(function(t) {
             return '<li>' + t.date + ': ' + t.count + '位活跃用户</li>';
-        }).join('') + '</ul></div><div><h4>角色分布</h4><ul>' + (analytics.role_distribution || []).map(function(r) {
+        }).join('') + '</ul></div><div><h4>角色分布</h4><ul>' + (d.role_distribution || []).map(function(r) {
             return '<li>' + r.role + ': ' + r.count + '人</li>';
-        }).join('') + '</ul></div></div><div style="margin-top:16px;"><h4>热门页面TOP10</h4><ul>' + (analytics.top_pages || []).map(function(p) {
+        }).join('') + '</ul></div></div><div style="margin-top:16px;"><h4>热门页面TOP10</h4><ul>' + (d.top_pages || []).map(function(p) {
             return '<li>' + p.path + ': ' + p.count + '次访问</li>';
         }).join('') + '</ul></div>';
     });
@@ -801,7 +812,8 @@ var currentNotificationPage = 1;
 function loadNotifications() {
     safeFetch('/api/super_admin/notifications?page=' + currentNotificationPage).then(function(data) {
         if (!data.success) return;
-        var notifications = data.data ? data.data.notifications : [];
+        var d = data.data || {};
+        var notifications = d.notifications || [];
         var tbody = document.querySelector('#notification-table tbody');
         tbody.innerHTML = notifications.length ? notifications.map(function(n) {
             var typeClass = { 'info': 'badge-gray', 'success': 'badge-success', 'warning': 'badge-warning', 'error': 'badge-danger' }[n.type] || 'badge-gray';
@@ -848,7 +860,8 @@ var currentAnnouncementPage = 1;
 function loadAnnouncements() {
     safeFetch('/api/super_admin/announcements?page=' + currentAnnouncementPage).then(function(data) {
         if (!data.success) return;
-        var announcements = data.data ? data.data.announcements : [];
+        var d = data.data || {};
+        var announcements = d.announcements || [];
         var tbody = document.querySelector('#announcement-table tbody');
         tbody.innerHTML = announcements.length ? announcements.map(function(a) {
             var statusClass = a.is_published ? 'badge-success' : 'badge-gray';
