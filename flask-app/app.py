@@ -759,7 +759,7 @@ def get_system_settings():
     """获取系统设置"""
     settings = {
         'system_name': 'MTSCOS AI 智能学习评估系统',
-        'version': "8.5.0",
+        'version': "8.6.0",
         'description': '基于AI的智能学习评估系统,提供个性化学习体验和智能评估功能.',
         'admin_email': 'admin@example.com',
         'maintenance_mode': False,
@@ -891,6 +891,22 @@ def security_check():
         if request.is_json or 'application/json' in request.headers.get('Accept', ''):
             return jsonify(result), result.get('status_code', 401)
         return redirect('/auth/login')
+
+@app.before_request
+def update_session_activity():
+    """更新会话活动时间 - 用于超级管理员会话管理"""
+    session_id = session.get('session_id')
+    if session_id and session.get('logged_in'):
+        try:
+            from app.api.super_admin_api import get_db_connection
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            cursor.execute('UPDATE user_sessions SET last_activity = ? WHERE session_id = ? AND status = "active"',
+                         (datetime.now().isoformat(), session_id))
+            conn.commit()
+            conn.close()
+        except Exception as e:
+            logger.debug(f"更新会话活动失败: {e}")
 
 # 添加安全响应头到所有响应
 @app.after_request
@@ -4991,7 +5007,7 @@ def get_dashboard_stats_public():
 # 系统状态
 @app.route('/api/system/status')
 def system_status():
-    return jsonify({'status': 'running', 'version': "8.5.0", 'timestamp': datetime.now().isoformat()})
+    return jsonify({'status': 'running', 'version': "8.6.0", 'timestamp': datetime.now().isoformat()})
 
 # 用户信息API - 改用/api/users/info避免路由冲突
 @app.route('/api/users/info/<username>')
