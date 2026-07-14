@@ -1,0 +1,206 @@
+
+version: '3.8'
+
+services:
+  # 主应用服务 - 节点1
+  mtscos-app-1:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mtscos-app-1
+    restart: unless-stopped
+    environment:
+      - FLASK_APP=app.py
+      - FLASK_ENV=production
+      - SECRET_KEY=${SECRET_KEY:-your-secret-key-here}
+      - DATABASE_URI=postgresql://admin:${POSTGRES_PASSWORD:-password}@postgres:5432/mtscos_db
+      - SERVER_HOST=0.0.0.0
+      - SERVER_PORT=8888
+      - CLUSTER_NODE_ID=node-1
+      - CLUSTER_NODE_ROLE=master
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    networks:
+      - mtscos-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8888/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    depends_on:
+      - redis
+      - postgres
+
+  # 应用服务 - 节点2
+  mtscos-app-2:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mtscos-app-2
+    restart: unless-stopped
+    environment:
+      - FLASK_APP=app.py
+      - FLASK_ENV=production
+      - SECRET_KEY=${SECRET_KEY:-your-secret-key-here}
+      - DATABASE_URI=postgresql://admin:${POSTGRES_PASSWORD:-password}@postgres:5432/mtscos_db
+      - SERVER_HOST=0.0.0.0
+      - SERVER_PORT=8888
+      - CLUSTER_NODE_ID=node-2
+      - CLUSTER_NODE_ROLE=slave
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    networks:
+      - mtscos-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8888/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    depends_on:
+      - redis
+      - postgres
+
+  # 应用服务 - 节点3
+  mtscos-app-3:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mtscos-app-3
+    restart: unless-stopped
+    environment:
+      - FLASK_APP=app.py
+      - FLASK_ENV=production
+      - SECRET_KEY=${SECRET_KEY:-your-secret-key-here}
+      - DATABASE_URI=postgresql://admin:${POSTGRES_PASSWORD:-password}@postgres:5432/mtscos_db
+      - SERVER_HOST=0.0.0.0
+      - SERVER_PORT=8888
+      - CLUSTER_NODE_ID=node-3
+      - CLUSTER_NODE_ROLE=slave
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    networks:
+      - mtscos-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8888/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    depends_on:
+      - redis
+      - postgres
+
+  # Redis缓存服务
+  redis:
+    image: redis:7.4-alpine
+    container_name: mtscos-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./redis-data:/data
+    networks:
+      - mtscos-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Nginx负载均衡
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: mtscos-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.cluster.conf:/etc/nginx/nginx.conf
+      - ./ssl:/etc/nginx/ssl
+      - ./static:/usr/share/nginx/html/static
+    networks:
+      - mtscos-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    depends_on:
+      - mtscos-app-1
+      - mtscos-app-2
+      - mtscos-app-3
+
+  # PostgreSQL数据库
+  postgres:
+    image: postgres:17-alpine
+    container_name: mtscos-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=mtscos_db
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-password}
+      - POSTGRES_INITDB_ARGS=--encoding=UTF-8
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
+    networks:
+      - mtscos-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d mtscos_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Prometheus监控
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    container_name: mtscos-prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.cluster.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus/data:/prometheus
+    networks:
+      - mtscos-network
+
+  # Grafana可视化
+  grafana:
+    image: grafana/grafana:11.2.0
+    container_name: mtscos-grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+    volumes:
+      - ./grafana/data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    networks:
+      - mtscos-network
+
+networks:
+  mtscos-network:
+    driver: bridge
+
+volumes:
+  redis-data:
+  postgres-data:
+  prometheus-data:
+  grafana-data:

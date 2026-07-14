@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI生成测试 - {{ test_content.title }}</title>
+    <style>
+        /* 基础样式 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* 头部样式 */
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header h1 {
+            color: #343a40;
+            font-size: 24px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .back-btn {
+            background: #f8f9fa;
+            color: #343a40;
+            border: 2px solid #dee2e6;
+            padding: 8px 16px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .back-btn:hover {
+            background: #e9ecef;
+            border-color: #adb5bd;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            font-size: 16px;
+        }
+        
+        .username {
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .logout-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .logout-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        /* 主要内容样式 */
+        .container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 40px;
+        }
+        
+        .test-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+            max-width: 1200px;
+            width: 100%;
+        }
+        
+        .test-header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e3f2fd;
+        }
+        
+        .test-title {
+            color: #343a40;
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+        
+        .test-meta {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 20px;
+            color: #6c757d;
+            font-size: 16px;
+        }
+        
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .meta-value {
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        /* 测试内容样式 */
+        .test-content {
+            margin-bottom: 30px;
+        }
+        
+        .section-title {
+            color: #343a40;
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e3f2fd;
+        }
+        
+        .question {
+            background: #f8f9fa;
+            border: 2px solid #e3f2fd;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 25px;
+            transition: all 0.3s ease;
+        }
+        
+        .question:hover {
+            border-color: #667eea;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.1);
+        }
+        
+        .question-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+        }
+        
+        .question-number {
+            font-size: 18px;
+            font-weight: 700;
+            color: #667eea;
+            background: #e7f3ff;
+            padding: 5px 15px;
+            border-radius: 20px;
+        }
+        
+        .question-difficulty {
+            font-size: 14px;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-weight: 600;
+        }
+        
+        .difficulty-easy {
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+        
+        .difficulty-medium {
+            background: #fff3e0;
+            color: #ef6c00;
+        }
+        
+        .difficulty-hard {
+            background: #ffebee;
+            color: #c62828;
+        }
+        
+        .question-content {
+            font-size: 18px;
+            line-height: 1.6;
+            color: #343a40;
+            margin-bottom: 25px;
+        }
+        
+        .options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        .option {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .option:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+        
+        .option.selected {
+            border-color: #667eea;
+            background: #e7f3ff;
+        }
+        
+        .option-input {
+            accent-color: #667eea;
+            width: 20px;
+            height: 20px;
+        }
+        
+        .option-label {
+            font-size: 16px;
+            color: #343a40;
+            cursor: pointer;
+        }
+        
+        /* 提交按钮样式 */
+        .test-footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 30px;
+            border-top: 2px solid #e3f2fd;
+        }
+        
+        .submit-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 18px 60px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-size: 18px;
+            font-weight: 700;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .submit-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        /* 加载动画 */
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+        }
+        
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 6px solid #e3f2fd;
+            border-top: 6px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .loading-text {
+            color: #667eea;
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        /* 页脚样式 */
+        .footer {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            text-align: center;
+            color: #6c757d;
+            font-size: 14px;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .header {
+                padding: 15px 20px;
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .header-left {
+                flex-direction: column;
+                gap: 10px;
+                text-align: center;
+            }
+            
+            .header h1 {
+                font-size: 20px;
+            }
+            
+            .user-info {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .container {
+                padding: 20px;
+            }
+            
+            .test-container {
+                padding: 20px;
+            }
+            
+            .test-title {
+                font-size: 24px;
+            }
+            
+            .test-meta {
+                flex-direction: column;
+                gap: 15px;
+                align-items: center;
+            }
+            
+            .options {
+                grid-template-columns: 1fr;
+            }
+            
+            .section-title {
+                font-size: 20px;
+            }
+        }
+    </style>
+    <!-- FontAwesome CDN removed -->
+
+<style>
+.svg-icon {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    vertical-align: -0.125em;
+    fill: currentColor;
+}
+</style>
+</head>
+<body>
+    <!-- 头部 -->
+    <header class="header">
+        <div class="header-left">
+            <a href="/test-system" class="back-btn">
+                <svg class="svg-icon" viewBox="0 0 448 512" width="16" height="16"><path d="M257.5 445.1l-22.2 22.2c-9.4 9.4-24.6 9.4-33.9 0L7 273c-9.4-9.4-9.4-24.6 0-33.9L201.4 44.7c9.4-9.4 24.6-9.4 33.9 0l22.2 22.2c9.5 9.5 9.3 25-.4 34.3L136.6 216H424c13.3 0 24 10.7 24 24v32c0 13.3-10.7 24-24 24H136.6l120.5 114.8c9.8 9.3 10 24.8.4 34.3z"/></svg> 返回测试系统
+            </a>
+            <h1>
+                <span>📝</span>
+                AI生成测试
+            </h1>
+        </div>
+        <div class="user-info">
+            <span class="username">欢迎, {{ user.username }}！</span>
+            <a href="/auth/logout" class="logout-btn">退出登录</a>
+        </div>
+    </header>
+    
+    <!-- 主要内容 -->
+    <main class="container">
+        <div class="test-container">
+            <!-- 加载状态 -->
+            <div class="loading" id="loading-state">
+                <div class="loading-spinner"></div>
+                <div class="loading-text">正在加载测试内容...</div>
+                <p style="margin-top: 10px; color: #6c757d;">请稍候，正在准备测试题目</p>
+            </div>
+            
+            <!-- 测试内容 -->
+            <div id="test-content-container" style="display: none;">
+                <div class="test-header">
+                    <h2 class="test-title">
+                        <span>🎯</span>
+                        <span id="test-title"></span>
+                    </h2>
+                    <div class="test-meta">
+                        <div class="meta-item">
+                            <span>⏱️ 考试时长:</span>
+                            <span class="meta-value" id="test-duration"></span>
+                        </div>
+                        <div class="meta-item">
+                            <span>📊 题目数量:</span>
+                            <span class="meta-value" id="test-question-count"></span>
+                        </div>
+                        <div class="meta-item">
+                            <span>🌟 语言类型:</span>
+                            <span class="meta-value" id="test-language"></span>
+                        </div>
+                        <div class="meta-item">
+                            <span>📋 测试类型:</span>
+                            <span class="meta-value" id="test-type"></span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="test-content" id="test-content">
+                    <!-- 动态生成的测试题目将显示在这里 -->
+                </div>
+                
+                <div class="test-footer">
+                    <button class="submit-btn" id="submit-test">
+                        <svg class="svg-icon" viewBox="0 0 512 512" fill="#28a745" width="16" height="16"><path d="M256 8C119 8 8 119 8 256s111 248 248 248 248-111 248-248S393 8 256 8zm-24 336l-112-112 17-17 95 95 207-207 17 17z"/></svg> 提交测试
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 错误状态 -->
+            <div id="error-state" style="display: none; text-align: center; padding: 60px 20px; color: #dc3545;">
+                <svg class="svg-icon" viewBox="0 0 512 512" width="16" height="16"><path d="M256 8C119 8 8 119 8 256s111 248 248 248 248-111 248-248S393 8 256 8zm0 400c-17.7 0-32-14.3-32-32s14.3-32 32-32 32 14.3 32 32-14.3 32-32 32zm32-160h-64c-17.7 0-32-14.3-32-32V176c0-17.7 14.3-32 32-32h64c17.7 0 32 14.3 32 32v40c0 17.7-14.3 32-32 32z"/></svg>
+                <h3 style="font-size: 24px; margin-bottom: 10px;">加载测试失败</h3>
+                <p style="margin-bottom: 20px;">无法加载测试内容，请尝试重新开始</p>
+                <a href="/level-assessment" class="back-btn" style="display: inline-block;">
+                    <i class="fas fa-redo"></i> 重新开始
+                </a>
+            </div>
+        </div>
+    </main>
+    
+    <!-- 页脚 -->
+    <footer class="footer">
+        <p>&copy; 2026 AI生成测试系统. 保留所有权利.</p>
+    </footer>
+    
+    <script>
+        // 页面加载时初始化测试内容
+        document.addEventListener('DOMContentLoaded', function() {
+            // 从localStorage获取测试内容
+            const testContentJson = localStorage.getItem('current_test_content');
+            
+            if (testContentJson) {
+                try {
+                    const testContent = JSON.parse(testContentJson);
+                    
+                    // 渲染测试内容
+                    renderTestContent(testContent);
+                    
+                    // 切换显示状态
+                    document.getElementById('loading-state').style.display = 'none';
+                    document.getElementById('test-content-container').style.display = 'block';
+                } catch (error) {
+                    console.error('解析测试内容失败:', error);
+                    showErrorState();
+                }
+            } else {
+                console.error('未找到测试内容');
+                showErrorState();
+            }
+        });
+        
+        // 渲染测试内容
+        function renderTestContent(testContent) {
+            // 设置测试标题和元数据
+            document.getElementById('test-title').textContent = testContent.title;
+            document.getElementById('test-duration').textContent = `${testContent.duration}分钟`;
+            document.getElementById('test-question-count').textContent = testContent.total_questions;
+            document.getElementById('test-language').textContent = testContent.language === 'japanese' ? '日语' : '英语';
+            document.getElementById('test-type').textContent = testContent.test_type === 'assessment' ? '等级评估' : '练习测试';
+            
+            // 获取测试内容容器
+            const testContentContainer = document.getElementById('test-content');
+            
+            // 按章节分组题目
+            const questionsBySection = {};
+            testContent.questions.forEach(question => {
+                if (!questionsBySection[question.section]) {
+                    questionsBySection[question.section] = [];
+                }
+                questionsBySection[question.section].push(question);
+            });
+            
+            // 生成HTML内容
+            let html = '';
+            
+            // 遍历每个章节
+            for (const [section, questions] of Object.entries(questionsBySection)) {
+                html += `
+                    <div class="section">
+                        <h3 class="section-title">
+                            <i class="fas fa-book-open"></i>
+                            ${section}
+                        </h3>
+                `;
+                
+                // 遍历每个题目
+                questions.forEach((question, index) => {
+                    const questionNumber = index + 1;
+                    html += `
+                        <div class="question" id="question-${questionNumber}">
+                            <div class="question-header">
+                                <span class="question-number">第 ${questionNumber} 题</span>
+                                <span class="question-difficulty difficulty-${question.difficulty}">${question.difficulty === 'easy' ? '简单' : question.difficulty === 'medium' ? '中等' : '困难'}</span>
+                            </div>
+                            <div class="question-content">
+                                ${question.content}
+                            </div>
+                            <div class="options">
+                    `;
+                    
+                    // 生成选项
+                    question.options.forEach((option, optIndex) => {
+                        const optionLetter = String.fromCharCode(65 + optIndex); // A, B, C, D
+                        html += `
+                                <div class="option">
+                                    <input type="radio" id="option-${questionNumber}-${optionLetter}" name="question-${questionNumber}" class="option-input">
+                                    <label for="option-${questionNumber}-${optionLetter}" class="option-label">${optionLetter}. ${option}</label>
+                                </div>
+                        `;
+                    });
+                    
+                    html += `
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += `
+                    </div>
+                `;
+            }
+            
+            // 更新测试内容
+            testContentContainer.innerHTML = html;
+            
+            // 添加选项选择事件
+            addOptionEvents();
+        }
+        
+        // 添加选项选择事件
+        function addOptionEvents() {
+            document.querySelectorAll('.option').forEach(option => {
+                option.addEventListener('click', function() {
+                    // 移除同组选项的选中状态
+                    const question = this.closest('.question');
+                    question.querySelectorAll('.option').forEach(opt => opt.classList.remove('selected'));
+                    // 添加当前选项的选中状态
+                    this.classList.add('selected');
+                    // 选中对应的radio按钮
+                    const radio = this.querySelector('.option-input');
+                    radio.checked = true;
+                });
+            });
+        }
+        
+        // 显示错误状态
+        function showErrorState() {
+            document.getElementById('loading-state').style.display = 'none';
+            document.getElementById('error-state').style.display = 'block';
+        }
+        
+        // 测试提交事件
+        document.getElementById('submit-test').addEventListener('click', function() {
+            if (confirm('确定要提交测试吗？提交后将无法修改答案。')) {
+                // 收集答案
+                const answers = {};
+                const questions = document.querySelectorAll('.question');
+                
+                questions.forEach((question, index) => {
+                    const questionNumber = index + 1;
+                    const selectedOption = question.querySelector('.option-input:checked');
+                    answers[`question-${questionNumber}`] = selectedOption ? selectedOption.id : null;
+                });
+                
+                // 获取当前测试内容
+                const testContentJson = localStorage.getItem('current_test_content');
+                if (testContentJson) {
+                    try {
+                        const testContent = JSON.parse(testContentJson);
+                        
+                        // 准备提交数据
+                        const submissionData = {
+                            test_id: testContent.test_id,
+                            test_results: {
+                                correct_answers: 0, // 这里需要根据实际答案计算
+                                total_answers: testContent.questions.length,
+                                user_answers: answers
+                            },
+                            test_type: testContent.test_type,
+                            language: testContent.language
+                        };
+                        
+                        // 调用API提交测试结果
+                        fetch('/api/submit-test-results', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify(submissionData)
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                // 测试提交成功，显示结果
+                                alert('测试提交成功！\n\n测试分数: ' + data.analysis.score + '\n新等级: ' + data.analysis.new_level);
+                                // 清除localStorage中的测试内容
+                                localStorage.removeItem('current_test_id');
+                                localStorage.removeItem('current_test_content');
+                                // 跳转到测试系统主页
+                                window.location.href = '/test-system';
+                            } else {
+                                alert('测试提交失败：' + data.message);
+                            }
+                        })
+                        .catch(error => {
+                            console.error('提交测试结果时出错:', error);
+                            alert('提交测试结果时发生错误，请稍后重试');
+                        });
+                    } catch (error) {
+                        console.error('处理测试内容时出错:', error);
+                        alert('处理测试内容时发生错误，请稍后重试');
+                    }
+                } else {
+                    alert('未找到测试内容，请重新开始测试');
+                }
+            }
+        });
+        
+        // 防止页面意外关闭
+        window.addEventListener('beforeunload', function(e) {
+            e.preventDefault();
+            e.returnValue = '';
+            return '您正在参加测试，确定要离开吗？';
+        });
+        
+        // 自动保存功能（每30秒）
+        setInterval(function() {
+            // 这里可以添加自动保存逻辑
+            console.log('自动保存测试进度...');
+        }, 30000);
+    </script>
+</body>
+</html>
