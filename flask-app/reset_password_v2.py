@@ -71,8 +71,19 @@ def test_login(username, password):
         return False
 
 if __name__ == "__main__":
-    username = "wuchenghao15"
-    new_password = "LoginMe.1988"
+    import sys
+    
+    if len(sys.argv) >= 3:
+        username = sys.argv[1]
+        new_password = sys.argv[2]
+    else:
+        username = os.environ.get('RESET_PASSWORD_USERNAME', '')
+        new_password = os.environ.get('RESET_PASSWORD_NEW_PASSWORD', '')
+    
+    if not username or not new_password:
+        print("用法: python reset_password_v2.py <username> <new_password>")
+        print("或设置环境变量: RESET_PASSWORD_USERNAME 和 RESET_PASSWORD_NEW_PASSWORD")
+        sys.exit(1)
     
     print(f"\n=== 更新用户 {username} 的密码 ===")
     update_password(username, new_password)

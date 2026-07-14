@@ -1,6 +1,3 @@
-import logging
-logger = logging.getLogger(__name__)
-
 # -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
@@ -18,6 +15,26 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.backends import default_backend
 import base64
+import logging
+logger = logging.getLogger(__name__)
+
+
+def get_certificate_key() -> bytes:
+    """从环境变量获取证书加密密钥"""
+    key = os.environ.get('CERTIFICATE_ENCRYPTION_KEY')
+    if key:
+        return key.encode()
+    logger.warning("[安全] 未设置CERTIFICATE_ENCRYPTION_KEY环境变量，使用默认密钥")
+    return b'MTSCOS_CERTIFICATE_KEY_2024'
+
+
+def get_certificate_salt() -> bytes:
+    """从环境变量获取证书加密盐值"""
+    salt = os.environ.get('CERTIFICATE_SALT')
+    if salt:
+        return salt.encode()
+    logger.warning("[安全] 未设置CERTIFICATE_SALT环境变量，使用默认盐值")
+    return b'MTSCOS_CERT_SALT'
 import json
 from typing import Dict, Optional, Any
 
@@ -104,8 +121,8 @@ class UserCertificateManager:
     
     def _init_fernet(self) -> Fernet:
         """初始化Fernet加密器"""
-        password = b'MTSCOS_CERTIFICATE_KEY_2024'
-        salt = b'MTSCOS_CERT_SALT'
+        password = get_certificate_key()
+        salt = get_certificate_salt()
         
         kdf = PBKDF2HMAC(
             algorithm=hashes.SHA256(),

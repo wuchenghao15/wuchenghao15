@@ -1,6 +1,3 @@
-import logging
-logger = logging.getLogger(__name__)
-
 # -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """
@@ -16,6 +13,27 @@ import time
 import threading
 from datetime import datetime
 from typing import Dict, Optional, Any
+import logging
+logger = logging.getLogger(__name__)
+
+
+def get_json_encryption_key() -> bytes:
+    """从环境变量获取JSON加密密钥"""
+    key = os.environ.get('JSON_ENCRYPTION_KEY')
+    if key:
+        return key.encode()
+    logger.warning("[安全] 未设置JSON_ENCRYPTION_KEY环境变量，使用默认密钥")
+    return b'MTSCOS_JSON_ENCRYPTION_KEY_2024'
+
+
+def get_json_salt() -> bytes:
+    """从环境变量获取JSON加密盐值"""
+    salt = os.environ.get('JSON_SALT')
+    if salt:
+        return salt.encode()
+    logger.warning("[安全] 未设置JSON_SALT环境变量，使用默认盐值")
+    return b'MTSCOS_JSON_SALT'
+
 
 class JSONSyncManager:
     """JSON加密同步管理器"""
@@ -73,8 +91,8 @@ class JSONSyncManager:
         from cryptography.hazmat.backends import default_backend
         import base64
         
-        password = b'MTSCOS_JSON_ENCRYPTION_KEY_2024'
-        salt = b'MTSCOS_JSON_SALT'
+        password = get_json_encryption_key()
+        salt = get_json_salt()
         
         kdf = PBKDF2HMAC(
             algorithm=hashes.SHA256(),
@@ -97,8 +115,8 @@ class JSONSyncManager:
         from cryptography.hazmat.backends import default_backend
         import base64
         
-        password = b'MTSCOS_JSON_ENCRYPTION_KEY_2024'
-        salt = b'MTSCOS_JSON_SALT'
+        password = get_json_encryption_key()
+        salt = get_json_salt()
         
         kdf = PBKDF2HMAC(
             algorithm=hashes.SHA256(),
