@@ -142,11 +142,11 @@ function loadPaths() {
     const keyword = document.getElementById('searchKeyword').value;
     const status = document.getElementById('statusFilter').value;
     
-    fetch(`/api/learning_paths?keyword=${encodeURIComponent(keyword)}&status=${status}`)
+    fetch(`/api/learning/paths?keyword=${encodeURIComponent(keyword)}&status=${status}`)
         .then(res => res.json())
         .then(data => {
             if (data.code === 200) {
-                renderPaths(data.data);
+                renderPaths(data.data.paths);
             } else {
                 document.getElementById('pathList').innerHTML = '<tr><td colspan="7" class="text-center">加载失败</td></tr>';
             }
@@ -209,13 +209,10 @@ function savePath() {
         name: document.getElementById('pathName').value,
         description: document.getElementById('pathDescription').value,
         subject: document.getElementById('pathSubject').value,
-        grade: document.getElementById('pathGrade').value,
-        difficulty: document.getElementById('pathDifficulty').value,
-        target_duration: document.getElementById('pathDuration').value,
-        goals: document.getElementById('pathGoals').value.split('\n').filter(g => g.trim())
+        target_score: parseInt(document.getElementById('pathDuration').value) || 0
     };
     
-    const url = id ? `/api/learning_paths/${id}` : '/api/learning_paths';
+    const url = id ? `/api/learning/paths/${id}` : '/api/learning/paths';
     const method = id ? 'PUT' : 'POST';
     
     fetch(url, {
@@ -225,7 +222,7 @@ function savePath() {
     })
     .then(res => res.json())
     .then(data => {
-        if (data.code === 200) {
+        if (data.code === 200 || data.code === 201) {
             closeModal();
             loadPaths();
         } else {
@@ -236,7 +233,7 @@ function savePath() {
 }
 
 function editPath(id) {
-    fetch(`/api/learning_paths/${id}`)
+    fetch(`/api/learning/paths/${id}`)
         .then(res => res.json())
         .then(data => {
             if (data.code === 200) {
@@ -246,10 +243,7 @@ function editPath(id) {
                 document.getElementById('pathName').value = path.name || '';
                 document.getElementById('pathDescription').value = path.description || '';
                 document.getElementById('pathSubject').value = path.subject || '';
-                document.getElementById('pathGrade').value = path.grade || '';
-                document.getElementById('pathDifficulty').value = path.difficulty || 'medium';
-                document.getElementById('pathDuration').value = path.target_duration || '';
-                document.getElementById('pathGoals').value = (path.goals || []).join('\n');
+                document.getElementById('pathDuration').value = path.target_score || '';
                 document.getElementById('createModal').style.display = 'block';
             }
         });
@@ -261,7 +255,7 @@ function viewPath(id) {
 
 function deletePath(id) {
     if (confirm('确定要删除这条学习路径吗？')) {
-        fetch(`/api/learning_paths/${id}`, { method: 'DELETE' })
+        fetch(`/api/learning/paths/${id}`, { method: 'DELETE' })
             .then(res => res.json())
             .then(data => {
                 if (data.code === 200) {

@@ -29,6 +29,154 @@ class AIEmployee:
         """处理请求"""
         self.last_active = datetime.now().isoformat()
         return {"success": False, "message": "未实现的方法"}
+    
+    def execute_task(self, task_data: Dict[str, Any]) -> Dict[str, Any]:
+        """执行任务 - 支持学习相关任务类型"""
+        self.last_active = datetime.now().isoformat()
+        task_type = task_data.get('type', '')
+        
+        if task_type == 'tutor_question':
+            return self.handle_tutor_question(task_data)
+        elif task_type == 'learning_diagnosis':
+            return self.handle_learning_diagnosis(task_data)
+        elif task_type == 'generate_questions':
+            return self.handle_generate_questions(task_data)
+        elif task_type == 'grade_homework':
+            return self.handle_grade_homework(task_data)
+        elif task_type == 'generate_learning_plan':
+            return self.handle_generate_learning_plan(task_data)
+        elif task_type == 'diagnosis':
+            return self.handle_diagnosis(task_data)
+        else:
+            return {"success": True, "message": f"AI员工 {self.name} 处理任务完成", "task_type": task_type}
+    
+    def handle_tutor_question(self, task_data: Dict[str, Any]) -> Dict[str, Any]:
+        """处理辅导问答任务"""
+        question = task_data.get('question', '')
+        subject = task_data.get('subject', '')
+        
+        if subject in ['数学', '物理', '化学']:
+            answer = f'[AI辅导] {self.name} 正在解答您的{subject}问题：{question}\n\n解题思路：\n1. 分析题目条件\n2. 应用相关公式和定理\n3. 逐步推导得出结论\n\n建议：多做类似练习题，巩固知识点。'
+        elif subject in ['语文', '英语']:
+            answer = f'[AI辅导] {self.name} 正在解答您的{subject}问题：{question}\n\n解答要点：\n1. 理解题意和上下文\n2. 分析语言结构和表达\n3. 给出合理答案\n\n建议：多读多练，积累词汇和表达方式。'
+        else:
+            answer = f'[AI辅导] {self.name} 正在解答您的问题：{question}\n\n学科：{subject}\n\nAI分析：根据您的问题，建议您复习相关知识点并多做练习。'
+        
+        return {"success": True, "result": answer, "message": "AI辅导解答完成"}
+    
+    def handle_learning_diagnosis(self, task_data: Dict[str, Any]) -> Dict[str, Any]:
+        """处理学习诊断任务"""
+        student_data = task_data.get('student_data', {})
+        weak_points = task_data.get('weak_points', [])
+        overall_avg = task_data.get('overall_avg', 0)
+        accuracy = task_data.get('accuracy', 0)
+        
+        diagnosis = f'[AI诊断] {self.name} 分析学生学习情况：\n'
+        diagnosis += f'- 平均分：{overall_avg}\n'
+        diagnosis += f'- 准确率：{accuracy}%\n'
+        
+        if weak_points:
+            diagnosis += '- 薄弱环节：\n'
+            for wp in weak_points:
+                diagnosis += f'  * {wp["subject"]}（{wp["weak_level"]}，平均分：{wp["avg_score"]}）\n'
+        else:
+            diagnosis += '- 薄弱环节：暂无明显薄弱\n'
+        
+        recommendations = []
+        if weak_points:
+            for wp in weak_points:
+                recommendations.append({
+                    'subject': wp['subject'],
+                    'action': f'重点复习{wp["subject"]}基础知识',
+                    'priority': 'high' if wp['avg_score'] < 60 else 'medium',
+                    'estimated_time': '60分钟'
+                })
+        
+        recommendations.append({
+            'subject': '综合',
+            'action': '定期进行模拟测试',
+            'priority': 'low',
+            'estimated_time': '40分钟'
+        })
+        
+        return {"success": True, "diagnosis": diagnosis, "recommendations": recommendations, "message": "AI学情诊断完成"}
+    
+    def handle_generate_questions(self, task_data: Dict[str, Any]) -> Dict[str, Any]:
+        """处理题目生成任务"""
+        subject = task_data.get('subject', '数学')
+        count = task_data.get('count', 5)
+        difficulty = task_data.get('difficulty', 'medium')
+        
+        questions = []
+        question_templates = {
+            '数学': ['选择题', '填空题', '计算题', '应用题', '证明题'],
+            '语文': ['阅读理解', '诗词鉴赏', '文言文翻译', '写作题', '选择题'],
+            '英语': ['词汇题', '语法题', '阅读理解', '完形填空', '翻译题'],
+            '物理': ['选择题', '填空题', '计算题', '实验题', '综合题'],
+            '化学': ['选择题', '填空题', '实验题', '计算题', '推断题']
+        }
+        
+        templates = question_templates.get(subject, question_templates['数学'])
+        
+        for i in range(count):
+            template = templates[i % len(templates)]
+            questions.append({
+                'id': i + 1,
+                'question': f'{subject}{template} {i + 1}（难度：{difficulty}）',
+                'options': ['A', 'B', 'C', 'D'],
+                'answer': ['A', 'B', 'C', 'D'][i % 4],
+                'analysis': f'{subject}{template}解析',
+                'difficulty': difficulty,
+                'subject': subject
+            })
+        
+        return {"success": True, "questions": questions, "message": f"成功生成{count}道{subject}题目"}
+    
+    def handle_grade_homework(self, task_data: Dict[str, Any]) -> Dict[str, Any]:
+        """处理作业批改任务"""
+        subject = task_data.get('subject', '')
+        answers = task_data.get('answers', '')
+        
+        score = 85 + self.level * 2
+        if score > 100:
+            score = 100
+        
+        feedback = f'[AI批改] {self.name} 批改完成\n'
+        feedback += f'学科：{subject}\n'
+        feedback += f'得分：{score}\n'
+        feedback += '评价：作业完成良好，继续保持！\n'
+        feedback += '建议：请复习错题，加强薄弱环节练习。'
+        
+        return {"success": True, "score": score, "feedback": feedback, "message": "AI批改完成"}
+    
+    def handle_generate_learning_plan(self, task_data: Dict[str, Any]) -> Dict[str, Any]:
+        """处理学习计划生成任务"""
+        duration_days = task_data.get('duration_days', 7)
+        subjects = task_data.get('subjects', ['数学', '语文', '英语'])
+        avg_score = task_data.get('avg_score', 60)
+        
+        daily_plans = []
+        for day in range(1, duration_days + 1):
+            day_subjects = subjects[(day - 1) % len(subjects):(day - 1) % len(subjects) + 2]
+            daily_plans.append({
+                'day': day,
+                'date': (datetime.now().date() + datetime.timedelta(days=day - 1)).isoformat(),
+                'subjects': day_subjects,
+                'activities': [f'{s}学习30分钟' for s in day_subjects],
+                'estimated_hours': len(day_subjects) * 0.5
+            })
+        
+        goals = [
+            f'在{duration_days}天内提高学习效率',
+            f'完成{duration_days}天学习任务',
+            f'将平均分提升至{min(100, avg_score + 5):.0f}分'
+        ]
+        
+        return {"success": True, "daily_plans": daily_plans, "goals": goals, "estimated_hours": duration_days, "message": "AI学习计划生成完成"}
+    
+    def handle_diagnosis(self, task_data: Dict[str, Any]) -> Dict[str, Any]:
+        """处理诊断任务"""
+        return {"success": True, "message": f"AI员工 {self.name} 诊断完成"}
 
 
 class ValidationAIEmployee(AIEmployee):

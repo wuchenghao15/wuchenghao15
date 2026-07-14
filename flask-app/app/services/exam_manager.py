@@ -27,7 +27,7 @@ class ExamManager:
             
             # 创建考试表
             cursor.execute('''
-                CREATE TABLE IF NOT EXISTS exams (
+                CREATE TABLE IF NOT EXISTS competition_exams (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     name TEXT NOT NULL,
                     description TEXT,
@@ -46,7 +46,7 @@ class ExamManager:
             
             # 创建题目表
             cursor.execute('''
-                CREATE TABLE IF NOT EXISTS questions (
+                CREATE TABLE IF NOT EXISTS competition_questions (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     exam_id INTEGER,
                     question_text TEXT NOT NULL,
@@ -58,7 +58,7 @@ class ExamManager:
                     explanation TEXT,
                     difficulty TEXT DEFAULT 'medium',
                     score INTEGER DEFAULT 5,
-                    FOREIGN KEY (exam_id) REFERENCES exams(id)
+                    FOREIGN KEY (exam_id) REFERENCES competition_exams(id)
                 )
             ''')
             
@@ -105,10 +105,10 @@ class ExamManager:
             cursor = conn.cursor()
             
             for exam in default_exams:
-                cursor.execute('SELECT COUNT(*) FROM exams WHERE name = ?', (exam['name'],))
+                cursor.execute('SELECT COUNT(*) FROM competition_exams WHERE name = ?', (exam['name'],))
                 if cursor.fetchone()[0] == 0:
                     cursor.execute('''
-                        INSERT INTO exams (name, description, category, subcategory, difficulty, 
+                        INSERT INTO competition_exams (name, description, category, subcategory, difficulty,
                                          duration, question_count, total_score, status, target_grade)
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ''', (
@@ -125,9 +125,9 @@ class ExamManager:
             cursor = conn.cursor()
             
             if category:
-                cursor.execute('SELECT * FROM exams WHERE category = ? ORDER BY name', (category,))
+                cursor.execute('SELECT * FROM competition_exams WHERE category = ? ORDER BY name', (category,))
             else:
-                cursor.execute('SELECT * FROM exams ORDER BY category, name')
+                cursor.execute('SELECT * FROM competition_exams ORDER BY category, name')
             
             rows = cursor.fetchall()
             columns = [desc[0] for desc in cursor.description]
@@ -140,7 +140,7 @@ class ExamManager:
             cursor = conn.cursor()
             
             # 匹配目标年级
-            cursor.execute('SELECT * FROM exams WHERE target_grade = ? ORDER BY name', (grade,))
+            cursor.execute('SELECT * FROM competition_exams WHERE target_grade = ? ORDER BY name', (grade,))
             rows = cursor.fetchall()
             columns = [desc[0] for desc in cursor.description]
             
@@ -150,7 +150,7 @@ class ExamManager:
         """按ID获取考试"""
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
-            cursor.execute('SELECT * FROM exams WHERE id = ?', (exam_id,))
+            cursor.execute('SELECT * FROM competition_exams WHERE id = ?', (exam_id,))
             row = cursor.fetchone()
             
             if row:
@@ -162,7 +162,7 @@ class ExamManager:
         """获取所有考试类别"""
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
-            cursor.execute('SELECT DISTINCT category FROM exams ORDER BY category')
+            cursor.execute('SELECT DISTINCT category FROM competition_exams ORDER BY category')
             return [row[0] for row in cursor.fetchall()]
     
     def get_category_info(self) -> Dict[str, List[Dict]]:

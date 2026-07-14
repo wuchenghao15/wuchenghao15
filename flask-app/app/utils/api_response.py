@@ -59,6 +59,30 @@ def authentication_error(message='未授权'):
     )
 
 
+class APIResponse:
+    """统一API响应类"""
+    
+    @staticmethod
+    def success(data=None, message='success', code=200):
+        return success_response(data, message, code)
+    
+    @staticmethod
+    def error(message, code=400, error_type=None, suggestion=None, details=None):
+        return error_response(message, code, error_type, suggestion, details)
+    
+    @staticmethod
+    def not_found(message='资源不存在'):
+        return error_response(message, code=404, error_type='NOT_FOUND')
+    
+    @staticmethod
+    def validation_error(message, details=None):
+        return validation_error(message, details)
+    
+    @staticmethod
+    def server_error(message='服务器内部错误'):
+        return error_response(message, code=500, error_type='SERVER_ERROR', suggestion='请稍后重试')
+
+
 def authorization_error(message='权限不足'):
     """授权错误响应"""
     return error_response(

@@ -1,0 +1,521 @@
+{% extends 'admin_app/base.html' %}
+
+{% block title %}AI知识图谱系统 - MTSCOS管理端{% endblock %}
+
+{% block content %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<div class="page-container">
+    <div class="section-title">
+        <i class="fas fa-project-diagram" style="color: var(--color-primary);"></i>
+        AI知识图谱系统
+    </div>
+
+    <div class="card" style="margin-bottom: 16px;">
+        <div class="card-header">
+            <div class="card-title">
+                <i class="fas fa-book"></i> 学科选择
+            </div>
+        </div>
+        <div style="padding: 8px 16px 16px;">
+            <select id="subjectSelect" class="input" onchange="switchSubject()">
+                <option value="数学">数学</option>
+                <option value="物理">物理</option>
+                <option value="英语">英语</option>
+                <option value="语文">语文</option>
+                <option value="化学">化学</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="stat-grid">
+        <div class="stat-card blue">
+            <div class="stat-value" id="totalKnowledgePoints">--</div>
+            <div class="stat-label">总知识点</div>
+            <div class="stat-icon"><i class="fas fa-book-open"></i></div>
+        </div>
+        <div class="stat-card green">
+            <div class="stat-value" id="masteredPoints">--</div>
+            <div class="stat-label">已掌握</div>
+            <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+        </div>
+        <div class="stat-card orange">
+            <div class="stat-value" id="weakPoints">--</div>
+            <div class="stat-label">薄弱点</div>
+            <div class="stat-icon"><i class="fas fa-exclamation-triangle"></i></div>
+        </div>
+        <div class="stat-card purple">
+            <div class="stat-value" id="avgMastery">--%</div>
+            <div class="stat-label">平均掌握度</div>
+            <div class="stat-icon"><i class="fas fa-chart-pie"></i></div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">
+                <i class="fas fa-chart-bar"></i> 掌握度分布
+            </div>
+        </div>
+        <div style="padding: 20px;">
+            <canvas id="masteryChart" width="400" height="220"></canvas>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">
+                <i class="fas fa-project-diagram"></i> 知识图谱
+            </div>
+            <div class="card-more" onclick="toggleGraphView()">
+                <i class="fas fa-sync-alt"></i> 切换视图
+            </div>
+        </div>
+        <div style="padding: 16px;">
+            <div id="graphContainer" style="min-height: 300px;">
+                <div class="loading">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">
+                <i class="fas fa-exclamation-circle"></i> 薄弱知识点TOP10
+            </div>
+        </div>
+        <div style="padding: 8px 16px 16px;">
+            <div id="weakPointsList">
+                <div class="loading">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">
+                <i class="fas fa-route"></i> 学习路径生成
+            </div>
+        </div>
+        <div style="padding: 16px;">
+            <div style="margin-bottom: 12px;">
+                <label class="label">目标知识点</label>
+                <input type="text" id="targetKnowledge" class="input" placeholder="请输入目标知识点名称...">
+            </div>
+            <button class="btn btn-primary" onclick="generateLearningPath()" style="width: 100%;">
+                <i class="fas fa-magic"></i> 生成学习路径
+            </button>
+            <div id="learningPathResult" style="margin-top: 16px;"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentSubject = '数学';
+let masteryChart = null;
+let graphViewMode = 'cards';
+
+function switchSubject() {
+    currentSubject = document.getElementById('subjectSelect').value;
+    loadAllData();
+}
+
+function loadAllData() {
+    loadDashboard();
+    loadGraph();
+    loadWeakPoints();
+}
+
+function loadDashboard() {
+    fetch(`/api/ai/kg/dashboard?subject=${encodeURIComponent(currentSubject)}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.code === 200 && data.data) {
+                const d = data.data;
+                document.getElementById('totalKnowledgePoints').textContent = d.total_points || 0;
+                document.getElementById('masteredPoints').textContent = d.mastered_points || 0;
+                document.getElementById('weakPoints').textContent = d.weak_points_count || 0;
+                document.getElementById('avgMastery').textContent = (d.avg_mastery || 0) + '%';
+                renderMasteryChart(d.mastery_distribution);
+            }
+        })
+        .catch(error => {
+            console.error('加载仪表盘失败:', error);
+        });
+}
+
+function renderMasteryChart(distribution) {
+    const ctx = document.getElementById('masteryChart').getContext('2d');
+
+    if (masteryChart) {
+        masteryChart.destroy();
+    }
+
+    const labels = distribution?.labels || ['未掌握', '初步了解', '基本掌握', '熟练掌握', '精通'];
+    const data = distribution?.data || [0, 0, 0, 0, 0];
+
+    masteryChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: data,
+                backgroundColor: [
+                    'rgba(245, 108, 108, 0.8)',
+                    'rgba(230, 162, 60, 0.8)',
+                    'rgba(59, 130, 246, 0.8)',
+                    'rgba(103, 194, 58, 0.8)',
+                    'rgba(139, 92, 246, 0.8)'
+                ],
+                borderColor: [
+                    'rgba(245, 108, 108, 1)',
+                    'rgba(230, 162, 60, 1)',
+                    'rgba(59, 130, 246, 1)',
+                    'rgba(103, 194, 58, 1)',
+                    'rgba(139, 92, 246, 1)'
+                ],
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'right',
+                    labels: {
+                        color: '#94a3b8',
+                        font: {
+                            size: 11
+                        },
+                        padding: 10
+                    }
+                }
+            },
+            cutout: '60%'
+        }
+    });
+}
+
+function loadGraph() {
+    const container = document.getElementById('graphContainer');
+    container.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+
+    fetch(`/api/ai/kg/graph?subject=${encodeURIComponent(currentSubject)}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.code === 200 && data.data) {
+                renderGraph(data.data);
+            } else {
+                container.innerHTML = '<div class="empty-state"><div class="empty-state-icon"><i class="fas fa-project-diagram"></i></div><div class="empty-state-text">暂无知识图谱数据</div></div>';
+            }
+        })
+        .catch(error => {
+            console.error('加载知识图谱失败:', error);
+            container.innerHTML = '<div class="empty-state"><div class="empty-state-icon"><i class="fas fa-exclamation-triangle"></i></div><div class="empty-state-text">加载失败，请稍后重试</div></div>';
+        });
+}
+
+function renderGraph(graphData) {
+    const container = document.getElementById('graphContainer');
+    const nodes = graphData.nodes || [];
+
+    if (nodes.length === 0) {
+        container.innerHTML = '<div class="empty-state"><div class="empty-state-icon"><i class="fas fa-project-diagram"></i></div><div class="empty-state-text">暂无知识点数据</div></div>';
+        return;
+    }
+
+    const categories = {};
+    nodes.forEach(node => {
+        const cat = node.category || '其他';
+        if (!categories[cat]) {
+            categories[cat] = [];
+        }
+        categories[cat].push(node);
+    });
+
+    let html = '';
+    for (const [category, catNodes] of Object.entries(categories)) {
+        html += `
+            <div style="margin-bottom: 16px;">
+                <div style="font-size: 14px; font-weight: 600; color: var(--text-secondary); margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-folder" style="color: var(--color-primary);"></i>
+                    ${category}
+                    <span style="font-size: 11px; color: var(--text-muted); font-weight: normal;">(${catNodes.length}个知识点)</span>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px;">
+                    ${catNodes.map(node => renderKnowledgeCard(node)).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    html += `
+        <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border);">
+            <div style="font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 10px;">
+                <i class="fas fa-link" style="margin-right: 6px;"></i>知识点关系
+            </div>
+            <div style="font-size: 12px; color: var(--text-muted);">
+                共 ${graphData.edges?.length || 0} 条关系连线
+            </div>
+        </div>
+    `;
+
+    container.innerHTML = html;
+}
+
+function renderKnowledgeCard(node) {
+    const mastery = node.mastery_level || 0;
+    let masteryClass = 'mastery-unknown';
+    let masteryText = '未评估';
+    let masteryColor = '#64748b';
+
+    if (mastery >= 90) {
+        masteryClass = 'mastery-expert';
+        masteryText = '精通';
+        masteryColor = '#8b5cf6';
+    } else if (mastery >= 75) {
+        masteryClass = 'mastery-proficient';
+        masteryText = '熟练';
+        masteryColor = '#67c23a';
+    } else if (mastery >= 60) {
+        masteryClass = 'mastery-basic';
+        masteryText = '掌握';
+        masteryColor = '#3b82f6';
+    } else if (mastery >= 30) {
+        masteryClass = 'mastery-learning';
+        masteryText = '了解';
+        masteryColor = '#e6a23c';
+    } else {
+        masteryClass = 'mastery-weak';
+        masteryText = '薄弱';
+        masteryColor = '#f56c6c';
+    }
+
+    return `
+        <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 10px; cursor: pointer; transition: all 0.2s; border-left: 3px solid ${masteryColor};"
+             onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 12px rgba(0,0,0,0.2)';"
+             onmouseout="this.style.transform='';this.style.boxShadow='';"
+             onclick="showKnowledgeDetail('${node.name || node.id}')">
+            <div style="font-size: 12px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                ${node.name || node.id}
+            </div>
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+                <span style="font-size: 10px; padding: 2px 6px; border-radius: 10px; background: ${masteryColor}20; color: ${masteryColor};">
+                    ${masteryText}
+                </span>
+                <span style="font-size: 10px; color: var(--text-muted);">${mastery}%</span>
+            </div>
+        </div>
+    `;
+}
+
+function loadWeakPoints() {
+    const container = document.getElementById('weakPointsList');
+    container.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+
+    fetch(`/api/ai/kg/weak_points?subject=${encodeURIComponent(currentSubject)}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.code === 200 && data.data) {
+                renderWeakPoints(data.data);
+            } else {
+                container.innerHTML = '<div class="empty-state" style="padding: 30px 20px;"><div class="empty-state-icon" style="font-size: 36px;"><i class="fas fa-check-circle"></i></div><div class="empty-state-text">暂无薄弱知识点</div></div>';
+            }
+        })
+        .catch(error => {
+            console.error('加载薄弱点失败:', error);
+            container.innerHTML = '<div class="empty-state" style="padding: 30px 20px;"><div class="empty-state-icon" style="font-size: 36px;"><i class="fas fa-exclamation-triangle"></i></div><div class="empty-state-text">加载失败</div></div>';
+        });
+}
+
+function renderWeakPoints(weakPoints) {
+    const container = document.getElementById('weakPointsList');
+
+    if (!weakPoints || weakPoints.length === 0) {
+        container.innerHTML = '<div class="empty-state" style="padding: 30px 20px;"><div class="empty-state-icon" style="font-size: 36px;"><i class="fas fa-check-circle"></i></div><div class="empty-state-text">暂无薄弱知识点</div></div>';
+        return;
+    }
+
+    const top10 = weakPoints.slice(0, 10);
+
+    container.innerHTML = top10.map((wp, index) => {
+        const rankColor = index < 3 ? 'var(--color-error)' : index < 6 ? 'var(--color-warning)' : 'var(--text-muted)';
+        const mastery = wp.mastery_level || 0;
+        return `
+            <div class="list-item">
+                <div style="width: 24px; height: 24px; border-radius: 50%; background: ${rankColor}20; color: ${rankColor}; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; margin-right: 12px; flex-shrink: 0;">
+                    ${index + 1}
+                </div>
+                <div class="list-content">
+                    <div class="list-title">${wp.name || wp.knowledge_point || '未知'}</div>
+                    <div class="list-desc">
+                        ${wp.category || '未分类'} · 掌握度 ${mastery}%
+                    </div>
+                </div>
+                <div class="list-action">
+                    <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px; min-height: 32px;" onclick="generatePathFromWeak('${wp.name || wp.knowledge_point}')">
+                        <i class="fas fa-route"></i> 学习路径
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function generateLearningPath() {
+    const target = document.getElementById('targetKnowledge').value.trim();
+    if (!target) {
+        showToast('请输入目标知识点');
+        return;
+    }
+
+    const resultContainer = document.getElementById('learningPathResult');
+    resultContainer.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+
+    fetch('/api/ai/kg/learning_path', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            subject: currentSubject,
+            target: target
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.code === 200 && data.data) {
+            renderLearningPath(data.data);
+        } else {
+            resultContainer.innerHTML = `
+                <div class="empty-state" style="padding: 30px 20px;">
+                    <div class="empty-state-icon" style="font-size: 36px;"><i class="fas fa-exclamation-circle"></i></div>
+                    <div class="empty-state-text">${data.message || '生成学习路径失败'}</div>
+                </div>
+            `;
+        }
+    })
+    .catch(error => {
+        console.error('生成学习路径失败:', error);
+        resultContainer.innerHTML = `
+            <div class="empty-state" style="padding: 30px 20px;">
+                <div class="empty-state-icon" style="font-size: 36px;"><i class="fas fa-exclamation-triangle"></i></div>
+                <div class="empty-state-text">网络错误，请稍后重试</div>
+            </div>
+        `;
+    });
+}
+
+function generatePathFromWeak(knowledgePoint) {
+    document.getElementById('targetKnowledge').value = knowledgePoint;
+    generateLearningPath();
+    document.querySelector('.card:last-of-type').scrollIntoView({ behavior: 'smooth' });
+}
+
+function renderLearningPath(pathData) {
+    const container = document.getElementById('learningPathResult');
+    const path = pathData.path || pathData.steps || [];
+
+    if (path.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state" style="padding: 30px 20px;">
+                <div class="empty-state-icon" style="font-size: 36px;"><i class="fas fa-route"></i></div>
+                <div class="empty-state-text">暂无学习路径数据</div>
+            </div>
+        `;
+        return;
+    }
+
+    let html = `
+        <div style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 14px;">
+            <div style="font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;">
+                <i class="fas fa-flag-checkered" style="color: var(--color-primary); margin-right: 6px;"></i>
+                学习路径概览
+            </div>
+            <div style="font-size: 12px; color: var(--text-secondary);">
+                共 ${path.length} 个学习步骤 · 预计学习时间: ${pathData.estimated_time || '未知'}
+            </div>
+        </div>
+        <div style="position: relative;">
+    `;
+
+    path.forEach((step, index) => {
+        const isLast = index === path.length - 1;
+        const mastery = step.mastery_level || 0;
+        let statusIcon = 'fa-circle';
+        let statusColor = 'var(--text-muted)';
+
+        if (mastery >= 80) {
+            statusIcon = 'fa-check-circle';
+            statusColor = 'var(--color-success)';
+        } else if (mastery >= 50) {
+            statusIcon = 'fa-play-circle';
+            statusColor = 'var(--color-primary)';
+        } else {
+            statusIcon = 'fa-circle';
+            statusColor = 'var(--color-warning)';
+        }
+
+        html += `
+            <div style="display: flex; gap: 12px; position: relative;">
+                <div style="display: flex; flex-direction: column; align-items: center; flex-shrink: 0;">
+                    <div style="width: 28px; height: 28px; border-radius: 50%; background: ${statusColor}20; color: ${statusColor}; display: flex; align-items: center; justify-content: center; font-size: 12px; z-index: 1;">
+                        <i class="fas ${statusIcon}"></i>
+                    </div>
+                    ${!isLast ? '<div style="width: 2px; flex: 1; background: var(--border); margin: 4px 0;"></div>' : ''}
+                </div>
+                <div style="flex: 1; padding-bottom: ${isLast ? '0' : '16px'};">
+                    <div style="background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 10px; padding: 12px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                            <span style="font-size: 13px; font-weight: 600; color: var(--text-primary);">
+                                第${index + 1}步: ${step.name || step.knowledge_point || '未知知识点'}
+                            </span>
+                            <span class="tag ${mastery >= 80 ? 'tag-green' : mastery >= 50 ? 'tag-blue' : 'tag-yellow'}">
+                                ${mastery}%
+                            </span>
+                        </div>
+                        <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">
+                            ${step.description || step.reason || '无描述'}
+                        </div>
+                        ${step.suggestions ? `
+                            <div style="font-size: 11px; color: var(--text-secondary);">
+                                <i class="fas fa-lightbulb" style="margin-right: 4px; color: var(--color-warning);"></i>
+                                ${step.suggestions}
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    html += '</div>';
+
+    container.innerHTML = html;
+}
+
+function toggleGraphView() {
+    graphViewMode = graphViewMode === 'cards' ? 'list' : 'cards';
+    loadGraph();
+}
+
+function showKnowledgeDetail(name) {
+    showToast(`知识点: ${name}`);
+}
+
+function showToast(message) {
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 2000);
+}
+
+document.addEventListener('DOMContentLoaded', loadAllData);
+</script>
+{% endblock %}

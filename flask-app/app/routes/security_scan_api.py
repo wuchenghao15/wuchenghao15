@@ -8,7 +8,7 @@
 from flask import Blueprint, jsonify, request
 from app.services.security_monitor_service import security_monitor_service
 from app.utils.api_response import success_response, error_response
-from app.decorators.auth import login_required, require_admin
+from app.middlewares.access_control import require_login as login_required, require_admin
 
 security_scan_api = Blueprint('security_scan_api', __name__, url_prefix='/api/security')
 

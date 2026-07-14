@@ -34,7 +34,11 @@ class DatabaseStorageService:
 
     def _initialize(self):
         """初始化数据库存储服务"""
-        self.db_path = 'flask-app/app.db'
+        # 使用项目根目录下的绝对路径，避免相对路径在不同工作目录下找不到数据库文件
+        self.db_path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+            'app.db'
+        )
         self._create_tables()
         logger.info("数据库存储服务初始化完成")
 

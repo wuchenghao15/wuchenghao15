@@ -21,8 +21,10 @@ class DataLayerService:
     """数据层服务类"""
 
     def __init__(self):
-        self._data_dir = os.environ.get('DATA_DIR', '/app/data')
-        self._backup_dir = os.environ.get('BACKUP_DIR', '/app/backups')
+        # 使用项目根目录下的本地路径，避免Docker路径'/app'在非容器环境不可写
+        _project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        self._data_dir = os.environ.get('DATA_DIR', os.path.join(_project_root, 'data'))
+        self._backup_dir = os.environ.get('BACKUP_DIR', os.path.join(_project_root, 'data', 'backups'))
         self._ensure_directories()
         logger.info("数据层服务初始化完成")
 

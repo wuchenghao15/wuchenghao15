@@ -18,18 +18,24 @@ logger = logging.getLogger(__name__)
 class BaseCoreAgent(ABC):
     """核心Agent基类"""
     
-    def __init__(self, agent_id: str, agent_name: str, agent_type: str):
-        self.agent_id = agent_id
-        self.agent_name = agent_name
-        self.agent_type = agent_type
+    def __init__(self, agent_id: str = None, agent_name: str = None, agent_type: str = None):
+        self.agent_id = agent_id or str(uuid.uuid4())[:8]
+        self.agent_name = agent_name or self.__class__.__name__
+        self.agent_type = agent_type or 'core'
         self.status = 'idle'
         self.last_heartbeat = datetime.now()
         self.task_history: List[Dict] = []
     
-    @abstractmethod
     def execute(self, context: Dict = None) -> Dict:
-        """执行Agent核心逻辑"""
-        pass
+        """执行Agent核心逻辑（子类可覆盖，未覆盖时使用默认实现）"""
+        return {
+            'status': 'success',
+            'agent_id': self.agent_id,
+            'agent_name': self.agent_name,
+            'message': f'{self.agent_name}执行完成（基类默认实现）',
+            'context': context,
+            'timestamp': datetime.now().isoformat()
+        }
     
     def report_to_db(self, task_id: str, status: str, data: Dict = None):
         """上报任务结果到数据库"""

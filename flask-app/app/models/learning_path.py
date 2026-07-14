@@ -34,7 +34,16 @@ class LearningPath:
                     description TEXT,
                     status TEXT DEFAULT 'draft',
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    path_id TEXT,
+                    subject TEXT,
+                    current_topic TEXT,
+                    progress REAL DEFAULT 0,
+                    completed_topics TEXT,
+                    recommended_topics TEXT,
+                    current_level TEXT,
+                    target_level TEXT,
+                    path_data TEXT
                 )
             """)
         except Exception as e:
@@ -66,29 +75,28 @@ class LearningPath:
     def create(cls, user_id: int, name: str, description: str = None):
         """创建学习路径"""
         cls._create_table()
+        import uuid
+        path_id = str(uuid.uuid4())
         try:
             db_manager.execute(f"""
-                INSERT INTO {cls.TABLE_NAME} (user_id, name, description)
-                VALUES (?, ?, ?)
-            """, (user_id, name, description))
+                INSERT INTO {cls.TABLE_NAME} (path_id, user_id, name, description, status, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, (path_id, user_id, name, description, 'draft', datetime.now().isoformat(), datetime.now().isoformat()))
             
-            result = db_manager.fetch_one(f"SELECT last_insert_rowid()")
-            path_id = result[0] if result else None
-            
-            logger.info(f"创建学习路径成功: id={path_id}, user_id={user_id}")
+            logger.info(f"创建学习路径成功: path_id={path_id}, user_id={user_id}")
             return cls.get_by_id(path_id)
         except Exception as e:
             logger.error(f"创建学习路径失败: {str(e)}")
             return None
     
     @classmethod
-    def get_by_id(cls, path_id: int):
+    def get_by_id(cls, path_id):
         """根据ID获取学习路径"""
         cls._create_table()
         try:
             result = db_manager.fetch_one(f"""
-                SELECT id, user_id, name, description, status, created_at, updated_at
-                FROM {cls.TABLE_NAME} WHERE id = ?
+                SELECT path_id, user_id, name, description, status, created_at, updated_at
+                FROM {cls.TABLE_NAME} WHERE path_id = ?
             """, (path_id,))
             
             if result:
@@ -97,7 +105,7 @@ class LearningPath:
                     user_id=result[1],
                     name=result[2],
                     description=result[3],
-                    status=LearningPathStatus(result[4]),
+                    status=LearningPathStatus(result[4]) if result[4] else LearningPathStatus.DRAFT,
                     created_at=result[5],
                     updated_at=result[6]
                 )
@@ -111,7 +119,7 @@ class LearningPath:
         cls._create_table()
         try:
             query = f"""
-                SELECT id, user_id, name, description, status, created_at, updated_at
+                SELECT path_id, user_id, name, description, status, created_at, updated_at
                 FROM {cls.TABLE_NAME} WHERE user_id = ?
             """
             params = [user_id]

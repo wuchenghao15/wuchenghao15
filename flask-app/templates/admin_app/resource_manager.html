@@ -1,0 +1,370 @@
+{% extends 'admin_app/base.html' %}
+
+{% block title %}资源管理{% endblock %}
+
+{% block content %}
+    <div class="page-header">
+        <h1>资源管理</h1>
+        <p>管理平台文件和学习资源</p>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">资源列表</div>
+            <button class="btn btn-primary" onclick="openUploadModal()">
+                <i class="fas fa-upload"></i>
+                上传资源
+            </button>
+        </div>
+        <div class="card-body">
+            <div class="search-bar">
+                <input type="text" class="form-control" id="searchKeyword" placeholder="搜索资源..." onkeyup="handleSearch()">
+                <select class="form-control" id="typeFilter" onchange="loadResources()">
+                    <option value="">全部类型</option>
+                    <option value="pdf">PDF文档</option>
+                    <option value="video">视频</option>
+                    <option value="image">图片</option>
+                    <option value="audio">音频</option>
+                    <option value="other">其他</option>
+                </select>
+                <select class="form-control" id="accessFilter" onchange="loadResources()">
+                    <option value="">全部权限</option>
+                    <option value="public">公开</option>
+                    <option value="private">私有</option>
+                    <option value="shared">共享</option>
+                </select>
+            </div>
+            
+            <div class="grid-container" id="resourceGrid">
+                <div class="loading">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+            
+            <div class="pagination" id="pagination">
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="uploadModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">上传资源</h3>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="uploadForm" enctype="multipart/form-data">
+                    <input type="hidden" id="resourceId">
+                    <div class="form-group">
+                        <label class="form-label">资源文件 *</label>
+                        <input type="file" class="form-control" id="file" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">资源名称</label>
+                        <input type="text" class="form-control" id="name" placeholder="输入资源名称">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">资源描述</label>
+                        <textarea class="form-control" id="description" rows="3" placeholder="输入资源描述"></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">访问权限</label>
+                            <select class="form-control" id="accessType">
+                                <option value="private">私有</option>
+                                <option value="shared">共享</option>
+                                <option value="public">公开</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">分类</label>
+                            <select class="form-control" id="category">
+                                <option value="">请选择分类</option>
+                                <option value="course">课程资料</option>
+                                <option value="exam">考试资料</option>
+                                <option value="reference">参考资料</option>
+                                <option value="video">视频资源</option>
+                                <option value="other">其他</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-primary btn-lg w-full" onclick="uploadResource()">
+                        <i class="fas fa-upload"></i>
+                        上传
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentPage = 1;
+
+async function loadResources() {
+    const keyword = document.getElementById('searchKeyword').value;
+    const type = document.getElementById('typeFilter').value;
+    const access = document.getElementById('accessFilter').value;
+    
+    try {
+        const response = await fetch(`/api/resources?page=${currentPage}&keyword=${encodeURIComponent(keyword)}&type=${type}&access=${access}`);
+        const data = await response.json();
+        
+        if (data.code === 200) {
+            renderResources(data.data.resources || []);
+            renderPagination(data.data.total, data.data.page, data.data.per_page);
+        }
+    } catch (error) {
+        console.error('加载资源失败:', error);
+    }
+}
+
+function renderResources(resources) {
+    const grid = document.getElementById('resourceGrid');
+    
+    if (resources.length === 0) {
+        grid.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon"><i class="fas fa-folder-open"></i></div>
+                <div class="empty-state-text">暂无资源</div>
+            </div>
+        `;
+        return;
+    }
+    
+    grid.innerHTML = resources.map(r => `
+        <div class="resource-card">
+            <div class="resource-icon" style="background: ${getFileColor(r.file_type)};">
+                <i class="fas ${getFileIcon(r.file_type)}"></i>
+            </div>
+            <div class="resource-info">
+                <div class="resource-name">${r.name}</div>
+                <div class="resource-meta">${formatSize(r.file_size)} · ${r.access_type}</div>
+            </div>
+            <div class="resource-actions">
+                <button onclick="downloadResource(${r.id})" class="btn btn-secondary btn-sm">
+                    <i class="fas fa-download"></i>
+                </button>
+                <button onclick="deleteResource(${r.id})" class="btn btn-danger btn-sm">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+    `).join('');
+}
+
+function getFileIcon(type) {
+    const icons = {
+        'pdf': 'fa-file-pdf',
+        'video': 'fa-file-video',
+        'image': 'fa-file-image',
+        'audio': 'fa-file-audio',
+        'doc': 'fa-file-word',
+        'xls': 'fa-file-excel',
+        'ppt': 'fa-file-powerpoint',
+        'zip': 'fa-file-archive'
+    };
+    return icons[type] || 'fa-file';
+}
+
+function getFileColor(type) {
+    const colors = {
+        'pdf': '#ef4444',
+        'video': '#8b5cf6',
+        'image': '#10b981',
+        'audio': '#f59e0b',
+        'doc': '#3b82f6',
+        'xls': '#22c55e',
+        'ppt': '#f97316',
+        'zip': '#6b7280'
+    };
+    return colors[type] || '#6b7280';
+}
+
+function formatSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+function renderPagination(total, page, perPage) {
+    const pages = Math.ceil(total / perPage);
+    const pagination = document.getElementById('pagination');
+    
+    if (pages <= 1) {
+        pagination.innerHTML = '';
+        return;
+    }
+    
+    let html = '<div class="pagination-links">';
+    if (page > 1) {
+        html += `<button onclick="goToPage(${page - 1})" class="pagination-btn">上一页</button>`;
+    }
+    
+    for (let i = 1; i <= pages; i++) {
+        html += `<button onclick="goToPage(${i})" class="pagination-btn ${i === page ? 'active' : ''}">${i}</button>`;
+    }
+    
+    if (page < pages) {
+        html += `<button onclick="goToPage(${page + 1})" class="pagination-btn">下一页</button>`;
+    }
+    html += '</div>';
+    
+    pagination.innerHTML = html;
+}
+
+function goToPage(page) {
+    currentPage = page;
+    loadResources();
+}
+
+function handleSearch() {
+    currentPage = 1;
+    loadResources();
+}
+
+function openUploadModal() {
+    document.getElementById('uploadForm').reset();
+    document.getElementById('resourceId').value = '';
+    document.getElementById('modalTitle').textContent = '上传资源';
+    document.getElementById('uploadModal').style.display = 'flex';
+}
+
+function closeModal() {
+    document.getElementById('uploadModal').style.display = 'none';
+}
+
+async function uploadResource() {
+    const formData = new FormData();
+    formData.append('file', document.getElementById('file').files[0]);
+    formData.append('name', document.getElementById('name').value);
+    formData.append('description', document.getElementById('description').value);
+    formData.append('access_type', document.getElementById('accessType').value);
+    formData.append('category', document.getElementById('category').value);
+    
+    try {
+        const response = await fetch('/api/resources/upload', {
+            method: 'POST',
+            body: formData
+        });
+        const data = await response.json();
+        
+        if (data.code === 201) {
+            alert('上传成功');
+            closeModal();
+            loadResources();
+        } else {
+            alert(data.message);
+        }
+    } catch (error) {
+        console.error('上传失败:', error);
+        alert('上传失败');
+    }
+}
+
+async function downloadResource(id) {
+    window.location.href = `/api/resources/${id}/download`;
+}
+
+async function deleteResource(id) {
+    if (!confirm('确定要删除这个资源吗？')) return;
+    
+    try {
+        const response = await fetch(`/api/resources/${id}`, {
+            method: 'DELETE'
+        });
+        const data = await response.json();
+        
+        if (data.code === 200) {
+            alert('删除成功');
+            loadResources();
+        } else {
+            alert(data.message);
+        }
+    } catch (error) {
+        console.error('删除失败:', error);
+        alert('删除失败');
+    }
+}
+
+loadResources();
+</script>
+<style>
+.grid-container {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+.resource-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.resource-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    color: white;
+    margin-bottom: 10px;
+}
+
+.resource-info {
+    flex: 1;
+    width: 100%;
+}
+
+.resource-name {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.resource-meta {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.resource-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.pagination-links {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 16px;
+}
+
+.pagination-btn {
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.pagination-btn.active {
+    background: var(--primary);
+    border-color: var(--primary);
+}
+</style>
+{% endblock %}

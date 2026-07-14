@@ -82,11 +82,11 @@ class Course:
             cls._create_table()
             db_manager.execute(f"""
                 INSERT INTO {cls.TABLE_NAME} 
-                (title, description, course_type, subject, grade, duration, 
-                 cover_image, created_by)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """, (title, description, course_type, subject, grade, duration, 
-                  cover_image, created_by))
+                (course_name, title, description, course_type, subject, grade_level, grade, 
+                 duration_hours, duration, cover_image, difficulty, is_active, created_by)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (title, title, description, course_type, subject, grade, grade, 
+                  duration / 60, duration, cover_image, 'medium', 1, created_by))
             course_id = db_manager.fetch_one(f"SELECT last_insert_rowid() FROM {cls.TABLE_NAME}")
             course_id = course_id[0] if course_id else None
             logger.info(f"创建课程成功: id={course_id}, title={title}")
@@ -100,7 +100,11 @@ class Course:
         """通过ID获取课程"""
         try:
             data = db_manager.fetch_one(f"""
-                SELECT * FROM {cls.TABLE_NAME} WHERE id = ?
+                SELECT id, title, description, course_type, subject, grade, duration, 
+                       cover_image, status, created_by, created_at, updated_at,
+                       view_count, enrollment_count, price, is_free,
+                       course_name, grade_level, duration_hours, difficulty, is_active
+                FROM {cls.TABLE_NAME} WHERE id = ?
             """, (course_id,))
             if data:
                 return cls._from_row(data)
@@ -114,7 +118,13 @@ class Course:
                 grade: str = None, page: int = 1, limit: int = 20) -> list:
         """获取课程列表"""
         try:
-            query = f"SELECT * FROM {cls.TABLE_NAME}"
+            query = f"""
+                SELECT id, title, description, course_type, subject, grade, duration, 
+                       cover_image, status, created_by, created_at, updated_at,
+                       view_count, enrollment_count, price, is_free,
+                       course_name, grade_level, duration_hours, difficulty, is_active
+                FROM {cls.TABLE_NAME}
+            """
             params = []
             
             conditions = []
@@ -239,14 +249,14 @@ class Course:
         if isinstance(row, dict):
             return cls(
                 id=row.get('id'),
-                title=row.get('title'),
+                title=row.get('title', row.get('course_name', '')),
                 description=row.get('description'),
-                course_type=row.get('course_type'),
+                course_type=row.get('course_type', 'video'),
                 subject=row.get('subject'),
-                grade=row.get('grade'),
-                duration=row.get('duration'),
-                cover_image=row.get('cover_image'),
-                status=row.get('status'),
+                grade=row.get('grade', row.get('grade_level', '')),
+                duration=row.get('duration', int((row.get('duration_hours') or 0) * 60)),
+                cover_image=row.get('cover_image', ''),
+                status=row.get('status', 'draft'),
                 created_by=row.get('created_by'),
                 created_at=row.get('created_at'),
                 updated_at=row.get('updated_at'),
@@ -257,18 +267,18 @@ class Course:
             )
         else:
             return cls(
-                id=row[0],
-                title=row[1],
-                description=row[2],
-                course_type=row[3],
-                subject=row[4],
-                grade=row[5],
-                duration=row[6],
-                cover_image=row[7],
-                status=row[8],
-                created_by=row[9],
-                created_at=row[10],
-                updated_at=row[11],
+                id=row[0] if len(row) > 0 else None,
+                title=row[1] if len(row) > 1 else '',
+                description=row[2] if len(row) > 2 else '',
+                course_type=row[3] if len(row) > 3 else 'video',
+                subject=row[4] if len(row) > 4 else '',
+                grade=row[5] if len(row) > 5 else '',
+                duration=row[6] if len(row) > 6 else 0,
+                cover_image=row[7] if len(row) > 7 else '',
+                status=row[8] if len(row) > 8 else 'draft',
+                created_by=row[9] if len(row) > 9 else None,
+                created_at=row[10] if len(row) > 10 else None,
+                updated_at=row[11] if len(row) > 11 else None,
                 view_count=row[12] if len(row) > 12 else 0,
                 enrollment_count=row[13] if len(row) > 13 else 0,
                 price=row[14] if len(row) > 14 else 0.0,

@@ -1,0 +1,305 @@
+{% extends 'admin_app/base.html' %}
+
+{% block title %}AI自动化学习 - MTSCOS管理端{% endblock %}
+
+{% block content %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<div class="page-container">
+    <div class="section-title">
+        <i class="fas fa-robot" style="color: var(--color-primary);"></i>
+        AI自动化学习系统
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <i class="fas fa-calendar-check"></i>
+            </div>
+            <div class="stat-info">
+                <div class="stat-value" id="totalPlans">--</div>
+                <div class="stat-label">学习计划</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="stat-info">
+                <div class="stat-value" id="completedHomework">--</div>
+                <div class="stat-label">已批改作业</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                <i class="fas fa-file-alt"></i>
+            </div>
+            <div class="stat-info">
+                <div class="stat-value" id="generatedQuestions">--</div>
+                <div class="stat-label">生成题目</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                <i class="fas fa-users"></i>
+            </div>
+            <div class="stat-info">
+                <div class="stat-value" id="analyzedStudents">--</div>
+                <div class="stat-label">分析学生</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid-2">
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fas fa-calendar-plus"></i> 生成学习计划
+                </div>
+            </div>
+            <div style="padding: 20px;">
+                <div class="form-group">
+                    <label>学习天数</label>
+                    <input type="number" id="planDays" class="form-control" value="7" min="1" max="30">
+                </div>
+                <div class="form-group">
+                    <label>学科</label>
+                    <select id="planSubjects" class="form-select" multiple size="5">
+                        <option value="数学" selected>数学</option>
+                        <option value="语文" selected>语文</option>
+                        <option value="英语" selected>英语</option>
+                        <option value="物理">物理</option>
+                        <option value="化学">化学</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary" onclick="generatePlan()" style="width: 100%;">
+                    <i class="fas fa-play"></i> 生成计划
+                </button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fas fa-file-edit"></i> 生成题目
+                </div>
+            </div>
+            <div style="padding: 20px;">
+                <div class="form-group">
+                    <label>学科</label>
+                    <select id="questionSubject" class="form-select">
+                        <option value="数学">数学</option>
+                        <option value="语文">语文</option>
+                        <option value="英语">英语</option>
+                        <option value="物理">物理</option>
+                        <option value="化学">化学</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>题目数量</label>
+                    <input type="number" id="questionCount" class="form-control" value="5" min="1" max="20">
+                </div>
+                <div class="form-group">
+                    <label>难度</label>
+                    <select id="questionDifficulty" class="form-select">
+                        <option value="easy">简单</option>
+                        <option value="medium" selected>中等</option>
+                        <option value="hard">困难</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary" onclick="generateQuestions()" style="width: 100%;">
+                    <i class="fas fa-file-plus"></i> 生成题目
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">
+                <i class="fas fa-calendar"></i> 学习计划详情
+            </div>
+        </div>
+        <div style="padding: 16px;">
+            <div id="planDetails">
+                <div style="text-align:center; padding: 40px; color: #999;">
+                    <i class="fas fa-calendar-alt" style="font-size: 48px; margin-bottom: 16px;"></i>
+                    <p>点击"生成计划"创建学习计划</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">
+                <i class="fas fa-clipboard-list"></i> 生成的题目
+            </div>
+        </div>
+        <div style="padding: 16px;">
+            <div id="questionsList">
+                <div style="text-align:center; padding: 40px; color: #999;">
+                    <i class="fas fa-file-question" style="font-size: 48px; margin-bottom: 16px;"></i>
+                    <p>点击"生成题目"创建题目</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function generatePlan() {
+    const days = parseInt(document.getElementById('planDays').value);
+    const subjectsSelect = document.getElementById('planSubjects');
+    const subjects = Array.from(subjectsSelect.selectedOptions).map(o => o.value);
+    
+    if (subjects.length === 0) {
+        alert('请至少选择一个学科');
+        return;
+    }
+    
+    document.getElementById('planDetails').innerHTML = `
+        <div style="text-align:center; padding: 40px;">
+            <i class="fas fa-spinner fa-spin" style="font-size: 48px; margin-bottom: 16px;"></i>
+            <p>AI正在生成学习计划...</p>
+        </div>
+    `;
+    
+    fetch('/api/ai/integration/learning_plan', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ duration_days: days, subjects: subjects })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.code === 200 && data.data) {
+            renderPlan(data.data);
+            document.getElementById('totalPlans').textContent = parseInt(document.getElementById('totalPlans').textContent || '0') + 1;
+        } else {
+            document.getElementById('planDetails').innerHTML = `<p style="color:red;">生成失败: ${data.message}</p>`;
+        }
+    })
+    .catch(error => {
+        document.getElementById('planDetails').innerHTML = `<p style="color:red;">请求失败: ${error.message}</p>`;
+    });
+}
+
+function renderPlan(plan) {
+    let html = `
+        <h4>学习计划 - ${plan.username}</h4>
+        <p><strong>周期:</strong> ${plan.duration_days}天 | <strong>预计时长:</strong> ${plan.estimated_hours}小时</p>
+        <p><strong>当前平均分:</strong> ${plan.avg_score}</p>
+        <br>
+        <h5>学习目标</h5>
+        <ul>
+            ${plan.goals.map(g => `<li>${g}</li>`).join('')}
+        </ul>
+        <br>
+        <h5>每日计划</h5>
+        <div style="border: 1px solid #ddd; border-radius: 8px; overflow: hidden;">
+    `;
+    
+    plan.daily_plans.forEach((day, index) => {
+        html += `
+            <div style="padding: 15px; border-bottom: 1px solid #eee; ${index % 2 === 0 ? 'background: #f9f9f9;' : ''}">
+                <div style="font-weight: bold; margin-bottom: 10px;">第 ${day.day} 天 (${day.date})</div>
+                <div style="margin-bottom: 10px;">
+                    <strong>学科:</strong> ${day.subjects.join(', ')}
+                </div>
+                <div>
+                    <strong>学习活动:</strong>
+                    <ul>
+                        ${(day.activities || []).map(a => typeof a === 'string' ? `<li>${a}</li>` : `<li>${a.subject}: ${a.activity} (${a.duration})</li>`).join('')}
+                    </ul>
+                </div>
+            </div>
+        `;
+    });
+    
+    html += `</div>`;
+    document.getElementById('planDetails').innerHTML = html;
+}
+
+function generateQuestions() {
+    const subject = document.getElementById('questionSubject').value;
+    const count = parseInt(document.getElementById('questionCount').value);
+    const difficulty = document.getElementById('questionDifficulty').value;
+    
+    document.getElementById('questionsList').innerHTML = `
+        <div style="text-align:center; padding: 40px;">
+            <i class="fas fa-spinner fa-spin" style="font-size: 48px; margin-bottom: 16px;"></i>
+            <p>AI正在生成${subject}题目...</p>
+        </div>
+    `;
+    
+    fetch('/api/ai/integration/generate_questions', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ subject, count, difficulty })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.code === 200 && data.data) {
+            renderQuestions(data.data);
+            document.getElementById('generatedQuestions').textContent = parseInt(document.getElementById('generatedQuestions').textContent || '0') + count;
+        } else {
+            document.getElementById('questionsList').innerHTML = `<p style="color:red;">生成失败: ${data.message}</p>`;
+        }
+    })
+    .catch(error => {
+        document.getElementById('questionsList').innerHTML = `<p style="color:red;">请求失败: ${error.message}</p>`;
+    });
+}
+
+function renderQuestions(data) {
+    let html = `
+        <h4>${data.subject}题目 (共${data.count}道, 难度: ${data.difficulty})</h4>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>序号</th>
+                    <th>题目</th>
+                    <th>选项</th>
+                    <th>答案</th>
+                    <th>解析</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+    
+    data.questions.forEach(q => {
+        html += `
+            <tr>
+                <td>${q.id}</td>
+                <td>${q.question}</td>
+                <td>${q.options.join(', ')}</td>
+                <td><strong>${q.answer}</strong></td>
+                <td>${q.analysis}</td>
+            </tr>
+        `;
+    });
+    
+    html += `</tbody></table>`;
+    document.getElementById('questionsList').innerHTML = html;
+}
+
+function loadStats() {
+    fetch('/api/ai/auto/class_analysis')
+        .then(response => response.json())
+        .then(data => {
+            if (data.code === 200 && data.data) {
+                document.getElementById('analyzedStudents').textContent = data.data.students.length;
+            }
+        })
+        .catch(error => {
+            console.error('加载统计数据失败:', error);
+        });
+}
+
+document.addEventListener('DOMContentLoaded', loadStats);
+</script>
+{% endblock %}

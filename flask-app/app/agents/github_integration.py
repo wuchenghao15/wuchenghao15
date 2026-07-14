@@ -8,11 +8,23 @@ import logging
 import os
 from datetime import datetime
 from typing import Dict, Any, List
-from github import Github
-from github.GithubException import GithubException
-from github.Repository import Repository
-from github.Branch import Branch
-from github.PullRequest import PullRequest
+
+try:
+    from github import Github
+    from github.GithubException import GithubException
+    from github.Repository import Repository
+    from github.Branch import Branch
+    from github.PullRequest import PullRequest
+    GITHUB_AVAILABLE = True
+except ImportError:
+    # PyGithub未安装时优雅降级，避免阻断整个系统初始化
+    GITHUB_AVAILABLE = False
+    Github = None
+    GithubException = Exception
+    Repository = None
+    Branch = None
+    PullRequest = None
+    logging.getLogger(__name__).warning("PyGithub未安装，GitHub集成功能不可用。安装: pip install PyGithub")
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +51,9 @@ class GitHubIntegration:
     
     def _connect(self):
         """连接GitHub"""
+        if not GITHUB_AVAILABLE:
+            logger.warning("[GitHub集成] PyGithub未安装，GitHub集成功能不可用")
+            return
         if self.token:
             try:
                 self.github = Github(self.token)

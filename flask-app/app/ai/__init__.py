@@ -33,6 +33,21 @@ from .maintenance_ai import (
     maintenance_ai
 )
 
+from .self_learning_system import (
+    SelfLearningSystem,
+    LearningPattern,
+    SystemInsight,
+    self_learning_system
+)
+
+from .ai_skill_evolution import (
+    AISkillEvolutionSystem,
+    AIEmployeeEvolution,
+    SkillMetric,
+    ThinkingProfile,
+    ai_skill_evolution_system
+)
+
 __all__ = [
     # 题库优化
     'QuestionBankAIAssistant',
@@ -58,5 +73,18 @@ __all__ = [
     'LogCleaner',
     'BackupManager',
     'SystemHealthChecker',
-    'maintenance_ai'
+    'maintenance_ai',
+    
+    # 自学习系统
+    'SelfLearningSystem',
+    'LearningPattern',
+    'SystemInsight',
+    'self_learning_system',
+    
+    # 技能进化系统
+    'AISkillEvolutionSystem',
+    'AIEmployeeEvolution',
+    'SkillMetric',
+    'ThinkingProfile',
+    'ai_skill_evolution_system'
 ]

@@ -49,6 +49,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from flask import Flask
 from flask_cors import CORS
 from flask import send_from_directory
+from app.middlewares.access_control import require_login, require_admin, require_super_admin, require_role
 
 # 创建Flask应用
 app = Flask(__name__)
@@ -1015,7 +1016,37 @@ def mobile_home():
         'username': session.get('username'),
         'role': session.get('role')
     }
-    return render_template('mobile/home.html', user=user, current_page='home')
+    
+    stats = {
+        'total_points': 0,
+        'completed_tasks': 0,
+        'exam_score': 0
+    }
+    
+    daily_progress = 35
+    
+    try:
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            
+            cursor.execute('SELECT SUM(points) FROM learning_records WHERE user_id = ?', (session['user_id'],))
+            points = cursor.fetchone()[0]
+            if points:
+                stats['total_points'] = points
+            
+            cursor.execute('SELECT COUNT(*) FROM learning_records WHERE user_id = ? AND status = ?', (session['user_id'], 'completed'))
+            tasks = cursor.fetchone()[0]
+            if tasks:
+                stats['completed_tasks'] = tasks
+    except Exception:
+        pass
+    
+    return render_template('mobile/home.html', 
+                          user=user, 
+                          current_page='home',
+                          stats=stats,
+                          daily_progress=daily_progress)
 
 @app.route('/mobile/exam')
 def mobile_exam():
@@ -1048,7 +1079,92 @@ def mobile_profile():
         'username': session.get('username'),
         'role': session.get('role')
     }
-    return render_template('mobile/profile.html', user=user, current_page='profile')
+    
+    stats = {
+        'total_points': 0,
+        'completed_tasks': 0,
+        'learning_days': 0,
+        'weekly_hours': 0,
+        'completed_courses': 0,
+        'badges': 0,
+        'accuracy': 0
+    }
+    
+    devices = []
+    notifications = []
+    version = '2.0.0'
+    
+    try:
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            
+            cursor.execute('SELECT * FROM mobile_devices WHERE user_id = ? LIMIT 2', (session['user_id'],))
+            devices = [dict(row) for row in cursor.fetchall()]
+            
+            cursor.execute('SELECT * FROM push_notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT 3', (session['user_id'],))
+            notifications = [dict(row) for row in cursor.fetchall()]
+            
+            cursor.execute('SELECT version FROM app_versions WHERE is_active = 1 ORDER BY id DESC LIMIT 1')
+            latest_version = cursor.fetchone()
+            if latest_version:
+                version = latest_version['version']
+    except Exception:
+        pass
+    
+    return render_template('mobile/profile.html', 
+                          user=user, 
+                          current_page='profile',
+                          stats=stats,
+                          devices=devices,
+                          notifications=notifications,
+                          version=version)
+
+@app.route('/mobile/ai_learning')
+def mobile_ai_learning():
+    if 'user_id' not in session:
+        return redirect('/mobile/login')
+    user = {
+        'id': session.get('user_id'),
+        'username': session.get('username'),
+        'role': session.get('role')
+    }
+    return render_template('mobile/ai_learning_h5.html', user=user, current_page='ai_learning')
+
+@app.route('/mobile/device_management')
+def mobile_device_management():
+    if 'user_id' not in session:
+        return redirect('/mobile/login')
+    user = {
+        'id': session.get('user_id'),
+        'username': session.get('username'),
+        'role': session.get('role')
+    }
+    
+    devices = []
+    device_count = 0
+    online_count = 0
+    offline_count = 0
+    
+    try:
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute('SELECT * FROM mobile_devices WHERE user_id = ?', (session['user_id'],))
+            devices = [dict(row) for row in cursor.fetchall()]
+            device_count = len(devices)
+            online_count = sum(1 for d in devices if d['status'] == 'online')
+            offline_count = device_count - online_count
+    except Exception:
+        pass
+    
+    return render_template('mobile/device_management.html', 
+                          user=user, 
+                          current_page='profile',
+                          devices=devices,
+                          device_count=device_count,
+                          online_count=online_count,
+                          offline_count=offline_count)
 
 @app.route('/mobile/logout')
 def mobile_logout():
@@ -1340,6 +1456,132 @@ def admin_app_health_details():
                            overall_status=overall_status, cpu_usage=cpu_usage,
                            memory_usage=memory_usage, disk_usage=disk_usage,
                            db_count=db_count, redis_status=redis_status)
+
+@app.route('/admin_app/ai_learning_dashboard')
+def admin_app_ai_learning_dashboard():
+    """管理员App - AI智能学习仪表盘"""
+    has_access, redirect_to = require_admin_app_access()
+    if not has_access:
+        if redirect_to == 'login':
+            return redirect('/admin_app/login')
+        return "无权访问", 403
+    
+    user_id = session.get('user_id')
+    user = {
+        'id': user_id,
+        'username': session.get('username'),
+        'role': session.get('role')
+    }
+    
+    return render_template('admin_app/ai_learning_dashboard.html', user=user, current_page='ai_learning')
+
+@app.route('/admin_app/ai_tutor_assistant')
+def admin_app_ai_tutor_assistant():
+    """管理员App - AI智能辅导助手"""
+    has_access, redirect_to = require_admin_app_access()
+    if not has_access:
+        if redirect_to == 'login':
+            return redirect('/admin_app/login')
+        return "无权访问", 403
+    
+    user_id = session.get('user_id')
+    user = {
+        'id': user_id,
+        'username': session.get('username'),
+        'role': session.get('role')
+    }
+    
+    return render_template('admin_app/ai_tutor_assistant.html', user=user, current_page='ai_learning')
+
+@app.route('/admin_app/ai_auto_learning')
+def admin_app_ai_auto_learning():
+    """管理员App - AI自动化学习"""
+    has_access, redirect_to = require_admin_app_access()
+    if not has_access:
+        if redirect_to == 'login':
+            return redirect('/admin_app/login')
+        return "无权访问", 403
+    
+    user_id = session.get('user_id')
+    user = {
+        'id': user_id,
+        'username': session.get('username'),
+        'role': session.get('role')
+    }
+    
+    return render_template('admin_app/ai_auto_learning.html', user=user, current_page='ai_learning')
+
+@app.route('/admin_app/ai_warning_intervention')
+def admin_app_ai_warning_intervention():
+    """管理员App - AI智能预警与干预"""
+    has_access, redirect_to = require_admin_app_access()
+    if not has_access:
+        if redirect_to == 'login':
+            return redirect('/admin_app/login')
+        return "无权访问", 403
+    
+    user_id = session.get('user_id')
+    user = {
+        'id': user_id,
+        'username': session.get('username'),
+        'role': session.get('role')
+    }
+    
+    return render_template('admin_app/ai_warning_intervention.html', user=user, current_page='ai_learning')
+
+@app.route('/admin_app/ai_knowledge_graph')
+def admin_app_ai_knowledge_graph():
+    """管理员App - AI知识图谱系统"""
+    has_access, redirect_to = require_admin_app_access()
+    if not has_access:
+        if redirect_to == 'login':
+            return redirect('/admin_app/login')
+        return "无权访问", 403
+    
+    user_id = session.get('user_id')
+    user = {
+        'id': user_id,
+        'username': session.get('username'),
+        'role': session.get('role')
+    }
+    
+    return render_template('admin_app/ai_knowledge_graph.html', user=user, current_page='ai_learning')
+
+@app.route('/admin_app/ai_question_generation')
+def admin_app_ai_question_generation():
+    """管理员App - AI智能出题系统"""
+    has_access, redirect_to = require_admin_app_access()
+    if not has_access:
+        if redirect_to == 'login':
+            return redirect('/admin_app/login')
+        return "无权访问", 403
+    
+    user_id = session.get('user_id')
+    user = {
+        'id': user_id,
+        'username': session.get('username'),
+        'role': session.get('role')
+    }
+    
+    return render_template('admin_app/ai_question_generation.html', user=user, current_page='ai_learning')
+
+@app.route('/admin_app/ai_learning_planner')
+def admin_app_ai_learning_planner():
+    """管理员App - AI智能学习规划"""
+    has_access, redirect_to = require_admin_app_access()
+    if not has_access:
+        if redirect_to == 'login':
+            return redirect('/admin_app/login')
+        return "无权访问", 403
+    
+    user_id = session.get('user_id')
+    user = {
+        'id': user_id,
+        'username': session.get('username'),
+        'role': session.get('role')
+    }
+    
+    return render_template('admin_app/ai_learning_planner.html', user=user, current_page='ai_learning')
 
 @app.route('/admin_app/users')
 def admin_app_users():
@@ -1781,6 +2023,168 @@ def gray_release_status():
     except Exception as e:
         logger.error(f"获取灰度推送状态错误: {e}")
         return jsonify({'success': False, 'message': '获取失败'}), 500
+
+
+@app.route('/admin_app/courses')
+@require_admin
+def admin_app_courses():
+    """课程管理页面"""
+    return render_template('admin_app/courses.html', current_page='courses')
+
+
+@app.route('/admin_app/assignments')
+@require_admin
+def admin_app_assignments():
+    """作业管理页面"""
+    return render_template('admin_app/assignments.html', current_page='assignments')
+
+
+@app.route('/admin_app/notifications')
+@require_admin
+def admin_app_notifications():
+    """通知管理页面"""
+    return render_template('admin_app/notifications.html', current_page='notifications')
+
+
+@app.route('/admin_app/resource_manager')
+@require_admin
+def admin_app_resource_manager():
+    """资源管理页面"""
+    return render_template('admin_app/resource_manager.html', current_page='resource_manager')
+
+
+@app.route('/admin_app/data_analysis')
+@require_admin
+def admin_app_data_analysis():
+    """数据分析页面"""
+    return render_template('admin_app/data_analysis.html', current_page='data_analysis')
+
+
+@app.route('/admin_app/user_auth')
+@require_admin
+def admin_app_user_auth():
+    """用户认证管理页面"""
+    return render_template('admin_app/user_auth.html', current_page='user_auth')
+
+
+def _get_admin_context():
+    """获取管理员页面通用上下文"""
+    user_id = session.get('user_id')
+    user = get_user_info(user_id) if user_id else None
+    notification_count = 0
+    try:
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            cursor = conn.cursor()
+            if user_id:
+                cursor.execute('SELECT COUNT(*) FROM notifications WHERE (recipient_id = ? OR recipient_id IS NULL) AND status = ?', (user_id, 'unread'))
+                notification_count = cursor.fetchone()[0]
+    except Exception:
+        pass
+    return {'user': user, 'notification_count': notification_count}
+
+
+@app.route('/admin_app/learning_paths')
+@require_admin
+def admin_app_learning_paths():
+    """学习路径页面"""
+    context = _get_admin_context()
+    return render_template('admin_app/learning_paths.html', current_page='learning_paths', **context)
+
+
+@app.route('/admin_app/student_analytics')
+@require_admin
+def admin_app_student_analytics():
+    """学生分析页面"""
+    context = _get_admin_context()
+    return render_template('admin_app/student_analytics.html', current_page='student_analytics', **context)
+
+
+@app.route('/admin_app/exam_analysis')
+@require_admin
+def admin_app_exam_analysis():
+    """考试分析页面"""
+    context = _get_admin_context()
+    return render_template('admin_app/exam_analysis.html', current_page='exam_analysis', **context)
+
+
+@app.route('/admin_app/wrong_book')
+@require_admin
+def admin_app_wrong_book():
+    """错题本页面"""
+    context = _get_admin_context()
+    return render_template('admin_app/wrong_book.html', current_page='wrong_book', **context)
+
+
+@app.route('/admin_app/health_monitor')
+@require_admin
+def admin_app_health_monitor():
+    """健康监控页面"""
+    context = _get_admin_context()
+    return render_template('admin_app/health_monitor.html', current_page='health_monitor', **context)
+
+
+@app.route('/admin_app/visualization')
+@require_admin
+def admin_app_visualization():
+    """数据可视化页面"""
+    context = _get_admin_context()
+    return render_template('admin_app/visualization.html', current_page='visualization', **context)
+
+
+@app.route('/admin_app/enhanced_settings')
+@require_admin
+def admin_app_enhanced_settings():
+    """增强设置页面"""
+    context = _get_admin_context()
+    return render_template('admin_app/enhanced_settings.html', current_page='enhanced_settings', **context)
+
+
+@app.route('/admin_app/ai_tutor')
+@require_admin
+def admin_app_ai_tutor():
+    """AI辅导页面"""
+    context = _get_admin_context()
+    return render_template('admin_app/ai_tutor.html', current_page='ai_tutor', **context)
+
+
+@app.route('/admin_app/ai_study_path')
+@require_admin
+def admin_app_ai_study_path():
+    """AI学习路径页面"""
+    context = _get_admin_context()
+    return render_template('admin_app/ai_study_path.html', current_page='ai_study_path', **context)
+
+
+@app.route('/admin_app/ai_question_generator')
+@require_admin
+def admin_app_ai_question_generator():
+    """AI题目生成页面"""
+    context = _get_admin_context()
+    return render_template('admin_app/ai_question_generator.html', current_page='ai_question_generator', **context)
+
+
+@app.route('/admin_app/ai_intelligent_center')
+@require_admin
+def admin_app_ai_intelligent_center():
+    """AI智能中心页面"""
+    context = _get_admin_context()
+    return render_template('admin_app/ai_intelligent_center.html', current_page='ai_intelligent_center', **context)
+
+
+@app.route('/admin_app/ai_exam_composer')
+@require_admin
+def admin_app_ai_exam_composer():
+    """AI组卷页面"""
+    context = _get_admin_context()
+    return render_template('admin_app/ai_exam_composer.html', current_page='ai_exam_composer', **context)
+
+
+@app.route('/admin_app/arduino_ide')
+@require_admin
+def admin_app_arduino_ide():
+    """Arduino IDE页面"""
+    context = _get_admin_context()
+    return render_template('admin_app/arduino_ide.html', current_page='arduino_ide', **context)
 
 
 @app.route('/admin_app/logout')
@@ -3981,8 +4385,7 @@ def register():
     # GET请求重定向到主页,注册页面由前端处理
     return redirect('/')
 
-# 导入权限装饰器
-from app.middlewares.access_control import require_login, require_admin, require_super_admin, require_role
+
 
 
 @app.route('/dashboard')
@@ -18393,6 +18796,52 @@ try:
     logger.info("✓ 注册蓝图: super_admin_api")
 except Exception as e:
     logger.error(f"✗ 注册蓝图 super_admin_api 失败: {e}")
+
+try:
+    from app.api.student_analytics_api import student_analytics_api
+    app.register_blueprint(student_analytics_api)
+    logger.info("✓ 注册蓝图: student_analytics_api")
+except Exception as e:
+    logger.error(f"✗ 注册蓝图 student_analytics_api 失败: {e}")
+
+# 注：以下8个蓝图已由 app/__init__.py 的 _register_blueprints() 统一注册，此处不再重复注册：
+# course_management_api, homework_system_api, notification_system_api, learning_enhancement_api,
+# exam_enhancement_api, user_auth_enhanced_api, resource_management_api, data_analysis_api
+
+try:
+    from app.api.ai_intelligent_learning_api import ai_intelligent_learning_api
+    app.register_blueprint(ai_intelligent_learning_api)
+    logger.info("✓ 注册蓝图: ai_intelligent_learning_api")
+except Exception as e:
+    logger.error(f"✗ 注册蓝图 ai_intelligent_learning_api 失败: {e}")
+
+try:
+    from app.api.ai_tutor_assistant_api import ai_tutor_assistant_api
+    app.register_blueprint(ai_tutor_assistant_api)
+    logger.info("✓ 注册蓝图: ai_tutor_assistant_api")
+except Exception as e:
+    logger.error(f"✗ 注册蓝图 ai_tutor_assistant_api 失败: {e}")
+
+try:
+    from app.api.ai_auto_learning_api import ai_auto_learning_api
+    app.register_blueprint(ai_auto_learning_api)
+    logger.info("✓ 注册蓝图: ai_auto_learning_api")
+except Exception as e:
+    logger.error(f"✗ 注册蓝图 ai_auto_learning_api 失败: {e}")
+
+try:
+    from app.api.ai_learning_integration_api import ai_learning_integration_api
+    app.register_blueprint(ai_learning_integration_api)
+    logger.info("✓ 注册蓝图: ai_learning_integration_api")
+except Exception as e:
+    logger.error(f"✗ 注册蓝图 ai_learning_integration_api 失败: {e}")
+
+try:
+    from app.api.ai_warning_intervention_api import ai_warning_intervention_api
+    app.register_blueprint(ai_warning_intervention_api)
+    logger.info("✓ 注册蓝图: ai_warning_intervention_api")
+except Exception as e:
+    logger.error(f"✗ 注册蓝图 ai_warning_intervention_api 失败: {e}")
 
 # ==================== AI布局管理员工模块 ====================
 

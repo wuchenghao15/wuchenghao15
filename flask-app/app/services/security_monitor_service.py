@@ -86,7 +86,7 @@ class SecurityMonitorService:
                     fixed_version TEXT,
                     severity TEXT,
                     description TEXT,
-                    references TEXT,
+                    reference_links TEXT,
                     status TEXT DEFAULT 'open',
                     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (scan_id) REFERENCES security_scan_results(id)

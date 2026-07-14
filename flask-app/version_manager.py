@@ -7,6 +7,29 @@ from datetime import datetime
 from db_manager import connect
 
 VERSION_DATA = {
+    '8.0.0': {
+        'major': 8,
+        'minor': 0,
+        'patch': 0,
+        'build_number': '20260713a',
+        'build_date': '2026-07-13',
+        'codename': 'Full Function Expansion Edition',
+        'status': 'stable',
+        'description': '全功能扩展版本，智能延展系统所有功能包括子功能和新建子系统',
+        'features': [
+            '用户认证增强系统（多因素认证MFA/权限矩阵/用户分组/登录尝试追踪）',
+            '考试增强系统（考试预约/错题本/考试收藏/考试标签/成绩分析）',
+            '学习增强系统（学习路径规划/学习进度追踪/成就系统/学习社区）',
+            '课程管理系统（课程创建/章节管理/学员报名/学习进度/课程评价）',
+            '作业系统（作业布置/作业提交/AI批改/作业统计/智能反馈）',
+            '消息通知系统（站内消息/邮件通知/推送服务/通知模板/通知设置）',
+            '资源管理系统（文件上传/资源分类/资源分享/权限控制/版本管理）',
+            '数据分析系统（数据可视化/智能报表/趋势分析/预测模型/仪表盘）',
+            '题库扩展系统（智能题目生成/题目质量评估/题库自动扩充/知识点关联）',
+            '安全监控系统（入侵检测/威胁分析/安全审计/访问控制/异常行为监测）'
+        ],
+        'upgrade_notes': '从v7.2.0升级：全面扩展用户认证、考试、学习系统，新建课程、作业、通知、资源、数据分析子系统'
+    },
     '7.2.0': {
         'major': 7,
         'minor': 2,
@@ -207,7 +230,7 @@ VERSION_DATA = {
     }
 }
 
-CURRENT_VERSION = '7.2.0'
+CURRENT_VERSION = '8.0.0'
 
 def init_version_table():
     conn = connect('system')

@@ -329,7 +329,11 @@ class RedisCache:
 class FileCache:
     """文件缓存实现"""
     
-    def __init__(self, cache_dir: str = '/app/data/cache'):
+    def __init__(self, cache_dir: str = None):
+        # 默认使用项目根目录下的本地缓存路径，避免Docker路径'/app'在非容器环境不可写
+        if cache_dir is None:
+            _project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            cache_dir = os.path.join(_project_root, 'data', 'cache')
         self._cache_dir = cache_dir
         self._lock = threading.RLock()
         os.makedirs(self._cache_dir, exist_ok=True)

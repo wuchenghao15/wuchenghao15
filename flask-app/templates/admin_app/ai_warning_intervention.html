@@ -1,0 +1,342 @@
+{% extends 'admin_app/base.html' %}
+
+{% block title %}AI智能预警与干预系统 - MTSCOS管理端{% endblock %}
+
+{% block content %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<div class="page-container">
+    <div class="section-title">
+        <i class="fas fa-exclamation-triangle" style="color: var(--color-error);"></i>
+        AI智能预警与干预系统
+    </div>
+
+    <div class="card" style="margin-bottom: 16px;">
+        <div style="padding: 12px; display: flex; gap: 10px; flex-wrap: wrap;">
+            <button class="btn btn-primary" onclick="location.href='/admin_app/ai_learning_dashboard'">
+                <i class="fas fa-chart-bar"></i> 学情分析
+            </button>
+            <button class="btn btn-primary" onclick="location.href='/admin_app/ai_tutor_assistant'">
+                <i class="fas fa-comments"></i> AI辅导
+            </button>
+            <button class="btn btn-primary" onclick="location.href='/admin_app/ai_auto_learning'">
+                <i class="fas fa-calendar-check"></i> 自动学习
+            </button>
+            <button class="btn btn-danger" onclick="scanWarnings()">
+                <i class="fas fa-radar"></i> AI扫描预警
+            </button>
+        </div>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);">
+                <i class="fas fa-exclamation-circle"></i>
+            </div>
+            <div class="stat-info">
+                <div class="stat-value" id="totalActive">--</div>
+                <div class="stat-label">活跃预警</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #ffa502 0%, #ff6348 100%);">
+                <i class="fas fa-bell"></i>
+            </div>
+            <div class="stat-info">
+                <div class="stat-value" id="criticalCount">--</div>
+                <div class="stat-label">红色预警</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                <i class="fas fa-hands-helping"></i>
+            </div>
+            <div class="stat-info">
+                <div class="stat-value" id="pendingInterventions">--</div>
+                <div class="stat-label">待执行干预</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                <i class="fas fa-check-double"></i>
+            </div>
+            <div class="stat-info">
+                <div class="stat-value" id="resolvedCount">--</div>
+                <div class="stat-label">已解除预警</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">
+                <i class="fas fa-chart-line"></i> 预警趋势（近30天）
+            </div>
+        </div>
+        <div style="padding: 20px;">
+            <canvas id="warningTrendChart" width="400" height="200"></canvas>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">
+                <i class="fas fa-fire"></i> 高风险学生TOP10
+            </div>
+        </div>
+        <div style="padding: 16px;">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>排名</th>
+                        <th>学生</th>
+                        <th>风险分数</th>
+                        <th>预警等级</th>
+                        <th>预警原因</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="topRiskList">
+                    <tr><td colspan="6" style="text-align:center;">加载中...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">
+                <i class="fas fa-list-ul"></i> 全部预警列表
+            </div>
+            <div class="card-actions">
+                <select id="levelFilter" class="form-select" onchange="loadWarningList()" style="width: 120px;">
+                    <option value="">全部等级</option>
+                    <option value="critical">红色预警</option>
+                    <option value="high">橙色预警</option>
+                    <option value="medium">黄色预警</option>
+                    <option value="low">蓝色预警</option>
+                </select>
+            </div>
+        </div>
+        <div style="padding: 16px;">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>学生</th>
+                        <th>班级</th>
+                        <th>风险分数</th>
+                        <th>预警等级</th>
+                        <th>状态</th>
+                        <th>时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="warningList">
+                    <tr><td colspan="7" style="text-align:center;">加载中...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+let trendChart = null;
+
+function loadDashboard() {
+    fetch('/api/ai/warning/dashboard')
+        .then(r => r.json())
+        .then(data => {
+            if (data.code === 200 && data.data) {
+                const d = data.data;
+                document.getElementById('totalActive').textContent = d.total_active;
+                document.getElementById('criticalCount').textContent = d.level_distribution.critical || 0;
+                document.getElementById('pendingInterventions').textContent = d.pending_interventions;
+                document.getElementById('resolvedCount').textContent = d.total_resolved;
+                
+                renderTrendChart(d.trend_data || {});
+                renderTopRisk(d.top_risk_students || []);
+            }
+        })
+        .catch(e => console.error('加载仪表盘失败:', e));
+}
+
+function renderTrendChart(trendData) {
+    const ctx = document.getElementById('warningTrendChart').getContext('2d');
+    const dates = Object.keys(trendData).sort();
+    
+    if (trendChart) trendChart.destroy();
+    
+    trendChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: dates,
+            datasets: [
+                {label: '红色预警', data: dates.map(d => trendData[d].critical || 0), borderColor: '#ff6b6b', backgroundColor: 'rgba(255,107,107,0.1)', tension: 0.3},
+                {label: '橙色预警', data: dates.map(d => trendData[d].high || 0), borderColor: '#ffa502', backgroundColor: 'rgba(255,165,2,0.1)', tension: 0.3},
+                {label: '黄色预警', data: dates.map(d => trendData[d].medium || 0), borderColor: '#feca57', backgroundColor: 'rgba(254,202,87,0.1)', tension: 0.3},
+                {label: '蓝色预警', data: dates.map(d => trendData[d].low || 0), borderColor: '#54a0ff', backgroundColor: 'rgba(84,160,255,0.1)', tension: 0.3}
+            ]
+        },
+        options: {responsive: true, scales: {y: {beginAtZero: true, ticks: {stepSize: 1}}}}
+    });
+}
+
+function renderTopRisk(students) {
+    const tbody = document.getElementById('topRiskList');
+    if (!students.length) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">暂无高风险学生</td></tr>';
+        return;
+    }
+    
+    const levelColors = {critical: '#ff6b6b', high: '#ffa502', medium: '#feca57', low: '#54a0ff'};
+    const levelNames = {critical: '红色预警', high: '橙色预警', medium: '黄色预警', low: '蓝色预警'};
+    
+    tbody.innerHTML = students.map((s, i) => `
+        <tr>
+            <td><strong>#${i+1}</strong></td>
+            <td>${s.username || '未知'}</td>
+            <td><span style="color: ${levelColors[s.warning_level]}; font-weight: bold;">${s.risk_score}</span></td>
+            <td><span class="badge" style="background: ${levelColors[s.warning_level]};">${levelNames[s.warning_level]}</span></td>
+            <td>${(s.warning_reason || []).join('; ').substring(0, 40)}</td>
+            <td><button class="btn btn-sm btn-primary" onclick="viewStudentDetail(${s.user_id})">详情</button></td>
+        </tr>
+    `).join('');
+}
+
+function loadWarningList() {
+    const level = document.getElementById('levelFilter').value;
+    const url = level ? `/api/ai/warning/list?level=${level}` : '/api/ai/warning/list';
+    
+    fetch(url)
+        .then(r => r.json())
+        .then(data => {
+            if (data.code === 200 && data.data) {
+                renderWarningList(data.data.warnings);
+            }
+        })
+        .catch(e => console.error('加载预警列表失败:', e));
+}
+
+function renderWarningList(warnings) {
+    const tbody = document.getElementById('warningList');
+    if (!warnings.length) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">暂无预警记录</td></tr>';
+        return;
+    }
+    
+    const levelColors = {critical: '#ff6b6b', high: '#ffa502', medium: '#feca57', low: '#54a0ff'};
+    const levelNames = {critical: '红色', high: '橙色', medium: '黄色', low: '蓝色'};
+    const statusNames = {active: '活跃', intervening: '干预中', resolved: '已解除'};
+    
+    tbody.innerHTML = warnings.map(w => `
+        <tr>
+            <td>${w.username || '未知'}</td>
+            <td>${w.class_name || '-'}</td>
+            <td><strong>${w.risk_score}</strong></td>
+            <td><span class="badge" style="background: ${levelColors[w.warning_level]};">${levelNames[w.warning_level]}</span></td>
+            <td>${statusNames[w.status] || w.status}</td>
+            <td>${new Date(w.created_at).toLocaleDateString()}</td>
+            <td><button class="btn btn-sm btn-info" onclick="viewStudentDetail(${w.user_id})">查看</button></td>
+        </tr>
+    `).join('');
+}
+
+function viewStudentDetail(userId) {
+    fetch(`/api/ai/warning/student/${userId}`)
+        .then(r => r.json())
+        .then(data => {
+            if (data.code === 200 && data.data) {
+                showStudentModal(data.data);
+            }
+        })
+        .catch(e => console.error('加载学生详情失败:', e));
+}
+
+function showStudentModal(data) {
+    const levelColors = {critical: '#ff6b6b', high: '#ffa502', medium: '#feca57', low: '#54a0ff'};
+    const levelNames = {critical: '红色预警', high: '橙色预警', medium: '黄色预警', low: '蓝色预警'};
+    
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.innerHTML = `
+        <div class="modal" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3>学生预警详情 - ${data.student_info?.username || '未知'}</h3>
+                <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">&times;</button>
+            </div>
+            <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>班级</label>
+                        <input type="text" class="form-control" value="${data.student_info?.class_name || '-'}" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label>当前风险分数</label>
+                        <input type="text" class="form-control" value="${data.current_risk_score}" readonly 
+                               style="color: ${levelColors[data.current_risk_level]}; font-weight: bold;">
+                    </div>
+                </div>
+                
+                <h4 style="margin-top: 16px; color: ${levelColors[data.current_risk_level]};">
+                    ${levelNames[data.current_risk_level]}
+                </h4>
+                
+                <h4 style="margin-top: 20px;">风险因素</h4>
+                <div>
+                    ${(data.current_risk_factors || []).map(f => `
+                        <div class="alert alert-warning" style="margin-bottom: 8px;">⚠️ ${f}</div>
+                    `).join('') || '<p style="color:#999;">暂无风险因素</p>'}
+                </div>
+                
+                <h4 style="margin-top: 20px;">干预建议</h4>
+                <div>
+                    ${(data.warning_history?.[0]?.intervention_suggestion || []).map(s => `
+                        <div class="card" style="margin-bottom: 8px; padding: 12px;">
+                            <p><strong>类型:</strong> ${s.type}</p>
+                            <p><strong>优先级:</strong> ${s.priority}</p>
+                            <p><strong>措施:</strong> ${s.action}</p>
+                            <p><strong>预期效果:</strong> ${s.expected_effect}</p>
+                            <p><strong>负责人:</strong> ${s.responsible}</p>
+                        </div>
+                    `).join('') || '<p style="color:#999;">暂无干预建议</p>'}
+                </div>
+                
+                <h4 style="margin-top: 20px;">干预历史</h4>
+                <div>
+                    ${(data.intervention_history || []).map(i => `
+                        <div class="card" style="margin-bottom: 8px; padding: 12px;">
+                            <p><strong>类型:</strong> ${i.intervention_type} | <strong>状态:</strong> ${i.status}</p>
+                            <p><strong>内容:</strong> ${i.intervention_content}</p>
+                            <p><strong>执行人:</strong> ${i.executor}</p>
+                        </div>
+                    `).join('') || '<p style="color:#999;">暂无干预历史</p>'}
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+function scanWarnings() {
+    if (!confirm('确定要扫描所有学生并生成预警吗？')) return;
+    
+    fetch('/api/ai/warning/scan', {method: 'POST'})
+        .then(r => r.json())
+        .then(data => {
+            if (data.code === 200) {
+                alert(data.message);
+                loadDashboard();
+                loadWarningList();
+            } else {
+                alert('扫描失败: ' + data.message);
+            }
+        })
+        .catch(e => alert('请求失败: ' + e.message));
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadDashboard();
+    loadWarningList();
+});
+</script>
+{% endblock %}

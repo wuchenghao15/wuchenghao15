@@ -39,7 +39,7 @@ class LearningPathService:
                 suggestion='请稍后重试或联系管理员'
             )
         
-        path.update(status=LearningPathStatus.ACTIVE)
+        LearningPath.update(path.id, status=LearningPathStatus.ACTIVE.value)
         return path
     
     @staticmethod
@@ -158,7 +158,7 @@ class LearningPathService:
         completed_nodes = sum(1 for n in PathNode.get_by_path(path_id) if n.completed)
         
         if total_nodes > 0 and completed_nodes == total_nodes:
-            path.update(status=LearningPathStatus.COMPLETED)
+            LearningPath.update(path.id, status=LearningPathStatus.COMPLETED.value)
             logger.info(f"学习路径完成: path_id={path_id}")
     
     @staticmethod
@@ -201,7 +201,7 @@ class LearningPathService:
             )
         
         logger.info(f"暂停学习路径: path_id={path_id}")
-        path.update(status=LearningPathStatus.PAUSED)
+        LearningPath.update(path.id, status=LearningPathStatus.PAUSED.value)
         return LearningPath.get_by_id(path_id)
     
     @staticmethod
@@ -227,7 +227,7 @@ class LearningPathService:
             )
         
         logger.info(f"恢复学习路径: path_id={path_id}")
-        path.update(status=LearningPathStatus.ACTIVE)
+        LearningPath.update(path.id, status=LearningPathStatus.ACTIVE.value)
         return LearningPath.get_by_id(path_id)
     
     @staticmethod

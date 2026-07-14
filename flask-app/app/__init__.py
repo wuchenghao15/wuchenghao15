@@ -201,11 +201,23 @@ def _register_blueprints(app) -> Dict[str, bool]:
                 ('app.api.auto_dev_api', 'auto_dev_api', None),
                 ('app.api.exam_enhancement_api', 'exam_enhancement_api', None),
                 ('app.api.exam_expansion_api', 'exam_expansion_api', None),
+                ('app.api.user_auth_enhanced_api', 'user_auth_enhanced_api', None),
+                ('app.api.learning_enhancement_api', 'learning_enhancement_api', None),
+                ('app.api.course_management_api', 'course_management_api', None),
+                ('app.api.homework_system_api', 'homework_system_api', None),
+                ('app.api.notification_system_api', 'notification_system_api', None),
+                ('app.api.resource_management_api', 'resource_management_api', None),
+                ('app.api.data_analysis_api', 'data_analysis_api', None),
                 ('app.api.version_api', 'version_api', '/api/version'),
                 ('app.api.parent_api', 'parent_api', None),
                 ('app.api.teacher_k12_api', 'teacher_k12_api', None),
                 ('app.api.iteration_api', 'iteration_api', '/api'),
                 ('app.api.ai_distributed_db_api', 'ai_distributed_db_api', '/api'),
+                ('app.api.ai_knowledge_graph_api', 'ai_knowledge_graph_api', None),
+                ('app.api.ai_question_generation_api', 'ai_question_generation_api', None),
+                ('app.api.ai_learning_planner_api', 'ai_learning_planner_api', None),
+                ('app.api.mobile_app_management_api', 'mobile_app_management_api', None),
+                ('app.api.ai_empowerment_api', 'ai_empowerment_api', None),
             ]
         }
     ]
@@ -545,20 +557,22 @@ def _init_services() -> Dict[str, bool]:
                         logger.warning(f"[服务层] {service['name']} 参数不匹配")
             elif service_class:
                 try:
-                    if service_class.__init__.__code__.co_argcount <= 1:
+                    # 优先尝试无参实例化，失败则尝试传入数据库路径
+                    # 避免直接访问__init__.__code__（部分类的__init__是wrapper_descriptor无__code__属性）
+                    try:
                         service_class()
-                    else:
+                    except TypeError:
                         try:
                             service_class(DATABASE_PATH)
-                        except:
+                        except TypeError:
                             service_class()
                     results[service['name']] = True
                     print_progress(i, len(services), f"{Color.GREEN}✓ {service['name']}{Color.RESET}")
                     logger.info(f"[服务层] {service['name']} 类实例化成功")
-                except:
+                except Exception as e:
                     results[service['name']] = False
                     print_progress(i, len(services), f"{Color.YELLOW}~ {service['name']} 类实例化失败{Color.RESET}")
-                    logger.warning(f"[服务层] {service['name']} 类实例化失败")
+                    logger.warning(f"[服务层] {service['name']} 类实例化失败: {e}")
             elif service_instance:
                 results[service['name']] = True
                 print_progress(i, len(services), f"{Color.GREEN}✓ {service['name']}{Color.RESET}")
@@ -614,7 +628,9 @@ def _init_employees() -> Dict[str, bool]:
         {'name': '题目库规则模板', 'module': 'app.agents.question_bank_rule_templates'},
         {'name': '安全规则模板', 'module': 'app.agents.security_rule_templates'},
         {'name': '听力题库AI', 'module': 'ai_engines.listening_question_employee'},
-        {'name': '日语听力音频AI', 'module': 'ai_engines.japanese_listening_audio_ai'}
+        {'name': '日语听力音频AI', 'module': 'ai_engines.japanese_listening_audio_ai'},
+        {'name': '自学习系统', 'module': 'app.ai.self_learning_system'},
+        {'name': 'AI技能进化系统', 'module': 'app.ai.ai_skill_evolution'}
     ]
     
     print(f"\n{Color.BOLD}{Color.MAGENTA}┌─────────────────────────────────────────────────────────────┐")
@@ -686,26 +702,28 @@ def _init_employees() -> Dict[str, bool]:
                             results[employee['name']] = True
                             print_progress(i, len(employees), f"{Color.GREEN}✓ {employee['name']}{Color.RESET}")
                             logger.info(f"[AI员工] {employee['name']} 初始化成功")
-                    except:
+                    except Exception as e:
                         results[employee['name']] = False
                         print_progress(i, len(employees), f"{Color.YELLOW}~ {employee['name']} 参数不匹配{Color.RESET}")
-                        logger.warning(f"[AI员工] {employee['name']} 参数不匹配")
+                        logger.warning(f"[AI员工] {employee['name']} 参数不匹配: {e}")
             elif employee_class:
                 try:
-                    if employee_class.__init__.__code__.co_argcount <= 1:
+                    # 优先尝试无参实例化，失败则尝试传入数据库路径
+                    # 避免直接访问__init__.__code__（部分类的__init__是wrapper_descriptor无__code__属性）
+                    try:
                         employee_class()
-                    else:
+                    except TypeError:
                         try:
                             employee_class(DATABASE_PATH)
-                        except:
+                        except TypeError:
                             employee_class()
                     results[employee['name']] = True
                     print_progress(i, len(employees), f"{Color.GREEN}✓ {employee['name']}{Color.RESET}")
                     logger.info(f"[AI员工] {employee['name']} 类实例化成功")
-                except:
+                except Exception as e:
                     results[employee['name']] = False
                     print_progress(i, len(employees), f"{Color.YELLOW}~ {employee['name']} 类实例化失败{Color.RESET}")
-                    logger.warning(f"[AI员工] {employee['name']} 类实例化失败")
+                    logger.warning(f"[AI员工] {employee['name']} 类实例化失败: {e}")
             elif employee_instance:
                 results[employee['name']] = True
                 print_progress(i, len(employees), f"{Color.GREEN}✓ {employee['name']}{Color.RESET}")

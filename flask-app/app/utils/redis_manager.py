@@ -155,11 +155,15 @@ class RedisManager:
                 decode_responses=True
             )
             
-            self.connections['default'] = redis.Redis(connection_pool=pool)
-            self.connections['default'].ping()
+            client = redis.Redis(connection_pool=pool)
+            client.ping()
+            self.connections['default'] = client
             logger.info(f"Redis单机连接成功: {host}:{port}")
         except Exception as e:
-            logger.error(f"Redis单机连接失败: {str(e)}")
+            # 连接失败时移除无效连接对象，避免监控线程反复ping死连接导致日志刷屏
+            self.connections.pop('default', None)
+            self._use_memory_fallback = True
+            logger.warning(f"Redis单机连接失败，自动切换到内存缓存模式: {str(e)}")
 
     def _init_sentinel_connection(self):
         """初始化哨兵模式连接 - 强化版"""
@@ -462,7 +466,9 @@ class RedisManager:
             elif self.connection_mode == 'sentinel' and hasattr(self, 'master'):
                 return self.master
             
-            logger.error("没有可用的Redis连接")
+            # 内存缓存模式下无Redis连接是正常情况，使用debug避免日志刷屏
+            if not self._use_memory_fallback:
+                logger.error("没有可用的Redis连接")
             return None
 
     def get_master_connection(self):

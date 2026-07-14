@@ -41,17 +41,18 @@
                         <tr>
                             <th>ID</th>
                             <th>课程名称</th>
-                            <th>类型</th>
                             <th>科目</th>
-                            <th>状态</th>
-                            <th>浏览量</th>
+                            <th>难度</th>
+                            <th>时长</th>
+                            <th>课时数</th>
                             <th>报名人数</th>
+                            <th>评分</th>
                             <th>操作</th>
                         </tr>
                     </thead>
                     <tbody id="courseList">
                         <tr>
-                            <td colspan="8" class="text-center">加载中...</td>
+                            <td colspan="9" class="text-center">加载中...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -122,14 +123,6 @@
                             <label class="form-label">时长(分钟)</label>
                             <input type="number" class="form-control" id="duration" placeholder="课程时长" min="0">
                         </div>
-                        <div class="form-group">
-                            <label class="form-label">价格</label>
-                            <input type="number" class="form-control" id="price" placeholder="课程价格" min="0" step="0.01">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">免费</label>
-                            <input type="checkbox" id="isFree" checked>
-                        </div>
                     </div>
                     <button type="submit" class="btn btn-primary btn-lg w-full">保存课程</button>
                 </form>
@@ -161,7 +154,7 @@
             const tbody = document.getElementById('courseList');
             
             if (courses.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" class="text-center">暂无课程</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="9" class="text-center">暂无课程</td></tr>';
                 return;
             }
 
@@ -169,32 +162,29 @@
                 <tr>
                     <td>${course.id}</td>
                     <td>${course.title}</td>
-                    <td>${getCourseTypeName(course.course_type)}</td>
                     <td>${getSubjectName(course.subject)}</td>
-                    <td><span class="badge ${getStatusClass(course.status)}">${getStatusName(course.status)}</span></td>
-                    <td>${course.view_count}</td>
-                    <td>${course.enrollment_count}</td>
+                    <td>${getLevelName(course.level)}</td>
+                    <td>${course.duration || 0}分钟</td>
+                    <td>${course.lesson_count || 0}</td>
+                    <td>${course.enrollment_count || 0}</td>
+                    <td>${course.avg_rating ? course.avg_rating.toFixed(1) : '-'}</td>
                     <td>
                         <button class="btn btn-sm btn-secondary" onclick="viewCourse(${course.id})">详情</button>
                         <button class="btn btn-sm btn-secondary" onclick="editCourse(${course.id})">编辑</button>
-                        ${course.status === 'draft' ? `<button class="btn btn-sm btn-success" onclick="publishCourse(${course.id})">发布</button>` : ''}
-                        ${course.status === 'published' ? `<button class="btn btn-sm btn-warning" onclick="archiveCourse(${course.id})">归档</button>` : ''}
-                        ${course.status !== 'draft' ? `<button class="btn btn-sm btn-info" onclick="manageChapters(${course.id})">章节管理</button>` : ''}
+                        <button class="btn btn-sm btn-info" onclick="manageChapters(${course.id})">章节管理</button>
                         <button class="btn btn-sm btn-danger" onclick="deleteCourse(${course.id})">删除</button>
                     </td>
                 </tr>
             `).join('');
         }
 
-        function getCourseTypeName(type) {
-            const types = {
-                'video': '视频',
-                'live': '直播',
-                'interactive': '互动',
-                'assessment': '评估',
-                'practice': '练习'
+        function getLevelName(level) {
+            const levels = {
+                'beginner': '初级',
+                'intermediate': '中级',
+                'advanced': '高级'
             };
-            return types[type] || type;
+            return levels[level] || level || '-';
         }
 
         function getSubjectName(subject) {
@@ -230,7 +220,6 @@
             document.getElementById('modalTitle').textContent = '添加课程';
             document.getElementById('courseForm').reset();
             document.getElementById('courseId').value = '';
-            document.getElementById('isFree').checked = true;
             document.getElementById('createModal').style.display = 'block';
         }
 
@@ -243,18 +232,16 @@
                 const response = await fetch(`/api/courses/${id}`);
                 const data = await response.json();
                 
-                if (data.code === 200) {
+                if (data.success) {
                     const course = data.data;
                     document.getElementById('modalTitle').textContent = '编辑课程';
                     document.getElementById('courseId').value = course.id;
                     document.getElementById('title').value = course.title;
                     document.getElementById('description').value = course.description || '';
-                    document.getElementById('courseType').value = course.course_type;
+                    document.getElementById('courseType').value = course.course_type || 'video';
                     document.getElementById('subject').value = course.subject || '';
                     document.getElementById('grade').value = course.grade || '';
-                    document.getElementById('duration').value = course.duration;
-                    document.getElementById('price').value = course.price;
-                    document.getElementById('isFree').checked = course.is_free;
+                    document.getElementById('duration').value = course.duration || 0;
                     document.getElementById('createModal').style.display = 'block';
                 }
             } catch (error) {
@@ -272,9 +259,7 @@
                 course_type: document.getElementById('courseType').value,
                 subject: document.getElementById('subject').value,
                 grade: document.getElementById('grade').value,
-                duration: parseInt(document.getElementById('duration').value) || 0,
-                price: parseFloat(document.getElementById('price').value) || 0,
-                is_free: document.getElementById('isFree').checked
+                duration: parseInt(document.getElementById('duration').value) || 0
             };
             
             try {

@@ -1,0 +1,207 @@
+{% extends 'admin_app/base.html' %}
+
+{% block title %}AI辅导助手 - MTSCOS管理端{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <div class="section-title">
+        <i class="fas fa-robot" style="color: var(--color-primary);"></i>
+        AI智能辅导助手
+    </div>
+
+    <div class="grid-2">
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fas fa-comments"></i> AI智能问答
+                </div>
+            </div>
+            <div style="padding: 20px;">
+                <div class="form-group">
+                    <label>学科</label>
+                    <select id="tutorSubject" class="form-select">
+                        <option value="">全部学科</option>
+                        <option value="数学">数学</option>
+                        <option value="语文">语文</option>
+                        <option value="英语">英语</option>
+                        <option value="物理">物理</option>
+                        <option value="化学">化学</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>问题</label>
+                    <textarea id="tutorQuestion" class="form-control" rows="4" placeholder="输入您的问题..."></textarea>
+                </div>
+                <button class="btn btn-primary" onclick="askAI()" style="width: 100%;">
+                    <i class="fas fa-send"></i> 提交问题
+                </button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fas fa-graduation-cap"></i> AI辅导解答
+                </div>
+            </div>
+            <div style="padding: 20px;">
+                <div id="aiAnswer" style="min-height: 200px; padding: 15px; background: #f8f9fa; border-radius: 8px; white-space: pre-wrap; font-size: 14px; line-height: 1.6;">
+                    等待AI解答...
+                </div>
+                <div id="aiMetadata" style="margin-top: 10px; font-size: 12px; color: #666;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">
+                <i class="fas fa-history"></i> 问答历史
+            </div>
+        </div>
+        <div style="padding: 16px;">
+            <div id="questionHistory">
+                <div style="text-align:center; padding: 40px; color: #999;">
+                    <i class="fas fa-history" style="font-size: 48px; margin-bottom: 16px;"></i>
+                    <p>暂无问答历史</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">
+                <i class="fas fa-list"></i> 可用AI员工
+            </div>
+        </div>
+        <div style="padding: 16px;">
+            <div id="employeeList" class="grid-3">
+                <div style="text-align:center; padding: 40px; color: #999;">
+                    <i class="fas fa-users" style="font-size: 48px; margin-bottom: 16px;"></i>
+                    <p>加载中...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function askAI() {
+    const question = document.getElementById('tutorQuestion').value.trim();
+    const subject = document.getElementById('tutorSubject').value;
+    
+    if (!question) {
+        alert('请输入问题');
+        return;
+    }
+    
+    document.getElementById('aiAnswer').textContent = 'AI正在思考中...';
+    document.getElementById('aiMetadata').textContent = '';
+    
+    fetch('/api/ai/integration/tutor_ask', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ question, subject })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.code === 200 && data.data) {
+            document.getElementById('aiAnswer').textContent = data.data.answer;
+            document.getElementById('aiMetadata').textContent = `由 ${data.data.generated_by || '系统'} 生成`;
+            loadQuestionHistory();
+        } else {
+            document.getElementById('aiAnswer').textContent = 'AI解答失败: ' + (data.message || '未知错误');
+        }
+    })
+    .catch(error => {
+        document.getElementById('aiAnswer').textContent = '请求失败: ' + error.message;
+    });
+}
+
+function loadQuestionHistory() {
+    fetch('/api/ai/tutor/questions')
+        .then(response => response.json())
+        .then(data => {
+            if (data.code === 200 && data.data && data.data.questions) {
+                const history = data.data.questions.slice(0, 5);
+                if (history.length > 0) {
+                    document.getElementById('questionHistory').innerHTML = `
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>问题</th>
+                                    <th>学科</th>
+                                    <th>时间</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${history.map(q => `
+                                    <tr>
+                                        <td>${q.question.substring(0, 30)}${q.question.length > 30 ? '...' : ''}</td>
+                                        <td>${q.subject || '-'}</td>
+                                        <td>${new Date(q.created_at).toLocaleString()}</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-info" onclick="viewAnswer(${q.id})">查看</button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    `;
+                }
+            }
+        })
+        .catch(error => {
+            console.error('加载问答历史失败:', error);
+        });
+}
+
+function viewAnswer(id) {
+    fetch(`/api/ai/tutor/questions/${id}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.code === 200 && data.data) {
+                const answer = JSON.parse(data.data.answer);
+                document.getElementById('aiAnswer').textContent = answer.answer || '暂无答案';
+                document.getElementById('aiMetadata').textContent = `问题: ${data.data.question}`;
+            }
+        })
+        .catch(error => {
+            console.error('查看答案失败:', error);
+        });
+}
+
+function loadEmployees() {
+    fetch('/api/ai/integration/employees')
+        .then(response => response.json())
+        .then(data => {
+            if (data.code === 200 && data.data && data.data.employees) {
+                const employees = data.data.employees.slice(0, 9);
+                document.getElementById('employeeList').innerHTML = employees.map(e => `
+                    <div class="stat-card" style="margin: 8px;">
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                            <i class="fas fa-user-robot"></i>
+                        </div>
+                        <div class="stat-info">
+                            <div class="stat-value" style="font-size: 14px;">${e.name}</div>
+                            <div class="stat-label" style="font-size: 12px;">级别 ${e.level} | ${e.status}</div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        })
+        .catch(error => {
+            console.error('加载AI员工失败:', error);
+        });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadQuestionHistory();
+    loadEmployees();
+});
+</script>
+{% endblock %}

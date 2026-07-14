@@ -53,6 +53,12 @@ try:
 except ImportError:
     super_admin_data_api = None
 
+try:
+    from app.api.ai_empowerment_api import ai_empowerment_api
+except ImportError:
+    ai_empowerment_api = None
+    logger.warning("[API] AI赋能API导入失败")
+
 # ==================== K12教育系统API ====================
 try:
     from app.api.parent_api import parent_api
@@ -96,6 +102,10 @@ if exam_api:
 
 if super_admin_data_api:
     api_bp.register_blueprint(super_admin_data_api)
+
+if ai_empowerment_api:
+    api_bp.register_blueprint(ai_empowerment_api)
+    logger.info("[API] AI赋能API蓝图注册完成")
 
 # 注册K12教育系统API蓝图
 if parent_api:
