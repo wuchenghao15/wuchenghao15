@@ -1,1032 +1,166 @@
-{% extends 'admin_app/base.html' %}
-
-{% block title %}AI智能学习规划 - MTSCOS管理端{% endblock %}
-
-{% block content %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<style>
-    .grid-2 {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 12px;
-    }
-    .grid-3 {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 12px;
-    }
-    .stats-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 10px;
-        margin-bottom: 16px;
-    }
-    .stat-card .stat-icon {
-        position: absolute;
-        right: 12px;
-        top: 50%;
-        transform: translateY(-50%);
-        width: 44px;
-        height: 44px;
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 20px;
-        color: white;
-    }
-    .stat-card .stat-info {
-        position: relative;
-        z-index: 1;
-    }
-    .progress-bar {
-        height: 8px;
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 4px;
-        overflow: hidden;
-    }
-    .progress-fill {
-        height: 100%;
-        border-radius: 4px;
-        transition: width 0.3s ease;
-    }
-    .plan-item {
-        background: rgba(255, 255, 255, 0.03);
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        padding: 14px;
-        margin-bottom: 10px;
-        cursor: pointer;
-        transition: all 0.2s;
-    }
-    .plan-item:hover, .plan-item.active {
-        background: rgba(59, 130, 246, 0.1);
-        border-color: var(--primary);
-    }
-    .plan-item-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 8px;
-    }
-    .plan-item-title {
-        font-size: 14px;
-        font-weight: 600;
-    }
-    .plan-item-meta {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        font-size: 12px;
-        color: var(--text-muted);
-        margin-bottom: 8px;
-    }
-    .task-timeline {
-        position: relative;
-        padding-left: 24px;
-    }
-    .task-timeline::before {
-        content: '';
-        position: absolute;
-        left: 8px;
-        top: 8px;
-        bottom: 8px;
-        width: 2px;
-        background: var(--border);
-    }
-    .task-item {
-        position: relative;
-        padding: 12px 0;
-        border-bottom: 1px solid var(--border);
-    }
-    .task-item:last-child {
-        border-bottom: none;
-    }
-    .task-item::before {
-        content: '';
-        position: absolute;
-        left: -20px;
-        top: 16px;
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-        background: var(--text-muted);
-        border: 2px solid var(--bg-secondary);
-    }
-    .task-item.completed::before {
-        background: var(--success);
-    }
-    .task-item-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 6px;
-    }
-    .task-item-title {
-        font-size: 14px;
-        font-weight: 500;
-    }
-    .task-item.completed .task-item-title {
-        text-decoration: line-through;
-        color: var(--text-muted);
-    }
-    .task-item-meta {
-        font-size: 12px;
-        color: var(--text-muted);
-    }
-    .task-checkbox {
-        width: 22px;
-        height: 22px;
-        border-radius: 6px;
-        border: 2px solid var(--border);
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.2s;
-        flex-shrink: 0;
-    }
-    .task-checkbox.checked {
-        background: var(--success);
-        border-color: var(--success);
-        color: white;
-    }
-    .form-group {
-        margin-bottom: 14px;
-    }
-    .form-select {
-        width: 100%;
-        padding: 12px 14px;
-        border-radius: 12px;
-        border: 1px solid var(--border);
-        background: rgba(0, 0, 0, 0.2);
-        color: var(--text-primary);
-        font-size: 15px;
-        outline: none;
-        transition: all 0.2s;
-        min-height: 44px;
-    }
-    .form-select:focus {
-        border-color: var(--primary);
-    }
-    .form-select option {
-        background: var(--bg-secondary);
-        color: var(--text-primary);
-    }
-    .plan-type-tabs {
-        display: flex;
-        gap: 8px;
-        margin-bottom: 14px;
-    }
-    .plan-type-tab {
-        flex: 1;
-        padding: 10px 8px;
-        border-radius: 10px;
-        background: rgba(255, 255, 255, 0.03);
-        border: 1px solid var(--border);
-        text-align: center;
-        cursor: pointer;
-        transition: all 0.2s;
-        font-size: 13px;
-    }
-    .plan-type-tab.active {
-        background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-        border-color: transparent;
-        color: white;
-    }
-    .plan-type-tab i {
-        display: block;
-        font-size: 18px;
-        margin-bottom: 4px;
-    }
-    .record-item {
-        display: flex;
-        align-items: center;
-        padding: 12px 0;
-        border-bottom: 1px solid var(--border);
-    }
-    .record-item:last-child {
-        border-bottom: none;
-    }
-    .record-date {
-        width: 50px;
-        text-align: center;
-        margin-right: 12px;
-    }
-    .record-day {
-        font-size: 18px;
-        font-weight: 700;
-    }
-    .record-month {
-        font-size: 11px;
-        color: var(--text-muted);
-    }
-    .record-content {
-        flex: 1;
-    }
-    .record-title {
-        font-size: 14px;
-        font-weight: 500;
-        margin-bottom: 4px;
-    }
-    .record-meta {
-        font-size: 12px;
-        color: var(--text-muted);
-    }
-    .record-duration {
-        font-size: 13px;
-        font-weight: 600;
-        color: var(--primary);
-    }
-    .textarea {
-        width: 100%;
-        padding: 12px 14px;
-        border-radius: 12px;
-        border: 1px solid var(--border);
-        background: rgba(0, 0, 0, 0.2);
-        color: var(--text-primary);
-        font-size: 15px;
-        outline: none;
-        transition: all 0.2s;
-        resize: vertical;
-        min-height: 80px;
-        font-family: inherit;
-    }
-    .textarea:focus {
-        border-color: var(--primary);
-        background: rgba(0, 0, 0, 0.3);
-    }
-    .btn-sm {
-        padding: 6px 12px;
-        font-size: 12px;
-        min-height: 32px;
-        border-radius: 8px;
-    }
-    .filter-section {
-        display: flex;
-        gap: 8px;
-        margin-bottom: 12px;
-    }
-    .filter-btn {
-        padding: 6px 14px;
-        border-radius: 20px;
-        font-size: 12px;
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid var(--border);
-        color: var(--text-secondary);
-        cursor: pointer;
-        transition: all 0.2s;
-    }
-    .filter-btn.active {
-        background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-        color: white;
-        border-color: transparent;
-    }
-    .empty-state {
-        text-align: center;
-        padding: 40px 20px;
-        color: var(--text-muted);
-    }
-    .empty-state-icon {
-        font-size: 48px;
-        margin-bottom: 12px;
-        opacity: 0.4;
-    }
-</style>
-
-<div class="page-container">
-    <div class="section-title">
-        <i class="fas fa-calendar-alt" style="color: var(--color-primary);"></i>
-        AI智能学习规划
-    </div>
-
-    <div class="stats-grid">
-        <div class="stat-card blue">
-            <div class="stat-icon" style="background: linear-gradient(135deg, #3b82f6, #2563eb);">
-                <i class="fas fa-play"></i>
-            </div>
-            <div class="stat-info">
-                <div class="stat-value" id="activePlans">--</div>
-                <div class="stat-label">进行中计划</div>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI学习规划系统</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); min-height: 100vh; }
+        .container { padding: 20px; max-width: 1400px; margin: 0 auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; color: white; }
+        .header h1 { font-size: 26px; }
+        .header .user-info { display: flex; align-items: center; gap: 15px; }
+        .nav-bar { background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); padding: 15px 20px; margin-bottom: 20px; border-radius: 10px; }
+        .nav-bar ul { list-style: none; display: flex; gap: 20px; }
+        .nav-bar ul li a { color: white; text-decoration: none; padding: 8px 15px; border-radius: 6px; transition: background 0.3s; }
+        .nav-bar ul li a:hover, .nav-bar ul li a.active { background: rgba(255,255,255,0.2); }
+        .main-content { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .card { background: white; border-radius: 12px; padding: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .card h2 { font-size: 18px; color: #333; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-size: 13px; color: #555; margin-bottom: 5px; }
+        .form-group select, .form-group input, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+        .form-group textarea { height: 100px; resize: vertical; }
+        .btn { padding: 10px 20px; border-radius: 6px; border: none; cursor: pointer; font-size: 14px; font-weight: 500; }
+        .btn-primary { background: #f59e0b; color: white; }
+        .btn-primary:hover { background: #d97706; }
+        .btn-success { background: #10b981; color: white; }
+        .btn-success:hover { background: #059669; }
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px; }
+        .stat-item { background: white; border-radius: 10px; padding: 15px; text-align: center; }
+        .stat-item .value { font-size: 24px; font-weight: bold; color: #f59e0b; }
+        .stat-item .label { font-size: 12px; color: #666; margin-top: 5px; }
+        .table-container { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        table th, table td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; font-size: 13px; }
+        table th { background: #f8f9fa; color: #555; font-weight: 600; }
+        table tr:hover { background: #f9fafb; }
+        @media (max-width: 768px) { .main-content { grid-template-columns: 1fr; } .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-calendar-check"></i> AI学习规划系统</h1>
+            <div class="user-info">
+                <span>欢迎, {{ user.username }}</span>
             </div>
         </div>
-        <div class="stat-card green">
-            <div class="stat-icon" style="background: linear-gradient(135deg, #10b981, #059669);">
-                <i class="fas fa-check-circle"></i>
-            </div>
-            <div class="stat-info">
-                <div class="stat-value" id="completedPlans">--</div>
-                <div class="stat-label">已完成计划</div>
-            </div>
+        
+        <div class="nav-bar">
+            <ul>
+                <li><a href="/admin_app/dashboard">管理首页</a></li>
+                <li><a href="/admin_app/ai_learning_dashboard">AI学习仪表盘</a></li>
+                <li><a href="/admin_app/ai_learning_planner" class="active">学习规划</a></li>
+                <li><a href="/admin_app/ai_auto_learning">自动化学习</a></li>
+            </ul>
         </div>
-        <div class="stat-card purple">
-            <div class="stat-icon" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);">
-                <i class="fas fa-clock"></i>
-            </div>
-            <div class="stat-info">
-                <div class="stat-value" id="totalHours">--</div>
-                <div class="stat-label">总学习时长(h)</div>
-            </div>
-        </div>
-        <div class="stat-card orange">
-            <div class="stat-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
-                <i class="fas fa-fire"></i>
-            </div>
-            <div class="stat-info">
-                <div class="stat-value" id="streakDays">--</div>
-                <div class="stat-label">连续学习天数</div>
-            </div>
-        </div>
-    </div>
 
-    <div class="card">
-        <div class="card-header">
-            <div class="card-title">
-                <i class="fas fa-plus-circle" style="color: var(--color-primary);"></i>
-                创建学习计划
+        <div class="stats-grid">
+            <div class="stat-item">
+                <div class="value">{{ planner_stats.get('total_plans', '--') }}</div>
+                <div class="label">规划总数</div>
+            </div>
+            <div class="stat-item">
+                <div class="value">{{ planner_stats.get('active_plans', '--') }}</div>
+                <div class="label">进行中规划</div>
+            </div>
+            <div class="stat-item">
+                <div class="value">{{ planner_stats.get('completed_plans', '--') }}</div>
+                <div class="label">已完成规划</div>
+            </div>
+            <div class="stat-item">
+                <div class="value">{{ planner_stats.get('total_goals', '--') }}</div>
+                <div class="label">目标总数</div>
             </div>
         </div>
-        <div style="padding: 4px 0;">
-            <div class="form-group">
-                <label class="label">计划标题</label>
-                <input type="text" class="input" id="planTitle" placeholder="例如：期末复习计划、数学查漏补缺">
-            </div>
-            <div class="form-group">
-                <label class="label">计划类型</label>
-                <div class="plan-type-tabs">
-                    <div class="plan-type-tab active" data-type="exam">
-                        <i class="fas fa-graduation-cap"></i>
-                        考试备考
-                    </div>
-                    <div class="plan-type-tab" data-type="sync">
-                        <i class="fas fa-book"></i>
-                        同步学习
-                    </div>
-                    <div class="plan-type-tab" data-type="review">
-                        <i class="fas fa-search-plus"></i>
-                        查漏补缺
-                    </div>
-                </div>
-            </div>
-            <div class="grid-2">
+
+        <div class="main-content">
+            <div class="card">
+                <h2><i class="fas fa-plus-circle"></i> 创建学习规划</h2>
                 <div class="form-group">
-                    <label class="label">学科</label>
-                    <select class="form-select" id="planSubject">
-                        <option value="">请选择学科</option>
-                        <option value="math">数学</option>
-                        <option value="chinese">语文</option>
-                        <option value="english">英语</option>
-                        <option value="physics">物理</option>
-                        <option value="chemistry">化学</option>
-                        <option value="biology">生物</option>
-                        <option value="history">历史</option>
-                        <option value="geography">地理</option>
-                        <option value="politics">政治</option>
+                    <label>规划名称</label>
+                    <input type="text" id="plan-name" placeholder="请输入规划名称">
+                </div>
+                <div class="form-group">
+                    <label>规划周期</label>
+                    <select id="plan-duration">
+                        <option value="week">一周</option>
+                        <option value="month">一个月</option>
+                        <option value="quarter">一季度</option>
+                        <option value="year">一年</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label class="label">每日学习时长(分钟)</label>
-                    <input type="number" class="input" id="dailyDuration" value="60" min="15" max="480">
-                </div>
-            </div>
-            <div class="grid-2">
-                <div class="form-group">
-                    <label class="label">开始日期</label>
-                    <input type="date" class="input" id="startDate">
+                    <label>学习目标</label>
+                    <textarea id="plan-goal" placeholder="请输入学习目标"></textarea>
                 </div>
                 <div class="form-group">
-                    <label class="label">结束日期</label>
-                    <input type="date" class="input" id="endDate">
+                    <label>优先级</label>
+                    <select id="plan-priority">
+                        <option value="high">高</option>
+                        <option value="medium">中</option>
+                        <option value="low">低</option>
+                    </select>
+                </div>
+                <button class="btn btn-success" onclick="createPlan()">创建规划</button>
+            </div>
+
+            <div class="card">
+                <h2><i class="fas fa-list"></i> 学习规划列表</h2>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>规划名称</th>
+                                <th>周期</th>
+                                <th>优先级</th>
+                                <th>进度</th>
+                                <th>状态</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for plan in planner_stats.get('recent_plans', []) %}
+                            <tr>
+                                <td>{{ plan.name }}</td>
+                                <td>{{ plan.duration }}</td>
+                                <td>{{ plan.priority }}</td>
+                                <td>
+                                    <div style="width: 80px; background: #eee; border-radius: 5px; height: 8px;">
+                                        <div style="width: {{ plan.progress }}%; background: #f59e0b; border-radius: 5px; height: 100%;"></div>
+                                    </div>
+                                </td>
+                                <td>{{ plan.status }}</td>
+                            </tr>
+                            {% endfor %}
+                            {% if not planner_stats.get('recent_plans') %}
+                            <tr><td colspan="5" style="text-align: center; color: #999;">暂无学习规划</td></tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
                 </div>
             </div>
-            <button class="btn btn-primary" style="width: 100%; margin-top: 8px;" onclick="createPlan()">
-                <i class="fas fa-magic"></i>&nbsp; AI生成学习计划
-            </button>
         </div>
     </div>
 
-    <div class="card">
-        <div class="card-header">
-            <div class="card-title">
-                <i class="fas fa-list-alt" style="color: var(--color-secondary);"></i>
-                学习计划列表
-            </div>
-        </div>
-        <div class="filter-section">
-            <button class="filter-btn active" data-filter="all" onclick="filterPlans('all')">全部</button>
-            <button class="filter-btn" data-filter="active" onclick="filterPlans('active')">进行中</button>
-            <button class="filter-btn" data-filter="paused" onclick="filterPlans('paused')">已暂停</button>
-            <button class="filter-btn" data-filter="completed" onclick="filterPlans('completed')">已完成</button>
-        </div>
-        <div id="planList">
-            <div class="loading">
-                <div class="spinner"></div>
-            </div>
-        </div>
-    </div>
-
-    <div class="card" id="planDetailCard" style="display: none;">
-        <div class="card-header">
-            <div class="card-title">
-                <i class="fas fa-project-diagram" style="color: var(--color-success);"></i>
-                <span id="detailPlanTitle">计划详情</span>
-            </div>
-            <div id="detailPlanActions">
-                <button class="btn btn-sm btn-secondary" onclick="togglePlanStatus()">
-                    <i class="fas fa-pause" id="toggleIcon"></i>
-                    <span id="toggleText">暂停</span>
-                </button>
-            </div>
-        </div>
-        <div style="padding: 4px 0;">
-            <div style="margin-bottom: 16px;">
-                <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
-                    <span style="font-size: 13px; color: var(--text-secondary);">总体进度</span>
-                    <span style="font-size: 13px; font-weight: 600;" id="detailProgressText">0%</span>
-                </div>
-                <div class="progress-bar">
-                    <div class="progress-fill" style="width: 0%; background: linear-gradient(90deg, var(--color-primary), var(--el-color-primary-light-3));" id="detailProgressBar"></div>
-                </div>
-            </div>
-            <div id="taskList" class="task-timeline">
-            </div>
-        </div>
-    </div>
-
-    <div class="card">
-        <div class="card-header">
-            <div class="card-title">
-                <i class="fas fa-chart-line" style="color: var(--color-warning);"></i>
-                学习趋势
-            </div>
-        </div>
-        <div style="padding: 16px;">
-            <canvas id="learningTrendChart" width="400" height="200"></canvas>
-        </div>
-    </div>
-
-    <div class="card">
-        <div class="card-header">
-            <div class="card-title">
-                <i class="fas fa-book-open" style="color: var(--color-primary);"></i>
-                学习记录
-            </div>
-            <button class="btn btn-sm btn-primary" onclick="showRecordModal()">
-                <i class="fas fa-plus"></i> 记录
-            </button>
-        </div>
-        <div id="recordList">
-            <div class="loading">
-                <div class="spinner"></div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="modal-overlay" id="recordModal" style="display: none;">
-    <div class="modal">
-        <div class="modal-header">
-            <div class="modal-title">记录学习</div>
-            <button class="modal-close" onclick="hideRecordModal()">&times;</button>
-        </div>
-        <div class="modal-body">
-            <div class="form-group">
-                <label class="label">关联计划</label>
-                <select class="form-select" id="recordPlan">
-                    <option value="">选择学习计划</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label class="label">学习时长(分钟)</label>
-                <input type="number" class="input" id="recordDuration" value="30" min="5" max="480">
-            </div>
-            <div class="form-group">
-                <label class="label">学习笔记</label>
-                <textarea class="textarea" id="recordNotes" placeholder="记录今天的学习内容、收获和问题..."></textarea>
-            </div>
-        </div>
-        <div class="modal-footer">
-            <button class="btn btn-secondary" onclick="hideRecordModal()">取消</button>
-            <button class="btn btn-primary" onclick="submitRecord()">提交记录</button>
-        </div>
-    </div>
-</div>
-
-<script>
-let plans = [];
-let currentFilter = 'all';
-let selectedPlanId = null;
-let trendChart = null;
-let selectedPlanType = 'exam';
-
-document.addEventListener('DOMContentLoaded', function() {
-    const today = new Date();
-    const nextMonth = new Date(today);
-    nextMonth.setMonth(nextMonth.getMonth() + 1);
-    
-    document.getElementById('startDate').value = today.toISOString().split('T')[0];
-    document.getElementById('endDate').value = nextMonth.toISOString().split('T')[0];
-
-    document.querySelectorAll('.plan-type-tab').forEach(tab => {
-        tab.addEventListener('click', function() {
-            document.querySelectorAll('.plan-type-tab').forEach(t => t.classList.remove('active'));
-            this.classList.add('active');
-            selectedPlanType = this.dataset.type;
-        });
-    });
-
-    loadStats();
-    loadPlans();
-    loadRecords();
-    initTrendChart();
-});
-
-function loadStats() {
-    fetch('/api/ai/planner/stats')
-        .then(response => response.json())
-        .then(data => {
-            if (data.code === 200 && data.data) {
-                const d = data.data;
-                document.getElementById('activePlans').textContent = d.active_plans || 0;
-                document.getElementById('completedPlans').textContent = d.completed_plans || 0;
-                document.getElementById('totalHours').textContent = d.total_hours || 0;
-                document.getElementById('streakDays').textContent = d.streak_days || 0;
-            }
-        })
-        .catch(error => {
-            console.error('加载统计数据失败:', error);
-            document.getElementById('activePlans').textContent = 0;
-            document.getElementById('completedPlans').textContent = 0;
-            document.getElementById('totalHours').textContent = 0;
-            document.getElementById('streakDays').textContent = 0;
-        });
-}
-
-function loadPlans() {
-    fetch('/api/ai/planner/plans')
-        .then(response => response.json())
-        .then(data => {
-            if (data.code === 200 && data.data) {
-                plans = data.data.plans || [];
-                renderPlans();
-                updateRecordPlanOptions();
-            }
-        })
-        .catch(error => {
-            console.error('加载计划列表失败:', error);
-            plans = [];
-            renderPlans();
-        });
-}
-
-function renderPlans() {
-    const container = document.getElementById('planList');
-    
-    let filteredPlans = plans;
-    if (currentFilter !== 'all') {
-        filteredPlans = plans.filter(p => p.status === currentFilter);
-    }
-    
-    if (filteredPlans.length === 0) {
-        container.innerHTML = `
-            <div class="empty-state">
-                <div class="empty-state-icon"><i class="fas fa-calendar"></i></div>
-                <div style="font-size: 14px;">暂无学习计划</div>
-            </div>
-        `;
-        return;
-    }
-    
-    container.innerHTML = filteredPlans.map(plan => `
-        <div class="plan-item ${selectedPlanId === plan.id ? 'active' : ''}" onclick="selectPlan(${plan.id})">
-            <div class="plan-item-header">
-                <div class="plan-item-title">${plan.title}</div>
-                <span class="tag ${getStatusTagClass(plan.status)}">${getStatusText(plan.status)}</span>
-            </div>
-            <div class="plan-item-meta">
-                <span><i class="fas fa-book"></i> ${plan.subject_name || plan.subject || '-'}</span>
-                <span><i class="fas fa-calendar"></i> ${plan.start_date} ~ ${plan.end_date}</span>
-            </div>
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <div class="progress-bar" style="flex: 1;">
-                    <div class="progress-fill ${getProgressClass(plan.status)}" style="width: ${plan.progress || 0}%;"></div>
-                </div>
-                <span style="font-size: 12px; color: var(--text-muted); min-width: 40px; text-align: right;">${plan.progress || 0}%</span>
-            </div>
-        </div>
-    `).join('');
-}
-
-function getStatusTagClass(status) {
-    const classes = {
-        'active': 'tag-green',
-        'paused': 'tag-yellow',
-        'completed': 'tag-blue'
-    };
-    return classes[status] || 'tag-gray';
-}
-
-function getStatusText(status) {
-    const texts = {
-        'active': '进行中',
-        'paused': '已暂停',
-        'completed': '已完成'
-    };
-    return texts[status] || status;
-}
-
-function getProgressClass(status) {
-    const classes = {
-        'active': 'progress-fill-primary',
-        'paused': 'progress-fill-warning',
-        'completed': 'progress-fill-success'
-    };
-    return classes[status] || 'progress-fill-primary';
-}
-
-function filterPlans(filter) {
-    currentFilter = filter;
-    document.querySelectorAll('.filter-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.filter === filter);
-    });
-    renderPlans();
-}
-
-function selectPlan(planId) {
-    selectedPlanId = planId;
-    renderPlans();
-    
-    fetch(`/api/ai/planner/plan/${planId}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.code === 200 && data.data) {
-                showPlanDetail(data.data);
-            }
-        })
-        .catch(error => {
-            console.error('加载计划详情失败:', error);
-        });
-}
-
-function showPlanDetail(plan) {
-    document.getElementById('planDetailCard').style.display = 'block';
-    document.getElementById('detailPlanTitle').textContent = plan.title;
-    
-    document.getElementById('detailProgressText').textContent = (plan.progress || 0) + '%';
-    document.getElementById('detailProgressBar').style.width = (plan.progress || 0) + '%';
-    
-    const toggleIcon = document.getElementById('toggleIcon');
-    const toggleText = document.getElementById('toggleText');
-    if (plan.status === 'active') {
-        toggleIcon.className = 'fas fa-pause';
-        toggleText.textContent = '暂停';
-    } else if (plan.status === 'paused') {
-        toggleIcon.className = 'fas fa-play';
-        toggleText.textContent = '继续';
-    } else {
-        document.getElementById('detailPlanActions').style.display = 'none';
-    }
-    
-    const tasks = plan.tasks || [];
-    const taskList = document.getElementById('taskList');
-    
-    if (tasks.length === 0) {
-        taskList.innerHTML = `
-            <div class="empty-state" style="padding: 30px 20px;">
-                <div class="empty-state-icon" style="font-size: 36px;"><i class="fas fa-tasks"></i></div>
-                <div style="font-size: 13px;">暂无任务</div>
-            </div>
-        `;
-        return;
-    }
-    
-    taskList.innerHTML = tasks.map(task => `
-        <div class="task-item ${task.completed ? 'completed' : ''}">
-            <div class="task-item-header">
-                <div style="display: flex; align-items: center; gap: 10px; flex: 1;">
-                    <div class="task-checkbox ${task.completed ? 'checked' : ''}" onclick="event.stopPropagation(); toggleTask(${task.id})">
-                        ${task.completed ? '<i class="fas fa-check" style="font-size: 12px;"></i>' : ''}
-                    </div>
-                    <div class="task-item-title">${task.title}</div>
-                </div>
-            </div>
-            <div class="task-item-meta">
-                <i class="fas fa-calendar-day"></i> ${task.date || ''}
-                &nbsp;·&nbsp;
-                <i class="fas fa-clock"></i> ${task.duration || 0}分钟
-                ${task.description ? '&nbsp;·&nbsp; ' + task.description : ''}
-            </div>
-        </div>
-    `).join('');
-}
-
-function togglePlanStatus() {
-    if (!selectedPlanId) return;
-    
-    const plan = plans.find(p => p.id === selectedPlanId);
-    if (!plan) return;
-    
-    let endpoint;
-    if (plan.status === 'active') {
-        endpoint = `/api/ai/planner/plan/${selectedPlanId}/pause`;
-    } else if (plan.status === 'paused') {
-        endpoint = `/api/ai/planner/plan/${selectedPlanId}/start`;
-    } else {
-        return;
-    }
-    
-    fetch(endpoint, { method: 'POST' })
-        .then(response => response.json())
-        .then(data => {
-            if (data.code === 200) {
-                loadPlans();
-                loadStats();
-                if (selectedPlanId) {
-                    selectPlan(selectedPlanId);
-                }
-                showToast(plan.status === 'active' ? '计划已暂停' : '计划已继续');
-            }
-        })
-        .catch(error => {
-            console.error('操作失败:', error);
-            showToast('操作失败');
-        });
-}
-
-function toggleTask(taskId) {
-    fetch(`/api/ai/planner/task/${taskId}/complete`, { method: 'POST' })
-        .then(response => response.json())
-        .then(data => {
-            if (data.code === 200) {
-                if (selectedPlanId) {
-                    selectPlan(selectedPlanId);
-                }
-                loadPlans();
-                loadStats();
-            }
-        })
-        .catch(error => {
-            console.error('任务状态更新失败:', error);
-            showToast('操作失败');
-        });
-}
-
-function createPlan() {
-    const title = document.getElementById('planTitle').value.trim();
-    const subject = document.getElementById('planSubject').value;
-    const startDate = document.getElementById('startDate').value;
-    const endDate = document.getElementById('endDate').value;
-    const dailyDuration = document.getElementById('dailyDuration').value;
-    
-    if (!title) {
-        showToast('请输入计划标题');
-        return;
-    }
-    if (!subject) {
-        showToast('请选择学科');
-        return;
-    }
-    if (!startDate || !endDate) {
-        showToast('请选择开始和结束日期');
-        return;
-    }
-    if (new Date(endDate) < new Date(startDate)) {
-        showToast('结束日期不能早于开始日期');
-        return;
-    }
-    
-    const btn = event.target;
-    const originalText = btn.innerHTML;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>&nbsp; AI生成中...';
-    btn.disabled = true;
-    
-    fetch('/api/ai/planner/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            title: title,
-            subject: subject,
-            plan_type: selectedPlanType,
-            start_date: startDate,
-            end_date: endDate,
-            daily_duration: parseInt(dailyDuration)
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-        
-        if (data.code === 200) {
-            showToast('计划创建成功！');
-            document.getElementById('planTitle').value = '';
-            loadPlans();
-            loadStats();
-        } else {
-            showToast(data.message || '创建失败');
-        }
-    })
-    .catch(error => {
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-        console.error('创建计划失败:', error);
-        showToast('创建失败，请重试');
-    });
-}
-
-function showRecordModal() {
-    document.getElementById('recordModal').style.display = 'flex';
-}
-
-function hideRecordModal() {
-    document.getElementById('recordModal').style.display = 'none';
-}
-
-function updateRecordPlanOptions() {
-    const select = document.getElementById('recordPlan');
-    const activePlans = plans.filter(p => p.status === 'active');
-    select.innerHTML = '<option value="">选择学习计划</option>' + 
-        activePlans.map(p => `<option value="${p.id}">${p.title}</option>`).join('');
-}
-
-function submitRecord() {
-    const planId = document.getElementById('recordPlan').value;
-    const duration = document.getElementById('recordDuration').value;
-    const notes = document.getElementById('recordNotes').value.trim();
-    
-    if (!planId) {
-        showToast('请选择学习计划');
-        return;
-    }
-    if (!duration || duration <= 0) {
-        showToast('请输入有效的学习时长');
-        return;
-    }
-    
-    fetch('/api/ai/planner/record', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            plan_id: parseInt(planId),
-            duration: parseInt(duration),
-            notes: notes
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.code === 200) {
-            showToast('记录提交成功！');
-            hideRecordModal();
-            document.getElementById('recordDuration').value = 30;
-            document.getElementById('recordNotes').value = '';
-            loadRecords();
-            loadStats();
-            updateTrendChart();
-        } else {
-            showToast(data.message || '提交失败');
-        }
-    })
-    .catch(error => {
-        console.error('提交记录失败:', error);
-        showToast('提交失败，请重试');
-    });
-}
-
-function loadRecords() {
-    fetch('/api/ai/planner/plans')
-        .then(response => response.json())
-        .then(data => {
-            const container = document.getElementById('recordList');
-            const mockRecords = generateMockRecords();
+    <script>
+        function createPlan() {
+            const planName = document.getElementById('plan-name').value;
+            const planDuration = document.getElementById('plan-duration').value;
+            const planGoal = document.getElementById('plan-goal').value;
+            const planPriority = document.getElementById('plan-priority').value;
             
-            if (mockRecords.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-state-icon"><i class="fas fa-book"></i></div>
-                        <div style="font-size: 14px;">暂无学习记录</div>
-                    </div>
-                `;
+            if (!planName) {
+                alert('请输入规划名称');
                 return;
             }
             
-            container.innerHTML = mockRecords.map(record => `
-                <div class="record-item">
-                    <div class="record-date">
-                        <div class="record-day">${record.day}</div>
-                        <div class="record-month">${record.month}</div>
-                    </div>
-                    <div class="record-content">
-                        <div class="record-title">${record.title}</div>
-                        <div class="record-meta">${record.subject} · ${record.duration}分钟</div>
-                    </div>
-                    <div class="record-duration">${record.duration}min</div>
-                </div>
-            `).join('');
-        })
-        .catch(error => {
-            console.error('加载记录失败:', error);
-        });
-}
-
-function generateMockRecords() {
-    const records = [];
-    const subjects = ['数学', '英语', '物理', '语文'];
-    const topics = ['函数复习', '阅读理解', '力学基础', '文言文', '导数练习', '完形填空'];
-    
-    for (let i = 0; i < 7; i++) {
-        const date = new Date();
-        date.setDate(date.getDate() - i);
-        const duration = 30 + Math.floor(Math.random() * 90);
-        records.push({
-            day: date.getDate(),
-            month: (date.getMonth() + 1) + '月',
-            title: topics[Math.floor(Math.random() * topics.length)],
-            subject: subjects[Math.floor(Math.random() * subjects.length)],
-            duration: duration
-        });
-    }
-    return records;
-}
-
-function initTrendChart() {
-    const ctx = document.getElementById('learningTrendChart').getContext('2d');
-    
-    const labels = [];
-    const data = [];
-    for (let i = 6; i >= 0; i--) {
-        const date = new Date();
-        date.setDate(date.getDate() - i);
-        labels.push((date.getMonth() + 1) + '/' + date.getDate());
-        data.push(30 + Math.floor(Math.random() * 100));
-    }
-    
-    trendChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: '学习时长(分钟)',
-                data: data,
-                borderColor: 'rgba(59, 130, 246, 1)',
-                backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                fill: true,
-                tension: 0.4,
-                pointBackgroundColor: 'rgba(59, 130, 246, 1)',
-                pointBorderColor: '#fff',
-                pointBorderWidth: 2,
-                pointRadius: 4
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    display: false
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    grid: {
-                        color: 'rgba(255, 255, 255, 0.05)'
-                    },
-                    ticks: {
-                        color: 'rgba(255, 255, 255, 0.5)'
-                    }
-                },
-                x: {
-                    grid: {
-                        display: false
-                    },
-                    ticks: {
-                        color: 'rgba(255, 255, 255, 0.5)'
-                    }
-                }
-            }
+            alert(`学习规划已创建：\n名称: ${planName}\n周期: ${planDuration}\n目标: ${planGoal}\n优先级: ${planPriority}`);
+            document.getElementById('plan-name').value = '';
+            document.getElementById('plan-goal').value = '';
         }
-    });
-}
-
-function updateTrendChart() {
-    if (trendChart) {
-        const newData = [];
-        for (let i = 0; i < 7; i++) {
-            newData.push(30 + Math.floor(Math.random() * 100));
-        }
-        trendChart.data.datasets[0].data = newData;
-        trendChart.update();
-    }
-}
-
-function showToast(message) {
-    const toast = document.createElement('div');
-    toast.className = 'toast';
-    toast.textContent = message;
-    document.body.appendChild(toast);
-    
-    setTimeout(() => {
-        toast.remove();
-    }, 2000);
-}
-</script>
-{% endblock %}
+    </script>
+</body>
+</html>

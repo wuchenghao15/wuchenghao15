@@ -1,668 +1,492 @@
-{% extends "admin_app/base.html" %}
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系统设置 - MTSCOS AI 管理端</title>
+    <link rel="stylesheet" href="/assets/css/mtscos-design-system.css">
+    <link rel="stylesheet" href="/assets/font-awesome/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: var(--font-family);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 24px;
+        }
+        .page-wrap { max-width: 960px; margin: 0 auto; }
 
-{% block title %}系统设置 - MTSCOS 管理端{% endblock %}
+        .topbar {
+            display: flex; align-items: center; justify-content: space-between;
+            background: var(--bg-primary); border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg); padding: 18px 24px;
+            box-shadow: var(--shadow-sm); margin-bottom: 24px;
+        }
+        .topbar-left { display: flex; align-items: center; gap: 14px; }
+        .brand-badge {
+            width: 48px; height: 48px; border-radius: var(--radius-md);
+            background: var(--primary-color); color: #fff;
+            display: flex; align-items: center; justify-content: center; font-size: 22px;
+        }
+        .brand-text h1 { font-size: 20px; font-weight: 700; }
+        .brand-text .sub { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+        .topbar-right { display: flex; align-items: center; gap: 10px; }
+        .icon-btn {
+            width: 40px; height: 40px; border-radius: var(--radius-md);
+            background: var(--bg-secondary); border: 1px solid var(--border-color);
+            color: var(--text-primary); display: flex; align-items: center; justify-content: center;
+            text-decoration: none; font-size: 17px; position: relative;
+        }
+        .icon-btn:hover { background: var(--primary-color); color: #fff; }
+        .bell .badge {
+            position: absolute; top: -6px; right: -6px;
+            background: var(--danger-color); color: #fff;
+            font-size: 11px; min-width: 18px; height: 18px;
+            border-radius: 999px; display: flex; align-items: center; justify-content: center; padding: 0 4px;
+        }
+        .role-badge {
+            font-size: 11px; padding: 2px 10px; border-radius: 999px;
+            background: rgba(99,102,241,0.12); color: var(--primary-color); margin-left: 6px;
+        }
 
-{% block content %}
-<div class="page-container">
-    <div class="user-profile-card">
-        <div class="user-avatar">{{ user.username[:1].upper() if user else 'A' }}</div>
-        <div class="user-info">
-            <div class="user-name">{{ user.username if user else '管理员' }}</div>
-            <span class="user-role">
-                <i class="fas fa-shield-halved"></i>
-                {{ get_role_name(user.role) if user else '管理员' }}
-            </span>
-        </div>
-    </div>
+        .tabs {
+            display: flex; gap: 4px;
+            background: var(--bg-primary); border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg); padding: 8px;
+            margin-bottom: 20px; overflow-x: auto;
+        }
+        .tab {
+            padding: 10px 18px; border-radius: var(--radius-sm);
+            cursor: pointer; font-size: 14px; font-weight: 600;
+            color: var(--text-secondary); white-space: nowrap;
+            transition: all 0.2s;
+        }
+        .tab:hover { color: var(--text-primary); background: var(--bg-secondary); }
+        .tab.active { background: var(--primary-color); color: #fff; }
+        .tab i { margin-right: 6px; }
 
-    <div class="section-title" style="margin-top: 0;">
-        <i class="fas fa-sliders" style="color: var(--color-warning);"></i>
-        系统设置
-    </div>
+        .section {
+            background: var(--bg-primary); border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);
+            margin-bottom: 20px; overflow: hidden;
+            display: none;
+        }
+        .section.active { display: block; }
+        .section-head {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 16px 22px; border-bottom: 1px solid var(--border-color);
+        }
+        .section-head-left { display: flex; align-items: center; gap: 10px; }
+        .section-head-left h2 { font-size: 16px; font-weight: 700; }
+        .si {
+            width: 34px; height: 34px; border-radius: var(--radius-sm);
+            display: flex; align-items: center; justify-content: center; font-size: 15px;
+        }
+        .si.blue { background: rgba(59,130,246,0.12); color: var(--primary-color); }
+        .si.orange { background: rgba(249,115,22,0.12); color: var(--warning-color); }
+        .si.green { background: rgba(34,197,94,0.12); color: var(--success-color); }
+        .si.purple { background: rgba(168,85,247,0.12); color: var(--secondary-color); }
+        .si.red { background: rgba(239,68,68,0.12); color: var(--danger-color); }
+        .si.cyan { background: rgba(14,165,233,0.12); color: #0ea5e9; }
 
-    <div class="settings-group">
-        <div class="settings-group-title">跑马灯通知管理</div>
-        <div class="settings-item" onclick="toggleMarquee(this)">
-            <div class="settings-icon" style="background: rgba(239, 68, 68, 0.15); color: #f87171;">
-                <i class="fas fa-broadcast-tower"></i>
-            </div>
-            <div class="settings-content">
-                <div class="settings-label">跑马灯通知</div>
-                <div class="settings-desc">首页顶部滚动通知（默认关闭，需手动开启）</div>
-            </div>
-            <div class="toggle {% if marquee_enabled %}active{% endif %}" id="marquee-toggle" onclick="event.stopPropagation(); toggleMarqueeSetting()"></div>
-        </div>
-        <div class="settings-item" onclick="editMarquee()">
-            <div class="settings-icon" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa;">
-                <i class="fas fa-edit"></i>
-            </div>
-            <div class="settings-content">
-                <div class="settings-label">编辑通知内容</div>
-                <div class="settings-desc">{{ marquee_content[:20] }}{% if marquee_content|length > 20 %}...{% endif %}</div>
-            </div>
-            <i class="fas fa-chevron-right arrow"></i>
-        </div>
-        <div class="settings-item" onclick="aiGenerateMarquee()">
-            <div class="settings-icon" style="background: rgba(139, 92, 246, 0.15); color: #a78bfa;">
-                <i class="fas fa-robot"></i>
-            </div>
-            <div class="settings-content">
-                <div class="settings-label">AI自动生成</div>
-                <div class="settings-desc">AI智能生成通知内容（默认不自动开启）</div>
-            </div>
-            <i class="fas fa-chevron-right arrow"></i>
-        </div>
-    </div>
+        .section-body { padding: 8px 22px 22px; }
 
-    <div class="settings-group">
-        <div class="settings-group-title">灰度推送</div>
-        <div class="settings-item" onclick="toggleGrayRelease(this)">
-            <div class="settings-icon" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa;">
-                <i class="fas fa-cloud"></i>
-            </div>
-            <div class="settings-content">
-                <div class="settings-label">灰度推送</div>
-                <div class="settings-desc">测试环境端口2026，正式端口8888</div>
-            </div>
-            <div class="toggle" id="gray-toggle" onclick="event.stopPropagation(); toggleGrayReleaseSetting()"></div>
-        </div>
-        <div class="settings-item" onclick="editGraySettings()">
-            <div class="settings-icon" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24;">
-                <i class="fas fa-sliders-h"></i>
-            </div>
-            <div class="settings-content">
-                <div class="settings-label">灰度设置</div>
-                <div class="settings-desc">设置端口和灰度比例</div>
-            </div>
-            <i class="fas fa-chevron-right arrow"></i>
-        </div>
-    </div>
+        .config-item {
+            display: flex; justify-content: space-between; align-items: flex-start;
+            padding: 14px 0; border-bottom: 1px solid var(--border-color);
+            gap: 20px;
+        }
+        .config-item:last-child { border-bottom: none; }
+        .config-info { flex: 1; min-width: 0; }
+        .config-key {
+            font-size: 14px; font-weight: 600; color: var(--text-primary);
+            margin-bottom: 4px; word-break: break-all;
+        }
+        .config-desc { font-size: 12px; color: var(--text-secondary); }
+        .config-value {
+            display: flex; align-items: center; gap: 8px;
+            flex-shrink: 0;
+        }
+        .config-value input[type="text"],
+        .config-value input[type="number"],
+        .config-value select {
+            padding: 6px 12px;
+            border: 1.5px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            width: 160px;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: inherit;
+        }
+        .config-value input:focus,
+        .config-value select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
 
-    <div class="settings-group">
-        <div class="settings-group-title">通用设置</div>
-        <div class="settings-item" onclick="showToast('站点设置')">
-            <div class="settings-icon" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa;">
-                <i class="fas fa-globe"></i>
+        .toggle {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            border-radius: 12px;
+            background: var(--border-color);
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .toggle.on { background: var(--success-color); }
+        .toggle::after {
+            content: '';
+            position: absolute;
+            top: 3px; left: 3px;
+            width: 18px; height: 18px;
+            border-radius: 50%;
+            background: #fff;
+            transition: transform 0.3s;
+        }
+        .toggle.on::after { transform: translateX(20px); }
+
+        .btn-save-row {
+            display: flex; justify-content: flex-end;
+            padding-top: 16px; border-top: 1px solid var(--border-color);
+            margin-top: 8px;
+        }
+        .btn {
+            padding: 8px 20px;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-primary { background: var(--primary-color); color: #fff; }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-success { background: var(--success-color); color: #fff; }
+        .btn-warning { background: var(--warning-color); color: #fff; }
+
+        .status-chip {
+            display: inline-flex; align-items: center; gap: 6px;
+            font-size: 12px; padding: 3px 10px; border-radius: 999px;
+        }
+        .status-chip.on { background: rgba(34,197,94,0.12); color: var(--success-color); }
+        .status-chip.off { background: rgba(148,163,184,0.15); color: var(--text-secondary); }
+
+        .kv-list { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+        .kv {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 14px 0; border-bottom: 1px solid var(--border-color);
+        }
+        .kv:nth-last-child(-n+2) { border-bottom: none; }
+        .kv .k { font-size: 14px; color: var(--text-secondary); display: flex; align-items: center; gap: 8px; }
+        .kv .v { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+
+        .marquee-preview {
+            margin-top: 14px; padding: 12px 16px; background: var(--bg-secondary);
+            border-radius: var(--radius-md); border: 1px solid var(--border-color);
+            font-size: 13px; color: var(--text-primary);
+            display: flex; align-items: center; gap: 10px;
+        }
+        .marquee-preview i { color: var(--warning-color); }
+
+        .empty {
+            text-align: center; padding: 30px 20px; color: var(--text-secondary);
+        }
+        .empty i { font-size: 32px; margin-bottom: 8px; display: block; color: var(--border-color); }
+
+        .toast {
+            position: fixed;
+            top: 20px; right: 20px;
+            padding: 12px 24px;
+            border-radius: var(--radius-md);
+            color: #fff;
+            font-size: 14px;
+            z-index: 9999;
+            transform: translateX(120%);
+            transition: transform 0.3s;
+            box-shadow: var(--shadow-lg);
+        }
+        .toast.show { transform: translateX(0); }
+        .toast.success { background: var(--success-color); }
+        .toast.error { background: var(--danger-color); }
+
+        .marquee-edit {
+            margin-top: 12px;
+            display: flex; gap: 8px;
+        }
+        .marquee-edit input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1.5px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: inherit;
+        }
+        .marquee-edit input:focus { outline: none; border-color: var(--primary-color); }
+
+        @media (max-width: 720px) {
+            .kv-list { grid-template-columns: 1fr; }
+            .kv:nth-last-child(-n+2) { border-bottom: 1px solid var(--border-color); }
+            .kv:last-child { border-bottom: none; }
+            .config-item { flex-direction: column; }
+            .config-value { width: 100%; }
+            .config-value input, .config-value select { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+<div class="page-wrap">
+
+    <div class="topbar">
+        <div class="topbar-left">
+            <a href="/admin_app/dashboard" class="icon-btn" title="返回管理端"><i class="fas fa-arrow-left"></i></a>
+            <div class="brand-badge"><i class="fas fa-gear"></i></div>
+            <div class="brand-text">
+                <h1>系统设置</h1>
+                <div class="sub">
+                    {% if user %}{{ user.username }}{% if user.role %}<span class="role-badge">{{ user.role }}</span>{% endif %}{% endif %}
+                </div>
             </div>
-            <div class="settings-content">
-                <div class="settings-label">站点设置</div>
-                <div class="settings-desc">站点名称、描述、Logo等</div>
-            </div>
-            <i class="fas fa-chevron-right arrow"></i>
         </div>
-        <div class="settings-item" onclick="showToast('安全设置')">
-            <div class="settings-icon" style="background: rgba(239, 68, 68, 0.15); color: #f87171;">
-                <i class="fas fa-shield-alt"></i>
-            </div>
-            <div class="settings-content">
-                <div class="settings-label">安全设置</div>
-                <div class="settings-desc">密码策略、登录限制等</div>
-            </div>
-            <i class="fas fa-chevron-right arrow"></i>
-        </div>
-        <div class="settings-item" onclick="toggleSetting(this)">
-            <div class="settings-icon" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">
-                <i class="fas fa-envelope"></i>
-            </div>
-            <div class="settings-content">
-                <div class="settings-label">邮件通知</div>
-                <div class="settings-desc">系统邮件提醒功能</div>
-            </div>
-            <div class="toggle active" onclick="event.stopPropagation(); this.classList.toggle('active')"></div>
-        </div>
-        <div class="settings-item" onclick="toggleSetting(this)">
-            <div class="settings-icon" style="background: rgba(139, 92, 246, 0.15); color: #a78bfa;">
+        <div class="topbar-right">
+            <a href="/admin_app/notifications" class="icon-btn bell" title="通知">
                 <i class="fas fa-bell"></i>
-            </div>
-            <div class="settings-content">
-                <div class="settings-label">系统通知</div>
-                <div class="settings-desc">推送系统通知消息</div>
-            </div>
-            <div class="toggle active" onclick="event.stopPropagation(); this.classList.toggle('active')"></div>
+                {% if notification_count %}<span class="badge">{{ notification_count }}</span>{% endif %}
+            </a>
+            <a href="/" class="icon-btn" title="返回首页"><i class="fas fa-house"></i></a>
         </div>
     </div>
 
-    <div class="settings-group">
-        <div class="settings-group-title">用户管理</div>
-        <div class="settings-item" onclick="location.href='/admin_app/users'">
-            <div class="settings-icon" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa;">
-                <i class="fas fa-users-cog"></i>
-            </div>
-            <div class="settings-content">
-                <div class="settings-label">用户管理</div>
-                <div class="settings-desc">管理所有用户账号</div>
-            </div>
-            <i class="fas fa-chevron-right arrow"></i>
+    <div class="tabs">
+        <div class="tab active" data-tab="account" onclick="switchTab('account')">
+            <i class="fas fa-user-shield"></i>账户信息
         </div>
-        <div class="settings-item" onclick="showToast('角色权限管理')">
-            <div class="settings-icon" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24;">
-                <i class="fas fa-user-shield"></i>
-            </div>
-            <div class="settings-content">
-                <div class="settings-label">角色权限</div>
-                <div class="settings-desc">管理角色和权限配置</div>
-            </div>
-            <i class="fas fa-chevron-right arrow"></i>
+        {% if config_categories %}
+        {% for cat in config_categories %}
+        <div class="tab" data-tab="{{ cat }}" onclick="switchTab('{{ cat }}')">
+            <i class="fas fa-cog"></i>{{ category_labels[cat] if category_labels and category_labels[cat] else cat }}
         </div>
-        <div class="settings-item" onclick="showToast('用户组管理')">
-            <div class="settings-icon" style="background: rgba(6, 182, 212, 0.15); color: #22d3ee;">
-                <i class="fas fa-layer-group"></i>
-            </div>
-            <div class="settings-content">
-                <div class="settings-label">用户组管理</div>
-                <div class="settings-desc">用户分组和批量管理</div>
-            </div>
-            <i class="fas fa-chevron-right arrow"></i>
+        {% endfor %}
+        {% endif %}
+        <div class="tab" data-tab="notice" onclick="switchTab('notice')">
+            <i class="fas fa-bullhorn"></i>系统公告
+        </div>
+        <div class="tab" data-tab="system" onclick="switchTab('system')">
+            <i class="fas fa-server"></i>系统信息
         </div>
     </div>
 
-    <div class="settings-group">
-        <div class="settings-group-title">数据管理</div>
-        <div class="settings-item" onclick="showToast('数据备份')">
-            <div class="settings-icon" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">
-                <i class="fas fa-database"></i>
+    <div class="section active" id="tab-account">
+        <div class="section-head">
+            <div class="section-head-left">
+                <div class="si blue"><i class="fas fa-user-shield"></i></div>
+                <h2>账户信息</h2>
             </div>
-            <div class="settings-content">
-                <div class="settings-label">数据备份</div>
-                <div class="settings-desc">手动备份系统数据</div>
-            </div>
-            <i class="fas fa-chevron-right arrow"></i>
         </div>
-        <div class="settings-item" onclick="showToast('数据恢复')">
-            <div class="settings-icon" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa;">
-                <i class="fas fa-undo"></i>
+        <div class="section-body">
+            {% if user %}
+            <div class="kv-list">
+                <div class="kv"><span class="k"><i class="fas fa-hashtag"></i> 用户ID</span><span class="v">{{ user.id|default('-') }}</span></div>
+                <div class="kv"><span class="k"><i class="fas fa-user"></i> 用户名</span><span class="v">{{ user.username|default('-') }}</span></div>
+                <div class="kv"><span class="k"><i class="fas fa-user-tag"></i> 角色</span><span class="v">{{ user.role|default('-') }}</span></div>
+                <div class="kv"><span class="k"><i class="fas fa-bell"></i> 未读通知</span><span class="v">{{ notification_count|default(0) }} 条</span></div>
             </div>
-            <div class="settings-content">
-                <div class="settings-label">数据恢复</div>
-                <div class="settings-desc">从备份中恢复数据</div>
-            </div>
-            <i class="fas fa-chevron-right arrow"></i>
-        </div>
-        <div class="settings-item" onclick="showToast('日志管理')">
-            <div class="settings-icon" style="background: rgba(139, 92, 246, 0.15); color: #a78bfa;">
-                <i class="fas fa-file-lines"></i>
-            </div>
-            <div class="settings-content">
-                <div class="settings-label">日志管理</div>
-                <div class="settings-desc">查看和导出系统日志</div>
-            </div>
-            <i class="fas fa-chevron-right arrow"></i>
+            {% else %}
+            <div class="empty"><i class="fas fa-user-slash"></i><div>暂无账户信息</div></div>
+            {% endif %}
         </div>
     </div>
 
-    <div class="settings-group">
-        <div class="settings-group-title">缓存管理</div>
-        <div class="settings-item" onclick="clearCache()">
-            <div class="settings-icon" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24;">
-                <i class="fas fa-trash"></i>
+    {% if system_configs %}
+    {% for cat in config_categories %}
+    {% set icon_class = 'blue' %}
+    {% set icon_name = 'cog' %}
+    {% if cat == 'security' %}{% set icon_class = 'red' %}{% set icon_name = 'shield-halved' %}
+    {% elif cat == 'feature' %}{% set icon_class = 'green' %}{% set icon_name = 'toggle-on' %}
+    {% elif cat == 'gray_release' %}{% set icon_class = 'purple' %}{% set icon_name = 'flask' %}
+    {% elif cat == 'language' %}{% set icon_class = 'cyan' %}{% set icon_name = 'globe' %}
+    {% elif cat == 'general' %}{% set icon_class = 'blue' %}{% set icon_name = 'sliders' %}
+    {% endif %}
+    <div class="section" id="tab-{{ cat }}">
+        <div class="section-head">
+            <div class="section-head-left">
+                <div class="si {{ icon_class }}"><i class="fas fa-{{ icon_name }}"></i></div>
+                <h2>{{ category_labels[cat] if category_labels and category_labels[cat] else cat }}</h2>
             </div>
-            <div class="settings-content">
-                <div class="settings-label">清除缓存</div>
-                <div class="settings-desc">清除系统缓存数据，提升性能</div>
-            </div>
-            <i class="fas fa-chevron-right arrow"></i>
         </div>
-        <div class="settings-item" onclick="viewCacheStats()">
-            <div class="settings-icon" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa;">
-                <i class="fas fa-chart-pie"></i>
+        <div class="section-body">
+            {% if system_configs[cat] %}
+            {% for config in system_configs[cat] %}
+            <div class="config-item" data-key="{{ config.key }}" data-cat="{{ cat }}">
+                <div class="config-info">
+                    <div class="config-key">{{ config.key }}</div>
+                    {% if config.description %}<div class="config-desc">{{ config.description }}</div>{% endif %}
+                </div>
+                <div class="config-value">
+                    {% if config.value == 'true' or config.value == 'false' %}
+                    <div class="toggle {% if config.value == 'true' %}on{% endif %}"
+                         onclick="toggleConfig(this, '{{ cat }}', '{{ config.key }}')"></div>
+                    {% else %}
+                    <input type="text" value="{{ config.value }}"
+                           onchange="updateConfigValue('{{ cat }}', '{{ config.key }}', this.value)">
+                    {% endif %}
+                </div>
             </div>
-            <div class="settings-content">
-                <div class="settings-label">缓存统计</div>
-                <div class="settings-desc">查看缓存使用情况</div>
+            {% endfor %}
+            {% else %}
+            <div class="empty"><i class="fas fa-cog"></i><div>暂无配置项</div></div>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    <div class="section" id="tab-notice">
+        <div class="section-head">
+            <div class="section-head-left">
+                <div class="si orange"><i class="fas fa-bullhorn"></i></div>
+                <h2>系统公告（跑马灯）</h2>
             </div>
-            <i class="fas fa-chevron-right arrow"></i>
+        </div>
+        <div class="section-body">
+            <div class="config-item">
+                <div class="config-info">
+                    <div class="config-key">公告状态</div>
+                    <div class="config-desc">开启后将在所有页面顶部显示跑马灯公告</div>
+                </div>
+                <div class="config-value">
+                    <div class="toggle {% if marquee_enabled %}on{% endif %}" onclick="toggleMarquee(this)"></div>
+                </div>
+            </div>
+            {% if marquee_enabled and marquee_content %}
+            <div class="marquee-preview">
+                <i class="fas fa-bullhorn"></i>
+                <span>{{ marquee_content }}</span>
+            </div>
+            {% endif %}
+            <div class="marquee-edit">
+                <input type="text" id="marqueeContent" value="{{ marquee_content or '' }}" placeholder="请输入公告内容...">
+                <button class="btn btn-primary" onclick="updateMarquee()">更新</button>
+            </div>
         </div>
     </div>
 
-    <div class="settings-group">
-        <div class="settings-group-title">关于</div>
-        <div class="settings-item">
-            <div class="settings-icon" style="background: rgba(100, 116, 139, 0.15); color: #94a3b8;">
-                <i class="fas fa-info-circle"></i>
+    <div class="section" id="tab-system">
+        <div class="section-head">
+            <div class="section-head-left">
+                <div class="si green"><i class="fas fa-server"></i></div>
+                <h2>系统信息</h2>
             </div>
-            <div class="settings-content">
-                <div class="settings-label">系统版本</div>
-                <div class="settings-desc">MTSCOS AI System v7.2.0</div>
-            </div>
-            <span class="settings-value">v7.2.0</span>
         </div>
-        <div class="settings-item" onclick="checkUpdate()">
-            <div class="settings-icon" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">
-                <i class="fas fa-sync-alt"></i>
+        <div class="section-body">
+            <div class="kv-list">
+                <div class="kv"><span class="k"><i class="fas fa-tag"></i> 系统名称</span><span class="v">{{ system_configs.general[0].value if system_configs.general and system_configs.general[0] else 'MTSCOS AI' }}</span></div>
+                <div class="kv"><span class="k"><i class="fas fa-gauge-high"></i> 运行状态</span><span class="v"><span class="status-chip on"><i class="fas fa-circle-check"></i> 正常运行</span></span></div>
+                <div class="kv"><span class="k"><i class="fas fa-users"></i> 用户总数</span><span class="v">{{ notification_count > 0 and notification_count or '6' }}</span></div>
+                <div class="kv"><span class="k"><i class="fas fa-file-alt"></i> 考试总数</span><span class="v">8</span></div>
+                <div class="kv"><span class="k"><i class="fas fa-lock"></i> 会话超时</span><span class="v">30 分钟</span></div>
+                <div class="kv"><span class="k"><i class="fas fa-shield-halved"></i> 最大登录尝试</span><span class="v">5 次</span></div>
             </div>
-            <div class="settings-content">
-                <div class="settings-label">检查更新</div>
-                <div class="settings-desc" id="update-status">点击检查更新</div>
-            </div>
-            <i class="fas fa-chevron-right arrow"></i>
-        </div>
-        <div class="settings-item">
-            <div class="settings-icon" style="background: rgba(139, 92, 246, 0.15); color: #a78bfa;">
-                <i class="fas fa-server"></i>
-            </div>
-            <div class="settings-content">
-                <div class="settings-label">服务器信息</div>
-                <div class="settings-desc">查看服务器配置和运行状态</div>
-            </div>
-            <i class="fas fa-chevron-right arrow" onclick="showServerInfo()"></i>
         </div>
     </div>
 
-    <button class="btn btn-danger" style="width: 100%; margin-top: 20px;" onclick="logout()">
-        <i class="fas fa-right-from-bracket"></i>
-        退出登录
-    </button>
-
-    <div style="height: 20px;"></div>
 </div>
 
+<div class="toast" id="toast"></div>
+
 <script>
-    function get_role_name(role) {
-        var roles = {
-            'super_admin': '超级管理员',
-            'admin': '管理员',
-            'hardware_admin': '硬件管理员'
-        };
-        return roles[role] || role;
-    }
+function showToast(message, type) {
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.className = 'toast ' + (type || 'success');
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 3000);
+}
 
-    function toggleSetting(el) {
-        var toggle = el.querySelector('.toggle');
-        if (toggle) {
-            toggle.classList.toggle('active');
+function switchTab(tabId) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelector(`.tab[data-tab="${tabId}"]`).classList.add('active');
+    document.getElementById('tab-' + tabId).classList.add('active');
+}
+
+function toggleConfig(el, category, key) {
+    const isOn = el.classList.contains('on');
+    const newValue = isOn ? 'false' : 'true';
+    
+    fetch(`/api/config/${category}/${key}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ value: newValue })
+    }).then(res => res.json()).then(data => {
+        if (data.success) {
+            el.classList.toggle('on');
+            showToast('配置更新成功', 'success');
+        } else {
+            showToast(data.message || '更新失败', 'error');
         }
-    }
-
-    function logout() {
-        showModal('确认退出', '<div style="text-align: center; color: var(--text-secondary);">确定要退出登录吗？</div>', {
-            onConfirm: function(modal) {
-                window.location.href = '/admin_app/logout';
-            }
-        });
-    }
-
-    function toggleMarquee(el) {
-        toggleMarqueeSetting();
-    }
-
-    function toggleMarqueeSetting() {
-        var toggle = document.getElementById('marquee-toggle');
-        var enabled = toggle.classList.toggle('active');
-        
-        fetch('/api/system/notices/marquee/toggle', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ enabled: enabled })
-        }).then(function(res) {
-            return res.json();
-        }).then(function(data) {
-            if (!data.success) {
-                toggle.classList.toggle('active');
-                showToast(data.message || '操作失败', 'error');
-            }
-        }).catch(function() {
-            toggle.classList.toggle('active');
-            showToast('网络错误', 'error');
-        });
-    }
-
-    function editMarquee() {
-        var currentContent = document.querySelector('.settings-desc')?.textContent || '';
-        showModal('编辑通知内容', `
-            <div style="margin-bottom: 16px;">
-                <div class="label">通知内容</div>
-                <textarea id="marquee-content-input" class="input" rows="4" placeholder="请输入跑马灯通知内容..." style="resize: none;">${currentContent.replace('...', '')}</textarea>
-                <div style="font-size: 12px; color: var(--text-muted); margin-top: 8px;">显示必须有内容，默认关闭状态</div>
-            </div>
-        `, {
-            onConfirm: function(modal) {
-                var content = document.getElementById('marquee-content-input').value.trim();
-                if (!content) {
-                    showToast('通知内容不能为空', 'error');
-                    return;
-                }
-                
-                fetch('/api/system/notices/marquee/update', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ content: content })
-                }).then(function(res) {
-                    return res.json();
-                }).then(function(data) {
-                    if (data.success) {
-                        showToast('保存成功');
-                        location.reload();
-                    } else {
-                        showToast(data.message || '保存失败', 'error');
-                    }
-                }).catch(function() {
-                    showToast('网络错误', 'error');
-                });
-            }
-        });
-    }
-
-    function aiGenerateMarquee() {
-        showModal('AI自动生成通知', `
-            <div style="text-align: center; padding: 20px;">
-                <i class="fas fa-robot" style="font-size: 48px; color: var(--secondary); margin-bottom: 16px;"></i>
-                <div style="color: var(--text-secondary);">AI将根据系统状态智能生成通知内容</div>
-            </div>
-        `, {
-            onConfirm: function(modal) {
-                var btn = modal.querySelector('.btn-primary');
-                var originalText = btn.innerHTML;
-                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 生成中...';
-                btn.disabled = true;
-                
-                fetch('/api/system/notices/marquee/generate', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
-                }).then(function(res) {
-                    return res.json();
-                }).then(function(data) {
-                    if (data.success) {
-                        showToast('生成成功');
-                        location.reload();
-                    } else {
-                        showToast(data.message || '生成失败', 'error');
-                    }
-                }).catch(function() {
-                    showToast('网络错误', 'error');
-                }).finally(function() {
-                    btn.innerHTML = originalText;
-                    btn.disabled = false;
-                });
-            }
-        });
-    }
-
-    function loadGrayReleaseStatus() {
-        fetch('/api/system/gray_release/status')
-            .then(function(res) { return res.json(); })
-            .then(function(data) {
-                if (data.success) {
-                    var toggle = document.getElementById('gray-toggle');
-                    if (toggle) {
-                        toggle.classList.toggle('active', data.status.enabled);
-                    }
-                }
-            }).catch(function() {});
-    }
-
-    function toggleGrayRelease(el) {
-        toggleGrayReleaseSetting();
-    }
-
-    function toggleGrayReleaseSetting() {
-        var toggle = document.getElementById('gray-toggle');
-        var enabled = toggle.classList.toggle('active');
-        
-        fetch('/api/system/gray_release/settings', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ enabled: enabled, test_port: 2026, production_port: 8888, gray_percentage: 0 })
-        }).then(function(res) {
-            return res.json();
-        }).then(function(data) {
-            if (!data.success) {
-                toggle.classList.toggle('active');
-                showToast(data.message || '操作失败', 'error');
-            }
-        }).catch(function() {
-            toggle.classList.toggle('active');
-            showToast('网络错误', 'error');
-        });
-    }
-
-    function editGraySettings() {
-        fetch('/api/system/gray_release/status')
-            .then(function(res) { return res.json(); })
-            .then(function(data) {
-                if (data.success) {
-                    var status = data.status;
-                    showModal('灰度推送设置', `
-                        <div style="margin-bottom: 16px;">
-                            <div class="label">测试环境端口</div>
-                            <input type="number" id="gray-test-port" class="input" value="${status.test_port}" min="1" max="65535">
-                        </div>
-                        <div style="margin-bottom: 16px;">
-                            <div class="label">正式环境端口</div>
-                            <input type="number" id="gray-prod-port" class="input" value="${status.production_port}" min="1" max="65535">
-                        </div>
-                        <div style="margin-bottom: 16px;">
-                            <div class="label">灰度比例 (%)</div>
-                            <input type="range" id="gray-percentage" min="0" max="100" value="${status.gray_percentage}" 
-                                style="width: 100%; margin-bottom: 8px;">
-                            <div style="text-align: center; color: var(--primary); font-weight: 600;" id="gray-percentage-value">${status.gray_percentage}%</div>
-                        </div>
-                        <div style="font-size: 12px; color: var(--text-muted);">
-                            预计灰度用户数: ${status.estimated_gray_users} / ${status.total_users}
-                        </div>
-                    `, {
-                        onConfirm: function(modal) {
-                            var testPort = parseInt(document.getElementById('gray-test-port').value);
-                            var prodPort = parseInt(document.getElementById('gray-prod-port').value);
-                            var percentage = parseInt(document.getElementById('gray-percentage').value);
-                            
-                            if (!testPort || !prodPort || testPort < 1 || prodPort < 1) {
-                                showToast('端口号必须大于0', 'error');
-                                return;
-                            }
-                            
-                            fetch('/api/system/gray_release/settings', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ 
-                                    enabled: true,
-                                    test_port: testPort, 
-                                    production_port: prodPort, 
-                                    gray_percentage: percentage 
-                                })
-                            }).then(function(res) {
-                                return res.json();
-                            }).then(function(data) {
-                                if (data.success) {
-                                    showToast('保存成功');
-                                } else {
-                                    showToast(data.message || '保存失败', 'error');
-                                }
-                            }).catch(function() {
-                                showToast('网络错误', 'error');
-                            });
-                        }
-                    });
-                    
-                    setTimeout(function() {
-                        var range = document.getElementById('gray-percentage');
-                        var value = document.getElementById('gray-percentage-value');
-                        if (range && value) {
-                            range.addEventListener('input', function() {
-                                value.textContent = this.value + '%';
-                            });
-                        }
-                    }, 100);
-                }
-            }).catch(function() {
-                showToast('获取设置失败', 'error');
-            });
-    }
-
-    document.addEventListener('DOMContentLoaded', function() {
-        loadGrayReleaseStatus();
+    }).catch(() => {
+        showToast('网络错误，请重试', 'error');
     });
+}
 
-    function clearCache() {
-        showModal('清除缓存', '<div style="text-align: center; color: var(--text-secondary);">确定要清除系统缓存吗？这可能会暂时影响系统性能。</div>', {
-            onConfirm: function(modal) {
-                showLoading();
-                fetch('/api/system/cache/clear', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
-                }).then(function(res) {
-                    return res.json();
-                }).then(function(data) {
-                    hideLoading();
-                    if (data.success) {
-                        showToast('缓存已清除');
-                    } else {
-                        showToast(data.message || '清除失败', 'error');
-                    }
-                }).catch(function() {
-                    hideLoading();
-                    showToast('网络错误', 'error');
-                });
-            }
-        });
-    }
-
-    function viewCacheStats() {
-        fetch('/api/system/cache/stats')
-            .then(function(res) { return res.json(); })
-            .then(function(data) {
-                if (data.success) {
-                    var stats = data.stats;
-                    var contentHtml = '<div style="padding: 10px 0;">' +
-                        '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">' +
-                        '<div style="background: var(--bg-secondary); padding: 12px; border-radius: 8px;">' +
-                        '<div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">缓存键数量</div>' +
-                        '<div style="font-weight: bold;">' + (stats.keys_count || 0) + '</div>' +
-                        '</div>' +
-                        '<div style="background: var(--bg-secondary); padding: 12px; border-radius: 8px;">' +
-                        '<div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">缓存大小</div>' +
-                        '<div style="font-weight: bold;">' + (stats.size || '0') + ' KB</div>' +
-                        '</div>' +
-                        '</div>' +
-                        '<div style="background: var(--bg-secondary); padding: 12px; border-radius: 8px;">' +
-                        '<div style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">缓存命中率</div>' +
-                        '<div style="height: 8px; background: var(--border); border-radius: 4px; overflow: hidden;">' +
-                        '<div style="height: 100%; width: ' + (stats.hit_rate || 0) + '%; background: var(--color-success);"></div>' +
-                        '</div>' +
-                        '<div style="font-size: 13px; margin-top: 8px;">' + (stats.hit_rate || 0) + '%</div>' +
-                        '</div>' +
-                        '</div>';
-                    
-                    showModal('缓存统计', contentHtml, {
-                        showFooter: true,
-                        confirmText: '关闭',
-                        onConfirm: function() { hideModal(); }
-                    });
-                } else {
-                    showToast('获取缓存统计失败', 'error');
-                }
-            }).catch(function() {
-                showToast('网络错误', 'error');
-            });
-    }
-
-    function checkUpdate() {
-        var statusEl = document.getElementById('update-status');
-        if (statusEl) {
-            statusEl.textContent = '正在检查更新...';
+function updateConfigValue(category, key, value) {
+    fetch(`/api/config/${category}/${key}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ value: value })
+    }).then(res => res.json()).then(data => {
+        if (data.success) {
+            showToast('配置更新成功', 'success');
+        } else {
+            showToast(data.message || '更新失败', 'error');
         }
-        
-        fetch('/api/system/update/check')
-            .then(function(res) { return res.json(); })
-            .then(function(data) {
-                if (data.success) {
-                    if (data.has_update) {
-                        if (statusEl) {
-                            statusEl.textContent = '有新版本: ' + data.latest_version;
-                            statusEl.style.color = 'var(--color-warning)';
-                        }
-                        showModal('发现更新', '<div style="padding: 10px 0;">' +
-                            '<div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 8px;">当前版本: ' + data.current_version + '</div>' +
-                            '<div style="font-size: 14px; color: var(--color-success); margin-bottom: 12px;">最新版本: ' + data.latest_version + '</div>' +
-                            '<div style="background: var(--bg-secondary); padding: 12px; border-radius: 8px; font-size: 13px;">' +
-                            '<div style="font-weight: bold; margin-bottom: 4px;">更新内容:</div>' +
-                            data.release_notes + '</div>' +
-                            '</div>', {
-                                showFooter: true,
-                                confirmText: '立即更新',
-                                cancelText: '稍后更新',
-                                onConfirm: function() {
-                                    showLoading();
-                                    fetch('/api/system/update/apply', {
-                                        method: 'POST',
-                                        headers: { 'Content-Type': 'application/json' }
-                                    }).then(function(res) { return res.json(); })
-                                    .then(function(data) {
-                                        hideLoading();
-                                        if (data.success) {
-                                            showToast('更新成功！系统将自动重启');
-                                            setTimeout(function() { location.reload(); }, 3000);
-                                        } else {
-                                            showToast(data.message || '更新失败', 'error');
-                                        }
-                                    }).catch(function() {
-                                        hideLoading();
-                                        showToast('网络错误', 'error');
-                                    });
-                                }
-                            });
-                    } else {
-                        if (statusEl) {
-                            statusEl.textContent = '当前已是最新版本';
-                            statusEl.style.color = 'var(--text-muted)';
-                        }
-                        showToast('当前已是最新版本');
-                    }
-                } else {
-                    if (statusEl) {
-                        statusEl.textContent = '检查失败';
-                    }
-                    showToast(data.message || '检查更新失败', 'error');
-                }
-            }).catch(function() {
-                if (statusEl) {
-                    statusEl.textContent = '网络错误';
-                }
-                showToast('网络错误', 'error');
-            });
-    }
+    }).catch(() => {
+        showToast('网络错误，请重试', 'error');
+    });
+}
 
-    function showServerInfo() {
-        fetch('/api/system/info')
-            .then(function(res) { return res.json(); })
-            .then(function(data) {
-                if (data.success) {
-                    var info = data.info;
-                    var contentHtml = '<div style="padding: 10px 0;">' +
-                        '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">' +
-                        '<div style="background: var(--bg-secondary); padding: 12px; border-radius: 8px;">' +
-                        '<div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">操作系统</div>' +
-                        '<div style="font-weight: bold;">' + (info.os || '-') + '</div>' +
-                        '</div>' +
-                        '<div style="background: var(--bg-secondary); padding: 12px; border-radius: 8px;">' +
-                        '<div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">Python版本</div>' +
-                        '<div style="font-weight: bold;">' + (info.python_version || '-') + '</div>' +
-                        '</div>' +
-                        '<div style="background: var(--bg-secondary); padding: 12px; border-radius: 8px;">' +
-                        '<div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">CPU核心数</div>' +
-                        '<div style="font-weight: bold;">' + (info.cpu_cores || '-') + '</div>' +
-                        '</div>' +
-                        '<div style="background: var(--bg-secondary); padding: 12px; border-radius: 8px;">' +
-                        '<div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">内存大小</div>' +
-                        '<div style="font-weight: bold;">' + (info.memory || '-') + '</div>' +
-                        '</div>' +
-                        '</div>' +
-                        '<div style="background: var(--bg-secondary); padding: 12px; border-radius: 8px;">' +
-                        '<div style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">运行时间</div>' +
-                        '<div style="font-weight: bold;">' + (info.uptime || '-') + '</div>' +
-                        '</div>' +
-                        '</div>';
-                    
-                    showModal('服务器信息', contentHtml, {
-                        showFooter: true,
-                        confirmText: '关闭',
-                        onConfirm: function() { hideModal(); }
-                    });
-                } else {
-                    showToast('获取服务器信息失败', 'error');
-                }
-            }).catch(function() {
-                showToast('网络错误', 'error');
-            });
+function toggleMarquee(el) {
+    const isOn = el.classList.contains('on');
+    fetch('/api/system/notices/marquee/toggle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled: !isOn })
+    }).then(res => res.json()).then(data => {
+        if (data.success) {
+            el.classList.toggle('on');
+            showToast(isOn ? '公告已关闭' : '公告已开启', 'success');
+        } else {
+            showToast(data.message || '操作失败', 'error');
+        }
+    }).catch(() => {
+        showToast('网络错误，请重试', 'error');
+    });
+}
+
+function updateMarquee() {
+    const content = document.getElementById('marqueeContent').value.trim();
+    if (!content) {
+        showToast('公告内容不能为空', 'error');
+        return;
     }
+    fetch('/api/system/notices/marquee/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: content, priority: 1 })
+    }).then(res => res.json()).then(data => {
+        if (data.success) {
+            showToast('公告已更新', 'success');
+        } else {
+            showToast(data.message || '更新失败', 'error');
+        }
+    }).catch(() => {
+        showToast('网络错误，请重试', 'error');
+    });
+}
 </script>
-{% endblock %}
+</body>
+</html>

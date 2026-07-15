@@ -1,392 +1,269 @@
-{% extends 'admin_app/base.html' %}
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI学习仪表盘</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
+        .container { padding: 20px; max-width: 1400px; margin: 0 auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; color: white; }
+        .header h1 { font-size: 28px; }
+        .header .user-info { display: flex; align-items: center; gap: 15px; }
+        .header .user-info span { font-size: 14px; opacity: 0.9; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .stat-card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 15px; }
+        .stat-card .icon { width: 50px; height: 50px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 24px; }
+        .stat-card .icon.memory { background: #e0f2fe; color: #0ea5e9; }
+        .stat-card .icon.emotion { background: #fce7f3; color: #ec4899; }
+        .stat-card .icon.evaluation { background: #fef3c7; color: #f59e0b; }
+        .stat-card .icon.total { background: #dcfce7; color: #10b981; }
+        .stat-card .info h3 { font-size: 24px; color: #333; }
+        .stat-card .info p { font-size: 13px; color: #666; margin-top: 3px; }
+        .system-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px; }
+        .system-card { background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.3s, box-shadow 0.3s; }
+        .system-card:hover { transform: translateY(-5px); box-shadow: 0 8px 30px rgba(0,0,0,0.15); }
+        .system-card .card-header { padding: 25px; color: white; }
+        .system-card .card-header h2 { font-size: 20px; margin-bottom: 8px; }
+        .system-card .card-header p { font-size: 13px; opacity: 0.9; }
+        .system-card .card-header i { font-size: 36px; margin-bottom: 10px; }
+        .system-card .card-body { padding: 20px; }
+        .system-card .card-body .feature-list { list-style: none; }
+        .system-card .card-body .feature-list li { padding: 8px 0; font-size: 13px; color: #555; border-bottom: 1px solid #f0f0f0; }
+        .system-card .card-body .feature-list li:last-child { border-bottom: none; }
+        .system-card .card-body .feature-list li i { margin-right: 8px; color: #10b981; font-size: 12px; }
+        .system-card .card-footer { padding: 15px 20px; background: #f8f9fa; display: flex; justify-content: space-between; align-items: center; }
+        .system-card .card-footer .btn { padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 13px; font-weight: 500; }
+        .btn-primary { background: #6366f1; color: white; }
+        .btn-primary:hover { background: #4f46e5; }
+        .btn-info { background: #0ea5e9; color: white; }
+        .btn-info:hover { background: #0284c7; }
+        .btn-warning { background: #f59e0b; color: white; }
+        .btn-warning:hover { background: #d97706; }
+        .memory-header { background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%); }
+        .emotion-header { background: linear-gradient(135deg, #ec4899 0%, #db2777 100%); }
+        .evaluation-header { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+        .nav-bar { background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); padding: 15px 20px; margin-bottom: 20px; border-radius: 10px; }
+        .nav-bar ul { list-style: none; display: flex; gap: 20px; }
+        .nav-bar ul li a { color: white; text-decoration: none; padding: 8px 15px; border-radius: 6px; transition: background 0.3s; }
+        .nav-bar ul li a:hover, .nav-bar ul li a.active { background: rgba(255,255,255,0.2); }
+        @media (max-width: 768px) { .header { flex-direction: column; gap: 15px; } .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-brain"></i> AI学习仪表盘</h1>
+            <div class="user-info">
+                <span>欢迎, {{ user.username }}</span>
+                <span class="role-tag">{{ get_role_name(user.role) }}</span>
+            </div>
+        </div>
+        
+        <div class="nav-bar">
+            <ul>
+                <li><a href="/admin_app/dashboard">管理首页</a></li>
+                <li><a href="/admin_app/ai_learning_dashboard" class="active">AI学习</a></li>
+                <li><a href="/admin_app/ai_cognitive_reasoning">认知推理</a></li>
+                <li><a href="/admin_app/ai_adaptive_learning">自适应学习</a></li>
+                <li><a href="/admin_app/ai_intelligent_qna">智能问答</a></li>
+                <li><a href="/admin_app/ai_tutor_assistant">AI辅导助手</a></li>
+                <li><a href="/admin_app/ai_auto_learning">AI自动学习</a></li>
+                <li><a href="/admin_app/ai_warning_intervention">预警干预</a></li>
+            </ul>
+        </div>
 
-{% block title %}AI智能学习仪表盘 - MTSCOS管理端{% endblock %}
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="icon total"><i class="fas fa-database"></i></div>
+                <div class="info">
+                    <h3 id="total-memories">{{ dashboard_stats.get('total_memories', '--') }}</h3>
+                    <p>总记忆数</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="icon emotion"><i class="fas fa-heart"></i></div>
+                <div class="info">
+                    <h3 id="active-alerts">{{ dashboard_stats.get('active_alerts', '--') }}</h3>
+                    <p>活跃情感预警</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="icon evaluation"><i class="fas fa-chart-line"></i></div>
+                <div class="info">
+                    <h3 id="total-evaluations">{{ dashboard_stats.get('total_evaluations', '--') }}</h3>
+                    <p>评估记录数</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="icon memory"><i class="fas fa-lightbulb"></i></div>
+                <div class="info">
+                    <h3 id="memory-relations">--</h3>
+                    <p>记忆关系数</p>
+                </div>
+            </div>
+        </div>
 
-{% block content %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <div class="system-grid">
+            <div class="system-card" onclick="window.location.href='/admin_app/ai_memory'">
+                <div class="card-header memory-header">
+                    <i class="fas fa-memory"></i>
+                    <h2>AI记忆管理系统</h2>
+                    <p>经验记忆存储与智能检索</p>
+                </div>
+                <div class="card-body">
+                    <ul class="feature-list">
+                        <li><i class="fas fa-check"></i> 多类型记忆存储（经验/知识/技能/决策）</li>
+                        <li><i class="fas fa-check"></i> 智能全文检索与标签过滤</li>
+                        <li><i class="fas fa-check"></i> 记忆关系网络构建</li>
+                        <li><i class="fas fa-check"></i> 自动清理与归档机制</li>
+                        <li><i class="fas fa-check"></i> 洞察生成与知识发现</li>
+                    </ul>
+                </div>
+                <div class="card-footer">
+                    <span>版本 v12.0.0</span>
+                    <a href="/admin_app/ai_memory" class="btn btn-primary">进入管理</a>
+                </div>
+            </div>
 
-<div class="page-container">
-    <div class="section-title">
-        <i class="fas fa-robot" style="color: var(--color-primary);"></i>
-        AI智能学习仪表盘
+            <div class="system-card" onclick="window.location.href='/admin_app/ai_emotion'">
+                <div class="card-header emotion-header">
+                    <i class="fas fa-smile"></i>
+                    <h2>AI情感分析系统</h2>
+                    <p>学生情感状态分析与干预</p>
+                </div>
+                <div class="card-body">
+                    <ul class="feature-list">
+                        <li><i class="fas fa-check"></i> 文本与行为情感检测</li>
+                        <li><i class="fas fa-check"></i> 情感趋势分析与档案</li>
+                        <li><i class="fas fa-check"></i> 异常情感预警机制</li>
+                        <li><i class="fas fa-check"></i> 个性化干预建议生成</li>
+                        <li><i class="fas fa-check"></i> 干预执行与效果跟踪</li>
+                    </ul>
+                </div>
+                <div class="card-footer">
+                    <span>版本 v12.0.0</span>
+                    <a href="/admin_app/ai_emotion" class="btn btn-info">进入管理</a>
+                </div>
+            </div>
+
+            <div class="system-card" onclick="window.location.href='/admin_app/ai_evaluation'">
+                <div class="card-header evaluation-header">
+                    <i class="fas fa-star"></i>
+                    <h2>AI智能评估系统</h2>
+                    <p>智能评估和个性化反馈</p>
+                </div>
+                <div class="card-body">
+                    <ul class="feature-list">
+                        <li><i class="fas fa-check"></i> 多维度评估（知识/技能/行为）</li>
+                        <li><i class="fas fa-check"></i> 加权评分与等级评定</li>
+                        <li><i class="fas fa-check"></i> 个性化反馈与建议</li>
+                        <li><i class="fas fa-check"></i> 评估趋势跟踪分析</li>
+                        <li><i class="fas fa-check"></i> 自定义评估标准配置</li>
+                    </ul>
+                </div>
+                <div class="card-footer">
+                    <span>版本 v12.0.0</span>
+                    <a href="/admin_app/ai_evaluation" class="btn btn-warning">进入管理</a>
+                </div>
+            </div>
+
+            <div class="system-card" onclick="window.location.href='/admin_app/ai_cognitive_reasoning'">
+                <div class="card-header" style="background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);">
+                    <i class="fas fa-brain"></i>
+                    <h2>AI认知推理系统</h2>
+                    <p>基于记忆和知识进行推理决策</p>
+                </div>
+                <div class="card-body">
+                    <ul class="feature-list">
+                        <li><i class="fas fa-check"></i> 演绎/归纳/溯因/类比/因果推理</li>
+                        <li><i class="fas fa-check"></i> 智能知识库管理</li>
+                        <li><i class="fas fa-check"></i> 推理任务记录与历史</li>
+                        <li><i class="fas fa-check"></i> 知识检索与关联分析</li>
+                        <li><i class="fas fa-check"></i> 多模态推理支持</li>
+                    </ul>
+                </div>
+                <div class="card-footer">
+                    <span>版本 v12.0.0</span>
+                    <a href="/admin_app/ai_cognitive_reasoning" class="btn" style="background: #8b5cf6; color: white;">进入管理</a>
+                </div>
+            </div>
+
+            <div class="system-card" onclick="window.location.href='/admin_app/ai_adaptive_learning'">
+                <div class="card-header" style="background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);">
+                    <i class="fas fa-graduation-cap"></i>
+                    <h2>AI自适应学习系统</h2>
+                    <p>动态调整学习路径与推荐</p>
+                </div>
+                <div class="card-body">
+                    <ul class="feature-list">
+                        <li><i class="fas fa-check"></i> 学习风格分析（视觉/听觉/阅读/动觉）</li>
+                        <li><i class="fas fa-check"></i> 个性化学习路径生成</li>
+                        <li><i class="fas fa-check"></i> 实时学习进度跟踪</li>
+                        <li><i class="fas fa-check"></i> 智能知识缺口检测</li>
+                        <li><i class="fas fa-check"></i> 自适应学习推荐</li>
+                    </ul>
+                </div>
+                <div class="card-footer">
+                    <span>版本 v12.0.0</span>
+                    <a href="/admin_app/ai_adaptive_learning" class="btn" style="background: #0ea5e9; color: white;">进入管理</a>
+                </div>
+            </div>
+
+            <div class="system-card" onclick="window.location.href='/admin_app/ai_intelligent_qna'">
+                <div class="card-header" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                    <i class="fas fa-comments"></i>
+                    <h2>AI智能问答系统</h2>
+                    <p>基于知识库的智能问答交互</p>
+                </div>
+                <div class="card-body">
+                    <ul class="feature-list">
+                        <li><i class="fas fa-check"></i> 多轮对话与上下文理解</li>
+                        <li><i class="fas fa-check"></i> Q&A会话管理</li>
+                        <li><i class="fas fa-check"></i> 智能回答生成</li>
+                        <li><i class="fas fa-check"></i> 反馈收集与分析</li>
+                        <li><i class="fas fa-check"></i> 热门问答推荐</li>
+                    </ul>
+                </div>
+                <div class="card-footer">
+                    <span>版本 v12.0.0</span>
+                    <a href="/admin_app/ai_intelligent_qna" class="btn" style="background: #10b981; color: white;">进入管理</a>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <div class="card" style="margin-bottom: 16px;">
-        <div class="card-header">
-            <div class="card-title">
-                <i class="fas fa-brain"></i> AI学习系统
-            </div>
-        </div>
-        <div style="padding: 16px;">
-            <div class="grid-3" style="gap: 12px;">
-                <div class="stat-card" style="cursor: pointer; margin: 0;" onclick="location.href='/admin_app/ai_learning_dashboard'">
-                    <div class="stat-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                        <i class="fas fa-chart-bar"></i>
-                    </div>
-                    <div class="stat-info">
-                        <div class="stat-value" style="font-size: 14px;">学情分析</div>
-                        <div class="stat-label" style="font-size: 12px;">AI智能分析</div>
-                    </div>
-                </div>
-                <div class="stat-card" style="cursor: pointer; margin: 0;" onclick="location.href='/admin_app/ai_tutor_assistant'">
-                    <div class="stat-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
-                        <i class="fas fa-comments"></i>
-                    </div>
-                    <div class="stat-info">
-                        <div class="stat-value" style="font-size: 14px;">AI辅导</div>
-                        <div class="stat-label" style="font-size: 12px;">智能问答</div>
-                    </div>
-                </div>
-                <div class="stat-card" style="cursor: pointer; margin: 0;" onclick="location.href='/admin_app/ai_auto_learning'">
-                    <div class="stat-icon" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
-                        <i class="fas fa-calendar-check"></i>
-                    </div>
-                    <div class="stat-info">
-                        <div class="stat-value" style="font-size: 14px;">自动学习</div>
-                        <div class="stat-label" style="font-size: 12px;">计划生成</div>
-                    </div>
-                </div>
-            </div>
-            <div class="grid-3" style="gap: 12px; margin-top: 12px;">
-                <div class="stat-card" style="cursor: pointer; margin: 0;" onclick="location.href='/admin_app/ai_warning_intervention'">
-                    <div class="stat-icon" style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);">
-                        <i class="fas fa-exclamation-triangle"></i>
-                    </div>
-                    <div class="stat-info">
-                        <div class="stat-value" style="font-size: 14px;">预警干预</div>
-                        <div class="stat-label" style="font-size: 12px;">风险预测</div>
-                    </div>
-                </div>
-                <div class="stat-card" style="cursor: pointer; margin: 0;" onclick="location.href='/admin_app/ai_knowledge_graph'">
-                    <div class="stat-icon" style="background: linear-gradient(135deg, #a855f7 0%, #6366f1 100%);">
-                        <i class="fas fa-project-diagram"></i>
-                    </div>
-                    <div class="stat-info">
-                        <div class="stat-value" style="font-size: 14px;">知识图谱</div>
-                        <div class="stat-label" style="font-size: 12px;">知识点网络</div>
-                    </div>
-                </div>
-                <div class="stat-card" style="cursor: pointer; margin: 0;" onclick="location.href='/admin_app/ai_question_generation'">
-                    <div class="stat-icon" style="background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);">
-                        <i class="fas fa-magic"></i>
-                    </div>
-                    <div class="stat-info">
-                        <div class="stat-value" style="font-size: 14px;">智能出题</div>
-                        <div class="stat-label" style="font-size: 12px;">AI生成题目</div>
-                    </div>
-                </div>
-            </div>
-            <div class="grid-3" style="gap: 12px; margin-top: 12px;">
-                <div class="stat-card" style="cursor: pointer; margin: 0;" onclick="location.href='/admin_app/ai_learning_planner'">
-                    <div class="stat-icon" style="background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);">
-                        <i class="fas fa-route"></i>
-                    </div>
-                    <div class="stat-info">
-                        <div class="stat-value" style="font-size: 14px;">学习规划</div>
-                        <div class="stat-label" style="font-size: 12px;">智能排期</div>
-                    </div>
-                </div>
-                <div class="stat-card" style="margin: 0; opacity: 0.5;">
-                    <div class="stat-icon" style="background: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%);">
-                        <i class="fas fa-plus"></i>
-                    </div>
-                    <div class="stat-info">
-                        <div class="stat-value" style="font-size: 14px;">更多功能</div>
-                        <div class="stat-label" style="font-size: 12px;">敬请期待</div>
-                    </div>
-                </div>
-                <div class="stat-card" style="margin: 0; opacity: 0.5;">
-                    <div class="stat-icon" style="background: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%);">
-                        <i class="fas fa-plus"></i>
-                    </div>
-                    <div class="stat-info">
-                        <div class="stat-value" style="font-size: 14px;">更多功能</div>
-                        <div class="stat-label" style="font-size: 12px;">敬请期待</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="stats-grid">
-        <div class="stat-card">
-            <div class="stat-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                <i class="fas fa-brain"></i>
-            </div>
-            <div class="stat-info">
-                <div class="stat-value" id="totalStudents">--</div>
-                <div class="stat-label">学生总数</div>
-            </div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
-                <i class="fas fa-chart-line"></i>
-            </div>
-            <div class="stat-info">
-                <div class="stat-value" id="avgScore">--</div>
-                <div class="stat-label">平均分数</div>
-            </div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
-                <i class="fas fa-check-circle"></i>
-            </div>
-            <div class="stat-info">
-                <div class="stat-value" id="accuracy">--%</div>
-                <div class="stat-label">答题准确率</div>
-            </div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-icon" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
-                <i class="fas fa-users"></i>
-            </div>
-            <div class="stat-info">
-                <div class="stat-value" id="analyzedStudents">--</div>
-                <div class="stat-label">已分析学生</div>
-            </div>
-        </div>
-    </div>
-
-    <div class="card">
-        <div class="card-header">
-            <div class="card-title">
-                <i class="fas fa-chart-bar"></i> 学生水平分布
-            </div>
-        </div>
-        <div style="padding: 20px;">
-            <canvas id="levelDistributionChart" width="400" height="250"></canvas>
-        </div>
-    </div>
-
-    <div class="card">
-        <div class="card-header">
-            <div class="card-title">
-                <i class="fas fa-list"></i> 学生学习分析列表
-            </div>
-            <div class="card-actions">
-                <select id="classFilter" class="form-select" onchange="loadStudentList()">
-                    <option value="">全部班级</option>
-                </select>
-            </div>
-        </div>
-        <div style="padding: 16px;">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>学生</th>
-                        <th>班级</th>
-                        <th>平均分</th>
-                        <th>准确率</th>
-                        <th>水平</th>
-                        <th>操作</th>
-                    </tr>
-                </thead>
-                <tbody id="studentList">
-                    <tr><td colspan="6" style="text-align:center;">加载中...</td></tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <div class="card">
-        <div class="card-header">
-            <div class="card-title">
-                <i class="fas fa-lightbulb"></i> AI学习推荐
-            </div>
-        </div>
-        <div style="padding: 16px;">
-            <div id="recommendationList">
-                <div style="text-align:center; padding: 40px; color: #999;">
-                    <i class="fas fa-robot" style="font-size: 48px; margin-bottom: 16px;"></i>
-                    <p>选择学生查看AI学习推荐</p>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
-let levelChart = null;
-
-function loadDashboard() {
-    fetch('/api/ai/auto/class_analysis')
-        .then(response => response.json())
-        .then(data => {
-            if (data.code === 200 && data.data) {
-                const d = data.data;
-                document.getElementById('totalStudents').textContent = d.total_students;
-                document.getElementById('avgScore').textContent = d.avg_score;
-                document.getElementById('accuracy').textContent = d.avg_accuracy + '%';
-                document.getElementById('analyzedStudents').textContent = d.students.length;
+    <script>
+        async function loadStats() {
+            try {
+                const [memoryRes, emotionRes, evaluationRes] = await Promise.all([
+                    fetch('/api/ai/memory/summary'),
+                    fetch('/api/ai/emotion/summary'),
+                    fetch('/api/ai/evaluation/summary')
+                ]);
                 
-                renderLevelChart(d.level_distribution);
-                renderStudentList(d.students);
-            }
-        })
-        .catch(error => {
-            console.error('加载仪表盘失败:', error);
-        });
-}
-
-function renderLevelChart(distribution) {
-    const ctx = document.getElementById('levelDistributionChart').getContext('2d');
-    
-    if (levelChart) {
-        levelChart.destroy();
-    }
-    
-    levelChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: ['入门', '初级', '中级', '高级'],
-            datasets: [{
-                label: '学生数',
-                data: [
-                    distribution.beginner || 0,
-                    distribution.basic || 0,
-                    distribution.intermediate || 0,
-                    distribution.advanced || 0
-                ],
-                backgroundColor: [
-                    'rgba(255, 99, 132, 0.8)',
-                    'rgba(255, 159, 64, 0.8)',
-                    'rgba(54, 162, 235, 0.8)',
-                    'rgba(75, 192, 192, 0.8)'
-                ],
-                borderColor: [
-                    'rgba(255, 99, 132, 1)',
-                    'rgba(255, 159, 64, 1)',
-                    'rgba(54, 162, 235, 1)',
-                    'rgba(75, 192, 192, 1)'
-                ],
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true,
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: { stepSize: 1 }
+                if (memoryRes.ok) {
+                    const data = await memoryRes.json();
+                    document.getElementById('total-memories').textContent = data.data.total_memories || 0;
+                    document.getElementById('memory-relations').textContent = data.data.total_relations || 0;
                 }
-            },
-            plugins: {
-                legend: {
-                    display: false
+                
+                if (emotionRes.ok) {
+                    const data = await emotionRes.json();
+                    document.getElementById('active-alerts').textContent = data.data.active_alerts || 0;
                 }
+                
+                if (evaluationRes.ok) {
+                    const data = await evaluationRes.json();
+                    document.getElementById('total-evaluations').textContent = data.data.total_evaluations || 0;
+                }
+            } catch (e) {
+                console.error('加载统计数据失败:', e);
             }
         }
-    });
-}
-
-function renderStudentList(students) {
-    const tbody = document.getElementById('studentList');
-    
-    if (!students || students.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">暂无学生数据</td></tr>';
-        return;
-    }
-    
-    tbody.innerHTML = students.map(s => `
-        <tr>
-            <td>${s.username || '未知'}</td>
-            <td>${s.class_name || '-'}</td>
-            <td>${s.avg_score}</td>
-            <td>${s.accuracy}%</td>
-            <td>
-                <span class="badge ${getLevelBadgeClass(s.level)}">${s.level_desc}</span>
-            </td>
-            <td>
-                <button class="btn btn-sm btn-primary" onclick="viewStudentAnalysis(${s.user_id})">
-                    <i class="fas fa-eye"></i> 分析
-                </button>
-            </td>
-        </tr>
-    `).join('');
-}
-
-function getLevelBadgeClass(level) {
-    const classes = {
-        'beginner': 'badge-danger',
-        'basic': 'badge-warning',
-        'intermediate': 'badge-info',
-        'advanced': 'badge-success'
-    };
-    return classes[level] || 'badge-secondary';
-}
-
-function viewStudentAnalysis(userId) {
-    fetch(`/api/ai/learning/teacher_dashboard/${userId}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.code === 200 && data.data) {
-                showStudentModal(data.data);
-            }
-        })
-        .catch(error => {
-            console.error('加载学生分析失败:', error);
-        });
-}
-
-function showStudentModal(data) {
-    const modal = document.createElement('div');
-    modal.className = 'modal-overlay';
-    modal.innerHTML = `
-        <div class="modal">
-            <div class="modal-header">
-                <h3>学生分析 - ${data.student_info?.username || '未知'}</h3>
-                <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="grid-2">
-                    <div class="form-group">
-                        <label>班级</label>
-                        <input type="text" class="form-control" value="${data.student_info?.class_name || '-'}" readonly>
-                    </div>
-                    <div class="form-group">
-                        <label>年级</label>
-                        <input type="text" class="form-control" value="${data.student_info?.grade || '-'}" readonly>
-                    </div>
-                    <div class="form-group">
-                        <label>预测等级</label>
-                        <input type="text" class="form-control" value="${data.prediction?.prediction || '-'}" readonly>
-                    </div>
-                    <div class="form-group">
-                        <label>当前平均分</label>
-                        <input type="text" class="form-control" value="${data.prediction?.current_avg || '-'}" readonly>
-                    </div>
-                </div>
-                
-                <h4 style="margin-top: 20px;">薄弱环节</h4>
-                <div id="weakPointsList">
-                    ${data.weak_points?.length > 0 ? data.weak_points.map(wp => `
-                        <div class="alert alert-warning">
-                            <strong>${wp.subject}</strong> - 平均分: ${wp.avg_score} (${wp.weak_level})
-                        </div>
-                    `).join('') : '<p style="color:#999;">暂无薄弱环节数据</p>'}
-                </div>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(modal);
-}
-
-function loadStudentList() {
-    const cls = document.getElementById('classFilter').value;
-    const url = cls ? `/api/ai/auto/class_analysis?class=${encodeURIComponent(cls)}` : '/api/ai/auto/class_analysis';
-    
-    fetch(url)
-        .then(response => response.json())
-        .then(data => {
-            if (data.code === 200 && data.data) {
-                renderStudentList(data.data.students);
-            }
-        })
-        .catch(error => {
-            console.error('加载学生列表失败:', error);
-        });
-}
-
-document.addEventListener('DOMContentLoaded', loadDashboard);
-</script>
-{% endblock %}
+        loadStats();
+    </script>
+</body>
+</html>

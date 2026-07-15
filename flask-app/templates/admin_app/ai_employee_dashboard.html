@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI员工仪表盘</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); min-height: 100vh; color: #e2e8f0; }
+        .container { padding: 20px; max-width: 1600px; margin: 0 auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .header h1 { font-size: 32px; background: linear-gradient(90deg, #60a5fa, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .header .actions { display: flex; gap: 15px; }
+        .btn { padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.3s; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; }
+        .btn-primary { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4); }
+        .btn-success { background: linear-gradient(135deg, #10b981, #059669); color: white; }
+        .btn-success:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4); }
+        .btn-info { background: linear-gradient(135deg, #0ea5e9, #0284c7); color: white; }
+        .btn-warning { background: linear-gradient(135deg, #f59e0b, #d97706); color: white; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .stat-card { background: rgba(30, 41, 59, 0.8); backdrop-filter: blur(10px); border-radius: 16px; padding: 25px; border: 1px solid rgba(255,255,255,0.1); transition: transform 0.3s; }
+        .stat-card:hover { transform: translateY(-5px); }
+        .stat-card .icon-wrapper { width: 55px; height: 55px; border-radius: 14px; display: flex; align-items: center; justify-content: center; margin-bottom: 15px; }
+        .stat-card .icon-wrapper.blue { background: rgba(96, 165, 250, 0.2); }
+        .stat-card .icon-wrapper.green { background: rgba(16, 185, 129, 0.2); }
+        .stat-card .icon-wrapper.purple { background: rgba(167, 139, 250, 0.2); }
+        .stat-card .icon-wrapper.orange { background: rgba(245, 158, 11, 0.2); }
+        .stat-card .icon-wrapper.pink { background: rgba(236, 72, 153, 0.2); }
+        .stat-card .icon-wrapper.cyan { background: rgba(6, 182, 212, 0.2); }
+        .stat-card .icon-wrapper i { font-size: 28px; }
+        .stat-card .stat-value { font-size: 36px; font-weight: 700; margin-bottom: 5px; }
+        .stat-card .stat-label { font-size: 14px; color: #94a3b8; }
+        .main-content { display: grid; grid-template-columns: 1fr 350px; gap: 25px; }
+        .panel { background: rgba(30, 41, 59, 0.8); backdrop-filter: blur(10px); border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); overflow: hidden; }
+        .panel-header { padding: 20px 25px; background: rgba(0,0,0,0.2); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .panel-header h2 { font-size: 18px; display: flex; align-items: center; gap: 10px; }
+        .panel-body { padding: 20px 25px; }
+        .employee-table { width: 100%; border-collapse: collapse; }
+        .employee-table th { text-align: left; padding: 15px; font-size: 13px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .employee-table td { padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 14px; }
+        .employee-table tr:hover { background: rgba(255,255,255,0.03); }
+        .role-badge { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; }
+        .role-badge.kansai { background: rgba(236, 72, 153, 0.2); color: #f472b6; }
+        .role-badge.kanto { background: rgba(96, 165, 250, 0.2); color: #93c5fd; }
+        .role-badge.us { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; }
+        .role-badge.uk { background: rgba(245, 158, 11, 0.2); color: #fcd34d; }
+        .role-badge.other { background: rgba(148, 163, 184, 0.2); color: #cbd5e1; }
+        .status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+        .status-dot.active { background: #10b981; box-shadow: 0 0 10px rgba(16, 185, 129, 0.5); }
+        .status-dot.idle { background: #f59e0b; }
+        .status-dot.learning { background: #6366f1; }
+        .skill-bar { height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; }
+        .skill-bar-fill { height: 100%; border-radius: 3px; transition: width 0.5s; }
+        .skill-bar-fill.excellent { background: linear-gradient(90deg, #10b981, #059669); }
+        .skill-bar-fill.good { background: linear-gradient(90deg, #6366f1, #8b5cf6); }
+        .skill-bar-fill.moderate { background: linear-gradient(90deg, #f59e0b, #d97706); }
+        .skill-bar-fill.weak { background: linear-gradient(90deg, #ef4444, #dc2626); }
+        .role-stats { display: flex; flex-direction: column; gap: 15px; }
+        .role-stat-item { display: flex; align-items: center; gap: 15px; }
+        .role-stat-item .role-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+        .role-stat-item .role-info { flex: 1; }
+        .role-stat-item .role-info .role-name { font-size: 14px; font-weight: 500; }
+        .role-stat-item .role-info .role-count { font-size: 12px; color: #94a3b8; }
+        .role-stat-item .role-percentage { font-size: 20px; font-weight: 700; }
+        .growth-history { max-height: 400px; overflow-y: auto; }
+        .growth-item { background: rgba(0,0,0,0.2); border-radius: 10px; padding: 15px; margin-bottom: 12px; }
+        .growth-item .growth-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .growth-item .growth-header .cycle-num { font-size: 16px; font-weight: 600; }
+        .growth-item .growth-header .growth-time { font-size: 12px; color: #94a3b8; }
+        .growth-item .growth-status { padding: 2px 8px; border-radius: 4px; font-size: 11px; }
+        .growth-item .growth-status.completed { background: rgba(16, 185, 129, 0.2); color: #10b981; }
+        .growth-item .growth-status.running { background: rgba(99, 102, 241, 0.2); color: #818cf8; }
+        .growth-item .growth-steps { font-size: 12px; color: #94a3b8; }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); justify-content: center; align-items: center; z-index: 1000; }
+        .modal-overlay.active { display: flex; }
+        .modal { background: #1e293b; border-radius: 16px; width: 90%; max-width: 500px; border: 1px solid rgba(255,255,255,0.1); overflow: hidden; }
+        .modal-header { padding: 20px 25px; background: rgba(0,0,0,0.2); display: flex; justify-content: space-between; align-items: center; }
+        .modal-header h3 { font-size: 18px; }
+        .modal-header .close-btn { background: none; border: none; color: #94a3b8; font-size: 24px; cursor: pointer; }
+        .modal-body { padding: 25px; }
+        .modal-body .form-group { margin-bottom: 20px; }
+        .modal-body .form-group label { display: block; font-size: 14px; margin-bottom: 8px; color: #94a3b8; }
+        .modal-body .form-group select, .modal-body .form-group input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); color: white; font-size: 14px; }
+        .modal-footer { padding: 20px 25px; background: rgba(0,0,0,0.2); display: flex; justify-content: flex-end; gap: 15px; }
+        .toast { position: fixed; top: 20px; right: 20px; padding: 15px 25px; border-radius: 10px; color: white; font-size: 14px; z-index: 2000; animation: slideIn 0.3s ease-out; }
+        .toast.success { background: linear-gradient(135deg, #10b981, #059669); }
+        .toast.error { background: linear-gradient(135deg, #ef4444, #dc2626); }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .nav-bar { background: rgba(30, 41, 59, 0.5); backdrop-filter: blur(10px); padding: 15px 20px; margin-bottom: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); }
+        .nav-bar ul { list-style: none; display: flex; gap: 5px; flex-wrap: wrap; }
+        .nav-bar ul li a { color: #94a3b8; text-decoration: none; padding: 10px 18px; border-radius: 8px; transition: all 0.3s; font-size: 14px; }
+        .nav-bar ul li a:hover, .nav-bar ul li a.active { background: rgba(99, 102, 241, 0.2); color: #a5b4fc; }
+        .loading-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(30, 41, 59, 0.9); display: flex; justify-content: center; align-items: center; border-radius: 16px; }
+        .loading-spinner { width: 50px; height: 50px; border: 3px solid rgba(255,255,255,0.1); border-top-color: #6366f1; border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .empty-state { text-align: center; padding: 40px; color: #64748b; }
+        .empty-state i { font-size: 48px; margin-bottom: 15px; opacity: 0.5; }
+        @media (max-width: 1200px) { .main-content { grid-template-columns: 1fr; } }
+        @media (max-width: 768px) { .header { flex-direction: column; gap: 15px; align-items: flex-start; } .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-users"></i> AI员工仪表盘</h1>
+            <div class="actions">
+                <button class="btn btn-success" onclick="openTriggerModal()"><i class="fas fa-play"></i> 触发成长周期</button>
+                <button class="btn btn-primary" onclick="loadData()"><i class="fas fa-sync-alt"></i> 刷新数据</button>
+            </div>
+        </div>
+
+        <div class="nav-bar">
+            <ul>
+                <li><a href="/admin_app/dashboard">管理首页</a></li>
+                <li><a href="/admin_app/ai_learning_dashboard">AI学习</a></li>
+                <li><a href="/admin_app/ai_employee_dashboard" class="active">AI员工管理</a></li>
+                <li><a href="/admin_app/ai_cognitive_reasoning">认知推理</a></li>
+                <li><a href="/admin_app/ai_adaptive_learning">自适应学习</a></li>
+                <li><a href="/admin_app/ai_intelligent_qna">智能问答</a></li>
+                <li><a href="/admin_app/ai_tutor_assistant">AI辅导助手</a></li>
+            </ul>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="icon-wrapper blue"><i class="fas fa-users" style="color: #60a5fa;"></i></div>
+                <div class="stat-value" id="total-employees">{{ employee_stats.get('total_employees', '--') }}</div>
+                <div class="stat-label">员工总数</div>
+            </div>
+            <div class="stat-card">
+                <div class="icon-wrapper green"><i class="fas fa-heartbeat" style="color: #10b981;"></i></div>
+                <div class="stat-value" id="active-employees">{{ employee_stats.get('active_employees', '--') }}</div>
+                <div class="stat-label">活跃员工</div>
+            </div>
+            <div class="stat-card">
+                <div class="icon-wrapper purple"><i class="fas fa-chart-line" style="color: #a78bfa;"></i></div>
+                <div class="stat-value" id="growth-cycles">{{ employee_stats.get('growth_cycles', '--') }}</div>
+                <div class="stat-label">成长周期数</div>
+            </div>
+            <div class="stat-card">
+                <div class="icon-wrapper orange"><i class="fas fa-brain" style="color: #f59e0b;"></i></div>
+                <div class="stat-value" id="knowledge-size">{{ employee_stats.get('knowledge_base_size', '--') }}</div>
+                <div class="stat-label">知识库大小</div>
+            </div>
+            <div class="stat-card">
+                <div class="icon-wrapper pink"><i class="fas fa-book-open" style="color: #ec4899;"></i></div>
+                <div class="stat-value" id="learning-hours">{{ employee_stats.get('learning_hours', '--') }}</div>
+                <div class="stat-label">累计学习时长</div>
+            </div>
+            <div class="stat-card">
+                <div class="icon-wrapper cyan"><i class="fas fa-lightbulb" style="color: #06b6d4;"></i></div>
+                <div class="stat-value" id="thinking-sessions">{{ employee_stats.get('thinking_sessions', '--') }}</div>
+                <div class="stat-label">思考会话数</div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="panel">
+                <div class="panel-header">
+                    <h2><i class="fas fa-table"></i> AI员工列表</h2>
+                    <div style="font-size: 13px; color: #94a3b8;">共 <span id="employee-count">{{ employee_stats.get('total_employees', 0) }}</span> 名员工</div>
+                </div>
+                <div class="panel-body">
+                    <table class="employee-table" id="employee-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>员工名称</th>
+                                <th>角色</th>
+                                <th>状态</th>
+                                <th>技能评分</th>
+                                <th>思考次数</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="employee-table-body">
+                            {% for employee in employee_stats.get('employees', []) %}
+                            <tr>
+                                <td>{{ employee.id }}</td>
+                                <td>{{ employee.name }}</td>
+                                <td><span style="padding: 4px 10px; border-radius: 20px; font-size: 12px; background: rgba(96, 165, 250, 0.15); color: #60a5fa;">{{ employee.role_name }}</span></td>
+                                <td>{% if employee.status == 'active' %}<span style="color: #10b981;">在线</span>{% else %}<span style="color: #94a3b8;">离线</span>{% endif %}</td>
+                                <td>{{ employee.skill_score }}</td>
+                                <td>{{ employee.thinking_sessions }}</td>
+                                <td>
+                                    <button class="btn btn-primary" style="padding: 4px 8px; font-size: 12px;" onclick="viewEmployee({{ employee.id }})">查看</button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            {% if not employee_stats.get('employees') %}
+                            <tr><td colspan="7" style="text-align: center; color: #94a3b8;">暂无员工数据</td></tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 25px;">
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2><i class="fas fa-chart-pie"></i> 角色分布</h2>
+                    </div>
+                    <div class="panel-body">
+                        <div id="role-stats" class="role-stats">
+                            {% for role in employee_stats.get('role_distribution', []) %}
+                            <div class="role-item">
+                                <div class="role-bar" style="width: {{ role.percentage }}%; background: {{ role.color }};"></div>
+                                <div class="role-info">
+                                    <span class="role-name">{{ role.name }}</span>
+                                    <span class="role-count">{{ role.count }} ({{ role.percentage }}%)</span>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2><i class="fas fa-history"></i> 成长历史</h2>
+                        <button class="btn btn-info" style="padding: 6px 12px; font-size: 12px;" onclick="loadGrowthHistory()"><i class="fas fa-refresh"></i></button>
+                    </div>
+                    <div class="panel-body">
+                        <div id="growth-history" class="growth-history">
+                            {% for record in employee_stats.get('growth_history', []) %}
+                            <div class="growth-item">
+                                <div class="growth-date">{{ record.timestamp }}</div>
+                                <div class="growth-content">
+                                    <span class="growth-employee">{{ record.employee_name }}</span>
+                                    <span class="growth-action">{{ record.action }}</span>
+                                </div>
+                                <div class="growth-detail">{{ record.detail }}</div>
+                            </div>
+                            {% endfor %}
+                            {% if not employee_stats.get('growth_history') %}
+                            <div style="text-align: center; color: #94a3b8; padding: 20px;">暂无成长历史数据</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="trigger-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-play"></i> 触发成长周期</h3>
+                <button class="close-btn" onclick="closeTriggerModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="employee-select">选择员工</label>
+                    <select id="employee-select">
+                        <option value="">请选择员工</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="trigger-mode">触发模式</label>
+                    <select id="trigger-mode">
+                        <option value="single">单个员工</option>
+                        <option value="batch">批量所有员工</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" style="background: rgba(148,163,184,0.2); color: #94a3b8;" onclick="closeTriggerModal()">取消</button>
+                <button class="btn btn-success" onclick="triggerGrowthCycle()">确认触发</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let employees = [];
+
+        function loadData() {
+            loadOverview();
+            loadEmployees();
+            loadRoleStats();
+            loadGrowthHistory();
+        }
+
+        function loadOverview() {
+            fetch('/api/ai/dashboard/overview')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('total-employees').textContent = data.data.total_employees || 0;
+                        document.getElementById('active-employees').textContent = data.data.active_employees || 0;
+                        document.getElementById('growth-cycles').textContent = data.data.growth_cycles || 0;
+                        document.getElementById('knowledge-size').textContent = data.data.knowledge_base_size || 0;
+                        document.getElementById('learning-hours').textContent = data.data.learning_hours || 0;
+                        document.getElementById('thinking-sessions').textContent = data.data.thinking_sessions || 0;
+                    }
+                })
+                .catch(err => console.error('加载概览失败:', err));
+        }
+
+        function loadEmployees() {
+            document.getElementById('employees-loading').style.display = 'flex';
+            fetch('/api/ai/dashboard/employees')
+                .then(res => res.json())
+                .then(data => {
+                    document.getElementById('employees-loading').style.display = 'none';
+                    if (data.success) {
+                        employees = data.data;
+                        document.getElementById('employee-count').textContent = employees.length;
+                        renderEmployeeTable(employees);
+                        populateEmployeeSelect(employees);
+                    } else {
+                        document.getElementById('employee-table-body').innerHTML = 
+                            '<tr><td colspan="7" class="empty-state"><i class="fas fa-users"></i><br>暂无员工数据</td></tr>';
+                    }
+                })
+                .catch(err => {
+                    document.getElementById('employees-loading').style.display = 'none';
+                    console.error('加载员工失败:', err);
+                });
+        }
+
+        function renderEmployeeTable(data) {
+            const tbody = document.getElementById('employee-table-body');
+            tbody.innerHTML = '';
+            
+            data.forEach(emp => {
+                const avgScore = emp.avg_skill_score || 0;
+                let scoreClass = 'weak';
+                if (avgScore >= 80) scoreClass = 'excellent';
+                else if (avgScore >= 60) scoreClass = 'good';
+                else if (avgScore >= 40) scoreClass = 'moderate';
+
+                let roleClass = 'other';
+                if (emp.role_name && emp.role_name.includes('关西')) roleClass = 'kansai';
+                else if (emp.role_name && emp.role_name.includes('关东')) roleClass = 'kanto';
+                else if (emp.role_name && emp.role_name.includes('美式')) roleClass = 'us';
+                else if (emp.role_name && emp.role_name.includes('英式')) roleClass = 'uk';
+
+                let statusClass = 'idle';
+                let statusText = '空闲';
+                if (emp.status === 'active') { statusClass = 'active'; statusText = '活跃'; }
+                else if (emp.status === 'learning') { statusClass = 'learning'; statusText = '学习中'; }
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${emp.id || emp.employee_id || '--'}</td>
+                    <td><strong>${emp.name || emp.employee_name || '--'}</strong></td>
+                    <td><span class="role-badge ${roleClass}">${emp.role_name || '未分配'}</span></td>
+                    <td><span class="status-dot ${statusClass}" title="${statusText}"></span> ${statusText}</td>
+                    <td>
+                        <div class="skill-bar">
+                            <div class="skill-bar-fill ${scoreClass}" style="width: ${avgScore}%"></div>
+                        </div>
+                        <span style="font-size: 12px; color: #94a3b8;">${avgScore}%</span>
+                    </td>
+                    <td>${emp.total_thinking_sessions || 0}</td>
+                    <td>
+                        <button class="btn btn-primary" style="padding: 6px 12px; font-size: 12px;" 
+                            onclick="triggerSingleGrowth('${emp.id || emp.employee_id}', '${emp.name || emp.employee_name}')">
+                            <i class="fas fa-play"></i> 成长
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function populateEmployeeSelect(data) {
+            const select = document.getElementById('employee-select');
+            select.innerHTML = '<option value="">请选择员工</option>';
+            data.forEach(emp => {
+                const option = document.createElement('option');
+                option.value = emp.id || emp.employee_id;
+                option.textContent = emp.name || emp.employee_name;
+                select.appendChild(option);
+            });
+        }
+
+        function loadRoleStats() {
+            fetch('/api/ai/dashboard/roles')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        const container = document.getElementById('role-stats');
+                        container.innerHTML = '';
+                        const total = Object.values(data.data).reduce((sum, v) => sum + v, 0);
+                        
+                        Object.entries(data.data).forEach(([role, count]) => {
+                            const percentage = total > 0 ? Math.round((count / total) * 100) : 0;
+                            let iconClass = 'other';
+                            if (role.includes('关西')) iconClass = 'kansai';
+                            else if (role.includes('关东')) iconClass = 'kanto';
+                            else if (role.includes('美式')) iconClass = 'us';
+                            else if (role.includes('英式')) iconClass = 'uk';
+
+                            const item = document.createElement('div');
+                            item.className = 'role-stat-item';
+                            item.innerHTML = `
+                                <div class="role-icon" style="background: ${getRoleColor(iconClass)}20;">
+                                    <i class="fas fa-user" style="color: ${getRoleColor(iconClass)};"></i>
+                                </div>
+                                <div class="role-info">
+                                    <div class="role-name">${role}</div>
+                                    <div class="role-count">${count} 名员工</div>
+                                </div>
+                                <div class="role-percentage" style="color: ${getRoleColor(iconClass)};">${percentage}%</div>
+                            `;
+                            container.appendChild(item);
+                        });
+                    }
+                })
+                .catch(err => console.error('加载角色统计失败:', err));
+        }
+
+        function getRoleColor(className) {
+            const colors = { kansai: '#f472b6', kanto: '#93c5fd', us: '#6ee7b7', uk: '#fcd34d', other: '#cbd5e1' };
+            return colors[className] || colors.other;
+        }
+
+        function loadGrowthHistory() {
+            fetch('/api/ai/dashboard/employees')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        const container = document.getElementById('growth-history');
+                        container.innerHTML = '';
+                        const cycles = [];
+                        
+                        data.data.forEach(emp => {
+                            if (emp.growth_cycles && emp.growth_cycles.length > 0) {
+                                emp.growth_cycles.forEach(cycle => {
+                                    cycles.push({ ...cycle, employee_name: emp.name || emp.employee_name });
+                                });
+                            }
+                        });
+
+                        cycles.sort((a, b) => new Date(b.completed_at || b.start_time) - new Date(a.completed_at || a.start_time));
+
+                        if (cycles.length === 0) {
+                            container.innerHTML = '<div class="empty-state"><i class="fas fa-history"></i><br>暂无成长记录</div>';
+                            return;
+                        }
+
+                        cycles.slice(0, 10).forEach(cycle => {
+                            const item = document.createElement('div');
+                            item.className = 'growth-item';
+                            item.innerHTML = `
+                                <div class="growth-header">
+                                    <span class="cycle-num">${cycle.employee_name} - 周期 ${cycle.cycle_number || cycle.id}</span>
+                                    <span class="growth-time">${formatTime(cycle.completed_at || cycle.start_time)}</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span class="growth-status ${cycle.stage === 'completed' ? 'completed' : 'running'}">
+                                        ${cycle.stage === 'completed' ? '已完成' : '进行中'}
+                                    </span>
+                                    ${cycle.insights ? `<span style="font-size: 12px; color: #60a5fa;">${cycle.insights}</span>` : ''}
+                                </div>
+                                ${cycle.steps ? `<div class="growth-steps">步骤: ${cycle.steps.map(s => s.step.replace('_', ' ')).join(', ')}</div>` : ''}
+                            `;
+                            container.appendChild(item);
+                        });
+                    }
+                })
+                .catch(err => console.error('加载成长历史失败:', err));
+        }
+
+        function formatTime(timeStr) {
+            if (!timeStr) return '--';
+            const date = new Date(timeStr);
+            return date.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+        }
+
+        function openTriggerModal() {
+            document.getElementById('trigger-modal').classList.add('active');
+        }
+
+        function closeTriggerModal() {
+            document.getElementById('trigger-modal').classList.remove('active');
+        }
+
+        function triggerGrowthCycle() {
+            const mode = document.getElementById('trigger-mode').value;
+            const employeeId = document.getElementById('employee-select').value;
+
+            if (mode === 'single' && !employeeId) {
+                showToast('请选择员工或切换为批量模式', 'error');
+                return;
+            }
+
+            closeTriggerModal();
+            
+            if (mode === 'batch') {
+                fetch('/api/ai/dashboard/growth/batch', { method: 'POST' })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            showToast(`批量成长触发成功，共处理 ${data.data.count} 名员工`, 'success');
+                            loadData();
+                        } else {
+                            showToast(data.message || '批量成长触发失败', 'error');
+                        }
+                    })
+                    .catch(err => showToast('批量成长触发失败', 'error'));
+            } else {
+                triggerSingleGrowth(employeeId);
+            }
+        }
+
+        function triggerSingleGrowth(employeeId, employeeName) {
+            fetch(`/api/ai/dashboard/growth/trigger?employee_id=${employeeId}`, { method: 'POST' })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        showToast(`${employeeName || '员工'}成长周期触发成功`, 'success');
+                        loadData();
+                    } else {
+                        showToast(data.message || '成长周期触发失败', 'error');
+                    }
+                })
+                .catch(err => showToast('成长周期触发失败', 'error'));
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        document.addEventListener('DOMContentLoaded', loadData);
+    </script>
+</body>
+</html>

@@ -3,910 +3,275 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#0c1222">
-    <title>超级管理员控制台 - MTSCOS AI 系统</title>
-    <meta name="description" content="超级管理员控制面板 - 管理所有系统功能和AI扩展能力">
-    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='images/mtscos_shield.svg') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/mtscos-design-system.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='all.min.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/super_admin_dashboard.css') }}">
-    <script src="{{ url_for('static', filename='js/chart.umd.min.js') }}"></script>
+    <title>超级管理员控制台 - MTSCOS AI</title>
+    <link rel="stylesheet" href="/assets/css/mtscos-design-system.css">
+    <link rel="stylesheet" href="/assets/font-awesome/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: var(--font-family);
+            background: var(--bg-secondary);
+            min-height: 100vh;
+            color: var(--text-primary);
+        }
+        .header {
+            background: var(--bg-primary);
+            padding: 20px 30px;
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 { font-size: 22px; color: var(--text-primary); }
+        .header .user-info { display: flex; align-items: center; gap: 12px; }
+        .header .user-info span { color: var(--text-secondary); font-size: 14px; }
+        .header .badge {
+            background: var(--primary-color);
+            color: white;
+            padding: 4px 12px;
+            border-radius: var(--radius-sm);
+            font-size: 12px;
+        }
+        .main { padding: 24px 30px; max-width: 1200px; margin: 0 auto; }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            box-shadow: var(--shadow-md);
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            transition: transform 0.2s;
+        }
+        .stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+        .stat-icon {
+            width: 56px; height: 56px;
+            border-radius: var(--radius-md);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px;
+        }
+        .bg-primary { background: rgba(99, 102, 241, 0.1); color: var(--primary-color); }
+        .bg-success { background: rgba(34, 197, 94, 0.1); color: var(--success-color); }
+        .bg-warning { background: rgba(245, 158, 11, 0.1); color: var(--warning-color); }
+        .bg-danger { background: rgba(239, 68, 68, 0.1); color: var(--danger-color); }
+        .bg-info { background: rgba(14, 165, 233, 0.1); color: #0ea5e9; }
+        .stat-value { font-size: 28px; font-weight: 700; color: var(--text-primary); }
+        .stat-label { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
+        .role-distribution {
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            box-shadow: var(--shadow-md);
+            margin-bottom: 30px;
+        }
+        .role-distribution h3 { font-size: 16px; margin-bottom: 16px; color: var(--text-primary); }
+        .role-bars { display: flex; flex-direction: column; gap: 12px; }
+        .role-bar { display: flex; align-items: center; gap: 12px; }
+        .role-bar .role-name { width: 80px; font-size: 14px; color: var(--text-secondary); }
+        .role-bar .bar-container {
+            flex: 1; height: 24px; background: var(--bg-secondary);
+            border-radius: var(--radius-sm); overflow: hidden;
+        }
+        .role-bar .bar-fill {
+            height: 100%; border-radius: var(--radius-sm);
+            display: flex; align-items: center; padding: 0 8px;
+            color: white; font-size: 12px; font-weight: 600;
+            transition: width 0.5s ease;
+        }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+        @media (max-width: 768px) { .grid-2 { grid-template-columns: 1fr; } }
+        .card {
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            box-shadow: var(--shadow-md);
+        }
+        .card h3 { font-size: 16px; margin-bottom: 16px; color: var(--text-primary); }
+        .data-table { width: 100%; border-collapse: collapse; }
+        .data-table th, .data-table td {
+            padding: 10px 12px; text-align: left;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 13px;
+        }
+        .data-table th { color: var(--text-secondary); font-weight: 600; }
+        .data-table td { color: var(--text-primary); }
+        .data-table tr:hover { background: var(--bg-secondary); }
+        .empty-state { text-align: center; padding: 30px; color: var(--text-secondary); font-size: 14px; }
+        .nav-links { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+        .nav-links a {
+            padding: 8px 16px; background: var(--bg-primary);
+            border-radius: var(--radius-sm); text-decoration: none;
+            color: var(--text-secondary); font-size: 14px;
+            box-shadow: var(--shadow-sm); transition: all 0.2s;
+        }
+        .nav-links a:hover { color: var(--primary-color); box-shadow: var(--shadow-md); }
+        .status-tag {
+            padding: 2px 8px; border-radius: var(--radius-sm);
+            font-size: 11px; font-weight: 600;
+        }
+        .status-published { background: rgba(34, 197, 94, 0.1); color: var(--success-color); }
+        .status-active { background: rgba(14, 165, 233, 0.1); color: #0ea5e9; }
+    </style>
 </head>
-<body class="super-admin-body">
-<div class="dashboard-shell">
-    <div class="sidebar">
-        <div class="sidebar-header">
-            <div class="logo-badge">
-                <div class="logo-icon"><img src="{{ url_for('static', filename='images/mtscos_shield.svg') }}" alt="Logo"></div>
-                <div class="logo-text">
-                    <h2>MTSCOS AI</h2>
-                    <p>超级管理员控制台</p>
-                </div>
-            </div>
-        </div>
-        <div class="sidebar-nav">
-            <div class="nav-section">系统概览</div>
-            <div class="nav-item active" onclick="switchTab('overview')"><div class="nav-icon">📊</div><div class="nav-text">系统概览</div></div>
-            <div class="nav-item" onclick="switchTab('resources')"><div class="nav-icon">💻</div><div class="nav-text">资源监控</div></div>
-            <div class="nav-item" onclick="switchTab('logs')"><div class="nav-icon">📝</div><div class="nav-text">系统日志</div></div>
-            
-            <div class="nav-section">数据管理</div>
-            <div class="nav-item" onclick="switchTab('users')"><div class="nav-icon">👥</div><div class="nav-text">用户管理</div></div>
-            <div class="nav-item" onclick="switchTab('exam')"><div class="nav-icon">📋</div><div class="nav-text">考试系统</div></div>
-            <div class="nav-item" onclick="switchTab('routes')"><div class="nav-icon">🔗</div><div class="nav-text">路由管理</div></div>
-            
-            <div class="nav-section">AI 能力</div>
-            <div class="nav-item" onclick="switchTab('engines')"><div class="nav-icon">⚙️</div><div class="nav-text">AI引擎矩阵</div></div>
-            <div class="nav-item" onclick="switchTab('employees')"><div class="nav-icon">🤖</div><div class="nav-text">AI员工管理</div></div>
-            <div class="nav-item" onclick="switchTab('agent')"><div class="nav-icon">🧠</div><div class="nav-text">本地AI Agent</div></div>
-            
-            <div class="nav-section">安全监控</div>
-            <div class="nav-item" onclick="switchTab('security')"><div class="nav-icon">🛡️</div><div class="nav-text">安全监控中心</div></div>
-            <div class="nav-item" onclick="switchTab('ai-analytics')"><div class="nav-icon">📊</div><div class="nav-text">AI智能分析</div></div>
-            <div class="nav-section">系统监控</div>
-            <div class="nav-item" onclick="switchTab('health')"><div class="nav-icon">❤️</div><div class="nav-text">健康监控</div></div>
-            <div class="nav-item" onclick="switchTab('tasks')"><div class="nav-icon">⏰</div><div class="nav-text">定时任务</div></div>
-            <div class="nav-item" onclick="switchTab('sessions')"><div class="nav-icon">👤</div><div class="nav-text">会话管理</div></div>
-            <div class="nav-section">系统维护</div>
-            <div class="nav-item" onclick="switchTab('params')"><div class="nav-icon">🔧</div><div class="nav-text">系统参数</div></div>
-            <div class="nav-item" onclick="switchTab('param-logs')"><div class="nav-icon">📝</div><div class="nav-text">参数变更日志</div></div>
-            <div class="nav-item" onclick="switchTab('param-backup')"><div class="nav-icon">💾</div><div class="nav-text">参数备份恢复</div></div>
-            <div class="nav-item" onclick="switchTab('backup')"><div class="nav-icon">🗄️</div><div class="nav-text">数据备份</div></div>
-            <div class="nav-item" onclick="switchTab('notifications')"><div class="nav-icon">�</div><div class="nav-text">通知管理</div></div>
-            <div class="nav-item" onclick="switchTab('announcements')"><div class="nav-icon">📢</div><div class="nav-text">公告管理</div></div>
-            <div class="nav-item" onclick="switchTab('export')"><div class="nav-icon">📤</div><div class="nav-text">数据导出</div></div>
-            <div class="nav-item" onclick="switchTab('settings')"><div class="nav-icon">⚙️</div><div class="nav-text">系统设置</div></div>
-        </div>
-        <div class="sidebar-footer">
-            <div class="user-info">
-                <div class="user-avatar">{{ user.username[0].upper() if user and user.username else 'A' }}</div>
-                <div class="user-detail">
-                    <p class="user-name">{{ user.username if user else '管理员' }}</p>
-                    <p class="user-role">{{ user.role if user else 'super_admin' }}</p>
-                </div>
-                <button class="logout-btn" onclick="logout()" title="退出登录">🚪</button>
-            </div>
+<body>
+    <div class="header">
+        <h1><i class="fas fa-crown"></i> 超级管理员控制台</h1>
+        <div class="user-info">
+            <span>{{ user.username }}</span>
+            <span class="badge">{{ user.role }}</span>
         </div>
     </div>
 
-    <div class="main-content">
-        <div class="page-header">
-            <h1>超级管理员控制台</h1>
-            <p>管理系统所有功能和AI扩展能力</p>
+    <div class="main">
+        <div class="nav-links">
+            <a href="/"><i class="fas fa-home"></i> 首页</a>
+            <a href="/admin_center"><i class="fas fa-cog"></i> 管理中心</a>
+            <a href="/admin_app/dashboard"><i class="fas fa-chart-line"></i> 管理仪表盘</a>
+            <a href="/admin_app/users"><i class="fas fa-users"></i> 用户管理</a>
+            <a href="/admin_app/exams"><i class="fas fa-file-alt"></i> 考试管理</a>
+            <a href="/settings"><i class="fas fa-sliders-h"></i> 系统设置</a>
         </div>
 
-        <div id="tab-overview" class="tab-content">
-            <div class="stats-grid">
-                <div class="stat-card blue animate-fadeInUp">
-                    <div class="stat-header">
-                        <div>
-                            <p class="stat-label">总用户数</p>
-                            <p class="stat-value" id="stat-users">--</p>
-                        </div>
-                        <div class="stat-icon">👥</div>
-                    </div>
-                </div>
-                <div class="stat-card green animate-fadeInUp" style="animation-delay: 0.05s;">
-                    <div class="stat-header">
-                        <div>
-                            <p class="stat-label">考试总数</p>
-                            <p class="stat-value" id="stat-exams">--</p>
-                        </div>
-                        <div class="stat-icon">📋</div>
-                    </div>
-                </div>
-                <div class="stat-card purple animate-fadeInUp" style="animation-delay: 0.1s;">
-                    <div class="stat-header">
-                        <div>
-                            <p class="stat-label">AI员工</p>
-                            <p class="stat-value" id="stat-employees">--</p>
-                        </div>
-                        <div class="stat-icon">🤖</div>
-                    </div>
-                </div>
-                <div class="stat-card orange animate-fadeInUp" style="animation-delay: 0.15s;">
-                    <div class="stat-header">
-                        <div>
-                            <p class="stat-label">路由总数</p>
-                            <p class="stat-value" id="stat-routes">--</p>
-                        </div>
-                        <div class="stat-icon">🔗</div>
-                    </div>
-                </div>
-                <div class="stat-card pink animate-fadeInUp" style="animation-delay: 0.2s;">
-                    <div class="stat-header">
-                        <div>
-                            <p class="stat-label">本地AI Agent</p>
-                            <p class="stat-value" id="stat-agent">--</p>
-                            <div class="stat-sub" id="agent-status">待启动</div>
-                        </div>
-                        <div class="stat-icon">🧠</div>
-                    </div>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon bg-primary"><i class="fas fa-users"></i></div>
+                <div>
+                    <div class="stat-value">{{ stats.total_users or 0 }}</div>
+                    <div class="stat-label">用户总数</div>
                 </div>
             </div>
-
-            <div class="action-grid">
-                <div class="action-card blue" onclick="window.location.href='/ai_auto_expand'">
-                    <div class="action-icon">✨</div>
-                    <p class="action-label">AI拓展</p>
-                </div>
-                <div class="action-card green" onclick="startLocalAgent()">
-                    <div class="action-icon">▶️</div>
-                    <p class="action-label">启动Agent</p>
-                </div>
-                <div class="action-card purple" onclick="reloadRoutes()">
-                    <div class="action-icon">🔄</div>
-                    <p class="action-label">刷新路由</p>
-                </div>
-                <div class="action-card orange" onclick="checkRoutes()">
-                    <div class="action-icon">✅</div>
-                    <p class="action-label">健康检查</p>
-                </div>
-                <div class="action-card pink" onclick="createBackup()">
-                    <div class="action-icon">💾</div>
-                    <p class="action-label">数据备份</p>
-                </div>
-                <div class="action-card cyan" onclick="startKnowledgeScan()">
-                    <div class="action-icon">🔍</div>
-                    <p class="action-label">知识扫描</p>
+            <div class="stat-card">
+                <div class="stat-icon bg-success"><i class="fas fa-file-alt"></i></div>
+                <div>
+                    <div class="stat-value">{{ stats.total_exams or 0 }}</div>
+                    <div class="stat-label">考试总数</div>
                 </div>
             </div>
-
-            <div class="panel">
-                <div class="panel-header">
-                    <h3 class="panel-title"><div class="panel-title-bar"></div>系统资源</h3>
-                </div>
-                <div class="panel-content">
-                    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:24px;">
-                        <div>
-                            <div class="resource-label"><span>CPU使用率</span><span id="cpu-percent">0%</span></div>
-                            <div class="resource-bar"><div class="resource-fill cpu" id="cpu-bar" style="width:0%"></div></div>
-                        </div>
-                        <div>
-                            <div class="resource-label"><span>内存使用率</span><span id="mem-percent">0%</span></div>
-                            <div class="resource-bar"><div class="resource-fill mem" id="mem-bar" style="width:0%"></div></div>
-                        </div>
-                        <div>
-                            <div class="resource-label"><span>磁盘使用率</span><span id="disk-percent">0%</span></div>
-                            <div class="resource-bar"><div class="resource-fill disk" id="disk-bar" style="width:0%"></div></div>
-                        </div>
-                    </div>
+            <div class="stat-card">
+                <div class="stat-icon bg-warning"><i class="fas fa-book"></i></div>
+                <div>
+                    <div class="stat-value">{{ stats.total_courses or 0 }}</div>
+                    <div class="stat-label">课程总数</div>
                 </div>
             </div>
-
-            <div class="panel">
-                <div class="panel-header">
-                    <h3 class="panel-title"><div class="panel-title-bar"></div>最近活动</h3>
+            <div class="stat-card">
+                <div class="stat-icon bg-info"><i class="fas fa-question-circle"></i></div>
+                <div>
+                    <div class="stat-value">{{ stats.total_questions or 0 }}</div>
+                    <div class="stat-label">题目总数</div>
                 </div>
-                <div class="panel-content">
-                    <table class="table-grid">
-                        <thead>
-                            <tr>
-                                <th>时间</th>
-                                <th>模块</th>
-                                <th>描述</th>
-                                <th>级别</th>
-                            </tr>
-                        </thead>
-                        <tbody id="recent-activity">
-                            <tr><td colspan="4" class="empty-state">加载中...</td></tr>
-                        </tbody>
-                    </table>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon bg-danger"><i class="fas fa-bell"></i></div>
+                <div>
+                    <div class="stat-value">{{ stats.total_notifications or 0 }}</div>
+                    <div class="stat-label">通知总数</div>
                 </div>
             </div>
         </div>
 
-        <div id="tab-resources" class="tab-content" style="display:none;">
-            <div class="panel">
-                <div class="panel-header">
-                    <h3 class="panel-title"><div class="panel-title-bar"></div>资源使用趋势</h3>
-                </div>
-                <div class="panel-content">
-                    <div class="chart-container"><canvas id="resourceChart"></canvas></div>
-                </div>
-            </div>
-            <div class="info-grid">
-                <div class="panel">
-                    <div class="panel-header">
-                        <h3 class="panel-title"><div class="panel-title-bar"></div>CPU信息</h3>
-                    </div>
-                    <div class="panel-content" id="cpu-info">加载中...</div>
-                </div>
-                <div class="panel">
-                    <div class="panel-header">
-                        <h3 class="panel-title"><div class="panel-title-bar"></div>内存信息</h3>
-                    </div>
-                    <div class="panel-content" id="mem-info">加载中...</div>
-                </div>
-            </div>
-        </div>
-
-        <div id="tab-logs" class="tab-content" style="display:none;">
-            <div class="panel">
-                <div class="panel-header">
-                    <h3 class="panel-title"><div class="panel-title-bar"></div>系统日志</h3>
-                </div>
-                <div class="panel-content">
-                    <div class="search-bar">
-                        <input type="text" id="log-search" placeholder="搜索日志消息" onkeypress="if(event.key==='Enter')loadLogs()">
-                        <select id="log-level-filter" onchange="loadLogs()">
-                            <option value="">全部级别</option>
-                            <option value="info">INFO</option>
-                            <option value="warning">WARNING</option>
-                            <option value="error">ERROR</option>
-                            <option value="success">SUCCESS</option>
-                        </select>
-                        <button onclick="loadLogs()">搜索</button>
-                    </div>
-                    <table class="table-grid" id="log-table">
-                        <thead>
-                            <tr>
-                                <th>时间</th>
-                                <th>级别</th>
-                                <th>模块</th>
-                                <th>消息</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr><td colspan="4" class="empty-state">加载中...</td></tr>
-                        </tbody>
-                    </table>
-                    <div class="pagination" id="log-pagination"></div>
-                </div>
-            </div>
-        </div>
-
-        <div id="tab-users" class="tab-content" style="display:none;">
-            <div class="panel">
-                <div class="panel-header">
-                    <h3 class="panel-title"><div class="panel-title-bar"></div>用户管理</h3>
-                </div>
-                <div class="panel-content">
-                    <div class="search-bar">
-                        <input type="text" id="user-search" placeholder="搜索用户名/邮箱">
-                        <select id="user-role-filter">
-                            <option value="">全部角色</option>
-                            <option value="super_admin">超级管理员</option>
-                            <option value="admin">管理员</option>
-                            <option value="teacher">教师</option>
-                            <option value="student">学生</option>
-                        </select>
-                        <button onclick="loadUsers()">搜索</button>
-                    </div>
-                    <table class="table-grid" id="user-table">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>用户名</th>
-                                <th>邮箱</th>
-                                <th>角色</th>
-                                <th>状态</th>
-                                <th>创建时间</th>
-                                <th>操作</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr><td colspan="7" class="empty-state">加载中...</td></tr>
-                        </tbody>
-                    </table>
-                    <div class="pagination" id="user-pagination"></div>
-                </div>
-            </div>
-        </div>
-
-        <div id="tab-exam" class="tab-content" style="display:none;">
-            <div class="stats-grid" style="grid-template-columns: repeat(4, 1fr);">
-                <div class="stat-card blue">
-                    <div class="stat-header">
-                        <div>
-                            <p class="stat-label">总考试数</p>
-                            <p class="stat-value" id="exam-total">--</p>
+        <div class="role-distribution">
+            <h3><i class="fas fa-chart-pie"></i> 用户角色分布</h3>
+            <div class="role-bars">
+                {% set total = (stats.total_users or 1) %}
+                <div class="role-bar">
+                    <span class="role-name">学生</span>
+                    <div class="bar-container">
+                        <div class="bar-fill" style="background: var(--primary-color); width: {{ (stats.student_count or 0) * 100 // total }}%;">
+                            {{ stats.student_count or 0 }}
                         </div>
                     </div>
                 </div>
-                <div class="stat-card green">
-                    <div class="stat-header">
-                        <div>
-                            <p class="stat-label">进行中</p>
-                            <p class="stat-value" id="exam-active">--</p>
+                <div class="role-bar">
+                    <span class="role-name">教师</span>
+                    <div class="bar-container">
+                        <div class="bar-fill" style="background: var(--success-color); width: {{ (stats.teacher_count or 0) * 100 // total }}%;">
+                            {{ stats.teacher_count or 0 }}
                         </div>
                     </div>
                 </div>
-                <div class="stat-card purple">
-                    <div class="stat-header">
-                        <div>
-                            <p class="stat-label">已完成</p>
-                            <p class="stat-value" id="exam-completed">--</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="stat-card orange">
-                    <div class="stat-header">
-                        <div>
-                            <p class="stat-label">平均分</p>
-                            <p class="stat-value" id="exam-avg">--</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="panel">
-                <div class="panel-header">
-                    <h3 class="panel-title"><div class="panel-title-bar"></div>考试列表</h3>
-                </div>
-                <div class="panel-content">
-                    <div class="search-bar">
-                        <input type="text" id="exam-search" placeholder="搜索考试名称">
-                        <select id="exam-status-filter">
-                            <option value="">全部状态</option>
-                            <option value="active">进行中</option>
-                            <option value="completed">已完成</option>
-                        </select>
-                        <button onclick="loadExams()">搜索</button>
-                    </div>
-                    <table class="table-grid" id="exam-table">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>标题</th>
-                                <th>科目</th>
-                                <th>时长</th>
-                                <th>题目数</th>
-                                <th>状态</th>
-                                <th>创建时间</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr><td colspan="7" class="empty-state">加载中...</td></tr>
-                        </tbody>
-                    </table>
-                    <div class="pagination" id="exam-pagination"></div>
-                </div>
-            </div>
-        </div>
-
-        <div id="tab-routes" class="tab-content" style="display:none;">
-            <div class="panel">
-                <div class="panel-header">
-                    <h3 class="panel-title"><div class="panel-title-bar"></div>路由列表</h3>
-                </div>
-                <div class="panel-content">
-                    <div class="search-bar">
-                        <input type="text" id="route-search" placeholder="搜索路由路径" onkeypress="if(event.key==='Enter')loadRoutes()">
-                        <button onclick="loadRoutes()">搜索</button>
-                    </div>
-                    <table class="table-grid" id="route-table">
-                        <thead>
-                            <tr>
-                                <th>路径</th>
-                                <th>端点</th>
-                                <th>方法</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr><td colspan="3" class="empty-state">加载中...</td></tr>
-                        </tbody>
-                    </table>
-                    <div style="margin-top:12px;font-size:12px;color:var(--text-tertiary);">共 <span id="route-count">0</span> 条路由</div>
-                </div>
-            </div>
-        </div>
-
-        <div id="tab-engines" class="tab-content" style="display:none;">
-            <div class="panel">
-                <div class="panel-header">
-                    <h3 class="panel-title"><div class="panel-title-bar"></div>AI引擎矩阵</h3>
-                </div>
-                <div class="panel-content">
-                    <div class="engine-grid" id="engine-grid">加载中...</div>
-                </div>
-            </div>
-        </div>
-
-        <div id="tab-employees" class="tab-content" style="display:none;">
-            <div class="panel">
-                <div class="panel-header">
-                    <h3 class="panel-title"><div class="panel-title-bar"></div>AI员工列表</h3>
-                </div>
-                <div class="panel-content">
-                    <table class="table-grid" id="employee-table">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>名称</th>
-                                <th>角色</th>
-                                <th>状态</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr><td colspan="4" class="empty-state">加载中...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <div id="tab-agent" class="tab-content" style="display:none;">
-            <div class="stats-grid" style="grid-template-columns: repeat(3, 1fr);">
-                <div class="stat-card blue">
-                    <div class="stat-header">
-                        <div>
-                            <p class="stat-label">Agent总数</p>
-                            <p class="stat-value" id="agent-total">--</p>
-                        </div>
-                        <div class="stat-icon">🤖</div>
-                    </div>
-                </div>
-                <div class="stat-card green">
-                    <div class="stat-header">
-                        <div>
-                            <p class="stat-label">运行中</p>
-                            <p class="stat-value" id="agent-running">--</p>
-                        </div>
-                        <div class="stat-icon">▶️</div>
-                    </div>
-                </div>
-                <div class="stat-card orange">
-                    <div class="stat-header">
-                        <div>
-                            <p class="stat-label">已停止</p>
-                            <p class="stat-value" id="agent-stopped">--</p>
-                        </div>
-                        <div class="stat-icon">⏸️</div>
-                    </div>
-                </div>
-            </div>
-            <div class="panel">
-                <div class="panel-header">
-                    <h3 class="panel-title"><div class="panel-title-bar"></div>Agent列表</h3>
-                </div>
-                <div class="panel-content">
-                    <table class="table-grid" id="agent-table">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>名称</th>
-                                <th>角色</th>
-                                <th>状态</th>
-                                <th>操作</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr><td colspan="5" class="empty-state">加载中...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <div id="tab-backup" class="tab-content" style="display:none;">
-            <div class="panel">
-                <div class="panel-header">
-                    <h3 class="panel-title"><div class="panel-title-bar"></div>备份管理</h3>
-                    <button class="btn-primary" onclick="createBackup()">创建备份</button>
-                </div>
-                <div class="panel-content">
-                    <div id="backup-list">加载中...</div>
-                </div>
-            </div>
-        </div>
-
-        <div id="tab-params" class="tab-content" style="display:none;">
-            <div class="panel">
-                <div class="panel-header">
-                    <h3 class="panel-title"><div class="panel-title-bar"></div>系统参数管理</h3>
-                    <div>
-                        <button class="btn-primary" onclick="showAddParamModal()">+ 新增参数</button>
-                        <button class="btn-secondary" onclick="resetParamModal()">↺ 重置参数</button>
-                    </div>
-                </div>
-                <div class="panel-content">
-                    <div class="search-bar">
-                        <input type="text" id="param-search" placeholder="搜索参数键" onkeypress="if(event.key==='Enter')loadParams()">
-                        <select id="param-category-filter" onchange="loadParams()">
-                            <option value="">全部分类</option>
-                        </select>
-                        <select id="param-scope-filter" onchange="loadParams()">
-                            <option value="">全部作用域</option>
-                        </select>
-                        <button onclick="loadParams()">搜索</button>
-                    </div>
-                    <table class="table-grid" id="param-table">
-                        <thead>
-                            <tr>
-                                <th>参数键</th>
-                                <th>值</th>
-                                <th>分类</th>
-                                <th>数据类型</th>
-                                <th>作用域</th>
-                                <th>描述</th>
-                                <th>操作</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr><td colspan="7" class="empty-state">加载中...</td></tr>
-                        </tbody>
-                    </table>
-                    <div class="pagination" id="param-pagination"></div>
-                </div>
-            </div>
-        </div>
-
-        <div id="tab-param-logs" class="tab-content" style="display:none;">
-            <div class="panel">
-                <div class="panel-header">
-                    <h3 class="panel-title"><div class="panel-title-bar"></div>参数变更日志</h3>
-                </div>
-                <div class="panel-content">
-                    <div class="search-bar">
-                        <input type="text" id="param-log-search" placeholder="搜索参数键" onkeypress="if(event.key==='Enter')loadParamLogs()">
-                        <select id="param-log-operation" onchange="loadParamLogs()">
-                            <option value="">全部操作</option>
-                            <option value="create">创建</option>
-                            <option value="update">修改</option>
-                            <option value="delete">删除</option>
-                            <option value="reset">重置</option>
-                        </select>
-                        <button onclick="loadParamLogs()">搜索</button>
-                    </div>
-                    <table class="table-grid" id="param-log-table">
-                        <thead>
-                            <tr>
-                                <th>时间</th>
-                                <th>操作类型</th>
-                                <th>参数键</th>
-                                <th>旧值</th>
-                                <th>新值</th>
-                                <th>操作人</th>
-                                <th>角色</th>
-                                <th>IP地址</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr><td colspan="8" class="empty-state">加载中...</td></tr>
-                        </tbody>
-                    </table>
-                    <div class="pagination" id="param-log-pagination"></div>
-                </div>
-            </div>
-        </div>
-
-        <div id="tab-param-backup" class="tab-content" style="display:none;">
-            <div class="panel">
-                <div class="panel-header">
-                    <h3 class="panel-title"><div class="panel-title-bar"></div>参数备份恢复</h3>
-                    <button class="btn-primary" onclick="createParamBackup()">+ 创建备份</button>
-                </div>
-                <div class="panel-content">
-                    <div id="param-backup-list">加载中...</div>
-                </div>
-            </div>
-        </div>
-
-        <div id="tab-settings" class="tab-content" style="display:none;">
-            <div class="panel">
-                <div class="panel-header">
-                    <h3 class="panel-title"><div class="panel-title-bar"></div>系统设置</h3>
-                </div>
-                <div class="panel-content" id="settings-content">加载中...</div>
-            </div>
-        </div>
-
-        <div id="tab-security" class="tab-content" style="display:none;">
-            <div class="stats-grid" style="grid-template-columns: repeat(4, 1fr);">
-                <div class="stat-card red">
-                    <div class="stat-header">
-                        <div>
-                            <p class="stat-label">SQL注入攻击</p>
-                            <p class="stat-value" id="security-sql-injection">--</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="stat-card orange">
-                    <div class="stat-header">
-                        <div>
-                            <p class="stat-label">访问拒绝</p>
-                            <p class="stat-value" id="security-access-denied">--</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="stat-card yellow">
-                    <div class="stat-header">
-                        <div>
-                            <p class="stat-label">今日登录失败</p>
-                            <p class="stat-value" id="security-failed-login">--</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="stat-card blue">
-                    <div class="stat-header">
-                        <div>
-                            <p class="stat-label">可疑IP</p>
-                            <p class="stat-value" id="security-suspicious-ips">--</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="panel">
-                <div class="panel-header">
-                    <h3 class="panel-title"><div class="panel-title-bar"></div>安全审计日志</h3>
-                </div>
-                <div class="panel-content">
-                    <table class="table-grid" id="security-audit-table">
-                        <thead>
-                            <tr>
-                                <th>时间</th>
-                                <th>操作</th>
-                                <th>目标</th>
-                                <th>操作人</th>
-                                <th>IP地址</th>
-                                <th>状态</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr><td colspan="6" class="empty-state">加载中...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <div id="tab-ai-analytics" class="tab-content" style="display:none;">
-            <div class="panel">
-                <div class="panel-header">
-                    <h3 class="panel-title"><div class="panel-title-bar"></div>学习数据分析</h3>
-                </div>
-                <div class="panel-content">
-                    <div id="learning-analytics">加载中...</div>
-                </div>
-            </div>
-            <div class="panel">
-                <div class="panel-header">
-                    <h3 class="panel-title"><div class="panel-title-bar"></div>考试数据分析</h3>
-                </div>
-                <div class="panel-content">
-                    <div id="exam-analytics">加载中...</div>
-                </div>
-            </div>
-            <div class="panel">
-                <div class="panel-header">
-                    <h3 class="panel-title"><div class="panel-title-bar"></div>用户行为分析</h3>
-                </div>
-                <div class="panel-content">
-                    <div id="behavior-analytics">加载中...</div>
-                </div>
-            </div>
-        </div>
-
-        <div id="tab-notifications" class="tab-content" style="display:none;">
-            <div class="panel">
-                <div class="panel-header">
-                    <h3 class="panel-title"><div class="panel-title-bar"></div>通知管理</h3>
-                    <button class="btn-primary" onclick="showAddNotificationModal()">+ 发送通知</button>
-                </div>
-                <div class="panel-content">
-                    <table class="table-grid" id="notification-table">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>标题</th>
-                                <th>类型</th>
-                                <th>状态</th>
-                                <th>创建时间</th>
-                                <th>操作</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr><td colspan="6" class="empty-state">加载中...</td></tr>
-                        </tbody>
-                    </table>
-                    <div class="pagination" id="notification-pagination"></div>
-                </div>
-            </div>
-        </div>
-
-        <div id="tab-announcements" class="tab-content" style="display:none;">
-            <div class="panel">
-                <div class="panel-header">
-                    <h3 class="panel-title"><div class="panel-title-bar"></div>公告管理</h3>
-                    <button class="btn-primary" onclick="showAddAnnouncementModal()">+ 发布公告</button>
-                </div>
-                <div class="panel-content">
-                    <table class="table-grid" id="announcement-table">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>标题</th>
-                                <th>状态</th>
-                                <th>发布时间</th>
-                                <th>创建时间</th>
-                                <th>操作</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr><td colspan="6" class="empty-state">加载中...</td></tr>
-                        </tbody>
-                    </table>
-                    <div class="pagination" id="announcement-pagination"></div>
-                </div>
-            </div>
-        </div>
-
-        <div id="tab-export" class="tab-content" style="display:none;">
-            <div class="panel">
-                <div class="panel-header">
-                    <h3 class="panel-title"><div class="panel-title-bar"></div>数据导出</h3>
-                </div>
-                <div class="panel-content">
-                    <div class="export-grid">
-                        <div class="export-card" onclick="exportUsers()">
-                            <div class="export-icon">👥</div>
-                            <p class="export-label">导出用户数据</p>
-                            <p class="export-desc">导出所有用户信息到CSV文件</p>
-                        </div>
-                        <div class="export-card" onclick="exportExams()">
-                            <div class="export-icon">📝</div>
-                            <p class="export-label">导出考试数据</p>
-                            <p class="export-desc">导出所有考试信息到CSV文件</p>
-                        </div>
-                        <div class="export-card" onclick="exportLogs()">
-                            <div class="export-icon">📋</div>
-                            <p class="export-label">导出日志数据</p>
-                            <p class="export-desc">导出系统日志到CSV文件（最近1000条）</p>
+                <div class="role-bar">
+                    <span class="role-name">管理员</span>
+                    <div class="bar-container">
+                        <div class="bar-fill" style="background: var(--warning-color); width: {{ (stats.admin_count or 0) * 100 // total }}%;">
+                            {{ stats.admin_count or 0 }}
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div id="tab-health" class="tab-content" style="display:none;">
-            <div class="panel">
-                <div class="panel-header">
-                    <h3 class="panel-title"><div class="panel-title-bar"></div>系统健康状态</h3>
-                    <button class="btn-primary" onclick="runHealthCheck()">🔄 执行健康检查</button>
-                </div>
-                <div class="panel-content">
-                    <div id="health-status-summary" style="margin-bottom:24px;">加载中...</div>
-                    <table class="table-grid" id="health-check-results">
-                        <thead>
-                            <tr>
-                                <th>模块名称</th>
-                                <th>状态</th>
-                                <th>响应时间(ms)</th>
-                                <th>错误信息</th>
-                                <th>检查时间</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr><td colspan="5" class="empty-state">加载中...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
+        <div class="grid-2">
+            <div class="card">
+                <h3><i class="fas fa-history"></i> 最近登录</h3>
+                {% if stats.recent_logins %}
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>用户名</th>
+                            <th>角色</th>
+                            <th>登录时间</th>
+                            <th>IP地址</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for login in stats.recent_logins %}
+                        <tr>
+                            <td>{{ login.username }}</td>
+                            <td>{{ login.role }}</td>
+                            <td>{{ login.login_time[:19] if login.login_time else '-' }}</td>
+                            <td>{{ login.login_ip or '-' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="empty-state">暂无登录记录</div>
+                {% endif %}
             </div>
-            <div class="panel">
-                <div class="panel-header">
-                    <h3 class="panel-title"><div class="panel-title-bar"></div>健康检查历史</h3>
-                </div>
-                <div class="panel-content">
-                    <table class="table-grid" id="health-history-table">
-                        <thead>
-                            <tr>
-                                <th>模块名称</th>
-                                <th>状态</th>
-                                <th>响应时间(ms)</th>
-                                <th>检查时间</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr><td colspan="4" class="empty-state">加载中...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
 
-        <div id="tab-tasks" class="tab-content" style="display:none;">
-            <div class="panel">
-                <div class="panel-header">
-                    <h3 class="panel-title"><div class="panel-title-bar"></div>定时任务列表</h3>
-                    <button class="btn-primary" onclick="showAddTaskModal()">+ 创建任务</button>
-                </div>
-                <div class="panel-content">
-                    <table class="table-grid" id="task-table">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>任务名称</th>
-                                <th>类型</th>
-                                <th>Cron表达式</th>
-                                <th>状态</th>
-                                <th>上次运行</th>
-                                <th>操作</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr><td colspan="7" class="empty-state">加载中...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            <div class="panel">
-                <div class="panel-header">
-                    <h3 class="panel-title"><div class="panel-title-bar"></div>任务执行日志</h3>
-                </div>
-                <div class="panel-content">
-                    <table class="table-grid" id="task-log-table">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>任务名称</th>
-                                <th>状态</th>
-                                <th>开始时间</th>
-                                <th>完成时间</th>
-                                <th>错误信息</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr><td colspan="6" class="empty-state">加载中...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <div id="tab-sessions" class="tab-content" style="display:none;">
-            <div class="stats-grid" style="grid-template-columns: repeat(2, 1fr);">
-                <div class="stat-card blue">
-                    <div class="stat-header">
-                        <div>
-                            <p class="stat-label">活跃会话</p>
-                            <p class="stat-value" id="session-active">--</p>
-                        </div>
-                        <div class="stat-icon">🟢</div>
-                    </div>
-                </div>
-                <div class="stat-card orange">
-                    <div class="stat-header">
-                        <div>
-                            <p class="stat-label">已过期会话</p>
-                            <p class="stat-value" id="session-expired">--</p>
-                        </div>
-                        <div class="stat-icon">🔴</div>
-                    </div>
-                </div>
-            </div>
-            <div class="panel">
-                <div class="panel-header">
-                    <h3 class="panel-title"><div class="panel-title-bar"></div>活跃会话列表</h3>
-                    <button class="btn-danger" onclick="terminateAllSessions()">终止所有会话</button>
-                </div>
-                <div class="panel-content">
-                    <div class="search-bar">
-                        <input type="text" id="session-search" placeholder="搜索用户名" onkeypress="if(event.key==='Enter')loadSessions()">
-                        <button onclick="loadSessions()">搜索</button>
-                    </div>
-                    <table class="table-grid" id="session-table">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>用户名</th>
-                                <th>角色</th>
-                                <th>登录时间</th>
-                                <th>最后活跃</th>
-                                <th>IP地址</th>
-                                <th>状态</th>
-                                <th>操作</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr><td colspan="8" class="empty-state">加载中...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
+            <div class="card">
+                <h3><i class="fas fa-file-alt"></i> 最近考试</h3>
+                {% if stats.recent_exams %}
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>考试名称</th>
+                            <th>状态</th>
+                            <th>创建时间</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for exam in stats.recent_exams %}
+                        <tr>
+                            <td>{{ exam.id }}</td>
+                            <td>{{ exam.title }}</td>
+                            <td>
+                                {% if exam.status == 'published' %}
+                                <span class="status-tag status-published">已发布</span>
+                                {% elif exam.status == 'active' %}
+                                <span class="status-tag status-active">进行中</span>
+                                {% else %}
+                                <span class="status-tag">{{ exam.status or '未知' }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ exam.created_at[:10] if exam.created_at else '-' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="empty-state">暂无考试数据</div>
+                {% endif %}
             </div>
         </div>
     </div>
-</div>
-
-<script src="{{ url_for('static', filename='js/super_admin_dashboard.js') }}"></script>
 </body>
 </html>

@@ -1,236 +1,85 @@
-{% extends "mobile/base.html" %}
-
-{% block title %}我的 - MTSCOS AI{% endblock %}
-
-{% block content %}
-<div class="page-container animate-fade-in">
-    <div class="header">
-        <div class="header-back" onclick="goBack()" style="display: none;"></div>
-        <div class="header-title">我的</div>
-        <div class="header-action" onclick="showToast('设置功能开发中...')">
-            <i class="fas fa-cog"></i>
-        </div>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>个人中心</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 100%;
+        }
+        .icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #333;
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        p {
+            color: #666;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        .path {
+            background: #f5f5f5;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 20px;
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 32px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #666;
+        }
+        .btn-secondary:hover {
+            background: #e0e0e0;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">👤</div>
+        <h1>个人中心</h1>
+        <p>移动端个人中心。</p>
+        <div class="path">/templates/mobile/profile.html</div>
+        <a href="/" class="btn">返回首页</a>
+        
     </div>
-
-    <div style="padding-top: 72px;">
-        <div class="card gradient-card" style="padding: 24px; margin-bottom: 20px;">
-            <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 20px;">
-                <div class="avatar-lg">
-                    {{ user.get('username', 'U')[0].upper() if user.get('username') else 'U' }}
-                </div>
-                <div>
-                    <div style="font-size: 20px; font-weight: 700; color: white; margin-bottom: 4px;">
-                        {{ user.get('username', '用户') }}
-                    </div>
-                    <div style="font-size: 14px; color: rgba(255,255,255,0.8);">
-                        {{ user.get('email', '') }}
-                    </div>
-                </div>
-            </div>
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;">
-                <div style="text-align: center; padding: 12px; background: rgba(255,255,255,0.1); border-radius: 12px;">
-                    <div style="font-size: 24px; font-weight: 700; color: white;">{{ stats.get('total_points', 0) }}</div>
-                    <div style="font-size: 12px; color: rgba(255,255,255,0.7);">学习积分</div>
-                </div>
-                <div style="text-align: center; padding: 12px; background: rgba(255,255,255,0.1); border-radius: 12px;">
-                    <div style="font-size: 24px; font-weight: 700; color: white;">{{ stats.get('completed_tasks', 0) }}</div>
-                    <div style="font-size: 12px; color: rgba(255,255,255,0.7);">完成任务</div>
-                </div>
-                <div style="text-align: center; padding: 12px; background: rgba(255,255,255,0.1); border-radius: 12px;">
-                    <div style="font-size: 24px; font-weight: 700; color: white;">{{ stats.get('learning_days', 0) }}</div>
-                    <div style="font-size: 12px; color: rgba(255,255,255,0.7);">学习天数</div>
-                </div>
-            </div>
-        </div>
-
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-            <h2 style="font-size: 18px; font-weight: 600; color: var(--text-primary);">学习统计</h2>
-            <div style="font-size: 14px; color: var(--primary-light); cursor: pointer;" onclick="showToast('详细统计开发中...')">详情</div>
-        </div>
-
-        <div class="card">
-            <div class="stat-row">
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(99, 102, 241, 0.2); display: flex; align-items: center; justify-content: center;">
-                        <i class="fas fa-clock" style="font-size: 16px; color: var(--primary-light);"></i>
-                    </div>
-                    <span class="stat-label">本周学习时长</span>
-                </div>
-                <span class="stat-value">{{ stats.get('weekly_hours', 0) }} 小时</span>
-            </div>
-            <div class="stat-row">
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(34, 197, 94, 0.2); display: flex; align-items: center; justify-content: center;">
-                        <i class="fas fa-check-circle" style="font-size: 16px; color: #4ade80;"></i>
-                    </div>
-                    <span class="stat-label">完成课程数</span>
-                </div>
-                <span class="stat-value">{{ stats.get('completed_courses', 0) }} 门</span>
-            </div>
-            <div class="stat-row">
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(245, 158, 11, 0.2); display: flex; align-items: center; justify-content: center;">
-                        <i class="fas fa-trophy" style="font-size: 16px; color: #fbbf24;"></i>
-                    </div>
-                    <span class="stat-label">获得勋章</span>
-                </div>
-                <span class="stat-value">{{ stats.get('badges', 0) }} 个</span>
-            </div>
-            <div class="stat-row">
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(239, 68, 68, 0.2); display: flex; align-items: center; justify-content: center;">
-                        <i class="fas fa-percent" style="font-size: 16px; color: #f87171;"></i>
-                    </div>
-                    <span class="stat-label">正确率</span>
-                </div>
-                <span class="stat-value">{{ stats.get('accuracy', 0) }}%</span>
-            </div>
-        </div>
-
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; margin-top: 20px;">
-            <h2 style="font-size: 18px; font-weight: 600; color: var(--text-primary);">消息中心</h2>
-            <div style="font-size: 14px; color: var(--primary-light); cursor: pointer;" onclick="showToast('查看全部消息')">全部</div>
-        </div>
-
-        <div class="card">
-            {% if notifications %}
-                {% for notification in notifications[:3] %}
-                <div class="stat-row" onclick="showToast('查看消息详情')">
-                    <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
-                        <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba({{ notification.color or '99, 102, 241' }}, 0.2); display: flex; align-items: center; justify-content: center;">
-                            <i class="fas {{ notification.icon or 'fa-info-circle' }}" style="font-size: 16px; color: {{ notification.icon_color or 'var(--primary-light)' }};"></i>
-                        </div>
-                        <div style="flex: 1;">
-                            <div style="font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 2px;">{{ notification.title }}</div>
-                            <div style="font-size: 12px; color: var(--text-secondary);">{{ notification.message }}</div>
-                        </div>
-                    </div>
-                    <span style="font-size: 12px; color: var(--text-secondary);">{{ notification.time }}</span>
-                </div>
-                {% endfor %}
-            {% else %}
-                <div class="empty-state">
-                    <i class="fas fa-bell" style="font-size: 48px; color: var(--text-secondary); margin-bottom: 8px;"></i>
-                    <div style="font-size: 14px; color: var(--text-secondary);">暂无消息</div>
-                </div>
-            {% endif %}
-        </div>
-
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; margin-top: 20px;">
-            <h2 style="font-size: 18px; font-weight: 600; color: var(--text-primary);">设备管理</h2>
-            <div style="font-size: 14px; color: var(--primary-light); cursor: pointer;" onclick="location.href='/mobile/device_management'">管理</div>
-        </div>
-
-        <div class="card">
-            {% if devices %}
-                {% for device in devices[:2] %}
-                <div class="stat-row" onclick="location.href='/mobile/device_management'">
-                    <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
-                        <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(59, 130, 246, 0.2); display: flex; align-items: center; justify-content: center;">
-                            <i class="fas fa-mobile-alt" style="font-size: 16px; color: #60a5fa;"></i>
-                        </div>
-                        <div style="flex: 1;">
-                            <div style="font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 2px;">{{ device.device_name or '未知设备' }}</div>
-                            <div style="font-size: 12px; color: var(--text-secondary);">{{ device.model }} · {{ device.os_type }} {{ device.os_version }}</div>
-                        </div>
-                    </div>
-                    <span class="tag {% if device.status == 'online' %}tag-green{% else %}tag-gray{% endif %}">
-                        {{ device.status == 'online' ? '在线' : '离线' }}
-                    </span>
-                </div>
-                {% endfor %}
-            {% else %}
-                <div class="empty-state" onclick="location.href='/mobile/device_management'">
-                    <i class="fas fa-plus-circle" style="font-size: 48px; color: var(--primary-light); margin-bottom: 8px;"></i>
-                    <div style="font-size: 14px; color: var(--text-primary);">添加设备</div>
-                    <div style="font-size: 12px; color: var(--text-secondary);">绑定您的移动设备</div>
-                </div>
-            {% endif %}
-        </div>
-
-        <div style="margin-top: 20px;">
-            <div class="card">
-                <div class="stat-row" onclick="showToast('修改密码开发中...')">
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(168, 85, 247, 0.2); display: flex; align-items: center; justify-content: center;">
-                            <i class="fas fa-lock" style="font-size: 16px; color: #c084fc;"></i>
-                        </div>
-                        <span class="stat-label">修改密码</span>
-                    </div>
-                    <i class="fas fa-chevron-right" style="color: var(--text-secondary);"></i>
-                </div>
-                <div class="stat-row" onclick="showToast('隐私设置开发中...')">
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(6, 182, 212, 0.2); display: flex; align-items: center; justify-content: center;">
-                            <i class="fas fa-shield-alt" style="font-size: 16px; color: #22d3ee;"></i>
-                        </div>
-                        <span class="stat-label">隐私设置</span>
-                    </div>
-                    <i class="fas fa-chevron-right" style="color: var(--text-secondary);"></i>
-                </div>
-                <div class="stat-row" onclick="checkVersion()">
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(245, 158, 11, 0.2); display: flex; align-items: center; justify-content: center;">
-                            <i class="fas fa-refresh" style="font-size: 16px; color: #fbbf24;"></i>
-                        </div>
-                        <span class="stat-label">检查更新</span>
-                    </div>
-                    <span style="font-size: 12px; color: var(--text-secondary);">版本 {{ version }}</span>
-                </div>
-                <div class="stat-row" onclick="showToast('关于我们')">
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(239, 68, 68, 0.2); display: flex; align-items: center; justify-content: center;">
-                            <i class="fas fa-info" style="font-size: 16px; color: #f87171;"></i>
-                        </div>
-                        <span class="stat-label">关于我们</span>
-                    </div>
-                    <i class="fas fa-chevron-right" style="color: var(--text-secondary);"></i>
-                </div>
-            </div>
-        </div>
-
-        <div style="padding: 24px;">
-            <button class="btn btn-danger" onclick="logout()">退出登录</button>
-        </div>
-    </div>
-</div>
-{% endblock %}
-
-{% block scripts %}
-<script>
-    function logout() {
-        showModal('确认退出', '确定要退出当前账号吗？', function() {
-            window.location.href = '/mobile/login';
-        });
-    }
-
-    function checkVersion() {
-        showToast('正在检查更新...', 'info');
-        fetchData('/api/mobile/update/check').then(function(response) {
-            if (response.success) {
-                if (response.has_update) {
-                    showModal(
-                        '发现新版本',
-                        '当前版本: ' + response.current_version + '<br>最新版本: ' + response.latest_version + '<br><br>' + response.description,
-                        function() {
-                            showToast('开始下载更新...', 'success');
-                        }
-                    );
-                } else {
-                    showToast('当前已是最新版本', 'success');
-                }
-            } else {
-                showToast('检查更新失败', 'error');
-            }
-        });
-    }
-
-    document.addEventListener('DOMContentLoaded', function() {
-        fetchData('/api/mobile/notifications').then(function(response) {
-            if (response.success && response.data) {
-                console.log('Notifications:', response.data);
-            }
-        });
-    });
-</script>
-{% endblock %}
+</body>
+</html>

@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI自适应学习系统</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%); min-height: 100vh; }
+        .container { padding: 20px; max-width: 1400px; margin: 0 auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; color: white; }
+        .header h1 { font-size: 26px; }
+        .nav-bar { background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); padding: 15px 20px; margin-bottom: 20px; border-radius: 10px; }
+        .nav-bar ul { list-style: none; display: flex; gap: 20px; }
+        .nav-bar ul li a { color: white; text-decoration: none; padding: 8px 15px; border-radius: 6px; transition: background 0.3s; }
+        .nav-bar ul li a:hover, .nav-bar ul li a.active { background: rgba(255,255,255,0.2); }
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px; }
+        .stat-item { background: white; border-radius: 10px; padding: 15px; text-align: center; }
+        .stat-item .value { font-size: 24px; font-weight: bold; color: #0ea5e9; }
+        .stat-item .label { font-size: 12px; color: #666; margin-top: 5px; }
+        .main-content { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .card { background: white; border-radius: 12px; padding: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .card h2 { font-size: 18px; color: #333; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-size: 13px; color: #555; margin-bottom: 5px; }
+        .form-group select, .form-group input, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+        .form-group textarea { height: 80px; resize: vertical; }
+        .btn { padding: 10px 20px; border-radius: 6px; border: none; cursor: pointer; font-size: 14px; font-weight: 500; }
+        .btn-primary { background: #0ea5e9; color: white; }
+        .btn-primary:hover { background: #0284c7; }
+        .btn-success { background: #10b981; color: white; }
+        .btn-success:hover { background: #059669; }
+        .table-container { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        table th, table td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; font-size: 13px; }
+        table th { background: #f8f9fa; color: #555; font-weight: 600; }
+        table tr:hover { background: #f9fafb; }
+        .progress-bar { height: 8px; background: #eee; border-radius: 4px; overflow: hidden; }
+        .progress-fill { height: 100%; background: #0ea5e9; border-radius: 4px; transition: width 0.3s; }
+        .gap-item { padding: 10px; background: #fef3c7; border-radius: 6px; margin-bottom: 10px; }
+        .gap-item .subject { font-weight: bold; color: #92400e; }
+        .gap-item .level { font-size: 12px; color: #78716c; }
+        .learning-path { background: #f0fdf4; border-radius: 8px; padding: 15px; margin-top: 15px; }
+        .learning-path .step { padding: 8px 0; border-bottom: 1px dashed #bbf7d0; position: relative; padding-left: 20px; }
+        .learning-path .step:last-child { border-bottom: none; }
+        .learning-path .step::before { content: '✓'; position: absolute; left: 0; color: #10b981; }
+        @media (max-width: 768px) { .main-content { grid-template-columns: 1fr; } .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-graduation-cap"></i> AI自适应学习系统</h1>
+            <div class="user-info">
+                <span>欢迎, {{ user.username }}</span>
+            </div>
+        </div>
+        
+        <div class="nav-bar">
+            <ul>
+                <li><a href="/admin_app/dashboard">管理首页</a></li>
+                <li><a href="/admin_app/ai_learning_dashboard">AI学习仪表盘</a></li>
+                <li><a href="/admin_app/ai_cognitive_reasoning">认知推理</a></li>
+                <li><a href="/admin_app/ai_adaptive_learning" class="active">自适应学习</a></li>
+                <li><a href="/admin_app/ai_intelligent_qna">智能问答</a></li>
+            </ul>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-item">
+                <div class="value" id="total-profiles">{{ stats.get('total_profiles', '--') }}</div>
+                <div class="label">学习档案数</div>
+            </div>
+            <div class="stat-item">
+                <div class="value" id="active-paths">{{ stats.get('active_paths', '--') }}</div>
+                <div class="label">活跃学习路径</div>
+            </div>
+            <div class="stat-item">
+                <div class="value" id="avg-progress">{{ stats.get('avg_progress', '--') }}</div>
+                <div class="label">平均进度%</div>
+            </div>
+            <div class="stat-item">
+                <div class="value" id="gap-detections">{{ stats.get('gap_detections', '--') }}</div>
+                <div class="label">知识缺口检测</div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="card">
+                <h2><i class="fas fa-user-circle"></i> 创建学习档案</h2>
+                <div class="form-group">
+                    <label>用户ID</label>
+                    <input type="text" id="profile-user-id" placeholder="用户ID">
+                </div>
+                <div class="form-group">
+                    <label>学习风格</label>
+                    <select id="profile-style">
+                        <option value="visual">视觉型</option>
+                        <option value="auditory">听觉型</option>
+                        <option value="reading">阅读型</option>
+                        <option value="kinesthetic">动觉型</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>目标科目</label>
+                    <input type="text" id="profile-subject" placeholder="如：数学、英语">
+                </div>
+                <div class="form-group">
+                    <label>学习目标</label>
+                    <textarea id="profile-objectives" placeholder="学习目标描述..."></textarea>
+                </div>
+                <button class="btn btn-primary" onclick="createProfile()">创建档案</button>
+            </div>
+
+            <div class="card">
+                <h2><i class="fas fa-map"></i> 生成学习路径</h2>
+                <div class="form-group">
+                    <label>用户ID</label>
+                    <input type="text" id="path-user-id" placeholder="用户ID">
+                </div>
+                <div class="form-group">
+                    <label>科目</label>
+                    <input type="text" id="path-subject" placeholder="科目名称">
+                </div>
+                <button class="btn btn-success" onclick="generatePath()">生成学习路径</button>
+                <div class="learning-path" id="path-result"></div>
+            </div>
+
+            <div class="card">
+                <h2><i class="fas fa-chart-line"></i> 学习进度</h2>
+                <div class="form-group">
+                    <label>用户ID</label>
+                    <input type="text" id="progress-user-id" placeholder="用户ID" onchange="loadProgress()">
+                </div>
+                <div id="progress-details"></div>
+            </div>
+
+            <div class="card">
+                <h2><i class="fas fa-search-minus"></i> 知识缺口检测</h2>
+                <div class="form-group">
+                    <label>用户ID</label>
+                    <input type="text" id="gap-user-id" placeholder="用户ID">
+                </div>
+                <div class="form-group">
+                    <label>科目（可选）</label>
+                    <input type="text" id="gap-subject" placeholder="科目名称">
+                </div>
+                <button class="btn btn-primary" onclick="detectGaps()">检测缺口</button>
+                <div id="gap-results"></div>
+            </div>
+
+            <div class="card">
+                <h2><i class="fas fa-list-alt"></i> 学习档案列表</h2>
+                <div class="table-container">
+                    <table id="profiles-table">
+                        <thead>
+                            <tr><th>用户ID</th><th>学习风格</th><th>科目</th><th>创建时间</th></tr>
+                        </thead>
+                        <tbody id="profiles-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2><i class="fas fa-lightbulb"></i> 获取学习推荐</h2>
+                <div class="form-group">
+                    <label>用户ID</label>
+                    <input type="text" id="recommend-user-id" placeholder="用户ID">
+                </div>
+                <button class="btn btn-success" onclick="getRecommendations()">获取推荐</button>
+                <div id="recommendation-results"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function loadStats() {
+            try {
+                const res = await fetch('/api/ai/adaptive/summary');
+                if (res.ok) {
+                    const data = await res.json();
+                    document.getElementById('total-profiles').textContent = data.data.total_profiles || 0;
+                    document.getElementById('active-paths').textContent = data.data.active_paths || 0;
+                    document.getElementById('avg-progress').textContent = (data.data.avg_progress || 0) + '%';
+                    document.getElementById('gap-detections').textContent = data.data.gap_detections || 0;
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        async function createProfile() {
+            const userId = document.getElementById('profile-user-id').value;
+            const style = document.getElementById('profile-style').value;
+            const subject = document.getElementById('profile-subject').value;
+            const objectives = document.getElementById('profile-objectives').value;
+            
+            try {
+                await fetch('/api/ai/adaptive/profile', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: userId, learning_style: style, subject, objectives })
+                });
+                alert('学习档案创建成功');
+                loadStats();
+                loadProfiles();
+            } catch (e) { console.error(e); }
+        }
+
+        async function generatePath() {
+            const userId = document.getElementById('path-user-id').value;
+            const subject = document.getElementById('path-subject').value;
+            
+            try {
+                const res = await fetch('/api/ai/adaptive/path', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: userId, subject })
+                });
+                const data = await res.json();
+                const steps = data.data.steps || [];
+                document.getElementById('path-result').innerHTML = steps.map((s, i) => `
+                    <div class="step"><strong>步骤${i+1}:</strong> ${s}</div>
+                `).join('');
+            } catch (e) { console.error(e); }
+        }
+
+        async function loadProgress() {
+            const userId = document.getElementById('progress-user-id').value;
+            if (!userId) return;
+            
+            try {
+                const res = await fetch(`/api/ai/adaptive/progress/${userId}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    const progress = data.data;
+                    document.getElementById('progress-details').innerHTML = `
+                        <div style="margin-bottom: 10px;"><strong>总进度:</strong> ${progress.overall_progress}%</div>
+                        <div class="progress-bar"><div class="progress-fill" style="width: ${progress.overall_progress}%"></div></div>
+                        <div style="margin-top: 15px;"><strong>各科目进度:</strong></div>
+                        ${Object.entries(progress.subject_progress || {}).map(([k, v]) => `
+                            <div style="margin-top: 8px;">${k}: ${v}%</div>
+                            <div class="progress-bar"><div class="progress-fill" style="width: ${v}%"></div></div>
+                        `).join('')}
+                    `;
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        async function detectGaps() {
+            const userId = document.getElementById('gap-user-id').value;
+            const subject = document.getElementById('gap-subject').value;
+            
+            try {
+                const url = subject ? `/api/ai/adaptive/gaps/${userId}?subject=${encodeURIComponent(subject)}` : `/api/ai/adaptive/gaps/${userId}`;
+                const res = await fetch(url);
+                if (res.ok) {
+                    const data = await res.json();
+                    const gaps = data.data.gaps || [];
+                    document.getElementById('gap-results').innerHTML = gaps.map(g => `
+                        <div class="gap-item">
+                            <div class="subject">${g.subject}</div>
+                            <div style="font-size: 14px; color: #333;">知识点: ${g.topic}</div>
+                            <div class="level">掌握程度: ${g.mastery_level}</div>
+                        </div>
+                    `).join('');
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        async function loadProfiles() {
+            try {
+                const res = await fetch('/api/ai/adaptive/profiles');
+                if (res.ok) {
+                    const data = await res.json();
+                    const body = document.getElementById('profiles-body');
+                    body.innerHTML = data.data.map(p => `
+                        <tr>
+                            <td>${p.user_id}</td>
+                            <td>${p.learning_style}</td>
+                            <td>${p.subject}</td>
+                            <td>${p.created_at}</td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        async function getRecommendations() {
+            const userId = document.getElementById('recommend-user-id').value;
+            if (!userId) return;
+            
+            try {
+                const res = await fetch(`/api/ai/adaptive/recommendations/${userId}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    const recs = data.data.recommendations || [];
+                    document.getElementById('recommendation-results').innerHTML = recs.map(r => `
+                        <div style="padding: 10px; background: #f0fdf4; border-radius: 6px; margin-bottom: 8px;">
+                            <strong>${r.type}:</strong> ${r.content}
+                        </div>
+                    `).join('');
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        loadStats();
+        loadProfiles();
+    </script>
+</body>
+</html>

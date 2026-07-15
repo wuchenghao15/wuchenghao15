@@ -2,332 +2,223 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="theme-color" content="#1e293b">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>用户登录 - MTSCOS AI 智能教育平台</title>
-    <link rel="stylesheet" href="/assets/css/mtscos-design-system.css">
-    <link rel="stylesheet" href="/assets/css/login-page.css">
-    <link rel="stylesheet" href="/assets/font-awesome/css/all.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MTSCOS AI 智能学习评估系统 - 登录</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow: hidden; }
+        #particles-js { position: fixed; width: 100%; height: 100%; z-index: 0; background: linear-gradient(135deg, #0c0c1e 0%, #1a1a3e 50%, #0c0c1e 100%); }
+        .login-container { position: relative; z-index: 1; width: 100%; max-width: 450px; padding: 20px; margin: 0 auto; height: 100vh; display: flex; align-items: center; justify-content: center; }
+        .login-card { background: rgba(20, 20, 40, 0.75); backdrop-filter: blur(20px); border-radius: 24px; padding: 48px; border: 1px solid rgba(99, 102, 241, 0.2); box-shadow: 0 0 60px rgba(99, 102, 241, 0.15), 0 25px 50px rgba(0,0,0,0.5); }
+        .login-header { text-align: center; margin-bottom: 35px; }
+        .logo-container { position: relative; width: 100px; height: 100px; margin: 0 auto 25px; }
+        .logo-circle { position: absolute; width: 100%; height: 100%; border-radius: 50%; background: linear-gradient(135deg, #6366f1, #8b5cf6, #a78bfa); animation: rotate 20s linear infinite; box-shadow: 0 0 40px rgba(99, 102, 241, 0.5); }
+        .logo-inner { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 70px; height: 70px; border-radius: 50%; background: rgba(20, 20, 40, 0.9); display: flex; align-items: center; justify-content: center; }
+        .logo-icon { width: 42px; height: 42px; fill: white; }
+        .logo-glow { position: absolute; top: -5px; left: -5px; right: -5px; bottom: -5px; border-radius: 50%; background: radial-gradient(circle, rgba(99, 102, 241, 0.4) 0%, transparent 70%); animation: pulse 2s ease-in-out infinite; }
+        @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes pulse { 0%, 100% { opacity: 0.5; transform: scale(1); } 50% { opacity: 1; transform: scale(1.1); } }
+        .login-header h1 { font-size: 32px; color: white; margin-bottom: 12px; font-weight: 700; letter-spacing: 1px; }
+        .login-header p { font-size: 14px; color: #94a3b8; }
+        .form-group { margin-bottom: 22px; }
+        .form-group label { display: block; font-size: 14px; color: #94a3b8; margin-bottom: 10px; display: flex; align-items: center; gap: 10px; }
+        .form-group input { width: 100%; padding: 16px 20px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.3); color: white; font-size: 16px; transition: all 0.3s; }
+        .form-group input:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 25px rgba(99, 102, 241, 0.3), inset 0 0 20px rgba(99, 102, 241, 0.1); }
+        .form-group input::placeholder { color: #64748b; }
+        .btn { width: 100%; padding: 16px; border-radius: 14px; border: none; cursor: pointer; font-size: 16px; font-weight: 600; transition: all 0.3s; }
+        .btn-primary { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; position: relative; overflow: hidden; }
+        .btn-primary::before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent); transition: left 0.5s; }
+        .btn-primary:hover::before { left: 100%; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 15px 40px rgba(99, 102, 241, 0.4); }
+        .btn-primary:active { transform: translateY(0); }
+        .forgot-link { text-align: center; margin-top: 22px; }
+        .forgot-link a { color: #60a5fa; text-decoration: none; font-size: 14px; transition: color 0.3s; }
+        .forgot-link a:hover { color: #93c5fd; text-decoration: underline; }
+        .system-info { text-align: center; margin-top: 35px; padding-top: 25px; border-top: 1px solid rgba(255,255,255,0.1); }
+        .system-info .version { font-size: 12px; color: #64748b; }
+        .system-info .version span { color: #a78bfa; font-weight: 600; }
+        .system-info .status { font-size: 12px; color: #10b981; margin-top: 8px; }
+        .error-message { background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 10px; padding: 14px; color: #f87171; font-size: 14px; margin-bottom: 22px; display: none; text-align: center; }
+        .error-message.show { display: block; animation: shake 0.3s ease-in-out; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+        .icon-svg { width: 16px; height: 16px; fill: #94a3b8; }
+        .floating-elements { position: fixed; width: 100%; height: 100%; pointer-events: none; z-index: 0; overflow: hidden; }
+        .float-element { position: absolute; opacity: 0.3; animation: float 15s ease-in-out infinite; }
+        .float-element:nth-child(1) { width: 60px; height: 60px; border: 1px solid #6366f1; border-radius: 50%; top: 10%; left: 10%; animation-delay: 0s; }
+        .float-element:nth-child(2) { width: 40px; height: 40px; border: 1px solid #8b5cf6; border-radius: 50%; top: 20%; right: 15%; animation-delay: 2s; }
+        .float-element:nth-child(3) { width: 80px; height: 80px; border: 1px solid #a78bfa; border-radius: 50%; bottom: 20%; left: 20%; animation-delay: 4s; }
+        .float-element:nth-child(4) { width: 50px; height: 50px; border: 1px solid #60a5fa; border-radius: 50%; bottom: 10%; right: 10%; animation-delay: 6s; }
+        .float-element:nth-child(5) { width: 70px; height: 70px; border: 1px solid #c084fc; border-radius: 50%; top: 50%; left: 5%; animation-delay: 8s; }
+        @keyframes float { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-30px) rotate(180deg); } }
+        @media (max-width: 500px) { .login-card { padding: 35px 25px; } .logo-container { width: 80px; height: 80px; } .logo-inner { width: 55px; height: 55px; } .logo-icon { width: 35px; height: 35px; } }
+    </style>
 </head>
 <body>
-    <div class="bg-gradient"></div>
-    <div class="tech-grid"></div>
+    <canvas id="particles-js"></canvas>
     
-    <canvas class="particle-canvas" id="particleCanvas"></canvas>
-    
-    <div class="bg-orbs">
-        <div class="orb orb-1"></div>
-        <div class="orb orb-2"></div>
-        <div class="orb orb-3"></div>
-        <div class="orb orb-4"></div>
-    </div>
-    
-    <div class="stars" id="stars"></div>
-    <div class="particles" id="particles"></div>
-
-    <div class="network-status online" id="network-status">
-        <i class="fas fa-wifi"></i>
-        <span>网络正常</span>
+    <div class="floating-elements">
+        <div class="float-element"></div>
+        <div class="float-element"></div>
+        <div class="float-element"></div>
+        <div class="float-element"></div>
+        <div class="float-element"></div>
     </div>
 
     <div class="login-container">
         <div class="login-card">
-            <div class="brand-section">
-                <div class="brand-logo">
-                    <img src="/assets/images/mtscos_shield.svg" alt="MTSCOS Logo">
+            <div class="login-header">
+                <div class="logo-container">
+                    <div class="logo-circle"></div>
+                    <div class="logo-inner">
+                        <svg class="logo-icon" viewBox="0 0 24 24">
+                            <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                        </svg>
+                    </div>
+                    <div class="logo-glow"></div>
                 </div>
-                <div class="brand-title">MTSCOS AI</div>
-                <div class="brand-subtitle">智能教育平台管理系统</div>
+                <h1>MTSCOS AI 系统</h1>
+                <p>智能学习评估系统 v{{ version }}</p>
             </div>
 
-            <form id="login-form" onsubmit="handleLogin(event)">
-                <div class="form-group">
-                    <label class="form-label">用户名</label>
-                    <div class="form-input-icon">
-                        <i class="fas fa-user"></i>
-                        <input type="text" class="form-input" id="username" placeholder="请输入用户名" required autocomplete="username">
-                    </div>
-                </div>
+            <div class="error-message" id="error-message"></div>
 
+            <form id="login-form" method="POST" action="/admin_app/login">
                 <div class="form-group">
-                    <label class="form-label">密码</label>
-                    <div class="form-input-icon">
-                        <i class="fas fa-lock"></i>
-                        <input type="password" class="form-input" id="password" placeholder="请输入密码" required autocomplete="current-password">
-                    </div>
-                </div>
-
-                <div class="form-options">
-                    <label class="checkbox-wrapper">
-                        <input type="checkbox" id="remember">
-                        <div class="checkbox-custom">
-                            <i class="fas fa-check"></i>
-                        </div>
-                        <span class="checkbox-label">记住我</span>
+                    <label for="username">
+                        <svg class="icon-svg" viewBox="0 0 24 24">
+                            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                        </svg>
+                        用户名
                     </label>
-                    <a href="/forgot_password" class="forgot-link">忘记密码?</a>
+                    <input type="text" id="username" name="username" placeholder="请输入用户名" required>
                 </div>
-
-                <button type="submit" id="login-btn" class="btn btn-primary">
-                    <span>登 录</span>
-                </button>
+                <div class="form-group">
+                    <label for="password">
+                        <svg class="icon-svg" viewBox="0 0 24 24">
+                            <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
+                        </svg>
+                        密码
+                    </label>
+                    <input type="password" id="password" name="password" placeholder="请输入密码" required>
+                </div>
+                <button type="submit" class="btn btn-primary">登录系统</button>
             </form>
 
-            <div class="divider">
-                <div class="divider-line"></div>
-                <span class="divider-text">其他登录方式</span>
-                <div class="divider-line"></div>
+            <div class="forgot-link">
+                <a href="/forgot-password">忘记密码？</a>
             </div>
 
-            <button class="btn btn-secondary">
-                <i class="fas fa-user-plus"></i>
-                <span>注册账号</span>
-            </button>
-
-            <div class="register-section">
-                <span class="register-text">还没有账号?</span>
-                <a href="/register" class="register-link">立即注册</a>
+            <div class="system-info">
+                <div class="version">版本: <span>{{ version }}</span> | {{ version_info.codename if version_info else '' }}</div>
+                <div class="status">系统状态: {{ system_status }}</div>
             </div>
         </div>
     </div>
 
     <script>
-        (function initParticles() {
-            function createStars() {
-                const container = document.getElementById('stars');
-                if (!container) return;
-                const count = 60;
-                for (let i = 0; i < count; i++) {
-                    const star = document.createElement('div');
-                    star.className = 'star';
-                    star.style.left = Math.random() * 100 + '%';
-                    star.style.top = Math.random() * 100 + '%';
-                    star.style.animationDelay = (Math.random() * 3) + 's';
-                    star.style.animationDuration = (2 + Math.random() * 3) + 's';
-                    const size = 1 + Math.random() * 2;
-                    star.style.width = size + 'px';
-                    star.style.height = size + 'px';
-                    container.appendChild(star);
-                }
-            }
-
-            function createRisingParticles() {
-                const container = document.getElementById('particles');
-                if (!container) return;
-                const classes = ['primary', 'secondary', 'accent', 'glow'];
-                const count = 35;
-                for (let i = 0; i < count; i++) {
-                    const particle = document.createElement('div');
-                    const cls = classes[Math.floor(Math.random() * classes.length)];
-                    particle.className = 'particle ' + cls;
-                    particle.style.left = Math.random() * 100 + '%';
-                    particle.style.animationDelay = (Math.random() * 18) + 's';
-                    particle.style.animationDuration = (12 + Math.random() * 14) + 's';
-                    const size = 2 + Math.random() * 6;
-                    particle.style.width = size + 'px';
-                    particle.style.height = size + 'px';
-                    container.appendChild(particle);
-                }
-            }
-
-            function initCanvasParticles() {
-                const canvas = document.getElementById('particleCanvas');
-                if (!canvas) return;
-                const ctx = canvas.getContext('2d');
-                let particles = [];
-                let animationId;
-
-                function resize() {
-                    canvas.width = window.innerWidth;
-                    canvas.height = window.innerHeight;
-                }
-
-                function createParticle() {
-                    return {
-                        x: Math.random() * canvas.width,
-                        y: Math.random() * canvas.height,
-                        vx: (Math.random() - 0.5) * 0.8,
-                        vy: (Math.random() - 0.5) * 0.8,
-                        radius: 1 + Math.random() * 2.5,
-                        opacity: 0.4 + Math.random() * 0.6
-                    };
-                }
-
-                function init() {
-                    resize();
-                    particles = [];
-                    const count = Math.floor((canvas.width * canvas.height) / 12000);
-                    for (let i = 0; i < count; i++) {
-                        particles.push(createParticle());
-                    }
-                }
-
-                function draw() {
-                    ctx.clearRect(0, 0, canvas.width, canvas.height);
-                    for (let i = 0; i < particles.length; i++) {
-                        const p = particles[i];
-                        p.x += p.vx;
-                        p.y += p.vy;
-                        if (p.x < 0) p.x = canvas.width;
-                        if (p.x > canvas.width) p.x = 0;
-                        if (p.y < 0) p.y = canvas.height;
-                        if (p.y > canvas.height) p.y = 0;
-                        
-                        ctx.beginPath();
-                        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-                        ctx.fillStyle = 'rgba(255, 255, 255, ' + p.opacity + ')';
-                        ctx.fill();
-                        
-                        for (let j = i + 1; j < particles.length; j++) {
-                            const p2 = particles[j];
-                            const dx = p.x - p2.x;
-                            const dy = p.y - p2.y;
-                            const dist = Math.sqrt(dx * dx + dy * dy);
-                            if (dist < 120) {
-                                ctx.beginPath();
-                                ctx.moveTo(p.x, p.y);
-                                ctx.lineTo(p2.x, p2.y);
-                                const lineOpacity = (1 - dist / 120) * 0.3;
-                                ctx.strokeStyle = 'rgba(147, 197, 253, ' + lineOpacity + ')';
-                                ctx.lineWidth = 1;
-                                ctx.stroke();
-                            }
-                        }
-                    }
-                    animationId = requestAnimationFrame(draw);
-                }
-
-                init();
-                draw();
-
-                window.addEventListener('resize', function() {
-                    cancelAnimationFrame(animationId);
-                    init();
-                    draw();
-                });
-            }
-
-            document.addEventListener('DOMContentLoaded', function() {
-                createStars();
-                createRisingParticles();
-                initCanvasParticles();
-            });
-        })();
-
-        const API_BASE = window.location.protocol + '//' + window.location.host;
-
-        function checkNetworkStatus() {
-            if (navigator.onLine) {
-                return { online: true, message: '网络连接正常' };
-            } else {
-                return { online: false, message: '网络连接已断开' };
-            }
-        }
-
-        function updateNetworkStatus() {
-            const statusEl = document.getElementById('network-status');
-            const status = checkNetworkStatus();
-            
-            if (status.online) {
-                statusEl.classList.remove('offline');
-                statusEl.classList.add('online');
-                statusEl.innerHTML = '<i class="fas fa-wifi"></i><span>网络正常</span>';
-            } else {
-                statusEl.classList.remove('online');
-                statusEl.classList.add('offline');
-                statusEl.innerHTML = '<i class="fas fa-wifi-slash"></i><span>网络断开</span>';
-            }
-        }
-
-        window.addEventListener('online', updateNetworkStatus);
-        window.addEventListener('offline', updateNetworkStatus);
-
-        updateNetworkStatus();
-
-        function showAlert(message, type) {
-            const alertEl = document.createElement('div');
-            alertEl.className = `alert alert-${type}`;
-            alertEl.textContent = message;
-            document.body.appendChild(alertEl);
-
-            setTimeout(() => {
-                alertEl.remove();
-            }, 3000);
-        }
-
-        async function handleLogin(e) {
+        document.getElementById('login-form').addEventListener('submit', function(e) {
             e.preventDefault();
-            const username = document.getElementById('username').value.trim();
+            const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
-            const remember = document.getElementById('remember').checked;
-            const btn = document.getElementById('login-btn');
-
-            if (!username || !password) {
-                showAlert('请输入用户名和密码', 'error');
-                return;
-            }
-
-            const networkStatus = checkNetworkStatus();
-            if (!networkStatus.online) {
-                showAlert('网络连接失败，请检查网络设置或稍后重试', 'error');
-                return;
-            }
-
-            btn.disabled = true;
-            btn.innerHTML = '<div class="spinner"></div><span>登录中...</span>';
-
-            try {
-                const loginUrl = API_BASE + '/auth/login';
-                const res = await fetch(loginUrl, {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify({ username, password, remember }),
-                    credentials: 'include',
-                    timeout: 30000
-                });
-
-                if (!res.ok) {
-                    const errorData = await res.json().catch(() => ({}));
-                    let errorMsg = errorData.message || `HTTP错误: ${res.status}`;
-                    
-                    if (res.status === 403) {
-                        errorMsg = errorData.message || '访问被拒绝，请联系管理员';
-                    } else if (res.status === 401) {
-                        errorMsg = errorData.message || '用户名或密码错误';
-                    } else if (res.status === 429) {
-                        errorMsg = '请求过于频繁，请稍后再试';
-                    }
-                    
-                    showAlert(errorMsg, 'error');
-                    btn.disabled = false;
-                    btn.innerHTML = '<span>登 录</span>';
-                    return;
-                }
-
-                const data = await res.json();
-                
+            
+            fetch('/admin_app/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            })
+            .then(res => res.json())
+            .then(data => {
                 if (data.success) {
-                    showAlert('登录成功', 'success');
-                    setTimeout(() => {
-                        window.location.href = data.redirect || '/dashboard';
-                    }, 500);
+                    window.location.href = '/admin_app/dashboard';
                 } else {
-                    showAlert(data.message || '登录失败', 'error');
-                    btn.disabled = false;
-                    btn.innerHTML = '<span>登 录</span>';
+                    const errorMsg = document.getElementById('error-message');
+                    errorMsg.textContent = data.error || '登录失败';
+                    errorMsg.classList.add('show');
+                    setTimeout(() => errorMsg.classList.remove('show'), 3000);
                 }
-            } catch (error) {
-                console.error('登录错误:', error);
-                showAlert('网络连接失败，请检查网络设置或稍后重试', 'error');
-                btn.disabled = false;
-                btn.innerHTML = '<span>登 录</span>';
+            })
+            .catch(err => {
+                const errorMsg = document.getElementById('error-message');
+                errorMsg.textContent = '网络错误，请重试';
+                errorMsg.classList.add('show');
+                setTimeout(() => errorMsg.classList.remove('show'), 3000);
+            });
+        });
+
+        class ParticleSystem {
+            constructor(canvasId) {
+                this.canvas = document.getElementById(canvasId);
+                this.ctx = this.canvas.getContext('2d');
+                this.particles = [];
+                this.resize();
+                window.addEventListener('resize', () => this.resize());
+                this.init();
+                this.animate();
+            }
+            
+            resize() {
+                this.canvas.width = window.innerWidth;
+                this.canvas.height = window.innerHeight;
+            }
+            
+            init() {
+                const particleCount = Math.min(100, Math.floor((this.canvas.width * this.canvas.height) / 15000));
+                for (let i = 0; i < particleCount; i++) {
+                    this.particles.push(this.createParticle());
+                }
+            }
+            
+            createParticle() {
+                return {
+                    x: Math.random() * this.canvas.width,
+                    y: Math.random() * this.canvas.height,
+                    vx: (Math.random() - 0.5) * 0.5,
+                    vy: (Math.random() - 0.5) * 0.5,
+                    radius: Math.random() * 2 + 0.5,
+                    opacity: Math.random() * 0.5 + 0.2,
+                    color: ['#6366f1', '#8b5cf6', '#a78bfa', '#60a5fa'][Math.floor(Math.random() * 4)]
+                };
+            }
+            
+            animate() {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                this.particles.forEach(p => {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    
+                    if (p.x < 0 || p.x > this.canvas.width) p.vx *= -1;
+                    if (p.y < 0 || p.y > this.canvas.height) p.vy *= -1;
+                    
+                    this.ctx.beginPath();
+                    this.ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                    this.ctx.fillStyle = p.color;
+                    this.ctx.globalAlpha = p.opacity;
+                    this.ctx.fill();
+                    
+                    this.particles.forEach(p2 => {
+                        const dx = p.x - p2.x;
+                        const dy = p.y - p2.y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        
+                        if (dist < 150) {
+                            this.ctx.beginPath();
+                            this.ctx.moveTo(p.x, p.y);
+                            this.ctx.lineTo(p2.x, p2.y);
+                            this.ctx.strokeStyle = p.color;
+                            this.ctx.globalAlpha = (150 - dist) / 150 * 0.2;
+                            this.ctx.lineWidth = 0.5;
+                            this.ctx.stroke();
+                        }
+                    });
+                });
+                
+                this.ctx.globalAlpha = 1;
+                requestAnimationFrame(() => this.animate());
             }
         }
+
+        new ParticleSystem('particles-js');
     </script>
 </body>
 </html>

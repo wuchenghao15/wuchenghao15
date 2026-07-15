@@ -1,544 +1,102 @@
-{% extends 'admin_app/base.html' %}
-
-{% block title %}用户认证管理{% endblock %}
-
-{% block content %}
-    <div class="page-header">
-        <h1>用户认证管理</h1>
-        <p>管理用户认证和安全设置</p>
-    </div>
-
-    <div class="card">
-        <div class="card-header">
-            <div class="card-title">权限矩阵</div>
-            <button class="btn btn-primary btn-sm" onclick="openPermissionModal()">
-                <i class="fas fa-plus"></i>
-                添加权限
-            </button>
-        </div>
-        <div class="card-body">
-            <div class="search-bar">
-                <input type="text" class="form-control" id="searchRole" placeholder="搜索角色..." onkeyup="loadPermissions()">
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户认证管理</title>
+    <link rel="stylesheet" href="/assets/css/mtscos-design-system.css">
+    <link rel="stylesheet" href="/assets/font-awesome/css/all.min.css">
+    <style>
+        .auth-table { width: 100%; border-collapse: collapse; }
+        .auth-table th, .auth-table td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border-color); }
+        .auth-table th { background: var(--bg-secondary); color: var(--text-primary); }
+        .auth-table tr:hover { background: var(--bg-secondary); }
+        .btn-group { display: flex; gap: 6px; }
+        .btn-sm { padding: 4px 10px; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-shield-alt"></i> 用户认证管理</h1>
+            <div class="user-info">
+                <span>欢迎, {{ user.username }}</span>
+                {% if notification_count > 0 %}
+                <span class="notification-badge">{{ notification_count }}</span>
+                {% endif %}
             </div>
-            <div id="permissionMatrix">
-                <div class="loading">
-                    <div class="spinner"></div>
+        </div>
+        
+        <div class="nav-bar">
+            <ul>
+                <li><a href="/admin_app/dashboard">管理首页</a></li>
+                <li><a href="/admin_app/user_auth" class="active">认证管理</a></li>
+            </ul>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon bg-primary"><i class="fas fa-key"></i></div>
+                <div class="stat-info">
+                    <div class="stat-value">{{ auth_stats.total_tokens }}</div>
+                    <div class="stat-label">Token总数</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon bg-success"><i class="fas fa-check-circle"></i></div>
+                <div class="stat-info">
+                    <div class="stat-value">{{ auth_stats.active_tokens }}</div>
+                    <div class="stat-label">活跃Token</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon bg-warning"><i class="fas fa-lock"></i></div>
+                <div class="stat-info">
+                    <div class="stat-value">{{ auth_stats.locked_users }}</div>
+                    <div class="stat-label">锁定用户</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon bg-secondary"><i class="fas fa-eye"></i></div>
+                <div class="stat-info">
+                    <div class="stat-value">{{ auth_stats.today_logins }}</div>
+                    <div class="stat-label">今日登录</div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <div class="card">
-        <div class="card-header">
-            <div class="card-title">用户分组</div>
-            <button class="btn btn-primary btn-sm" onclick="openGroupModal()">
-                <i class="fas fa-plus"></i>
-                创建分组
-            </button>
-        </div>
-        <div class="card-body">
-            <div id="groupList">
-                <div class="loading">
-                    <div class="spinner"></div>
-                </div>
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">登录记录</h3>
+            </div>
+            <div class="card-body">
+                <table class="auth-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>用户名</th>
+                            <th>IP地址</th>
+                            <th>登录时间</th>
+                            <th>状态</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for login in login_records %}
+                        <tr>
+                            <td>{{ login.id }}</td>
+                            <td>{{ login.username }}</td>
+                            <td>{{ login.ip_address }}</td>
+                            <td>{{ login.login_time }}</td>
+                            <td>{{ login.status }}</td>
+                        </tr>
+                        {% endfor %}
+                        {% if not login_records %}
+                        <tr><td colspan="5" class="empty-state">暂无登录记录</td></tr>
+                        {% endif %}
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
-
-    <div class="card">
-        <div class="card-header">
-            <div class="card-title">MFA设置</div>
-        </div>
-        <div class="card-body">
-            <div class="settings-group">
-                <div class="settings-group-title">多因素认证</div>
-                <div class="settings-item">
-                    <div class="settings-icon" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa;">
-                        <i class="fas fa-shield-alt"></i>
-                    </div>
-                    <div class="settings-content">
-                        <div class="settings-label">启用MFA</div>
-                        <div class="settings-desc">强制所有用户启用多因素认证</div>
-                    </div>
-                    <div class="toggle" id="mfaToggle" onclick="toggleMFA()"></div>
-                </div>
-                <div class="settings-item">
-                    <div class="settings-icon" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">
-                        <i class="fas fa-users"></i>
-                    </div>
-                    <div class="settings-content">
-                        <div class="settings-label">MFA用户数</div>
-                        <div class="settings-desc">已启用MFA的用户数量</div>
-                    </div>
-                    <div class="settings-value" id="mfaUserCount">0</div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="card">
-        <div class="card-header">
-            <div class="card-title">安全设置</div>
-        </div>
-        <div class="card-body">
-            <div class="settings-group">
-                <div class="settings-group-title">登录安全</div>
-                <div class="settings-item">
-                    <div class="settings-icon" style="background: rgba(239, 68, 68, 0.15); color: #f87171;">
-                        <i class="fas fa-lock"></i>
-                    </div>
-                    <div class="settings-content">
-                        <div class="settings-label">最大登录尝试</div>
-                        <div class="settings-desc">允许的最大登录失败次数</div>
-                    </div>
-                    <div class="settings-value">5次</div>
-                </div>
-                <div class="settings-item">
-                    <div class="settings-icon" style="background: rgba(245, 158, 11, 0.15); color: #fb923c;">
-                        <i class="fas fa-clock"></i>
-                    </div>
-                    <div class="settings-content">
-                        <div class="settings-label">账户锁定时间</div>
-                        <div class="settings-desc">登录失败后账户锁定时长</div>
-                    </div>
-                    <div class="settings-value">15分钟</div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="modal" id="permissionModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="modalTitle">添加权限</h3>
-                <button class="modal-close" onclick="closePermissionModal()">&times;</button>
-            </div>
-            <div class="modal-body">
-                <form id="permissionForm">
-                    <input type="hidden" id="permissionId">
-                    <div class="form-group">
-                        <label class="form-label">角色 *</label>
-                        <select class="form-control" id="role">
-                            <option value="admin">管理员</option>
-                            <option value="teacher">教师</option>
-                            <option value="student">学生</option>
-                            <option value="student_vip">VIP学生</option>
-                            <option value="super_admin">超级管理员</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">模块 *</label>
-                        <select class="form-control" id="module">
-                            <option value="exam">考试系统</option>
-                            <option value="learning">学习系统</option>
-                            <option value="course">课程管理</option>
-                            <option value="homework">作业系统</option>
-                            <option value="resource">资源管理</option>
-                            <option value="analysis">数据分析</option>
-                            <option value="user">用户管理</option>
-                            <option value="settings">系统设置</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">权限 *</label>
-                        <div class="checkbox-group">
-                            <label class="checkbox-item">
-                                <input type="checkbox" name="permission" value="view">
-                                <span>查看</span>
-                            </label>
-                            <label class="checkbox-item">
-                                <input type="checkbox" name="permission" value="create">
-                                <span>创建</span>
-                            </label>
-                            <label class="checkbox-item">
-                                <input type="checkbox" name="permission" value="edit">
-                                <span>编辑</span>
-                            </label>
-                            <label class="checkbox-item">
-                                <input type="checkbox" name="permission" value="delete">
-                                <span>删除</span>
-                            </label>
-                        </div>
-                    </div>
-                    <button type="button" class="btn btn-primary btn-lg w-full" onclick="savePermission()">
-                        <i class="fas fa-save"></i>
-                        保存
-                    </button>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <div class="modal" id="groupModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="groupModalTitle">创建分组</h3>
-                <button class="modal-close" onclick="closeGroupModal()">&times;</button>
-            </div>
-            <div class="modal-body">
-                <form id="groupForm">
-                    <input type="hidden" id="groupId">
-                    <div class="form-group">
-                        <label class="form-label">分组名称 *</label>
-                        <input type="text" class="form-control" id="groupName" placeholder="输入分组名称" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">分组描述</label>
-                        <textarea class="form-control" id="groupDesc" rows="3" placeholder="输入分组描述"></textarea>
-                    </div>
-                    <button type="button" class="btn btn-primary btn-lg w-full" onclick="saveGroup()">
-                        <i class="fas fa-save"></i>
-                        保存
-                    </button>
-                </form>
-            </div>
-        </div>
-    </div>
-{% endblock %}
-
-{% block scripts %}
-<script>
-async function loadPermissions() {
-    const role = document.getElementById('searchRole').value;
-    
-    try {
-        const response = await fetch(`/api/auth/permissions?role=${role}`);
-        const data = await response.json();
-        
-        if (data.code === 200) {
-            renderPermissions(data.data.permissions || []);
-        }
-    } catch (error) {
-        console.error('加载权限失败:', error);
-    }
-}
-
-function renderPermissions(permissions) {
-    const container = document.getElementById('permissionMatrix');
-    
-    if (permissions.length === 0) {
-        container.innerHTML = `
-            <div class="empty-state">
-                <div class="empty-state-icon"><i class="fas fa-key"></i></div>
-                <div class="empty-state-text">暂无权限配置</div>
-            </div>
-        `;
-        return;
-    }
-    
-    container.innerHTML = `
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>角色</th>
-                    <th>模块</th>
-                    <th>权限</th>
-                    <th>操作</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${permissions.map(p => `
-                    <tr>
-                        <td>${getRoleName(p.role)}</td>
-                        <td>${getModuleName(p.module)}</td>
-                        <td>${p.permissions.map(perm => `<span class="badge">${getPermissionName(perm)}</span>`).join(' ')}</td>
-                        <td>
-                            <button onclick="editPermission(${p.id})" class="btn btn-secondary btn-sm">编辑</button>
-                            <button onclick="deletePermission(${p.id})" class="btn btn-danger btn-sm">删除</button>
-                        </td>
-                    </tr>
-                `).join('')}
-            </tbody>
-        </table>
-    `;
-}
-
-function getRoleName(role) {
-    const names = { admin: '管理员', teacher: '教师', student: '学生', student_vip: 'VIP学生', super_admin: '超级管理员' };
-    return names[role] || role;
-}
-
-function getModuleName(module) {
-    const names = { exam: '考试系统', learning: '学习系统', course: '课程管理', homework: '作业系统', resource: '资源管理', analysis: '数据分析', user: '用户管理', settings: '系统设置' };
-    return names[module] || module;
-}
-
-function getPermissionName(perm) {
-    const names = { view: '查看', create: '创建', edit: '编辑', delete: '删除' };
-    return names[perm] || perm;
-}
-
-async function loadGroups() {
-    try {
-        const response = await fetch('/api/auth/groups');
-        const data = await response.json();
-        
-        if (data.code === 200) {
-            renderGroups(data.data.groups || []);
-        }
-    } catch (error) {
-        console.error('加载分组失败:', error);
-    }
-}
-
-function renderGroups(groups) {
-    const container = document.getElementById('groupList');
-    
-    if (groups.length === 0) {
-        container.innerHTML = `
-            <div class="empty-state">
-                <div class="empty-state-icon"><i class="fas fa-users"></i></div>
-                <div class="empty-state-text">暂无用户分组</div>
-            </div>
-        `;
-        return;
-    }
-    
-    container.innerHTML = groups.map(g => `
-        <div class="group-card">
-            <div class="group-info">
-                <div class="group-name">${g.name}</div>
-                <div class="group-desc">${g.description || '无描述'}</div>
-            </div>
-            <div class="group-stats">
-                <div class="stat">成员: ${g.member_count || 0}</div>
-                <div class="stat">创建: ${formatDate(g.created_at)}</div>
-            </div>
-            <div class="group-actions">
-                <button onclick="editGroup(${g.id})" class="btn btn-secondary btn-sm">编辑</button>
-                <button onclick="deleteGroup(${g.id})" class="btn btn-danger btn-sm">删除</button>
-            </div>
-        </div>
-    `).join('');
-}
-
-function formatDate(dateStr) {
-    if (!dateStr) return '-';
-    return dateStr.substring(0, 10);
-}
-
-function openPermissionModal() {
-    document.getElementById('permissionForm').reset();
-    document.getElementById('permissionId').value = '';
-    document.getElementById('modalTitle').textContent = '添加权限';
-    document.getElementById('permissionModal').style.display = 'flex';
-}
-
-function closePermissionModal() {
-    document.getElementById('permissionModal').style.display = 'none';
-}
-
-async function savePermission() {
-    const permissions = Array.from(document.querySelectorAll('input[name="permission"]:checked')).map(cb => cb.value);
-    
-    const data = {
-        role: document.getElementById('role').value,
-        module: document.getElementById('module').value,
-        permissions: permissions
-    };
-    
-    try {
-        const response = await fetch('/api/auth/permissions', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
-        const res = await response.json();
-        
-        if (res.code === 201) {
-            alert('保存成功');
-            closePermissionModal();
-            loadPermissions();
-        } else {
-            alert(res.message);
-        }
-    } catch (error) {
-        console.error('保存权限失败:', error);
-        alert('保存失败');
-    }
-}
-
-async function deletePermission(id) {
-    if (!confirm('确定要删除这个权限配置吗？')) return;
-    
-    try {
-        const response = await fetch(`/api/auth/permissions/${id}`, {
-            method: 'DELETE'
-        });
-        const data = await response.json();
-        
-        if (data.code === 200) {
-            alert('删除成功');
-            loadPermissions();
-        } else {
-            alert(data.message);
-        }
-    } catch (error) {
-        console.error('删除权限失败:', error);
-        alert('删除失败');
-    }
-}
-
-function openGroupModal() {
-    document.getElementById('groupForm').reset();
-    document.getElementById('groupId').value = '';
-    document.getElementById('groupModalTitle').textContent = '创建分组';
-    document.getElementById('groupModal').style.display = 'flex';
-}
-
-function closeGroupModal() {
-    document.getElementById('groupModal').style.display = 'none';
-}
-
-async function saveGroup() {
-    const data = {
-        name: document.getElementById('groupName').value,
-        description: document.getElementById('groupDesc').value
-    };
-    
-    try {
-        const response = await fetch('/api/auth/groups', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
-        const res = await response.json();
-        
-        if (res.code === 201) {
-            alert('保存成功');
-            closeGroupModal();
-            loadGroups();
-        } else {
-            alert(res.message);
-        }
-    } catch (error) {
-        console.error('保存分组失败:', error);
-        alert('保存失败');
-    }
-}
-
-async function deleteGroup(id) {
-    if (!confirm('确定要删除这个分组吗？')) return;
-    
-    try {
-        const response = await fetch(`/api/auth/groups/${id}`, {
-            method: 'DELETE'
-        });
-        const data = await response.json();
-        
-        if (data.code === 200) {
-            alert('删除成功');
-            loadGroups();
-        } else {
-            alert(data.message);
-        }
-    } catch (error) {
-        console.error('删除分组失败:', error);
-        alert('删除失败');
-    }
-}
-
-async function toggleMFA() {
-    const toggle = document.getElementById('mfaToggle');
-    const enabled = toggle.classList.contains('active');
-    
-    try {
-        const response = await fetch('/api/auth/mfa/settings', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ enabled: !enabled })
-        });
-        const data = await response.json();
-        
-        if (data.code === 200) {
-            toggle.classList.toggle('active', !enabled);
-            alert(data.message);
-            loadMFAStats();
-        }
-    } catch (error) {
-        console.error('切换MFA失败:', error);
-    }
-}
-
-async function loadMFAStats() {
-    try {
-        const response = await fetch('/api/auth/mfa/stats');
-        const data = await response.json();
-        
-        if (data.code === 200) {
-            document.getElementById('mfaUserCount').textContent = data.data.count || 0;
-            document.getElementById('mfaToggle').classList.toggle('active', data.data.enabled || false);
-        }
-    } catch (error) {
-        console.error('加载MFA统计失败:', error);
-    }
-}
-
-loadPermissions();
-loadGroups();
-loadMFAStats();
-</script>
-<style>
-.checkbox-group {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-}
-
-.checkbox-item {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 12px;
-    background: rgba(255, 255, 255, 0.06);
-    border-radius: 8px;
-    cursor: pointer;
-}
-
-.checkbox-item input[type="checkbox"] {
-    width: 16px;
-    height: 16px;
-}
-
-.group-card {
-    display: flex;
-    align-items: center;
-    padding: 14px;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    margin-bottom: 10px;
-}
-
-.group-info {
-    flex: 1;
-}
-
-.group-name {
-    font-size: 14px;
-    font-weight: 600;
-    margin-bottom: 4px;
-}
-
-.group-desc {
-    font-size: 12px;
-    color: var(--text-muted);
-}
-
-.group-stats {
-    display: flex;
-    gap: 16px;
-    margin-right: 12px;
-}
-
-.group-stats .stat {
-    font-size: 11px;
-    color: var(--text-secondary);
-}
-
-.group-actions {
-    display: flex;
-    gap: 8px;
-}
-</style>
-{% endblock %}
+</body>
+</html>

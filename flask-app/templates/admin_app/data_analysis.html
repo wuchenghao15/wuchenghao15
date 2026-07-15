@@ -1,361 +1,92 @@
-{% extends 'admin_app/base.html' %}
-
-{% block title %}数据分析{% endblock %}
-
-{% block extra_head %}
-    <script src="/assets/js/chart.umd.min.js"></script>
-{% endblock %}
-
-{% block content %}
-    <div class="page-header">
-        <h1>数据分析</h1>
-        <p>数据可视化与智能报表</p>
-    </div>
-
-    <div class="stat-grid">
-        <div class="stat-card blue">
-            <div class="stat-value" id="totalUsers">0</div>
-            <div class="stat-label">总用户数</div>
-            <div class="stat-icon">
-                <i class="fas fa-users"></i>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据分析</title>
+    <link rel="stylesheet" href="/assets/css/mtscos-design-system.css">
+    <link rel="stylesheet" href="/assets/font-awesome/css/all.min.css">
+    <style>
+        .chart-container { height: 300px; background: var(--bg-secondary); border-radius: 8px; display: flex; align-items: center; justify-content: center; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-chart-bar"></i> 数据分析</h1>
+            <div class="user-info">
+                <span>欢迎, {{ user.username }}</span>
+                {% if notification_count > 0 %}
+                <span class="notification-badge">{{ notification_count }}</span>
+                {% endif %}
             </div>
         </div>
-        <div class="stat-card green">
-            <div class="stat-value" id="studentCount">0</div>
-            <div class="stat-label">学生数</div>
-            <div class="stat-icon">
-                <i class="fas fa-graduation-cap"></i>
-            </div>
-        </div>
-        <div class="stat-card purple">
-            <div class="stat-value" id="examCount">0</div>
-            <div class="stat-label">考试总数</div>
-            <div class="stat-icon">
-                <i class="fas fa-file-alt"></i>
-            </div>
-        </div>
-        <div class="stat-card orange">
-            <div class="stat-value" id="enrollmentCount">0</div>
-            <div class="stat-label">课程报名</div>
-            <div class="stat-icon">
-                <i class="fas fa-book-open"></i>
-            </div>
-        </div>
-    </div>
-
-    <div class="card">
-        <div class="card-header">
-            <div class="card-title">考试趋势</div>
-        </div>
-        <div class="card-body">
-            <canvas id="examTrendChart" height="200"></canvas>
-        </div>
-    </div>
-
-    <div class="card">
-        <div class="card-header">
-            <div class="card-title">学习趋势</div>
-        </div>
-        <div class="card-body">
-            <canvas id="learningTrendChart" height="200"></canvas>
-        </div>
-    </div>
-
-    <div class="card">
-        <div class="card-header">
-            <div class="card-title">科目分布</div>
-        </div>
-        <div class="card-body">
-            <canvas id="subjectChart" height="200"></canvas>
-        </div>
-    </div>
-
-    <div class="card">
-        <div class="card-header">
-            <div class="card-title">成绩统计</div>
-        </div>
-        <div class="card-body">
-            <div class="progress-stats">
-                <div class="progress-item">
-                    <div class="progress-label">优秀率</div>
-                    <div class="progress-bar">
-                        <div class="progress-fill" id="excellentRate" style="width: 0%"></div>
-                    </div>
-                    <div class="progress-value" id="excellentText">0%</div>
-                </div>
-                <div class="progress-item">
-                    <div class="progress-label">及格率</div>
-                    <div class="progress-bar">
-                        <div class="progress-fill" id="passRate" style="width: 0%"></div>
-                    </div>
-                    <div class="progress-value" id="passText">0%</div>
-                </div>
-                <div class="progress-item">
-                    <div class="progress-label">平均分</div>
-                    <div class="progress-bar">
-                        <div class="progress-fill" id="avgScore" style="width: 0%"></div>
-                    </div>
-                    <div class="progress-value" id="avgText">0</div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="card">
-        <div class="card-header">
-            <div class="card-title">学生排行榜</div>
-        </div>
-        <div class="card-body">
-            <div id="topStudents">
-                <div class="loading">
-                    <div class="spinner"></div>
-                </div>
-            </div>
-        </div>
-    </div>
-{% endblock %}
-
-{% block scripts %}
-<script>
-let examTrendChart, learningTrendChart, subjectChart;
-
-async function loadDashboardData() {
-    try {
-        const response = await fetch('/api/analysis/dashboard');
-        const data = await response.json();
         
-        if (data.code === 200) {
-            const overview = data.data.overview || {};
-            document.getElementById('totalUsers').textContent = overview.total_users || 0;
-            document.getElementById('studentCount').textContent = overview.student_count || 0;
-            document.getElementById('examCount').textContent = overview.exam_count || 0;
-            document.getElementById('enrollmentCount').textContent = overview.enrollment_count || 0;
-            
-            initCharts(data.data);
-            renderProgressStats(data.data);
-            renderTopStudents(data.data.top_students || []);
-        }
-    } catch (error) {
-        console.error('加载仪表盘数据失败:', error);
-    }
-}
+        <div class="nav-bar">
+            <ul>
+                <li><a href="/admin_app/dashboard">管理首页</a></li>
+                <li><a href="/admin_app/data_analysis" class="active">数据分析</a></li>
+            </ul>
+        </div>
 
-function initCharts(data) {
-    const ctx1 = document.getElementById('examTrendChart').getContext('2d');
-    examTrendChart = new Chart(ctx1, {
-        type: 'line',
-        data: {
-            labels: (data.exam_trend || []).map(d => d.date || ''),
-            datasets: [{
-                label: '考试次数',
-                data: (data.exam_trend || []).map(d => d.count || 0),
-                borderColor: '#3b82f6',
-                backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                fill: true,
-                tension: 0.4
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: { display: false }
-            },
-            scales: {
-                x: { grid: { display: false }, ticks: { font: { size: 10 } } },
-                y: { grid: { color: 'rgba(255,255,255,0.1)' }, beginAtZero: true }
-            }
-        }
-    });
-
-    const ctx2 = document.getElementById('learningTrendChart').getContext('2d');
-    learningTrendChart = new Chart(ctx2, {
-        type: 'line',
-        data: {
-            labels: (data.learning_trend || []).map(d => d.date || ''),
-            datasets: [{
-                label: '学习时长',
-                data: (data.learning_trend || []).map(d => d.duration || 0),
-                borderColor: '#10b981',
-                backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                fill: true,
-                tension: 0.4
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: { display: false }
-            },
-            scales: {
-                x: { grid: { display: false }, ticks: { font: { size: 10 } } },
-                y: { grid: { color: 'rgba(255,255,255,0.1)' }, beginAtZero: true }
-            }
-        }
-    });
-
-    const ctx3 = document.getElementById('subjectChart').getContext('2d');
-    subjectChart = new Chart(ctx3, {
-        type: 'doughnut',
-        data: {
-            labels: (data.subject_stats || []).map(d => d.name || ''),
-            datasets: [{
-                data: (data.subject_stats || []).map(d => d.count || 0),
-                backgroundColor: ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#06b6d4'],
-                borderWidth: 0
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: { position: 'right', labels: { font: { size: 11 }, padding: 10 } }
-            }
-        }
-    });
-}
-
-function renderProgressStats(data) {
-    const stats = data.exam_stats || {};
-    document.getElementById('excellentRate').style.width = (stats.excellent_rate || 0) + '%';
-    document.getElementById('excellentText').textContent = (stats.excellent_rate || 0) + '%';
-    document.getElementById('passRate').style.width = (stats.pass_rate || 0) + '%';
-    document.getElementById('passText').textContent = (stats.pass_rate || 0) + '%';
-    document.getElementById('avgScore').style.width = Math.min((stats.avg_score || 0) + '%', '100%');
-    document.getElementById('avgText').textContent = stats.avg_score || 0;
-}
-
-function renderTopStudents(students) {
-    const container = document.getElementById('topStudents');
-    
-    if (students.length === 0) {
-        container.innerHTML = `
-            <div class="empty-state">
-                <div class="empty-state-icon"><i class="fas fa-trophy"></i></div>
-                <div class="empty-state-text">暂无数据</div>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon bg-primary"><i class="fas fa-users"></i></div>
+                <div class="stat-info">
+                    <div class="stat-value">{{ analysis_stats.total_users }}</div>
+                    <div class="stat-label">总用户数</div>
+                </div>
             </div>
-        `;
-        return;
-    }
-    
-    container.innerHTML = students.map((s, index) => `
-        <div class="student-rank-item">
-            <div class="rank-badge ${index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? 'bronze' : ''}">${index + 1}</div>
-            <div class="student-info">
-                <div class="student-name">${s.username}</div>
-                <div class="student-score">平均分: ${s.avg_score || 0}</div>
+            <div class="stat-card">
+                <div class="stat-icon bg-success"><i class="fas fa-file-alt"></i></div>
+                <div class="stat-info">
+                    <div class="stat-value">{{ analysis_stats.total_exams }}</div>
+                    <div class="stat-label">考试总数</div>
+                </div>
             </div>
-            <div class="student-stats">
-                <div class="stat-item">考试: ${s.exam_count || 0}</div>
-                <div class="stat-item">课程: ${s.course_count || 0}</div>
+            <div class="stat-card">
+                <div class="stat-icon bg-warning"><i class="fas fa-check-circle"></i></div>
+                <div class="stat-info">
+                    <div class="stat-value">{{ analysis_stats.completed_exams }}</div>
+                    <div class="stat-label">已完成考试</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon bg-secondary"><i class="fas fa-chart-line"></i></div>
+                <div class="stat-info">
+                    <div class="stat-value">{{ analysis_stats.avg_score }}</div>
+                    <div class="stat-label">平均分数</div>
+                </div>
             </div>
         </div>
-    `).join('');
-}
 
-loadDashboardData();
-</script>
-<style>
-.progress-stats {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-}
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">用户增长趋势</h3>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <div style="text-align: center;">
+                        <i class="fas fa-chart-line" style="font-size: 48px; margin-bottom: 10px;"></i>
+                        <p>用户增长趋势图表区域</p>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-.progress-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.progress-label {
-    width: 60px;
-    font-size: 13px;
-    color: var(--text-secondary);
-}
-
-.progress-bar {
-    flex: 1;
-    height: 8px;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 4px;
-    overflow: hidden;
-}
-
-.progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, var(--primary), var(--secondary));
-    border-radius: 4px;
-    transition: width 0.5s ease;
-}
-
-.progress-value {
-    width: 50px;
-    text-align: right;
-    font-size: 13px;
-    font-weight: 600;
-}
-
-.student-rank-item {
-    display: flex;
-    align-items: center;
-    padding: 12px;
-    border-bottom: 1px solid var(--border);
-}
-
-.student-rank-item:last-child {
-    border-bottom: none;
-}
-
-.rank-badge {
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.1);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
-    font-weight: 700;
-    margin-right: 12px;
-}
-
-.rank-badge.gold {
-    background: linear-gradient(135deg, #fbbf24, #f59e0b);
-    color: white;
-}
-
-.rank-badge.silver {
-    background: linear-gradient(135deg, #9ca3af, #6b7280);
-    color: white;
-}
-
-.rank-badge.bronze {
-    background: linear-gradient(135deg, #d97706, #b45309);
-    color: white;
-}
-
-.student-info {
-    flex: 1;
-}
-
-.student-name {
-    font-size: 14px;
-    font-weight: 600;
-    margin-bottom: 2px;
-}
-
-.student-score {
-    font-size: 12px;
-    color: var(--text-muted);
-}
-
-.student-stats {
-    display: flex;
-    gap: 16px;
-}
-
-.stat-item {
-    font-size: 11px;
-    color: var(--text-secondary);
-}
-</style>
-{% endblock %}
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">考试成绩分布</h3>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <div style="text-align: center;">
+                        <i class="fas fa-chart-pie" style="font-size: 48px; margin-bottom: 10px;"></i>
+                        <p>考试成绩分布图表区域</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

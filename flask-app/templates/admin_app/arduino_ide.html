@@ -1,830 +1,1980 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <!-- 设计系统 -->
-    <link rel="stylesheet" href="/assets/css/mtscos-design-system.css">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Arduino AI设计系统 - MTSCOS</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.3.0/dist/tailwind.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Arduino IDE - MTSCOS AI</title>
+    <link rel="stylesheet" href="/assets/font-awesome/css/all.min.css">
     <style>
+        :root {
+            --primary-color: #6366f1;
+            --primary-dark: #4f46e5;
+            --primary-light: #818cf8;
+            --primary-glow: rgba(99, 102, 241, 0.35);
+            --bg-darkest: #070a14;
+            --bg-dark: #0c1120;
+            --bg-panel: #111726;
+            --bg-elevated: #182040;
+            --bg-hover: #1e2745;
+            --bg-input: #0d1322;
+            --border-color: rgba(99, 102, 241, 0.16);
+            --border-strong: rgba(99, 102, 241, 0.32);
+            --text-primary: #e6eaf2;
+            --text-secondary: #9aa6bd;
+            --text-muted: #5e6a82;
+            --accent-success: #10b981;
+            --accent-warning: #f59e0b;
+            --accent-error: #ef4444;
+            --accent-info: #3b82f6;
+            --terminal-bg: #04060a;
+            --terminal-fg: #19f290;
+            --shadow-glow: 0 0 24px var(--primary-glow);
+            --radius-sm: 6px;
+            --radius: 10px;
+            --radius-lg: 14px;
+            --font-mono: 'SF Mono', 'Fira Code', 'JetBrains Mono', 'Consolas', 'Menlo', monospace;
+            --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-        
-        .code-editor {
-            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+
+        html, body {
+            height: 100%;
+            font-family: var(--font-sans);
+            background: var(--bg-darkest);
+            color: var(--text-primary);
+            overflow: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            background:
+                radial-gradient(1200px 600px at 80% -10%, rgba(99,102,241,0.10), transparent 60%),
+                radial-gradient(900px 500px at -10% 110%, rgba(16,185,129,0.06), transparent 60%),
+                var(--bg-darkest);
+        }
+
+        ::-webkit-scrollbar { width: 10px; height: 10px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(99,102,241,0.25); border-radius: 8px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(99,102,241,0.45); }
+
+        /* ============ 顶部工具栏 ============ */
+        .toolbar {
+            height: 58px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 0 16px;
+            background: linear-gradient(180deg, var(--bg-panel), var(--bg-dark));
+            border-bottom: 1px solid var(--border-color);
+            box-shadow: 0 2px 16px rgba(0,0,0,0.35);
+            z-index: 20;
+        }
+
+        .toolbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+            font-size: 15px;
+            white-space: nowrap;
+        }
+        .toolbar-brand .brand-icon {
+            width: 34px; height: 34px;
+            display: grid; place-items: center;
+            border-radius: var(--radius-sm);
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            color: #fff;
+            box-shadow: var(--shadow-glow);
+        }
+        .toolbar-brand .brand-sub { color: var(--text-secondary); font-weight: 500; font-size: 12px; }
+
+        .toolbar-divider {
+            width: 1px; height: 28px;
+            background: var(--border-color);
+        }
+
+        .project-name-input {
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 8px 12px;
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            font-weight: 600;
+            width: 200px;
+            outline: none;
+            transition: border-color .15s, box-shadow .15s;
+        }
+        .project-name-input:focus { border-color: var(--primary-color); box-shadow: 0 0 0 3px var(--primary-glow); }
+
+        .board-select {
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 8px 30px 8px 12px;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            outline: none;
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239aa6bd' stroke-width='3'><path d='M6 9l6 6 6-6'/></svg>");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+        }
+        .board-select:focus { border-color: var(--primary-color); }
+
+        .toolbar-actions { display: flex; align-items: center; gap: 8px; }
+
+        .tool-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 12px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all .15s;
+            white-space: nowrap;
+        }
+        .tool-btn:hover { background: var(--bg-hover); color: var(--text-primary); border-color: var(--border-strong); }
+        .tool-btn.primary {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            color: #fff;
+            border-color: transparent;
+            box-shadow: 0 4px 14px var(--primary-glow);
+        }
+        .tool-btn.primary:hover { filter: brightness(1.08); color: #fff; }
+        .tool-btn.success { background: linear-gradient(135deg, #10b981, #059669); color: #fff; border-color: transparent; }
+        .tool-btn.success:hover { filter: brightness(1.08); color:#fff; }
+        .tool-btn.icon-only { padding: 8px 10px; }
+        .tool-btn:active { transform: translateY(1px); }
+
+        .toolbar-spacer { flex: 1; }
+
+        .toolbar-user {
+            display: flex; align-items: center; gap: 8px;
+            color: var(--text-secondary); font-size: 13px;
+            padding: 6px 12px;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+        }
+        .toolbar-user i { color: var(--primary-light); }
+        .toolbar-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 13px;
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 8px 12px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-color);
+            transition: all .15s;
+        }
+        .toolbar-link:hover { color: var(--text-primary); border-color: var(--border-strong); background: var(--bg-hover); }
+
+        /* ============ 主区域 ============ */
+        .ide-main {
+            flex: 1;
+            display: flex;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        /* ============ 侧边面板通用 ============ */
+        .side-panel {
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-panel);
+            overflow: hidden;
+            transition: width .22s ease, min-width .22s ease;
+        }
+        .left-panel { width: 262px; min-width: 262px; border-right: 1px solid var(--border-color); }
+        .right-panel { width: 348px; min-width: 348px; border-left: 1px solid var(--border-color); }
+        .left-panel.collapsed, .right-panel.collapsed { width: 0 !important; min-width: 0 !important; border: 0; }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-dark);
+            flex-shrink: 0;
+        }
+        .panel-title { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--text-secondary); }
+
+        .tabs { display: flex; gap: 4px; padding: 8px 8px 0; background: var(--bg-dark); flex-shrink: 0; }
+        .tab-btn {
+            flex: 1;
+            padding: 8px 10px;
+            background: transparent;
+            border: 1px solid transparent;
+            border-bottom: 2px solid transparent;
+            color: var(--text-muted);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+            transition: all .15s;
+            display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+        }
+        .tab-btn:hover { color: var(--text-secondary); background: var(--bg-elevated); }
+        .tab-btn.active { color: var(--primary-light); border-bottom-color: var(--primary-color); background: var(--bg-panel); }
+
+        .tab-pane { display: none; flex: 1; overflow-y: auto; min-height: 0; }
+        .tab-pane.active { display: block; }
+
+        /* ============ 左侧组件库 / 模板 ============ */
+        .lib-group { padding: 10px 10px 4px; }
+        .lib-group-title {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+            color: var(--text-muted);
+            padding: 6px 6px 8px;
+        }
+        .lib-group-title i { color: var(--primary-light); }
+
+        .lib-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 9px 10px;
+            margin-bottom: 6px;
+            background: var(--bg-elevated);
+            border: 1px solid transparent;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all .15s;
+        }
+        .lib-item:hover { background: var(--bg-hover); border-color: var(--border-strong); transform: translateX(2px); }
+        .lib-icon { font-size: 18px; width: 26px; text-align: center; flex-shrink: 0; }
+        .lib-info { min-width: 0; flex: 1; }
+        .lib-name { font-size: 13px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .lib-desc { font-size: 11px; color: var(--text-muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .lib-badge {
+            font-size: 10px; padding: 2px 7px; border-radius: 20px;
+            background: rgba(99,102,241,0.14); color: var(--primary-light);
+            border: 1px solid var(--border-color); white-space: nowrap;
+        }
+
+        /* ============ 编辑器区域 ============ */
+        .editor-wrap {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            background: var(--bg-dark);
+        }
+        .editor-bar {
+            height: 34px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            padding: 0 12px;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-panel);
+            gap: 10px;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+        .editor-bar .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent-success); box-shadow: 0 0 8px var(--accent-success); }
+        .editor-bar .file-name { color: var(--text-secondary); font-weight: 600; }
+        .editor-bar .file-name .ino { color: var(--primary-light); }
+
+        .editor-container {
+            flex: 1;
+            display: flex;
+            min-height: 0;
+            position: relative;
+            background: var(--bg-dark);
+        }
+        .line-numbers {
+            width: 52px;
+            flex-shrink: 0;
+            background: var(--bg-darkest);
+            border-right: 1px solid var(--border-color);
+            overflow: hidden;
+            position: relative;
+        }
+        .line-numbers-inner {
+            font-family: var(--font-mono);
             font-size: 14px;
             line-height: 1.6;
-            tab-size: 2;
-        }
-        
-        .sidebar-item {
-            transition: all 0.2s ease;
-        }
-        
-        .sidebar-item:hover {
-            background: rgba(99, 102, 241, 0.1);
-        }
-        
-        .sidebar-item.active {
-            background: rgba(99, 102, 241, 0.15);
-            border-right: 3px solid #6366f1;
-            color: #6366f1;
-        }
-        
-        .tool-btn {
-            transition: all 0.2s ease;
-        }
-        
-        .tool-btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }
-        
-        .compile-output {
-            font-family: 'Monaco', 'Menlo', monospace;
-            font-size: 13px;
-            line-height: 1.5;
-        }
-        
-        .line-numbers {
-            counter-reset: line;
-        }
-        
-        .line-numbers > div::before {
-            counter-increment: line;
-            content: counter(line);
-            display: inline-block;
-            width: 3em;
+            padding: 16px 10px 16px 0;
             text-align: right;
-            margin-right: 1em;
-            color: #9ca3af;
+            color: var(--text-muted);
+            white-space: pre;
+            will-change: transform;
+        }
+
+        .code-container {
+            flex: 1;
+            position: relative;
+            min-width: 0;
+            overflow: hidden;
+        }
+        .code-backdrop, .code-editor {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            font-family: var(--font-mono);
+            font-size: 14px;
+            line-height: 1.6;
+            padding: 16px;
+            tab-size: 2;
+            -moz-tab-size: 2;
+            border: 0;
+            white-space: pre;
+            word-wrap: normal;
+        }
+        .code-backdrop {
+            z-index: 1;
+            overflow: hidden;
+            pointer-events: none;
+            color: var(--text-primary);
+        }
+        .code-backdrop code { font-family: inherit; white-space: pre; }
+        .code-editor {
+            z-index: 2;
+            resize: none;
+            overflow: auto;
+            background: transparent;
+            color: transparent;
+            caret-color: var(--primary-light);
+            outline: none;
+        }
+        .code-editor::selection { background: rgba(99,102,241,0.30); color: transparent; }
+
+        /* 语法高亮配色 */
+        .tok-keyword { color: #c084fc; font-weight: 600; }
+        .tok-function { color: #60a5fa; }
+        .tok-class { color: #22d3ee; font-weight: 600; }
+        .tok-string { color: #34d399; }
+        .tok-comment { color: #5b6b85; font-style: italic; }
+        .tok-preprocessor { color: #f59e0b; }
+        .tok-number { color: #fbbf24; }
+
+        .editor-statusbar {
+            height: 28px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            padding: 0 14px;
+            border-top: 1px solid var(--border-color);
+            background: var(--bg-panel);
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+        .editor-statusbar .status-item { display: inline-flex; align-items: center; gap: 6px; }
+        .editor-statusbar .status-item i { color: var(--primary-light); }
+        .editor-statusbar .spacer { flex: 1; }
+        .editor-statusbar .status-item strong { color: var(--text-secondary); font-weight: 600; }
+
+        /* ============ 右侧 串口 / 编译 ============ */
+        .serial-toolbar {
+            display: flex; align-items: center; gap: 8px;
+            padding: 8px 10px;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-dark);
+            flex-shrink: 0;
+        }
+        .serial-toolbar .mini-btn {
+            background: var(--bg-elevated); border: 1px solid var(--border-color); color: var(--text-secondary);
+            padding: 5px 9px; border-radius: var(--radius-sm); cursor: pointer; font-size: 12px;
+            display: inline-flex; align-items: center; gap: 5px; transition: all .15s;
+        }
+        .serial-toolbar .mini-btn:hover { color: var(--text-primary); border-color: var(--border-strong); }
+        .serial-toolbar .baud { color: var(--text-muted); font-size: 12px; font-family: var(--font-mono); }
+        .serial-toolbar .auto-scroll-wrap { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); cursor: pointer; user-select: none; }
+        .serial-toolbar input[type="checkbox"] { accent-color: var(--primary-color); }
+
+        .serial-terminal {
+            flex: 1;
+            background: var(--terminal-bg);
+            color: var(--terminal-fg);
+            font-family: var(--font-mono);
+            font-size: 13px;
+            line-height: 1.55;
+            padding: 12px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+            border: 1px solid #000;
+            margin: 8px;
+            border-radius: var(--radius-sm);
+            box-shadow: inset 0 0 40px rgba(25,242,144,0.04);
+            min-height: 0;
+        }
+        .serial-line { padding: 1px 0; }
+        .serial-line.sys { color: #6b7280; }
+        .serial-line.err { color: #ff6b6b; }
+        .serial-line.out { color: var(--terminal-fg); }
+
+        .compile-pane { padding: 12px; }
+        .compile-status {
+            display: flex; align-items: center; gap: 10px;
+            padding: 12px 14px;
+            border-radius: var(--radius-sm);
+            font-weight: 700;
+            font-size: 14px;
+            margin-bottom: 12px;
+        }
+        .compile-status.ok { background: rgba(16,185,129,0.12); color: var(--accent-success); border: 1px solid rgba(16,185,129,0.3); }
+        .compile-status.fail { background: rgba(239,68,68,0.12); color: var(--accent-error); border: 1px solid rgba(239,68,68,0.3); }
+        .compile-status.idle { background: var(--bg-elevated); color: var(--text-muted); border: 1px solid var(--border-color); }
+
+        .compile-section { margin-bottom: 12px; }
+        .compile-section-title {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
+            margin-bottom: 8px;
+        }
+        .compile-section-title.error { color: var(--accent-error); }
+        .compile-section-title.warning { color: var(--accent-warning); }
+        .compile-item {
+            display: flex; gap: 10px;
+            padding: 8px 10px;
+            background: var(--bg-elevated);
+            border-left: 3px solid var(--accent-error);
+            border-radius: 4px;
+            margin-bottom: 6px;
+            font-size: 13px;
+        }
+        .compile-item.warning { border-left-color: var(--accent-warning); }
+        .compile-line {
+            font-family: var(--font-mono);
+            color: var(--text-muted);
+            flex-shrink: 0;
+            min-width: 52px;
+        }
+        .compile-msg { color: var(--text-secondary); }
+
+        .compile-stats {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            padding: 12px;
+        }
+        .stat-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 6px 0;
+            font-size: 13px;
+            border-bottom: 1px dashed var(--border-color);
+        }
+        .stat-row:last-child { border-bottom: 0; }
+        .stat-row .label { color: var(--text-muted); }
+        .stat-row .value { color: var(--text-primary); font-weight: 600; font-family: var(--font-mono); }
+        .stat-row .value.good { color: var(--accent-success); }
+
+        .loading-text, .empty-text {
+            text-align: center;
+            padding: 30px 12px;
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+        .loading-text i { color: var(--primary-light); }
+
+        /* ============ 底部项目列表 ============ */
+        .projects-bar {
+            flex-shrink: 0;
+            background: var(--bg-panel);
+            border-top: 1px solid var(--border-color);
+            transition: height .22s ease;
+            height: 42px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .projects-bar.expanded { height: 220px; }
+        .projects-header {
+            height: 42px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 0 16px;
+            cursor: pointer;
             user-select: none;
         }
-        
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+        .projects-header:hover { background: var(--bg-hover); }
+        .projects-header .title { font-size: 13px; font-weight: 700; color: var(--text-secondary); display: inline-flex; align-items: center; gap: 8px; }
+        .projects-header .title i { color: var(--primary-light); }
+        .projects-header .count { font-size: 12px; color: var(--text-muted); background: var(--bg-elevated); padding: 2px 8px; border-radius: 20px; }
+        .projects-header .chev { margin-left: auto; color: var(--text-muted); transition: transform .2s; }
+        .projects-bar.expanded .projects-header .chev { transform: rotate(180deg); }
+
+        .projects-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 4px 12px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
         }
-        
-        .compiling {
-            animation: pulse 1.5s infinite;
-        }
-        
-        .template-card {
-            transition: all 0.2s ease;
+        .project-item {
+            display: flex; align-items: center; gap: 12px;
+            padding: 10px 12px;
+            background: var(--bg-elevated);
+            border: 1px solid transparent;
+            border-radius: var(--radius-sm);
             cursor: pointer;
+            transition: all .15s;
         }
-        
-        .template-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);
+        .project-item:hover { background: var(--bg-hover); border-color: var(--border-strong); }
+        .project-item.active { border-color: var(--primary-color); box-shadow: 0 0 0 2px var(--primary-glow); }
+        .project-info { flex: 1; min-width: 0; }
+        .project-name { font-size: 13px; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 8px; }
+        .board-tag {
+            font-size: 10px; padding: 1px 7px; border-radius: 20px;
+            background: rgba(99,102,241,0.16); color: var(--primary-light);
+            text-transform: uppercase; letter-spacing: .04em; font-weight: 700;
         }
-        
-        .tutorial-card {
-            transition: all 0.2s ease;
+        .project-meta { font-size: 11px; color: var(--text-muted); margin-top: 3px; display: flex; align-items: center; gap: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .project-desc { color: var(--text-secondary); }
+        .project-del {
+            background: transparent; border: 1px solid var(--border-color); color: var(--text-muted);
+            width: 30px; height: 30px; border-radius: var(--radius-sm); cursor: pointer; transition: all .15s;
+            display: grid; place-items: center; flex-shrink: 0;
         }
-        
-        .tutorial-card:hover {
-            transform: translateY(-2px);
+        .project-del:hover { color: var(--accent-error); border-color: var(--accent-error); background: rgba(239,68,68,0.1); }
+
+        /* ============ 响应式 ============ */
+        @media (max-width: 1100px) {
+            .left-panel { width: 220px; min-width: 220px; }
+            .right-panel { width: 300px; min-width: 300px; }
+            .project-name-input { width: 150px; }
         }
-        
-        .difficulty-beginner { background: var(--color-success); }
-        .difficulty-intermediate { background: var(--color-warning); }
-        .difficulty-advanced { background: var(--color-error); }
-        
-        .tab-btn.active {
-            color: #6366f1;
-            border-bottom: 2px solid #6366f1;
+        @media (max-width: 860px) {
+            .left-panel, .right-panel { position: absolute; top: 58px; bottom: 42px; z-index: 15; height: auto; }
+            .left-panel { left: 0; }
+            .right-panel { right: 0; }
+            .left-panel.collapsed, .right-panel.collapsed { width: 0 !important; min-width: 0 !important; }
+            .toolbar-brand .brand-sub, .toolbar-user span { display: none; }
+            .tool-btn span { display: none; }
+            .tool-btn { padding: 8px 10px; }
+        }
+        @media (max-width: 560px) {
+            .project-name-input { width: 110px; }
+            .board-select { padding-left: 8px; }
+        }
+
+        /* ============ AI 浮动按钮 ============ */
+        .ai-fab {
+            position: fixed;
+            right: 28px;
+            bottom: 28px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #8b5cf6, #6366f1);
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            z-index: 1000;
+            display: grid;
+            place-items: center;
+            font-size: 26px;
+            box-shadow: 0 6px 24px rgba(139, 92, 246, 0.45), 0 0 0 0 rgba(139, 92, 246, 0.45);
+            transition: transform .2s ease, box-shadow .2s ease;
+            animation: aiPulse 2.2s infinite;
+        }
+        .ai-fab:hover {
+            transform: scale(1.08);
+            box-shadow: 0 8px 32px rgba(139, 92, 246, 0.6), 0 0 28px rgba(99, 102, 241, 0.5);
+            animation: none;
+        }
+        .ai-fab:active { transform: scale(0.96); }
+        @keyframes aiPulse {
+            0% { box-shadow: 0 6px 24px rgba(139, 92, 246, 0.45), 0 0 0 0 rgba(139, 92, 246, 0.45); }
+            70% { box-shadow: 0 6px 24px rgba(139, 92, 246, 0.45), 0 0 0 14px rgba(139, 92, 246, 0); }
+            100% { box-shadow: 0 6px 24px rgba(139, 92, 246, 0.45), 0 0 0 0 rgba(139, 92, 246, 0); }
+        }
+
+        /* ============ AI 助手面板 ============ */
+        .ai-assistant-panel {
+            position: fixed;
+            right: 28px;
+            bottom: 100px;
+            width: 400px;
+            height: 550px;
+            background: var(--bg-panel);
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius-lg);
+            box-shadow: 0 12px 48px rgba(0,0,0,0.5), 0 0 0 1px rgba(99,102,241,0.2);
+            z-index: 999;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transform-origin: bottom right;
+            transform: scale(0.85) translateY(20px);
+            opacity: 0;
+            pointer-events: none;
+            transition: transform .25s cubic-bezier(.34,1.56,.64,1), opacity .2s ease;
+        }
+        .ai-assistant-panel.open {
+            transform: scale(1) translateY(0);
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .ai-panel-header {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            background: linear-gradient(135deg, rgba(139,92,246,0.18), rgba(99,102,241,0.12));
+            border-bottom: 1px solid var(--border-color);
+            flex-shrink: 0;
+        }
+        .ai-panel-header .ai-icon {
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #8b5cf6, #6366f1);
+            display: grid; place-items: center;
+            color: #fff; font-size: 16px;
+            margin-right: 10px;
+            box-shadow: 0 0 12px rgba(139,92,246,0.4);
+        }
+        .ai-panel-header .ai-title {
+            font-size: 14px; font-weight: 700;
+            color: var(--text-primary);
+        }
+        .ai-panel-header .ai-subtitle {
+            font-size: 11px; color: var(--text-muted); margin-top: 2px;
+        }
+        .ai-panel-header .header-actions { margin-left: auto; display: flex; gap: 4px; }
+        .ai-panel-header .header-btn {
+            width: 28px; height: 28px;
+            border-radius: 6px;
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: grid; place-items: center;
+            font-size: 13px;
+            transition: all .15s;
+        }
+        .ai-panel-header .header-btn:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+            border-color: var(--border-color);
+        }
+
+        /* 快捷功能区 */
+        .ai-quick-actions {
+            display: flex;
+            gap: 6px;
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-dark);
+            flex-shrink: 0;
+            overflow-x: auto;
+        }
+        .ai-quick-btn {
+            flex-shrink: 0;
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            padding: 8px 10px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            color: var(--text-secondary);
+            font-size: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all .15s;
+            min-width: 60px;
+        }
+        .ai-quick-btn i { font-size: 16px; color: var(--primary-light); }
+        .ai-quick-btn:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+            border-color: var(--border-strong);
+            transform: translateY(-1px);
+        }
+        .ai-quick-btn:hover i { color: var(--primary-color); }
+
+        /* 聊天区域 */
+        .ai-chat-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            min-height: 0;
+        }
+        .ai-chat-msg {
+            max-width: 85%;
+            display: flex;
+            gap: 8px;
+            animation: msgIn .25s ease;
+        }
+        @keyframes msgIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .ai-chat-msg.user { align-self: flex-end; flex-direction: row-reverse; }
+        .ai-chat-msg.ai { align-self: flex-start; }
+        .msg-avatar {
+            width: 28px; height: 28px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            display: grid; place-items: center;
+            font-size: 12px;
+        }
+        .ai-chat-msg.user .msg-avatar {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: #fff;
+        }
+        .ai-chat-msg.ai .msg-avatar {
+            background: linear-gradient(135deg, #8b5cf6, #6366f1);
+            color: #fff;
+        }
+        .msg-bubble {
+            padding: 10px 12px;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            line-height: 1.55;
+            word-wrap: break-word;
+        }
+        .ai-chat-msg.user .msg-bubble {
+            background: linear-gradient(135deg, rgba(59,130,246,0.2), rgba(99,102,241,0.18));
+            border: 1px solid rgba(99,102,241,0.3);
+            color: var(--text-primary);
+            border-top-right-radius: 2px;
+        }
+        .ai-chat-msg.ai .msg-bubble {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            border-top-left-radius: 2px;
+        }
+        .ai-chat-msg.ai .msg-bubble strong { color: var(--text-primary); }
+        .ai-chat-msg.ai .msg-bubble p { margin-bottom: 8px; }
+        .ai-chat-msg.ai .msg-bubble p:last-child { margin-bottom: 0; }
+        .ai-chat-msg.ai .msg-bubble ul,
+        .ai-chat-msg.ai .msg-bubble ol { margin: 6px 0 6px 20px; }
+        .ai-chat-msg.ai .msg-bubble li { margin-bottom: 4px; }
+
+        /* 代码块 */
+        .ai-code-block {
+            position: relative;
+            margin: 8px 0;
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+        .ai-code-header {
+            display: flex;
+            align-items: center;
+            padding: 6px 10px;
+            background: var(--bg-dark);
+            border-bottom: 1px solid var(--border-color);
+            font-size: 11px;
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+        }
+        .ai-code-header .lang { color: var(--primary-light); font-weight: 600; }
+        .ai-code-header .insert-btn {
+            margin-left: auto;
+            background: rgba(99,102,241,0.15);
+            border: 1px solid var(--border-color);
+            color: var(--primary-light);
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all .15s;
+            font-family: var(--font-sans);
+        }
+        .ai-code-header .insert-btn:hover {
+            background: var(--primary-color);
+            color: #fff;
+        }
+        .ai-code-block pre {
+            margin: 0;
+            padding: 10px 12px;
+            background: var(--terminal-bg);
+            overflow-x: auto;
+            font-family: var(--font-mono);
+            font-size: 12px;
+            line-height: 1.5;
+            color: #c9d1d9;
+        }
+        .ai-code-block code { font-family: inherit; }
+
+        .ai-loading-dots {
+            display: inline-flex;
+            gap: 4px;
+            align-items: center;
+        }
+        .ai-loading-dots span {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: var(--primary-light);
+            animation: dotPulse 1.2s infinite;
+        }
+        .ai-loading-dots span:nth-child(2) { animation-delay: .2s; }
+        .ai-loading-dots span:nth-child(3) { animation-delay: .4s; }
+        @keyframes dotPulse {
+            0%, 60%, 100% { opacity: .3; transform: scale(.8); }
+            30% { opacity: 1; transform: scale(1); }
+        }
+
+        /* 输入区域 */
+        .ai-input-area {
+            display: flex;
+            gap: 8px;
+            padding: 10px 12px;
+            border-top: 1px solid var(--border-color);
+            background: var(--bg-dark);
+            flex-shrink: 0;
+        }
+        .ai-input-area textarea {
+            flex: 1;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 8px 10px;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-family: var(--font-sans);
+            outline: none;
+            resize: none;
+            height: 38px;
+            min-height: 38px;
+            max-height: 100px;
+            line-height: 1.4;
+            transition: border-color .15s;
+        }
+        .ai-input-area textarea:focus { border-color: var(--primary-color); }
+        .ai-send-btn {
+            width: 38px; height: 38px;
+            border-radius: var(--radius-sm);
+            background: linear-gradient(135deg, #8b5cf6, #6366f1);
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            display: grid; place-items: center;
+            font-size: 14px;
+            flex-shrink: 0;
+            transition: all .15s;
+        }
+        .ai-send-btn:hover { filter: brightness(1.12); transform: translateY(-1px); }
+        .ai-send-btn:active { transform: translateY(0); }
+        .ai-send-btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+        /* ============ AI Agent 状态面板 ============ */
+        .ai-agent-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 12px;
+            background: linear-gradient(135deg, rgba(139,92,246,0.2), rgba(99,102,241,0.18));
+            border: 1px solid rgba(139,92,246,0.35);
+            color: #c4b5fd;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all .15s;
+            white-space: nowrap;
+        }
+        .ai-agent-btn:hover {
+            background: linear-gradient(135deg, rgba(139,92,246,0.3), rgba(99,102,241,0.25));
+            border-color: rgba(139,92,246,0.55);
+            color: #ddd6fe;
+        }
+        .ai-agent-btn .status-dot {
+            width: 7px; height: 7px;
+            border-radius: 50%;
+            background: var(--accent-success);
+            box-shadow: 0 0 6px var(--accent-success);
+            animation: agentDot 2s infinite;
+        }
+        @keyframes agentDot {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .55; }
+        }
+
+        .ai-agent-panel {
+            position: absolute;
+            top: 58px;
+            right: 220px;
+            width: 320px;
+            background: var(--bg-panel);
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius-lg);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+            z-index: 100;
+            overflow: hidden;
+            transform-origin: top right;
+            transform: scale(0.9) translateY(-8px);
+            opacity: 0;
+            pointer-events: none;
+            transition: transform .2s cubic-bezier(.34,1.56,.64,1), opacity .15s ease;
+        }
+        .ai-agent-panel.open {
+            transform: scale(1) translateY(0);
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .ai-agent-panel-header {
+            padding: 12px 14px;
+            background: linear-gradient(135deg, rgba(139,92,246,0.18), rgba(99,102,241,0.12));
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+        }
+        .ai-agent-panel-header .title {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        .ai-agent-panel-header .sub {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+        .ai-agent-list {
+            padding: 6px;
+            max-height: 380px;
+            overflow-y: auto;
+        }
+        .ai-agent-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 10px;
+            border-radius: var(--radius-sm);
+            cursor: default;
+            transition: background .15s;
+        }
+        .ai-agent-item:hover { background: var(--bg-hover); }
+        .ai-agent-item .agent-icon {
+            width: 36px; height: 36px;
+            border-radius: 8px;
+            display: grid; place-items: center;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+        .ai-agent-item .agent-icon.gen { background: rgba(139,92,246,0.18); color: #a78bfa; }
+        .ai-agent-item .agent-icon.debug { background: rgba(239,68,68,0.15); color: #f87171; }
+        .ai-agent-item .agent-icon.optimize { background: rgba(16,185,129,0.15); color: #34d399; }
+        .ai-agent-item .agent-icon.component { background: rgba(245,158,11,0.15); color: #fbbf24; }
+        .ai-agent-item .agent-info { flex: 1; min-width: 0; }
+        .ai-agent-item .agent-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        .ai-agent-item .agent-desc {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .ai-agent-item .agent-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 3px 8px;
+            border-radius: 12px;
+            flex-shrink: 0;
+        }
+        .ai-agent-item .agent-status.running {
+            background: rgba(16,185,129,0.12);
+            color: var(--accent-success);
+        }
+        .ai-agent-item .agent-status.stopped {
+            background: rgba(107,114,128,0.15);
+            color: var(--text-muted);
+        }
+        .ai-agent-item .agent-status .sdot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+        .ai-agent-item .agent-status.running .sdot {
+            animation: agentDot 1.5s infinite;
         }
     </style>
 </head>
-<body class="bg-gray-50">
-    <div class="flex h-screen overflow-hidden">
-        <!-- 左侧边栏 -->
-        <div class="w-64 bg-white shadow-lg flex flex-col">
-            <div class="p-4 border-b">
-                <h1 class="text-xl font-bold text-indigo-600 flex items-center gap-2">
-                    <i class="ri-cpu-line"></i>
-                    Arduino AI
-                </h1>
-                <p class="text-xs text-gray-500 mt-1">智能设计系统</p>
-            </div>
-            
-            <div class="flex-1 overflow-y-auto py-2">
-                <div class="px-3 py-2">
-                    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">开发</p>
-                    <div class="sidebar-item active px-3 py-2 rounded-lg cursor-pointer flex items-center gap-3" onclick="switchView('editor')">
-                        <i class="ri-code-s-slash-line text-lg"></i>
-                        <span>代码编辑器</span>
-                    </div>
-                    <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer flex items-center gap-3" onclick="switchView('tutorials')">
-                        <i class="ri-book-open-line text-lg"></i>
-                        <span>学习教程</span>
-                    </div>
-                    <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer flex items-center gap-3" onclick="switchView('projects')">
-                        <i class="ri-folder-line text-lg"></i>
-                        <span>我的项目</span>
-                    </div>
-                    <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer flex items-center gap-3" onclick="switchView('components')">
-                        <i class="ri-microchip-line text-lg"></i>
-                        <span>元件库</span>
-                    </div>
-                </div>
-                
-                <div class="px-3 py-2 mt-4">
-                    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">AI工具</p>
-                    <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer flex items-center gap-3" onclick="showAIPanel()">
-                        <i class="ri-robot-line text-lg"></i>
-                        <span>AI代码生成</span>
-                    </div>
-                    <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer flex items-center gap-3" onclick="explainCurrentCode()">
-                        <i class="ri-question-line text-lg"></i>
-                        <span>代码解释</span>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="p-4 border-t bg-gray-50">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold">
-                        {{ user.username[0].upper() if user else 'U' }}
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <p class="font-medium text-gray-800 truncate">{{ user.username if user else '游客' }}</p>
-                        <p class="text-xs text-gray-500">Arduino开发者</p>
-                    </div>
-                </div>
+<body>
+    <!-- 顶部工具栏 -->
+    <div class="toolbar">
+        <div class="toolbar-brand">
+            <div class="brand-icon"><i class="fas fa-microchip"></i></div>
+            <div>
+                <div>Arduino IDE</div>
+                <div class="brand-sub">MTSCOS AI 在线开发环境</div>
             </div>
         </div>
-        
-        <!-- 主内容区 -->
-        <div class="flex-1 flex flex-col overflow-hidden">
-            <!-- 顶部工具栏 -->
-            <div class="bg-white border-b px-4 py-3 flex items-center justify-between">
-                <div class="flex items-center gap-4">
-                    <select id="boardSelect" class="px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-indigo-500 text-sm">
-                        <option value="uno">Arduino Uno</option>
-                        <option value="nano">Arduino Nano</option>
-                        <option value="mega">Arduino Mega</option>
-                        <option value="esp32">ESP32 DevKit</option>
-                        <option value="esp8266">NodeMCU ESP8266</option>
-                    </select>
-                    
-                    <div class="h-6 w-px bg-gray-200"></div>
-                    
-                    <button onclick="compileCode()" class="tool-btn px-4 py-2 bg-green-500 text-white rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-green-600">
-                        <i class="ri-play-line"></i>
-                        编译
-                    </button>
-                    <button onclick="uploadCode()" class="tool-btn px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-blue-600">
-                        <i class="ri-upload-2-line"></i>
-                        上传
-                    </button>
-                    <button onclick="verifyCode()" class="tool-btn px-4 py-2 bg-gray-500 text-white rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-gray-600">
-                        <i class="ri-check-line"></i>
-                        验证
-                    </button>
-                    
-                    <div class="h-6 w-px bg-gray-200"></div>
-                    
-                    <select id="portSelect" class="px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-indigo-500 text-sm">
-                        <option value="">选择端口...</option>
-                    </select>
-                    <button onclick="refreshPorts()" class="p-2 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition">
-                        <i class="ri-refresh-line"></i>
-                    </button>
-                </div>
-                
-                <div class="flex items-center gap-2">
-                    <button onclick="saveProject()" class="tool-btn px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium flex items-center gap-2 hover:border-indigo-500 hover:text-indigo-600">
-                        <i class="ri-save-line"></i>
-                        保存项目
-                    </button>
-                    <button onclick="showTemplates()" class="tool-btn px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium flex items-center gap-2 hover:border-indigo-500 hover:text-indigo-600">
-                        <i class="ri-file-code-line"></i>
-                        模板
-                    </button>
-                </div>
-            </div>
-            
-            <!-- 编辑器视图 -->
-            <div id="view-editor" class="flex-1 flex flex-col overflow-hidden">
-                <div class="flex-1 flex overflow-hidden">
-                    <div class="flex-1 flex flex-col">
-                        <div class="bg-gray-800 text-gray-100 flex-1 overflow-auto p-4 code-editor" id="codeContainer">
-                            <textarea id="codeEditor" class="w-full h-full bg-transparent text-gray-100 outline-none resize-none code-editor" spellcheck="false">void setup() {
-  // 初始化代码
-  Serial.begin(9600);
-  pinMode(LED_BUILTIN, OUTPUT);
-  Serial.println("Arduino 已启动");
-}
 
-void loop() {
-  // 主循环代码
-  digitalWrite(LED_BUILTIN, HIGH);
-  delay(1000);
-  digitalWrite(LED_BUILTIN, LOW);
-  delay(1000);
-}</textarea>
-                        </div>
-                        
-                        <div class="h-48 bg-gray-900 border-t border-gray-700 flex flex-col">
-                            <div class="flex border-b border-gray-700">
-                                <button class="tab-btn active px-4 py-2 text-sm text-gray-300" onclick="switchOutputTab('compile')">
-                                    <i class="ri-terminal-box-line mr-1"></i>编译输出
-                                </button>
-                                <button class="tab-btn px-4 py-2 text-sm text-gray-300" onclick="switchOutputTab('serial')">
-                                    <i class="ri-usb-line mr-1"></i>串口监视器
-                                </button>
-                            </div>
-                            <div id="output-compile" class="flex-1 p-4 overflow-auto compile-output text-green-400">
-                                <span class="text-gray-500">// 编译输出将显示在这里</span>
-                            </div>
-                            <div id="output-serial" class="flex-1 p-4 overflow-auto compile-output text-green-400 hidden">
-                                <span class="text-gray-500">// 串口监视器输出</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- 教程视图 -->
-            <div id="view-tutorials" class="flex-1 overflow-y-auto p-6 hidden">
-                <div class="max-w-5xl mx-auto">
-                    <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-                        <i class="ri-book-open-line text-indigo-600"></i>
-                        Arduino学习教程
-                    </h2>
-                    
-                    <div class="flex gap-2 mb-6 overflow-x-auto pb-2">
-                        <button class="px-4 py-2 bg-indigo-600 text-white rounded-full text-sm whitespace-nowrap">全部</button>
-                        <button class="px-4 py-2 bg-gray-100 text-gray-600 rounded-full text-sm whitespace-nowrap hover:bg-gray-200">入门</button>
-                        <button class="px-4 py-2 bg-gray-100 text-gray-600 rounded-full text-sm whitespace-nowrap hover:bg-gray-200">基础</button>
-                        <button class="px-4 py-2 bg-gray-100 text-gray-600 rounded-full text-sm whitespace-nowrap hover:bg-gray-200">传感器</button>
-                        <button class="px-4 py-2 bg-gray-100 text-gray-600 rounded-full text-sm whitespace-nowrap hover:bg-gray-200">显示</button>
-                        <button class="px-4 py-2 bg-gray-100 text-gray-600 rounded-full text-sm whitespace-nowrap hover:bg-gray-200">通信</button>
-                        <button class="px-4 py-2 bg-gray-100 text-gray-600 rounded-full text-sm whitespace-nowrap hover:bg-gray-200">进阶</button>
-                    </div>
-                    
-                    <div id="tutorialList" class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    </div>
-                </div>
-            </div>
-            
-            <!-- 项目视图 -->
-            <div id="view-projects" class="flex-1 overflow-y-auto p-6 hidden">
-                <div class="max-w-5xl mx-auto">
-                    <div class="flex items-center justify-between mb-6">
-                        <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                            <i class="ri-folder-line text-indigo-600"></i>
-                            我的项目
-                        </h2>
-                        <button onclick="newProject()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-indigo-700">
-                            <i class="ri-add-line"></i>
-                            新建项目
-                        </button>
-                    </div>
-                    
-                    <div id="projectList" class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        <div class="text-center py-12 text-gray-400 col-span-full">
-                            <i class="ri-inbox-line text-5xl mb-3 opacity-50"></i>
-                            <p>暂无项目</p>
-                            <p class="text-sm mt-1">保存你的第一个项目吧</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- 元件库视图 -->
-            <div id="view-components" class="flex-1 overflow-y-auto p-6 hidden">
-                <div class="max-w-5xl mx-auto">
-                    <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-                        <i class="ri-microchip-line text-indigo-600"></i>
-                        元件库
-                    </h2>
-                    
-                    <div class="space-y-8" id="componentList">
-                    </div>
-                </div>
+        <div class="toolbar-divider"></div>
+
+        <input type="text" id="project-name" class="project-name-input" value="Blink 示例项目" placeholder="项目名称">
+
+        <select id="board-select" class="board-select" title="选择开发板">
+            <option value="uno">Arduino Uno</option>
+            <option value="mega">Arduino Mega</option>
+            <option value="nano">Arduino Nano</option>
+            <option value="esp32">ESP32</option>
+        </select>
+
+        <div class="toolbar-actions">
+            <button class="tool-btn" onclick="newProject()" title="新建项目"><i class="fas fa-file-circle-plus"></i><span>新建</span></button>
+            <button class="tool-btn primary" onclick="saveProject()" title="保存项目"><i class="fas fa-floppy-disk"></i><span>保存</span></button>
+            <button class="tool-btn success" onclick="compileCode()" title="编译代码"><i class="fas fa-hammer"></i><span>编译</span></button>
+            <button class="tool-btn" onclick="uploadCode()" title="上传（模拟）"><i class="fas fa-upload"></i><span>上传</span></button>
+            <button class="tool-btn" onclick="runSerial()" title="串口监视器"><i class="fas fa-terminal"></i><span>串口</span></button>
+            <button class="ai-agent-btn" onclick="toggleAgentPanel(event)" title="AI Agent 状态"><span class="status-dot"></span><i class="fas fa-robot"></i> <span>AI Agent</span></button>
+            <button class="tool-btn icon-only" onclick="togglePanel('left')" title="切换左侧栏"><i class="fas fa-outdent"></i></button>
+            <button class="tool-btn icon-only" onclick="togglePanel('right')" title="切换右侧栏"><i class="fas fa-indent"></i></button>
+        </div>
+
+        <div class="toolbar-spacer"></div>
+
+        <div class="toolbar-user"><i class="fas fa-user-astronaut"></i><span>{{ (user or {}).username | default('用户') }}</span></div>
+        <a href="/admin_app/dashboard" class="toolbar-link"><i class="fas fa-arrow-left"></i> 返回后台</a>
+    </div>
+
+    <!-- AI Agent 状态面板 -->
+    <div class="ai-agent-panel" id="ai-agent-panel">
+        <div class="ai-agent-panel-header">
+            <div>
+                <div class="title">Arduino AI Agents</div>
+                <div class="sub">智能体运行状态监控</div>
             </div>
         </div>
-        
-        <!-- AI助手面板 -->
-        <div id="aiPanel" class="fixed right-0 top-0 h-full w-96 bg-white shadow-2xl transform translate-x-full transition-transform z-50">
-            <div class="h-full flex flex-col">
-                <div class="p-4 border-b flex items-center justify-between">
-                    <h3 class="font-bold text-gray-800 flex items-center gap-2">
-                        <i class="ri-robot-line text-indigo-600"></i>
-                        AI代码助手
-                    </h3>
-                    <button onclick="hideAIPanel()" class="text-gray-400 hover:text-gray-600">
-                        <i class="ri-close-line text-xl"></i>
-                    </button>
-                </div>
-                
-                <div class="p-4 border-b">
-                    <p class="text-sm text-gray-500 mb-3">描述你想要的功能，AI帮你生成代码</p>
-                    <div class="space-y-3">
-                        <select id="aiFeature" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500">
-                            <option value="LED闪烁">LED闪烁</option>
-                            <option value="传感器读取">传感器读取</option>
-                            <option value="电机控制">电机控制</option>
-                            <option value="自定义功能">自定义功能</option>
-                        </select>
-                        <textarea id="aiDescription" rows="3" placeholder="详细描述你想要实现的功能..." class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500 resize-none"></textarea>
-                        <button onclick="generateAICode()" class="w-full py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg text-sm font-medium hover:from-indigo-700 hover:to-purple-700">
-                            <i class="ri-magic-line mr-1"></i>生成代码
-                        </button>
-                    </div>
-                </div>
-                
-                <div class="flex-1 overflow-y-auto p-4">
-                    <div id="aiResult">
-                        <div class="text-center py-12 text-gray-400">
-                            <i class="ri-lightbulb-line text-4xl mb-3 opacity-50"></i>
-                            <p>输入功能描述</p>
-                            <p class="text-sm mt-1">AI将为你生成Arduino代码</p>
-                        </div>
-                    </div>
-                </div>
+        <div class="ai-agent-list" id="ai-agent-list">
+            <div class="loading-text" style="padding:20px 12px;"><i class="fas fa-spinner fa-spin"></i> 加载中...</div>
+        </div>
+    </div>
+
+    <!-- 主区域：三栏布局 -->
+    <div class="ide-main">
+        <!-- 左侧面板 -->
+        <div class="side-panel left-panel" id="left-panel">
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="components" onclick="switchTab('left','components')"><i class="fas fa-cube"></i> 组件库</button>
+                <button class="tab-btn" data-tab="templates" onclick="switchTab('left','templates')"><i class="fas fa-code"></i> 模板</button>
+            </div>
+            <div class="tab-pane active" data-tab="components" id="components-list">
+                <div class="loading-text"><i class="fas fa-spinner fa-spin"></i> 加载组件中...</div>
+            </div>
+            <div class="tab-pane" data-tab="templates" id="templates-list">
+                <div class="loading-text"><i class="fas fa-spinner fa-spin"></i> 加载模板中...</div>
             </div>
         </div>
-        
-        <!-- 模板弹窗 -->
-        <div id="templateModal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center p-4">
-            <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[80vh] overflow-hidden">
-                <div class="p-6 border-b flex items-center justify-between">
-                    <h3 class="text-xl font-bold">代码模板</h3>
-                    <button onclick="closeTemplates()" class="text-gray-400 hover:text-gray-600">
-                        <i class="ri-close-line text-2xl"></i>
-                    </button>
+
+        <!-- 中间编辑器 -->
+        <div class="editor-wrap">
+            <div class="editor-bar">
+                <span class="dot"></span>
+                <span class="file-name" id="file-name">sketch<span class="ino">.ino</span></span>
+            </div>
+            <div class="editor-container">
+                <div class="line-numbers"><div class="line-numbers-inner" id="line-numbers-inner">1</div></div>
+                <div class="code-container">
+                    <pre class="code-backdrop" id="code-backdrop"><code id="highlighted"></code></pre>
+                    <textarea class="code-editor" id="code-editor" wrap="off" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
                 </div>
-                <div class="p-6 overflow-y-auto max-h-[60vh]">
-                    <div id="templateGrid" class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    </div>
+            </div>
+            <div class="editor-statusbar">
+                <span class="status-item"><i class="fas fa-code"></i> 行数 <strong id="status-lines">0</strong></span>
+                <span class="status-item"><i class="fas fa-font"></i> 字符 <strong id="status-chars">0</strong></span>
+                <span class="spacer"></span>
+                <span class="status-item"><i class="fas fa-microchip"></i> 开发板 <strong id="status-board">Arduino Uno</strong></span>
+                <span class="status-item"><i class="fas fa-circle-check"></i> UTF-8</span>
+            </div>
+        </div>
+
+        <!-- 右侧面板 -->
+        <div class="side-panel right-panel" id="right-panel">
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="serial" onclick="switchTab('right','serial')"><i class="fas fa-terminal"></i> 串口监视器</button>
+                <button class="tab-btn" data-tab="compile" onclick="switchTab('right','compile')"><i class="fas fa-hammer"></i> 编译输出</button>
+            </div>
+
+            <!-- 串口监视器 -->
+            <div class="tab-pane active" data-tab="serial" style="display:flex; flex-direction:column;">
+                <div class="serial-toolbar">
+                    <button class="mini-btn" onclick="runSerial()"><i class="fas fa-play"></i> 运行</button>
+                    <button class="mini-btn" onclick="clearSerial()"><i class="fas fa-broom"></i> 清空</button>
+                    <span class="baud">9600 baud</span>
+                    <label class="auto-scroll-wrap">
+                        <input type="checkbox" id="auto-scroll" checked> 自动滚动
+                    </label>
+                </div>
+                <div class="serial-terminal" id="serial-terminal"><div class="serial-line sys">> 串口监视器就绪，点击"运行"开始模拟输出...</div></div>
+            </div>
+
+            <!-- 编译输出 -->
+            <div class="tab-pane" data-tab="compile" id="compile-output">
+                <div class="compile-pane">
+                    <div class="compile-status idle"><i class="fas fa-circle-info"></i> 尚未编译，点击"编译"按钮开始</div>
                 </div>
             </div>
         </div>
     </div>
 
-    <script>
-        let currentView = 'editor';
-        
-        function switchView(view) {
-            currentView = view;
-            
-            document.querySelectorAll('[id^="view-"]').forEach(v => v.classList.add('hidden'));
-            document.getElementById('view-' + view).classList.remove('hidden');
-            
-            document.querySelectorAll('.sidebar-item').forEach(item => {
-                item.classList.remove('active');
-            });
-            event.currentTarget.classList.add('active');
-            
-            if (view === 'tutorials') loadTutorials();
-            if (view === 'projects') loadProjects();
-            if (view === 'components') loadComponents();
-        }
-        
-        function switchOutputTab(tab) {
-            document.querySelectorAll('[id^="output-"]').forEach(o => o.classList.add('hidden'));
-            document.getElementById('output-' + tab).classList.remove('hidden');
-            
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-            event.currentTarget.classList.add('active');
-        }
-        
-        function compileCode() {
-            const code = document.getElementById('codeEditor').value;
-            const board = document.getElementById('boardSelect').value;
-            const output = document.getElementById('output-compile');
-            
-            output.innerHTML = '<span class="text-yellow-400 compiling">⏳ 正在编译...</span>';
-            
-            fetch('/api/arduino/compile', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ code, board })
-            })
-            .then(r => r.json())
-            .then(data => {
-                if (data.success) {
-                    output.innerHTML = `<span class="text-green-400">✓ ${data.message}</span>\n<span class="text-gray-500">${data.output || ''}</span>`;
-                } else {
-                    let errors = data.errors ? data.errors.join('\n') : data.error;
-                    output.innerHTML = `<span class="text-red-400">✗ ${data.message}</span>\n<span class="text-red-300">${errors || ''}</span>`;
-                }
-            })
-            .catch(err => {
-                output.innerHTML = `<span class="text-red-400">编译失败: ${err.message}</span>`;
-            });
-        }
-        
-        function uploadCode() {
-            const code = document.getElementById('codeEditor').value;
-            const board = document.getElementById('boardSelect').value;
-            const port = document.getElementById('portSelect').value;
-            const output = document.getElementById('output-compile');
-            
-            output.innerHTML = '<span class="text-yellow-400 compiling">⏳ 正在上传...</span>';
-            
-            fetch('/api/arduino/upload', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ code, board, port })
-            })
-            .then(r => r.json())
-            .then(data => {
-                if (data.success) {
-                    output.innerHTML = `<span class="text-green-400">✓ ${data.message}</span>`;
-                } else {
-                    output.innerHTML = `<span class="text-red-400">✗ ${data.message}</span>\n<span class="text-red-300">${data.error || ''}</span>`;
-                }
-            });
-        }
-        
-        function verifyCode() {
-            const code = document.getElementById('codeEditor').value;
-            const output = document.getElementById('output-compile');
-            
-            fetch('/api/arduino/verify', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ code })
-            })
-            .then(r => r.json())
-            .then(data => {
-                if (data.success) {
-                    let warnings = data.warnings && data.warnings.length > 0 
-                        ? `\n<span class="text-yellow-400">⚠️ ${data.warnings.length} 个警告:</span>\n${data.warnings.map(w => '  ' + w).join('\n')}`
-                        : '';
-                    output.innerHTML = `<span class="text-green-400">✓ 代码验证通过</span>${warnings}`;
-                } else {
-                    output.innerHTML = `<span class="text-red-400">✗ 代码存在错误</span>\n<span class="text-red-300">${data.errors.join('\n')}</span>`;
-                }
-            });
-        }
-        
-        function refreshPorts() {
-            fetch('/api/arduino/ports')
-                .then(r => r.json())
-                .then(data => {
-                    const select = document.getElementById('portSelect');
-                    select.innerHTML = '<option value="">选择端口...</option>';
-                    if (data.success && data.ports) {
-                        data.ports.forEach(port => {
-                            const option = document.createElement('option');
-                            option.value = port;
-                            option.textContent = port;
-                            select.appendChild(option);
-                        });
-                    }
-                });
-        }
-        
-        function showAIPanel() {
-            document.getElementById('aiPanel').classList.remove('translate-x-full');
-        }
-        
-        function hideAIPanel() {
-            document.getElementById('aiPanel').classList.add('translate-x-full');
-        }
-        
-        function generateAICode() {
-            const feature = document.getElementById('aiFeature').value;
-            const description = document.getElementById('aiDescription').value || feature;
-            const board = document.getElementById('boardSelect').value;
-            const resultDiv = document.getElementById('aiResult');
-            
-            resultDiv.innerHTML = `
-                <div class="text-center py-8">
-                    <div class="animate-spin w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-                    <p class="text-gray-500">AI正在生成代码...</p>
+    <!-- 底部项目列表 -->
+    <div class="projects-bar" id="projects-bar">
+        <div class="projects-header" onclick="toggleProjects()">
+            <span class="title"><i class="fas fa-folder-open"></i> 我的项目</span>
+            <span class="count" id="projects-count">0</span>
+            <i class="fas fa-chevron-up chev"></i>
+        </div>
+        <div class="projects-list" id="projects-list">
+            <div class="empty-text">加载中...</div>
+        </div>
+    </div>
+
+    <!-- AI 助手面板 -->
+    <div class="ai-assistant-panel" id="ai-assistant-panel">
+        <div class="ai-panel-header">
+            <div class="ai-icon"><i class="fas fa-robot"></i></div>
+            <div>
+                <div class="ai-title">Arduino AI 助手</div>
+                <div class="ai-subtitle">智能编程助手，帮你写代码、调Bug</div>
+            </div>
+            <div class="header-actions">
+                <button class="header-btn" onclick="clearAIChat()" title="清空对话"><i class="fas fa-broom"></i></button>
+                <button class="header-btn" onclick="toggleAIPanel()" title="关闭"><i class="fas fa-xmark"></i></button>
+            </div>
+        </div>
+        <div class="ai-quick-actions">
+            <button class="ai-quick-btn" onclick="quickAIAction('generate')">
+                <i class="fas fa-wand-magic-sparkles"></i>
+                代码生成
+            </button>
+            <button class="ai-quick-btn" onclick="quickAIAction('debug')">
+                <i class="fas fa-bug"></i>
+                代码调试
+            </button>
+            <button class="ai-quick-btn" onclick="quickAIAction('optimize')">
+                <i class="fas fa-gauge-high"></i>
+                代码优化
+            </button>
+            <button class="ai-quick-btn" onclick="quickAIAction('components')">
+                <i class="fas fa-microchip"></i>
+                组件推荐
+            </button>
+            <button class="ai-quick-btn" onclick="quickAIAction('explain')">
+                <i class="fas fa-book-open"></i>
+                代码解释
+            </button>
+        </div>
+        <div class="ai-chat-area" id="ai-chat-area">
+            <div class="ai-chat-msg ai">
+                <div class="msg-avatar"><i class="fas fa-robot"></i></div>
+                <div class="msg-bubble">
+                    <p><strong>👋 你好！我是 Arduino AI 助手</strong></p>
+                    <p>我可以帮你：</p>
+                    <ul>
+                        <li><strong>代码生成</strong>：描述需求，自动生成 Arduino 代码</li>
+                        <li><strong>代码调试</strong>：分析当前代码中的错误</li>
+                        <li><strong>代码优化</strong>：优化代码性能和内存占用</li>
+                        <li><strong>组件推荐</strong>：根据项目推荐合适的电子元件</li>
+                        <li><strong>代码解释</strong>：逐行解释当前代码逻辑</li>
+                    </ul>
+                    <p>点击上方快捷按钮或直接输入问题开始吧！</p>
                 </div>
-            `;
-            
-            fetch('/api/arduino/ai/generate', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ description, board, feature })
-            })
-            .then(r => r.json())
-            .then(data => {
-                if (data.success) {
-                    resultDiv.innerHTML = `
-                        <div class="space-y-4">
-                            <div class="bg-indigo-50 rounded-lg p-4">
-                                <div class="flex items-center justify-between mb-2">
-                                    <span class="text-sm font-medium text-indigo-600">生成成功！</span>
-                                    <button onclick="applyAICode()" class="text-sm text-indigo-600 hover:text-indigo-800">
-                                        <i class="ri-file-copy-line mr-1"></i>应用代码
-                                    </button>
-                                </div>
-                                <p class="text-xs text-gray-500">${data.description}</p>
-                            </div>
-                            <div class="bg-gray-900 rounded-lg p-3 overflow-x-auto">
-                                <pre class="text-green-400 text-xs whitespace-pre-wrap">${escapeHtml(data.code)}</pre>
-                            </div>
-                            <div class="text-xs text-gray-500 space-y-1">
-                                <p>📊 代码行数: ${data.code.split('\n').length}</p>
-                                <p>⚡ 复杂度: ${data.complexity}</p>
-                                <p>🔧 板型: ${data.board}</p>
-                            </div>
-                        </div>
-                    `;
-                    window._lastAICode = data.code;
-                } else {
-                    resultDiv.innerHTML = `<p class="text-red-500 text-center">生成失败: ${data.error}</p>`;
-                }
+            </div>
+        </div>
+        <div class="ai-input-area">
+            <textarea id="ai-input" placeholder="输入你的问题，按 Enter 发送，Shift+Enter 换行..." onkeydown="handleAIInputKeydown(event)"></textarea>
+            <button class="ai-send-btn" id="ai-send-btn" onclick="sendAIMessage()" title="发送"><i class="fas fa-paper-plane"></i></button>
+        </div>
+    </div>
+
+    <!-- AI 浮动按钮 -->
+    <button class="ai-fab" id="ai-fab" onclick="toggleAIPanel()" title="AI 助手">
+        <i class="fas fa-robot"></i>
+    </button>
+
+    <script src="/static/js/utils/apiRequest.js"></script>
+    <script>
+        // ============ 全局状态 ============
+        var currentProjectId = null;
+        var currentBoard = 'uno';
+        var _componentsFlat = [];
+        var _templatesFlat = [];
+
+        var DEFAULT_CODE =
+            '// Arduino Blink 示例\n' +
+            '// 默认项目代码\n\n' +
+            'int ledPin = 13;\n\n' +
+            'void setup() {\n' +
+            '  Serial.begin(9600);\n' +
+            '  pinMode(ledPin, OUTPUT);\n' +
+            '  Serial.println("Blink Ready");\n' +
+            '}\n\n' +
+            'void loop() {\n' +
+            '  digitalWrite(ledPin, HIGH);\n' +
+            '  Serial.println("LED ON");\n' +
+            '  delay(1000);\n' +
+            '  digitalWrite(ledPin, LOW);\n' +
+            '  Serial.println("LED OFF");\n' +
+            '  delay(1000);\n' +
+            '}\n';
+
+        var BOARD_NAMES = { uno: 'Arduino Uno', mega: 'Arduino Mega', nano: 'Arduino Nano', esp32: 'ESP32' };
+        var TEMPLATE_CAT = { basic: { label: '基础', icon: 'fa-seedling' }, intermediate: { label: '进阶', icon: 'fa-fire' }, advanced: { label: '高级', icon: 'fa-rocket' } };
+        var COMP_CAT = { input: { label: '输入组件', icon: 'fa-arrow-down-to-bracket' }, output: { label: '输出组件', icon: 'fa-arrow-up-from-bracket' } };
+
+        // ============ 工具函数 ============
+        function escapeHtml(s) {
+            return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+        function escapeAttr(s) {
+            return escapeHtml(s).replace(/"/g, '&quot;');
+        }
+        function boardDisplayName(b) { return BOARD_NAMES[b] || b || 'Arduino Uno'; }
+        function emptyHtml(msg, icon) {
+            return '<div class="empty-text"><i class="fas ' + (icon || 'fa-inbox') + '" style="font-size:22px;display:block;margin-bottom:8px;color:var(--text-muted);"></i>' + escapeHtml(msg) + '</div>';
+        }
+
+        // ============ 语法高亮 ============
+        var TOKEN_RE = /(\/\*[\s\S]*?\*\/|\/\/[^\n]*)|("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')|(^[ \t]*#[^\n]*)|\b(void|int|float|double|char|bool|boolean|long|short|byte|unsigned|const|static|volatile|if|else|for|while|do|switch|case|break|continue|return|new|class|struct|public|private|protected|default|sizeof|true|false|HIGH|LOW|INPUT|OUTPUT|INPUT_PULLUP|LED_BUILTIN)\b|\b(setup|loop|pinMode|digitalWrite|digitalRead|analogWrite|analogRead|delay|delayMicroseconds|millis|micros|attachInterrupt|detachInterrupt|map|constrain|random|randomSeed|tone|noTone|pulseIn|shiftOut|begin|end|print|println|write|read|available|flush|peek|attach)\b|\b(Serial|Servo|LiquidCrystal|String|Wire|SPI|EEPROM)\b|\b(0x[0-9a-fA-F]+|\d+\.?\d*)\b/gm;
+
+        function highlightCode(code) {
+            var escaped = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            return escaped.replace(TOKEN_RE, function (m, comment, str, pre, kw, fn, cls, num) {
+                if (comment) return '<span class="tok-comment">' + comment + '</span>';
+                if (str) return '<span class="tok-string">' + str + '</span>';
+                if (pre) return '<span class="tok-preprocessor">' + pre + '</span>';
+                if (kw) return '<span class="tok-keyword">' + kw + '</span>';
+                if (fn) return '<span class="tok-function">' + fn + '</span>';
+                if (cls) return '<span class="tok-class">' + cls + '</span>';
+                if (num) return '<span class="tok-number">' + num + '</span>';
+                return m;
             });
         }
-        
-        function applyAICode() {
-            if (window._lastAICode) {
-                document.getElementById('codeEditor').value = window._lastAICode;
-                hideAIPanel();
+
+        // ============ 编辑器核心 ============
+        function updateEditor() {
+            var ta = document.getElementById('code-editor');
+            document.getElementById('highlighted').innerHTML = highlightCode(ta.value) + '\n';
+            updateLineNumbers();
+            updateStatusBar();
+        }
+
+        function updateLineNumbers() {
+            var ta = document.getElementById('code-editor');
+            var lines = ta.value.split('\n').length;
+            var html = '';
+            for (var i = 1; i <= lines; i++) {
+                html += i + '\n';
+            }
+            document.getElementById('line-numbers-inner').textContent = html;
+        }
+
+        function updateStatusBar() {
+            var ta = document.getElementById('code-editor');
+            document.getElementById('status-lines').textContent = ta.value.split('\n').length;
+            document.getElementById('status-chars').textContent = ta.value.length;
+            document.getElementById('status-board').textContent = boardDisplayName(currentBoard);
+        }
+
+        function syncScroll() {
+            var ta = document.getElementById('code-editor');
+            document.getElementById('code-backdrop').scrollTop = ta.scrollTop;
+            document.getElementById('code-backdrop').scrollLeft = ta.scrollLeft;
+            document.getElementById('line-numbers-inner').style.transform = 'translateY(' + (-ta.scrollTop) + 'px)';
+        }
+
+        function insertComponent(code) {
+            var ta = document.getElementById('code-editor');
+            var start = ta.selectionStart, end = ta.selectionEnd;
+            var insert = (code ? code + '\n' : '');
+            ta.value = ta.value.substring(0, start) + insert + ta.value.substring(end);
+            ta.selectionStart = ta.selectionEnd = start + insert.length;
+            ta.focus();
+            updateEditor();
+            syncScroll();
+            ApiRequest.showToast('已插入组件示例代码', 'success');
+        }
+
+        function loadTemplate(code) {
+            if (!confirm('加载模板将覆盖当前编辑器内容，是否继续？')) return;
+            document.getElementById('code-editor').value = code || '';
+            updateEditor();
+            syncScroll();
+            ApiRequest.showToast('模板代码已加载', 'success');
+        }
+
+        // ============ 标签页 / 面板折叠 ============
+        function switchTab(panel, tab) {
+            var p = document.getElementById(panel + '-panel');
+            p.querySelectorAll('.tab-btn').forEach(function (b) {
+                b.classList.toggle('active', b.dataset.tab === tab);
+            });
+            p.querySelectorAll('.tab-pane').forEach(function (pane) {
+                var match = pane.dataset.tab === tab;
+                pane.classList.toggle('active', match);
+                pane.style.display = match ? (pane.dataset.tab === 'serial' ? 'flex' : 'block') : 'none';
+            });
+        }
+
+        function togglePanel(panel) {
+            var p = document.getElementById(panel + '-panel');
+            p.classList.toggle('collapsed');
+        }
+
+        function toggleProjects() {
+            document.getElementById('projects-bar').classList.toggle('expanded');
+        }
+
+        // ============ 数据加载 ============
+        function loadComponents() {
+            var container = document.getElementById('components-list');
+            container.innerHTML = '<div class="loading-text"><i class="fas fa-spinner fa-spin"></i> 加载组件中...</div>';
+            ApiRequest.get('/api/arduino/components').then(function (res) {
+                var data = (res && res.data) || [];
+                var groups = { input: [], output: [] };
+                data.forEach(function (c) {
+                    var key = c.category || 'output';
+                    if (!groups[key]) groups[key] = [];
+                    groups[key].push(c);
+                });
+                if (!data.length) { container.innerHTML = emptyHtml('暂无组件数据'); return; }
+
+                var flat = [];
+                var html = '';
+                ['input', 'output'].forEach(function (cat) {
+                    var meta = COMP_CAT[cat] || { label: cat, icon: 'fa-cube' };
+                    html += '<div class="lib-group"><div class="lib-group-title"><i class="fas ' + meta.icon + '"></i> ' + meta.label + '</div>';
+                    (groups[cat] || []).forEach(function (c) {
+                        var idx = flat.length;
+                        flat.push(c);
+                        html += '<div class="lib-item" data-idx="' + idx + '" title="' + escapeAttr(c.description || '') + '">' +
+                            '<span class="lib-icon">' + escapeHtml(c.icon || '🔌') + '</span>' +
+                            '<div class="lib-info"><div class="lib-name">' + escapeHtml(c.name) + '</div>' +
+                            '<div class="lib-desc">' + escapeHtml(c.pin_type || '') + '</div></div>' +
+                            '<span class="lib-badge">插入</span></div>';
+                    });
+                    html += '</div>';
+                });
+                _componentsFlat = flat;
+                container.innerHTML = html;
+                container.querySelectorAll('.lib-item').forEach(function (el) {
+                    el.addEventListener('click', function () {
+                        var i = parseInt(el.dataset.idx, 10);
+                        if (_componentsFlat[i]) insertComponent(_componentsFlat[i].default_code || '');
+                    });
+                });
+            }).catch(function () {
+                container.innerHTML = emptyHtml('组件加载失败，请刷新重试', 'fa-triangle-exclamation');
+            });
+        }
+
+        function loadTemplates() {
+            var container = document.getElementById('templates-list');
+            container.innerHTML = '<div class="loading-text"><i class="fas fa-spinner fa-spin"></i> 加载模板中...</div>';
+            ApiRequest.get('/api/arduino/templates').then(function (res) {
+                var data = (res && res.data) || [];
+                if (!data.length) { container.innerHTML = emptyHtml('暂无模板'); return; }
+                var groups = { basic: [], intermediate: [], advanced: [] };
+                data.forEach(function (t) {
+                    var key = t.category || 'basic';
+                    if (!groups[key]) groups[key] = [];
+                    groups[key].push(t);
+                });
+                var flat = [];
+                var html = '';
+                ['basic', 'intermediate', 'advanced'].forEach(function (cat) {
+                    var meta = TEMPLATE_CAT[cat] || { label: cat, icon: 'fa-code' };
+                    if (!(groups[cat] || []).length) return;
+                    html += '<div class="lib-group"><div class="lib-group-title"><i class="fas ' + meta.icon + '"></i> ' + meta.label + '</div>';
+                    groups[cat].forEach(function (t) {
+                        var idx = flat.length;
+                        flat.push(t);
+                        html += '<div class="lib-item" data-idx="' + idx + '" title="' + escapeAttr(t.description || '') + '">' +
+                            '<span class="lib-icon"><i class="fas fa-file-code" style="color:var(--primary-light);"></i></span>' +
+                            '<div class="lib-info"><div class="lib-name">' + escapeHtml(t.name) + '</div>' +
+                            '<div class="lib-desc">' + escapeHtml(t.description || '') + '</div></div>' +
+                            '<span class="lib-badge">加载</span></div>';
+                    });
+                    html += '</div>';
+                });
+                _templatesFlat = flat;
+                container.innerHTML = html;
+                container.querySelectorAll('.lib-item').forEach(function (el) {
+                    el.addEventListener('click', function () {
+                        var i = parseInt(el.dataset.idx, 10);
+                        if (_templatesFlat[i]) loadTemplate(_templatesFlat[i].code || '');
+                    });
+                });
+            }).catch(function () {
+                container.innerHTML = emptyHtml('模板加载失败，请刷新重试', 'fa-triangle-exclamation');
+            });
+        }
+
+        function loadProjects() {
+            var list = document.getElementById('projects-list');
+            list.innerHTML = '<div class="empty-text">加载中...</div>';
+            ApiRequest.get('/api/arduino/projects').then(function (res) {
+                var data = (res && res.data) || [];
+                document.getElementById('projects-count').textContent = data.length;
+                if (!data.length) { list.innerHTML = emptyHtml('暂无项目，点击工具栏"新建"创建项目'); return; }
+                list.innerHTML = data.map(function (p) {
+                    var active = (p.id === currentProjectId) ? ' active' : '';
+                    var desc = p.description ? ' · <span class="project-desc">' + escapeHtml(p.description) + '</span>' : '';
+                    return '<div class="project-item' + active + '" onclick="loadProject(' + p.id + ')">' +
+                        '<div class="project-info">' +
+                        '<div class="project-name">' + escapeHtml(p.name) + ' <span class="board-tag">' + escapeHtml(p.board_type || 'uno') + '</span></div>' +
+                        '<div class="project-meta"><i class="far fa-clock"></i> ' + escapeHtml(p.updated_at || p.created_at || '') + desc + '</div>' +
+                        '</div>' +
+                        '<button class="project-del" onclick="deleteProject(' + p.id + ', event)" title="删除项目"><i class="fas fa-trash"></i></button>' +
+                        '</div>';
+                }).join('');
+            }).catch(function () {
+                list.innerHTML = emptyHtml('项目列表加载失败', 'fa-triangle-exclamation');
+            });
+        }
+
+        // ============ 项目操作 ============
+        function newProject() {
+            if (!confirm('新建项目将清空当前编辑器内容，是否继续？')) return;
+            currentProjectId = null;
+            document.getElementById('project-name').value = '新建项目';
+            document.getElementById('code-editor').value = DEFAULT_CODE;
+            document.getElementById('board-select').value = 'uno';
+            currentBoard = 'uno';
+            updateEditor();
+            syncScroll();
+            loadProjects();
+            ApiRequest.showToast('已创建新项目', 'info');
+        }
+
+        function saveProject() {
+            var name = document.getElementById('project-name').value.trim();
+            if (!name) { ApiRequest.showToast('请输入项目名称', 'warning'); return; }
+            var code = document.getElementById('code-editor').value;
+            var payload = { name: name, description: '', code: code, board_type: currentBoard, tags: '' };
+            if (currentProjectId) {
+                ApiRequest.put('/api/arduino/projects/' + currentProjectId, payload, { showSuccessToast: true, successMessage: '项目已保存' })
+                    .then(function () { loadProjects(); });
+            } else {
+                ApiRequest.post('/api/arduino/projects', payload, { showSuccessToast: true, successMessage: '项目已创建' })
+                    .then(function (res) {
+                        if (res && res.data && res.data.id) currentProjectId = res.data.id;
+                        loadProjects();
+                    });
             }
         }
-        
-        function explainCurrentCode() {
-            const code = document.getElementById('codeEditor').value;
-            showAIPanel();
-            
-            const resultDiv = document.getElementById('aiResult');
-            resultDiv.innerHTML = `
-                <div class="text-center py-8">
-                    <div class="animate-spin w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-                    <p class="text-gray-500">AI正在分析代码...</p>
-                </div>
-            `;
-            
-            fetch('/api/arduino/ai/explain', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ code })
-            })
-            .then(r => r.json())
-            .then(data => {
-                if (data.success) {
-                    resultDiv.innerHTML = `
-                        <div class="space-y-4">
-                            <div class="bg-green-50 rounded-lg p-4">
-                                <p class="text-sm text-green-700">${data.summary}</p>
-                            </div>
-                            <div class="space-y-3">
-                                ${data.explanations.map(e => `
-                                    <div class="border-l-4 border-indigo-500 pl-3">
-                                        <h4 class="font-medium text-gray-800">${e.section}</h4>
-                                        <p class="text-sm text-gray-600 mt-1">${e.description}</p>
-                                    </div>
-                                `).join('')}
-                            </div>
-                        </div>
-                    `;
-                }
+
+        function loadProject(id) {
+            ApiRequest.get('/api/arduino/projects/' + id).then(function (res) {
+                var p = res.data || {};
+                currentProjectId = p.id;
+                document.getElementById('project-name').value = p.name || '未命名项目';
+                document.getElementById('code-editor').value = p.code || '';
+                document.getElementById('board-select').value = p.board_type || 'uno';
+                currentBoard = p.board_type || 'uno';
+                updateEditor();
+                syncScroll();
+                document.getElementById('projects-bar').classList.add('expanded');
+                loadProjects();
+                ApiRequest.showToast('已加载项目: ' + (p.name || ''), 'success');
+            }).catch(function () {
+                ApiRequest.showToast('加载项目失败', 'error');
             });
         }
-        
-        function showTemplates() {
-            document.getElementById('templateModal').classList.remove('hidden');
-            document.getElementById('templateModal').classList.add('flex');
+
+        function deleteProject(id, ev) {
+            if (ev) { ev.stopPropagation(); ev.preventDefault(); }
+            if (!confirm('确认删除该项目？此操作不可恢复。')) return;
+            ApiRequest.delete('/api/arduino/projects/' + id, { showSuccessToast: true, successMessage: '项目已删除' })
+                .then(function () {
+                    if (currentProjectId === id) currentProjectId = null;
+                    loadProjects();
+                });
+        }
+
+        // ============ 编译 ============
+        function compileCode() {
+            var code = document.getElementById('code-editor').value;
+            var out = document.getElementById('compile-output');
+            switchTab('right', 'compile');
+            out.innerHTML = '<div class="compile-pane"><div class="compile-status idle"><i class="fas fa-spinner fa-spin"></i> 正在编译...</div></div>';
+            ApiRequest.post('/api/arduino/compile', { code: code, board_type: currentBoard }, { showErrorToast: false })
+                .then(function (res) { renderCompileResult(res); })
+                .catch(function (err) {
+                    if (err && err.data) { renderCompileResult(err.data); }
+                    else {
+                        out.innerHTML = '<div class="compile-pane"><div class="compile-status fail"><i class="fas fa-times-circle"></i> 编译请求失败: ' + escapeHtml(err.message || '未知错误') + '</div></div>';
+                    }
+                });
+        }
+
+        function renderCompileResult(res) {
+            var out = document.getElementById('compile-output');
+            var success = !!(res && res.success);
+            var errors = (res && res.errors) || [];
+            var warnings = (res && res.warnings) || [];
+            var stats = (res && res.stats) || {};
+            var html = '<div class="compile-pane">';
+            html += '<div class="compile-status ' + (success ? 'ok' : 'fail') + '"><i class="fas ' + (success ? 'fa-check-circle' : 'fa-times-circle') + '"></i> ' + (success ? '编译成功' : '编译失败') + '</div>';
+
+            if (errors.length) {
+                html += '<div class="compile-section"><div class="compile-section-title error"><i class="fas fa-bug"></i> 错误 (' + errors.length + ')</div>';
+                errors.forEach(function (e) {
+                    html += '<div class="compile-item"><span class="compile-line">行 ' + (e.line || 0) + '</span><span class="compile-msg">' + escapeHtml(e.message || '') + '</span></div>';
+                });
+                html += '</div>';
+            }
+            if (warnings.length) {
+                html += '<div class="compile-section"><div class="compile-section-title warning"><i class="fas fa-triangle-exclamation"></i> 警告 (' + warnings.length + ')</div>';
+                warnings.forEach(function (w) {
+                    html += '<div class="compile-item warning"><span class="compile-line">行 ' + (w.line || 0) + '</span><span class="compile-msg">' + escapeHtml(w.message || '') + '</span></div>';
+                });
+                html += '</div>';
+            }
+
+            html += '<div class="compile-section"><div class="compile-section-title" style="color:var(--text-secondary);"><i class="fas fa-chart-simple"></i> 编译统计</div>';
+            html += '<div class="compile-stats">';
+            html += '<div class="stat-row"><span class="label">代码总行数</span><span class="value">' + (stats.total_lines || 0) + '</span></div>';
+            html += '<div class="stat-row"><span class="label">源码大小</span><span class="value">' + (stats.code_size || 0) + ' B</span></div>';
+            if (stats.binary_size) {
+                html += '<div class="stat-row"><span class="label">二进制大小</span><span class="value">' + stats.binary_size + ' B</span></div>';
+            }
+            if (stats.flash_usage) {
+                html += '<div class="stat-row"><span class="label">Flash 占用</span><span class="value good">' + stats.flash_usage + '</span></div>';
+            }
+            if (stats.ram_usage) {
+                html += '<div class="stat-row"><span class="label">RAM 占用</span><span class="value good">' + stats.ram_usage + '</span></div>';
+            }
+            html += '</div></div></div>';
+            out.innerHTML = html;
+        }
+
+        // ============ 串口模拟 ============
+        function runSerial() {
+            var code = document.getElementById('code-editor').value;
+            var term = document.getElementById('serial-terminal');
+            switchTab('right', 'serial');
+            term.innerHTML = '';
+            appendSerial('sys', '> 启动串口模拟 (9600 baud)...');
+            appendSerial('sys', '> 正在解析 Serial 输出语句...');
+            ApiRequest.post('/api/arduino/serial', { code: code, duration: 5 }, { showErrorToast: false })
+                .then(function (res) {
+                    var data = (res && res.data) || [];
+                    appendSerial('sys', '> 共生成 ' + data.length + ' 条输出，开始模拟运行：');
+                    appendSerial('sys', '----------------------------------------');
+                    data.forEach(function (d, i) {
+                        setTimeout(function () {
+                            appendSerial('out', '[' + d.time + '] ' + d.data);
+                        }, i * 130);
+                    });
+                })
+                .catch(function (err) {
+                    appendSerial('err', '> 串口模拟失败: ' + (err.message || '未知错误'));
+                });
+        }
+
+        function appendSerial(cls, text) {
+            var term = document.getElementById('serial-terminal');
+            var div = document.createElement('div');
+            div.className = 'serial-line ' + cls;
+            div.textContent = text;
+            term.appendChild(div);
+            var auto = document.getElementById('auto-scroll');
+            if (!auto || auto.checked) term.scrollTop = term.scrollHeight;
+        }
+
+        function clearSerial() {
+            document.getElementById('serial-terminal').innerHTML = '<div class="serial-line sys">> 串口监视器已清空</div>';
+        }
+
+        // ============ 上传（模拟） ============
+        function uploadCode() {
+            ApiRequest.showToast('正在上传到开发板（模拟）...', 'info');
+            compileCode();
+            setTimeout(function () {
+                ApiRequest.showToast('上传完成（模拟）', 'success');
+                appendSerial('sys', '> [上传] 代码已上传至 ' + boardDisplayName(currentBoard) + '（模拟）');
+            }, 1400);
+        }
+
+        // ============ 初始化 ============
+        (function init() {
+            var ta = document.getElementById('code-editor');
+            ta.value = DEFAULT_CODE;
+
+            ta.addEventListener('input', function () { updateEditor(); });
+            ta.addEventListener('scroll', syncScroll);
+            ta.addEventListener('keydown', function (e) {
+                if (e.key === 'Tab') {
+                    e.preventDefault();
+                    var start = this.selectionStart, end = this.selectionEnd;
+                    this.value = this.value.substring(0, start) + '  ' + this.value.substring(end);
+                    this.selectionStart = this.selectionEnd = start + 2;
+                    updateEditor();
+                    syncScroll();
+                }
+                if (e.key === 'Enter') {
+                    // 自动缩进：复制当前行前导空白
+                    var pos = this.selectionStart;
+                    var lineStart = this.value.lastIndexOf('\n', pos - 1) + 1;
+                    var line = this.value.substring(lineStart, pos);
+                    var indent = (line.match(/^[ \t]*/) || [''])[0];
+                    var after = this.value.substring(pos);
+                    // 若上一行以 { 结尾则增加缩进
+                    var trimmed = line.trim();
+                    if (trimmed.charAt(trimmed.length - 1) === '{') indent += '  ';
+                    this.value = this.value.substring(0, pos) + '\n' + indent + after;
+                    this.selectionStart = this.selectionEnd = pos + 1 + indent.length;
+                    e.preventDefault();
+                    updateEditor();
+                    syncScroll();
+                }
+            });
+
+            document.getElementById('board-select').addEventListener('change', function () {
+                currentBoard = this.value;
+                updateStatusBar();
+            });
+
+            updateEditor();
+
+            // 加载数据
+            loadComponents();
             loadTemplates();
+            loadProjects();
+            loadAIAgents();
+        })();
+
+        // ============ 编辑器辅助函数 ============
+        var editorTextarea = document.getElementById('code-editor');
+
+        function getEditorCode() {
+            return document.getElementById('code-editor').value;
         }
-        
-        function closeTemplates() {
-            document.getElementById('templateModal').classList.add('hidden');
-            document.getElementById('templateModal').classList.remove('flex');
+
+        function setEditorCode(code) {
+            document.getElementById('code-editor').value = code || '';
+            updateEditor();
+            syncScroll();
         }
-        
-        function loadTemplates() {
-            fetch('/api/arduino/templates')
-                .then(r => r.json())
-                .then(data => {
-                    const grid = document.getElementById('templateGrid');
-                    if (data.success && data.templates) {
-                        grid.innerHTML = Object.entries(data.templates).map(([key, t]) => `
-                            <div class="template-card border border-gray-200 rounded-xl p-4 hover:border-indigo-300" onclick="loadTemplate('${key}')">
-                                <h4 class="font-bold text-gray-800 mb-2">${t.name}</h4>
-                                <p class="text-sm text-gray-500 mb-3">${t.description}</p>
-                                <div class="bg-gray-900 rounded-lg p-2 text-xs text-gray-400 overflow-hidden">
-                                    <pre class="truncate">${t.code.substring(0, 80)}...</pre>
-                                </div>
-                            </div>
-                        `).join('');
-                    }
-                });
+
+        // ============ AI 助手面板 ============
+        var _aiPanelOpen = false;
+        var _aiLoading = false;
+
+        function toggleAIPanel() {
+            var panel = document.getElementById('ai-assistant-panel');
+            _aiPanelOpen = !_aiPanelOpen;
+            panel.classList.toggle('open', _aiPanelOpen);
+            if (_aiPanelOpen) {
+                setTimeout(function () {
+                    document.getElementById('ai-input').focus();
+                }, 200);
+            }
         }
-        
-        function loadTemplate(key) {
-            fetch('/api/arduino/templates')
-                .then(r => r.json())
-                .then(data => {
-                    if (data.success && data.templates && data.templates[key]) {
-                        document.getElementById('codeEditor').value = data.templates[key].code;
-                        closeTemplates();
-                    }
-                });
+
+        function handleAIInputKeydown(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendAIMessage();
+            }
         }
-        
-        function loadTutorials() {
-            fetch('/api/arduino/tutorials')
-                .then(r => r.json())
-                .then(data => {
-                    const list = document.getElementById('tutorialList');
-                    if (data.success && data.tutorials) {
-                        list.innerHTML = data.tutorials.map(t => `
-                            <div class="tutorial-card bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden cursor-pointer" onclick="openTutorial(${t.id})">
-                                <div class="h-32 bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-                                    <i class="ri-book-open-line text-4xl text-white opacity-80"></i>
-                                </div>
-                                <div class="p-4">
-                                    <div class="flex items-center gap-2 mb-2">
-                                        <span class="difficulty-${t.difficulty} text-white text-xs px-2 py-0.5 rounded">
-                                            ${t.difficulty === 'beginner' ? '入门' : t.difficulty === 'intermediate' ? '中等' : '进阶'}
-                                        </span>
-                                        <span class="text-xs text-gray-400"><i class="ri-time-line mr-1"></i>${t.duration}分钟</span>
-                                    </div>
-                                    <h4 class="font-bold text-gray-800 mb-1">${t.title}</h4>
-                                    <p class="text-sm text-gray-500 line-clamp-2">${t.description}</p>
-                                </div>
-                            </div>
-                        `).join('');
-                    }
-                });
+
+        function addAIMessage(role, contentHtml) {
+            var chatArea = document.getElementById('ai-chat-area');
+            var msgDiv = document.createElement('div');
+            msgDiv.className = 'ai-chat-msg ' + role;
+            var icon = role === 'user' ? 'fa-user' : 'fa-robot';
+            msgDiv.innerHTML =
+                '<div class="msg-avatar"><i class="fas ' + icon + '"></i></div>' +
+                '<div class="msg-bubble">' + contentHtml + '</div>';
+            chatArea.appendChild(msgDiv);
+            chatArea.scrollTop = chatArea.scrollHeight;
+            return msgDiv;
         }
-        
-        function openTutorial(id) {
-            fetch(`/api/arduino/tutorials/${id}`)
-                .then(r => r.json())
-                .then(data => {
-                    if (data.success && data.tutorial) {
-                        const t = data.tutorial;
-                        if (t.code_example) {
-                            document.getElementById('codeEditor').value = t.code_example;
-                            switchView('editor');
+
+        function addAILoadingMessage() {
+            var chatArea = document.getElementById('ai-chat-area');
+            var msgDiv = document.createElement('div');
+            msgDiv.className = 'ai-chat-msg ai';
+            msgDiv.id = 'ai-loading-msg';
+            msgDiv.innerHTML =
+                '<div class="msg-avatar"><i class="fas fa-robot"></i></div>' +
+                '<div class="msg-bubble"><div class="ai-loading-dots"><span></span><span></span><span></span></div></div>';
+            chatArea.appendChild(msgDiv);
+            chatArea.scrollTop = chatArea.scrollHeight;
+            return msgDiv;
+        }
+
+        function removeAILoadingMessage() {
+            var el = document.getElementById('ai-loading-msg');
+            if (el) el.remove();
+        }
+
+        function parseAICodeBlocks(text) {
+            var html = '';
+            var parts = text.split(/(```[\s\S]*?```)/g);
+            parts.forEach(function (part) {
+                var codeMatch = part.match(/^```(\w*)\n?([\s\S]*?)\n?```$/);
+                if (codeMatch) {
+                    var lang = codeMatch[1] || 'cpp';
+                    var code = codeMatch[2];
+                    var codeId = 'ai-code-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6);
+                    html += '<div class="ai-code-block">';
+                    html += '<div class="ai-code-header"><span class="lang">' + escapeHtml(lang) + '</span>';
+                    html += '<button class="insert-btn" onclick="insertAICodeToEditor(\'' + codeId + '\')">';
+                    html += '<i class="fas fa-code-merge"></i> 插入到编辑器</button></div>';
+                    html += '<pre id="' + codeId + '"><code>' + escapeHtml(code) + '</code></pre>';
+                    html += '</div>';
+                } else {
+                    html += formatAIMarkdown(part);
+                }
+            });
+            return html;
+        }
+
+        function formatAIMarkdown(text) {
+            var html = escapeHtml(text);
+            html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+            html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+            html = html.replace(/`([^`]+)`/g, '<code style="background:rgba(99,102,241,0.15);padding:1px 6px;border-radius:4px;font-family:var(--font-mono);font-size:12px;color:var(--primary-light);">$1</code>');
+            var lines = html.split('\n');
+            var result = [];
+            var inList = false;
+            lines.forEach(function (line) {
+                var trimmed = line.trim();
+                if (trimmed.match(/^[-*]\s/)) {
+                    if (!inList) { result.push('<ul>'); inList = true; }
+                    result.push('<li>' + trimmed.replace(/^[-*]\s/, '') + '</li>');
+                } else if (trimmed.match(/^\d+\.\s/)) {
+                    if (!inList) { result.push('<ol>'); inList = true; }
+                    result.push('<li>' + trimmed.replace(/^\d+\.\s/, '') + '</li>');
+                } else if (trimmed === '') {
+                    if (inList) {
+                        var last = result[result.length - 1];
+                        if (last === '</ul>' || last === '</ol>') inList = false;
+                        else {
+                            if (result[result.length - 1] && result[result.length - 1].indexOf('<li>') === 0) {
+                                result.push('</ul>');
+                            }
+                            inList = false;
                         }
                     }
-                });
-        }
-        
-        function loadProjects() {
-            fetch('/api/arduino/projects')
-                .then(r => r.json())
-                .then(data => {
-                    const list = document.getElementById('projectList');
-                    if (data.success && data.projects && data.projects.length > 0) {
-                        list.innerHTML = data.projects.map(p => `
-                            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 cursor-pointer hover:border-indigo-300" onclick="loadProject(${p.id})">
-                                <div class="flex items-start justify-between mb-3">
-                                    <div class="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center">
-                                        <i class="ri-file-code-line text-xl text-indigo-600"></i>
-                                    </div>
-                                    <button class="text-gray-400 hover:text-red-500" onclick="deleteProject(${p.id}); event.stopPropagation();">
-                                        <i class="ri-delete-bin-line"></i>
-                                    </button>
-                                </div>
-                                <h4 class="font-bold text-gray-800 mb-1">${p.project_name}</h4>
-                                <p class="text-sm text-gray-500 line-clamp-2 mb-3">${p.description || '暂无描述'}</p>
-                                <div class="flex items-center justify-between text-xs text-gray-400">
-                                    <span>${p.board_type}</span>
-                                    <span>${formatTime(p.updated_at)}</span>
-                                </div>
-                            </div>
-                        `).join('');
+                } else {
+                    if (inList) {
+                        result.push('</ul>');
+                        inList = false;
                     }
-                });
-        }
-        
-        function saveProject() {
-            const code = document.getElementById('codeEditor').value;
-            const board = document.getElementById('boardSelect').value;
-            const projectName = prompt('请输入项目名称:', '我的Arduino项目');
-            
-            if (!projectName) return;
-            
-            fetch('/api/arduino/projects', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    project_name: projectName,
-                    code,
-                    board_type: board
-                })
-            })
-            .then(r => r.json())
-            .then(data => {
-                if (data.success) {
-                    alert('项目保存成功！');
+                    if (trimmed) result.push('<p>' + line + '</p>');
                 }
             });
+            if (inList) result.push('</ul>');
+            return result.join('');
         }
-        
-        function loadProject(id) {
-            fetch(`/api/arduino/projects/${id}`)
-                .then(r => r.json())
-                .then(data => {
-                    if (data.success && data.project) {
-                        document.getElementById('codeEditor').value = data.project.code || '';
-                        document.getElementById('boardSelect').value = data.project.board_type || 'uno';
-                        switchView('editor');
-                    }
-                });
-        }
-        
-        function deleteProject(id) {
-            if (!confirm('确定要删除这个项目吗？')) return;
-            
-            fetch(`/api/arduino/projects/${id}`, {
-                method: 'DELETE'
-            })
-            .then(r => r.json())
-            .then(data => {
-                if (data.success) {
-                    loadProjects();
-                }
-            });
-        }
-        
-        function newProject() {
-            document.getElementById('codeEditor').value = `void setup() {
-  // 初始化代码
-  Serial.begin(9600);
-}
 
-void loop() {
-  // 主循环代码
-  delay(1000);
-}`;
-            switchView('editor');
+        function insertAICodeToEditor(codeId) {
+            var codeEl = document.getElementById(codeId);
+            if (!codeEl) return;
+            var code = codeEl.textContent || codeEl.innerText;
+            setEditorCode(code);
+            ApiRequest.showToast('代码已插入到编辑器', 'success');
         }
-        
-        function loadComponents() {
-            fetch('/api/arduino/components')
-                .then(r => r.json())
-                .then(data => {
-                    const list = document.getElementById('componentList');
-                    if (data.success && data.components) {
-                        const categoryNames = {
-                            'basic': '基础元件',
-                            'sensors': '传感器',
-                            'output': '输出设备',
-                            'communication': '通信模块',
-                            'storage': '存储模块'
-                        };
-                        
-                        list.innerHTML = Object.entries(data.components).map(([cat, items]) => `
-                            <div>
-                                <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                                    <i class="ri-${cat === 'basic' ? 'circuit-board' : cat === 'sensors' ? 'radar' : cat === 'output' ? 'volume-up' : cat === 'communication' ? 'wifi' : 'hard-drive'}-line text-indigo-600"></i>
-                                    ${categoryNames[cat] || cat}
-                                </h3>
-                                <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                                    ${items.map(c => `
-                                        <div class="bg-white rounded-xl p-4 text-center border border-gray-100 hover:border-indigo-300 transition cursor-pointer">
-                                            <div class="text-3xl mb-2">${c.icon}</div>
-                                            <p class="text-sm font-medium text-gray-700">${c.name}</p>
-                                        </div>
-                                    `).join('')}
-                                </div>
-                            </div>
-                        `).join('');
-                    }
-                });
+
+        function clearAIChat() {
+            var chatArea = document.getElementById('ai-chat-area');
+            chatArea.innerHTML =
+                '<div class="ai-chat-msg ai">' +
+                '<div class="msg-avatar"><i class="fas fa-robot"></i></div>' +
+                '<div class="msg-bubble">' +
+                '<p><strong>👋 对话已清空</strong></p>' +
+                '<p>有什么我可以帮你的吗？点击上方快捷按钮或直接输入问题开始。</p>' +
+                '</div></div>';
         }
-        
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
+
+        function sendAIMessage() {
+            if (_aiLoading) return;
+            var input = document.getElementById('ai-input');
+            var text = input.value.trim();
+            if (!text) return;
+
+            addAIMessage('user', '<p>' + escapeHtml(text) + '</p>');
+            input.value = '';
+            input.style.height = '38px';
+            _aiLoading = true;
+            document.getElementById('ai-send-btn').disabled = true;
+            addAILoadingMessage();
+
+            ApiRequest.post('/api/arduino/ai/generate', {
+                description: text,
+                components: '',
+                difficulty: 'intermediate'
+            }, { showErrorToast: false }).then(function (res) {
+                handleAIResponse(res);
+            }).catch(function (err) {
+                handleAIError(err);
+            });
         }
-        
-        function formatTime(timestamp) {
-            if (!timestamp) return '';
-            const date = new Date(timestamp * 1000);
-            const now = new Date();
-            const diff = now - date;
-            if (diff < 86400000) return '今天';
-            if (diff < 604800000) return Math.floor(diff / 86400000) + '天前';
-            return date.toLocaleDateString();
+
+        function handleAIResponse(res) {
+            removeAILoadingMessage();
+            _aiLoading = false;
+            document.getElementById('ai-send-btn').disabled = false;
+            var data = (res && res.data) || {};
+            var content = data.content || data.result || data.message || (typeof res === 'string' ? res : '');
+            if (!content && data.code) {
+                content = '以下是生成的代码：\n\n```cpp\n' + data.code + '\n```';
+                if (data.explanation) content += '\n\n' + data.explanation;
+            }
+            if (!content) content = '抱歉，我无法生成有效的响应。';
+            var html = parseAICodeBlocks(content);
+            addAIMessage('ai', html);
         }
-        
-        document.getElementById('templateModal').addEventListener('click', function(e) {
-            if (e.target === this) closeTemplates();
-        });
-        
-        document.getElementById('codeEditor').addEventListener('keydown', function(e) {
-            if (e.key === 'Tab') {
+
+        function handleAIError(err) {
+            removeAILoadingMessage();
+            _aiLoading = false;
+            document.getElementById('ai-send-btn').disabled = false;
+            var msg = (err && err.message) ? err.message : '请求失败，请稍后重试';
+            addAIMessage('ai', '<p style="color:var(--accent-error);"><strong>❌ 出错了</strong></p><p>' + escapeHtml(msg) + '</p>');
+        }
+
+        function quickAIAction(type) {
+            if (_aiLoading) return;
+            var code = getEditorCode();
+
+            if (type === 'generate') {
+                if (!_aiPanelOpen) toggleAIPanel();
+                setTimeout(function () {
+                    document.getElementById('ai-input').focus();
+                    addAIMessage('ai', '<p><strong>✨ 代码生成模式</strong></p><p>请描述你想要实现的功能，例如：</p><ul><li>控制LED灯闪烁，间隔500ms</li><li>使用超声波传感器测距并在串口输出</li><li>通过PWM控制电机转速</li></ul><p>请输入你的需求描述：</p>');
+                }, 150);
+                return;
+            }
+
+            if (!_aiPanelOpen) toggleAIPanel();
+
+            var actionLabels = {
+                debug: '🔍 代码调试',
+                optimize: '⚡ 代码优化',
+                components: '🔧 组件推荐',
+                explain: '📖 代码解释'
+            };
+
+            addAIMessage('user', '<p><strong>' + actionLabels[type] + '</strong></p>');
+            _aiLoading = true;
+            document.getElementById('ai-send-btn').disabled = true;
+            addAILoadingMessage();
+
+            var apiMap = {
+                debug: { url: '/api/arduino/ai/debug', body: { code: code } },
+                optimize: { url: '/api/arduino/ai/optimize', body: { code: code, level: 'balanced' } },
+                components: { url: '/api/arduino/ai/components', body: { description: code, project_type: 'project' } },
+                explain: { url: '/api/arduino/ai/explain', body: { code: code } }
+            };
+
+            var api = apiMap[type];
+            if (!api) return;
+
+            ApiRequest.post(api.url, api.body, { showErrorToast: false })
+                .then(function (res) { handleAIResponse(res); })
+                .catch(function (err) { handleAIError(err); });
+        }
+
+        // ============ AI Agent 状态面板 ============
+        var _agentPanelOpen = false;
+        var _agentsCache = [];
+
+        function toggleAgentPanel(e) {
+            if (e) {
+                e.stopPropagation();
                 e.preventDefault();
-                const start = this.selectionStart;
-                const end = this.selectionEnd;
-                this.value = this.value.substring(0, start) + '  ' + this.value.substring(end);
-                this.selectionStart = this.selectionEnd = start + 2;
+            }
+            var panel = document.getElementById('ai-agent-panel');
+            _agentPanelOpen = !_agentPanelOpen;
+            panel.classList.toggle('open', _agentPanelOpen);
+            if (_agentPanelOpen) {
+                loadAIAgents();
+            }
+        }
+
+        document.addEventListener('click', function (e) {
+            var panel = document.getElementById('ai-agent-panel');
+            var btn = document.querySelector('.ai-agent-btn');
+            if (_agentPanelOpen && panel && !panel.contains(e.target) && btn && !btn.contains(e.target)) {
+                _agentPanelOpen = false;
+                panel.classList.remove('open');
             }
         });
-        
-        refreshPorts();
+
+        var DEFAULT_AGENTS = [
+            { id: 'code-gen', name: 'Arduino代码生成Agent', icon: 'gen', fa_icon: 'fa-wand-magic-sparkles', status: 'running', description: '根据需求描述自动生成Arduino代码' },
+            { id: 'code-debug', name: 'Arduino代码调试Agent', icon: 'debug', fa_icon: 'fa-bug', status: 'running', description: '智能分析代码错误并提供修复建议' },
+            { id: 'code-optimize', name: 'Arduino代码优化Agent', icon: 'optimize', fa_icon: 'fa-gauge-high', status: 'running', description: '优化代码性能、内存占用和功耗' },
+            { id: 'component-rec', name: 'Arduino组件推荐Agent', icon: 'component', fa_icon: 'fa-microchip', status: 'stopped', description: '根据项目需求推荐合适的电子元件' }
+        ];
+
+        function loadAIAgents() {
+            var list = document.getElementById('ai-agent-list');
+            ApiRequest.get('/api/arduino/ai/agents', { showErrorToast: false }).then(function (res) {
+                var agents = (res && res.data) || [];
+                if (!agents || !agents.length) {
+                    agents = DEFAULT_AGENTS;
+                }
+                _agentsCache = agents;
+                renderAgentList(agents);
+            }).catch(function () {
+                _agentsCache = DEFAULT_AGENTS;
+                renderAgentList(DEFAULT_AGENTS);
+            });
+        }
+
+        function renderAgentList(agents) {
+            var list = document.getElementById('ai-agent-list');
+            var html = '';
+            agents.forEach(function (agent) {
+                var iconClass = agent.icon || 'gen';
+                var faIcon = agent.fa_icon || 'fa-robot';
+                var status = agent.status || 'stopped';
+                var statusText = status === 'running' ? '运行中' : '已停止';
+                html += '<div class="ai-agent-item">';
+                html += '<div class="agent-icon ' + iconClass + '"><i class="fas ' + faIcon + '"></i></div>';
+                html += '<div class="agent-info">';
+                html += '<div class="agent-name">' + escapeHtml(agent.name) + '</div>';
+                html += '<div class="agent-desc">' + escapeHtml(agent.description || '') + '</div>';
+                html += '</div>';
+                html += '<div class="agent-status ' + status + '">';
+                html += '<span class="sdot"></span>' + statusText;
+                html += '</div>';
+                html += '</div>';
+            });
+            list.innerHTML = html;
+        }
+
+        function autoResizeAIInput() {
+            var ta = document.getElementById('ai-input');
+            if (!ta) return;
+            ta.style.height = 'auto';
+            ta.style.height = Math.min(ta.scrollHeight, 100) + 'px';
+        }
     </script>
 </body>
 </html>

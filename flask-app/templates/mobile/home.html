@@ -1,177 +1,85 @@
-{% extends "mobile/base.html" %}
-
-{% block title %}首页 - MTSCOS AI{% endblock %}
-
-{% block content %}
-<div class="page-container animate-fade-in">
-    <div class="header">
-        <div class="header-back" onclick="goBack()" style="display: none;"></div>
-        <div class="header-title">MTSCOS AI</div>
-        <div class="header-action" onclick="location.href='/mobile/profile'">
-            <i class="fas fa-user"></i>
-        </div>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>首页</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 100%;
+        }
+        .icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #333;
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        p {
+            color: #666;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        .path {
+            background: #f5f5f5;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 20px;
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 32px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #666;
+        }
+        .btn-secondary:hover {
+            background: #e0e0e0;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">🏠</div>
+        <h1>首页</h1>
+        <p>移动端首页。</p>
+        <div class="path">/templates/mobile/home.html</div>
+        <a href="/" class="btn">返回首页</a>
+        
     </div>
-
-    <div style="padding-top: 72px;">
-        <div class="card gradient-card" style="padding: 24px; margin-bottom: 20px;">
-            <div style="display: flex; align-items: center; gap: 16px;">
-                <div class="avatar-lg">
-                    {{ user.get('username', 'U')[0].upper() if user.get('username') else 'U' }}
-                </div>
-                <div>
-                    <div style="font-size: 20px; font-weight: 700; color: white; margin-bottom: 4px;">
-                        {{ user.get('username', '用户') }}
-                    </div>
-                    <div style="font-size: 14px; color: rgba(255,255,255,0.8);">
-                        欢迎回来，继续您的学习之旅
-                    </div>
-                </div>
-            </div>
-            <div style="margin-top: 20px; display: flex; gap: 24px;">
-                <div style="text-align: center;">
-                    <div style="font-size: 28px; font-weight: 700; color: white;">{{ stats.get('total_points', 0) }}</div>
-                    <div style="font-size: 12px; color: rgba(255,255,255,0.7);">学习积分</div>
-                </div>
-                <div style="text-align: center;">
-                    <div style="font-size: 28px; font-weight: 700; color: white;">{{ stats.get('completed_tasks', 0) }}</div>
-                    <div style="font-size: 12px; color: rgba(255,255,255,0.7);">完成任务</div>
-                </div>
-                <div style="text-align: center;">
-                    <div style="font-size: 28px; font-weight: 700; color: white;">{{ stats.get('exam_score', 0) }}</div>
-                    <div style="font-size: 12px; color: rgba(255,255,255,0.7);">考试分数</div>
-                </div>
-            </div>
-        </div>
-
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-            <h2 style="font-size: 18px; font-weight: 600; color: var(--text-primary);">快速入口</h2>
-        </div>
-
-        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px;">
-            <div class="card" onclick="location.href='/mobile/ai_learning'" style="padding: 16px 8px; text-align: center;">
-                <div style="width: 48px; height: 48px; border-radius: 14px; background: linear-gradient(135deg, #8b5cf6, #ec4899); display: flex; align-items: center; justify-content: center; margin: 0 auto 8px;">
-                    <i class="fas fa-brain" style="font-size: 24px; color: white;"></i>
-                </div>
-                <div style="font-size: 13px; font-weight: 600; color: var(--text-primary);">AI学习</div>
-            </div>
-            <div class="card" onclick="location.href='/mobile/training'" style="padding: 16px 8px; text-align: center;">
-                <div style="width: 48px; height: 48px; border-radius: 14px; background: linear-gradient(135deg, #14b8a6, #22c55e); display: flex; align-items: center; justify-content: center; margin: 0 auto 8px;">
-                    <i class="fas fa-chart-line" style="font-size: 24px; color: white;"></i>
-                </div>
-                <div style="font-size: 13px; font-weight: 600; color: var(--text-primary);">训练计划</div>
-            </div>
-            <div class="card" onclick="location.href='/mobile/exam'" style="padding: 16px 8px; text-align: center;">
-                <div style="width: 48px; height: 48px; border-radius: 14px; background: linear-gradient(135deg, #f59e0b, #f97316); display: flex; align-items: center; justify-content: center; margin: 0 auto 8px;">
-                    <i class="fas fa-file-alt" style="font-size: 24px; color: white;"></i>
-                </div>
-                <div style="font-size: 13px; font-weight: 600; color: var(--text-primary);">考试测评</div>
-            </div>
-            <div class="card" onclick="location.href='/mobile/device_management'" style="padding: 16px 8px; text-align: center;">
-                <div style="width: 48px; height: 48px; border-radius: 14px; background: linear-gradient(135deg, #3b82f6, #6366f1); display: flex; align-items: center; justify-content: center; margin: 0 auto 8px;">
-                    <i class="fas fa-mobile-alt" style="font-size: 24px; color: white;"></i>
-                </div>
-                <div style="font-size: 13px; font-weight: 600; color: var(--text-primary);">设备管理</div>
-            </div>
-        </div>
-
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-            <h2 style="font-size: 18px; font-weight: 600; color: var(--text-primary);">今日学习</h2>
-            <div style="font-size: 14px; color: var(--primary-light); cursor: pointer;" onclick="location.href='/mobile/training'">查看全部</div>
-        </div>
-
-        <div class="card" onclick="location.href='/mobile/training'" style="display: flex; align-items: center; gap: 16px;">
-            <div style="width: 80px; height: 80px; border-radius: 16px; background: linear-gradient(135deg, #6366f1, #ec4899); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                <i class="fas fa-book-open" style="font-size: 32px; color: white;"></i>
-            </div>
-            <div style="flex: 1;">
-                <div style="font-size: 16px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">知识图谱学习</div>
-                <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 8px;">基于AI的智能学习路径规划</div>
-                <div class="progress-bar" style="margin-bottom: 4px;">
-                    <div class="progress-fill" style="width: {{ daily_progress }}%;"></div>
-                </div>
-                <div style="font-size: 12px; color: var(--text-secondary);">今日进度 {{ daily_progress }}%</div>
-            </div>
-            <i class="fas fa-chevron-right" style="color: var(--text-secondary); font-size: 20px;"></i>
-        </div>
-
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-            <h2 style="font-size: 18px; font-weight: 600; color: var(--text-primary);">AI学习推荐</h2>
-            <div style="font-size: 14px; color: var(--primary-light); cursor: pointer;" onclick="location.href='/mobile/ai_learning'">更多</div>
-        </div>
-
-        <div class="card gradient-card-alt" onclick="location.href='/mobile/ai_learning'" style="padding: 20px;">
-            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-                <i class="fas fa-lightbulb" style="font-size: 28px; color: white;"></i>
-                <div>
-                    <div style="font-size: 16px; font-weight: 600; color: white;">智能知识推荐</div>
-                    <div style="font-size: 13px; color: rgba(255,255,255,0.8);">基于您的学习情况推荐</div>
-                </div>
-            </div>
-            <div style="background: rgba(255,255,255,0.15); border-radius: 12px; padding: 12px;">
-                <div style="font-size: 14px; color: white; line-height: 1.5;">
-                    根据您的学习历史，推荐学习：<span style="font-weight: 600;">"AI知识图谱构建"</span>和<span style="font-weight: 600;">"深度学习基础"</span>
-                </div>
-            </div>
-        </div>
-
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-            <h2 style="font-size: 18px; font-weight: 600; color: var(--text-primary);">最新动态</h2>
-        </div>
-
-        <div class="card" onclick="showToast('查看详情')">
-            <div style="display: flex; gap: 12px;">
-                <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(99, 102, 241, 0.2); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                    <i class="fas fa-newspaper" style="font-size: 20px; color: var(--primary-light);"></i>
-                </div>
-                <div style="flex: 1;">
-                    <div style="font-size: 15px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">系统更新通知</div>
-                    <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.4;">V2.0版本已发布，新增AI学习功能和设备管理模块</div>
-                </div>
-            </div>
-            <div style="margin-top: 10px; display: flex; justify-content: space-between; align-items: center;">
-                <span class="tag tag-blue">系统公告</span>
-                <span style="font-size: 12px; color: var(--text-secondary);">2小时前</span>
-            </div>
-        </div>
-
-        <div class="card" onclick="showToast('查看详情')">
-            <div style="display: flex; gap: 12px;">
-                <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(34, 197, 94, 0.2); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                    <i class="fas fa-trophy" style="font-size: 20px; color: #4ade80;"></i>
-                </div>
-                <div style="flex: 1;">
-                    <div style="font-size: 15px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">学习成就解锁</div>
-                    <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.4;">恭喜！您已完成10个学习任务，解锁"学习达人"勋章</div>
-                </div>
-            </div>
-            <div style="margin-top: 10px; display: flex; justify-content: space-between; align-items: center;">
-                <span class="tag tag-green">成就</span>
-                <span style="font-size: 12px; color: var(--text-secondary);">昨天</span>
-            </div>
-        </div>
-
-        <div style="padding-bottom: 20px;">
-            <div class="card" style="text-align: center; padding: 24px; border: 1px dashed var(--border);">
-                <i class="fas fa-robot" style="font-size: 36px; color: var(--primary-light); margin-bottom: 12px;"></i>
-                <div style="font-size: 16px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">需要帮助？</div>
-                <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 16px;">AI助手随时为您服务</div>
-                <button class="btn btn-primary" onclick="showToast('AI助手正在开发中...')">
-                    <i class="fas fa-comments" style="margin-right: 8px;"></i>联系AI助手
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-{% endblock %}
-
-{% block scripts %}
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        fetchData('/api/mobile/config').then(function(response) {
-            if (response.success) {
-                console.log('App config:', response.data);
-            }
-        });
-    });
-</script>
-{% endblock %}
+</body>
+</html>

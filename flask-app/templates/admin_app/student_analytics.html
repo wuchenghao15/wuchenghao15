@@ -1,363 +1,92 @@
-{% extends 'admin_app/base.html' %}
-
-{% block title %}学生成绩分析仪表盘 - MTSCOS管理端{% endblock %}
-
-{% block content %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-<div class="page-container">
-    <div class="section-title">
-        <i class="fas fa-chart-line" style="color: var(--color-primary);"></i>
-        学生成绩分析仪表盘
-    </div>
-
-    <div class="card" style="margin-bottom: 16px;">
-        <div class="card-header">
-            <div class="card-title">筛选条件</div>
-        </div>
-        <div style="display: flex; flex-wrap: wrap; gap: 12px;">
-            <div style="flex: 1; min-width: 120px;">
-                <div class="label">科目</div>
-                <select id="subject" class="input" style="padding: 10px 12px;">
-                    <option value="">全部科目</option>
-                    <option value="语文">语文</option>
-                    <option value="数学">数学</option>
-                    <option value="英语">英语</option>
-                    <option value="物理">物理</option>
-                    <option value="化学">化学</option>
-                    <option value="生物">生物</option>
-                    <option value="历史">历史</option>
-                    <option value="地理">地理</option>
-                    <option value="政治">政治</option>
-                </select>
-            </div>
-            <div style="flex: 1; min-width: 120px;">
-                <div class="label">班级</div>
-                <select id="class" class="input" style="padding: 10px 12px;">
-                    <option value="">全部班级</option>
-                    <option value="高一(1)班">高一(1)班</option>
-                    <option value="高一(2)班">高一(2)班</option>
-                    <option value="高二(1)班">高二(1)班</option>
-                    <option value="高二(2)班">高二(2)班</option>
-                    <option value="高三(1)班">高三(1)班</option>
-                    <option value="高三(2)班">高三(2)班</option>
-                </select>
-            </div>
-            <div style="flex: 1; min-width: 120px;">
-                <div class="label">时间范围</div>
-                <select id="timeRange" class="input" style="padding: 10px 12px;">
-                    <option value="week">本周</option>
-                    <option value="month">本月</option>
-                    <option value="quarter">本季度</option>
-                    <option value="year">本年</option>
-                </select>
-            </div>
-            <div style="min-width: 100px; align-self: flex-end;">
-                <button class="btn btn-primary" onclick="loadAnalytics()" style="width: 100%;">
-                    <i class="fas fa-refresh"></i> 刷新
-                </button>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>学生分析</title>
+    <link rel="stylesheet" href="/assets/css/mtscos-design-system.css">
+    <link rel="stylesheet" href="/assets/font-awesome/css/all.min.css">
+    <style>
+        .chart-container { height: 300px; background: var(--bg-secondary); border-radius: 8px; display: flex; align-items: center; justify-content: center; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-user-graduate"></i> 学生分析</h1>
+            <div class="user-info">
+                <span>欢迎, {{ user.username }}</span>
+                {% if notification_count > 0 %}
+                <span class="notification-badge">{{ notification_count }}</span>
+                {% endif %}
             </div>
         </div>
-    </div>
-
-    <div class="stat-grid" id="statsGrid">
-        <div class="stat-card blue">
-            <div class="stat-icon">👥</div>
-            <div class="stat-value" id="totalStudents">-</div>
-            <div class="stat-label">学生总数</div>
-        </div>
-        <div class="stat-card green">
-            <div class="stat-icon">📊</div>
-            <div class="stat-value" id="avgScore">-</div>
-            <div class="stat-label">平均分数</div>
-        </div>
-        <div class="stat-card purple">
-            <div class="stat-icon">📈</div>
-            <div class="stat-value" id="passRate">-</div>
-            <div class="stat-label">及格率</div>
-        </div>
-        <div class="stat-card orange">
-            <div class="stat-icon">⏱️</div>
-            <div class="stat-value" id="avgStudyTime">-</div>
-            <div class="stat-label">平均学习时长</div>
-        </div>
-    </div>
-
-    <div class="section-title">成绩分布</div>
-    <div class="card" style="padding: 16px;">
-        <div style="height: 300px;">
-            <canvas id="scoreDistributionChart"></canvas>
-        </div>
-    </div>
-
-    <div class="section-title">各科平均分对比</div>
-    <div class="card" style="padding: 16px;">
-        <div style="height: 300px;">
-            <canvas id="subjectScoreChart"></canvas>
-        </div>
-    </div>
-
-    <div class="section-title">学习时间趋势</div>
-    <div class="card" style="padding: 16px;">
-        <div style="height: 300px;">
-            <canvas id="studyTimeChart"></canvas>
-        </div>
-    </div>
-
-    <div class="section-title">错题率分析</div>
-    <div class="card" style="padding: 16px;">
-        <div style="height: 300px;">
-            <canvas id="wrongRateChart"></canvas>
-        </div>
-    </div>
-
-    <div class="section-title">成绩排名 Top 10</div>
-    <div class="card">
-        <div style="overflow-x: auto;">
-            <table style="width: 100%; border-collapse: collapse;">
-                <thead>
-                    <tr>
-                        <th style="padding: 12px; text-align: left; font-size: 12px; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--border);">排名</th>
-                        <th style="padding: 12px; text-align: left; font-size: 12px; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--border);">学生姓名</th>
-                        <th style="padding: 12px; text-align: left; font-size: 12px; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--border);">平均分</th>
-                        <th style="padding: 12px; text-align: left; font-size: 12px; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--border);">考试次数</th>
-                        <th style="padding: 12px; text-align: left; font-size: 12px; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--border);">进步幅度</th>
-                    </tr>
-                </thead>
-                <tbody id="topStudentsTable">
-                    <tr><td colspan="5" style="padding: 20px; text-align: center; color: var(--text-muted);">加载中...</td></tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <div class="section-title">薄弱知识点分析</div>
-    <div class="card">
-        <div style="overflow-x: auto;">
-            <table style="width: 100%; border-collapse: collapse;">
-                <thead>
-                    <tr>
-                        <th style="padding: 12px; text-align: left; font-size: 12px; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--border);">知识点</th>
-                        <th style="padding: 12px; text-align: left; font-size: 12px; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--border);">科目</th>
-                        <th style="padding: 12px; text-align: left; font-size: 12px; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--border);">错误率</th>
-                        <th style="padding: 12px; text-align: left; font-size: 12px; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--border);">掌握程度</th>
-                    </tr>
-                </thead>
-                <tbody id="weakPointsTable">
-                    <tr><td colspan="4" style="padding: 20px; text-align: center; color: var(--text-muted);">加载中...</td></tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
-{% endblock %}
-
-{% block scripts %}
-<script>
-    let charts = {};
-    
-    function initCharts() {
-        const ctx1 = document.getElementById('scoreDistributionChart').getContext('2d');
-        charts.scoreDistribution = new Chart(ctx1, {
-            type: 'bar',
-            data: {
-                labels: ['0-59', '60-69', '70-79', '80-89', '90-100'],
-                datasets: [{
-                    label: '人数',
-                    data: [15, 25, 40, 35, 20],
-                    backgroundColor: ['var(--color-error)', 'var(--color-warning)', 'var(--color-success)', 'var(--color-primary)', 'var(--color-secondary)'],
-                    borderRadius: 8
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: 'var(--text-muted)' } },
-                    x: { grid: { display: false }, ticks: { color: 'var(--text-muted)' } }
-                }
-            }
-        });
         
-        const ctx2 = document.getElementById('subjectScoreChart').getContext('2d');
-        charts.subjectScore = new Chart(ctx2, {
-            type: 'radar',
-            data: {
-                labels: ['语文', '数学', '英语', '物理', '化学', '生物'],
-                datasets: [{
-                    label: '平均分',
-                    data: [85, 78, 82, 75, 72, 78],
-                    backgroundColor: 'rgba(64, 158, 255, 0.2)',
-                    borderColor: 'var(--color-primary)',
-                    borderWidth: 2,
-                    pointBackgroundColor: 'var(--color-primary)'
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: { 
-                    r: { 
-                        angleLines: { color: 'rgba(255,255,255,0.05)' }, 
-                        grid: { color: 'rgba(255,255,255,0.05)' }, 
-                        pointLabels: { color: 'var(--text-muted)' }, 
-                        ticks: { display: false } 
-                    } 
-                }
-            }
-        });
-        
-        const ctx3 = document.getElementById('studyTimeChart').getContext('2d');
-        charts.studyTime = new Chart(ctx3, {
-            type: 'line',
-            data: {
-                labels: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
-                datasets: [{
-                    label: '学习时长(分钟)',
-                    data: [120, 150, 130, 180, 140, 200, 220],
-                    borderColor: 'var(--color-success)',
-                    backgroundColor: 'rgba(103, 194, 58, 0.1)',
-                    fill: true,
-                    tension: 0.4,
-                    pointBackgroundColor: 'var(--color-success)'
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: 'var(--text-muted)' } },
-                    x: { grid: { display: false }, ticks: { color: 'var(--text-muted)' } }
-                }
-            }
-        });
-        
-        const ctx4 = document.getElementById('wrongRateChart').getContext('2d');
-        charts.wrongRate = new Chart(ctx4, {
-            type: 'doughnut',
-            data: {
-                labels: ['掌握良好(&lt;30%)', '需要加强(30-50%)', '薄弱(50-70%)', '严重薄弱(&gt;70%)'],
-                datasets: [{
-                    data: [45, 30, 18, 7],
-                    backgroundColor: ['var(--color-success)', 'var(--color-warning)', 'var(--color-error)', '#991b1b'],
-                    borderWidth: 0
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { position: 'right', labels: { color: 'var(--text-muted)' } } }
-            }
-        });
-    }
-    
-    function updateChart(chartName, data) {
-        if (charts[chartName]) {
-            charts[chartName].data.datasets[0].data = data;
-            charts[chartName].update();
-        }
-    }
-    
-    function loadAnalytics() {
-        const subject = document.getElementById('subject').value;
-        const cls = document.getElementById('class').value;
-        const timeRange = document.getElementById('timeRange').value;
-        
-        fetch(`/api/student/analytics/all?subject=${encodeURIComponent(subject)}&class=${encodeURIComponent(cls)}&timeRange=${timeRange}`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.code === 200) {
-                    const stats = data.data.stats;
-                    document.getElementById('totalStudents').textContent = stats.total_students || '-';
-                    document.getElementById('avgScore').textContent = stats.avg_score || '-';
-                    document.getElementById('passRate').textContent = (stats.pass_rate || 0) + '%';
-                    document.getElementById('avgStudyTime').textContent = (stats.avg_study_time || 0) + '分钟';
-                    
-                    if (data.data.score_distribution) {
-                        updateChart('scoreDistribution', data.data.score_distribution.data);
-                        charts.scoreDistribution.data.labels = data.data.score_distribution.labels;
-                        charts.scoreDistribution.update();
-                    }
-                    
-                    if (data.data.subject_scores) {
-                        updateChart('subjectScore', data.data.subject_scores.data);
-                        charts.subjectScore.data.labels = data.data.subject_scores.labels;
-                        charts.subjectScore.update();
-                    }
-                    
-                    if (data.data.study_time_trend) {
-                        updateChart('studyTime', data.data.study_time_trend.data);
-                        charts.studyTime.data.labels = data.data.study_time_trend.labels;
-                        charts.studyTime.update();
-                    }
-                    
-                    if (data.data.wrong_rate) {
-                        updateChart('wrongRate', data.data.wrong_rate.data);
-                        charts.wrongRate.data.labels = data.data.wrong_rate.labels;
-                        charts.wrongRate.update();
-                    }
-                    
-                    if (data.data.top_students) {
-                        let tableHTML = '';
-                        data.data.top_students.forEach(s => {
-                            const rankClass = s.rank <= 3 ? 'style="color: var(--color-warning); font-weight: 700;"' : '';
-                            const progressColor = String(s.progress).startsWith('+') ? 'var(--color-success)' : 'var(--color-error)';
-                            tableHTML += `
-                                <tr>
-                                    <td style="padding: 12px; border-bottom: 1px solid var(--border);" ${rankClass}>${s.rank}</td>
-                                    <td style="padding: 12px; border-bottom: 1px solid var(--border);">${s.name}</td>
-                                    <td style="padding: 12px; border-bottom: 1px solid var(--border);">${s.avg_score}</td>
-                                    <td style="padding: 12px; border-bottom: 1px solid var(--border);">${s.exam_count}</td>
-                                    <td style="padding: 12px; border-bottom: 1px solid var(--border); color: ${progressColor};">${s.progress}</td>
-                                </tr>
-                            `;
-                        });
-                        document.getElementById('topStudentsTable').innerHTML = tableHTML;
-                    }
-                    
-                    if (data.data.weak_points) {
-                        let weakHTML = '';
-                        data.data.weak_points.forEach(p => {
-                            const color = p.wrong_rate > 70 ? 'var(--color-error)' : p.wrong_rate > 50 ? 'var(--color-warning)' : 'var(--color-success)';
-                            weakHTML += `
-                                <tr>
-                                    <td style="padding: 12px; border-bottom: 1px solid var(--border);">${p.point}</td>
-                                    <td style="padding: 12px; border-bottom: 1px solid var(--border);">${p.subject}</td>
-                                    <td style="padding: 12px; border-bottom: 1px solid var(--border);">${p.wrong_rate}%</td>
-                                    <td style="padding: 12px; border-bottom: 1px solid var(--border);">
-                                        <div style="height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
-                                            <div style="height: 100%; background: ${color}; border-radius: 3px; width: ${p.wrong_rate}%;"></div>
-                                        </div>
-                                        <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">${p.level}</div>
-                                    </td>
-                                </tr>
-                            `;
-                        });
-                        document.getElementById('weakPointsTable').innerHTML = weakHTML;
-                    }
-                } else {
-                    showToast(data.message || '获取数据失败');
-                }
-            })
-            .catch(err => {
-                console.error(err);
-                showToast('网络错误');
-            });
-    }
-    
-    function showToast(msg) {
-        const toast = document.createElement('div');
-        toast.className = 'toast';
-        toast.textContent = msg;
-        document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 2000);
-    }
-    
-    document.addEventListener('DOMContentLoaded', function() {
-        initCharts();
-        loadAnalytics();
-    });
-</script>
-{% endblock %}
+        <div class="nav-bar">
+            <ul>
+                <li><a href="/admin_app/dashboard">管理首页</a></li>
+                <li><a href="/admin_app/student_analytics" class="active">学生分析</a></li>
+            </ul>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon bg-primary"><i class="fas fa-users"></i></div>
+                <div class="stat-info">
+                    <div class="stat-value">{{ student_stats.total_students }}</div>
+                    <div class="stat-label">学生总数</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon bg-success"><i class="fas fa-chart-line"></i></div>
+                <div class="stat-info">
+                    <div class="stat-value">{{ student_stats.avg_score }}</div>
+                    <div class="stat-label">平均分数</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon bg-warning"><i class="fas fa-clock"></i></div>
+                <div class="stat-info">
+                    <div class="stat-value">{{ student_stats.avg_study_time }}</div>
+                    <div class="stat-label">平均学习时长</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon bg-secondary"><i class="fas fa-award"></i></div>
+                <div class="stat-info">
+                    <div class="stat-value">{{ student_stats.excellent_count }}</div>
+                    <div class="stat-label">优秀学生</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">成绩分布</h3>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <div style="text-align: center;">
+                        <i class="fas fa-chart-bar" style="font-size: 48px; margin-bottom: 10px;"></i>
+                        <p>学生成绩分布图表区域</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">学习时长排行</h3>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <div style="text-align: center;">
+                        <i class="fas fa-trophy" style="font-size: 48px; margin-bottom: 10px;"></i>
+                        <p>学习时长排行榜区域</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

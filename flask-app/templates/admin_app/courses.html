@@ -1,585 +1,122 @@
-{% extends 'admin_app/base.html' %}
-
-{% block title %}课程管理{% endblock %}
-
-{% block content %}
-    <div class="page-header">
-        <h1>课程管理</h1>
-        <p>管理平台课程内容</p>
-    </div>
-
-    <div class="card">
-        <div class="card-header">
-            <div class="card-title">课程列表</div>
-            <button class="btn btn-primary" onclick="openCreateModal()">
-                <i class="fas fa-plus"></i>
-                添加课程
-            </button>
-        </div>
-        <div class="card-body">
-            <div class="search-bar">
-                <input type="text" class="form-control" id="searchKeyword" placeholder="搜索课程..." onkeyup="handleSearch()">
-                <select class="form-control" id="statusFilter" onchange="loadCourses()">
-                    <option value="">全部状态</option>
-                    <option value="draft">草稿</option>
-                    <option value="published">已发布</option>
-                    <option value="archived">已归档</option>
-                </select>
-                <select class="form-control" id="subjectFilter" onchange="loadCourses()">
-                    <option value="">全部科目</option>
-                    <option value="math">数学</option>
-                    <option value="english">英语</option>
-                    <option value="chinese">语文</option>
-                    <option value="physics">物理</option>
-                    <option value="chemistry">化学</option>
-                </select>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>课程管理</title>
+    <link rel="stylesheet" href="/assets/css/mtscos-design-system.css">
+    <link rel="stylesheet" href="/assets/font-awesome/css/all.min.css">
+    <style>
+        .course-table { width: 100%; border-collapse: collapse; }
+        .course-table th, .course-table td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border-color); }
+        .course-table th { background: var(--bg-secondary); color: var(--text-primary); }
+        .course-table tr:hover { background: var(--bg-secondary); }
+        .btn-group { display: flex; gap: 6px; }
+        .btn-sm { padding: 4px 10px; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-book-open"></i> 课程管理</h1>
+            <div class="user-info">
+                <span>欢迎, {{ user.username }}</span>
+                {% if notification_count > 0 %}
+                <span class="notification-badge">{{ notification_count }}</span>
+                {% endif %}
             </div>
-            
-            <div class="table-container">
-                <table class="data-table">
+        </div>
+        
+        <div class="nav-bar">
+            <ul>
+                <li><a href="/admin_app/dashboard">管理首页</a></li>
+                <li><a href="/admin_app/courses" class="active">课程管理</a></li>
+                <li><a href="/admin_app/assignments">作业管理</a></li>
+            </ul>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon bg-primary"><i class="fas fa-book"></i></div>
+                <div class="stat-info">
+                    <div class="stat-value">{{ course_stats.total_courses }}</div>
+                    <div class="stat-label">课程总数</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon bg-success"><i class="fas fa-users"></i></div>
+                <div class="stat-info">
+                    <div class="stat-value">{{ course_stats.total_students }}</div>
+                    <div class="stat-label">选课学生</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon bg-warning"><i class="fas fa-video"></i></div>
+                <div class="stat-info">
+                    <div class="stat-value">{{ course_stats.total_lessons }}</div>
+                    <div class="stat-label">课时总数</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon bg-secondary"><i class="fas fa-chart-line"></i></div>
+                <div class="stat-info">
+                    <div class="stat-value">{{ course_stats.completion_rate }}%</div>
+                    <div class="stat-label">完成率</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">课程列表</h3>
+                <div class="search-bar">
+                    <input type="text" placeholder="搜索课程名称..." id="course-search">
+                    <button class="btn btn-primary btn-sm" onclick="searchCourses()">搜索</button>
+                </div>
+            </div>
+            <div class="card-body">
+                <table class="course-table">
                     <thead>
                         <tr>
                             <th>ID</th>
                             <th>课程名称</th>
-                            <th>科目</th>
-                            <th>难度</th>
-                            <th>时长</th>
+                            <th>类别</th>
                             <th>课时数</th>
-                            <th>报名人数</th>
-                            <th>评分</th>
+                            <th>学生数</th>
+                            <th>状态</th>
                             <th>操作</th>
                         </tr>
                     </thead>
-                    <tbody id="courseList">
+                    <tbody>
+                        {% for course in courses %}
                         <tr>
-                            <td colspan="9" class="text-center">加载中...</td>
+                            <td>{{ course.id }}</td>
+                            <td>{{ course.name }}</td>
+                            <td>{{ course.category }}</td>
+                            <td>{{ course.lesson_count }}</td>
+                            <td>{{ course.student_count }}</td>
+                            <td>{{ course.status }}</td>
+                            <td>
+                                <div class="btn-group">
+                                    <button class="btn btn-primary btn-sm">编辑</button>
+                                    <button class="btn btn-secondary btn-sm">查看</button>
+                                </div>
+                            </td>
                         </tr>
+                        {% endfor %}
+                        {% if not courses %}
+                        <tr><td colspan="7" class="empty-state">暂无课程数据</td></tr>
+                        {% endif %}
                     </tbody>
                 </table>
             </div>
-            
-            <div class="pagination" id="pagination">
-            </div>
         </div>
     </div>
-
-    <div class="modal" id="createModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="modalTitle">添加课程</h3>
-                <button class="modal-close" onclick="closeModal()">&times;</button>
-            </div>
-            <div class="modal-body">
-                <form id="courseForm">
-                    <input type="hidden" id="courseId">
-                    <div class="form-group">
-                        <label class="form-label">课程名称 *</label>
-                        <input type="text" class="form-control" id="title" placeholder="输入课程名称" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">课程描述</label>
-                        <textarea class="form-control" id="description" rows="4" placeholder="输入课程描述"></textarea>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">课程类型</label>
-                            <select class="form-control" id="courseType">
-                                <option value="video">视频课程</option>
-                                <option value="live">直播课程</option>
-                                <option value="interactive">互动课程</option>
-                                <option value="assessment">评估课程</option>
-                                <option value="practice">练习课程</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">科目</label>
-                            <select class="form-control" id="subject">
-                                <option value="">请选择科目</option>
-                                <option value="math">数学</option>
-                                <option value="english">英语</option>
-                                <option value="chinese">语文</option>
-                                <option value="physics">物理</option>
-                                <option value="chemistry">化学</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">年级</label>
-                            <select class="form-control" id="grade">
-                                <option value="">请选择年级</option>
-                                <option value="g1">一年级</option>
-                                <option value="g2">二年级</option>
-                                <option value="g3">三年级</option>
-                                <option value="g4">四年级</option>
-                                <option value="g5">五年级</option>
-                                <option value="g6">六年级</option>
-                                <option value="g7">初一</option>
-                                <option value="g8">初二</option>
-                                <option value="g9">初三</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">时长(分钟)</label>
-                            <input type="number" class="form-control" id="duration" placeholder="课程时长" min="0">
-                        </div>
-                    </div>
-                    <button type="submit" class="btn btn-primary btn-lg w-full">保存课程</button>
-                </form>
-            </div>
-        </div>
-    </div>
-
     <script>
-        let currentPage = 1;
-        let totalPages = 1;
-
-        async function loadCourses() {
-            const status = document.getElementById('statusFilter').value;
-            const subject = document.getElementById('subjectFilter').value;
-            
-            try {
-                const response = await fetch(`/api/courses?status=${status}&subject=${subject}&page=${currentPage}&limit=10`);
-                const data = await response.json();
-                
-                if (data.code === 200) {
-                    renderCourseList(data.data);
-                }
-            } catch (error) {
-                console.error('加载课程失败:', error);
-            }
+        function searchCourses() {
+            const keyword = document.getElementById('course-search').value;
+            alert(`搜索课程: ${keyword}`);
         }
-
-        function renderCourseList(courses) {
-            const tbody = document.getElementById('courseList');
-            
-            if (courses.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="9" class="text-center">暂无课程</td></tr>';
-                return;
-            }
-
-            tbody.innerHTML = courses.map(course => `
-                <tr>
-                    <td>${course.id}</td>
-                    <td>${course.title}</td>
-                    <td>${getSubjectName(course.subject)}</td>
-                    <td>${getLevelName(course.level)}</td>
-                    <td>${course.duration || 0}分钟</td>
-                    <td>${course.lesson_count || 0}</td>
-                    <td>${course.enrollment_count || 0}</td>
-                    <td>${course.avg_rating ? course.avg_rating.toFixed(1) : '-'}</td>
-                    <td>
-                        <button class="btn btn-sm btn-secondary" onclick="viewCourse(${course.id})">详情</button>
-                        <button class="btn btn-sm btn-secondary" onclick="editCourse(${course.id})">编辑</button>
-                        <button class="btn btn-sm btn-info" onclick="manageChapters(${course.id})">章节管理</button>
-                        <button class="btn btn-sm btn-danger" onclick="deleteCourse(${course.id})">删除</button>
-                    </td>
-                </tr>
-            `).join('');
-        }
-
-        function getLevelName(level) {
-            const levels = {
-                'beginner': '初级',
-                'intermediate': '中级',
-                'advanced': '高级'
-            };
-            return levels[level] || level || '-';
-        }
-
-        function getSubjectName(subject) {
-            const subjects = {
-                'math': '数学',
-                'english': '英语',
-                'chinese': '语文',
-                'physics': '物理',
-                'chemistry': '化学'
-            };
-            return subjects[subject] || subject || '-';
-        }
-
-        function getStatusName(status) {
-            const statuses = {
-                'draft': '草稿',
-                'published': '已发布',
-                'archived': '已归档'
-            };
-            return statuses[status] || status;
-        }
-
-        function getStatusClass(status) {
-            const classes = {
-                'draft': 'badge-warning',
-                'published': 'badge-success',
-                'archived': 'badge-secondary'
-            };
-            return classes[status] || 'badge-secondary';
-        }
-
-        function openCreateModal() {
-            document.getElementById('modalTitle').textContent = '添加课程';
-            document.getElementById('courseForm').reset();
-            document.getElementById('courseId').value = '';
-            document.getElementById('createModal').style.display = 'block';
-        }
-
-        function closeModal() {
-            document.getElementById('createModal').style.display = 'none';
-        }
-
-        async function editCourse(id) {
-            try {
-                const response = await fetch(`/api/courses/${id}`);
-                const data = await response.json();
-                
-                if (data.success) {
-                    const course = data.data;
-                    document.getElementById('modalTitle').textContent = '编辑课程';
-                    document.getElementById('courseId').value = course.id;
-                    document.getElementById('title').value = course.title;
-                    document.getElementById('description').value = course.description || '';
-                    document.getElementById('courseType').value = course.course_type || 'video';
-                    document.getElementById('subject').value = course.subject || '';
-                    document.getElementById('grade').value = course.grade || '';
-                    document.getElementById('duration').value = course.duration || 0;
-                    document.getElementById('createModal').style.display = 'block';
-                }
-            } catch (error) {
-                console.error('获取课程失败:', error);
-            }
-        }
-
-        document.getElementById('courseForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const courseId = document.getElementById('courseId').value;
-            const data = {
-                title: document.getElementById('title').value,
-                description: document.getElementById('description').value,
-                course_type: document.getElementById('courseType').value,
-                subject: document.getElementById('subject').value,
-                grade: document.getElementById('grade').value,
-                duration: parseInt(document.getElementById('duration').value) || 0
-            };
-            
-            try {
-                let response;
-                if (courseId) {
-                    response = await fetch(`/api/courses/${courseId}`, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(data)
-                    });
-                } else {
-                    response = await fetch('/api/courses', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(data)
-                    });
-                }
-                
-                const result = await response.json();
-                if (result.code === 200 || result.code === 201) {
-                    closeModal();
-                    loadCourses();
-                    showToast('success', courseId ? '课程更新成功' : '课程创建成功');
-                } else {
-                    showToast('error', result.message || '操作失败');
-                }
-            } catch (error) {
-                console.error('保存课程失败:', error);
-                showToast('error', '保存失败');
-            }
-        });
-
-        async function publishCourse(id) {
-            if (!confirm('确定发布此课程吗？')) return;
-            
-            try {
-                const response = await fetch(`/api/courses/${id}/publish`, { method: 'POST' });
-                const data = await response.json();
-                
-                if (data.code === 200) {
-                    loadCourses();
-                    showToast('success', '课程发布成功');
-                } else {
-                    showToast('error', data.message || '发布失败');
-                }
-            } catch (error) {
-                console.error('发布课程失败:', error);
-            }
-        }
-
-        async function archiveCourse(id) {
-            if (!confirm('确定归档此课程吗？')) return;
-            
-            try {
-                const response = await fetch(`/api/courses/${id}/archive`, { method: 'POST' });
-                const data = await response.json();
-                
-                if (data.code === 200) {
-                    loadCourses();
-                    showToast('success', '课程归档成功');
-                } else {
-                    showToast('error', data.message || '归档失败');
-                }
-            } catch (error) {
-                console.error('归档课程失败:', error);
-            }
-        }
-
-        async function deleteCourse(id) {
-            if (!confirm('确定删除此课程吗？此操作不可恢复。')) return;
-            
-            try {
-                const response = await fetch(`/api/courses/${id}`, { method: 'DELETE' });
-                const data = await response.json();
-                
-                if (data.code === 200) {
-                    loadCourses();
-                    showToast('success', '课程删除成功');
-                } else {
-                    showToast('error', data.message || '删除失败');
-                }
-            } catch (error) {
-                console.error('删除课程失败:', error);
-            }
-        }
-
-        function handleSearch() {
-            const keyword = document.getElementById('searchKeyword').value;
-            if (keyword.length >= 2) {
-                searchCourses(keyword);
-            } else {
-                loadCourses();
-            }
-        }
-
-        async function searchCourses(keyword) {
-            try {
-                const response = await fetch(`/api/courses/search?keyword=${encodeURIComponent(keyword)}&page=1&limit=10`);
-                const data = await response.json();
-                
-                if (data.code === 200) {
-                    renderCourseList(data.data);
-                }
-            } catch (error) {
-                console.error('搜索课程失败:', error);
-            }
-        }
-
-        window.onclick = function(e) {
-            if (e.target === document.getElementById('createModal')) {
-                closeModal();
-            }
-        }
-
-        async function viewCourse(id) {
-            try {
-                const response = await fetch(`/api/courses/${id}`);
-                const data = await response.json();
-                
-                if (data.code === 200) {
-                    const course = data.data;
-                    const modalHtml = `
-                        <div class="modal" id="detailModal" style="display:block;">
-                            <div class="modal-content">
-                                <div class="modal-header">
-                                    <h3>课程详情 - ${course.title}</h3>
-                                    <button class="modal-close" onclick="document.getElementById('detailModal').style.display='none';">&times;</button>
-                                </div>
-                                <div class="modal-body">
-                                    <div class="form-row">
-                                        <div class="form-group">
-                                            <label class="form-label">类型</label>
-                                            <input type="text" class="form-control" value="${getCourseTypeName(course.course_type)}" readonly>
-                                        </div>
-                                        <div class="form-group">
-                                            <label class="form-label">科目</label>
-                                            <input type="text" class="form-control" value="${getSubjectName(course.subject)}" readonly>
-                                        </div>
-                                        <div class="form-group">
-                                            <label class="form-label">状态</label>
-                                            <input type="text" class="form-control" value="${getStatusName(course.status)}" readonly>
-                                        </div>
-                                    </div>
-                                    <div class="form-row">
-                                        <div class="form-group">
-                                            <label class="form-label">时长</label>
-                                            <input type="text" class="form-control" value="${course.duration || 0}分钟" readonly>
-                                        </div>
-                                        <div class="form-group">
-                                            <label class="form-label">价格</label>
-                                            <input type="text" class="form-control" value="${course.is_free ? '免费' : '¥' + (course.price || 0)}" readonly>
-                                        </div>
-                                        <div class="form-group">
-                                            <label class="form-label">年级</label>
-                                            <input type="text" class="form-control" value="${course.grade ? course.grade.replace('g', '') + '年级' : '-'}" readonly>
-                                        </div>
-                                    </div>
-                                    <div class="form-row">
-                                        <div class="form-group">
-                                            <label class="form-label">浏览量</label>
-                                            <input type="text" class="form-control" value="${course.view_count || 0}" readonly>
-                                        </div>
-                                        <div class="form-group">
-                                            <label class="form-label">报名人数</label>
-                                            <input type="text" class="form-control" value="${course.enrollment_count || 0}" readonly>
-                                        </div>
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="form-label">描述</label>
-                                        <textarea class="form-control" rows="4" readonly>${course.description || '无'}</textarea>
-                                    </div>
-                                </div>
-                                <div class="modal-footer">
-                                    <button class="btn btn-secondary" onclick="document.getElementById('detailModal').style.display='none';">关闭</button>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                    document.body.insertAdjacentHTML('beforeend', modalHtml);
-                }
-            } catch (error) {
-                console.error('获取课程详情失败:', error);
-            }
-        }
-
-        async function manageChapters(courseId) {
-            try {
-                const response = await fetch(`/api/courses/${courseId}/chapters`);
-                const data = await response.json();
-                
-                const chapters = data.code === 200 ? data.data : [];
-                const modalHtml = `
-                    <div class="modal" id="chapterModal" style="display:block;">
-                        <div class="modal-content" style="width:90%; max-width:800px;">
-                            <div class="modal-header">
-                                <h3>章节管理</h3>
-                                <button class="modal-close" onclick="document.getElementById('chapterModal').style.display='none';">&times;</button>
-                            </div>
-                            <div class="modal-body">
-                                <div class="form-group" style="margin-bottom: 20px;">
-                                    <label class="form-label">添加章节</label>
-                                    <div style="display: flex; gap: 10px;">
-                                        <input type="text" id="chapterTitle" class="form-control" placeholder="章节标题" style="flex:1;">
-                                        <input type="number" id="chapterOrder" class="form-control" placeholder="排序" value="1" min="1" style="width:80px;">
-                                        <button class="btn btn-primary" onclick="addChapter(${courseId})">添加</button>
-                                    </div>
-                                </div>
-                                <table class="data-table">
-                                    <thead>
-                                        <tr>
-                                            <th>序号</th>
-                                            <th>章节标题</th>
-                                            <th>排序</th>
-                                            <th>操作</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        ${chapters.length === 0 ? '<tr><td colspan="4" class="text-center">暂无章节</td></tr>' : 
-                                            chapters.map((ch, idx) => `
-                                                <tr>
-                                                    <td>${idx + 1}</td>
-                                                    <td>${ch.title}</td>
-                                                    <td>${ch.order || idx + 1}</td>
-                                                    <td>
-                                                        <button class="btn btn-sm btn-secondary" onclick="editChapter(${courseId}, ${ch.id}, '${ch.title}', ${ch.order || idx + 1})">编辑</button>
-                                                        <button class="btn btn-sm btn-danger" onclick="deleteChapter(${courseId}, ${ch.id})">删除</button>
-                                                    </td>
-                                                </tr>
-                                            `).join('')}
-                                    </tbody>
-                                </table>
-                            </div>
-                            <div class="modal-footer">
-                                <button class="btn btn-secondary" onclick="document.getElementById('chapterModal').style.display='none';">关闭</button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                document.body.insertAdjacentHTML('beforeend', modalHtml);
-            } catch (error) {
-                console.error('获取章节失败:', error);
-            }
-        }
-
-        async function addChapter(courseId) {
-            const title = document.getElementById('chapterTitle').value.trim();
-            const order = parseInt(document.getElementById('chapterOrder').value) || 1;
-            
-            if (!title) {
-                showToast('error', '请输入章节标题');
-                return;
-            }
-            
-            try {
-                const response = await fetch(`/api/courses/${courseId}/chapters`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ title, order })
-                });
-                
-                const data = await response.json();
-                if (data.code === 200) {
-                    showToast('success', '章节添加成功');
-                    document.getElementById('chapterTitle').value = '';
-                    document.getElementById('chapterOrder').value = '1';
-                    document.getElementById('chapterModal').style.display = 'none';
-                } else {
-                    showToast('error', data.message || '添加失败');
-                }
-            } catch (error) {
-                console.error('添加章节失败:', error);
-                showToast('error', '添加失败');
-            }
-        }
-
-        async function editChapter(courseId, chapterId, title, order) {
-            const newTitle = prompt('请输入章节标题:', title);
-            if (newTitle === null) return;
-            
-            try {
-                const response = await fetch(`/api/courses/${courseId}/chapters/${chapterId}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ title: newTitle.trim(), order })
-                });
-                
-                const data = await response.json();
-                if (data.code === 200) {
-                    showToast('success', '章节更新成功');
-                    document.getElementById('chapterModal').style.display = 'none';
-                } else {
-                    showToast('error', data.message || '更新失败');
-                }
-            } catch (error) {
-                console.error('更新章节失败:', error);
-                showToast('error', '更新失败');
-            }
-        }
-
-        async function deleteChapter(courseId, chapterId) {
-            if (!confirm('确定删除此章节吗？')) return;
-            
-            try {
-                const response = await fetch(`/api/courses/${courseId}/chapters/${chapterId}`, {
-                    method: 'DELETE'
-                });
-                
-                const data = await response.json();
-                if (data.code === 200) {
-                    showToast('success', '章节删除成功');
-                    document.getElementById('chapterModal').style.display = 'none';
-                } else {
-                    showToast('error', data.message || '删除失败');
-                }
-            } catch (error) {
-                console.error('删除章节失败:', error);
-                showToast('error', '删除失败');
-            }
-        }
-
-        loadCourses();
     </script>
-{% endblock %}
+</body>
+</html>

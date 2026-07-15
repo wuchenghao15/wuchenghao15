@@ -1,248 +1,85 @@
-{% extends "mobile/base.html" %}
-
-{% block title %}设备管理 - MTSCOS AI{% endblock %}
-
-{% block content %}
-<div class="page-container animate-fade-in">
-    <div class="header">
-        <div class="header-back" onclick="goBack()">
-            <i class="fas fa-arrow-left"></i>
-        </div>
-        <div class="header-title">设备管理</div>
-        <div class="header-action" onclick="showAddDeviceModal()">
-            <i class="fas fa-plus"></i>
-        </div>
-    </div>
-
-    <div style="padding-top: 72px;">
-        <div class="card gradient-card" style="padding: 20px; margin-bottom: 20px;">
-            <div style="display: flex; justify-content: space-around;">
-                <div style="text-align: center;">
-                    <div style="font-size: 28px; font-weight: 700; color: white;">{{ device_count }}</div>
-                    <div style="font-size: 12px; color: rgba(255,255,255,0.7);">绑定设备</div>
-                </div>
-                <div style="text-align: center;">
-                    <div style="font-size: 28px; font-weight: 700; color: white;">{{ online_count }}</div>
-                    <div style="font-size: 12px; color: rgba(255,255,255,0.7);">在线设备</div>
-                </div>
-                <div style="text-align: center;">
-                    <div style="font-size: 28px; font-weight: 700; color: white;">{{ offline_count }}</div>
-                    <div style="font-size: 12px; color: rgba(255,255,255,0.7);">离线设备</div>
-                </div>
-            </div>
-        </div>
-
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-            <h2 style="font-size: 18px; font-weight: 600; color: var(--text-primary);">我的设备</h2>
-            <div style="display: flex; gap: 8px;">
-                <button class="btn btn-secondary" style="padding: 8px 16px; font-size: 13px;" onclick="filterDevices('all')">全部</button>
-                <button class="btn btn-secondary" style="padding: 8px 16px; font-size: 13px;" onclick="filterDevices('online')">在线</button>
-                <button class="btn btn-secondary" style="padding: 8px 16px; font-size: 13px;" onclick="filterDevices('offline')">离线</button>
-            </div>
-        </div>
-
-        <div id="device-list">
-            {% if devices %}
-                {% for device in devices %}
-                <div class="card" onclick="showDeviceDetail('{{ device.device_id }}')">
-                    <div style="display: flex; align-items: center; gap: 16px;">
-                        <div style="width: 56px; height: 56px; border-radius: 14px; background: linear-gradient(135deg, #3b82f6, #6366f1); display: flex; align-items: center; justify-content: center;">
-                            <i class="fas fa-mobile-alt" style="font-size: 28px; color: white;"></i>
-                        </div>
-                        <div style="flex: 1;">
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <div style="font-size: 16px; font-weight: 600; color: var(--text-primary);">{{ device.device_name or '未知设备' }}</div>
-                                <span class="tag {% if device.status == 'online' %}tag-green{% else %}tag-gray{% endif %}">
-                                    {{ device.status == 'online' ? '在线' : '离线' }}
-                                </span>
-                            </div>
-                            <div style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">
-                                {{ device.model }} · {{ device.os_type }} {{ device.os_version }}
-                            </div>
-                            <div style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">
-                                版本: {{ device.app_version or '-' }}
-                            </div>
-                        </div>
-                        <i class="fas fa-chevron-right" style="color: var(--text-secondary); font-size: 20px;"></i>
-                    </div>
-                </div>
-                {% endfor %}
-            {% else %}
-                <div class="empty-state" onclick="showAddDeviceModal()">
-                    <i class="fas fa-plus-circle" style="font-size: 64px; color: var(--primary-light); margin-bottom: 12px;"></i>
-                    <div style="font-size: 16px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">暂无设备</div>
-                    <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 16px;">点击添加您的移动设备</div>
-                    <button class="btn btn-primary">添加设备</button>
-                </div>
-            {% endif %}
-        </div>
-
-        <div style="margin-top: 20px;">
-            <div class="card">
-                <div class="stat-row" onclick="checkAllUpdates()">
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(245, 158, 11, 0.2); display: flex; align-items: center; justify-content: center;">
-                            <i class="fas fa-refresh" style="font-size: 16px; color: #fbbf24;"></i>
-                        </div>
-                        <span class="stat-label">检查所有设备更新</span>
-                    </div>
-                    <i class="fas fa-chevron-right" style="color: var(--text-secondary);"></i>
-                </div>
-                <div class="stat-row" onclick="syncDeviceInfo()">
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(6, 182, 212, 0.2); display: flex; align-items: center; justify-content: center;">
-                            <i class="fas fa-sync-alt" style="font-size: 16px; color: #22d3ee;"></i>
-                        </div>
-                        <span class="stat-label">同步设备信息</span>
-                    </div>
-                    <i class="fas fa-chevron-right" style="color: var(--text-secondary);"></i>
-                </div>
-            </div>
-        </div>
-
-        <div style="padding-bottom: 20px;">
-            <div class="card" style="border: 1px dashed var(--border); padding: 16px; text-align: center;">
-                <i class="fas fa-info-circle" style="font-size: 20px; color: var(--text-secondary); margin-bottom: 8px;"></i>
-                <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.5;">
-                    设备管理帮助您管理所有绑定的移动设备，查看设备状态、版本信息，并进行远程配置。
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-{% endblock %}
-
-{% block scripts %}
-<script>
-    var currentDevices = {{ devices | tojson | safe }};
-    var currentFilter = 'all';
-
-    function filterDevices(filter) {
-        currentFilter = filter;
-        var list = document.getElementById('device-list');
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>设备管理</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 100%;
+        }
+        .icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #333;
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        p {
+            color: #666;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        .path {
+            background: #f5f5f5;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 20px;
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 32px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #666;
+        }
+        .btn-secondary:hover {
+            background: #e0e0e0;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">📱</div>
+        <h1>设备管理</h1>
+        <p>移动端设备管理页面。</p>
+        <div class="path">/templates/mobile/device_management.html</div>
+        <a href="/" class="btn">返回首页</a>
         
-        if (currentDevices.length === 0) {
-            list.innerHTML = `
-                <div class="empty-state" onclick="showAddDeviceModal()">
-                    <i class="fas fa-plus-circle" style="font-size: 64px; color: var(--primary-light); margin-bottom: 12px;"></i>
-                    <div style="font-size: 16px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">暂无设备</div>
-                    <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 16px;">点击添加您的移动设备</div>
-                    <button class="btn btn-primary">添加设备</button>
-                </div>
-            `;
-            return;
-        }
-
-        var filtered = currentDevices;
-        if (filter === 'online') {
-            filtered = currentDevices.filter(d => d.status === 'online');
-        } else if (filter === 'offline') {
-            filtered = currentDevices.filter(d => d.status !== 'online');
-        }
-
-        if (filtered.length === 0) {
-            list.innerHTML = `
-                <div class="empty-state">
-                    <i class="fas fa-mobile-alt" style="font-size: 48px; color: var(--text-secondary); margin-bottom: 8px;"></i>
-                    <div style="font-size: 14px; color: var(--text-secondary);">没有${filter === 'online' ? '在线' : '离线'}设备</div>
-                </div>
-            `;
-            return;
-        }
-
-        list.innerHTML = filtered.map(device => `
-            <div class="card" onclick="showDeviceDetail('${device.device_id}')">
-                <div style="display: flex; align-items: center; gap: 16px;">
-                    <div style="width: 56px; height: 56px; border-radius: 14px; background: linear-gradient(135deg, #3b82f6, #6366f1); display: flex; align-items: center; justify-content: center;">
-                        <i class="fas fa-mobile-alt" style="font-size: 28px; color: white;"></i>
-                    </div>
-                    <div style="flex: 1;">
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            <div style="font-size: 16px; font-weight: 600; color: var(--text-primary);">${device.device_name || '未知设备'}</div>
-                            <span class="tag ${device.status === 'online' ? 'tag-green' : 'tag-gray'}">
-                                ${device.status === 'online' ? '在线' : '离线'}
-                            </span>
-                        </div>
-                        <div style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">
-                            ${device.model} · ${device.os_type} ${device.os_version}
-                        </div>
-                        <div style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">
-                            版本: ${device.app_version || '-'}
-                        </div>
-                    </div>
-                    <i class="fas fa-chevron-right" style="color: var(--text-secondary); font-size: 20px;"></i>
-                </div>
-            </div>
-        `).join('');
-    }
-
-    function showAddDeviceModal() {
-        showModal('添加设备', '请在移动设备上打开应用并完成绑定', function() {
-            showToast('请在设备上操作', 'info');
-        });
-    }
-
-    function showDeviceDetail(deviceId) {
-        var device = currentDevices.find(d => d.device_id === deviceId);
-        if (!device) return;
-
-        var detail = `
-            <div style="text-align: left;">
-                <div style="margin-bottom: 12px;">
-                    <div style="font-size: 14px; color: var(--text-secondary);">设备名称</div>
-                    <div style="font-size: 16px; font-weight: 600;">${device.device_name || '未知'}</div>
-                </div>
-                <div style="margin-bottom: 12px;">
-                    <div style="font-size: 14px; color: var(--text-secondary);">设备型号</div>
-                    <div style="font-size: 16px;">${device.model || '-'}</div>
-                </div>
-                <div style="margin-bottom: 12px;">
-                    <div style="font-size: 14px; color: var(--text-secondary);">操作系统</div>
-                    <div style="font-size: 16px;">${device.os_type} ${device.os_version}</div>
-                </div>
-                <div style="margin-bottom: 12px;">
-                    <div style="font-size: 14px; color: var(--text-secondary);">应用版本</div>
-                    <div style="font-size: 16px;">${device.app_version || '-'}</div>
-                </div>
-                <div style="margin-bottom: 12px;">
-                    <div style="font-size: 14px; color: var(--text-secondary);">设备状态</div>
-                    <div style="font-size: 16px;">${device.status === 'online' ? '<span style="color: var(--success)">在线</span>' : '<span style="color: var(--text-secondary)">离线</span>'}</div>
-                </div>
-                <div style="margin-bottom: 12px;">
-                    <div style="font-size: 14px; color: var(--text-secondary);">最后在线</div>
-                    <div style="font-size: 16px;">${formatDate(device.last_seen)}</div>
-                </div>
-            </div>
-        `;
-
-        showModal(device.device_name || '设备详情', detail, function() {
-            showToast('操作成功', 'success');
-        });
-    }
-
-    function checkAllUpdates() {
-        showToast('正在检查更新...', 'info');
-        fetchData('/api/mobile/update/check', {
-            method: 'POST',
-            body: JSON.stringify({ platform: 'android', current_version: '1.0.0' })
-        }).then(function(response) {
-            if (response.success) {
-                if (response.has_update) {
-                    showModal('发现更新', '最新版本: ' + response.latest_version, function() {
-                        showToast('开始更新', 'success');
-                    });
-                } else {
-                    showToast('所有设备已是最新版本', 'success');
-                }
-            }
-        });
-    }
-
-    function syncDeviceInfo() {
-        showToast('同步中...', 'info');
-        setTimeout(function() {
-            showToast('同步完成', 'success');
-        }, 1500);
-    }
-</script>
-{% endblock %}
+    </div>
+</body>
+</html>

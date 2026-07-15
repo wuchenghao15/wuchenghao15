@@ -318,6 +318,15 @@ class ListeningQuestionEmployee:
             dialogue_list = dialogues.get(difficulty, dialogues["medium"])
             dialogue = random.choice(dialogue_list)
 
+            special_type_map = {
+                "japanese": "JapaneseListening",
+                "english": "EnglishListening"
+            }
+            category_id_map = {
+                "japanese": 21,
+                "english": 22
+            }
+            
             question = {
                 "type": "single_choice",
                 "category": "comprehension",
@@ -330,6 +339,8 @@ class ListeningQuestionEmployee:
                 "tags": ["听力", language, accent, voice, topic, difficulty],
                 "knowledge_points": ["听力理解", topic],
                 "source": f"AI生成-{lang_info['name']}听力",
+                "special_type": special_type_map.get(language, "EnglishListening"),
+                "category_id": category_id_map.get(language, 22),
                 "score": 2.0 if difficulty == "easy" else (5.0 if difficulty == "medium" else 10.0),
                 "language": language,
                 "accent": accent,

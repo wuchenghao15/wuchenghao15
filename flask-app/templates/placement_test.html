@@ -1,273 +1,85 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <!-- 设计系统 -->
-    <link rel="stylesheet" href="/assets/css/mtscos-design-system.css">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ test_info.title }} - MTSCOS 智能考试系统</title>
-    
-    <link rel="stylesheet" href="/assets/tailwind.min.css">
-    <link rel="stylesheet" href="/assets/all.min.css">
-    
+    <title>分级测试</title>
     <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, var(--bg-dark) 0%, #1e293b 50%, var(--bg-dark) 100%);
-            color: #f1f5f9;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 20px;
         }
-        
-        .glass-card {
-            background: rgba(30, 41, 59, 0.8);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+        .container {
+            background: white;
             border-radius: 16px;
-            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 100%;
         }
-        
-        .btn {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 1rem;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-        
-        .btn-primary {
-            background: linear-gradient(135deg, var(--color-secondary), #7c3aed);
-            color: white;
-            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
-        }
-        
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(139, 92, 246, 0.5);
-        }
-        
-        .btn-secondary {
-            background: rgba(255, 255, 255, 0.1);
-            color: #f1f5f9;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        
-        .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.2);
-        }
-        
-        .feature-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        }
-        
-        .feature-item:last-child {
-            border-bottom: none;
-        }
-        
-        .feature-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-        }
-        
-        .subject-tag {
-            display: inline-block;
-            padding: 6px 16px;
-            background: rgba(139, 92, 246, 0.2);
-            border: 1px solid rgba(139, 92, 246, 0.3);
-            border-radius: 20px;
-            font-size: 0.9rem;
-        }
-        
-        .level-badge {
-            display: inline-block;
-            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-            color: white;
-            padding: 8px 24px;
-            border-radius: 25px;
-            font-size: 1.1rem;
-            font-weight: bold;
+        .icon {
+            font-size: 64px;
             margin-bottom: 20px;
         }
-        
-        .completed-section {
-            animation: fadeIn 0.5s ease;
+        h1 {
+            color: #333;
+            font-size: 24px;
+            margin-bottom: 10px;
         }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+        p {
+            color: #666;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        .path {
+            background: #f5f5f5;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 20px;
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 32px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #666;
+        }
+        .btn-secondary:hover {
+            background: #e0e0e0;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
         }
     </style>
 </head>
 <body>
-    <div class="glass-card p-8 max-w-2xl w-full">
-        {% if has_completed %}
-            <div class="completed-section text-center">
-                <div class="w-24 h-24 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center">
-                    <i class="fas fa-check-circle text-4xl text-white"></i>
-                </div>
-                <h1 class="text-3xl font-bold mb-3">摸底测试已完成！</h1>
-                {% if current_level %}
-                <div class="level-badge">当前水平: {{ current_level }}</div>
-                {% endif %}
-                <p class="text-gray-400 text-lg mb-8">
-                    您已经完成了摸底测试，系统已根据您的表现评估了您的知识水平。<br>
-                    现在您可以进入考试中心，根据您的水平选择合适的考试。
-                </p>
-                <div class="flex gap-4">
-                    <a href="/exam/exam_center" class="btn btn-primary flex-1">
-                        <i class="fas fa-arrow-right"></i>
-                        进入考试中心
-                    </a>
-                    <button onclick="createNewTest()" class="btn btn-secondary flex-1">
-                        <i class="fas fa-redo"></i>
-                        重新测试
-                    </button>
-                </div>
-            </div>
-        {% else %}
-            <div class="text-center mb-8">
-                <div class="w-24 h-24 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                    <i class="fas fa-brain text-4xl text-white"></i>
-                </div>
-                <h1 class="text-3xl font-bold mb-3">{{ test_info.title }}</h1>
-                <p class="text-gray-400 text-lg">{{ test_info.description }}</p>
-            </div>
-            
-            <div class="grid grid-cols-2 gap-4 mb-8">
-                <div class="glass-card p-4 text-center">
-                    <div class="text-3xl font-bold text-purple-400 mb-1">{{ test_info.duration }}</div>
-                    <div class="text-sm text-gray-400">测试时长</div>
-                </div>
-                <div class="glass-card p-4 text-center">
-                    <div class="text-3xl font-bold text-blue-400 mb-1">{{ test_info.questions }}</div>
-                    <div class="text-sm text-gray-400">题目数量</div>
-                </div>
-            </div>
-            
-            <div class="mb-8">
-                <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
-                    <i class="fas fa-list-ul text-purple-400"></i>
-                    测试科目
-                </h3>
-                <div class="flex flex-wrap gap-2">
-                    {% for subject in test_info.subjects %}
-                    <span class="subject-tag">{{ subject }}</span>
-                    {% endfor %}
-                </div>
-            </div>
-            
-            <div class="mb-8">
-                <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
-                    <i class="fas fa-star text-yellow-400"></i>
-                    测试特点
-                </h3>
-                <div class="glass-card p-4">
-                    <div class="feature-item">
-                        <div class="feature-icon bg-green-500/20">
-                            <i class="fas fa-check text-green-400"></i>
-                        </div>
-                        <span>智能题目推荐，根据水平动态调整难度</span>
-                    </div>
-                    <div class="feature-item">
-                        <div class="feature-icon bg-blue-500/20">
-                            <i class="fas fa-chart-bar text-blue-400"></i>
-                        </div>
-                        <span>生成详细的能力分析报告</span>
-                    </div>
-                    <div class="feature-item">
-                        <div class="feature-icon bg-purple-500/20">
-                            <i class="fas fa-graduation-cap text-purple-400"></i>
-                        </div>
-                        <span>定制专属学习计划和建议</span>
-                    </div>
-                    <div class="feature-item">
-                        <div class="feature-icon bg-yellow-500/20">
-                            <i class="fas fa-clock text-yellow-400"></i>
-                        </div>
-                        <span>支持中途暂停，随时继续</span>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="flex gap-4">
-                <a href="/exam_system" class="btn btn-secondary flex-1">
-                    <i class="fas fa-arrow-left"></i>
-                    返回首页
-                </a>
-                <button onclick="startTest()" class="btn btn-primary flex-1">
-                    <i class="fas fa-rocket"></i>
-                    开始测试
-                </button>
-            </div>
-        {% endif %}
+    <div class="container">
+        <div class="icon">📋</div>
+        <h1>分级测试</h1>
+        <p>英语分级测试页面。</p>
+        <div class="path">/templates/placement_test.html</div>
+        <a href="/" class="btn">返回首页</a>
+        
     </div>
-    
-    <script>
-        async function startTest() {
-            try {
-                const response = await fetch('/api/placement/test', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ subject: null })
-                });
-                
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error('创建测试失败 - HTTP错误:', response.status, errorText);
-                    throw new Error(`HTTP ${response.status}`);
-                }
-                
-                const data = await response.json();
-                
-                if (data.success && data.test_id) {
-                    const startResponse = await fetch(`/api/placement/test/${data.test_id}/start`, {
-                        method: 'POST'
-                    });
-                    
-                    if (startResponse.ok) {
-                        await startResponse.json();
-                        setTimeout(() => {
-                            window.location.href = `/exam/placement_test/take/${data.test_id}`;
-                        }, 100);
-                    } else {
-                        throw new Error('开始测试失败');
-                    }
-                } else {
-                    throw new Error(data.error || data.message || '创建测试失败');
-                }
-            } catch (error) {
-                console.error('创建测试失败:', error);
-                alert('创建测试失败: ' + error.message + '，请重试');
-            }
-        }
-
-        function createNewTest() {
-            if (confirm('确定要重新进行摸底测试吗？这将生成新的评估报告。')) {
-                startTest();
-            }
-        }
-    </script>
 </body>
 </html>

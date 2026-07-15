@@ -1,489 +1,135 @@
-{% extends "admin_app/base.html" %}
-
-{% block title %}考试管理 - MTSCOS 管理端{% endblock %}
-
-{% block content %}
-<div class="page-container">
-    <div class="section-title" style="margin-top: 0;">
-        <i class="fas fa-file-alt" style="color: var(--color-secondary);"></i>
-        考试管理
-        <span class="tag tag-purple" style="margin-left: auto;">{{ exams|length }} 场</span>
-    </div>
-
-    <div class="search-bar">
-        <i class="fas fa-search"></i>
-        <input type="text" id="search-input" placeholder="搜索考试名称..." oninput="filterExams()">
-    </div>
-
-    <div class="filter-tabs">
-        <div class="filter-tab active" onclick="setFilter(this, 'all')">全部</div>
-        <div class="filter-tab" onclick="setFilter(this, 'ongoing')">进行中</div>
-        <div class="filter-tab" onclick="setFilter(this, 'upcoming')">未开始</div>
-        <div class="filter-tab" onclick="setFilter(this, 'ended')">已结束</div>
-    </div>
-
-    <div id="exam-list">
-        {% if exams %}
-            {% for exam in exams %}
-            <div class="card exam-card" data-status="{{ exam.status or 'draft' }}" data-name="{{ exam.exam_name }}">
-                <div class="card-header" style="margin-bottom: 12px;">
-                    <div class="card-title">
-                        <div class="card-icon" style="background: rgba(139, 92, 246, 0.15); color: #a78bfa;">
-                            <i class="fas fa-scroll"></i>
-                        </div>
-                        {{ exam.exam_name or '未命名考试' }}
-                    </div>
-                    <span class="tag tag-{{ 'green' if exam.status == 'published' else 'blue' if exam.status == 'draft' or not exam.status else 'gray' }}">
-                        {% if exam.status == 'published' %}进行中{% elif exam.status == 'draft' %}草稿{% elif exam.status == 'closed' %}已结束{% else %}未开始{% endif %}
-                    </span>
-                </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
-                    <div style="font-size: 12px; color: var(--text-muted);">
-                        <i class="fas fa-clock" style="margin-right: 4px;"></i>
-                        时长: {{ exam.duration or 60 }}分钟
-                    </div>
-                    <div style="font-size: 12px; color: var(--text-muted);">
-                        <i class="fas fa-star" style="margin-right: 4px;"></i>
-                        总分: {{ exam.total_score or 100 }}分
-                    </div>
-                </div>
-                {% if exam.language_level %}
-                <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">
-                    <i class="fas fa-language" style="margin-right: 4px;"></i>
-                    {{ exam.language_level }}
-                </div>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>考试管理</title>
+    <link rel="stylesheet" href="/assets/css/mtscos-design-system.css">
+    <link rel="stylesheet" href="/assets/font-awesome/css/all.min.css">
+    <style>
+        .exam-table { width: 100%; border-collapse: collapse; }
+        .exam-table th, .exam-table td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border-color); }
+        .exam-table th { background: var(--bg-secondary); color: var(--text-primary); }
+        .exam-table tr:hover { background: var(--bg-secondary); }
+        .status-draft { color: var(--text-secondary); }
+        .status-active { color: var(--success-color); }
+        .status-published { color: var(--primary-color); }
+        .status-completed { color: var(--warning-color); }
+        .btn-group { display: flex; gap: 6px; }
+        .btn-sm { padding: 4px 10px; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-file-alt"></i> 考试管理</h1>
+            <div class="user-info">
+                <span>欢迎, {{ user.username }}</span>
+                {% if notification_count > 0 %}
+                <span class="notification-badge">{{ notification_count }}</span>
                 {% endif %}
-                <div style="display: flex; gap: 8px;">
-                    <button class="btn btn-secondary" style="flex: 1; padding: 10px; font-size: 13px; min-height: 38px;" onclick="viewExamDetail('{{ exam.id }}')">
-                        <i class="fas fa-eye"></i> 详情
-                    </button>
-                    <button class="btn btn-primary" style="flex: 1; padding: 10px; font-size: 13px; min-height: 38px;" onclick="manageExam('{{ exam.id }}')">
-                        <i class="fas fa-cog"></i> 管理
-                    </button>
-                    <button class="btn btn-success" style="flex: 1; padding: 10px; font-size: 13px; min-height: 38px;" onclick="previewExam('{{ exam.id }}')">
-                        <i class="fas fa-file-pdf"></i> 预览
-                    </button>
+            </div>
+        </div>
+        
+        <div class="nav-bar">
+            <ul>
+                <li><a href="/admin_app/dashboard">管理首页</a></li>
+                <li><a href="/admin_app/users">用户管理</a></li>
+                <li><a href="/admin_app/exams" class="active">考试管理</a></li>
+                <li><a href="/admin_app/monitor">系统监控</a></li>
+            </ul>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon bg-primary"><i class="fas fa-file-alt"></i></div>
+                <div class="stat-info">
+                    <div class="stat-value">{{ exam_stats.total_exams }}</div>
+                    <div class="stat-label">考试总数</div>
                 </div>
             </div>
-            {% endfor %}
-        {% else %}
-            <div class="empty-state">
-                <div class="empty-state-icon">
-                    <i class="fas fa-file-alt"></i>
+            <div class="stat-card">
+                <div class="stat-icon bg-success"><i class="fas fa-play"></i></div>
+                <div class="stat-info">
+                    <div class="stat-value">{{ exam_stats.active_exams }}</div>
+                    <div class="stat-label">进行中</div>
                 </div>
-                <div class="empty-state-text">暂无考试数据</div>
             </div>
-        {% endif %}
+            <div class="stat-card">
+                <div class="stat-icon bg-warning"><i class="fas fa-check-circle"></i></div>
+                <div class="stat-info">
+                    <div class="stat-value">{{ exam_stats.completed_exams }}</div>
+                    <div class="stat-label">已完成</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon bg-secondary"><i class="fas fa-file-question"></i></div>
+                <div class="stat-info">
+                    <div class="stat-value">{{ exam_stats.total_questions }}</div>
+                    <div class="stat-label">题目总数</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">考试列表</h3>
+                <div class="search-bar">
+                    <input type="text" placeholder="搜索考试名称..." id="exam-search">
+                    <button class="btn btn-primary btn-sm" onclick="searchExams()">搜索</button>
+                </div>
+            </div>
+            <div class="card-body">
+                <table class="exam-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>考试名称</th>
+                            <th>类型</th>
+                            <th>时长</th>
+                            <th>总分</th>
+                            <th>状态</th>
+                            <th>创建时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for exam in exams %}
+                        <tr>
+                            <td>{{ exam.id }}</td>
+                            <td>{{ exam.exam_name }}</td>
+                            <td>{{ exam.exam_type }}</td>
+                            <td>{{ exam.duration }}分钟</td>
+                            <td>{{ exam.total_score }}分</td>
+                            <td>
+                                {% if exam.status == 'active' %}<span class="status-active">进行中</span>
+                                {% elif exam.status == 'published' %}<span class="status-published">已发布</span>
+                                {% elif exam.status == 'completed' %}<span class="status-completed">已完成</span>
+                                {% else %}<span class="status-draft">草稿</span>{% endif %}
+                            </td>
+                            <td>{{ exam.created_at }}</td>
+                            <td>
+                                <div class="btn-group">
+                                    <button class="btn btn-primary btn-sm">编辑</button>
+                                    <button class="btn btn-secondary btn-sm">查看</button>
+                                    <button class="btn btn-success btn-sm">发布</button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        {% if not exams %}
+                        <tr><td colspan="8" class="empty-state">暂无考试数据</td></tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
-
-    <button class="btn btn-primary" style="width: 100%; margin-top: 16px;" onclick="showCreateExamModal()">
-        <i class="fas fa-plus"></i> 新建考试
-    </button>
-
-    <div style="height: 20px;"></div>
-</div>
-
-<script>
-    var currentFilter = 'all';
-
-    function setFilter(el, filter) {
-        currentFilter = filter;
-        document.querySelectorAll('.filter-tab').forEach(function(tab) {
-            tab.classList.remove('active');
-        });
-        el.classList.add('active');
-        filterExams();
-    }
-
-    function filterExams() {
-        var search = document.getElementById('search-input').value.toLowerCase();
-        var cards = document.querySelectorAll('.exam-card');
-        
-        cards.forEach(function(card) {
-            var name = card.getAttribute('data-name').toLowerCase();
-            var status = card.getAttribute('data-status');
-            var matchSearch = !search || name.includes(search);
-            
-            var matchStatus = true;
-            if (currentFilter === 'ongoing') matchStatus = status === 'published';
-            else if (currentFilter === 'upcoming') matchStatus = status === 'draft' || !status;
-            else if (currentFilter === 'ended') matchStatus = status === 'closed';
-            
-            card.style.display = (matchSearch && matchStatus) ? 'block' : 'none';
-        });
-    }
-
-    function viewExamDetail(id) {
-        fetch('/api/exam/' + id)
-            .then(function(response) { return response.json(); })
-            .then(function(data) {
-                if (data.exam) {
-                    var exam = data.exam;
-                    var detailHtml = '<div style="padding: 10px 0;">' +
-                        '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">' +
-                        '<div style="background: var(--bg-secondary); padding: 12px; border-radius: 8px;">' +
-                        '<div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">考试名称</div>' +
-                        '<div style="font-weight: bold;">' + (exam.exam_name || '未命名') + '</div>' +
-                        '</div>' +
-                        '<div style="background: var(--bg-secondary); padding: 12px; border-radius: 8px;">' +
-                        '<div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">科目/级别</div>' +
-                        '<div style="font-weight: bold;">' + (exam.language_level || '-') + '</div>' +
-                        '</div>' +
-                        '</div>' +
-                        '<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px;">' +
-                        '<div style="background: var(--bg-secondary); padding: 12px; border-radius: 8px;">' +
-                        '<div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">时长</div>' +
-                        '<div style="font-weight: bold;">' + (exam.duration || 60) + '分钟</div>' +
-                        '</div>' +
-                        '<div style="background: var(--bg-secondary); padding: 12px; border-radius: 8px;">' +
-                        '<div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">总分</div>' +
-                        '<div style="font-weight: bold;">' + (exam.total_score || 100) + '分</div>' +
-                        '</div>' +
-                        '<div style="background: var(--bg-secondary); padding: 12px; border-radius: 8px;">' +
-                        '<div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">状态</div>' +
-                        '<div style="font-weight: bold;">' + getStatusText(exam.status) + '</div>' +
-                        '</div>' +
-                        '<div style="background: var(--bg-secondary); padding: 12px; border-radius: 8px;">' +
-                        '<div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">题目数</div>' +
-                        '<div style="font-weight: bold;">' + (exam.question_count || 0) + '题</div>' +
-                        '</div>' +
-                        '</div>' +
-                        '<div style="margin-bottom: 16px;">' +
-                        '<div style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">考试说明</div>' +
-                        '<div style="background: var(--bg-secondary); padding: 12px; border-radius: 8px; min-height: 60px;">' +
-                        (exam.description || '无') + '</div>' +
-                        '</div>' +
-                        '<div style="margin-bottom: 16px;">' +
-                        '<div style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">创建时间</div>' +
-                        '<div style="background: var(--bg-secondary); padding: 12px; border-radius: 8px;">' +
-                        (exam.created_at || '-') + '</div>' +
-                        '</div>';
-                    
-                    showModal('考试详情 - ' + (exam.exam_name || '未命名'), detailHtml, {
-                        showFooter: true,
-                        confirmText: '关闭',
-                        onConfirm: function() { hideModal(); }
-                    });
-                } else {
-                    showToast('获取考试详情失败', 3000);
-                }
-            })
-            .catch(function(error) {
-                showToast('网络错误，请重试', 3000);
-            });
-    }
-
-    function getStatusText(status) {
-        if (status === 'published') return '进行中';
-        if (status === 'draft') return '草稿';
-        if (status === 'closed') return '已结束';
-        return '未开始';
-    }
-
-    function manageExam(id) {
-        fetch('/api/exam/' + id)
-            .then(function(response) { return response.json(); })
-            .then(function(data) {
-                if (data.exam) {
-                    var exam = data.exam;
-                    var contentHtml = '<div style="padding: 10px 0;">' +
-                        '<div style="margin-bottom: 16px;">' +
-                        '<label style="display: block; font-size: 14px; color: var(--text-secondary); margin-bottom: 8px;">考试名称</label>' +
-                        '<input type="text" id="edit-exam-name" value="' + (exam.exam_name || '') + '" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); font-size: 14px; box-sizing: border-box;">' +
-                        '</div>' +
-                        '<div style="margin-bottom: 16px;">' +
-                        '<label style="display: block; font-size: 14px; color: var(--text-secondary); margin-bottom: 8px;">科目</label>' +
-                        '<select id="edit-exam-level" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); font-size: 14px; box-sizing: border-box;">' +
-                        '<option value="">请选择科目</option>' +
-                        '<option value="语文-小学">' + (exam.language_level === '语文-小学' ? 'selected ' : '') + '语文-小学</option>' +
-                        '<option value="数学-小学">' + (exam.language_level === '数学-小学' ? 'selected ' : '') + '数学-小学</option>' +
-                        '<option value="英语-小学">' + (exam.language_level === '英语-小学' ? 'selected ' : '') + '英语-小学</option>' +
-                        '<option value="语文-初中">' + (exam.language_level === '语文-初中' ? 'selected ' : '') + '语文-初中</option>' +
-                        '<option value="数学-初中">' + (exam.language_level === '数学-初中' ? 'selected ' : '') + '数学-初中</option>' +
-                        '<option value="英语-初中">' + (exam.language_level === '英语-初中' ? 'selected ' : '') + '英语-初中</option>' +
-                        '<option value="物理-初中">' + (exam.language_level === '物理-初中' ? 'selected ' : '') + '物理-初中</option>' +
-                        '<option value="化学-初中">' + (exam.language_level === '化学-初中' ? 'selected ' : '') + '化学-初中</option>' +
-                        '<option value="语文-高中">' + (exam.language_level === '语文-高中' ? 'selected ' : '') + '语文-高中</option>' +
-                        '<option value="数学-高中">' + (exam.language_level === '数学-高中' ? 'selected ' : '') + '数学-高中</option>' +
-                        '<option value="英语-高中">' + (exam.language_level === '英语-高中' ? 'selected ' : '') + '英语-高中</option>' +
-                        '<option value="物理-高中">' + (exam.language_level === '物理-高中' ? 'selected ' : '') + '物理-高中</option>' +
-                        '<option value="化学-高中">' + (exam.language_level === '化学-高中' ? 'selected ' : '') + '化学-高中</option>' +
-                        '<option value="生物-高中">' + (exam.language_level === '生物-高中' ? 'selected ' : '') + '生物-高中</option>' +
-                        '<option value="历史-高中">' + (exam.language_level === '历史-高中' ? 'selected ' : '') + '历史-高中</option>' +
-                        '<option value="地理-高中">' + (exam.language_level === '地理-高中' ? 'selected ' : '') + '地理-高中</option>' +
-                        '</select>' +
-                        '</div>' +
-                        '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">' +
-                        '<div>' +
-                        '<label style="display: block; font-size: 14px; color: var(--text-secondary); margin-bottom: 8px;">时长(分钟)</label>' +
-                        '<input type="number" id="edit-exam-duration" value="' + (exam.duration || 60) + '" min="1" max="300" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); font-size: 14px; box-sizing: border-box;">' +
-                        '</div>' +
-                        '<div>' +
-                        '<label style="display: block; font-size: 14px; color: var(--text-secondary); margin-bottom: 8px;">总分</label>' +
-                        '<input type="number" id="edit-exam-score" value="' + (exam.total_score || 100) + '" min="1" max="1000" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); font-size: 14px; box-sizing: border-box;">' +
-                        '</div>' +
-                        '</div>' +
-                        '<div style="margin-bottom: 16px;">' +
-                        '<label style="display: block; font-size: 14px; color: var(--text-secondary); margin-bottom: 8px;">考试说明</label>' +
-                        '<textarea id="edit-exam-desc" rows="3" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); font-size: 14px; resize: none; box-sizing: border-box;">' + (exam.description || '') + '</textarea>' +
-                        '</div>' +
-                        '<div style="margin-bottom: 16px;">' +
-                        '<label style="display: block; font-size: 14px; color: var(--text-secondary); margin-bottom: 8px;">状态</label>' +
-                        '<select id="edit-exam-status" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); font-size: 14px; box-sizing: border-box;">' +
-                        '<option value="draft"' + (exam.status === 'draft' ? ' selected' : '') + '>草稿</option>' +
-                        '<option value="published"' + (exam.status === 'published' ? ' selected' : '') + '>发布(进行中)</option>' +
-                        '<option value="closed"' + (exam.status === 'closed' ? ' selected' : '') + '>已结束</option>' +
-                        '</select>' +
-                        '</div>';
-                    
-                    showModal('编辑考试', contentHtml, {
-                        showFooter: true,
-                        confirmText: '保存',
-                        cancelText: '取消',
-                        onConfirm: function() {
-                            var name = document.getElementById('edit-exam-name').value.trim();
-                            var level = document.getElementById('edit-exam-level').value;
-                            var duration = parseInt(document.getElementById('edit-exam-duration').value) || 60;
-                            var totalScore = parseInt(document.getElementById('edit-exam-score').value) || 100;
-                            var description = document.getElementById('edit-exam-desc').value.trim();
-                            var status = document.getElementById('edit-exam-status').value;
-                            
-                            if (!name) {
-                                showToast('请输入考试名称', 3000);
-                                return;
-                            }
-                            
-                            showLoading();
-                            var formData = new FormData();
-                            formData.append('title', name);
-                            formData.append('language_level', level);
-                            formData.append('duration', duration);
-                            formData.append('total_score', totalScore);
-                            formData.append('description', description);
-                            formData.append('status', status);
-                            
-                            fetch('/api/exam/' + id, {
-                                method: 'PUT',
-                                body: formData
-                            })
-                            .then(function(response) { return response.json(); })
-                            .then(function(data) {
-                                hideLoading();
-                                if (data.success) {
-                                    showToast('考试更新成功！', 2000);
-                                    setTimeout(function() { location.reload(); }, 1500);
-                                } else {
-                                    showToast(data.error || '更新失败', 3000);
-                                }
-                            })
-                            .catch(function(error) {
-                                hideLoading();
-                                showToast('网络错误，请重试', 3000);
-                            });
-                        }
-                    });
-                } else {
-                    showToast('获取考试信息失败', 3000);
-                }
-            })
-            .catch(function(error) {
-                showToast('网络错误，请重试', 3000);
-            });
-    }
-
-    function showCreateExamModal() {
-        var contentHtml = '<div style="padding: 10px 0;">' +
-            '<div style="margin-bottom: 16px;">' +
-            '<label style="display: block; font-size: 14px; color: var(--text-secondary); margin-bottom: 8px;">考试名称</label>' +
-            '<input type="text" id="exam-name-input" placeholder="请输入考试名称" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); font-size: 14px; box-sizing: border-box;">' +
-            '</div>' +
-            '<div style="margin-bottom: 16px;">' +
-            '<label style="display: block; font-size: 14px; color: var(--text-secondary); margin-bottom: 8px;">科目（按学段分类）</label>' +
-            '<select id="exam-level-input" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); font-size: 14px; box-sizing: border-box;">' +
-            '<option value="">请选择科目</option>' +
-            '<optgroup label="&#127891; 义务教育（小学）">' +
-            '<option value="语文-小学">&#128220; 语文</option>' +
-            '<option value="数学-小学">&#128187; 数学</option>' +
-            '<option value="英语-小学">&#127757; 英语</option>' +
-            '<option value="道德与法治-小学">&#127774; 道德与法治</option>' +
-            '<option value="科学-小学">&#128300; 科学</option>' +
-            '<option value="体育-小学">&#127939; 体育</option>' +
-            '<option value="音乐-小学">&#127925; 音乐</option>' +
-            '<option value="美术-小学">&#127912; 美术</option>' +
-            '<option value="信息技术-小学">&#128187; 信息技术</option>' +
-            '</optgroup>' +
-            '<optgroup label="&#127891; 义务教育（初中）">' +
-            '<option value="语文-初中">&#128220; 语文</option>' +
-            '<option value="数学-初中">&#128187; 数学</option>' +
-            '<option value="英语-初中">&#127757; 英语</option>' +
-            '<option value="道德与法治-初中">&#127774; 道德与法治</option>' +
-            '<option value="历史-初中">&#128218; 历史</option>' +
-            '<option value="地理-初中">&#127759; 地理</option>' +
-            '<option value="物理-初中">&#9889; 物理</option>' +
-            '<option value="化学-初中">&#129514; 化学</option>' +
-            '<option value="生物-初中">&#129504; 生物</option>' +
-            '<option value="体育与健康-初中">&#127939; 体育与健康</option>' +
-            '<option value="音乐-初中">&#127925; 音乐</option>' +
-            '<option value="美术-初中">&#127912; 美术</option>' +
-            '<option value="信息技术-初中">&#128187; 信息技术</option>' +
-            '</optgroup>' +
-            '<optgroup label="&#127891; 义务教育（高中）">' +
-            '<option value="语文-高中">&#128220; 语文</option>' +
-            '<option value="数学-高中">&#128187; 数学</option>' +
-            '<option value="英语-高中">&#127757; 英语</option>' +
-            '<option value="思想政治-高中">&#127774; 思想政治</option>' +
-            '<option value="历史-高中">&#128218; 历史</option>' +
-            '<option value="地理-高中">&#127759; 地理</option>' +
-            '<option value="物理-高中">&#9889; 物理</option>' +
-            '<option value="化学-高中">&#129514; 化学</option>' +
-            '<option value="生物-高中">&#129504; 生物</option>' +
-            '<option value="信息技术-高中">&#128187; 信息技术</option>' +
-            '<option value="通用技术-高中">&#9881; 通用技术</option>' +
-            '<option value="体育与健康-高中">&#127939; 体育与健康</option>' +
-            '<option value="音乐-高中">&#127925; 音乐</option>' +
-            '<option value="美术-高中">&#127912; 美术</option>' +
-            '</optgroup>' +
-            '<optgroup label="&#129309; 职业教育">' +
-            '<option value="语文-职高">&#128220; 语文</option>' +
-            '<option value="数学-职高">&#128187; 数学</option>' +
-            '<option value="英语-职高">&#127757; 英语</option>' +
-            '<option value="专业理论">&#128209; 专业理论</option>' +
-            '<option value="专业技能">&#128736; 专业技能</option>' +
-            '</optgroup>' +
-            '<optgroup label="&#127891; 成人教育">' +
-            '<option value="高等数学">&#8734; 高等数学</option>' +
-            '<option value="大学语文">&#128220; 大学语文</option>' +
-            '<option value="英语">&#127757; 英语</option>' +
-            '<option value="日语">&#127471; 日语</option>' +
-            '<option value="德语">&#127465;&#127466; 德语</option>' +
-            '<option value="法语">&#127467;&#127479; 法语</option>' +
-            '<option value="俄语">&#127479;&#127482; 俄语</option>' +
-            '<option value="其他外语">&#127760; 其他外语</option>' +
-            '<option value="线性代数">&#128302; 线性代数</option>' +
-            '<option value="概率论与数理统计">&#128200; 概率论与数理统计</option>' +
-            '<option value="大学物理">&#9889; 大学物理</option>' +
-            '<option value="计算机基础">&#128187; 计算机基础</option>' +
-            '<option value="专业必修课">&#128209; 专业必修课</option>' +
-            '</optgroup>' +
-            '<optgroup label="&#127758; 通用技能">' +
-            '<option value="心理健康">&#129322; 心理健康</option>' +
-            '<option value="安全教育">&#128737; 安全教育</option>' +
-            '<option value="职业规划">&#128188; 职业规划</option>' +
-            '<option value="创新创业">&#128640; 创新创业</option>' +
-            '</optgroup>' +
-            '</select>' +
-            '</div>' +
-            '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">' +
-            '<div>' +
-            '<label style="display: block; font-size: 14px; color: var(--text-secondary); margin-bottom: 8px;">时长(分钟)</label>' +
-            '<input type="number" id="exam-duration-input" value="60" min="1" max="300" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); font-size: 14px; box-sizing: border-box;">' +
-            '</div>' +
-            '<div>' +
-            '<label style="display: block; font-size: 14px; color: var(--text-secondary); margin-bottom: 8px;">总分</label>' +
-            '<input type="number" id="exam-score-input" value="100" min="1" max="1000" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); font-size: 14px; box-sizing: border-box;">' +
-            '</div>' +
-            '</div>' +
-            '<div style="margin-bottom: 16px;">' +
-            '<label style="display: block; font-size: 14px; color: var(--text-secondary); margin-bottom: 8px;">考试说明</label>' +
-            '<textarea id="exam-desc-input" placeholder="请输入考试说明（可选）" rows="3" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); font-size: 14px; resize: none; box-sizing: border-box;"></textarea>' +
-            '</div>' +
-            '</div>';
-        
-        showModal('新建考试', contentHtml, {
-            showFooter: true,
-            confirmText: '创建',
-            cancelText: '取消',
-            onConfirm: function() {
-                var name = document.getElementById('exam-name-input').value.trim();
-                var level = document.getElementById('exam-level-input').value;
-                var duration = parseInt(document.getElementById('exam-duration-input').value) || 60;
-                var totalScore = parseInt(document.getElementById('exam-score-input').value) || 100;
-                var description = document.getElementById('exam-desc-input').value.trim();
-                
-                if (!name) {
-                    showToast('请输入考试名称', 3000);
-                    return;
-                }
-                
-                showLoading();
-                var formData = new FormData();
-                formData.append('title', name);
-                formData.append('language_level', level);
-                formData.append('duration', duration);
-                formData.append('total_score', totalScore);
-                formData.append('description', description);
-                
-                fetch('/api/exam', {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(function(response) { return response.json(); })
-                .then(function(data) {
-                    hideLoading();
-                    if (data.success) {
-                        showToast('考试创建成功！', 2000);
-                        setTimeout(function() { location.reload(); }, 1500);
-                    } else {
-                        showToast(data.error || '创建失败', 3000);
-                    }
-                })
-                .catch(function(error) {
-                    hideLoading();
-                    showToast('网络错误，请重试', 3000);
-                });
-            }
-        });
-    }
-
-    function previewExam(id) {
-        fetch('/api/exam/' + id)
-            .then(function(response) { return response.json(); })
-            .then(function(data) {
-                if (data.exam) {
-                    var exam = data.exam;
-                    var previewHtml = '<div style="max-height: 600px; overflow-y: auto; padding: 10px;">' +
-                        '<div style="border-bottom: 2px solid var(--color-secondary); padding-bottom: 20px; margin-bottom: 20px;">' +
-                        '<h2 style="text-align: center; margin-bottom: 10px;">' + (exam.exam_name || '未命名考试') + '</h2>' +
-                        '<div style="display: flex; justify-content: center; gap: 20px; font-size: 13px; color: var(--text-muted);">' +
-                        '<span><i class="fas fa-clock"></i> ' + (exam.duration || 60) + '分钟</span>' +
-                        '<span><i class="fas fa-star"></i> 总分: ' + (exam.total_score || 100) + '分</span>' +
-                        '<span><i class="fas fa-language"></i> ' + (exam.language_level || '-') + '</span>' +
-                        '</div>' +
-                        '</div>' +
-                        (exam.description ? '<div style="margin-bottom: 20px; padding: 15px; background: var(--bg-secondary); border-radius: 8px;">' +
-                        '<div style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">考试说明</div>' +
-                        exam.description + '</div>' : '') +
-                        '<div>' +
-                        '<div style="font-size: 14px; font-weight: bold; margin-bottom: 15px;">题目预览</div>' +
-                        '<div style="color: var(--text-muted); font-size: 13px; margin-bottom: 15px;">' +
-                        '本次考试共 <strong>' + (exam.question_count || 0) + '</strong> 道题目' +
-                        '</div>' +
-                        '<div style="padding: 15px; background: var(--bg-secondary); border-radius: 8px; border-left: 4px solid var(--color-secondary);">' +
-                        '<div style="font-size: 13px; line-height: 1.6;">' +
-                        '<strong>选择题示例：</strong><br>' +
-                        '1. 设函数 f(x) = x² - 2x + 1，则 f(3) 的值为：<br>' +
-                        '&nbsp;&nbsp;A. 4&nbsp;&nbsp;&nbsp;&nbsp;B. 6&nbsp;&nbsp;&nbsp;&nbsp;C. 8&nbsp;&nbsp;&nbsp;&nbsp;D. 10<br><br>' +
-                        '<strong>填空题示例：</strong><br>' +
-                        '2. 已知等差数列 {aₙ} 的公差为 2，首项 a₁ = 1，则 a₁₀ = ______<br><br>' +
-                        '<strong>解答题示例：</strong><br>' +
-                        '3. 证明：对于任意正整数 n，1 + 2 + 3 + ... + n = n(n+1)/2' +
-                        '</div>' +
-                        '</div>' +
-                        '</div>' +
-                        '</div>';
-                    
-                    showModal('试卷预览 - ' + (exam.exam_name || '未命名'), previewHtml, {
-                        showFooter: true,
-                        confirmText: '关闭',
-                        onConfirm: function() { hideModal(); }
-                    });
-                } else {
-                    showToast('获取考试详情失败', 3000);
-                }
-            })
-            .catch(function(error) {
-                showToast('网络错误，请重试', 3000);
-            });
-    }
-</script>
-{% endblock %}
+    <script>
+        function searchExams() {
+            const keyword = document.getElementById('exam-search').value;
+            alert(`搜索考试: ${keyword}`);
+        }
+    </script>
+</body>
+</html>

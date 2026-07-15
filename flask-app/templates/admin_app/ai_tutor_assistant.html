@@ -1,207 +1,158 @@
-{% extends 'admin_app/base.html' %}
-
-{% block title %}AI辅导助手 - MTSCOS管理端{% endblock %}
-
-{% block content %}
-<div class="page-container">
-    <div class="section-title">
-        <i class="fas fa-robot" style="color: var(--color-primary);"></i>
-        AI智能辅导助手
-    </div>
-
-    <div class="grid-2">
-        <div class="card">
-            <div class="card-header">
-                <div class="card-title">
-                    <i class="fas fa-comments"></i> AI智能问答
-                </div>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI智能辅导助手</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #10b981 0%, #059669 100%); min-height: 100vh; }
+        .container { padding: 20px; max-width: 1400px; margin: 0 auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; color: white; }
+        .header h1 { font-size: 26px; }
+        .header .user-info { display: flex; align-items: center; gap: 15px; }
+        .nav-bar { background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); padding: 15px 20px; margin-bottom: 20px; border-radius: 10px; }
+        .nav-bar ul { list-style: none; display: flex; gap: 20px; }
+        .nav-bar ul li a { color: white; text-decoration: none; padding: 8px 15px; border-radius: 6px; transition: background 0.3s; }
+        .nav-bar ul li a:hover, .nav-bar ul li a.active { background: rgba(255,255,255,0.2); }
+        .main-content { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .card { background: white; border-radius: 12px; padding: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .card h2 { font-size: 18px; color: #333; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-size: 13px; color: #555; margin-bottom: 5px; }
+        .form-group select, .form-group input, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+        .form-group textarea { height: 100px; resize: vertical; }
+        .btn { padding: 10px 20px; border-radius: 6px; border: none; cursor: pointer; font-size: 14px; font-weight: 500; }
+        .btn-primary { background: #10b981; color: white; }
+        .btn-primary:hover { background: #059669; }
+        .btn-success { background: #3b82f6; color: white; }
+        .btn-success:hover { background: #2563eb; }
+        .result-area { background: #f8f9fa; border-radius: 8px; padding: 15px; min-height: 100px; margin-top: 15px; white-space: pre-wrap; font-size: 14px; color: #333; }
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px; }
+        .stat-item { background: white; border-radius: 10px; padding: 15px; text-align: center; }
+        .stat-item .value { font-size: 24px; font-weight: bold; color: #10b981; }
+        .stat-item .label { font-size: 12px; color: #666; margin-top: 5px; }
+        .table-container { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        table th, table td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; font-size: 13px; }
+        table th { background: #f8f9fa; color: #555; font-weight: 600; }
+        table tr:hover { background: #f9fafb; }
+        .status-badge { padding: 4px 8px; border-radius: 4px; font-size: 12px; }
+        .status-completed { background: #dcfce7; color: #16a34a; }
+        .status-pending { background: #fef3c7; color: #d97706; }
+        @media (max-width: 768px) { .main-content { grid-template-columns: 1fr; } .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-chalkboard-teacher"></i> AI智能辅导助手</h1>
+            <div class="user-info">
+                <span>欢迎, {{ user.username }}</span>
             </div>
-            <div style="padding: 20px;">
+        </div>
+        
+        <div class="nav-bar">
+            <ul>
+                <li><a href="/admin_app/dashboard">管理首页</a></li>
+                <li><a href="/admin_app/ai_learning_dashboard">AI学习仪表盘</a></li>
+                <li><a href="/admin_app/ai_employee_dashboard">AI员工管理</a></li>
+                <li><a href="/admin_app/ai_cognitive_reasoning">认知推理</a></li>
+                <li><a href="/admin_app/ai_tutor_assistant" class="active">AI辅导助手</a></li>
+            </ul>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-item">
+                <div class="value">{{ tutor_stats.get('total_sessions', '--') }}</div>
+                <div class="label">辅导会话数</div>
+            </div>
+            <div class="stat-item">
+                <div class="value">{{ tutor_stats.get('active_students', '--') }}</div>
+                <div class="label">活跃学生数</div>
+            </div>
+            <div class="stat-item">
+                <div class="value">{{ tutor_stats.get('avg_session_duration', '--') }}</div>
+                <div class="label">平均会话时长(分钟)</div>
+            </div>
+            <div class="stat-item">
+                <div class="value">{{ tutor_stats.get('completed_sessions', '--') }}</div>
+                <div class="label">已完成会话</div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="card">
+                <h2><i class="fas fa-user-plus"></i> 创建辅导会话</h2>
                 <div class="form-group">
-                    <label>学科</label>
-                    <select id="tutorSubject" class="form-select">
-                        <option value="">全部学科</option>
-                        <option value="数学">数学</option>
-                        <option value="语文">语文</option>
-                        <option value="英语">英语</option>
-                        <option value="物理">物理</option>
-                        <option value="化学">化学</option>
+                    <label>学生名称</label>
+                    <input type="text" id="student-name" placeholder="请输入学生名称">
+                </div>
+                <div class="form-group">
+                    <label>辅导类型</label>
+                    <select id="tutor-type">
+                        <option value="academic">学术辅导</option>
+                        <option value="language">语言学习</option>
+                        <option value="skill">技能培训</option>
+                        <option value="career">职业指导</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>问题</label>
-                    <textarea id="tutorQuestion" class="form-control" rows="4" placeholder="输入您的问题..."></textarea>
+                    <label>辅导目标</label>
+                    <textarea id="tutor-goal" placeholder="请输入辅导目标"></textarea>
                 </div>
-                <button class="btn btn-primary" onclick="askAI()" style="width: 100%;">
-                    <i class="fas fa-send"></i> 提交问题
-                </button>
+                <button class="btn btn-success" onclick="createSession()">开始辅导</button>
             </div>
-        </div>
 
-        <div class="card">
-            <div class="card-header">
-                <div class="card-title">
-                    <i class="fas fa-graduation-cap"></i> AI辅导解答
+            <div class="card">
+                <h2><i class="fas fa-clock"></i> 辅导历史记录</h2>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>学生</th>
+                                <th>类型</th>
+                                <th>状态</th>
+                                <th>时长</th>
+                                <th>时间</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for session in tutor_stats.get('recent_sessions', []) %}
+                            <tr>
+                                <td>{{ session.student_name }}</td>
+                                <td>{{ session.type }}</td>
+                                <td><span class="status-badge {{ 'status-completed' if session.status == 'completed' else 'status-pending' }}">{{ session.status }}</span></td>
+                                <td>{{ session.duration }}分钟</td>
+                                <td>{{ session.timestamp }}</td>
+                            </tr>
+                            {% endfor %}
+                            {% if not tutor_stats.get('recent_sessions') %}
+                            <tr><td colspan="5" style="text-align: center; color: #999;">暂无辅导记录</td></tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
                 </div>
-            </div>
-            <div style="padding: 20px;">
-                <div id="aiAnswer" style="min-height: 200px; padding: 15px; background: #f8f9fa; border-radius: 8px; white-space: pre-wrap; font-size: 14px; line-height: 1.6;">
-                    等待AI解答...
-                </div>
-                <div id="aiMetadata" style="margin-top: 10px; font-size: 12px; color: #666;"></div>
             </div>
         </div>
     </div>
 
-    <div class="card">
-        <div class="card-header">
-            <div class="card-title">
-                <i class="fas fa-history"></i> 问答历史
-            </div>
-        </div>
-        <div style="padding: 16px;">
-            <div id="questionHistory">
-                <div style="text-align:center; padding: 40px; color: #999;">
-                    <i class="fas fa-history" style="font-size: 48px; margin-bottom: 16px;"></i>
-                    <p>暂无问答历史</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="card">
-        <div class="card-header">
-            <div class="card-title">
-                <i class="fas fa-list"></i> 可用AI员工
-            </div>
-        </div>
-        <div style="padding: 16px;">
-            <div id="employeeList" class="grid-3">
-                <div style="text-align:center; padding: 40px; color: #999;">
-                    <i class="fas fa-users" style="font-size: 48px; margin-bottom: 16px;"></i>
-                    <p>加载中...</p>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
-function askAI() {
-    const question = document.getElementById('tutorQuestion').value.trim();
-    const subject = document.getElementById('tutorSubject').value;
-    
-    if (!question) {
-        alert('请输入问题');
-        return;
-    }
-    
-    document.getElementById('aiAnswer').textContent = 'AI正在思考中...';
-    document.getElementById('aiMetadata').textContent = '';
-    
-    fetch('/api/ai/integration/tutor_ask', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ question, subject })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.code === 200 && data.data) {
-            document.getElementById('aiAnswer').textContent = data.data.answer;
-            document.getElementById('aiMetadata').textContent = `由 ${data.data.generated_by || '系统'} 生成`;
-            loadQuestionHistory();
-        } else {
-            document.getElementById('aiAnswer').textContent = 'AI解答失败: ' + (data.message || '未知错误');
+    <script>
+        function createSession() {
+            const studentName = document.getElementById('student-name').value;
+            const tutorType = document.getElementById('tutor-type').value;
+            const tutorGoal = document.getElementById('tutor-goal').value;
+            
+            if (!studentName) {
+                alert('请输入学生名称');
+                return;
+            }
+            
+            alert(`辅导会话已创建：\n学生: ${studentName}\n类型: ${tutorType}\n目标: ${tutorGoal}`);
+            document.getElementById('student-name').value = '';
+            document.getElementById('tutor-goal').value = '';
         }
-    })
-    .catch(error => {
-        document.getElementById('aiAnswer').textContent = '请求失败: ' + error.message;
-    });
-}
-
-function loadQuestionHistory() {
-    fetch('/api/ai/tutor/questions')
-        .then(response => response.json())
-        .then(data => {
-            if (data.code === 200 && data.data && data.data.questions) {
-                const history = data.data.questions.slice(0, 5);
-                if (history.length > 0) {
-                    document.getElementById('questionHistory').innerHTML = `
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th>问题</th>
-                                    <th>学科</th>
-                                    <th>时间</th>
-                                    <th>操作</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${history.map(q => `
-                                    <tr>
-                                        <td>${q.question.substring(0, 30)}${q.question.length > 30 ? '...' : ''}</td>
-                                        <td>${q.subject || '-'}</td>
-                                        <td>${new Date(q.created_at).toLocaleString()}</td>
-                                        <td>
-                                            <button class="btn btn-sm btn-info" onclick="viewAnswer(${q.id})">查看</button>
-                                        </td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    `;
-                }
-            }
-        })
-        .catch(error => {
-            console.error('加载问答历史失败:', error);
-        });
-}
-
-function viewAnswer(id) {
-    fetch(`/api/ai/tutor/questions/${id}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.code === 200 && data.data) {
-                const answer = JSON.parse(data.data.answer);
-                document.getElementById('aiAnswer').textContent = answer.answer || '暂无答案';
-                document.getElementById('aiMetadata').textContent = `问题: ${data.data.question}`;
-            }
-        })
-        .catch(error => {
-            console.error('查看答案失败:', error);
-        });
-}
-
-function loadEmployees() {
-    fetch('/api/ai/integration/employees')
-        .then(response => response.json())
-        .then(data => {
-            if (data.code === 200 && data.data && data.data.employees) {
-                const employees = data.data.employees.slice(0, 9);
-                document.getElementById('employeeList').innerHTML = employees.map(e => `
-                    <div class="stat-card" style="margin: 8px;">
-                        <div class="stat-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                            <i class="fas fa-user-robot"></i>
-                        </div>
-                        <div class="stat-info">
-                            <div class="stat-value" style="font-size: 14px;">${e.name}</div>
-                            <div class="stat-label" style="font-size: 12px;">级别 ${e.level} | ${e.status}</div>
-                        </div>
-                    </div>
-                `).join('');
-            }
-        })
-        .catch(error => {
-            console.error('加载AI员工失败:', error);
-        });
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    loadQuestionHistory();
-    loadEmployees();
-});
-</script>
-{% endblock %}
+    </script>
+</body>
+</html>

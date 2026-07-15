@@ -1,684 +1,85 @@
-{% extends 'admin_app/base.html' %}
-
-{% block title %}数据可视化仪表盘 - MTSCOS{% endblock %}
-
-{% block extra_head %}
-    <script src="/assets/js/chart.umd.min.js"></script>
-{% endblock %}
-
-{% block content %}
-    <div class="page-header">
-        <h1>数据可视化仪表盘</h1>
-        <p>全面监控平台运营数据</p>
-    </div>
-
-    <div class="grid-container">
-        <div class="card stat-card">
-            <div class="stat-icon blue">
-                <i class="fas fa-users"></i>
-            </div>
-            <div class="stat-info">
-                <div class="stat-value" id="totalUsers">0</div>
-                <div class="stat-label">总用户数</div>
-                <div class="stat-change positive">
-                    <i class="fas fa-arrow-up"></i>
-                    <span id="userGrowth">0%</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="card stat-card">
-            <div class="stat-icon green">
-                <i class="fas fa-chart-line"></i>
-            </div>
-            <div class="stat-info">
-                <div class="stat-value" id="activeUsers">0</div>
-                <div class="stat-label">活跃用户</div>
-                <div class="stat-change positive">
-                    <i class="fas fa-arrow-up"></i>
-                    <span id="activeGrowth">0%</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="card stat-card">
-            <div class="stat-icon purple">
-                <i class="fas fa-graduation-cap"></i>
-            </div>
-            <div class="stat-info">
-                <div class="stat-value" id="courseCount">0</div>
-                <div class="stat-label">课程数量</div>
-                <div class="stat-change positive">
-                    <i class="fas fa-arrow-up"></i>
-                    <span id="courseGrowth">0%</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="card stat-card">
-            <div class="stat-icon orange">
-                <i class="fas fa-file-alt"></i>
-            </div>
-            <div class="stat-info">
-                <div class="stat-value" id="examCount">0</div>
-                <div class="stat-label">考试数量</div>
-                <div class="stat-change positive">
-                    <i class="fas fa-arrow-up"></i>
-                    <span id="examGrowth">0%</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="card stat-card">
-            <div class="stat-icon red">
-                <i class="fas fa-check-circle"></i>
-            </div>
-            <div class="stat-info">
-                <div class="stat-value" id="completedExams">0</div>
-                <div class="stat-label">已完成考试</div>
-                <div class="stat-change positive">
-                    <i class="fas fa-arrow-up"></i>
-                    <span id="completedGrowth">0%</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="card stat-card">
-            <div class="stat-icon cyan">
-                <i class="fas fa-file-question"></i>
-            </div>
-            <div class="stat-info">
-                <div class="stat-value" id="questionCount">0</div>
-                <div class="stat-label">题目总数</div>
-                <div class="stat-change positive">
-                    <i class="fas fa-arrow-up"></i>
-                    <span id="questionGrowth">0%</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="card stat-card">
-            <div class="stat-icon yellow">
-                <i class="fas fa-book-open"></i>
-            </div>
-            <div class="stat-info">
-                <div class="stat-value" id="assignmentCount">0</div>
-                <div class="stat-label">作业数量</div>
-                <div class="stat-change positive">
-                    <i class="fas fa-arrow-up"></i>
-                    <span id="assignmentGrowth">0%</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="card stat-card">
-            <div class="stat-icon pink">
-                <i class="fas fa-user-plus"></i>
-            </div>
-            <div class="stat-info">
-                <div class="stat-value" id="todayRegisters">0</div>
-                <div class="stat-label">今日注册</div>
-                <div class="stat-change positive">
-                    <i class="fas fa-arrow-up"></i>
-                    <span id="registerGrowth">0%</span>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="grid-container">
-        <div class="card chart-card">
-            <div class="card-header">
-                <div class="card-title">用户增长趋势</div>
-                <select class="form-control-sm" id="userChartPeriod" onchange="refreshUserChart()">
-                    <option value="7">近7天</option>
-                    <option value="30">近30天</option>
-                    <option value="90">近90天</option>
-                </select>
-            </div>
-            <div class="card-body">
-                <canvas id="userGrowthChart"></canvas>
-            </div>
-        </div>
-
-        <div class="card chart-card">
-            <div class="card-header">
-                <div class="card-title">活跃用户趋势</div>
-            </div>
-            <div class="card-body">
-                <canvas id="activeUserChart"></canvas>
-            </div>
-        </div>
-    </div>
-
-    <div class="grid-container">
-        <div class="card chart-card">
-            <div class="card-header">
-                <div class="card-title">用户角色分布</div>
-            </div>
-            <div class="card-body">
-                <canvas id="roleDistributionChart"></canvas>
-            </div>
-        </div>
-
-        <div class="card chart-card">
-            <div class="card-header">
-                <div class="card-title">科目占比</div>
-            </div>
-            <div class="card-body">
-                <canvas id="subjectDistributionChart"></canvas>
-            </div>
-        </div>
-
-        <div class="card chart-card">
-            <div class="card-header">
-                <div class="card-title">考试完成率</div>
-            </div>
-            <div class="card-body">
-                <canvas id="examCompletionChart"></canvas>
-            </div>
-        </div>
-
-        <div class="card chart-card">
-            <div class="card-header">
-                <div class="card-title">课程类型分布</div>
-            </div>
-            <div class="card-body">
-                <canvas id="courseTypeChart"></canvas>
-            </div>
-        </div>
-    </div>
-
-    <div class="grid-container">
-        <div class="card chart-card">
-            <div class="card-header">
-                <div class="card-title">学习时长分布</div>
-            </div>
-            <div class="card-body">
-                <canvas id="studyTimeChart"></canvas>
-            </div>
-        </div>
-
-        <div class="card chart-card">
-            <div class="card-header">
-                <div class="card-title">成绩等级分布</div>
-            </div>
-            <div class="card-body">
-                <canvas id="gradeDistributionChart"></canvas>
-            </div>
-        </div>
-    </div>
-
-    <div class="grid-container">
-        <div class="card">
-            <div class="card-header">
-                <div class="card-title">实时数据概览</div>
-            </div>
-            <div class="card-body">
-                <div class="timeline">
-                    <div class="timeline-item">
-                        <div class="timeline-dot"></div>
-                        <div class="timeline-content">
-                            <div class="timeline-title">系统运行状态</div>
-                            <div class="timeline-desc">CPU使用率: <span class="status-text" id="cpuUsage">--</span></div>
-                            <div class="timeline-desc">内存使用率: <span class="status-text" id="memoryUsage">--</span></div>
-                            <div class="timeline-desc">磁盘使用率: <span class="status-text" id="diskUsage">--</span></div>
-                        </div>
-                    </div>
-                    <div class="timeline-item">
-                        <div class="timeline-dot"></div>
-                        <div class="timeline-content">
-                            <div class="timeline-title">数据库状态</div>
-                            <div class="timeline-desc">连接数: <span class="status-text" id="dbConnections">--</span></div>
-                            <div class="timeline-desc">查询耗时: <span class="status-text" id="queryTime">--</span></div>
-                            <div class="timeline-desc">表数量: <span class="status-text" id="tableCount">--</span></div>
-                        </div>
-                    </div>
-                    <div class="timeline-item">
-                        <div class="timeline-dot"></div>
-                        <div class="timeline-content">
-                            <div class="timeline-title">API状态</div>
-                            <div class="timeline-desc">请求总数: <span class="status-text" id="totalRequests">--</span></div>
-                            <div class="timeline-desc">平均响应时间: <span class="status-text" id="avgResponseTime">--</span></div>
-                            <div class="timeline-desc">错误率: <span class="status-text" id="errorRate">--</span></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        let userGrowthChart, activeUserChart, roleDistributionChart, subjectDistributionChart, examCompletionChart, courseTypeChart, studyTimeChart, gradeDistributionChart;
-
-        async function loadStatistics() {
-            try {
-                const response = await fetch('/api/reports/daily');
-                const data = await response.json();
-                
-                if (data.code === 200) {
-                    const stats = data.data.summary;
-                    
-                    document.getElementById('totalUsers').textContent = stats.total_users || 0;
-                    document.getElementById('activeUsers').textContent = stats.active_users || 0;
-                    document.getElementById('courseCount').textContent = stats.total_courses || 0;
-                    document.getElementById('examCount').textContent = stats.exams_count || 0;
-                    document.getElementById('completedExams').textContent = stats.completed_exams || 0;
-                    document.getElementById('questionCount').textContent = stats.questions_count || 0;
-                    document.getElementById('assignmentCount').textContent = stats.assignments_count || 0;
-                    document.getElementById('todayRegisters').textContent = stats.today_registers || 0;
-
-                    loadCharts(stats);
-                }
-            } catch (error) {
-                console.error('加载统计数据失败:', error);
-                loadMockCharts();
-            }
-        }
-
-        function loadCharts(stats) {
-            const ctx1 = document.getElementById('userGrowthChart').getContext('2d');
-            userGrowthChart = new Chart(ctx1, {
-                type: 'line',
-                data: {
-                    labels: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
-                    datasets: [{
-                        label: '新增用户',
-                        data: [12, 19, 15, 25, 22, 30, 28],
-                        borderColor: '#409eff',
-                        backgroundColor: 'rgba(64, 158, 255, 0.1)',
-                        fill: true,
-                        tension: 0.4
-                    }, {
-                        label: '活跃用户',
-                        data: [45, 52, 48, 60, 55, 70, 65],
-                        borderColor: '#67c23a',
-                        backgroundColor: 'rgba(103, 194, 58, 0.1)',
-                        fill: true,
-                        tension: 0.4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: { position: 'top' }
-                    },
-                    scales: {
-                        y: { beginAtZero: true }
-                    }
-                }
-            });
-
-            const ctx2 = document.getElementById('activeUserChart').getContext('2d');
-            activeUserChart = new Chart(ctx2, {
-                type: 'bar',
-                data: {
-                    labels: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
-                    datasets: [{
-                        label: '日活用户',
-                        data: [120, 145, 132, 168, 155, 198, 185],
-                        backgroundColor: 'var(--color-secondary)',
-                        borderRadius: 6
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: { display: false }
-                    },
-                    scales: {
-                        y: { beginAtZero: true }
-                    }
-                }
-            });
-
-            const ctx3 = document.getElementById('roleDistributionChart').getContext('2d');
-            roleDistributionChart = new Chart(ctx3, {
-                type: 'doughnut',
-                data: {
-                    labels: ['学生', '教师', '管理员', '家长', '超级管理员'],
-                    datasets: [{
-                        data: [65, 15, 10, 8, 2],
-                        backgroundColor: [
-                            'var(--color-primary)', 'var(--el-color-success)', 'var(--el-color-warning)', 'var(--el-color-danger)', 'var(--el-color-info)'
-                        ],
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: { position: 'bottom' }
-                    },
-                    cutout: '65%'
-                }
-            });
-
-            const ctx4 = document.getElementById('subjectDistributionChart').getContext('2d');
-            subjectDistributionChart = new Chart(ctx4, {
-                type: 'pie',
-                data: {
-                    labels: ['数学', '英语', '语文', '物理', '化学', '其他'],
-                    datasets: [{
-                        data: [35, 25, 20, 10, 5, 5],
-                        backgroundColor: [
-                            'var(--color-primary)', 'var(--color-secondary)', 'var(--el-color-success)', 'var(--el-color-warning)', 'var(--el-color-danger)', 'var(--el-color-info)'
-                        ],
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: { position: 'bottom' }
-                    }
-                }
-            });
-
-            const ctx5 = document.getElementById('examCompletionChart').getContext('2d');
-            examCompletionChart = new Chart(ctx5, {
-                type: 'bar',
-                data: {
-                    labels: ['数学', '英语', '语文', '物理', '化学'],
-                    datasets: [{
-                        label: '完成率(%)',
-                        data: [85, 78, 82, 75, 70],
-                        backgroundColor: 'var(--el-color-success)',
-                        borderRadius: 6
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: { display: false }
-                    },
-                    scales: {
-                        y: { beginAtZero: true, max: 100 }
-                    }
-                }
-            });
-
-            const ctx6 = document.getElementById('courseTypeChart').getContext('2d');
-            courseTypeChart = new Chart(ctx6, {
-                type: 'doughnut',
-                data: {
-                    labels: ['视频课程', '直播课程', '互动课程', '评估课程'],
-                    datasets: [{
-                        data: [50, 25, 15, 10],
-                        backgroundColor: [
-                            'var(--color-primary)', 'var(--color-secondary)', 'var(--el-color-success)', 'var(--el-color-warning)'
-                        ],
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: { position: 'bottom' }
-                    },
-                    cutout: '65%'
-                }
-            });
-
-            const ctx7 = document.getElementById('studyTimeChart').getContext('2d');
-            studyTimeChart = new Chart(ctx7, {
-                type: 'bar',
-                data: {
-                    labels: ['0-30分钟', '30-60分钟', '1-2小时', '2-3小时', '3小时以上'],
-                    datasets: [{
-                        label: '用户数',
-                        data: [45, 68, 85, 52, 28],
-                        backgroundColor: [
-                            'rgba(59, 130, 246, 0.7)',
-                            'rgba(139, 92, 246, 0.7)',
-                            'rgba(16, 185, 129, 0.7)',
-                            'rgba(245, 158, 11, 0.7)',
-                            'rgba(239, 68, 68, 0.7)'
-                        ],
-                        borderRadius: 6
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: { display: false }
-                    },
-                    scales: {
-                        y: { beginAtZero: true },
-                        x: { grid: { display: false } }
-                    }
-                }
-            });
-
-            const ctx8 = document.getElementById('gradeDistributionChart').getContext('2d');
-            gradeDistributionChart = new Chart(ctx8, {
-                type: 'radar',
-                data: {
-                    labels: ['语文', '数学', '英语', '物理', '化学', '生物'],
-                    datasets: [{
-                        label: '平均分',
-                        data: [82, 78, 85, 72, 76, 80],
-                        backgroundColor: 'rgba(139, 92, 246, 0.2)',
-                        borderColor: '#7c3aed',
-                        borderWidth: 2,
-                        pointBackgroundColor: '#7c3aed'
-                    }, {
-                        label: '最高分',
-                        data: [95, 98, 96, 92, 94, 95],
-                        backgroundColor: 'rgba(16, 185, 129, 0.2)',
-                        borderColor: '#10b981',
-                        borderWidth: 2,
-                        pointBackgroundColor: '#10b981'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: { position: 'bottom' }
-                    },
-                    scales: {
-                        r: {
-                            angleLines: { color: 'rgba(148, 163, 184, 0.2)' },
-                            grid: { color: 'rgba(148, 163, 184, 0.2)' },
-                            pointLabels: { color: '#64748b', font: { size: 12 } },
-                            ticks: { display: false }
-                        }
-                    }
-                }
-            });
-        }
-
-        function loadMockCharts() {
-            loadCharts({});
-        }
-
-        function refreshUserChart() {
-            if (userGrowthChart) {
-                userGrowthChart.destroy();
-            }
-            loadMockCharts();
-        }
-
-        async function loadSystemStats() {
-            try {
-                const response = await fetch('/api/system/status');
-                const data = await response.json();
-                
-                if (data.success) {
-                    const sys = data.system;
-                    document.getElementById('cpuUsage').textContent = sys.cpu_usage + '%';
-                    document.getElementById('memoryUsage').textContent = sys.memory_usage + '%';
-                    document.getElementById('diskUsage').textContent = sys.disk_usage + '%';
-                    document.getElementById('dbConnections').textContent = sys.db_connections || '--';
-                    document.getElementById('tableCount').textContent = sys.table_count || '--';
-                }
-            } catch (error) {
-                console.error('加载系统状态失败:', error);
-            }
-        }
-
-        loadStatistics();
-        loadSystemStats();
-        setInterval(loadSystemStats, 10000);
-    </script>
-
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据可视化</title>
     <style>
-        .grid-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: var(--spacing-4);
-            margin-bottom: var(--spacing-6);
-        }
-
-        .stat-card {
-            display: flex;
-            align-items: center;
-            padding: var(--spacing-5);
-            border-radius: var(--border-radius-xl);
-            background: var(--card-bg);
-            box-shadow: var(--shadow-sm);
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-
-        .stat-card:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-md);
-        }
-
-        .stat-icon {
-            width: 56px;
-            height: 56px;
-            border-radius: var(--border-radius-round);
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 100%;
+        }
+        .icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #333;
             font-size: 24px;
-            margin-right: var(--spacing-4);
-            flex-shrink: 0;
+            margin-bottom: 10px;
         }
-
-        .stat-icon.blue { background: rgba(64, 158, 255, 0.15); color: var(--color-primary); }
-        .stat-icon.green { background: rgba(103, 194, 58, 0.15); color: var(--color-success); }
-        .stat-icon.purple { background: rgba(139, 92, 246, 0.15); color: var(--color-secondary); }
-        .stat-icon.orange { background: rgba(230, 162, 60, 0.15); color: var(--color-warning); }
-        .stat-icon.red { background: rgba(245, 108, 108, 0.15); color: var(--color-danger); }
-        .stat-icon.cyan { background: rgba(90, 144, 153, 0.15); color: var(--color-info); }
-        .stat-icon.yellow { background: rgba(250, 204, 21, 0.15); color: #facc15; }
-        .stat-icon.pink { background: rgba(236, 72, 153, 0.15); color: #ec4899; }
-
-        .stat-info {
-            flex: 1;
+        p {
+            color: #666;
+            margin-bottom: 20px;
+            font-size: 14px;
         }
-
-        .stat-value {
-            font-size: 28px;
-            font-weight: 700;
-            color: var(--text-primary);
-            line-height: 1.2;
-        }
-
-        .stat-label {
-            font-size: 13px;
-            color: var(--text-secondary);
-            margin-top: 2px;
-        }
-
-        .stat-change {
-            display: inline-flex;
-            align-items: center;
+        .path {
+            background: #f5f5f5;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-family: monospace;
             font-size: 12px;
-            margin-top: 4px;
-            padding: 2px 8px;
-            border-radius: 10px;
+            color: #888;
+            margin-bottom: 20px;
         }
-
-        .stat-change.positive {
-            background: rgba(103, 194, 58, 0.15);
-            color: var(--color-success);
-        }
-
-        .stat-change.negative {
-            background: rgba(245, 108, 108, 0.15);
-            color: var(--color-danger);
-        }
-
-        .chart-card {
-            grid-column: span 2;
-        }
-
-        .card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: var(--spacing-4);
-        }
-
-        .form-control-sm {
-            padding: 6px 12px;
-            font-size: 12px;
-            border-radius: var(--border-radius-sm);
-        }
-
-        .timeline {
-            position: relative;
-        }
-
-        .timeline-item {
-            display: flex;
-            align-items: flex-start;
-            margin-bottom: var(--spacing-4);
-            position: relative;
-        }
-
-        .timeline-item::before {
-            content: '';
-            position: absolute;
-            left: 19px;
-            top: 44px;
-            width: 2px;
-            height: calc(100% + 8px);
-            background: rgba(148, 163, 184, 0.2);
-        }
-
-        .timeline-item:last-child::before {
-            display: none;
-        }
-
-        .timeline-dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background: var(--color-primary);
-            margin-right: var(--spacing-3);
-            margin-top: 8px;
-            flex-shrink: 0;
-        }
-
-        .timeline-content {
-            flex: 1;
-        }
-
-        .timeline-title {
+        .btn {
+            display: inline-block;
+            padding: 12px 32px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
             font-weight: 600;
-            color: var(--text-primary);
-            margin-bottom: 4px;
+            transition: all 0.3s ease;
+            margin: 5px;
         }
-
-        .timeline-desc {
-            font-size: 13px;
-            color: var(--text-secondary);
-            margin-bottom: 2px;
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
         }
-
-        .status-text {
-            font-weight: 600;
-            color: var(--color-primary);
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #666;
         }
-
-        @media (max-width: 768px) {
-            .chart-card {
-                grid-column: span 1;
-            }
+        .btn-secondary:hover {
+            background: #e0e0e0;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
         }
     </style>
-{% endblock %}
+</head>
+<body>
+    <div class="container">
+        <div class="icon">📈</div>
+        <h1>数据可视化</h1>
+        <p>数据可视化展示页面。</p>
+        <div class="path">/templates/admin_app/visualization.html</div>
+        <a href="/" class="btn">返回首页</a>
+        
+    </div>
+</body>
+</html>

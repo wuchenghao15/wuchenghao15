@@ -1,774 +1,162 @@
-{% extends 'admin_app/base.html' %}
-
-{% block title %}AI智能出题系统 - MTSCOS管理端{% endblock %}
-
-{% block content %}
-<div class="page-container">
-    <div class="section-title">
-        <i class="fas fa-magic" style="color: var(--color-primary);"></i>
-        AI智能出题系统
-    </div>
-
-    <div class="stat-grid">
-        <div class="stat-card blue">
-            <div class="stat-icon"><i class="fas fa-file-alt"></i></div>
-            <div class="stat-value" id="totalQuestions">--</div>
-            <div class="stat-label">总出题数</div>
-        </div>
-        <div class="stat-card green">
-            <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
-            <div class="stat-value" id="approvedQuestions">--</div>
-            <div class="stat-label">已审核</div>
-        </div>
-        <div class="stat-card orange">
-            <div class="stat-icon"><i class="fas fa-percentage"></i></div>
-            <div class="stat-value" id="approvalRate">--%</div>
-            <div class="stat-label">通过率</div>
-        </div>
-        <div class="stat-card purple">
-            <div class="stat-icon"><i class="fas fa-calendar-day"></i></div>
-            <div class="stat-value" id="todayGenerated">--</div>
-            <div class="stat-label">今日生成</div>
-        </div>
-    </div>
-
-    <div class="card">
-        <div class="card-header">
-            <div class="card-title">
-                <i class="fas fa-sliders-h" style="color: var(--color-primary);"></i>
-                出题配置
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI智能题目生成系统</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #ec4899 0%, #db2777 100%); min-height: 100vh; }
+        .container { padding: 20px; max-width: 1400px; margin: 0 auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; color: white; }
+        .header h1 { font-size: 26px; }
+        .header .user-info { display: flex; align-items: center; gap: 15px; }
+        .nav-bar { background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); padding: 15px 20px; margin-bottom: 20px; border-radius: 10px; }
+        .nav-bar ul { list-style: none; display: flex; gap: 20px; }
+        .nav-bar ul li a { color: white; text-decoration: none; padding: 8px 15px; border-radius: 6px; transition: background 0.3s; }
+        .nav-bar ul li a:hover, .nav-bar ul li a.active { background: rgba(255,255,255,0.2); }
+        .main-content { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .card { background: white; border-radius: 12px; padding: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .card h2 { font-size: 18px; color: #333; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-size: 13px; color: #555; margin-bottom: 5px; }
+        .form-group select, .form-group input, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+        .form-group textarea { height: 100px; resize: vertical; }
+        .btn { padding: 10px 20px; border-radius: 6px; border: none; cursor: pointer; font-size: 14px; font-weight: 500; }
+        .btn-primary { background: #ec4899; color: white; }
+        .btn-primary:hover { background: #db2777; }
+        .btn-success { background: #10b981; color: white; }
+        .btn-success:hover { background: #059669; }
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px; }
+        .stat-item { background: white; border-radius: 10px; padding: 15px; text-align: center; }
+        .stat-item .value { font-size: 24px; font-weight: bold; color: #ec4899; }
+        .stat-item .label { font-size: 12px; color: #666; margin-top: 5px; }
+        .table-container { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        table th, table td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; font-size: 13px; }
+        table th { background: #f8f9fa; color: #555; font-weight: 600; }
+        table tr:hover { background: #f9fafb; }
+        @media (max-width: 768px) { .main-content { grid-template-columns: 1fr; } .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-file-question"></i> AI智能题目生成系统</h1>
+            <div class="user-info">
+                <span>欢迎, {{ user.username }}</span>
             </div>
         </div>
-        <div style="padding: 4px 0;">
-            <div class="grid-2" style="gap: 12px; margin-bottom: 12px;">
-                <div>
-                    <label class="label">学科选择</label>
-                    <select id="subjectSelect" class="input">
-                        <option value="math">数学</option>
-                        <option value="physics">物理</option>
-                        <option value="chemistry">化学</option>
-                        <option value="english">英语</option>
-                        <option value="chinese">语文</option>
+        
+        <div class="nav-bar">
+            <ul>
+                <li><a href="/admin_app/dashboard">管理首页</a></li>
+                <li><a href="/admin_app/ai_learning_dashboard">AI学习仪表盘</a></li>
+                <li><a href="/admin_app/ai_question_generation" class="active">题目生成</a></li>
+                <li><a href="/admin_app/ai_evaluation">智能评估</a></li>
+            </ul>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-item">
+                <div class="value">{{ question_stats.get('total_generated', '--') }}</div>
+                <div class="label">生成题目数</div>
+            </div>
+            <div class="stat-item">
+                <div class="value">{{ question_stats.get('total_types', '--') }}</div>
+                <div class="label">题型数量</div>
+            </div>
+            <div class="stat-item">
+                <div class="value">{{ question_stats.get('total_difficulties', '--') }}</div>
+                <div class="label">难度级别</div>
+            </div>
+            <div class="stat-item">
+                <div class="value">{{ question_stats.get('used_in_exams', '--') }}</div>
+                <div class="label">已使用题目</div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="card">
+                <h2><i class="fas fa-magic"></i> 生成题目</h2>
+                <div class="form-group">
+                    <label>题目类型</label>
+                    <select id="question-type">
+                        <option value="single">单选题</option>
+                        <option value="multiple">多选题</option>
+                        <option value="judge">判断题</option>
+                        <option value="fill">填空题</option>
+                        <option value="essay">问答题</option>
                     </select>
                 </div>
-                <div>
-                    <label class="label">题目数量</label>
-                    <input type="number" id="questionCount" class="input" value="5" min="1" max="50" placeholder="请输入题目数量">
-                </div>
-            </div>
-            <div class="form-group" style="margin-bottom: 12px;">
-                <label class="label">主题/知识点</label>
-                <input type="text" id="topicInput" class="input" placeholder="例如：一元二次方程、牛顿第二定律">
-            </div>
-            <div class="grid-2" style="gap: 12px; margin-bottom: 12px;">
-                <div>
-                    <label class="label">难度级别</label>
-                    <select id="difficultySelect" class="input">
+                <div class="form-group">
+                    <label>难度级别</label>
+                    <select id="difficulty">
                         <option value="easy">简单</option>
-                        <option value="medium" selected>中等</option>
+                        <option value="medium">中等</option>
                         <option value="hard">困难</option>
                     </select>
                 </div>
-                <div>
-                    <label class="label">生成状态</label>
-                    <div id="generationStatus" style="padding: 12px 14px; border-radius: 12px; background: rgba(0,0,0,0.2); border: 1px solid var(--border); font-size: 13px; color: var(--text-muted);">
-                        <i class="fas fa-info-circle"></i> 等待生成
-                    </div>
+                <div class="form-group">
+                    <label>主题/知识点</label>
+                    <input type="text" id="topic" placeholder="请输入主题或知识点">
                 </div>
-            </div>
-            <div style="margin-bottom: 16px;">
-                <label class="label">题型选择（可多选）</label>
-                <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-                    <label class="question-type-tag" style="cursor: pointer;">
-                        <input type="checkbox" value="choice" checked style="display: none;">
-                        <span style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 20px; font-size: 13px; font-weight: 500; background: rgba(59, 130, 246, 0.15); color: var(--color-primary); border: 1px solid rgba(59, 130, 246, 0.3); transition: all 0.2s;">
-                            <i class="fas fa-list-ul"></i> 选择题
-                        </span>
-                    </label>
-                    <label class="question-type-tag" style="cursor: pointer;">
-                        <input type="checkbox" value="fill" checked style="display: none;">
-                        <span style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 20px; font-size: 13px; font-weight: 500; background: rgba(103, 194, 58, 0.15); color: var(--color-success); border: 1px solid rgba(103, 194, 58, 0.3); transition: all 0.2s;">
-                            <i class="fas fa-pen"></i> 填空题
-                        </span>
-                    </label>
-                    <label class="question-type-tag" style="cursor: pointer;">
-                        <input type="checkbox" value="judge" checked style="display: none;">
-                        <span style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 20px; font-size: 13px; font-weight: 500; background: rgba(230, 162, 60, 0.15); color: var(--color-warning); border: 1px solid rgba(230, 162, 60, 0.3); transition: all 0.2s;">
-                            <i class="fas fa-check-double"></i> 判断题
-                        </span>
-                    </label>
-                    <label class="question-type-tag" style="cursor: pointer;">
-                        <input type="checkbox" value="essay" style="display: none;">
-                        <span style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 20px; font-size: 13px; font-weight: 500; background: rgba(148, 163, 184, 0.15); color: var(--text-secondary); border: 1px solid rgba(148, 163, 184, 0.3); transition: all 0.2s;">
-                            <i class="fas fa-align-left"></i> 简答题
-                        </span>
-                    </label>
+                <div class="form-group">
+                    <label>生成数量</label>
+                    <input type="number" id="count" value="5" min="1" max="50">
                 </div>
+                <button class="btn btn-success" onclick="generateQuestions()">生成题目</button>
             </div>
-            <button id="generateBtn" class="btn btn-primary" style="width: 100%;" onclick="generateQuestions()">
-                <i class="fas fa-wand-magic-sparkles"></i>
-                开始生成题目
-            </button>
-        </div>
-    </div>
 
-    <div class="card">
-        <div class="card-header">
-            <div class="card-title">
-                <i class="fas fa-list-check" style="color: var(--color-secondary);"></i>
-                生成批次
-            </div>
-            <div class="card-more" onclick="loadBatches()">
-                <i class="fas fa-sync-alt"></i> 刷新
-            </div>
-        </div>
-        <div style="padding: 4px 0;" id="batchList">
-            <div class="empty-state">
-                <div class="empty-state-icon"><i class="fas fa-inbox"></i></div>
-                <div class="empty-state-text">暂无生成批次</div>
+            <div class="card">
+                <h2><i class="fas fa-list"></i> 最近生成的题目</h2>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>题目内容</th>
+                                <th>类型</th>
+                                <th>难度</th>
+                                <th>状态</th>
+                                <th>创建时间</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for question in question_stats.get('recent_questions', []) %}
+                            <tr>
+                                <td>{{ question.content[:50] }}...</td>
+                                <td>{{ question.type }}</td>
+                                <td>{{ question.difficulty }}</td>
+                                <td>{{ question.status }}</td>
+                                <td>{{ question.timestamp }}</td>
+                            </tr>
+                            {% endfor %}
+                            {% if not question_stats.get('recent_questions') %}
+                            <tr><td colspan="5" style="text-align: center; color: #999;">暂无生成的题目</td></tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="card">
-        <div class="card-header">
-            <div class="card-title">
-                <i class="fas fa-clipboard-list" style="color: var(--color-success);"></i>
-                题目列表
-            </div>
-            <div style="display: flex; gap: 8px;">
-                <select id="statusFilter" class="input" style="width: auto; padding: 6px 10px; font-size: 12px; min-height: auto;" onchange="loadQuestions()">
-                    <option value="">全部状态</option>
-                    <option value="pending">待审核</option>
-                    <option value="approved">已通过</option>
-                    <option value="rejected">已拒绝</option>
-                </select>
-            </div>
-        </div>
-        <div style="padding: 4px 0;" id="questionList">
-            <div class="empty-state">
-                <div class="empty-state-icon"><i class="fas fa-clipboard-question"></i></div>
-                <div class="empty-state-text">暂无题目数据</div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<style>
-.grid-2 {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-}
-
-.grid-3 {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
-}
-
-.question-type-tag input:checked + span {
-    opacity: 1;
-}
-
-.question-type-tag input:not(:checked) + span {
-    opacity: 0.5;
-    background: rgba(148, 163, 184, 0.1) !important;
-    color: var(--text-muted) !important;
-    border-color: rgba(148, 163, 184, 0.2) !important;
-}
-
-.batch-item {
-    padding: 14px;
-    border-radius: 12px;
-    background: rgba(0, 0, 0, 0.2);
-    border: 1px solid var(--border);
-    margin-bottom: 10px;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.batch-item:hover {
-    background: rgba(59, 130, 246, 0.08);
-    border-color: rgba(59, 130, 246, 0.3);
-}
-
-.batch-item.active {
-    background: rgba(59, 130, 246, 0.12);
-    border-color: rgba(59, 130, 246, 0.4);
-}
-
-.batch-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 8px;
-}
-
-.batch-title {
-    font-size: 14px;
-    font-weight: 600;
-}
-
-.batch-meta {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 12px;
-    color: var(--text-muted);
-    margin-bottom: 10px;
-}
-
-.batch-progress {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.batch-progress .progress-bar {
-    flex: 1;
-}
-
-.batch-progress-text {
-    font-size: 12px;
-    color: var(--text-secondary);
-    min-width: 50px;
-    text-align: right;
-}
-
-.question-item {
-    padding: 14px;
-    border-radius: 12px;
-    background: rgba(0, 0, 0, 0.2);
-    border: 1px solid var(--border);
-    margin-bottom: 10px;
-    transition: all 0.2s;
-}
-
-.question-item:hover {
-    border-color: rgba(59, 130, 246, 0.3);
-}
-
-.question-header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    margin-bottom: 10px;
-    gap: 10px;
-}
-
-.question-type-badge {
-    flex-shrink: 0;
-}
-
-.question-content {
-    font-size: 14px;
-    line-height: 1.6;
-    margin-bottom: 10px;
-    color: var(--text-primary);
-}
-
-.question-options {
-    margin-bottom: 10px;
-    padding-left: 4px;
-}
-
-.question-option {
-    padding: 6px 0;
-    font-size: 13px;
-    color: var(--text-secondary);
-    display: flex;
-    gap: 8px;
-}
-
-.question-option.correct {
-    color: var(--color-success);
-    font-weight: 500;
-}
-
-.question-option-label {
-    flex-shrink: 0;
-    width: 20px;
-}
-
-.question-answer-section {
-    padding-top: 10px;
-    border-top: 1px solid var(--border);
-    margin-top: 10px;
-}
-
-.question-answer-row {
-    display: flex;
-    margin-bottom: 8px;
-    font-size: 13px;
-}
-
-.question-answer-label {
-    color: var(--text-muted);
-    min-width: 50px;
-    flex-shrink: 0;
-}
-
-.question-answer-value {
-    color: var(--text-primary);
-    flex: 1;
-}
-
-.question-answer-value.correct {
-    color: var(--color-success);
-    font-weight: 500;
-}
-
-.question-actions {
-    display: flex;
-    gap: 8px;
-    margin-top: 12px;
-}
-
-.question-actions .btn {
-    flex: 1;
-    font-size: 13px;
-    min-height: 36px;
-    padding: 8px 12px;
-}
-
-@media (max-width: 480px) {
-    .grid-2 {
-        grid-template-columns: 1fr;
-    }
-    
-    .grid-3 {
-        grid-template-columns: 1fr;
-    }
-}
-</style>
-
-<script>
-let currentBatchId = null;
-let questionTypes = ['choice', 'fill', 'judge'];
-
-document.addEventListener('DOMContentLoaded', function() {
-    initQuestionTypeTags();
-    loadStats();
-    loadBatches();
-    loadQuestions();
-});
-
-function initQuestionTypeTags() {
-    const tags = document.querySelectorAll('.question-type-tag');
-    tags.forEach(tag => {
-        const checkbox = tag.querySelector('input');
-        const span = tag.querySelector('span');
-        span.addEventListener('click', function(e) {
-            e.preventDefault();
-            checkbox.checked = !checkbox.checked;
-            updateQuestionTypes();
-        });
-    });
-    updateQuestionTypes();
-}
-
-function updateQuestionTypes() {
-    questionTypes = [];
-    document.querySelectorAll('.question-type-tag input:checked').forEach(cb => {
-        questionTypes.push(cb.value);
-    });
-}
-
-function loadStats() {
-    fetch('/api/ai/qg/stats')
-        .then(response => response.json())
-        .then(data => {
-            if (data.code === 200 && data.data) {
-                const d = data.data;
-                document.getElementById('totalQuestions').textContent = d.total || 0;
-                document.getElementById('approvedQuestions').textContent = d.approved || 0;
-                const rate = d.total > 0 ? ((d.approved / d.total) * 100).toFixed(1) : 0;
-                document.getElementById('approvalRate').textContent = rate + '%';
-                document.getElementById('todayGenerated').textContent = d.today || 0;
-            }
-        })
-        .catch(error => {
-            console.error('加载统计数据失败:', error);
-        });
-}
-
-function loadBatches() {
-    fetch('/api/ai/qg/batches')
-        .then(response => response.json())
-        .then(data => {
-            if (data.code === 200 && data.data) {
-                renderBatches(data.data);
-            }
-        })
-        .catch(error => {
-            console.error('加载批次列表失败:', error);
-        });
-}
-
-function renderBatches(batches) {
-    const container = document.getElementById('batchList');
-    
-    if (!batches || batches.length === 0) {
-        container.innerHTML = `
-            <div class="empty-state">
-                <div class="empty-state-icon"><i class="fas fa-inbox"></i></div>
-                <div class="empty-state-text">暂无生成批次</div>
-            </div>
-        `;
-        return;
-    }
-    
-    container.innerHTML = batches.map(batch => `
-        <div class="batch-item ${currentBatchId === batch.id ? 'active' : ''}" onclick="selectBatch(${batch.id})">
-            <div class="batch-header">
-                <span class="batch-title">${batch.subject_name || batch.subject} - ${batch.topic || '综合练习'}</span>
-                ${getStatusBadge(batch.status)}
-            </div>
-            <div class="batch-meta">
-                <span><i class="fas fa-hashtag"></i> ${batch.id}</span>
-                <span><i class="fas fa-file-alt"></i> ${batch.total_count || 0}题</span>
-                <span><i class="fas fa-clock"></i> ${formatTime(batch.created_at)}</span>
-            </div>
-            <div class="batch-progress">
-                <div class="progress-bar">
-                    <div class="progress-fill ${getProgressClass(batch.status)}" style="width: ${batch.progress || 0}%"></div>
-                </div>
-                <span class="batch-progress-text">${batch.progress || 0}%</span>
-            </div>
-        </div>
-    `).join('');
-}
-
-function getStatusBadge(status) {
-    const statusMap = {
-        'pending': { text: '等待中', class: 'tag tag-gray' },
-        'generating': { text: '生成中', class: 'tag tag-blue' },
-        'completed': { text: '已完成', class: 'tag tag-green' },
-        'failed': { text: '失败', class: 'tag tag-red' }
-    };
-    const s = statusMap[status] || statusMap['pending'];
-    return `<span class="${s.class}"><i class="fas fa-circle" style="font-size: 6px;"></i> ${s.text}</span>`;
-}
-
-function getProgressClass(status) {
-    const classMap = {
-        'pending': 'progress-fill-secondary',
-        'generating': 'progress-fill-primary',
-        'completed': 'progress-fill-success',
-        'failed': 'progress-fill-error'
-    };
-    return classMap[status] || 'progress-fill-primary';
-}
-
-function selectBatch(batchId) {
-    currentBatchId = batchId;
-    loadBatches();
-    loadQuestions(batchId);
-}
-
-function loadQuestions(batchId) {
-    let url = '/api/ai/qg/questions';
-    const params = new URLSearchParams();
-    
-    if (batchId || currentBatchId) {
-        params.append('batch_id', batchId || currentBatchId);
-    }
-    
-    const statusFilter = document.getElementById('statusFilter').value;
-    if (statusFilter) {
-        params.append('status', statusFilter);
-    }
-    
-    if (params.toString()) {
-        url += '?' + params.toString();
-    }
-    
-    fetch(url)
-        .then(response => response.json())
-        .then(data => {
-            if (data.code === 200 && data.data) {
-                renderQuestions(data.data);
-            }
-        })
-        .catch(error => {
-            console.error('加载题目列表失败:', error);
-        });
-}
-
-function renderQuestions(questions) {
-    const container = document.getElementById('questionList');
-    
-    if (!questions || questions.length === 0) {
-        container.innerHTML = `
-            <div class="empty-state">
-                <div class="empty-state-icon"><i class="fas fa-clipboard-question"></i></div>
-                <div class="empty-state-text">暂无题目数据</div>
-            </div>
-        `;
-        return;
-    }
-    
-    container.innerHTML = questions.map(q => renderQuestionItem(q)).join('');
-}
-
-function renderQuestionItem(q) {
-    const typeLabels = {
-        'choice': '选择题',
-        'fill': '填空题',
-        'judge': '判断题',
-        'essay': '简答题'
-    };
-    
-    const typeColors = {
-        'choice': 'tag-blue',
-        'fill': 'tag-green',
-        'judge': 'tag-yellow',
-        'essay': 'tag-purple'
-    };
-    
-    let optionsHtml = '';
-    if (q.type === 'choice' && q.options) {
-        const options = typeof q.options === 'string' ? JSON.parse(q.options) : q.options;
-        optionsHtml = `
-            <div class="question-options">
-                ${Object.entries(options).map(([key, value]) => `
-                    <div class="question-option ${key === q.answer ? 'correct' : ''}">
-                        <span class="question-option-label">${key}.</span>
-                        <span>${value}</span>
-                    </div>
-                `).join('')}
-            </div>
-        `;
-    }
-    
-    const showActions = q.status === 'pending';
-    
-    return `
-        <div class="question-item" id="question-${q.id}">
-            <div class="question-header">
-                <div>
-                    <span class="tag ${typeColors[q.type] || 'tag-gray'} question-type-badge">
-                        ${typeLabels[q.type] || q.type}
-                    </span>
-                    <span class="tag tag-gray" style="margin-left: 6px;">
-                        ${getDifficultyLabel(q.difficulty)}
-                    </span>
-                </div>
-                ${getStatusBadge(q.status)}
-            </div>
-            <div class="question-content">${q.content || q.question}</div>
-            ${optionsHtml}
-            <div class="question-answer-section">
-                <div class="question-answer-row">
-                    <span class="question-answer-label">答案：</span>
-                    <span class="question-answer-value correct">${q.answer || '-'}</span>
-                </div>
-                ${q.analysis ? `
-                <div class="question-answer-row">
-                    <span class="question-answer-label">解析：</span>
-                    <span class="question-answer-value">${q.analysis}</span>
-                </div>
-                ` : ''}
-            </div>
-            ${showActions ? `
-            <div class="question-actions">
-                <button class="btn btn-secondary" onclick="rejectQuestion(${q.id})">
-                    <i class="fas fa-times"></i> 拒绝
-                </button>
-                <button class="btn btn-primary" onclick="approveQuestion(${q.id})" style="background: linear-gradient(135deg, var(--color-success), #059669);">
-                    <i class="fas fa-check"></i> 通过
-                </button>
-            </div>
-            ` : ''}
-        </div>
-    `;
-}
-
-function getDifficultyLabel(difficulty) {
-    const labels = {
-        'easy': '简单',
-        'medium': '中等',
-        'hard': '困难'
-    };
-    return labels[difficulty] || difficulty;
-}
-
-function generateQuestions() {
-    const subject = document.getElementById('subjectSelect').value;
-    const topic = document.getElementById('topicInput').value.trim();
-    const count = parseInt(document.getElementById('questionCount').value);
-    const difficulty = document.getElementById('difficultySelect').value;
-    
-    if (!topic) {
-        showToast('请输入主题或知识点');
-        return;
-    }
-    
-    if (questionTypes.length === 0) {
-        showToast('请至少选择一种题型');
-        return;
-    }
-    
-    const btn = document.getElementById('generateBtn');
-    const statusEl = document.getElementById('generationStatus');
-    
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 生成中...';
-    statusEl.innerHTML = '<i class="fas fa-spinner fa-spin" style="color: var(--color-primary);"></i> 正在生成题目，请稍候...';
-    statusEl.style.color = 'var(--color-primary)';
-    
-    fetch('/api/ai/qg/generate', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            subject: subject,
-            topic: topic,
-            count: count,
-            difficulty: difficulty,
-            question_types: questionTypes
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.code === 200) {
-            statusEl.innerHTML = '<i class="fas fa-check-circle" style="color: var(--color-success);"></i> 生成任务已提交！';
-            statusEl.style.color = 'var(--color-success)';
-            showToast('题目生成任务已提交');
-            loadBatches();
-            loadStats();
+    <script>
+        function generateQuestions() {
+            const questionType = document.getElementById('question-type').value;
+            const difficulty = document.getElementById('difficulty').value;
+            const topic = document.getElementById('topic').value;
+            const count = document.getElementById('count').value;
             
-            const batchId = data.data?.batch_id || data.data?.id;
-            if (batchId) {
-                currentBatchId = batchId;
-                pollBatchStatus(batchId);
+            if (!topic) {
+                alert('请输入主题或知识点');
+                return;
             }
-        } else {
-            statusEl.innerHTML = '<i class="fas fa-exclamation-circle" style="color: var(--color-error);"></i> 生成失败: ' + (data.message || '未知错误');
-            statusEl.style.color = 'var(--color-error)';
-            showToast('生成失败: ' + (data.message || '未知错误'));
+            
+            alert(`题目生成请求已提交：\n类型: ${questionType}\n难度: ${difficulty}\n主题: ${topic}\n数量: ${count}`);
+            document.getElementById('topic').value = '';
         }
-    })
-    .catch(error => {
-        console.error('生成题目失败:', error);
-        statusEl.innerHTML = '<i class="fas fa-exclamation-circle" style="color: var(--color-error);"></i> 生成失败: 网络错误';
-        statusEl.style.color = 'var(--color-error)';
-        showToast('生成失败: 网络错误');
-    })
-    .finally(() => {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> 开始生成题目';
-    });
-}
-
-function pollBatchStatus(batchId) {
-    let pollCount = 0;
-    const maxPolls = 60;
-    
-    function poll() {
-        if (pollCount >= maxPolls) return;
-        pollCount++;
-        
-        fetch(`/api/ai/qg/batches?id=${batchId}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.code === 200 && data.data) {
-                    const batches = Array.isArray(data.data) ? data.data : [data.data];
-                    const batch = batches.find(b => b.id === batchId);
-                    
-                    if (batch) {
-                        loadBatches();
-                        loadQuestions(batchId);
-                        
-                        if (batch.status === 'completed' || batch.status === 'failed') {
-                            return;
-                        }
-                    }
-                }
-                
-                setTimeout(poll, 3000);
-            })
-            .catch(() => {
-                setTimeout(poll, 3000);
-            });
-    }
-    
-    setTimeout(poll, 2000);
-}
-
-function approveQuestion(questionId) {
-    if (!confirm('确定通过这道题目吗？')) return;
-    
-    fetch(`/api/ai/qg/question/${questionId}/approve`, {
-        method: 'POST'
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.code === 200) {
-            showToast('题目已通过');
-            loadQuestions();
-            loadStats();
-        } else {
-            showToast('操作失败: ' + (data.message || '未知错误'));
-        }
-    })
-    .catch(error => {
-        console.error('通过题目失败:', error);
-        showToast('操作失败');
-    });
-}
-
-function rejectQuestion(questionId) {
-    if (!confirm('确定拒绝这道题目吗？')) return;
-    
-    fetch(`/api/ai/qg/question/${questionId}/reject`, {
-        method: 'POST'
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.code === 200) {
-            showToast('题目已拒绝');
-            loadQuestions();
-            loadStats();
-        } else {
-            showToast('操作失败: ' + (data.message || '未知错误'));
-        }
-    })
-    .catch(error => {
-        console.error('拒绝题目失败:', error);
-        showToast('操作失败');
-    });
-}
-
-function formatTime(dateStr) {
-    if (!dateStr) return '-';
-    const date = new Date(dateStr);
-    const now = new Date();
-    const diff = now - date;
-    
-    if (diff < 60000) return '刚刚';
-    if (diff < 3600000) return Math.floor(diff / 60000) + '分钟前';
-    if (diff < 86400000) return Math.floor(diff / 3600000) + '小时前';
-    
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hour = String(date.getHours()).padStart(2, '0');
-    const minute = String(date.getMinutes()).padStart(2, '0');
-    return `${month}-${day} ${hour}:${minute}`;
-}
-
-function showToast(message) {
-    const existing = document.querySelector('.toast');
-    if (existing) existing.remove();
-    
-    const toast = document.createElement('div');
-    toast.className = 'toast';
-    toast.textContent = message;
-    document.body.appendChild(toast);
-    
-    setTimeout(() => toast.remove(), 2500);
-}
-</script>
-{% endblock %}
+    </script>
+</body>
+</html>

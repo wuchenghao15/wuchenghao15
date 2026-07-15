@@ -20,7 +20,7 @@ logging.basicConfig(
 logger = logging.getLogger('distributed_ai_employee_manager')
 
 class AIEmployee(ABC):
-    """AI员工抽象基类: 定义AI员工的核心能力"""
+    """AI员工抽象基类: 定义AI员工的核心能力 - 集成智能赋能"""
 
     def __init__(self, employee_id, name, role, version="1.0.0"):
         """初始化AI员工
@@ -50,6 +50,76 @@ class AIEmployee(ABC):
 
         self.logger = logging.getLogger(f"ai_employee_{employee_id}")
         self.logger.info(f"AI员工 {name} 已实例化,角色: {role},版本: {version}")
+
+        # 智能赋能初始化
+        self.empowerment_enabled = False
+        self.personality = None
+        self.learning_engine = None
+        self.decision_history = []
+        try:
+            from ai_engines.intelligent_empowerment import PersonalitySystem, NetworkLearningEngine
+            from ai_engines.intelligent_empowerment import EMOTION_STATES
+            _ROLE_P = {
+                'ai_service': 'creative', 'api_service': 'analytical',
+                'database_service': 'cautious', 'filesystem_service': 'cautious',
+                'monitoring_service': 'cautious',
+            }
+            _ROLE_D = {
+                'ai_service': 'general_programming', 'api_service': 'general_programming',
+                'database_service': 'system_admin', 'filesystem_service': 'system_admin',
+                'monitoring_service': 'diagnostics',
+            }
+            ptype = _ROLE_P.get(role, 'analytical')
+            domain = _ROLE_D.get(role, 'general_programming')
+            self.personality = PersonalitySystem(ptype)
+            self.learning_engine = NetworkLearningEngine(employee_id, domain)
+            self.empowerment_enabled = True
+            self._EMOTION_STATES = EMOTION_STATES
+        except Exception as e:
+            self.logger.warning(f"智能赋能初始化失败: {e}")
+
+    def get_empowerment_profile(self):
+        """获取智能赋能档案"""
+        if not self.empowerment_enabled:
+            return {'enabled': False, 'employee_id': self.employee_id, 'name': self.name}
+        return {
+            'enabled': True,
+            'employee_id': self.employee_id,
+            'name': self.name,
+            'type': self.role,
+            'personality': self.personality.get_personality_profile(),
+            'learning_stats': self.learning_engine.get_learning_stats(),
+            'knowledge_topics': len(self.learning_engine.knowledge_base),
+            'certifications': self.learning_engine.certifications,
+            'decision_count': len(self.decision_history),
+        }
+
+    def get_personality_detail(self):
+        if not self.personality:
+            return {}
+        return self.personality.get_personality_profile()
+
+    def get_learning_detail(self):
+        if not self.learning_engine:
+            return {}
+        return {
+            'stats': self.learning_engine.get_learning_stats(),
+            'knowledge_base': self.learning_engine.get_knowledge_base(),
+            'recent_history': self.learning_engine.get_learning_history(10),
+            'upgrade_status': self.learning_engine.auto_upgrade_check(),
+            'certifications': self.learning_engine.certifications,
+        }
+
+    def trigger_learning_session(self, topic=None, duration=30):
+        if not self.learning_engine:
+            return {'success': False, 'message': '学习引擎未初始化'}
+        return self.learning_engine.learn_from_network(topic, duration)
+
+    def rest_employee(self):
+        if self.personality:
+            self.personality.rest()
+            return {'success': True, 'message': f'{self.name} 已休息，能量恢复至 {self.personality.energy}'}
+        return {'success': False, 'message': '性格系统未初始化'}
 
     @abstractmethod
     def execute_task(self, task_data):
