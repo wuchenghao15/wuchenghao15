@@ -548,7 +548,7 @@ VERSION_DATA = {
     }
 }
 
-CURRENT_VERSION = '14.4.0'
+CURRENT_VERSION = '14.5.0'
 
 def init_version_table():
     conn = connect('system')
