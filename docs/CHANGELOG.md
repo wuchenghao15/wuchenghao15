@@ -1,3 +1,41 @@
+## v10.2.0 (2026-07-16)
+
+### 🏗️ 基础设施与资源管理增强
+
+#### 🔗 连接池服务 (connection_pool_service.py)
+
+- ✨ 统一数据库连接池管理
+- 🔄 多数据库支持（SQLite/MySQL/PostgreSQL）
+- ⚖️ 4个默认连接池（main/log/cache/report）
+- 📊 连接生命周期管理（创建/借出/归还/销毁）
+- 🧹 空闲连接自动清理
+
+#### 📦 对象存储服务 (storage_service.py)
+
+- ✨ 统一文件存储抽象（S3兼容接口）
+- 🪣 6个默认存储桶（uploads/backups/reports/temp/avatars/documents）
+- 📋 对象CRUD操作（上传/下载/删除/复制）
+- 🔐 ETag校验和元数据管理
+- 📊 存储配额和访问日志
+
+#### 🏢 多租户管理服务 (tenant_manager_service.py)
+
+- ✨ SaaS多租户隔离
+- 📋 4级套餐（free/basic/pro/enterprise）
+- 👥 租户用户管理（owner/admin/member/guest）
+- 📊 资源配额（用户数/存储/API调用）
+- 🔄 租户上下文（线程级隔离）
+
+#### 📊 API配额服务 (api_quota_service.py)
+
+- ✨ 按用户/租户的API配额管理
+- ⏰ 多维度限流（分钟/小时/天）
+- 📶 带宽配额控制
+- 📋 5个默认配额策略
+- 📊 配额使用日志和统计
+
+---
+
 ## v10.1.0 (2026-07-16)
 
 ### 🔐 安全与运维增强
