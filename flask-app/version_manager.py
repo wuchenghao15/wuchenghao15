@@ -1,10 +1,118 @@
 #!/usr/bin/env python3
+"""
+MTSCOS 版本管理器
+
+## 3级版本号规则 (Semantic Versioning)
+    版本号格式: MAJOR.MINOR.PATCH (如 14.1.0)
+
+### 递增规则:
+    - MAJOR (主版本号): 不兼容的API变更或重大架构重构时递增 (预计每年0-1次)
+    - MINOR (次版本号): 新增功能且向下兼容时递增 (每月最多1次)
+    - PATCH (修订号):   Bug修复或小优化时递增 (可多次)
+
+### 版本范围约束:
+    - MAJOR: 1-99
+    - MINOR: 0-99
+    - PATCH: 0-999
+
+### 注意事项:
+    - 新增服务模块属于 MINOR 级别变更,不应递增 MAJOR
+    - 仅当现有API发生破坏性变更时才递增 MAJOR
+    - PATCH 级别不得包含新功能,仅用于修复
+"""
+
 import os
 import json
 import time
 import sqlite3
+import re
 from datetime import datetime
 from db_manager import connect
+
+# 版本号格式正则
+VERSION_PATTERN = re.compile(r'^(\d{1,2})\.(\d{1,2})\.(\d{1,3})$')
+
+# 版本号范围约束
+MAJOR_MAX = 99
+MINOR_MAX = 99
+PATCH_MAX = 999
+
+
+def validate_version(version: str) -> bool:
+    """验证版本号格式是否符合3级规范"""
+    match = VERSION_PATTERN.match(version)
+    if not match:
+        return False
+    major, minor, patch = int(match.group(1)), int(match.group(2)), int(match.group(3))
+    if major < 0 or major > MAJOR_MAX:
+        return False
+    if minor < 0 or minor > MINOR_MAX:
+        return False
+    if patch < 0 or patch > PATCH_MAX:
+        return False
+    return True
+
+
+def parse_version(version: str) -> tuple:
+    """解析版本号为 (major, minor, patch) 元组"""
+    match = VERSION_PATTERN.match(version)
+    if not match:
+        return (0, 0, 0)
+    return (int(match.group(1)), int(match.group(2)), int(match.group(3)))
+
+
+def compare_versions(v1: str, v2: str) -> int:
+    """比较两个版本号, 返回 1(v1>v2), -1(v1<v2), 0(相等)"""
+    a = parse_version(v1)
+    b = parse_version(v2)
+    if a > b:
+        return 1
+    elif a < b:
+        return -1
+    return 0
+
+
+def next_patch_version(version: str) -> str:
+    """获取下一个PATCH版本号"""
+    major, minor, patch = parse_version(version)
+    patch = min(patch + 1, PATCH_MAX)
+    return f"{major}.{minor}.{patch}"
+
+
+def next_minor_version(version: str) -> str:
+    """获取下一个MINOR版本号"""
+    major, minor, _ = parse_version(version)
+    minor = min(minor + 1, MINOR_MAX)
+    return f"{major}.{minor}.0"
+
+
+def next_major_version(version: str) -> str:
+    """获取下一个MAJOR版本号"""
+    major, _, _ = parse_version(version)
+    major = min(major + 1, MAJOR_MAX)
+    return f"{major}.0.0"
+
+
+def suggest_version(current_version: str, change_type: str = 'patch') -> str:
+    """
+    根据变更类型建议下一个版本号
+
+    Args:
+        current_version: 当前版本号
+        change_type: 变更类型 ('patch'|'minor'|'major')
+
+    Returns:
+        建议的下一个版本号
+    """
+    if not validate_version(current_version):
+        return "1.0.0"
+
+    if change_type == 'major':
+        return next_major_version(current_version)
+    elif change_type == 'minor':
+        return next_minor_version(current_version)
+    else:
+        return next_patch_version(current_version)
 
 VERSION_DATA = {
     '14.0.0': {
