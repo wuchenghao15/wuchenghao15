@@ -98,7 +98,7 @@ class BrainKnowledge:
         return {
             'knowledge_id': self.knowledge_id,
             'error_type': self.error_type,
-            'error_pattern': self.pattern.value if self.error_pattern else None,
+            'error_pattern': self.error_pattern.value if self.error_pattern else None,
             'root_cause': self.root_cause,
             'solution_approach': self.solution_approach,
             'fix_code': self.fix_code,
@@ -120,6 +120,7 @@ class AIAutoFixService:
         self._fix_strategies: Dict[ErrorPattern, Callable] = {}
         self._lock = threading.RLock()
         self._db_path = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'brain_knowledge.json')
+        self._app_db_path = os.path.join(os.path.dirname(__file__), '..', 'app.db')
         
         os.makedirs(os.path.dirname(self._db_path), exist_ok=True)
         
@@ -437,14 +438,16 @@ class AIAutoFixService:
                         return kb
         return None
 
-    def apply_fix(self, analysis: ErrorAnalysis) -> FixSolution:
+    def apply_fix(self, analysis: ErrorAnalysis, executed_by: str = "system") -> FixSolution:
         """应用修复"""
+        fix_id = self._generate_solution_id()
+        
         kb_solution = self.find_solution_in_knowledge(analysis.pattern, analysis.error_message)
         
         if kb_solution:
             logger.info(f"从脑库找到解决方案: {kb_solution.knowledge_id}")
-            return FixSolution(
-                solution_id=self._generate_solution_id(),
+            solution = FixSolution(
+                solution_id=fix_id,
                 error_pattern=analysis.pattern,
                 strategy=FixStrategy.UNKNOWN,
                 original_code=analysis.code_snippet,
@@ -452,13 +455,43 @@ class AIAutoFixService:
                 explanation=f"应用脑库方案: {kb_solution.solution_approach}",
                 confidence=kb_solution.success_rate
             )
+            
+            self._record_fix_to_db(
+                fix_id=fix_id,
+                file_path=analysis.file_path,
+                original_code=analysis.code_snippet,
+                fixed_code=kb_solution.fix_code,
+                error_type=analysis.error_type,
+                error_message=analysis.error_message,
+                fix_strategy=kb_solution.solution_approach,
+                confidence=kb_solution.success_rate,
+                executed_by=executed_by,
+                description=solution.explanation
+            )
+            
+            return solution
         
         fix_func = self._fix_strategies.get(analysis.pattern)
         if fix_func:
-            return fix_func(analysis)
+            solution = fix_func(analysis)
+            
+            self._record_fix_to_db(
+                fix_id=fix_id,
+                file_path=analysis.file_path,
+                original_code=analysis.code_snippet,
+                fixed_code=solution.fixed_code,
+                error_type=analysis.error_type,
+                error_message=analysis.error_message,
+                fix_strategy=solution.strategy.value,
+                confidence=solution.confidence,
+                executed_by=executed_by,
+                description=solution.explanation
+            )
+            
+            return solution
         
-        return FixSolution(
-            solution_id=self._generate_solution_id(),
+        solution = FixSolution(
+            solution_id=fix_id,
             error_pattern=analysis.pattern,
             strategy=FixStrategy.UNKNOWN,
             original_code=analysis.code_snippet,
@@ -466,6 +499,21 @@ class AIAutoFixService:
             explanation="未知错误,请手动检查",
             confidence=0.0
         )
+        
+        self._record_fix_to_db(
+            fix_id=fix_id,
+            file_path=analysis.file_path,
+            original_code=analysis.code_snippet,
+            fixed_code=analysis.code_snippet,
+            error_type=analysis.error_type,
+            error_message=analysis.error_message,
+            fix_strategy="unknown",
+            confidence=0.0,
+            executed_by=executed_by,
+            description=solution.explanation
+        )
+        
+        return solution
 
     def learn_from_fix(self, analysis: ErrorAnalysis, solution: FixSolution, success: bool):
         """从修复中学习"""
@@ -506,12 +554,15 @@ class AIAutoFixService:
         
         return tags[:5]
 
-    def auto_fix_and_learn(self, error: Exception, file_path: str = "", context: Optional[Dict] = None) -> Tuple[ErrorAnalysis, FixSolution]:
+    def auto_fix_and_learn(self, error: Exception, file_path: str = "", context: Optional[Dict] = None, executed_by: str = "system") -> Tuple[ErrorAnalysis, FixSolution]:
         """自动修复并学习"""
         analysis = self.analyze_error(error, file_path, context)
-        solution = self.apply_fix(analysis)
+        solution = self.apply_fix(analysis, executed_by=executed_by)
         
-        self.learn_from_fix(analysis, solution, success=solution.confidence > 0.7)
+        success = solution.confidence > 0.7
+        self._update_fix_status(solution.solution_id, 'success' if success else 'failed')
+        
+        self.learn_from_fix(analysis, solution, success=success)
         
         return analysis, solution
 
@@ -574,6 +625,140 @@ class AIAutoFixService:
                 self._save_knowledge_base()
                 return True
         return False
+
+    def _record_fix_to_db(self, fix_id: str, file_path: str, original_code: str, 
+                         fixed_code: str, error_type: str, error_message: str, 
+                         fix_strategy: str, confidence: float, executed_by: str,
+                         description: str = ""):
+        """将修复记录写入数据库留底"""
+        try:
+            full_original_code = original_code
+            
+            if file_path and os.path.exists(file_path):
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    full_original_code = f.read()
+            
+            import sqlite3
+            with sqlite3.connect(self._app_db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute('''
+                    INSERT INTO auto_fix_code_records 
+                    (fix_id, file_path, original_code, fixed_code, error_type, 
+                     error_message, fix_strategy, confidence, executed_by, 
+                     status, rollback_available, description)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (fix_id, file_path, full_original_code, fixed_code, error_type,
+                      error_message, fix_strategy, confidence, executed_by,
+                      'pending', 1, description))
+                conn.commit()
+            logger.info(f"修复记录已写入数据库: {fix_id}")
+        except Exception as e:
+            logger.error(f"写入修复记录失败: {str(e)}")
+
+    def _update_fix_status(self, fix_id: str, status: str, validation_result: str = ""):
+        """更新修复状态"""
+        try:
+            import sqlite3
+            with sqlite3.connect(self._app_db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute('''
+                    UPDATE auto_fix_code_records 
+                    SET status = ?, validation_result = ? 
+                    WHERE fix_id = ?
+                ''', (status, validation_result, fix_id))
+                conn.commit()
+        except Exception as e:
+            logger.error(f"更新修复状态失败: {str(e)}")
+
+    def rollback_fix(self, fix_id: str) -> Dict[str, Any]:
+        """回滚指定修复"""
+        try:
+            import sqlite3
+            with sqlite3.connect(self._app_db_path) as conn:
+                cursor = conn.cursor()
+                
+                cursor.execute('''
+                    SELECT file_path, original_code, rollback_available 
+                    FROM auto_fix_code_records 
+                    WHERE fix_id = ? AND status = 'success'
+                ''', (fix_id,))
+                record = cursor.fetchone()
+                
+                if not record:
+                    return {'success': False, 'reason': '未找到可回滚的修复记录'}
+                
+                file_path, original_code, rollback_available = record
+                
+                if rollback_available != 1:
+                    return {'success': False, 'reason': '该修复不支持回滚'}
+                
+                if not original_code or len(original_code.strip()) < 10:
+                    return {'success': False, 'reason': '原始代码内容过短，可能不完整，禁止回滚'}
+                
+                if os.path.exists(file_path):
+                    backup_path = f"{file_path}.backup_{int(time.time())}"
+                    with open(file_path, 'r', encoding='utf-8') as src:
+                        with open(backup_path, 'w', encoding='utf-8') as dst:
+                            dst.write(src.read())
+                
+                with open(file_path, 'w', encoding='utf-8') as f:
+                    f.write(original_code)
+                
+                cursor.execute('''
+                    UPDATE auto_fix_code_records 
+                    SET status = 'rolled_back', rollback_code = ? 
+                    WHERE fix_id = ?
+                ''', (backup_path, fix_id))
+                conn.commit()
+                
+                logger.info(f"修复已回滚: {fix_id}")
+                return {'success': True, 'message': '回滚成功', 'backup_path': backup_path}
+        except Exception as e:
+            logger.error(f"回滚修复失败: {str(e)}")
+            return {'success': False, 'reason': str(e)}
+
+    def get_fix_records(self, status: str = None, limit: int = 100) -> List[Dict]:
+        """获取修复记录"""
+        try:
+            import sqlite3
+            with sqlite3.connect(self._app_db_path) as conn:
+                conn.row_factory = sqlite3.Row
+                cursor = conn.cursor()
+                
+                if status:
+                    cursor.execute('''
+                        SELECT * FROM auto_fix_code_records 
+                        WHERE status = ? 
+                        ORDER BY executed_at DESC LIMIT ?
+                    ''', (status, limit))
+                else:
+                    cursor.execute('''
+                        SELECT * FROM auto_fix_code_records 
+                        ORDER BY executed_at DESC LIMIT ?
+                    ''', (limit,))
+                
+                return [dict(row) for row in cursor.fetchall()]
+        except Exception as e:
+            logger.error(f"获取修复记录失败: {str(e)}")
+            return []
+
+    def get_fix_record_by_id(self, fix_id: str) -> Optional[Dict]:
+        """根据ID获取修复记录"""
+        try:
+            import sqlite3
+            with sqlite3.connect(self._app_db_path) as conn:
+                conn.row_factory = sqlite3.Row
+                cursor = conn.cursor()
+                
+                cursor.execute('''
+                    SELECT * FROM auto_fix_code_records WHERE fix_id = ?
+                ''', (fix_id,))
+                
+                row = cursor.fetchone()
+                return dict(row) if row else None
+        except Exception as e:
+            logger.error(f"获取修复记录失败: {str(e)}")
+            return None
 
 
 # 创建全局实例

@@ -18,7 +18,7 @@ def require_admin(f):
         if not session.get('logged_in'):
             return redirect('/auth/login')
         role = session.get('role', 'guest')
-        if role not in ['admin', 'super_admin', 'system_admin']:
+        if role not in ['admin', 'super_admin', 'system_admin', 'hardware_admin', 'hardware_vikey_admin']:
             return jsonify({'success': False, 'error': '权限不足'}), 403
         return f(*args, **kwargs)
     return decorated_function

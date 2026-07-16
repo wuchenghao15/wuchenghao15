@@ -5564,6 +5564,29 @@ def api_super_admin_update_user(user_id):
         conn = sqlite3.connect(DATABASE_PATH)
         cur = conn.cursor()
         
+        cur.execute('SELECT username FROM users WHERE id = ?', [user_id])
+        user = cur.fetchone()
+        if not user:
+            conn.close()
+            return jsonify({'success': False, 'error': '用户不存在'})
+        
+        target_username = user[0]
+        
+        cur.execute('SELECT rule_value FROM system_rules WHERE rule_code = ?', ('PERM_SUPER_ADMIN_UNIQUE_USER',))
+        unique_super_admin = cur.fetchone()
+        unique_super_admin = unique_super_admin[0] if unique_super_admin else None
+        
+        if 'role' in data:
+            new_role = data['role']
+            
+            if unique_super_admin and new_role == 'super_admin' and target_username != unique_super_admin:
+                conn.close()
+                return jsonify({'success': False, 'error': f'超级管理员唯一用户规则：仅允许 {unique_super_admin} 拥有super_admin角色'})
+            
+            if unique_super_admin and target_username == unique_super_admin and new_role != 'super_admin':
+                conn.close()
+                return jsonify({'success': False, 'error': f'禁止修改超级管理员 {unique_super_admin} 的角色'})
+        
         updates = []
         params = []
         
@@ -5575,6 +5598,7 @@ def api_super_admin_update_user(user_id):
             params.append(1 if data['is_active'] else 0)
         
         if not updates:
+            conn.close()
             return jsonify({'success': False, 'error': '没有需要更新的字段'})
         
         params.append(user_id)
@@ -5593,6 +5617,22 @@ def api_super_admin_delete_user(user_id):
         import sqlite3
         conn = sqlite3.connect(DATABASE_PATH)
         cur = conn.cursor()
+        
+        cur.execute('SELECT username FROM users WHERE id = ?', [user_id])
+        user = cur.fetchone()
+        if not user:
+            conn.close()
+            return jsonify({'success': False, 'error': '用户不存在'})
+        
+        target_username = user[0]
+        
+        cur.execute('SELECT rule_value FROM system_rules WHERE rule_code = ?', ('PERM_SUPER_ADMIN_UNIQUE_USER',))
+        unique_super_admin = cur.fetchone()
+        unique_super_admin = unique_super_admin[0] if unique_super_admin else None
+        
+        if unique_super_admin and target_username == unique_super_admin:
+            conn.close()
+            return jsonify({'success': False, 'error': f'禁止删除超级管理员 {unique_super_admin}'})
         
         cur.execute('DELETE FROM users WHERE id = ?', [user_id])
         conn.commit()
@@ -6507,7 +6547,7 @@ def get_user_education_type(user_id: int) -> str:
 # 学生门户路由 - 登录后首页（统一路口界面）
 @app.route('/exam_system')
 def exam_system():
-    ALLOWED_ROLES = ['student', 'student_vip', 'teacher', 'admin', 'super_admin', 'system_admin']
+    ALLOWED_ROLES = ['student', 'student_vip', 'teacher', 'admin', 'super_admin', 'system_admin', 'hardware_admin', 'hardware_vikey_admin']
     
     user_id = session.get('user_id')
     
@@ -6561,7 +6601,7 @@ def exam_system():
 # 考试系统子路由
 @app.route('/exam_system/exams')
 def exam_system_exams():
-    ALLOWED_ROLES = ['student', 'student_vip']
+    ALLOWED_ROLES = ['student', 'student_vip', 'teacher', 'admin', 'super_admin', 'system_admin', 'hardware_admin', 'hardware_vikey_admin']
     
     user_id = session.get('user_id')
     
@@ -6585,22 +6625,29 @@ def exam_system_exams():
     
     exams = get_recommended_exams(education_type, user_grade, limit=12, is_final_exam_period=is_final_exam_period, category=selected_category)
     
-    categories = [
-        {'name': '数学', 'code': 'Math', 'icon': 'fa-calculator'},
-        {'name': '语文', 'code': 'Chinese', 'icon': 'fa-book-open'},
-        {'name': '英语', 'code': 'English', 'icon': 'fa-globe'},
-        {'name': '物理', 'code': 'Physics', 'icon': 'fa-atom'},
-        {'name': '化学', 'code': 'Chemistry', 'icon': 'fa-flask-vial'},
-        {'name': '政治', 'code': 'Politics', 'icon': 'fa-flag'},
-        {'name': '党中央精神', 'code': 'PartySpirit', 'icon': 'fa-heart'},
-        {'name': '日语', 'code': 'Japanese', 'icon': 'fa-language'},
-        {'name': '日语听力', 'code': 'JapaneseListening', 'icon': 'fa-headphones'},
-        {'name': '英语听力', 'code': 'EnglishListening', 'icon': 'fa-headphones'},
-        {'name': '语文听力', 'code': 'ChineseListening', 'icon': 'fa-headphones'},
-        {'name': '自主招生', 'code': 'SelfEnrollment', 'icon': 'fa-graduation-cap'},
-        {'name': '数学竞赛', 'code': 'MathCompetition', 'icon': 'fa-trophy'},
-        {'name': '高考真题', 'code': 'GaokaoReal', 'icon': 'fa-file-text'},
+    if role in ['student', 'student_vip']:
+        k12_categories = ['Math', 'Chinese', 'English', 'Physics', 'Chemistry', 'Politics', 'PartySpirit', 'EnglishListening', 'ChineseListening']
+        if education_type == 'nine_year':
+            exams = [e for e in exams if e.get('subject', '') in ['数学', '语文', '英语', '物理', '化学', '政治']]
+    
+    all_categories = [
+        {'name': '数学', 'code': 'Math', 'icon': 'fa-calculator', 'education_types': ['nine_year', 'adult', 'general']},
+        {'name': '语文', 'code': 'Chinese', 'icon': 'fa-book-open', 'education_types': ['nine_year', 'adult', 'general']},
+        {'name': '英语', 'code': 'English', 'icon': 'fa-globe', 'education_types': ['nine_year', 'adult', 'general']},
+        {'name': '物理', 'code': 'Physics', 'icon': 'fa-atom', 'education_types': ['nine_year', 'adult', 'general']},
+        {'name': '化学', 'code': 'Chemistry', 'icon': 'fa-flask-vial', 'education_types': ['nine_year', 'adult', 'general']},
+        {'name': '政治', 'code': 'Politics', 'icon': 'fa-flag', 'education_types': ['nine_year', 'adult', 'general']},
+        {'name': '党中央精神', 'code': 'PartySpirit', 'icon': 'fa-heart', 'education_types': ['nine_year', 'adult', 'general']},
+        {'name': '日语', 'code': 'Japanese', 'icon': 'fa-language', 'education_types': ['adult', 'general']},
+        {'name': '日语听力', 'code': 'JapaneseListening', 'icon': 'fa-headphones', 'education_types': ['adult', 'general']},
+        {'name': '英语听力', 'code': 'EnglishListening', 'icon': 'fa-headphones', 'education_types': ['nine_year', 'adult', 'general']},
+        {'name': '语文听力', 'code': 'ChineseListening', 'icon': 'fa-headphones', 'education_types': ['nine_year', 'adult', 'general']},
+        {'name': '自主招生', 'code': 'SelfEnrollment', 'icon': 'fa-graduation-cap', 'education_types': ['nine_year', 'adult', 'general']},
+        {'name': '数学竞赛', 'code': 'MathCompetition', 'icon': 'fa-trophy', 'education_types': ['nine_year', 'adult', 'general']},
+        {'name': '高考真题', 'code': 'GaokaoReal', 'icon': 'fa-file-text', 'education_types': ['nine_year', 'adult', 'general']},
     ]
+    
+    categories = [cat for cat in all_categories if education_type in cat['education_types']]
     
     selected_category_name = ''
     for cat in categories:
@@ -6664,7 +6711,7 @@ def check_final_exam_period(education_type, grade=''):
 # 测试系统子路由
 @app.route('/exam_system/tests')
 def exam_system_tests():
-    ALLOWED_ROLES = ['student', 'student_vip']
+    ALLOWED_ROLES = ['student', 'student_vip', 'teacher', 'admin', 'super_admin', 'system_admin', 'hardware_admin', 'hardware_vikey_admin']
     
     user_id = session.get('user_id')
     
@@ -6688,22 +6735,29 @@ def exam_system_tests():
     
     tests = get_recommended_tests(education_type, user_grade, limit=12, is_final_exam_period=is_final_exam_period, category=selected_category)
     
-    categories = [
-        {'name': '数学', 'code': 'Math', 'icon': 'fa-calculator'},
-        {'name': '语文', 'code': 'Chinese', 'icon': 'fa-book-open'},
-        {'name': '英语', 'code': 'English', 'icon': 'fa-globe'},
-        {'name': '物理', 'code': 'Physics', 'icon': 'fa-atom'},
-        {'name': '化学', 'code': 'Chemistry', 'icon': 'fa-flask-vial'},
-        {'name': '政治', 'code': 'Politics', 'icon': 'fa-flag'},
-        {'name': '党中央精神', 'code': 'PartySpirit', 'icon': 'fa-heart'},
-        {'name': '日语', 'code': 'Japanese', 'icon': 'fa-language'},
-        {'name': '日语听力', 'code': 'JapaneseListening', 'icon': 'fa-headphones'},
-        {'name': '英语听力', 'code': 'EnglishListening', 'icon': 'fa-headphones'},
-        {'name': '语文听力', 'code': 'ChineseListening', 'icon': 'fa-headphones'},
-        {'name': '自主招生', 'code': 'SelfEnrollment', 'icon': 'fa-graduation-cap'},
-        {'name': '数学竞赛', 'code': 'MathCompetition', 'icon': 'fa-trophy'},
-        {'name': '高考真题', 'code': 'GaokaoReal', 'icon': 'fa-file-text'},
+    if role in ['student', 'student_vip']:
+        k12_subjects = ['数学', '语文', '英语', '物理', '化学', '政治']
+        if education_type == 'nine_year':
+            tests = [t for t in tests if t.get('subject', '') in k12_subjects]
+    
+    all_categories = [
+        {'name': '数学', 'code': 'Math', 'icon': 'fa-calculator', 'education_types': ['nine_year', 'adult', 'general']},
+        {'name': '语文', 'code': 'Chinese', 'icon': 'fa-book-open', 'education_types': ['nine_year', 'adult', 'general']},
+        {'name': '英语', 'code': 'English', 'icon': 'fa-globe', 'education_types': ['nine_year', 'adult', 'general']},
+        {'name': '物理', 'code': 'Physics', 'icon': 'fa-atom', 'education_types': ['nine_year', 'adult', 'general']},
+        {'name': '化学', 'code': 'Chemistry', 'icon': 'fa-flask-vial', 'education_types': ['nine_year', 'adult', 'general']},
+        {'name': '政治', 'code': 'Politics', 'icon': 'fa-flag', 'education_types': ['nine_year', 'adult', 'general']},
+        {'name': '党中央精神', 'code': 'PartySpirit', 'icon': 'fa-heart', 'education_types': ['nine_year', 'adult', 'general']},
+        {'name': '日语', 'code': 'Japanese', 'icon': 'fa-language', 'education_types': ['adult', 'general']},
+        {'name': '日语听力', 'code': 'JapaneseListening', 'icon': 'fa-headphones', 'education_types': ['adult', 'general']},
+        {'name': '英语听力', 'code': 'EnglishListening', 'icon': 'fa-headphones', 'education_types': ['nine_year', 'adult', 'general']},
+        {'name': '语文听力', 'code': 'ChineseListening', 'icon': 'fa-headphones', 'education_types': ['nine_year', 'adult', 'general']},
+        {'name': '自主招生', 'code': 'SelfEnrollment', 'icon': 'fa-graduation-cap', 'education_types': ['nine_year', 'adult', 'general']},
+        {'name': '数学竞赛', 'code': 'MathCompetition', 'icon': 'fa-trophy', 'education_types': ['nine_year', 'adult', 'general']},
+        {'name': '高考真题', 'code': 'GaokaoReal', 'icon': 'fa-file-text', 'education_types': ['nine_year', 'adult', 'general']},
     ]
+    
+    categories = [cat for cat in all_categories if education_type in cat['education_types']]
     
     selected_category_name = ''
     for cat in categories:
@@ -17736,18 +17790,63 @@ def math_user_history():
 def handle_400_error(e):
     """处理400错误 - 请求格式错误"""
     logger.warning(f"[错误页面] 400错误: {e}")
+    try:
+        import sqlite3
+        import os
+        from datetime import datetime
+        db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'app.db')
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO error_logs (error_type, error_message, stack_trace, status, created_at)
+            VALUES (?, ?, ?, ?, ?)
+        ''', ('http_400', f"400 Bad Request: {request.path}", str(e), 'open', datetime.now().isoformat()))
+        conn.commit()
+        conn.close()
+    except Exception as db_err:
+        logger.warning(f"记录400错误到数据库失败: {db_err}")
     return render_template('400.html'), 400
 
 @app.errorhandler(401)
 def handle_401_error(e):
     """处理401错误 - 需要登录"""
     logger.warning(f"[错误页面] 401错误: {e}")
+    try:
+        import sqlite3
+        import os
+        from datetime import datetime
+        db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'app.db')
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO error_logs (error_type, error_message, stack_trace, status, created_at)
+            VALUES (?, ?, ?, ?, ?)
+        ''', ('http_401', f"401 Unauthorized: {request.path}", str(e), 'open', datetime.now().isoformat()))
+        conn.commit()
+        conn.close()
+    except Exception as db_err:
+        logger.warning(f"记录401错误到数据库失败: {db_err}")
     return render_template('401.html'), 401
 
 @app.errorhandler(403)
 def handle_403_error(e):
     """处理403错误 - 权限不足"""
     logger.warning(f"[错误页面] 403错误: {e}")
+    try:
+        import sqlite3
+        import os
+        from datetime import datetime
+        db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'app.db')
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO error_logs (error_type, error_message, stack_trace, status, created_at)
+            VALUES (?, ?, ?, ?, ?)
+        ''', ('http_403', f"403 Forbidden: {request.path} (role:{session.get('role','unknown')})", str(e), 'open', datetime.now().isoformat()))
+        conn.commit()
+        conn.close()
+    except Exception as db_err:
+        logger.warning(f"记录403错误到数据库失败: {db_err}")
     return render_template('403.html', 
                           current_role=session.get('role', '未登录'),
                           request_path=request.path), 403
@@ -17756,12 +17855,43 @@ def handle_403_error(e):
 def handle_404_error(e):
     """处理404错误 - 页面未找到"""
     logger.warning(f"[错误页面] 404错误: {request.path}")
+    try:
+        import sqlite3
+        import os
+        from datetime import datetime
+        db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'app.db')
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO error_logs (error_type, error_message, stack_trace, status, created_at)
+            VALUES (?, ?, ?, ?, ?)
+        ''', ('http_404', f"404 Not Found: {request.path}", str(e), 'open', datetime.now().isoformat()))
+        conn.commit()
+        conn.close()
+    except Exception as db_err:
+        logger.warning(f"记录404错误到数据库失败: {db_err}")
     return render_template('404.html'), 404
 
 @app.errorhandler(500)
 def handle_500_error(e):
     """处理500错误 - 服务器内部错误"""
     logger.error(f"[错误页面] 500错误: {e}")
+    try:
+        import sqlite3
+        import os
+        import traceback
+        from datetime import datetime
+        db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'app.db')
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO error_logs (error_type, error_message, stack_trace, status, created_at)
+            VALUES (?, ?, ?, ?, ?)
+        ''', ('http_500', f"500 Internal Server Error: {request.path}", traceback.format_exc(), 'open', datetime.now().isoformat()))
+        conn.commit()
+        conn.close()
+    except Exception as db_err:
+        logger.warning(f"记录500错误到数据库失败: {db_err}")
     try:
         return render_template('error.html',
                               error_code=500,
