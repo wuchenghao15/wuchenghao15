@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>通知管理</title>
+    <link rel="stylesheet" href="/assets/css/mtscos-design-system.css">
+    <link rel="stylesheet" href="/assets/font-awesome/css/all.min.css">
+    <style>
+        .notif-table { width: 100%; border-collapse: collapse; }
+        .notif-table th, .notif-table td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border-color); }
+        .notif-table th { background: var(--bg-secondary); color: var(--text-primary); }
+        .notif-table tr:hover { background: var(--bg-secondary); }
+        .btn-group { display: flex; gap: 6px; }
+        .btn-sm { padding: 4px 10px; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-bell"></i> 通知管理</h1>
+            <div class="user-info">
+                <span>欢迎, {{ user.username }}</span>
+                {% if notification_count > 0 %}
+                <span class="notification-badge">{{ notification_count }}</span>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="nav-bar">
+            <ul>
+                <li><a href="/admin_app/dashboard">管理首页</a></li>
+                <li><a href="/admin_app/notifications" class="active">通知管理</a></li>
+            </ul>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon bg-primary"><i class="fas fa-bell"></i></div>
+                <div class="stat-info">
+                    <div class="stat-value">{{ notification_stats.total_notifications or notification_stats.total or 0 }}</div>
+                    <div class="stat-label">通知总数</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon bg-success"><i class="fas fa-check"></i></div>
+                <div class="stat-info">
+                    <div class="stat-value">{{ notification_stats.sent_count or 0 }}</div>
+                    <div class="stat-label">已发送</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon bg-warning"><i class="fas fa-clock"></i></div>
+                <div class="stat-info">
+                    <div class="stat-value">{{ notification_stats.pending_count or 0 }}</div>
+                    <div class="stat-label">待发送</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon bg-secondary"><i class="fas fa-envelope"></i></div>
+                <div class="stat-info">
+                    <div class="stat-value">{{ notification_stats.read_rate or 0 }}%</div>
+                    <div class="stat-label">阅读率</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">通知列表</h3>
+                <div class="search-bar">
+                    <input type="text" placeholder="搜索通知内容..." id="notif-search">
+                    <button class="btn btn-primary btn-sm" onclick="searchNotifications()">搜索</button>
+                </div>
+            </div>
+            <div class="card-body">
+                <table class="notif-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>标题</th>
+                            <th>类型</th>
+                            <th>状态</th>
+                            <th>发送时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for notif in notifications %}
+                        <tr>
+                            <td>{{ notif.id }}</td>
+                            <td>{{ notif.title }}</td>
+                            <td>{{ notif.type }}</td>
+                            <td>{{ notif.status }}</td>
+                            <td>{{ notif.created_at }}</td>
+                            <td>
+                                <div class="btn-group">
+                                    <button class="btn btn-primary btn-sm">编辑</button>
+                                    <button class="btn btn-success btn-sm">发送</button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        {% if not notifications %}
+                        <tr><td colspan="6" class="empty-state">暂无通知数据</td></tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <script>
+        function searchNotifications() {
+            const keyword = document.getElementById('notif-search').value;
+            alert(`搜索通知: ${keyword}`);
+        }
+    </script>
+</body>
+</html>

@@ -14,9 +14,61 @@ import sqlite3
 from contextlib import contextmanager
 from datetime import datetime
 
+# 智能赋能系统 - 性格属性模拟 + 网络自动学习
+try:
+    from ai_engines.intelligent_empowerment import PersonalitySystem, NetworkLearningEngine
+    EMPOWERMENT_AVAILABLE = True
+except ImportError:
+    EMPOWERMENT_AVAILABLE = False
+
+# 员工类型到知识领域的映射
+_DOMAIN_MAP = {
+    "general": "general_programming",
+    "arduino_code_generator": "arduino",
+    "arduino_code_debugger": "diagnostics",
+    "arduino_code_optimizer": "general_programming",
+    "arduino_component_advisor": "electronics",
+    "config_manager": "system_admin",
+    "validation": "validation",
+    "routing": "general_programming",
+    "test_system": "education",
+    "course_creation": "education",
+    "question_generation": "question_bank",
+    "question_explanation": "education",
+    "monitoring": "system_admin",
+    "diagnostics_repair": "diagnostics",
+    "rule_base_maintenance": "system_admin",
+    "question_bank_maintenance": "question_bank",
+    "powerful_fix": "diagnostics",
+    "enhancement_repair": "diagnostics",
+}
+
+# 员工类型到性格类型的映射
+_PERSONALITY_MAP = {
+    "general": "analytical",
+    "arduino_code_generator": "creative",
+    "arduino_code_debugger": "analytical",
+    "arduino_code_optimizer": "driven",
+    "arduino_component_advisor": "supportive",
+    "config_manager": "cautious",
+    "validation": "cautious",
+    "routing": "analytical",
+    "test_system": "analytical",
+    "course_creation": "creative",
+    "question_generation": "creative",
+    "question_explanation": "supportive",
+    "monitoring": "cautious",
+    "diagnostics_repair": "analytical",
+    "rule_base_maintenance": "cautious",
+    "question_bank_maintenance": "analytical",
+    "powerful_fix": "driven",
+    "enhancement_repair": "driven",
+}
+
+
 class AIEmployee:
-    """AI员工基类"""
-    
+    """AI员工基类 - 集成智能赋能（性格模拟+网络学习）"""
+
     def __init__(self, employee_id: str, name: str, employee_type: str = "general", level: int = 1):
         self.employee_id = employee_id
         self.name = name
@@ -24,17 +76,32 @@ class AIEmployee:
         self.level = level
         self.status = "active"
         self.last_active = datetime.now().isoformat()
-    
+
+        # 智能赋能初始化 - 所有AI员工统一启用
+        self.empowerment_enabled = False
+        self.personality = None
+        self.learning_engine = None
+        self.decision_history: List[Dict] = []
+        if EMPOWERMENT_AVAILABLE:
+            try:
+                personality_type = _PERSONALITY_MAP.get(employee_type, "analytical")
+                domain = _DOMAIN_MAP.get(employee_type, "general_programming")
+                self.personality = PersonalitySystem(personality_type)
+                self.learning_engine = NetworkLearningEngine(employee_id, domain)
+                self.empowerment_enabled = True
+            except Exception as e:
+                logger.warning(f"AI员工 {name} 智能赋能初始化失败: {e}")
+
     def process(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """处理请求"""
         self.last_active = datetime.now().isoformat()
         return {"success": False, "message": "未实现的方法"}
-    
+
     def execute_task(self, task_data: Dict[str, Any]) -> Dict[str, Any]:
         """执行任务 - 支持学习相关任务类型"""
         self.last_active = datetime.now().isoformat()
         task_type = task_data.get('type', '')
-        
+
         if task_type == 'tutor_question':
             return self.handle_tutor_question(task_data)
         elif task_type == 'learning_diagnosis':
@@ -49,6 +116,111 @@ class AIEmployee:
             return self.handle_diagnosis(task_data)
         else:
             return {"success": True, "message": f"AI员工 {self.name} 处理任务完成", "task_type": task_type}
+
+    def empowered_execute(self, task_data: Dict[str, Any]) -> Dict[str, Any]:
+        """赋能执行任务 - 注入性格风格，执行后更新情绪和学习"""
+        if not self.empowerment_enabled:
+            return self.execute_task(task_data)
+
+        task_type = task_data.get('type', 'general')
+        response_style = self.personality.get_response_style()
+
+        result = self.execute_task(task_data)
+
+        success = result.get('success', False)
+        event_type = 'complex_task' if task_type in ['generate', 'debug', 'optimize', 'diagnosis'] else 'routine_task'
+        emotion_update = self.personality.update_emotion(event_type, success)
+
+        if success:
+            self.learning_engine.learn_from_network(duration=random.randint(10, 30))
+        else:
+            self.learning_engine.learn_from_network(
+                topic=random.choice(list(self.learning_engine.knowledge_base.keys())),
+                duration=random.randint(15, 40),
+            )
+
+        upgrade_check = self.learning_engine.auto_upgrade_check()
+
+        if response_style['prefix']:
+            original_msg = result.get('message', '')
+            result['message'] = f"{response_style['prefix']} {original_msg}"
+
+        result['empowerment'] = {
+            'personality_emoji': response_style['emoji'],
+            'emotion': emotion_update['new_emotion'],
+            'emotion_label': self._get_emotion_label(emotion_update['new_emotion']),
+            'energy': response_style['energy'],
+            'performance_modifier': response_style['performance_modifier'],
+            'learned_topic': self.learning_engine.learning_history[-1]['topic'] if self.learning_engine.learning_history else '',
+            'proficiency_gain': self.learning_engine.learning_history[-1]['proficiency_gain'] if self.learning_engine.learning_history else 0,
+            'upgrade_ready': upgrade_check.get('upgrade_ready', False),
+            'new_certification': upgrade_check.get('new_certification', None),
+        }
+
+        self.decision_history.append({
+            'timestamp': datetime.now().isoformat(),
+            'task_type': task_type,
+            'success': success,
+            'emotion': emotion_update['new_emotion'],
+            'energy_after': emotion_update['energy'],
+        })
+        if len(self.decision_history) > 100:
+            self.decision_history = self.decision_history[-100:]
+
+        return result
+
+    def _get_emotion_label(self, emotion: str) -> str:
+        """获取情绪中文标签"""
+        from ai_engines.intelligent_empowerment import EMOTION_STATES
+        return EMOTION_STATES.get(emotion, {}).get('label', '')
+
+    def get_empowerment_profile(self) -> Dict[str, Any]:
+        """获取智能赋能档案"""
+        if not self.empowerment_enabled:
+            return {'enabled': False, 'employee_id': self.employee_id, 'name': self.name}
+
+        return {
+            'enabled': True,
+            'employee_id': self.employee_id,
+            'name': self.name,
+            'type': getattr(self, 'type', self.employee_type),
+            'personality': self.personality.get_personality_profile(),
+            'learning_stats': self.learning_engine.get_learning_stats(),
+            'knowledge_topics': len(self.learning_engine.knowledge_base),
+            'certifications': self.learning_engine.certifications,
+            'decision_count': len(self.decision_history),
+        }
+
+    def get_personality_detail(self) -> Dict[str, Any]:
+        """获取性格详情"""
+        if not self.personality:
+            return {}
+        return self.personality.get_personality_profile()
+
+    def get_learning_detail(self) -> Dict[str, Any]:
+        """获取学习详情"""
+        if not self.learning_engine:
+            return {}
+        return {
+            'stats': self.learning_engine.get_learning_stats(),
+            'knowledge_base': self.learning_engine.get_knowledge_base(),
+            'recent_history': self.learning_engine.get_learning_history(10),
+            'upgrade_status': self.learning_engine.auto_upgrade_check(),
+            'certifications': self.learning_engine.certifications,
+        }
+
+    def trigger_learning_session(self, topic: Optional[str] = None, duration: int = 30) -> Dict[str, Any]:
+        """触发一次学习会话"""
+        if not self.learning_engine:
+            return {'success': False, 'message': '学习引擎未初始化'}
+        return self.learning_engine.learn_from_network(topic, duration)
+
+    def rest_employee(self) -> Dict[str, Any]:
+        """让AI员工休息"""
+        if self.personality:
+            self.personality.rest()
+            return {'success': True, 'message': f'{self.name} 已休息，能量恢复至 {self.personality.energy}'}
+        return {'success': False, 'message': '性格系统未初始化'}
     
     def handle_tutor_question(self, task_data: Dict[str, Any]) -> Dict[str, Any]:
         """处理辅导问答任务"""

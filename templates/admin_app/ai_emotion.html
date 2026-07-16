@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI情感分析系统</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f7fa; }
+        .header { background: linear-gradient(135deg, #ec4899 0%, #db2777 100%); color: white; padding: 20px 30px; }
+        .header h1 { font-size: 24px; display: flex; align-items: center; gap: 10px; }
+        .header .nav { margin-top: 10px; }
+        .header .nav a { color: rgba(255,255,255,0.9); text-decoration: none; margin-right: 20px; font-size: 14px; }
+        .header .nav a:hover { text-decoration: underline; }
+        .container { padding: 20px 30px; max-width: 1400px; margin: 0 auto; }
+        .card { background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); padding: 20px; margin-bottom: 20px; }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+        .card-header h2 { font-size: 18px; color: #333; }
+        .btn { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; transition: background 0.3s; }
+        .btn-primary { background: #ec4899; color: white; }
+        .btn-primary:hover { background: #db2777; }
+        .btn-success { background: #10b981; color: white; }
+        .btn-success:hover { background: #059669; }
+        .btn-danger { background: #ef4444; color: white; }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-warning { background: #f59e0b; color: white; }
+        .btn-warning:hover { background: #d97706; }
+        .btn-outline { background: white; color: #ec4899; border: 1px solid #ec4899; }
+        .btn-outline:hover { background: #fdf2f8; }
+        .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 20px; }
+        .stat-box { background: white; border-radius: 10px; padding: 20px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
+        .stat-box h3 { font-size: 28px; color: #ec4899; margin-bottom: 5px; }
+        .stat-box p { font-size: 13px; color: #666; }
+        .table { width: 100%; border-collapse: collapse; }
+        .table th, .table td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #eee; font-size: 14px; }
+        .table th { background: #f8fafc; color: #64748b; font-weight: 600; }
+        .table tr:hover { background: #f8fafc; }
+        .tag { padding: 3px 8px; border-radius: 4px; font-size: 12px; }
+        .tag-happy { background: #dcfce7; color: #10b981; }
+        .tag-sad { background: #fee2e2; color: #dc2626; }
+        .tag-anxious { background: #fef3c7; color: #d97706; }
+        .tag-frustrated { background: #fce7f3; color: #db2777; }
+        .tag-neutral { background: #f1f5f9; color: #64748b; }
+        .alert-warning { background: #fef3c7; color: #d97706; }
+        .alert-critical { background: #fee2e2; color: #dc2626; }
+        .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
+        .modal.active { display: flex; }
+        .modal-content { background: white; border-radius: 12px; width: 500px; max-height: 90vh; overflow-y: auto; padding: 25px; }
+        .modal-content h3 { font-size: 18px; margin-bottom: 20px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-size: 13px; color: #666; margin-bottom: 5px; }
+        .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+        .form-group textarea { height: 100px; resize: vertical; }
+        .form-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+        .tab-container { display: flex; gap: 10px; margin-bottom: 20px; }
+        .tab { padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; border: none; }
+        .tab.active { background: #ec4899; color: white; }
+        .tab.inactive { background: white; color: #666; border: 1px solid #ddd; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1><i class="fas fa-smile"></i> AI情感分析系统</h1>
+        <div class="nav">
+            <a href="/admin_app/ai_learning_dashboard">返回仪表盘</a>
+            <a href="/admin_app/ai_memory">记忆管理系统</a>
+            <a href="/admin_app/ai_evaluation">智能评估系统</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="stats-row">
+        <div class="stat-box">
+            <h3 id="total-records">{{ stats.get('total_records', '--') }}</h3>
+            <p>情感记录数</p>
+        </div>
+        <div class="stat-box">
+            <h3 id="total-users">{{ stats.get('total_users', '--') }}</h3>
+            <p>分析用户数</p>
+        </div>
+        <div class="stat-box">
+            <h3 id="active-alerts">{{ stats.get('active_alerts', '--') }}</h3>
+            <p>活跃预警</p>
+        </div>
+        <div class="stat-box">
+            <h3 id="executed-interventions">{{ stats.get('executed_interventions', '--') }}</h3>
+            <p>已执行干预</p>
+        </div>
+    </div>
+
+        <div class="tab-container">
+            <button class="tab active" onclick="switchTab('alerts')">情感预警</button>
+            <button class="tab inactive" onclick="switchTab('history')">情感历史</button>
+            <button class="tab inactive" onclick="switchTab('profiles')">情感档案</button>
+            <button class="tab inactive" onclick="switchTab('detect')">情感检测</button>
+        </div>
+
+        <div id="alerts-tab" class="tab-content active">
+            <div class="card">
+                <div class="card-header">
+                    <h2>情感预警列表</h2>
+                    <button class="btn btn-danger" onclick="resolveAllAlerts()">全部解决</button>
+                </div>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>预警ID</th>
+                            <th>用户ID</th>
+                            <th>情感类型</th>
+                            <th>预警等级</th>
+                            <th>触发条件</th>
+                            <th>消息</th>
+                            <th>状态</th>
+                            <th>创建时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="alerts-table">
+                        <tr><td colspan="9" style="text-align:center;color:#999;">加载中...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="history-tab" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h2>情感历史</h2>
+                </div>
+                <div class="form-group" style="display:flex; gap:10px;">
+                    <input type="text" id="history-user-id" placeholder="用户ID" style="flex:1;">
+                    <button class="btn btn-primary" onclick="loadHistory()">查询</button>
+                </div>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>记录ID</th>
+                            <th>用户ID</th>
+                            <th>情感类型</th>
+                            <th>情感等级</th>
+                            <th>置信度</th>
+                            <th>来源</th>
+                            <th>时间</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-table">
+                        <tr><td colspan="7" style="text-align:center;color:#999;">输入用户ID查询</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="profiles-tab" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h2>情感档案</h2>
+                </div>
+                <div class="form-group" style="display:flex; gap:10px;">
+                    <input type="text" id="profile-user-id" placeholder="用户ID" style="flex:1;">
+                    <button class="btn btn-primary" onclick="loadProfile()">查询</button>
+                </div>
+                <div id="profile-content"></div>
+            </div>
+        </div>
+
+        <div id="detect-tab" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h2>情感检测</h2>
+                </div>
+                <div class="form-group">
+                    <label>用户ID</label>
+                    <input type="text" id="detect-user-id" placeholder="输入用户ID">
+                </div>
+                <div class="form-group">
+                    <label>文本内容（可选）</label>
+                    <textarea id="detect-text" placeholder="输入用户的文本内容，如聊天记录、学习笔记等..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>行为数据（JSON格式，可选）</label>
+                    <textarea id="detect-behavior" placeholder='{"learning_duration": 60, "task_completion_rate": 0.8, "error_count": 2}'></textarea>
+                </div>
+                <div class="form-actions">
+                    <button class="btn btn-primary" onclick="detectEmotion()">检测情感</button>
+                </div>
+                <div id="detect-result"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function loadStats() {
+            const res = await fetch('/api/ai/emotion/summary');
+            const data = await res.json();
+            if (data.success) {
+                document.getElementById('total-records').textContent = data.data.total_records || 0;
+                document.getElementById('total-users').textContent = data.data.total_users || 0;
+                document.getElementById('active-alerts').textContent = data.data.active_alerts || 0;
+                document.getElementById('executed-interventions').textContent = data.data.executed_interventions || 0;
+            }
+        }
+
+        async function loadAlerts() {
+            const res = await fetch('/api/ai/emotion/alerts');
+            const data = await res.json();
+            const tbody = document.getElementById('alerts-table');
+            if (data.success) {
+                tbody.innerHTML = data.data.map(a => `
+                    <tr>
+                        <td>${a.alert_id}</td>
+                        <td>${a.user_id}</td>
+                        <td><span class="tag tag-${getEmotionClass(a.emotion_type)}">${getEmotionName(a.emotion_type)}</span></td>
+                        <td><span class="tag ${a.alert_level === 'critical' ? 'alert-critical' : 'alert-warning'}">${a.alert_level === 'critical' ? '严重' : '警告'}</span></td>
+                        <td>${a.threshold_trigger}</td>
+                        <td>${a.message}</td>
+                        <td>${a.status === 'active' ? '<span class="tag alert-critical">活跃</span>' : '<span class="tag tag-happy">已解决</span>'}</td>
+                        <td>${formatDate(a.created_at)}</td>
+                        <td>
+                            ${a.status === 'active' ? `<button class="btn btn-success" onclick="resolveAlert('${a.alert_id}')">解决</button>` : '-'}
+                            <button class="btn btn-outline" onclick="generateIntervention('${a.user_id}', '${a.emotion_type}')">干预</button>
+                        </td>
+                    </tr>
+                `).join('');
+            } else {
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#999;">暂无数据</td></tr>';
+            }
+        }
+
+        async function loadHistory() {
+            const userId = document.getElementById('history-user-id').value;
+            if (!userId) { alert('请输入用户ID'); return; }
+            
+            const res = await fetch(`/api/ai/emotion/history?user_id=${userId}&days=30`);
+            const data = await res.json();
+            const tbody = document.getElementById('history-table');
+            if (data.success) {
+                tbody.innerHTML = data.data.history.map(h => `
+                    <tr>
+                        <td>${h.record_id}</td>
+                        <td>${h.user_id}</td>
+                        <td><span class="tag tag-${getEmotionClass(h.emotion_type)}">${getEmotionName(h.emotion_type)}</span></td>
+                        <td>${h.emotion_level}</td>
+                        <td>${(h.confidence * 100).toFixed(0)}%</td>
+                        <td>${h.source}</td>
+                        <td>${formatDate(h.timestamp)}</td>
+                    </tr>
+                `).join('');
+            } else {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#999;">暂无数据</td></tr>';
+            }
+        }
+
+        async function loadProfile() {
+            const userId = document.getElementById('profile-user-id').value;
+            if (!userId) { alert('请输入用户ID'); return; }
+            
+            const res = await fetch(`/api/ai/emotion/profile?user_id=${userId}`);
+            const data = await res.json();
+            if (data.success) {
+                const p = data.data;
+                document.getElementById('profile-content').innerHTML = `
+                    <div class="form-group"><label>用户ID</label><input type="text" value="${p.user_id}" readonly></div>
+                    <div class="form-group"><label>基线情感</label><input type="text" value="${getEmotionName(p.baseline_emotion)}" readonly></div>
+                    <div class="form-group"><label>情感模式</label><textarea readonly>${JSON.stringify(p.emotion_pattern, null, 2)}</textarea></div>
+                    <div class="form-group"><label>情感触发因素</label><input type="text" value="${p.emotional_triggers.join(', ') || '-'}" readonly></div>
+                    <div class="form-group"><label>干预历史</label><textarea readonly>${JSON.stringify(p.intervention_history, null, 2)}</textarea></div>
+                    <div class="form-group"><label>最后更新</label><input type="text" value="${p.last_updated}" readonly></div>
+                `;
+            } else {
+                document.getElementById('profile-content').innerHTML = '<p style="color:#999;text-align:center;">暂无档案数据</p>';
+            }
+        }
+
+        async function detectEmotion() {
+            const userId = document.getElementById('detect-user-id').value;
+            const text = document.getElementById('detect-text').value;
+            const behavior = document.getElementById('detect-behavior').value;
+            
+            if (!userId) { alert('请输入用户ID'); return; }
+            
+            const res = await fetch('/api/ai/emotion/detect', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    user_id: userId, 
+                    text_content: text,
+                    behavior_data: behavior ? JSON.parse(behavior) : {}
+                })
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                document.getElementById('detect-result').innerHTML = `
+                    <div style="background:${getEmotionBg(data.data.emotion_type)};padding:15px;border-radius:8px;margin-top:20px;">
+                        <h4 style="color:${getEmotionColor(data.data.emotion_type)};">检测结果：${getEmotionName(data.data.emotion_type)}</h4>
+                        <p>等级：${data.data.emotion_level}</p>
+                        <p>置信度：${(data.data.confidence * 100).toFixed(0)}%</p>
+                        <p>来源：${data.data.source}</p>
+                        <p>记录ID：${data.data.record_id}</p>
+                    </div>
+                `;
+            } else {
+                alert('检测失败: ' + data.error);
+            }
+        }
+
+        async function resolveAlert(alertId) {
+            const res = await fetch(`/api/ai/emotion/alerts/${alertId}/resolve`, { method: 'POST' });
+            const data = await res.json();
+            if (data.success) {
+                loadAlerts();
+                loadStats();
+            } else {
+                alert('操作失败: ' + data.error);
+            }
+        }
+
+        async function resolveAllAlerts() {
+            if (!confirm('确定要解决所有预警吗？')) return;
+            const res = await fetch('/api/ai/emotion/alerts');
+            const data = await res.json();
+            if (data.success) {
+                for (const alert of data.data) {
+                    if (alert.status === 'active') {
+                        await fetch(`/api/ai/emotion/alerts/${alert.alert_id}/resolve`, { method: 'POST' });
+                    }
+                }
+                loadAlerts();
+                loadStats();
+            }
+        }
+
+        async function generateIntervention(userId, emotionType) {
+            const res = await fetch('/api/ai/emotion/intervention', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: userId, emotion_type: emotionType })
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert(`干预建议已生成：\n\n类型：${data.data.intervention_type}\n\n内容：${data.data.intervention_content}`);
+            } else {
+                alert('生成干预建议失败: ' + data.error);
+            }
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab').forEach(t => t.classList.add('inactive'));
+            event.target.classList.add('active');
+            event.target.classList.remove('inactive');
+            
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+        }
+
+        function getEmotionName(type) {
+            const map = { happy: '开心', sad: '难过', angry: '生气', anxious: '焦虑', confused: '困惑', motivated: '有动力', frustrated: '挫败', bored: '无聊', excited: '兴奋', neutral: '平静' };
+            return map[type] || type;
+        }
+
+        function getEmotionClass(type) {
+            const map = { happy: 'happy', sad: 'sad', anxious: 'anxious', frustrated: 'frustrated' };
+            return map[type] || 'neutral';
+        }
+
+        function getEmotionBg(type) {
+            const map = { happy: '#dcfce7', sad: '#fee2e2', anxious: '#fef3c7', frustrated: '#fce7f3' };
+            return map[type] || '#f1f5f9';
+        }
+
+        function getEmotionColor(type) {
+            const map = { happy: '#10b981', sad: '#dc2626', anxious: '#d97706', frustrated: '#db2777' };
+            return map[type] || '#64748b';
+        }
+
+        function formatDate(dateStr) {
+            return dateStr ? new Date(dateStr).toLocaleString() : '';
+        }
+
+        loadStats();
+        loadAlerts();
+    </script>
+</body>
+</html>

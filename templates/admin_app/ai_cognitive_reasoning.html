@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI认知推理系统</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%); min-height: 100vh; }
+        .container { padding: 20px; max-width: 1400px; margin: 0 auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; color: white; }
+        .header h1 { font-size: 26px; }
+        .header .user-info { display: flex; align-items: center; gap: 15px; }
+        .nav-bar { background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); padding: 15px 20px; margin-bottom: 20px; border-radius: 10px; }
+        .nav-bar ul { list-style: none; display: flex; gap: 20px; }
+        .nav-bar ul li a { color: white; text-decoration: none; padding: 8px 15px; border-radius: 6px; transition: background 0.3s; }
+        .nav-bar ul li a:hover, .nav-bar ul li a.active { background: rgba(255,255,255,0.2); }
+        .main-content { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .card { background: white; border-radius: 12px; padding: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .card h2 { font-size: 18px; color: #333; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-size: 13px; color: #555; margin-bottom: 5px; }
+        .form-group select, .form-group input, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+        .form-group textarea { height: 100px; resize: vertical; }
+        .btn { padding: 10px 20px; border-radius: 6px; border: none; cursor: pointer; font-size: 14px; font-weight: 500; }
+        .btn-primary { background: #6366f1; color: white; }
+        .btn-primary:hover { background: #4f46e5; }
+        .btn-success { background: #10b981; color: white; }
+        .btn-success:hover { background: #059669; }
+        .result-area { background: #f8f9fa; border-radius: 8px; padding: 15px; min-height: 100px; margin-top: 15px; white-space: pre-wrap; font-size: 14px; color: #333; }
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px; }
+        .stat-item { background: white; border-radius: 10px; padding: 15px; text-align: center; }
+        .stat-item .value { font-size: 24px; font-weight: bold; color: #6366f1; }
+        .stat-item .label { font-size: 12px; color: #666; margin-top: 5px; }
+        .table-container { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        table th, table td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; font-size: 13px; }
+        table th { background: #f8f9fa; color: #555; font-weight: 600; }
+        table tr:hover { background: #f9fafb; }
+        .status-badge { padding: 4px 8px; border-radius: 4px; font-size: 12px; }
+        .status-success { background: #dcfce7; color: #16a34a; }
+        .status-pending { background: #fef3c7; color: #d97706; }
+        @media (max-width: 768px) { .main-content { grid-template-columns: 1fr; } .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-brain"></i> AI认知推理系统</h1>
+            <div class="user-info">
+                <span>欢迎, {{ user.username }}</span>
+            </div>
+        </div>
+        
+        <div class="nav-bar">
+            <ul>
+                <li><a href="/admin_app/dashboard">管理首页</a></li>
+                <li><a href="/admin_app/ai_learning_dashboard">AI学习仪表盘</a></li>
+                <li><a href="/admin_app/ai_cognitive_reasoning" class="active">认知推理</a></li>
+                <li><a href="/admin_app/ai_adaptive_learning">自适应学习</a></li>
+                <li><a href="/admin_app/ai_intelligent_qna">智能问答</a></li>
+            </ul>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-item">
+                <div class="value" id="total-tasks">{{ stats.get('total_tasks', '--') }}</div>
+                <div class="label">推理任务数</div>
+            </div>
+            <div class="stat-item">
+                <div class="value" id="knowledge-count">{{ stats.get('knowledge_count', '--') }}</div>
+                <div class="label">知识库条目</div>
+            </div>
+            <div class="stat-item">
+                <div class="value" id="success-rate">{{ stats.get('success_rate', '--') }}</div>
+                <div class="label">推理成功率</div>
+            </div>
+            <div class="stat-item">
+                <div class="value" id="avg-time">{{ stats.get('avg_time', '--') }}</div>
+                <div class="label">平均耗时(ms)</div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="card">
+                <h2><i class="fas fa-play-circle"></i> 执行推理</h2>
+                <div class="form-group">
+                    <label>推理类型</label>
+                    <select id="reasoning-type">
+                        <option value="deductive">演绎推理</option>
+                        <option value="inductive">归纳推理</option>
+                        <option value="abductive">溯因推理</option>
+                        <option value="analogical">类比推理</option>
+                        <option value="causal">因果推理</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>输入数据（前提/观察/问题）</label>
+                    <textarea id="input-data" placeholder="请输入推理所需的输入数据..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>推理目标</label>
+                    <input type="text" id="reasoning-goal" placeholder="推理目标或结论期望">
+                </div>
+                <button class="btn btn-primary" onclick="executeReasoning()">执行推理</button>
+                <div class="result-area" id="reasoning-result"></div>
+            </div>
+
+            <div class="card">
+                <h2><i class="fas fa-database"></i> 添加知识</h2>
+                <div class="form-group">
+                    <label>知识主题</label>
+                    <input type="text" id="knowledge-topic" placeholder="知识主题">
+                </div>
+                <div class="form-group">
+                    <label>知识内容</label>
+                    <textarea id="knowledge-content" placeholder="知识详细内容..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>关联标签（逗号分隔）</label>
+                    <input type="text" id="knowledge-tags" placeholder="标签1,标签2,标签3">
+                </div>
+                <button class="btn btn-success" onclick="addKnowledge()">添加知识</button>
+            </div>
+
+            <div class="card">
+                <h2><i class="fas fa-history"></i> 推理历史</h2>
+                <div class="table-container">
+                    <table id="history-table">
+                        <thead>
+                            <tr><th>任务ID</th><th>类型</th><th>状态</th><th>耗时(ms)</th><th>时间</th></tr>
+                        </thead>
+                        <tbody id="history-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2><i class="fas fa-search"></i> 搜索知识库</h2>
+                <div class="form-group">
+                    <input type="text" id="search-query" placeholder="搜索关键词..." onkeyup="searchKnowledge()">
+                </div>
+                <div id="search-results"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function loadStats() {
+            try {
+                const res = await fetch('/api/ai/cognitive/reasoning/summary');
+                if (res.ok) {
+                    const data = await res.json();
+                    document.getElementById('total-tasks').textContent = data.data.total_tasks || 0;
+                    document.getElementById('knowledge-count').textContent = data.data.total_knowledge || 0;
+                    document.getElementById('success-rate').textContent = (data.data.success_rate || 0) + '%';
+                    document.getElementById('avg-time').textContent = data.data.avg_duration || 0;
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        async function executeReasoning() {
+            const type = document.getElementById('reasoning-type').value;
+            const input = document.getElementById('input-data').value;
+            const goal = document.getElementById('reasoning-goal').value;
+            
+            try {
+                const res = await fetch('/api/ai/cognitive/reasoning/execute', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ type, input, goal })
+                });
+                const data = await res.json();
+                document.getElementById('reasoning-result').textContent = JSON.stringify(data.data, null, 2);
+                loadStats();
+                loadHistory();
+            } catch (e) { console.error(e); }
+        }
+
+        async function addKnowledge() {
+            const topic = document.getElementById('knowledge-topic').value;
+            const content = document.getElementById('knowledge-content').value;
+            const tags = document.getElementById('knowledge-tags').value;
+            
+            try {
+                await fetch('/api/ai/cognitive/knowledge', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ topic, content, tags: tags.split(',').map(t => t.trim()) })
+                });
+                alert('知识添加成功');
+                loadStats();
+            } catch (e) { console.error(e); }
+        }
+
+        async function loadHistory() {
+            try {
+                const res = await fetch('/api/ai/cognitive/reasoning/history');
+                if (res.ok) {
+                    const data = await res.json();
+                    const body = document.getElementById('history-body');
+                    body.innerHTML = data.data.map(t => `
+                        <tr>
+                            <td>${t.task_id}</td>
+                            <td>${t.type}</td>
+                            <td><span class="status-badge ${t.status === 'completed' ? 'status-success' : 'status-pending'}">${t.status}</span></td>
+                            <td>${t.duration_ms}</td>
+                            <td>${t.created_at}</td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        async function searchKnowledge() {
+            const query = document.getElementById('search-query').value;
+            if (!query) return;
+            try {
+                const res = await fetch(`/api/ai/cognitive/knowledge/search?q=${encodeURIComponent(query)}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    document.getElementById('search-results').innerHTML = data.data.map(k => `
+                        <div style="padding: 10px; border-bottom: 1px solid #eee;">
+                            <strong>${k.topic}</strong>
+                            <p style="font-size: 12px; color: #666;">${k.content.substring(0, 100)}...</p>
+                        </div>
+                    `).join('');
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        loadStats();
+        loadHistory();
+    </script>
+</body>
+</html>

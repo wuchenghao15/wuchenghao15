@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI智能题目生成系统</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #ec4899 0%, #db2777 100%); min-height: 100vh; }
+        .container { padding: 20px; max-width: 1400px; margin: 0 auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; color: white; }
+        .header h1 { font-size: 26px; }
+        .header .user-info { display: flex; align-items: center; gap: 15px; }
+        .nav-bar { background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); padding: 15px 20px; margin-bottom: 20px; border-radius: 10px; }
+        .nav-bar ul { list-style: none; display: flex; gap: 20px; }
+        .nav-bar ul li a { color: white; text-decoration: none; padding: 8px 15px; border-radius: 6px; transition: background 0.3s; }
+        .nav-bar ul li a:hover, .nav-bar ul li a.active { background: rgba(255,255,255,0.2); }
+        .main-content { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .card { background: white; border-radius: 12px; padding: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .card h2 { font-size: 18px; color: #333; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-size: 13px; color: #555; margin-bottom: 5px; }
+        .form-group select, .form-group input, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+        .form-group textarea { height: 100px; resize: vertical; }
+        .btn { padding: 10px 20px; border-radius: 6px; border: none; cursor: pointer; font-size: 14px; font-weight: 500; }
+        .btn-primary { background: #ec4899; color: white; }
+        .btn-primary:hover { background: #db2777; }
+        .btn-success { background: #10b981; color: white; }
+        .btn-success:hover { background: #059669; }
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px; }
+        .stat-item { background: white; border-radius: 10px; padding: 15px; text-align: center; }
+        .stat-item .value { font-size: 24px; font-weight: bold; color: #ec4899; }
+        .stat-item .label { font-size: 12px; color: #666; margin-top: 5px; }
+        .table-container { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        table th, table td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; font-size: 13px; }
+        table th { background: #f8f9fa; color: #555; font-weight: 600; }
+        table tr:hover { background: #f9fafb; }
+        @media (max-width: 768px) { .main-content { grid-template-columns: 1fr; } .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-file-question"></i> AI智能题目生成系统</h1>
+            <div class="user-info">
+                <span>欢迎, {{ user.username }}</span>
+            </div>
+        </div>
+        
+        <div class="nav-bar">
+            <ul>
+                <li><a href="/admin_app/dashboard">管理首页</a></li>
+                <li><a href="/admin_app/ai_learning_dashboard">AI学习仪表盘</a></li>
+                <li><a href="/admin_app/ai_question_generation" class="active">题目生成</a></li>
+                <li><a href="/admin_app/ai_evaluation">智能评估</a></li>
+            </ul>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-item">
+                <div class="value">{{ question_stats.get('total_generated', '--') }}</div>
+                <div class="label">生成题目数</div>
+            </div>
+            <div class="stat-item">
+                <div class="value">{{ question_stats.get('total_types', '--') }}</div>
+                <div class="label">题型数量</div>
+            </div>
+            <div class="stat-item">
+                <div class="value">{{ question_stats.get('total_difficulties', '--') }}</div>
+                <div class="label">难度级别</div>
+            </div>
+            <div class="stat-item">
+                <div class="value">{{ question_stats.get('used_in_exams', '--') }}</div>
+                <div class="label">已使用题目</div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="card">
+                <h2><i class="fas fa-magic"></i> 生成题目</h2>
+                <div class="form-group">
+                    <label>题目类型</label>
+                    <select id="question-type">
+                        <option value="single">单选题</option>
+                        <option value="multiple">多选题</option>
+                        <option value="judge">判断题</option>
+                        <option value="fill">填空题</option>
+                        <option value="essay">问答题</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>难度级别</label>
+                    <select id="difficulty">
+                        <option value="easy">简单</option>
+                        <option value="medium">中等</option>
+                        <option value="hard">困难</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>主题/知识点</label>
+                    <input type="text" id="topic" placeholder="请输入主题或知识点">
+                </div>
+                <div class="form-group">
+                    <label>生成数量</label>
+                    <input type="number" id="count" value="5" min="1" max="50">
+                </div>
+                <button class="btn btn-success" onclick="generateQuestions()">生成题目</button>
+            </div>
+
+            <div class="card">
+                <h2><i class="fas fa-list"></i> 最近生成的题目</h2>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>题目内容</th>
+                                <th>类型</th>
+                                <th>难度</th>
+                                <th>状态</th>
+                                <th>创建时间</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for question in question_stats.get('recent_questions', []) %}
+                            <tr>
+                                <td>{{ question.content[:50] }}...</td>
+                                <td>{{ question.type }}</td>
+                                <td>{{ question.difficulty }}</td>
+                                <td>{{ question.status }}</td>
+                                <td>{{ question.timestamp }}</td>
+                            </tr>
+                            {% endfor %}
+                            {% if not question_stats.get('recent_questions') %}
+                            <tr><td colspan="5" style="text-align: center; color: #999;">暂无生成的题目</td></tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function generateQuestions() {
+            const questionType = document.getElementById('question-type').value;
+            const difficulty = document.getElementById('difficulty').value;
+            const topic = document.getElementById('topic').value;
+            const count = document.getElementById('count').value;
+            
+            if (!topic) {
+                alert('请输入主题或知识点');
+                return;
+            }
+            
+            alert(`题目生成请求已提交：\n类型: ${questionType}\n难度: ${difficulty}\n主题: ${topic}\n数量: ${count}`);
+            document.getElementById('topic').value = '';
+        }
+    </script>
+</body>
+</html>

@@ -22,6 +22,12 @@ from ai_engines.k12_question_employee import K12QuestionEmployee
 from ai_engines.listening_question_employee import ListeningQuestionEmployee
 from ai_engines.rule_base_maintenance_employee import RuleBaseMaintenanceEmployee
 from ai_engines.config_manager_employee import ConfigManagerEmployee
+from ai_engines.arduino_ai_employees import (
+    ArduinoCodeGeneratorEmployee,
+    ArduinoCodeDebuggerEmployee,
+    ArduinoCodeOptimizerEmployee,
+    ArduinoComponentAdvisorEmployee,
+)
 
 try:
     from ai_engines.test_ai_employee import TestAIEmployee
@@ -83,7 +89,15 @@ class AIEmployeeManager:
             "k12_question": "K12题库AI员工",
             "listening_question": "听力题库AI员工",
             "rule_base_maintenance": "规则库维护AI员工",
-            "config_manager": "配置管理AI员工"
+            "config_manager": "配置管理AI员工",
+            "japanese_listener_kansai": "日语听力报读员-关西腔",
+            "japanese_listener_kanto": "日语听力报读员-关东腔",
+            "english_listener_american": "英语听力报读员-美式英语",
+            "english_listener_british": "英语听力报读员-英式英语",
+            "arduino_code_generator": "Arduino代码生成AI员工",
+            "arduino_code_debugger": "Arduino代码调试AI员工",
+            "arduino_code_optimizer": "Arduino代码优化AI员工",
+            "arduino_component_advisor": "Arduino组件推荐AI员工"
         }
         self.task_queue = []
         self.running_tasks = []
@@ -202,12 +216,39 @@ class AIEmployeeManager:
         self._safe_start_employee(rule_base_employee)
         self.add_employee_to_organizations(rule_base_employee)
 
+        # 为不继承AIEmployee基类的独立员工类注入智能赋能
+        self._inject_empowerment_to_standalone_employees()
+
         # 创建配置管理AI员工 (级别8)
         config_manager_employee = ConfigManagerEmployee("config_mgr_001", "配置管理AI", "config_manager", 8)
         config_manager_employee.type = "config_manager"
         self.employees["config_mgr_001"] = config_manager_employee
         self._safe_start_employee(config_manager_employee)
         self.add_employee_to_organizations(config_manager_employee)
+
+        # 创建Arduino代码生成AI员工 (级别7)
+        arduino_gen_employee = ArduinoCodeGeneratorEmployee("arduino_gen_001", "Arduino代码生成AI", 7)
+        self.employees["arduino_gen_001"] = arduino_gen_employee
+        self._safe_start_employee(arduino_gen_employee)
+        self.add_employee_to_organizations(arduino_gen_employee)
+
+        # 创建Arduino代码调试AI员工 (级别8)
+        arduino_debug_employee = ArduinoCodeDebuggerEmployee("arduino_debug_001", "Arduino代码调试AI", 8)
+        self.employees["arduino_debug_001"] = arduino_debug_employee
+        self._safe_start_employee(arduino_debug_employee)
+        self.add_employee_to_organizations(arduino_debug_employee)
+
+        # 创建Arduino代码优化AI员工 (级别7)
+        arduino_opt_employee = ArduinoCodeOptimizerEmployee("arduino_opt_001", "Arduino代码优化AI", 7)
+        self.employees["arduino_opt_001"] = arduino_opt_employee
+        self._safe_start_employee(arduino_opt_employee)
+        self.add_employee_to_organizations(arduino_opt_employee)
+
+        # 创建Arduino组件推荐AI员工 (级别6)
+        arduino_comp_employee = ArduinoComponentAdvisorEmployee("arduino_comp_001", "Arduino组件推荐AI", 6)
+        self.employees["arduino_comp_001"] = arduino_comp_employee
+        self._safe_start_employee(arduino_comp_employee)
+        self.add_employee_to_organizations(arduino_comp_employee)
 
     def _parse_json_or_text(self, text):
         """解析JSON或文本，返回列表"""
@@ -227,6 +268,72 @@ class AIEmployeeManager:
                     result.append(cleaned)
             return result if result else [text]
 
+    def _inject_empowerment_to_standalone_employees(self):
+        """为不继承AIEmployee基类的独立员工类注入智能赋能"""
+        try:
+            from ai_engines.intelligent_empowerment import PersonalitySystem, NetworkLearningEngine, EMOTION_STATES
+
+            standalone_map = {
+                'diag_001': ('analytical', 'diagnostics'),
+                'qbm_001': ('analytical', 'question_bank'),
+                'pol_001': ('supportive', 'education'),
+                'k12_001': ('supportive', 'education'),
+                'list_001': ('supportive', 'education'),
+                'rbu_001': ('cautious', 'system_admin'),
+            }
+
+            for emp_id, (ptype, domain) in standalone_map.items():
+                emp = self.employees.get(emp_id)
+                if emp and not getattr(emp, 'empowerment_enabled', False):
+                    emp.personality = PersonalitySystem(ptype)
+                    emp.learning_engine = NetworkLearningEngine(emp_id, domain)
+                    emp.empowerment_enabled = True
+                    emp.decision_history = []
+
+                    # 添加赋能方法（如果不存在）
+                    if not hasattr(emp, 'get_empowerment_profile'):
+                        def _get_profile(self=emp):
+                            if not getattr(self, 'empowerment_enabled', False):
+                                return {'enabled': False, 'employee_id': getattr(self, 'employee_id', ''), 'name': getattr(self, 'name', '')}
+                            return {
+                                'enabled': True,
+                                'employee_id': getattr(self, 'employee_id', ''),
+                                'name': getattr(self, 'name', ''),
+                                'type': getattr(self, 'type', getattr(self, 'employee_type', 'general')),
+                                'personality': self.personality.get_personality_profile(),
+                                'learning_stats': self.learning_engine.get_learning_stats(),
+                                'knowledge_topics': len(self.learning_engine.knowledge_base),
+                                'certifications': self.learning_engine.certifications,
+                                'decision_count': len(getattr(self, 'decision_history', [])),
+                            }
+                        emp.get_empowerment_profile = _get_profile
+
+                    if not hasattr(emp, 'get_personality_detail'):
+                        emp.get_personality_detail = lambda self=emp: self.personality.get_personality_profile() if getattr(self, 'personality', None) else {}
+
+                    if not hasattr(emp, 'get_learning_detail'):
+                        def _get_learning(self=emp):
+                            if not getattr(self, 'learning_engine', None):
+                                return {}
+                            return {
+                                'stats': self.learning_engine.get_learning_stats(),
+                                'knowledge_base': self.learning_engine.get_knowledge_base(),
+                                'recent_history': self.learning_engine.get_learning_history(10),
+                                'upgrade_status': self.learning_engine.auto_upgrade_check(),
+                                'certifications': self.learning_engine.certifications,
+                            }
+                        emp.get_learning_detail = _get_learning
+
+                    if not hasattr(emp, 'trigger_learning_session'):
+                        emp.trigger_learning_session = lambda topic=None, duration=30, self=emp: self.learning_engine.learn_from_network(topic, duration) if getattr(self, 'learning_engine', None) else {'success': False, 'message': '学习引擎未初始化'}
+
+                    if not hasattr(emp, 'rest_employee'):
+                        emp.rest_employee = lambda self=emp: ({'success': True, 'message': f'{self.name} 已休息'} if self.personality else {'success': False}) if hasattr(self, 'personality') and self.personality else self.personality.rest() if hasattr(self, 'personality') and self.personality else {'success': False}
+
+                    logger.info(f"  ✓ 独立员工 {emp.name} 智能赋能注入完成")
+        except Exception as e:
+            logger.error(f"独立员工赋能注入失败: {e}")
+
     def _load_employees_from_database(self):
         """从数据库加载AI员工"""
         import sqlite3
@@ -236,6 +343,33 @@ class AIEmployeeManager:
         try:
             conn = sqlite3.connect(db_path)
             cursor = conn.cursor()
+            
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS ai_employees (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    employee_code TEXT UNIQUE,
+                    description TEXT,
+                    capabilities TEXT,
+                    specialties TEXT,
+                    status TEXT DEFAULT 'active',
+                    accuracy REAL DEFAULT 0.85,
+                    total_tasks INTEGER DEFAULT 0,
+                    successful_fixes INTEGER DEFAULT 0,
+                    failed_fixes INTEGER DEFAULT 0,
+                    learning_rate REAL DEFAULT 0.05,
+                    knowledge_base_size INTEGER DEFAULT 0,
+                    last_training TEXT,
+                    model_version TEXT DEFAULT '1.0',
+                    is_enabled INTEGER DEFAULT 1,
+                    priority INTEGER DEFAULT 1,
+                    max_concurrent_tasks INTEGER DEFAULT 5,
+                    skill_level INTEGER DEFAULT 1,
+                    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+            conn.commit()
             
             cursor.execute('SELECT COUNT(*) FROM ai_employees')
             count = cursor.fetchone()[0]
@@ -300,7 +434,8 @@ class AIEmployeeManager:
                 
                 logger.info(f"成功加载 {business_count} 个业务专家AI员工")
             else:
-                logger.info("数据库中没有业务专家员工")
+                logger.info("数据库中没有业务专家员工，创建初始AI员工...")
+                self.create_initial_employees()
             
             conn.close()
         except Exception as e:

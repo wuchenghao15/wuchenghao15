@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户认证管理</title>
+    <link rel="stylesheet" href="/assets/css/mtscos-design-system.css">
+    <link rel="stylesheet" href="/assets/font-awesome/css/all.min.css">
+    <style>
+        .auth-table { width: 100%; border-collapse: collapse; }
+        .auth-table th, .auth-table td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border-color); }
+        .auth-table th { background: var(--bg-secondary); color: var(--text-primary); }
+        .auth-table tr:hover { background: var(--bg-secondary); }
+        .btn-group { display: flex; gap: 6px; }
+        .btn-sm { padding: 4px 10px; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-shield-alt"></i> 用户认证管理</h1>
+            <div class="user-info">
+                <span>欢迎, {{ user.username }}</span>
+                {% if notification_count > 0 %}
+                <span class="notification-badge">{{ notification_count }}</span>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="nav-bar">
+            <ul>
+                <li><a href="/admin_app/dashboard">管理首页</a></li>
+                <li><a href="/admin_app/user_auth" class="active">认证管理</a></li>
+            </ul>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon bg-primary"><i class="fas fa-key"></i></div>
+                <div class="stat-info">
+                    <div class="stat-value">{{ auth_stats.total_tokens }}</div>
+                    <div class="stat-label">Token总数</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon bg-success"><i class="fas fa-check-circle"></i></div>
+                <div class="stat-info">
+                    <div class="stat-value">{{ auth_stats.active_tokens }}</div>
+                    <div class="stat-label">活跃Token</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon bg-warning"><i class="fas fa-lock"></i></div>
+                <div class="stat-info">
+                    <div class="stat-value">{{ auth_stats.locked_users }}</div>
+                    <div class="stat-label">锁定用户</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon bg-secondary"><i class="fas fa-eye"></i></div>
+                <div class="stat-info">
+                    <div class="stat-value">{{ auth_stats.today_logins }}</div>
+                    <div class="stat-label">今日登录</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">登录记录</h3>
+            </div>
+            <div class="card-body">
+                <table class="auth-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>用户名</th>
+                            <th>IP地址</th>
+                            <th>登录时间</th>
+                            <th>状态</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for login in login_records %}
+                        <tr>
+                            <td>{{ login.id }}</td>
+                            <td>{{ login.username }}</td>
+                            <td>{{ login.ip_address }}</td>
+                            <td>{{ login.login_time }}</td>
+                            <td>{{ login.status }}</td>
+                        </tr>
+                        {% endfor %}
+                        {% if not login_records %}
+                        <tr><td colspan="5" class="empty-state">暂无登录记录</td></tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

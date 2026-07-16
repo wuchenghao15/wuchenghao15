@@ -388,6 +388,15 @@ class PoliticsQuestionEmployee:
 
             template = random.choice(templates)
 
+            category_map = {
+                "marxism": "Politics",
+                "mao_zedong": "Politics",
+                "socialism_with_chinese_characteristics": "PartySpirit",
+                "morality_and_law": "Politics",
+                "modern_history": "Politics",
+                "current_politics": "CurrentAffairs"
+            }
+            
             question = {
                 "type": q_type,
                 "category": "must_know" if template.get("difficulty") in ["easy", "medium"] else "real_exam",
@@ -400,6 +409,8 @@ class PoliticsQuestionEmployee:
                 "tags": ["政治", template.get("category", ""), template.get("sub_topic", ""), template.get("difficulty", "")],
                 "knowledge_points": [template.get("sub_topic", "")],
                 "source": "AI生成-政治题库",
+                "special_type": category_map.get(template.get("category", ""), "Politics"),
+                "category_id": 16,
                 "score": self._calculate_score(template.get("difficulty", "medium"), q_type)
             }
 
@@ -445,6 +456,8 @@ class PoliticsQuestionEmployee:
                     "tags": ["政治", "时事政治", topic],
                     "knowledge_points": [topic, "形势与政策"],
                     "source": "AI生成-时事政治",
+                    "special_type": "CurrentAffairs",
+                    "category_id": 18,
                     "score": 5.0,
                     "year": 2026
                 }

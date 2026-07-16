@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+
+{% block title %}用户注册{% endblock %}
+
+{% block head %}
+<style>
+    .register-container {
+        max-width: 450px;
+        margin: 40px auto;
+        background: white;
+        border-radius: 16px;
+        padding: 40px;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    .register-container h1 {
+        text-align: center;
+        color: #333;
+        margin-bottom: 30px;
+        font-size: 28px;
+    }
+    .form-group {
+        margin-bottom: 20px;
+    }
+    .form-group label {
+        display: block;
+        color: #555;
+        margin-bottom: 8px;
+        font-weight: 600;
+        font-size: 14px;
+    }
+    .form-group input {
+        width: 100%;
+        padding: 12px 16px;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        font-size: 14px;
+        transition: border-color 0.3s;
+    }
+    .form-group input:focus {
+        outline: none;
+        border-color: #667eea;
+    }
+    .btn-register {
+        width: 100%;
+        padding: 14px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    .btn-register:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(102,126,234,0.4);
+    }
+    .login-link {
+        text-align: center;
+        margin-top: 20px;
+        color: #666;
+        font-size: 14px;
+    }
+    .login-link a {
+        color: #667eea;
+        text-decoration: none;
+        font-weight: 600;
+    }
+    .alert {
+        padding: 12px 16px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        font-size: 14px;
+        display: none;
+    }
+    .alert-error {
+        background: #fee;
+        color: #c33;
+        border: 1px solid #fcc;
+    }
+    .alert-success {
+        background: #efe;
+        color: #363;
+        border: 1px solid #cfc;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="register-container">
+    <h1>📝 用户注册</h1>
+
+    <div class="alert alert-error" id="errorAlert"></div>
+    <div class="alert alert-success" id="successAlert"></div>
+
+    <form id="registerForm" onsubmit="return handleRegister(event)">
+        <div class="form-group">
+            <label for="username">用户名</label>
+            <input type="text" id="username" name="username" required placeholder="请输入用户名" minlength="3" maxlength="20">
+        </div>
+        <div class="form-group">
+            <label for="password">密码</label>
+            <input type="password" id="password" name="password" required placeholder="请输入密码" minlength="6">
+        </div>
+        <div class="form-group">
+            <label for="confirmPassword">确认密码</label>
+            <input type="password" id="confirmPassword" name="confirmPassword" required placeholder="请再次输入密码">
+        </div>
+        <button type="submit" class="btn-register">注 册</button>
+    </form>
+
+    <div class="login-link">
+        已有账号？<a href="/auth/login">立即登录</a>
+    </div>
+</div>
+
+<script>
+function handleRegister(event) {
+    event.preventDefault();
+
+    var username = document.getElementById('username').value;
+    var password = document.getElementById('password').value;
+    var confirmPassword = document.getElementById('confirmPassword').value;
+    var errorAlert = document.getElementById('errorAlert');
+    var successAlert = document.getElementById('successAlert');
+
+    errorAlert.style.display = 'none';
+    successAlert.style.display = 'none';
+
+    if (password !== confirmPassword) {
+        errorAlert.textContent = '两次输入的密码不一致';
+        errorAlert.style.display = 'block';
+        return false;
+    }
+
+    fetch('/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: username, password: password })
+    })
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+        if (data.success) {
+            successAlert.textContent = '注册成功！即将跳转到登录页...';
+            successAlert.style.display = 'block';
+            setTimeout(function() { window.location.href = '/auth/login'; }, 2000);
+        } else {
+            errorAlert.textContent = data.message || '注册失败';
+            errorAlert.style.display = 'block';
+        }
+    })
+    .catch(function(err) {
+        errorAlert.textContent = '网络错误，请稍后重试';
+        errorAlert.style.display = 'block';
+    });
+
+    return false;
+}
+</script>
+{% endblock %}

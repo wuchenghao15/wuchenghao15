@@ -19,9 +19,11 @@ class SandboxManager:
         self.sandboxes = {}
         self.sandbox_lock = threading.RLock()
         self.sandbox_config = self._load_sandbox_config()
+        self._apply_system_rules_config()
         self.running_sandboxes = 0
         self._init_dynamic_config()
         self.max_sandboxes = self.sandbox_config.get('initial_max_sandboxes', 10)
+        self._init_db_connection()
 
     def _init_dynamic_config(self):
         """初始化动态沙盒配置"""
@@ -86,6 +88,111 @@ class SandboxManager:
         except Exception as e:
             logger.error(f"保存沙盒配置失败: {str(e)}")
             return False
+
+    def _apply_system_rules_config(self):
+        """从system_rules表读取沙盒配置并应用"""
+        try:
+            import sqlite3
+            db_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'app.db')
+            
+            with sqlite3.connect(db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT rule_code, rule_value FROM system_rules WHERE rule_code LIKE 'SANDBOX_%'")
+                rules = cursor.fetchall()
+                
+                for rule_code, rule_value in rules:
+                    if rule_code == 'SANDBOX_ENABLED':
+                        self.sandbox_config['enabled'] = bool(int(rule_value))
+                    elif rule_code == 'SANDBOX_ISOLATION_LEVEL':
+                        self.sandbox_config['isolation_level'] = rule_value
+                    elif rule_code == 'SANDBOX_MAX_INSTANCES':
+                        self.sandbox_config['initial_max_sandboxes'] = int(rule_value)
+                    elif rule_code == 'SANDBOX_MIN_INSTANCES':
+                        self.sandbox_config['min_sandboxes'] = int(rule_value)
+                    elif rule_code == 'SANDBOX_RESOURCE_LIMIT_CPU':
+                        self.sandbox_config['resource_limits']['cpu'] = int(rule_value)
+                    elif rule_code == 'SANDBOX_RESOURCE_LIMIT_MEMORY':
+                        self.sandbox_config['resource_limits']['memory'] = int(rule_value)
+                    elif rule_code == 'SANDBOX_RESOURCE_LIMIT_DISK':
+                        self.sandbox_config['resource_limits']['disk'] = int(rule_value)
+                    elif rule_code == 'SANDBOX_RESOURCE_LIMIT_PROCESSES':
+                        self.sandbox_config['resource_limits']['processes'] = int(rule_value)
+                    elif rule_code == 'SANDBOX_FILE_SYSTEM_ACCESS':
+                        self.sandbox_config['file_system_access'] = bool(int(rule_value))
+                    elif rule_code == 'SANDBOX_CLIPBOARD_ACCESS':
+                        self.sandbox_config['clipboard_access'] = bool(int(rule_value))
+                    elif rule_code == 'SANDBOX_GPU_ACCESS':
+                        self.sandbox_config['gpu_access'] = bool(int(rule_value))
+                    elif rule_code == 'SANDBOX_NETWORK_ISOLATION_ENABLED':
+                        self.sandbox_config['network_isolation'] = bool(int(rule_value))
+            
+            logger.info("沙盒配置已从system_rules表更新")
+        except Exception as e:
+            logger.warning(f"从system_rules读取沙盒配置失败: {str(e)}")
+
+    def _init_db_connection(self):
+        """初始化数据库连接"""
+        self._db_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'app.db')
+
+    def _get_db_connection(self):
+        """获取数据库连接"""
+        import sqlite3
+        conn = sqlite3.connect(self._db_path)
+        conn.row_factory = sqlite3.Row
+        return conn
+
+    def _record_sandbox_to_db(self, sandbox):
+        """将沙盒记录写入数据库"""
+        try:
+            with self._get_db_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute('''
+                    INSERT OR REPLACE INTO sandbox_instances 
+                    (sandbox_id, instance_id, status, isolation_level, 
+                     resource_limits, file_system_access, network_isolation,
+                     clipboard_access, gpu_access, created_at, prewarmed, metadata)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (
+                    sandbox['sandbox_id'],
+                    sandbox['instance_id'],
+                    sandbox['status'],
+                    self.sandbox_config.get('isolation_level', 'medium'),
+                    json.dumps(self.sandbox_config.get('resource_limits', {})),
+                    1 if self.sandbox_config.get('file_system_access', True) else 0,
+                    1 if self.sandbox_config.get('network_isolation', True) else 0,
+                    1 if self.sandbox_config.get('clipboard_access', False) else 0,
+                    1 if self.sandbox_config.get('gpu_access', False) else 0,
+                    time.strftime('%Y-%m-%d %H:%M:%S'),
+                    1 if sandbox.get('prewarmed', False) else 0,
+                    json.dumps(sandbox.get('config', {}))
+                ))
+                conn.commit()
+            logger.info(f"沙盒记录已写入数据库: {sandbox['sandbox_id']}")
+        except Exception as e:
+            logger.error(f"写入沙盒记录失败: {str(e)}")
+
+    def _update_sandbox_status(self, sandbox_id, status):
+        """更新沙盒状态"""
+        try:
+            with self._get_db_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute('''
+                    UPDATE sandbox_instances SET status = ?, updated_at = ? WHERE sandbox_id = ?
+                ''', (status, time.strftime('%Y-%m-%d %H:%M:%S'), sandbox_id))
+                conn.commit()
+        except Exception as e:
+            logger.error(f"更新沙盒状态失败: {str(e)}")
+
+    def _remove_sandbox_from_db(self, sandbox_id):
+        """从数据库删除沙盒记录"""
+        try:
+            with self._get_db_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute('DELETE FROM sandbox_instances WHERE sandbox_id = ?', (sandbox_id,))
+                conn.commit()
+            logger.info(f"沙盒记录已从数据库删除: {sandbox_id}")
+        except Exception as e:
+            logger.error(f"删除沙盒记录失败: {str(e)}")
 
     def _adjust_sandbox_limit(self):
         """根据资源使用情况动态调整沙盒上限"""
@@ -170,6 +277,9 @@ class SandboxManager:
             }
             self.sandboxes[instance_id] = sandbox
             self.running_sandboxes += 1
+            
+            self._record_sandbox_to_db(sandbox)
+            
             logger.info(f"沙盒创建成功: {sandbox_id}")
             return sandbox
 
@@ -177,6 +287,10 @@ class SandboxManager:
         """销毁沙盒"""
         with self.sandbox_lock:
             if instance_id in self.sandboxes:
+                sandbox = self.sandboxes[instance_id]
+                sandbox_id = sandbox.get('sandbox_id')
+                self._remove_sandbox_from_db(sandbox_id)
+                
                 del self.sandboxes[instance_id]
                 self.running_sandboxes -= 1
                 logger.info(f"沙盒销毁成功: {instance_id}")

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>课程管理</title>
+    <link rel="stylesheet" href="/assets/css/mtscos-design-system.css">
+    <link rel="stylesheet" href="/assets/font-awesome/css/all.min.css">
+    <style>
+        .course-table { width: 100%; border-collapse: collapse; }
+        .course-table th, .course-table td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border-color); }
+        .course-table th { background: var(--bg-secondary); color: var(--text-primary); }
+        .course-table tr:hover { background: var(--bg-secondary); }
+        .btn-group { display: flex; gap: 6px; }
+        .btn-sm { padding: 4px 10px; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-book-open"></i> 课程管理</h1>
+            <div class="user-info">
+                <span>欢迎, {{ user.username }}</span>
+                {% if notification_count > 0 %}
+                <span class="notification-badge">{{ notification_count }}</span>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="nav-bar">
+            <ul>
+                <li><a href="/admin_app/dashboard">管理首页</a></li>
+                <li><a href="/admin_app/courses" class="active">课程管理</a></li>
+                <li><a href="/admin_app/assignments">作业管理</a></li>
+            </ul>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon bg-primary"><i class="fas fa-book"></i></div>
+                <div class="stat-info">
+                    <div class="stat-value">{{ course_stats.total_courses }}</div>
+                    <div class="stat-label">课程总数</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon bg-success"><i class="fas fa-users"></i></div>
+                <div class="stat-info">
+                    <div class="stat-value">{{ course_stats.total_students }}</div>
+                    <div class="stat-label">选课学生</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon bg-warning"><i class="fas fa-video"></i></div>
+                <div class="stat-info">
+                    <div class="stat-value">{{ course_stats.total_lessons }}</div>
+                    <div class="stat-label">课时总数</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon bg-secondary"><i class="fas fa-chart-line"></i></div>
+                <div class="stat-info">
+                    <div class="stat-value">{{ course_stats.completion_rate }}%</div>
+                    <div class="stat-label">完成率</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">课程列表</h3>
+                <div class="search-bar">
+                    <input type="text" placeholder="搜索课程名称..." id="course-search">
+                    <button class="btn btn-primary btn-sm" onclick="searchCourses()">搜索</button>
+                </div>
+            </div>
+            <div class="card-body">
+                <table class="course-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>课程名称</th>
+                            <th>类别</th>
+                            <th>课时数</th>
+                            <th>学生数</th>
+                            <th>状态</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for course in courses %}
+                        <tr>
+                            <td>{{ course.id }}</td>
+                            <td>{{ course.name }}</td>
+                            <td>{{ course.category }}</td>
+                            <td>{{ course.lesson_count }}</td>
+                            <td>{{ course.student_count }}</td>
+                            <td>{{ course.status }}</td>
+                            <td>
+                                <div class="btn-group">
+                                    <button class="btn btn-primary btn-sm">编辑</button>
+                                    <button class="btn btn-secondary btn-sm">查看</button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        {% if not courses %}
+                        <tr><td colspan="7" class="empty-state">暂无课程数据</td></tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <script>
+        function searchCourses() {
+            const keyword = document.getElementById('course-search').value;
+            alert(`搜索课程: ${keyword}`);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI智能评估系统</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f7fa; }
+        .header { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 20px 30px; }
+        .header h1 { font-size: 24px; display: flex; align-items: center; gap: 10px; }
+        .header .nav { margin-top: 10px; }
+        .header .nav a { color: rgba(255,255,255,0.9); text-decoration: none; margin-right: 20px; font-size: 14px; }
+        .header .nav a:hover { text-decoration: underline; }
+        .container { padding: 20px 30px; max-width: 1400px; margin: 0 auto; }
+        .card { background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); padding: 20px; margin-bottom: 20px; }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+        .card-header h2 { font-size: 18px; color: #333; }
+        .btn { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; transition: background 0.3s; }
+        .btn-primary { background: #f59e0b; color: white; }
+        .btn-primary:hover { background: #d97706; }
+        .btn-success { background: #10b981; color: white; }
+        .btn-success:hover { background: #059669; }
+        .btn-outline { background: white; color: #f59e0b; border: 1px solid #f59e0b; }
+        .btn-outline:hover { background: #fffbeb; }
+        .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 20px; }
+        .stat-box { background: white; border-radius: 10px; padding: 20px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
+        .stat-box h3 { font-size: 28px; color: #f59e0b; margin-bottom: 5px; }
+        .stat-box p { font-size: 13px; color: #666; }
+        .table { width: 100%; border-collapse: collapse; }
+        .table th, .table td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #eee; font-size: 14px; }
+        .table th { background: #f8fafc; color: #64748b; font-weight: 600; }
+        .table tr:hover { background: #f8fafc; }
+        .tag { padding: 3px 8px; border-radius: 4px; font-size: 12px; }
+        .tag-A { background: #dcfce7; color: #10b981; font-weight: bold; }
+        .tag-B { background: #dbeafe; color: #3b82f6; font-weight: bold; }
+        .tag-C { background: #fef3c7; color: #f59e0b; font-weight: bold; }
+        .tag-D { background: #fed7aa; color: #ea580c; font-weight: bold; }
+        .tag-F { background: #fee2e2; color: #dc2626; font-weight: bold; }
+        .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
+        .modal.active { display: flex; }
+        .modal-content { background: white; border-radius: 12px; width: 600px; max-height: 90vh; overflow-y: auto; padding: 25px; }
+        .modal-content h3 { font-size: 18px; margin-bottom: 20px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-size: 13px; color: #666; margin-bottom: 5px; }
+        .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+        .form-group textarea { height: 100px; resize: vertical; }
+        .form-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+        .tab-container { display: flex; gap: 10px; margin-bottom: 20px; }
+        .tab { padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; border: none; }
+        .tab.active { background: #f59e0b; color: white; }
+        .tab.inactive { background: white; color: #666; border: 1px solid #ddd; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .score-bar { height: 8px; background: #f3f4f6; border-radius: 4px; overflow: hidden; }
+        .score-fill { height: 100%; border-radius: 4px; transition: width 0.3s; }
+        .score-A { background: #10b981; }
+        .score-B { background: #3b82f6; }
+        .score-C { background: #f59e0b; }
+        .score-D { background: #ea580c; }
+        .score-F { background: #dc2626; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1><i class="fas fa-star"></i> AI智能评估系统</h1>
+        <div class="nav">
+            <a href="/admin_app/ai_learning_dashboard">返回仪表盘</a>
+            <a href="/admin_app/ai_memory">记忆管理系统</a>
+            <a href="/admin_app/ai_emotion">情感分析系统</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="stats-row">
+        <div class="stat-box">
+            <h3 id="total-evaluations">{{ stats.get('total_evaluations', '--') }}</h3>
+            <p>评估记录数</p>
+        </div>
+        <div class="stat-box">
+            <h3 id="total-users">{{ stats.get('total_users', '--') }}</h3>
+            <p>评估用户数</p>
+        </div>
+        <div class="stat-box">
+            <h3 id="average-score">{{ stats.get('average_score', '--') }}</h3>
+            <p>平均分数</p>
+        </div>
+        <div class="stat-box">
+            <h3 id="type-count">{{ stats.get('type_count', '--') }}</h3>
+            <p>评估类型数</p>
+        </div>
+    </div>
+
+        <div class="tab-container">
+            <button class="tab active" onclick="switchTab('evaluate')">执行评估</button>
+            <button class="tab inactive" onclick="switchTab('history')">评估历史</button>
+            <button class="tab inactive" onclick="switchTab('trend')">趋势分析</button>
+            <button class="tab inactive" onclick="switchTab('criteria')">评估标准</button>
+        </div>
+
+        <div id="evaluate-tab" class="tab-content active">
+            <div class="card">
+                <div class="card-header">
+                    <h2>执行智能评估</h2>
+                </div>
+                <div class="form-group">
+                    <label>用户ID</label>
+                    <input type="text" id="eval-user-id" placeholder="输入用户ID">
+                </div>
+                <div class="form-group">
+                    <label>评估类型</label>
+                    <select id="eval-type">
+                        <option value="knowledge">知识评估</option>
+                        <option value="skill">技能评估</option>
+                        <option value="behavior">行为评估</option>
+                        <option value="progress">进步评估</option>
+                        <option value="potential">潜力评估</option>
+                        <option value="overall">综合评估</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>评估数据（JSON格式，可选）</label>
+                    <textarea id="eval-data" placeholder='{"exam_scores": [85, 90, 88], "task_completion_rate": 0.85, "learning_days": 30}'></textarea>
+                </div>
+                <div class="form-actions">
+                    <button class="btn btn-primary" onclick="executeEvaluation()">执行评估</button>
+                </div>
+                <div id="eval-result"></div>
+            </div>
+        </div>
+
+        <div id="history-tab" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h2>评估历史</h2>
+                </div>
+                <div class="form-group" style="display:flex; gap:10px;">
+                    <input type="text" id="history-user-id" placeholder="用户ID" style="flex:1;">
+                    <select id="history-type" style="flex:1;">
+                        <option value="">全部类型</option>
+                        <option value="knowledge">知识评估</option>
+                        <option value="skill">技能评估</option>
+                        <option value="behavior">行为评估</option>
+                        <option value="progress">进步评估</option>
+                        <option value="potential">潜力评估</option>
+                    </select>
+                    <button class="btn btn-primary" onclick="loadHistory()">查询</button>
+                </div>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>评估ID</th>
+                            <th>用户ID</th>
+                            <th>评估类型</th>
+                            <th>分数</th>
+                            <th>等级</th>
+                            <th>反馈</th>
+                            <th>置信度</th>
+                            <th>时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-table">
+                        <tr><td colspan="9" style="text-align:center;color:#999;">输入用户ID查询</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="trend-tab" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h2>评估趋势</h2>
+                </div>
+                <div class="form-group" style="display:flex; gap:10px;">
+                    <input type="text" id="trend-user-id" placeholder="用户ID" style="flex:1;">
+                    <select id="trend-type">
+                        <option value="knowledge">知识评估</option>
+                        <option value="skill">技能评估</option>
+                        <option value="behavior">行为评估</option>
+                        <option value="progress">进步评估</option>
+                        <option value="potential">潜力评估</option>
+                    </select>
+                    <button class="btn btn-primary" onclick="loadTrend()">查询</button>
+                </div>
+                <div id="trend-chart"></div>
+            </div>
+        </div>
+
+        <div id="criteria-tab" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h2>评估标准配置</h2>
+                </div>
+                <div class="form-group" style="display:flex; gap:10px;">
+                    <select id="criteria-type" onchange="loadCriteria()">
+                        <option value="">全部类型</option>
+                        <option value="knowledge">知识评估</option>
+                        <option value="skill">技能评估</option>
+                        <option value="behavior">行为评估</option>
+                        <option value="progress">进步评估</option>
+                        <option value="potential">潜力评估</option>
+                    </select>
+                </div>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>标准ID</th>
+                            <th>标准名称</th>
+                            <th>评估类型</th>
+                            <th>权重</th>
+                            <th>描述</th>
+                            <th>分数范围</th>
+                        </tr>
+                    </thead>
+                    <tbody id="criteria-table">
+                        <tr><td colspan="6" style="text-align:center;color:#999;">加载中...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="detail-modal">
+        <div class="modal-content">
+            <h3><i class="fas fa-info-circle"></i> 评估详情</h3>
+            <div id="detail-content"></div>
+            <div class="form-actions">
+                <button class="btn btn-outline" onclick="closeModal('detail-modal')">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function loadStats() {
+            const res = await fetch('/api/ai/evaluation/summary');
+            const data = await res.json();
+            if (data.success) {
+                document.getElementById('total-evaluations').textContent = data.data.total_evaluations || 0;
+                document.getElementById('total-users').textContent = data.data.total_users || 0;
+                document.getElementById('average-score').textContent = data.data.average_score || 0;
+                document.getElementById('type-count').textContent = Object.keys(data.data.type_distribution || {}).length;
+            }
+        }
+
+        async function executeEvaluation() {
+            const userId = document.getElementById('eval-user-id').value;
+            const evalType = document.getElementById('eval-type').value;
+            const evalData = document.getElementById('eval-data').value;
+            
+            if (!userId) { alert('请输入用户ID'); return; }
+            
+            const res = await fetch('/api/ai/evaluation/evaluate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    user_id: userId, 
+                    evaluation_type: evalType,
+                    data: evalData ? JSON.parse(evalData) : {}
+                })
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                const d = data.data;
+                document.getElementById('eval-result').innerHTML = `
+                    <div style="background:${getGradeBg(d.grade)};padding:20px;border-radius:10px;margin-top:20px;">
+                        <h4>评估完成！</h4>
+                        <div style="display:flex;gap:30px;margin-top:15px;">
+                            <div>
+                                <span style="font-size:48px;font-weight:bold;color:${getGradeColor(d.grade)};">${d.score}</span>
+                                <p style="color:#666;">得分</p>
+                            </div>
+                            <div>
+                                <span style="font-size:48px;font-weight:bold;color:${getGradeColor(d.grade)};">${d.grade}</span>
+                                <p style="color:#666;">等级</p>
+                            </div>
+                        </div>
+                        <p style="margin-top:15px;"><strong>反馈：</strong>${d.feedback}</p>
+                        <p style="margin-top:10px;"><strong>建议：</strong>${d.recommendations.join('; ')}</p>
+                        <p style="margin-top:10px;color:#999;">评估ID：${d.evaluation_id}</p>
+                    </div>
+                `;
+            } else {
+                alert('评估失败: ' + data.error);
+            }
+        }
+
+        async function loadHistory() {
+            const userId = document.getElementById('history-user-id').value;
+            const evalType = document.getElementById('history-type').value;
+            
+            if (!userId) { alert('请输入用户ID'); return; }
+            
+            const url = `/api/ai/evaluation/user?user_id=${userId}${evalType ? '&type=' + evalType : ''}`;
+            const res = await fetch(url);
+            const data = await res.json();
+            const tbody = document.getElementById('history-table');
+            if (data.success) {
+                tbody.innerHTML = data.data.map(e => `
+                    <tr>
+                        <td>${e.evaluation_id}</td>
+                        <td>${e.user_id}</td>
+                        <td>${getEvaluationTypeName(e.evaluation_type)}</td>
+                        <td>${e.score}</td>
+                        <td><span class="tag tag-${e.grade}">${e.grade}</span></td>
+                        <td>${e.feedback}</td>
+                        <td>${(e.confidence * 100).toFixed(0)}%</td>
+                        <td>${formatDate(e.created_at)}</td>
+                        <td><button class="btn btn-outline" onclick="showDetail('${e.evaluation_id}')">详情</button></td>
+                    </tr>
+                `).join('');
+            } else {
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#999;">暂无数据</td></tr>';
+            }
+        }
+
+        async function loadTrend() {
+            const userId = document.getElementById('trend-user-id').value;
+            const evalType = document.getElementById('trend-type').value;
+            
+            if (!userId) { alert('请输入用户ID'); return; }
+            
+            const res = await fetch(`/api/ai/evaluation/trend?user_id=${userId}&type=${evalType}`);
+            const data = await res.json();
+            if (data.success) {
+                if (data.data.length === 0) {
+                    document.getElementById('trend-chart').innerHTML = '<p style="color:#999;text-align:center;">暂无趋势数据</p>';
+                    return;
+                }
+                
+                let chartHtml = '<div style="height:300px;display:flex;align-items:flex-end;gap:10px;padding:20px;">';
+                const maxScore = Math.max(...data.data.map(d => d.score));
+                
+                data.data.forEach((d, i) => {
+                    const height = (d.score / maxScore) * 250;
+                    chartHtml += `
+                        <div style="flex:1;display:flex;flex-direction:column;align-items:center;">
+                            <div style="width:100%;height:${height}px;background:${getGradeBg(d.grade)};border-radius:5px 5px 0 0;position:relative;">
+                                <span style="position:absolute;top:-25px;left:50%;transform:translateX(-50%);font-size:12px;">${d.score}</span>
+                            </div>
+                            <span style="font-size:11px;color:#666;margin-top:5px;">${formatDateShort(d.date)}</span>
+                            <span class="tag tag-${d.grade}" style="font-size:10px;margin-top:3px;">${d.grade}</span>
+                        </div>
+                    `;
+                });
+                chartHtml += '</div>';
+                document.getElementById('trend-chart').innerHTML = chartHtml;
+            }
+        }
+
+        async function loadCriteria() {
+            const evalType = document.getElementById('criteria-type').value;
+            const url = `/api/ai/evaluation/criteria${evalType ? '?type=' + evalType : ''}`;
+            const res = await fetch(url);
+            const data = await res.json();
+            const tbody = document.getElementById('criteria-table');
+            if (data.success) {
+                tbody.innerHTML = data.data.map(c => `
+                    <tr>
+                        <td>${c.criteria_id}</td>
+                        <td>${c.criteria_name}</td>
+                        <td>${getEvaluationTypeName(c.evaluation_type)}</td>
+                        <td>${(c.weight * 100).toFixed(0)}%</td>
+                        <td>${c.description}</td>
+                        <td>${c.min_score}-${c.max_score}</td>
+                    </tr>
+                `).join('');
+            } else {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#999;">暂无数据</td></tr>';
+            }
+        }
+
+        async function showDetail(evaluationId) {
+            const res = await fetch(`/api/ai/evaluation/${evaluationId}`);
+            const data = await res.json();
+            if (data.success) {
+                const e = data.data;
+                document.getElementById('detail-content').innerHTML = `
+                    <div class="form-group"><label>评估ID</label><input type="text" value="${e.evaluation_id}" readonly></div>
+                    <div class="form-group"><label>用户ID</label><input type="text" value="${e.user_id}" readonly></div>
+                    <div class="form-group"><label>评估类型</label><input type="text" value="${getEvaluationTypeName(e.evaluation_type)}" readonly></div>
+                    <div class="form-group"><label>评估方法</label><input type="text" value="${e.evaluation_method}" readonly></div>
+                    <div class="form-group"><label>分数</label><input type="text" value="${e.score} / ${e.max_score}" readonly></div>
+                    <div class="form-group">
+                        <label>分数进度条</label>
+                        <div class="score-bar"><div class="score-fill score-${e.grade}" style="width:${e.score}%"></div></div>
+                    </div>
+                    <div class="form-group"><label>等级</label><input type="text" value="${e.grade}" readonly></div>
+                    <div class="form-group"><label>反馈</label><textarea readonly>${e.feedback}</textarea></div>
+                    <div class="form-group"><label>建议</label><textarea readonly>${e.recommendations.join('\n')}</textarea></div>
+                    <div class="form-group"><label>置信度</label><input type="text" value="${(e.confidence * 100).toFixed(0)}%" readonly></div>
+                    <div class="form-group"><label>状态</label><input type="text" value="${e.status}" readonly></div>
+                    <div class="form-group"><label>创建时间</label><input type="text" value="${e.created_at}" readonly></div>
+                    ${e.details && e.details.length > 0 ? `
+                    <div class="form-group">
+                        <label>详细评分</label>
+                        <table class="table" style="font-size:12px;">
+                            <thead><tr><th>标准</th><th>得分</th><th>权重</th><th>加权分</th></tr></thead>
+                            <tbody>${e.details.map(d => `<tr><td>${d.criteria_id}</td><td>${d.score}</td><td>${(d.weight * 100).toFixed(0)}%</td><td>${d.normalized_score.toFixed(2)}</td></tr>`).join('')}</tbody>
+                        </table>
+                    </div>` : ''}
+                `;
+                document.getElementById('detail-modal').classList.add('active');
+            }
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('active');
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab').forEach(t => t.classList.add('inactive'));
+            event.target.classList.add('active');
+            event.target.classList.remove('inactive');
+            
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+            
+            if (tabName === 'criteria') {
+                loadCriteria();
+            }
+        }
+
+        function getEvaluationTypeName(type) {
+            const map = { knowledge: '知识评估', skill: '技能评估', behavior: '行为评估', progress: '进步评估', potential: '潜力评估', overall: '综合评估' };
+            return map[type] || type;
+        }
+
+        function getGradeBg(grade) {
+            const map = { A: '#dcfce7', B: '#dbeafe', C: '#fef3c7', D: '#fed7aa', F: '#fee2e2' };
+            return map[grade] || '#f1f5f9';
+        }
+
+        function getGradeColor(grade) {
+            const map = { A: '#10b981', B: '#3b82f6', C: '#f59e0b', D: '#ea580c', F: '#dc2626' };
+            return map[grade] || '#64748b';
+        }
+
+        function formatDate(dateStr) {
+            return dateStr ? new Date(dateStr).toLocaleString() : '';
+        }
+
+        function formatDateShort(dateStr) {
+            return dateStr ? new Date(dateStr).toLocaleDateString() : '';
+        }
+
+        loadStats();
+        loadCriteria();
+    </script>
+</body>
+</html>

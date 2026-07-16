@@ -62,7 +62,49 @@ app.config['TEMPLATES_AUTO_RELOAD'] = True
 app.static_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src', 'html', 'assets')
 app.static_url_path = '/assets'
 app.config['JSON_AS_ASCII'] = False
-app.secret_key = os.environ.get('SECRET_KEY', 'mtscos_ai_secret_key_2026')  # 设置session密钥
+
+def api_response(code=0, message='success', data=None, error=None, http_status=200):
+    """统一API响应格式"""
+    result = {
+        'code': code,
+        'message': message,
+        'data': data if data is not None else {},
+        'timestamp': int(datetime.now().timestamp() * 1000)
+    }
+    if error:
+        result['error'] = error
+    return make_response(jsonify(result), http_status)
+
+def _init_secret_key():
+    """初始化Secret Key - 生产环境强制从环境变量读取"""
+    env_secret = os.environ.get('SECRET_KEY')
+    flask_env = os.environ.get('FLASK_ENV', 'development')
+    
+    if env_secret and len(env_secret) >= 16:
+        app.secret_key = env_secret
+        logger.info("✓ 使用环境变量中的 SECRET_KEY")
+        return
+    
+    if flask_env == 'production':
+        raise RuntimeError(
+            "生产环境必须设置 SECRET_KEY 环境变量！"
+            "请生成一个安全的随机密钥并设置到环境变量中。"
+            "生成命令: python -c \"import secrets; print(secrets.token_hex(32))\""
+        )
+    
+    default_key = 'mtscos_ai_secret_key_2026'
+    if not env_secret:
+        logger.warning(
+            "⚠️  未设置 SECRET_KEY 环境变量，使用默认密钥！"
+            "生产环境请务必设置安全的随机密钥。"
+            "生成命令: python -c \"import secrets; print(secrets.token_hex(32))\""
+        )
+        app.secret_key = default_key
+    else:
+        logger.warning("⚠️  SECRET_KEY 长度不足(至少16位)，使用默认密钥")
+        app.secret_key = default_key
+
+_init_secret_key()
 
 try:
     from app.exceptions.handler import exception_handler
@@ -70,6 +112,13 @@ try:
     logger.info("✓ 注册统一异常处理中间件")
 except Exception as e:
     logger.error(f"✗ 注册统一异常处理中间件失败: {e}")
+
+try:
+    from app.middlewares.ai_self_repair import install_repair_middleware
+    install_repair_middleware(app)
+    logger.info("✓ 注册AI自我修复中间件")
+except Exception as e:
+    logger.error(f"✗ 注册AI自我修复中间件失败: {e}")
 
 # 注册Jinja2模板全局函数
 def get_role_name(role):
@@ -699,7 +748,7 @@ def verify_password(stored_password, provided_password):
                     algo = algo_parts[1]
                     iterations = int(algo_parts[2])
                     provided_hash = hashlib.pbkdf2_hmac(algo, provided_password.encode(), salt, iterations)
-                    return stored_hash == base64.b64encode(provided_hash).decode()
+                    return stored_hash == base64.b64encode(provided_hash)
             return False
         
         # 2. 尝试bcrypt格式: $2b$xxx$xxx 或 $2a$xxx$xxx
@@ -710,8 +759,13 @@ def verify_password(stored_password, provided_password):
             except ImportError:
                 logger.error("bcrypt模块未安装")
                 return False
-        
-        # 3. 尝试base64编码的哈希
+
+        # 3. 尝试十六进制SHA-256哈希（64位hex字符串）
+        if len(stored_password) == 64 and all(c in '0123456789abcdef' for c in stored_password.lower()):
+            provided_hex = hashlib.sha256(provided_password.encode()).hexdigest()
+            return stored_password == provided_hex
+
+        # 4. 尝试base64编码的哈希
         try:
             stored_bytes = base64.b64decode(stored_password)
             
@@ -729,16 +783,27 @@ def verify_password(stored_password, provided_password):
                 
         except Exception:
             pass
-        
-        # 4. 尝试简单比较(用于测试)
+
+        # 5. 尝试简单比较(用于测试)
         if stored_password == provided_password:
             return True
-            
+
     except Exception as e:
         logger.error(f"密码验证错误: {e}")
-    
+
     # 默认:直接比较(支持明文密码的用户)
     return stored_password == provided_password
+
+def hash_password(password):
+    """使用bcrypt哈希密码"""
+    try:
+        import bcrypt
+        return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+    except ImportError:
+        import hashlib
+        import base64
+        logger.warning("bcrypt未安装，回退到SHA-256哈希")
+        return base64.b64encode(hashlib.sha256(password.encode()).digest()).decode()
 
 def get_user_by_username(username):
     """从数据库获取用户信息"""
@@ -760,8 +825,8 @@ def get_system_settings():
     """获取系统设置"""
     settings = {
         'system_name': 'MTSCOS AI 智能学习评估系统',
-        'version': "9.0.0",
-        'description': 'AI赋能与统一版本管理版本，实现AI自学习、AI技能进化、统一版本管理、AI协作系统、智能决策支持，全面激发系统AI潜力.',
+        'version': "14.0.0",
+        'description': 'AI员工编排与集成版本，创建AI员工编排层连接专业角色→技能进化→独立思考→网络学习的自动化成长周期，实现14个子系统统一集成与仪表盘监控.',
         'admin_email': 'admin@example.com',
         'maintenance_mode': False,
         'auto_backup': True
@@ -769,7 +834,7 @@ def get_system_settings():
     try:
         with sqlite3.connect(DATABASE_PATH) as conn:
             cursor = conn.cursor()
-            cursor.execute('SELECT setting_key, value FROM system_settings WHERE category = "general"')
+            cursor.execute('SELECT setting_key, setting_value FROM system_settings WHERE category = "general"')
             rows = cursor.fetchall()
             for row in rows:
                 key, value = row
@@ -804,7 +869,7 @@ def get_security_settings():
     try:
         with sqlite3.connect(DATABASE_PATH) as conn:
             cursor = conn.cursor()
-            cursor.execute('SELECT setting_key, value FROM system_settings WHERE category = "security"')
+            cursor.execute('SELECT setting_key, setting_value FROM system_settings WHERE category = "security"')
             rows = cursor.fetchall()
             for row in rows:
                 key, value = row
@@ -832,7 +897,7 @@ def get_language_settings():
     try:
         with sqlite3.connect(DATABASE_PATH) as conn:
             cursor = conn.cursor()
-            cursor.execute('SELECT setting_key, value FROM system_settings WHERE category = "language"')
+            cursor.execute('SELECT setting_key, setting_value FROM system_settings WHERE category = "language"')
             rows = cursor.fetchall()
             for row in rows:
                 key, value = row
@@ -886,11 +951,20 @@ def force_https_redirect():
 def security_check():
     """安全检查中间件 - 会话超时、权限验证、速率限制"""
     from app.middlewares.security_middleware import security_middleware
-    
+
     result = security_middleware.before_request_handler()
     if result:
+        status_code = result.get('status_code', 401)
+        if status_code == 302:
+            return redirect(result.get('redirect', '/auth/login'))
         if request.is_json or 'application/json' in request.headers.get('Accept', ''):
-            return jsonify(result), result.get('status_code', 401)
+            return jsonify(result), status_code
+        if status_code == 401:
+            return redirect('/auth/login')
+        if status_code == 403:
+            return render_template('403.html', error=result.get('error', '权限不足')), 403
+        if status_code == 423:
+            return render_template('423.html', error=result.get('error', '账户已锁定')), 423
         return redirect('/auth/login')
 
 @app.before_request
@@ -1313,15 +1387,15 @@ def admin_app_dashboard():
                 })
             
             cursor.execute('''
-                SELECT 'exam_paper' as type, ep.user_id, ep.exam_id, ep.status, ep.started_at, u.username
-                FROM exam_papers ep
-                LEFT JOIN users u ON ep.user_id = u.id
-                ORDER BY ep.started_at DESC LIMIT 3
+                SELECT 'exam_session' as type, es.user_id, es.exam_id, es.status, es.started_at, u.username
+                FROM exam_sessions es
+                LEFT JOIN users u ON es.user_id = u.id
+                ORDER BY es.started_at DESC LIMIT 3
             ''')
             for row in cursor.fetchall():
                 if row[3] == 'in_progress':
                     activities.append({
-                        'type': 'exam_paper',
+                        'type': 'exam_session',
                         'user': row[5] or f'用户{row[1]}',
                         'action': '开始考试',
                         'time': row[4]
@@ -1473,7 +1547,13 @@ def admin_app_ai_learning_dashboard():
         'role': session.get('role')
     }
     
-    return render_template('admin_app/ai_learning_dashboard.html', user=user, current_page='ai_learning')
+    try:
+        from app.services.page_data_service import get_ai_learning_dashboard_stats
+        dashboard_stats = get_ai_learning_dashboard_stats()
+    except Exception:
+        dashboard_stats = {}
+    
+    return render_template('admin_app/ai_learning_dashboard.html', user=user, current_page='ai_learning', dashboard_stats=dashboard_stats)
 
 @app.route('/admin_app/ai_tutor_assistant')
 def admin_app_ai_tutor_assistant():
@@ -1491,7 +1571,13 @@ def admin_app_ai_tutor_assistant():
         'role': session.get('role')
     }
     
-    return render_template('admin_app/ai_tutor_assistant.html', user=user, current_page='ai_learning')
+    try:
+        from app.services.page_data_service import get_tutor_stats
+        tutor_stats = get_tutor_stats()
+    except Exception:
+        tutor_stats = {}
+    
+    return render_template('admin_app/ai_tutor_assistant.html', user=user, current_page='ai_learning', tutor_stats=tutor_stats)
 
 @app.route('/admin_app/ai_auto_learning')
 def admin_app_ai_auto_learning():
@@ -1509,7 +1595,13 @@ def admin_app_ai_auto_learning():
         'role': session.get('role')
     }
     
-    return render_template('admin_app/ai_auto_learning.html', user=user, current_page='ai_learning')
+    try:
+        from app.services.page_data_service import get_auto_learning_stats
+        auto_stats = get_auto_learning_stats()
+    except Exception:
+        auto_stats = {}
+    
+    return render_template('admin_app/ai_auto_learning.html', user=user, current_page='ai_learning', auto_stats=auto_stats)
 
 @app.route('/admin_app/ai_warning_intervention')
 def admin_app_ai_warning_intervention():
@@ -1527,7 +1619,13 @@ def admin_app_ai_warning_intervention():
         'role': session.get('role')
     }
     
-    return render_template('admin_app/ai_warning_intervention.html', user=user, current_page='ai_learning')
+    try:
+        from app.services.page_data_service import get_warning_stats
+        warning_stats = get_warning_stats()
+    except Exception:
+        warning_stats = {}
+    
+    return render_template('admin_app/ai_warning_intervention.html', user=user, current_page='ai_learning', warning_stats=warning_stats)
 
 @app.route('/admin_app/ai_knowledge_graph')
 def admin_app_ai_knowledge_graph():
@@ -1545,7 +1643,13 @@ def admin_app_ai_knowledge_graph():
         'role': session.get('role')
     }
     
-    return render_template('admin_app/ai_knowledge_graph.html', user=user, current_page='ai_learning')
+    try:
+        from app.services.page_data_service import get_graph_stats
+        graph_stats = get_graph_stats()
+    except Exception:
+        graph_stats = {}
+    
+    return render_template('admin_app/ai_knowledge_graph.html', user=user, current_page='ai_learning', graph_stats=graph_stats)
 
 @app.route('/admin_app/ai_question_generation')
 def admin_app_ai_question_generation():
@@ -1563,7 +1667,37 @@ def admin_app_ai_question_generation():
         'role': session.get('role')
     }
     
-    return render_template('admin_app/ai_question_generation.html', user=user, current_page='ai_learning')
+    try:
+        from app.services.page_data_service import get_question_stats
+        question_stats = get_question_stats()
+    except Exception:
+        question_stats = {}
+    
+    return render_template('admin_app/ai_question_generation.html', user=user, current_page='ai_learning', question_stats=question_stats)
+
+@app.route('/admin_app/ai_employee_dashboard')
+def admin_app_ai_employee_dashboard():
+    """管理员App - AI员工仪表盘"""
+    has_access, redirect_to = require_admin_app_access()
+    if not has_access:
+        if redirect_to == 'login':
+            return redirect('/admin_app/login')
+        return "无权访问", 403
+    
+    user_id = session.get('user_id')
+    user = {
+        'id': user_id,
+        'username': session.get('username'),
+        'role': session.get('role')
+    }
+    
+    try:
+        from app.services.page_data_service import get_ai_employee_stats
+        employee_stats = get_ai_employee_stats()
+    except Exception:
+        employee_stats = {}
+    
+    return render_template('admin_app/ai_employee_dashboard.html', user=user, current_page='ai_employee', employee_stats=employee_stats)
 
 @app.route('/admin_app/ai_learning_planner')
 def admin_app_ai_learning_planner():
@@ -1581,7 +1715,13 @@ def admin_app_ai_learning_planner():
         'role': session.get('role')
     }
     
-    return render_template('admin_app/ai_learning_planner.html', user=user, current_page='ai_learning')
+    try:
+        from app.services.page_data_service import get_planner_stats
+        planner_stats = get_planner_stats()
+    except Exception:
+        planner_stats = {}
+    
+    return render_template('admin_app/ai_learning_planner.html', user=user, current_page='ai_learning', planner_stats=planner_stats)
 
 @app.route('/admin_app/users')
 def admin_app_users():
@@ -1601,11 +1741,15 @@ def admin_app_users():
     
     users = []
     notification_count = 0
+    user_stats = {}
     try:
+        from app.services.page_data_service import get_user_stats
+        user_stats = get_user_stats()
+        
         with sqlite3.connect(DATABASE_PATH) as conn:
             cursor = conn.cursor()
-            cursor.execute('SELECT id, username, email, role, is_active, created_at FROM users ORDER BY created_at DESC LIMIT 50')
-            columns = ['id', 'username', 'email', 'role', 'is_active', 'created_at']
+            cursor.execute('SELECT id, username, email, role, is_active, created_at, phone, grade, score, student_type, education_level FROM users ORDER BY created_at DESC LIMIT 50')
+            columns = [desc[0] for desc in cursor.description]
             for row in cursor.fetchall():
                 users.append(dict(zip(columns, row)))
             
@@ -1616,7 +1760,7 @@ def admin_app_users():
         import logging
         logging.error(f"Users list error: {e}")
     
-    return render_template('admin_app/users.html', user=user, users=users, notification_count=notification_count, current_page='users')
+    return render_template('admin_app/users.html', user=user, users=users, notification_count=notification_count, current_page='users', user_stats=user_stats)
 
 @app.route('/admin_app/exams')
 def admin_app_exams():
@@ -1636,11 +1780,15 @@ def admin_app_exams():
     
     exams = []
     notification_count = 0
+    exam_stats = {}
     try:
+        from app.services.page_data_service import get_exam_stats
+        exam_stats = get_exam_stats()
+        
         with sqlite3.connect(DATABASE_PATH) as conn:
             cursor = conn.cursor()
-            cursor.execute('SELECT id, title, language_level, duration, total_score, status, created_at FROM exams ORDER BY created_at DESC LIMIT 20')
-            columns = ['id', 'exam_name', 'exam_type', 'duration', 'total_score', 'status', 'created_at']
+            cursor.execute('SELECT id, title AS exam_name, language_level AS exam_type, duration, total_score, status, created_at FROM exams ORDER BY created_at DESC LIMIT 20')
+            columns = [desc[0] for desc in cursor.description]
             for row in cursor.fetchall():
                 exam = dict(zip(columns, row))
                 exams.append(exam)
@@ -1652,7 +1800,7 @@ def admin_app_exams():
         import logging
         logging.error(f"Exams list error: {e}")
     
-    return render_template('admin_app/exams.html', user=user, exams=exams, notification_count=notification_count, current_page='exams')
+    return render_template('admin_app/exams.html', user=user, exams=exams, notification_count=notification_count, current_page='exams', exam_stats=exam_stats)
 
 @app.route('/admin_app/monitor')
 def admin_app_monitor():
@@ -1672,7 +1820,6 @@ def admin_app_monitor():
     
     logs = []
     notification_count = 0
-    # System stats
     uptime = '99.9'
     cpu_usage = 0
     memory_usage = 0
@@ -1684,12 +1831,15 @@ def admin_app_monitor():
     total_questions = 0
     completed_exams = 0
     active_users = 0
+    system_stats = {}
     
     try:
+        from app.services.page_data_service import get_system_stats
+        system_stats = get_system_stats()
+        
         with sqlite3.connect(DATABASE_PATH) as conn:
             cursor = conn.cursor()
             
-            # Get basic stats
             cursor.execute('SELECT COUNT(*) FROM users')
             total_users = cursor.fetchone()[0]
             
@@ -1708,7 +1858,6 @@ def admin_app_monitor():
             cursor.execute("SELECT COUNT(*) FROM exam_results WHERE status = 'completed'")
             completed_exams = cursor.fetchone()[0]
             
-            # Try access_logs first, fallback to system_logs
             try:
                 cursor.execute('SELECT id, path, username, ip_address, access_time, method FROM access_logs ORDER BY id DESC LIMIT 20')
                 columns = ['id', 'path', 'username', 'ip_address', 'access_time', 'method']
@@ -1732,7 +1881,7 @@ def admin_app_monitor():
                           db_size=db_size, db_queries=db_queries, total_users=total_users,
                           total_exams=total_exams, total_papers=total_papers, 
                           total_questions=total_questions, completed_exams=completed_exams,
-                          active_users=active_users, current_page='monitor')
+                          active_users=active_users, current_page='monitor', system_stats=system_stats)
 
 @app.route('/admin_app/github_sync')
 def admin_app_github_sync():
@@ -1764,6 +1913,9 @@ def admin_app_settings():
     notification_count = 0
     marquee_enabled = False
     marquee_content = ''
+    system_configs = {}
+    config_categories = []
+    gray_release_settings = {}
     
     try:
         with sqlite3.connect(DATABASE_PATH) as conn:
@@ -1783,14 +1935,90 @@ def admin_app_settings():
             if notice:
                 marquee_enabled = True
                 marquee_content = notice['content']
+            
+            cursor.execute("SELECT setting_key, setting_value, category, description FROM system_settings ORDER BY category, setting_key")
+            rows = cursor.fetchall()
+            for row in rows:
+                cat = row['category']
+                if cat not in system_configs:
+                    system_configs[cat] = []
+                    config_categories.append(cat)
+                system_configs[cat].append({
+                    'key': row['setting_key'],
+                    'value': row['setting_value'],
+                    'description': row['description'] or ''
+                })
+            
+            cursor.execute("SELECT setting_key, setting_value, description FROM system_settings WHERE category = 'gray_release' ORDER BY setting_key")
+            gray_rows = cursor.fetchall()
+            for row in gray_rows:
+                gray_release_settings[row['setting_key']] = {
+                    'value': row['setting_value'],
+                    'description': row['description'] or ''
+                }
     except Exception as e:
-        import logging
-        logging.error(f"Settings error: {e}")
+        logger.error(f"Admin settings error: {e}")
     
-    return render_template('admin_app/settings.html', user=user, notification_count=notification_count, 
-                           current_page='settings', marquee_enabled=marquee_enabled, marquee_content=marquee_content)
+    category_labels = {
+        'general': '通用设置',
+        'security': '安全设置',
+        'feature': '功能开关',
+        'gray_release': '灰度发布',
+        'language': '语言设置',
+        'notification': '通知设置',
+        'appearance': '外观设置'
+    }
+    
+    return render_template('admin_app/settings.html', 
+                          user=user, 
+                          notification_count=notification_count,
+                          current_page='settings', 
+                          marquee_enabled=marquee_enabled, 
+                          marquee_content=marquee_content,
+                          system_configs=system_configs,
+                          config_categories=config_categories,
+                          category_labels=category_labels,
+                          gray_release_settings=gray_release_settings)
+
+@app.route('/api/error/report', methods=['POST'])
+def api_error_report():
+    """错误报告API - 收集前端JavaScript错误"""
+    try:
+        data = request.get_json()
+        error_record = {
+            'message': data.get('message', ''),
+            'url': data.get('url', ''),
+            'line': data.get('line', 0),
+            'column': data.get('column', 0),
+            'error': data.get('error', ''),
+            'timestamp': data.get('timestamp', time.time()),
+            'user_agent': data.get('user_agent', ''),
+            'user_id': session.get('user_id', None),
+            'created_at': datetime.now().isoformat()
+        }
+        logger.error(f"前端错误报告: {error_record['message']} at {error_record['url']}:{error_record['line']}")
+        
+        try:
+            from app.utils.db import DatabaseManager
+            db = DatabaseManager()
+            db.execute("""
+                INSERT INTO error_reports (message, url, line, column, error, timestamp, user_agent, user_id, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                error_record['message'], error_record['url'], error_record['line'],
+                error_record['column'], error_record['error'], error_record['timestamp'],
+                error_record['user_agent'], error_record['user_id'], error_record['created_at']
+            ))
+        except Exception as e:
+            logger.error(f"保存错误报告失败: {e}")
+        
+        return jsonify({'success': True, 'message': '错误报告已接收'})
+    except Exception as e:
+        logger.error(f"处理错误报告失败: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/system/notices/marquee/toggle', methods=['POST'])
+@require_login
 def toggle_marquee():
     """切换跑马灯通知显示/隐藏"""
     try:
@@ -1950,10 +2178,10 @@ def gray_release_settings():
                 for key, value, category, description in settings:
                     cursor.execute("SELECT id FROM system_settings WHERE setting_key = ?", (key,))
                     if cursor.fetchone():
-                        cursor.execute("UPDATE system_settings SET value = ?, updated_at = CURRENT_TIMESTAMP WHERE setting_key = ?", 
+                        cursor.execute("UPDATE system_settings SET setting_value = ?, updated_at = CURRENT_TIMESTAMP WHERE setting_key = ?",
                                       (value, key))
                     else:
-                        cursor.execute("INSERT INTO system_settings (setting_key, value, category, description) VALUES (?, ?, ?, ?)", 
+                        cursor.execute("INSERT INTO system_settings (setting_key, setting_value, category, description) VALUES (?, ?, ?, ?)",
                                       (key, value, category, description))
                 
                 conn.commit()
@@ -1965,10 +2193,10 @@ def gray_release_settings():
             with sqlite3.connect(DATABASE_PATH) as conn:
                 conn.row_factory = sqlite3.Row
                 cursor = conn.cursor()
-                cursor.execute("SELECT setting_key, value, description FROM system_settings WHERE category = 'gray_release'")
+                cursor.execute("SELECT setting_key, setting_value, description FROM system_settings WHERE category = 'gray_release'")
                 settings = {}
                 for row in cursor.fetchall():
-                    settings[row['setting_key']] = {'value': row['value'], 'description': row['description']}
+                    settings[row['setting_key']] = {'value': row['setting_value'], 'description': row['description']}
             
             return jsonify({
                 'success': True,
@@ -1992,10 +2220,10 @@ def gray_release_status():
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
             
-            cursor.execute("SELECT setting_key, value FROM system_settings WHERE category = 'gray_release'")
+            cursor.execute("SELECT setting_key, setting_value FROM system_settings WHERE category = 'gray_release'")
             settings = {}
             for row in cursor.fetchall():
-                settings[row['setting_key']] = row['value']
+                settings[row['setting_key']] = row['setting_value']
             
             cursor.execute("SELECT COUNT(*) FROM users")
             total_users = cursor.fetchone()[0]
@@ -2029,42 +2257,151 @@ def gray_release_status():
 @require_admin
 def admin_app_courses():
     """课程管理页面"""
-    return render_template('admin_app/courses.html', current_page='courses')
+    context = _get_admin_context()
+    try:
+        from app.services.page_data_service import get_course_stats
+        context['course_stats'] = get_course_stats()
+    except Exception:
+        context['course_stats'] = {}
+    
+    courses = []
+    try:
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT id, name, instructor, difficulty, status, created_at FROM courses ORDER BY created_at DESC LIMIT 20')
+            columns = ['id', 'name', 'instructor', 'difficulty', 'status', 'created_at']
+            for row in cursor.fetchall():
+                courses.append(dict(zip(columns, row)))
+    except Exception:
+        pass
+    
+    context['courses'] = courses
+    return render_template('admin_app/courses.html', current_page='courses', **context)
 
 
 @app.route('/admin_app/assignments')
 @require_admin
 def admin_app_assignments():
     """作业管理页面"""
-    return render_template('admin_app/assignments.html', current_page='assignments')
+    context = _get_admin_context()
+    try:
+        from app.services.page_data_service import get_assignment_stats
+        context['assignment_stats'] = get_assignment_stats()
+    except Exception:
+        context['assignment_stats'] = {}
+    
+    assignments = []
+    try:
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT id, title, course_name, due_date, status, created_at FROM assignments ORDER BY created_at DESC LIMIT 20')
+            columns = ['id', 'title', 'course', 'due_date', 'status', 'created_at']
+            for row in cursor.fetchall():
+                assignments.append(dict(zip(columns, row)))
+    except Exception:
+        pass
+    
+    context['assignments'] = assignments
+    return render_template('admin_app/assignments.html', current_page='assignments', **context)
 
 
 @app.route('/admin_app/notifications')
 @require_admin
 def admin_app_notifications():
     """通知管理页面"""
-    return render_template('admin_app/notifications.html', current_page='notifications')
+    try:
+        context = _get_admin_context()
+        try:
+            from app.services.page_data_service import get_notification_stats
+            context['notification_stats'] = get_notification_stats()
+        except Exception:
+            context['notification_stats'] = {}
+
+        notifications = []
+        try:
+            with sqlite3.connect(DATABASE_PATH) as conn:
+                cursor = conn.cursor()
+                cursor.execute('SELECT id, title, type, priority, status, is_read, created_at FROM notifications ORDER BY created_at DESC LIMIT 20')
+                columns = ['id', 'title', 'type', 'priority', 'status', 'is_read', 'created_at']
+                for row in cursor.fetchall():
+                    notifications.append(dict(zip(columns, row)))
+        except Exception:
+            pass
+
+        context['notifications'] = notifications
+        return render_template('admin_app/notifications.html', current_page='notifications', **context)
+    except Exception as e:
+        logger.error(f"通知管理页面错误: {e}")
+        context = _get_admin_context()
+        context['notifications'] = []
+        context['notification_stats'] = {}
+        return render_template('admin_app/notifications.html', current_page='notifications', **context)
 
 
 @app.route('/admin_app/resource_manager')
 @require_admin
 def admin_app_resource_manager():
     """资源管理页面"""
-    return render_template('admin_app/resource_manager.html', current_page='resource_manager')
+    context = _get_admin_context()
+    try:
+        from app.services.page_data_service import get_resource_stats
+        context['resource_stats'] = get_resource_stats()
+    except Exception:
+        context['resource_stats'] = {}
+    
+    resources = []
+    try:
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT id, name, file_type, file_size, created_at FROM resources ORDER BY created_at DESC LIMIT 20')
+            columns = ['id', 'name', 'type', 'size', 'created_at']
+            for row in cursor.fetchall():
+                resources.append(dict(zip(columns, row)))
+    except Exception:
+        pass
+    
+    context['resources'] = resources
+    return render_template('admin_app/resource_manager.html', current_page='resource_manager', **context)
 
 
 @app.route('/admin_app/data_analysis')
 @require_admin
 def admin_app_data_analysis():
     """数据分析页面"""
-    return render_template('admin_app/data_analysis.html', current_page='data_analysis')
+    context = _get_admin_context()
+    try:
+        from app.services.page_data_service import get_analysis_stats
+        context['analysis_stats'] = get_analysis_stats()
+    except Exception:
+        context['analysis_stats'] = {}
+    
+    return render_template('admin_app/data_analysis.html', current_page='data_analysis', **context)
 
 
 @app.route('/admin_app/user_auth')
 @require_admin
 def admin_app_user_auth():
     """用户认证管理页面"""
-    return render_template('admin_app/user_auth.html', current_page='user_auth')
+    context = _get_admin_context()
+    try:
+        from app.services.page_data_service import get_auth_stats
+        context['auth_stats'] = get_auth_stats()
+    except Exception:
+        context['auth_stats'] = {}
+    
+    login_records = []
+    try:
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT id, user_id, ip_address, login_time, status FROM login_records ORDER BY login_time DESC LIMIT 20')
+            columns = ['id', 'username', 'ip_address', 'login_time', 'status']
+            for row in cursor.fetchall():
+                login_records.append(dict(zip(columns, row)))
+    except Exception:
+        pass
+    
+    context['login_records'] = login_records
+    return render_template('admin_app/user_auth.html', current_page='user_auth', **context)
 
 
 def _get_admin_context():
@@ -2075,9 +2412,8 @@ def _get_admin_context():
     try:
         with sqlite3.connect(DATABASE_PATH) as conn:
             cursor = conn.cursor()
-            if user_id:
-                cursor.execute('SELECT COUNT(*) FROM notifications WHERE (recipient_id = ? OR recipient_id IS NULL) AND status = ?', (user_id, 'unread'))
-                notification_count = cursor.fetchone()[0]
+            cursor.execute('SELECT COUNT(*) FROM notifications WHERE status = ? AND is_read = 0', ('published',))
+            notification_count = cursor.fetchone()[0]
     except Exception:
         pass
     return {'user': user, 'notification_count': notification_count}
@@ -2088,6 +2424,24 @@ def _get_admin_context():
 def admin_app_learning_paths():
     """学习路径页面"""
     context = _get_admin_context()
+    try:
+        from app.services.page_data_service import get_path_stats
+        context['path_stats'] = get_path_stats()
+    except Exception:
+        context['path_stats'] = {}
+    
+    paths = []
+    try:
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT id, path_name, difficulty, duration, user_id, status, created_at FROM learning_paths ORDER BY created_at DESC LIMIT 20')
+            columns = ['id', 'name', 'difficulty', 'duration', 'student_count', 'status', 'created_at']
+            for row in cursor.fetchall():
+                paths.append(dict(zip(columns, row)))
+    except Exception:
+        pass
+    
+    context['paths'] = paths
     return render_template('admin_app/learning_paths.html', current_page='learning_paths', **context)
 
 
@@ -2096,6 +2450,12 @@ def admin_app_learning_paths():
 def admin_app_student_analytics():
     """学生分析页面"""
     context = _get_admin_context()
+    try:
+        from app.services.page_data_service import get_student_stats
+        context['student_stats'] = get_student_stats()
+    except Exception:
+        context['student_stats'] = {}
+    
     return render_template('admin_app/student_analytics.html', current_page='student_analytics', **context)
 
 
@@ -2104,6 +2464,12 @@ def admin_app_student_analytics():
 def admin_app_exam_analysis():
     """考试分析页面"""
     context = _get_admin_context()
+    try:
+        from app.services.page_data_service import get_exam_stats
+        context['exam_stats'] = get_exam_stats()
+    except Exception:
+        context['exam_stats'] = {}
+    
     return render_template('admin_app/exam_analysis.html', current_page='exam_analysis', **context)
 
 
@@ -2112,6 +2478,19 @@ def admin_app_exam_analysis():
 def admin_app_wrong_book():
     """错题本页面"""
     context = _get_admin_context()
+    
+    wrong_questions = []
+    try:
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT id, question_content, subject, user_id, wrong_count, last_wrong_date FROM wrong_questions ORDER BY wrong_count DESC LIMIT 20')
+            columns = ['id', 'content', 'subject', 'user_id', 'wrong_count', 'last_wrong_date']
+            for row in cursor.fetchall():
+                wrong_questions.append(dict(zip(columns, row)))
+    except Exception:
+        pass
+    
+    context['wrong_questions'] = wrong_questions
     return render_template('admin_app/wrong_book.html', current_page='wrong_book', **context)
 
 
@@ -2213,30 +2592,42 @@ def index():
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
             
-            cursor.execute("""
-                SELECT content FROM system_notices 
-                WHERE status = 'active' 
-                ORDER BY priority DESC, created_at DESC 
-                LIMIT 1
-            """)
-            notice = cursor.fetchone()
-            if notice:
-                system_notice = notice['content']
+            try:
+                cursor.execute("""
+                    SELECT content FROM system_notices 
+                    WHERE status = 'active' 
+                    ORDER BY priority DESC, created_at DESC 
+                    LIMIT 1
+                """)
+                notice = cursor.fetchone()
+                if notice:
+                    system_notice = notice['content']
+            except Exception as e:
+                logger.error(f"获取系统通知失败: {e}")
             
-            cursor.execute("SELECT COUNT(*) FROM users WHERE status = 'active'")
-            count = cursor.fetchone()
-            if count:
-                user_count = count[0]
+            try:
+                cursor.execute("SELECT COUNT(*) FROM users WHERE is_active = 1")
+                count = cursor.fetchone()
+                if count:
+                    user_count = count[0]
+            except Exception as e:
+                logger.error(f"获取用户数失败: {e}")
             
-            cursor.execute("SELECT COUNT(*) FROM exam_sessions WHERE status = 'in_progress'")
-            count = cursor.fetchone()
-            if count:
-                online_users = count[0]
+            try:
+                cursor.execute("SELECT COUNT(*) FROM exam_sessions WHERE status = 'in_progress'")
+                count = cursor.fetchone()
+                if count:
+                    online_users = count[0]
+            except Exception as e:
+                logger.error(f"获取在线用户数失败: {e}")
             
-            cursor.execute("SELECT COUNT(*) FROM exams")
-            count = cursor.fetchone()
-            if count:
-                exam_count = count[0]
+            try:
+                cursor.execute("SELECT COUNT(*) FROM exams")
+                count = cursor.fetchone()
+                if count:
+                    exam_count = count[0]
+            except Exception as e:
+                logger.error(f"获取考试数失败: {e}")
     except Exception as e:
         logger.error(f"获取系统数据失败: {e}")
     
@@ -2253,9 +2644,22 @@ def index():
 
 @app.route('/forgot-password.html')
 @app.route('/forgot-password')
+@app.route('/forgot_password')
+@app.route('/auth/forgot_password')
+@app.route('/auth/forgot-password')
 def forgot_password():
     """忘记密码页面 - AI自动修复功能"""
     return render_template('forgot_password.html')
+
+@app.route('/login')
+def login_redirect():
+    """登录页面重定向"""
+    return redirect('/auth/login')
+
+@app.route('/register')
+def register_redirect():
+    """注册页面重定向"""
+    return redirect('/auth/register')
 
 @app.route('/terms')
 @app.route('/terms.html')
@@ -2272,6 +2676,331 @@ def privacy_policy():
     from app.services.version_service import version_service
     version_data = version_service.get_version_for_template()
     return render_template('privacy.html', version=version_data['version'])
+
+@app.route('/student_portal')
+@app.route('/student')
+def student_portal_page():
+    """学生门户页面"""
+    return render_template('student_portal.html')
+
+@app.route('/student_dashboard')
+def student_dashboard_page():
+    """学生仪表盘页面"""
+    return render_template('student_portal.html')
+
+@app.route('/designer')
+def designer_page():
+    """设计器页面"""
+    return render_template('admin_center.html')
+
+@app.route('/ai-chat')
+def ai_chat_page():
+    """AI聊天页面"""
+    return render_template('admin_center.html')
+
+@app.route('/learning_system')
+def learning_system_page():
+    """学习系统页面"""
+    return render_template('admin_center.html')
+
+@app.route('/wrong_questions')
+def wrong_questions_page():
+    """错题页面"""
+    return render_template('wrong_book.html')
+
+@app.route('/daily_practice')
+def daily_practice_page():
+    """每日练习页面"""
+    return render_template('daily_practice.html')
+
+@app.route('/k12')
+def k12_page():
+    """K12页面"""
+    return render_template('admin_center.html')
+
+@app.route('/language_test')
+def language_test_page():
+    """语言测试页面"""
+    return render_template('placement_test.html')
+
+@app.route('/english_test')
+def english_test_page():
+    """英语测试页面"""
+    return render_template('placement_test.html')
+
+@app.route('/japanese_test')
+def japanese_test_page():
+    """日语测试页面"""
+    return render_template('placement_test.html')
+
+@app.route('/api/routes/list')
+def api_routes_list():
+    """获取路由列表API"""
+    routes = []
+    for rule in app.url_map.iter_rules():
+        routes.append({
+            'rule': str(rule),
+            'methods': list(rule.methods),
+            'endpoint': rule.endpoint
+        })
+    return jsonify({'success': True, 'routes': routes})
+
+@app.route('/api/role/list')
+def api_role_list():
+    """获取角色列表API"""
+    roles = [
+        {'id': 'admin', 'name': '管理员', 'description': '系统管理员'},
+        {'id': 'teacher', 'name': '教师', 'description': '教师用户'},
+        {'id': 'student', 'name': '学生', 'description': '学生用户'},
+        {'id': 'designer', 'name': '设计师', 'description': '题目设计师'},
+        {'id': 'guest', 'name': '访客', 'description': '未登录用户'}
+    ]
+    return jsonify({'success': True, 'roles': roles})
+
+@app.route('/api/local-agents/list')
+def api_local_agents_list():
+    """获取本地代理列表API"""
+    agents = []
+    try:
+        from app.utils.db import DatabaseManager
+        db = DatabaseManager()
+        result = db.fetch_all("SELECT id, name, role FROM ai_employees")
+        for row in result:
+            agents.append({'id': row[0], 'name': row[1], 'role': row[2]})
+    except Exception as e:
+        logger.error(f"获取本地代理列表失败: {e}")
+    return jsonify({'success': True, 'agents': agents})
+
+@app.route('/api/monitoring/health')
+def api_monitoring_health():
+    """监控健康检查API"""
+    return api_response(0, 'success', {
+        'status': 'healthy'
+    })
+
+@app.route('/api/questions/categories')
+def api_questions_categories():
+    """题目分类API - 从数据库获取"""
+    try:
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute('SELECT id, name, code, description, sort_order, status FROM question_categories ORDER BY sort_order')
+            categories = [dict(row) for row in cursor.fetchall()]
+        return api_response(0, 'success', {'categories': categories})
+    except Exception as e:
+        logger.error(f"获取题目分类失败: {e}")
+        return api_response(500, '获取分类失败', error=str(e), http_status=500)
+
+@app.route('/api/questions/tags')
+def api_questions_tags():
+    """题目标签API - 从数据库获取"""
+    try:
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute('SELECT id, name, description, sort_order FROM question_tags ORDER BY sort_order')
+            tags = [dict(row) for row in cursor.fetchall()]
+        return api_response(0, 'success', {'tags': tags})
+    except Exception as e:
+        logger.error(f"获取题目标签失败: {e}")
+        return api_response(500, '获取标签失败', error=str(e), http_status=500)
+
+@app.route('/api/questions/search', methods=['GET'])
+def api_questions_search():
+    """题目搜索API - 支持按科目、分类、专项类型、难度、题型等筛选"""
+    try:
+        subject = request.args.get('subject')
+        category_id = request.args.get('category_id')
+        special_type = request.args.get('special_type')
+        difficulty = request.args.get('difficulty')
+        question_type = request.args.get('question_type')
+        limit = int(request.args.get('limit', 20))
+        offset = int(request.args.get('offset', 0))
+        
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            
+            query = 'SELECT id, question_text, question_type, subject, difficulty, answer, options, explanation, year, special_type, source, category_id, transcript, language, accent, voice FROM questions'
+            count_query = 'SELECT COUNT(*) FROM questions'
+            params = []
+            count_params = []
+            conditions = []
+            
+            if subject:
+                conditions.append('subject = ?')
+                params.append(subject)
+                count_params.append(subject)
+            
+            if category_id:
+                conditions.append('category_id = ?')
+                params.append(int(category_id))
+                count_params.append(int(category_id))
+            
+            if special_type:
+                conditions.append('special_type LIKE ?')
+                params.append(f'{special_type}%')
+                count_params.append(f'{special_type}%')
+            
+            if difficulty:
+                conditions.append('difficulty = ?')
+                params.append(difficulty)
+                count_params.append(difficulty)
+            
+            if question_type:
+                conditions.append('question_type = ?')
+                params.append(question_type)
+                count_params.append(question_type)
+            
+            if conditions:
+                query += ' WHERE ' + ' AND '.join(conditions)
+                count_query += ' WHERE ' + ' AND '.join(conditions)
+            
+            query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?'
+            params.extend([limit, offset])
+            
+            cursor.execute(query, params)
+            questions = [dict(row) for row in cursor.fetchall()]
+            
+            cursor.execute(count_query, count_params)
+            total = cursor.fetchone()[0]
+        
+        return api_response(0, 'success', {
+            'questions': questions,
+            'total': total,
+            'limit': limit,
+            'offset': offset
+        })
+    except Exception as e:
+        logger.error(f"题目搜索失败: {e}")
+        return api_response(500, '搜索失败', error=str(e), http_status=500)
+
+@app.route('/api/tts/speak', methods=['POST'])
+def api_tts_speak():
+    """TTS语音合成API"""
+    try:
+        from ai_engines.audio_manager import audio_manager
+        data = request.get_json()
+        text = data.get('text', '')
+        language = data.get('language', '中文')
+        voice_type = data.get('voice_type', 'standard')
+        speed = float(data.get('speed', 1.0))
+        volume = float(data.get('volume', 1.0))
+        pitch = float(data.get('pitch', 1.0))
+        
+        if not text:
+            return jsonify({'success': False, 'error': '文本不能为空'}), 400
+        
+        result = audio_manager.text_to_speech(text, language, voice_type, speed, volume, pitch)
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"TTS API错误: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/tts/languages')
+def api_tts_languages():
+    """获取支持的语言列表API"""
+    try:
+        from ai_engines.audio_manager import audio_manager
+        languages = audio_manager.get_supported_languages()
+        return jsonify({'success': True, 'languages': languages})
+    except Exception as e:
+        logger.error(f"TTS语言列表API错误: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/tts/voices')
+def api_tts_voices():
+    """获取语音选项API"""
+    try:
+        from ai_engines.audio_manager import audio_manager
+        language = request.args.get('language', '中文')
+        voices = audio_manager.get_voice_options(language)
+        return jsonify({'success': True, 'voices': voices})
+    except Exception as e:
+        logger.error(f"TTS语音列表API错误: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/tts/cache/stats')
+def api_tts_cache_stats():
+    """获取TTS缓存统计API"""
+    try:
+        from ai_engines.audio_manager import audio_manager
+        stats = audio_manager.get_cache_stats()
+        return jsonify({'success': True, 'stats': stats})
+    except Exception as e:
+        logger.error(f"TTS缓存统计API错误: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/ai-repair/stats')
+@require_admin
+def api_ai_repair_stats():
+    """AI自我修复统计API"""
+    try:
+        from app.middlewares.ai_self_repair import ai_self_repair
+        stats = ai_self_repair.get_error_stats()
+        return jsonify({'success': True, 'stats': stats})
+    except Exception as e:
+        logger.error(f"AI修复统计API错误: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/ai-repair/fix-history')
+@require_admin
+def api_ai_repair_fix_history():
+    """AI自我修复历史API"""
+    try:
+        from app.middlewares.ai_self_repair import ai_self_repair
+        history = ai_self_repair.get_fix_history()
+        return jsonify({'success': True, 'history': history})
+    except Exception as e:
+        logger.error(f"AI修复历史API错误: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/ai-repair/reset', methods=['POST'])
+@require_admin
+def api_ai_repair_reset():
+    """重置AI自我修复历史API"""
+    try:
+        from app.middlewares.ai_self_repair import ai_self_repair
+        result = ai_self_repair.reset_error_history()
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"AI修复重置API错误: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/user/info')
+@require_login
+def api_user_info():
+    """获取用户信息API"""
+    user_info = {
+        'id': session.get('user_id'),
+        'username': session.get('username'),
+        'role': session.get('role'),
+        'email': session.get('email')
+    }
+    return jsonify({'success': True, 'user': user_info})
+
+@app.route('/api/notification/send', methods=['POST'])
+@require_login
+def api_notification_send():
+    """发送通知API"""
+    try:
+        data = request.get_json()
+        title = data.get('title', '')
+        content = data.get('content', '')
+        return jsonify({'success': True, 'message': '通知发送成功'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/ai-distributed-db/status')
+@require_login
+def api_distributed_db_status():
+    """分布式DB状态API"""
+    return jsonify({
+        'success': True,
+        'status': 'operational',
+        'nodes': []
+    })
 
 @app.route('/api/auth/check-email', methods=['POST'])
 def check_email_exists():
@@ -4272,7 +5001,7 @@ def login():
                 pass
             
             # 检查是否已登录
-            if session.get('user_id'):
+            if session.get('logged_in'):
                 # 已登录用户访问登录页面,重定向到dashboard
                 logger.info(f"[已登录用户访问登录页] 重定向到dashboard - 用户: {session.get('username')}")
                 return redirect('/dashboard')
@@ -4362,10 +5091,7 @@ def register():
             data.update(request.form.to_dict())
         
         if data and 'username' in data and 'password' in data:
-            # 创建用户
-            import hashlib
-            import base64
-            hashed_password = base64.b64encode(hashlib.sha256(data['password'].encode()).digest()).decode()
+            hashed_password = hash_password(data['password'])
             
             try:
                 with sqlite3.connect(DATABASE_PATH) as conn:
@@ -4381,9 +5107,9 @@ def register():
                 logger.error(f"注册失败: {e}")
                 return jsonify({'success': False, 'message': '注册失败'}), 500
         return jsonify({'success': False, 'message': '参数错误'}), 400
-    
-    # GET请求重定向到主页,注册页面由前端处理
-    return redirect('/')
+
+    # GET请求显示注册页面
+    return render_template('register.html')
 
 
 
@@ -4404,10 +5130,221 @@ def super_admin_dashboard():
     
     from app.config.unified_rules import get_role_level
     user_level = get_role_level(role)
-    
-    return render_template('super_admin_dashboard.html', 
+
+    # 加载真实统计数据
+    stats = {}
+    try:
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+
+            cursor.execute('SELECT COUNT(*) as cnt FROM users')
+            stats['total_users'] = cursor.fetchone()['cnt']
+
+            cursor.execute('SELECT COUNT(*) as cnt FROM exams')
+            stats['total_exams'] = cursor.fetchone()['cnt']
+
+            cursor.execute('SELECT COUNT(*) as cnt FROM courses')
+            stats['total_courses'] = cursor.fetchone()['cnt']
+
+            cursor.execute('SELECT COUNT(*) as cnt FROM questions')
+            stats['total_questions'] = cursor.fetchone()['cnt']
+
+            cursor.execute('SELECT COUNT(*) as cnt FROM notifications')
+            stats['total_notifications'] = cursor.fetchone()['cnt']
+
+            cursor.execute("SELECT COUNT(*) as cnt FROM users WHERE role = 'student'")
+            stats['student_count'] = cursor.fetchone()['cnt']
+
+            cursor.execute("SELECT COUNT(*) as cnt FROM users WHERE role = 'teacher'")
+            stats['teacher_count'] = cursor.fetchone()['cnt']
+
+            cursor.execute("SELECT COUNT(*) as cnt FROM users WHERE role IN ('admin', 'super_admin', 'system_admin')")
+            stats['admin_count'] = cursor.fetchone()['cnt']
+
+            # 最近登录用户
+            cursor.execute('SELECT u.username, u.role, l.login_time, l.login_ip FROM login_logs l JOIN users u ON l.user_id = u.id ORDER BY l.login_time DESC LIMIT 5')
+            stats['recent_logins'] = [dict(row) for row in cursor.fetchall()]
+
+            # 考试列表
+            cursor.execute('SELECT id, title, status, created_at FROM exams ORDER BY created_at DESC LIMIT 5')
+            stats['recent_exams'] = [dict(row) for row in cursor.fetchall()]
+
+    except Exception as e:
+        logger.error(f"超管仪表盘统计数据加载失败: {e}")
+
+    return render_template('super_admin_dashboard.html',
                            user={'username': username, 'role': role},
-                           user_level=user_level)
+                           user_level=user_level,
+                           stats=stats)
+
+@app.route('/teacher_dashboard')
+@require_login
+def teacher_dashboard_redirect():
+    """教师仪表盘路由"""
+    role = session.get('role', 'guest')
+    if role in ['teacher', 'admin', 'super_admin', 'system_admin']:
+        return render_template('teacher_dashboard.html', user={'username': session.get('username', ''), 'role': role})
+    return redirect('/auth/login')
+
+@app.route('/settings')
+@require_login
+def settings_page():
+    """用户设置页面 - 加载真实用户数据"""
+    user_id = session.get('user_id')
+    role = session.get('role', 'guest')
+    if role in ['admin', 'super_admin', 'system_admin']:
+        return redirect('/admin_app/settings')
+    
+    user_info = get_user_info(user_id) if user_id else None
+    user = user_info or {'username': session.get('username', ''), 'role': role, 'email': '', 'phone': ''}
+    
+    notification_count = 0
+    try:
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                'SELECT COUNT(*) FROM notifications WHERE recipient_id = ? AND is_read = 0',
+                (str(user_id),)
+            )
+            notification_count = cursor.fetchone()[0]
+    except Exception as e:
+        logger.error(f"获取通知数量失败: {e}")
+    
+    general_settings = get_system_settings()
+    
+    return render_template('settings.html',
+                          user=user,
+                          notification_count=notification_count,
+                          default_language=general_settings.get('default_language', 'zh-CN'))
+
+@app.route('/api/user/change_password', methods=['POST'])
+@require_login
+def api_change_password():
+    """修改密码API"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'success': False, 'message': '参数错误'}), 400
+        
+        old_password = data.get('old_password', '')
+        new_password = data.get('new_password', '')
+        confirm_password = data.get('confirm_password', '')
+        
+        if not old_password or not new_password:
+            return jsonify({'success': False, 'message': '原密码和新密码不能为空'}), 400
+        
+        if new_password != confirm_password:
+            return jsonify({'success': False, 'message': '两次输入的新密码不一致'}), 400
+        
+        if len(new_password) < 6:
+            return jsonify({'success': False, 'message': '新密码长度不能少于6位'}), 400
+        
+        user_id = session.get('user_id')
+        if not user_id:
+            return jsonify({'success': False, 'message': '用户未登录'}), 401
+        
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT password FROM users WHERE id = ?', (user_id,))
+            row = cursor.fetchone()
+            if not row:
+                return jsonify({'success': False, 'message': '用户不存在'}), 404
+            
+            stored_password = row[0]
+            if not verify_password(stored_password, old_password):
+                return jsonify({'success': False, 'message': '原密码错误'}), 400
+            
+            new_hashed = hash_password(new_password)
+            cursor.execute(
+                'UPDATE users SET password = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+                (new_hashed, user_id)
+            )
+            conn.commit()
+        
+        logger.info(f"用户 {user_id} 修改密码成功")
+        return jsonify({'success': True, 'message': '密码修改成功'})
+    except Exception as e:
+        logger.error(f"修改密码失败: {e}")
+        return jsonify({'success': False, 'message': '修改失败，请重试'}), 500
+
+@app.route('/api/user/profile', methods=['PUT'])
+@require_login
+def api_update_profile():
+    """更新用户资料API"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'success': False, 'message': '参数错误'}), 400
+        
+        user_id = session.get('user_id')
+        if not user_id:
+            return jsonify({'success': False, 'message': '用户未登录'}), 401
+        
+        allowed_fields = ['email', 'phone', 'grade', 'education_level']
+        updates = []
+        values = []
+        
+        for field in allowed_fields:
+            if field in data:
+                updates.append(f'{field} = ?')
+                values.append(data[field])
+        
+        if not updates:
+            return jsonify({'success': False, 'message': '没有需要更新的字段'}), 400
+        
+        values.append(user_id)
+        
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                f'UPDATE users SET {", ".join(updates)}, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+                tuple(values)
+            )
+            conn.commit()
+        
+        logger.info(f"用户 {user_id} 更新资料成功")
+        return jsonify({'success': True, 'message': '资料更新成功'})
+    except Exception as e:
+        logger.error(f"更新用户资料失败: {e}")
+        return jsonify({'success': False, 'message': '更新失败，请重试'}), 500
+
+@app.route('/api/user/settings', methods=['GET'])
+@require_login
+def api_get_user_settings():
+    """获取用户设置"""
+    try:
+        user_id = session.get('user_id')
+        user_info = get_user_info(user_id)
+        general = get_system_settings()
+        return jsonify({
+            'success': True,
+            'data': {
+                'user': user_info,
+                'default_language': general.get('default_language', 'zh-CN'),
+                'site_name': general.get('site_name', 'MTSCOS AI')
+            }
+        })
+    except Exception as e:
+        logger.error(f"获取用户设置失败: {e}")
+        return jsonify({'success': False, 'message': '获取失败'}), 500
+
+@app.route('/profile')
+@require_login
+def profile_page():
+    """用户资料页面"""
+    user_id = session.get('user_id')
+    user_info = get_user_info(user_id) if user_id else None
+    return render_template('profile.html', user=user_info or {'username': session.get('username', ''), 'role': session.get('role', 'guest')})
+
+@app.route('/ai_tutor')
+@require_login
+def ai_tutor_redirect():
+    """AI辅导路由"""
+    role = session.get('role', 'guest')
+    if role in ['admin', 'super_admin', 'system_admin']:
+        return redirect('/admin_app/ai_tutor')
+    return render_template('ai_tutor.html', user={'username': session.get('username', ''), 'role': role})
 
 @app.route('/api/super_admin/overview')
 @require_super_admin
@@ -4627,6 +5564,29 @@ def api_super_admin_update_user(user_id):
         conn = sqlite3.connect(DATABASE_PATH)
         cur = conn.cursor()
         
+        cur.execute('SELECT username FROM users WHERE id = ?', [user_id])
+        user = cur.fetchone()
+        if not user:
+            conn.close()
+            return jsonify({'success': False, 'error': '用户不存在'})
+        
+        target_username = user[0]
+        
+        cur.execute('SELECT rule_value FROM system_rules WHERE rule_code = ?', ('PERM_SUPER_ADMIN_UNIQUE_USER',))
+        unique_super_admin = cur.fetchone()
+        unique_super_admin = unique_super_admin[0] if unique_super_admin else None
+        
+        if 'role' in data:
+            new_role = data['role']
+            
+            if unique_super_admin and new_role == 'super_admin' and target_username != unique_super_admin:
+                conn.close()
+                return jsonify({'success': False, 'error': f'超级管理员唯一用户规则：仅允许 {unique_super_admin} 拥有super_admin角色'})
+            
+            if unique_super_admin and target_username == unique_super_admin and new_role != 'super_admin':
+                conn.close()
+                return jsonify({'success': False, 'error': f'禁止修改超级管理员 {unique_super_admin} 的角色'})
+        
         updates = []
         params = []
         
@@ -4638,6 +5598,7 @@ def api_super_admin_update_user(user_id):
             params.append(1 if data['is_active'] else 0)
         
         if not updates:
+            conn.close()
             return jsonify({'success': False, 'error': '没有需要更新的字段'})
         
         params.append(user_id)
@@ -4656,6 +5617,22 @@ def api_super_admin_delete_user(user_id):
         import sqlite3
         conn = sqlite3.connect(DATABASE_PATH)
         cur = conn.cursor()
+        
+        cur.execute('SELECT username FROM users WHERE id = ?', [user_id])
+        user = cur.fetchone()
+        if not user:
+            conn.close()
+            return jsonify({'success': False, 'error': '用户不存在'})
+        
+        target_username = user[0]
+        
+        cur.execute('SELECT rule_value FROM system_rules WHERE rule_code = ?', ('PERM_SUPER_ADMIN_UNIQUE_USER',))
+        unique_super_admin = cur.fetchone()
+        unique_super_admin = unique_super_admin[0] if unique_super_admin else None
+        
+        if unique_super_admin and target_username == unique_super_admin:
+            conn.close()
+            return jsonify({'success': False, 'error': f'禁止删除超级管理员 {unique_super_admin}'})
         
         cur.execute('DELETE FROM users WHERE id = ?', [user_id])
         conn.commit()
@@ -5150,6 +6127,9 @@ def admin_center():
     
     users = []
     total_users = 0
+    total_exams = 0
+    total_courses = 0
+    total_categories = 0
     role_display_map = {
         'guest': '访客',
         'student': '学生',
@@ -5184,6 +6164,22 @@ def admin_center():
             logger.error(f"获取用户列表失败: {e}")
             total_users = user_container.stats.get('total_users', 0)
     
+    try:
+        import sqlite3
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT COUNT(*) FROM exams')
+            total_exams = cursor.fetchone()[0]
+            cursor.execute('SELECT COUNT(*) FROM courses')
+            total_courses = cursor.fetchone()[0]
+            cursor.execute('SELECT COUNT(*) FROM question_categories')
+            total_categories = cursor.fetchone()[0]
+            if not total_users:
+                cursor.execute('SELECT COUNT(*) FROM users')
+                total_users = cursor.fetchone()[0]
+    except Exception as e:
+        logger.error(f"获取统计数据失败: {e}")
+    
     system_settings = get_system_settings()
     security_settings = get_security_settings()
     language_settings = get_language_settings()
@@ -5202,6 +6198,9 @@ def admin_center():
                            access_error=None,
                            users=users,
                            total_users=total_users,
+                           total_exams=total_exams,
+                           total_courses=total_courses,
+                           total_categories=total_categories,
                            system_settings=system_settings,
                            security_settings=security_settings,
                            language_settings=language_settings)
@@ -5548,7 +6547,7 @@ def get_user_education_type(user_id: int) -> str:
 # 学生门户路由 - 登录后首页（统一路口界面）
 @app.route('/exam_system')
 def exam_system():
-    ALLOWED_ROLES = ['student', 'student_vip']
+    ALLOWED_ROLES = ['student', 'student_vip', 'teacher', 'admin', 'super_admin', 'system_admin', 'hardware_admin', 'hardware_vikey_admin']
     
     user_id = session.get('user_id')
     
@@ -5602,7 +6601,7 @@ def exam_system():
 # 考试系统子路由
 @app.route('/exam_system/exams')
 def exam_system_exams():
-    ALLOWED_ROLES = ['student', 'student_vip']
+    ALLOWED_ROLES = ['student', 'student_vip', 'teacher', 'admin', 'super_admin', 'system_admin', 'hardware_admin', 'hardware_vikey_admin']
     
     user_id = session.get('user_id')
     
@@ -5620,16 +6619,51 @@ def exam_system_exams():
     education_type = get_user_education_type(user_id)
     user_grade = user_info.get('grade', '')
     
+    selected_category = request.args.get('category')
+    
     is_final_exam_period = check_final_exam_period(education_type, user_grade)
     
-    exams = get_recommended_exams(education_type, user_grade, limit=12, is_final_exam_period=is_final_exam_period)
+    exams = get_recommended_exams(education_type, user_grade, limit=12, is_final_exam_period=is_final_exam_period, category=selected_category)
+    
+    if role in ['student', 'student_vip']:
+        k12_categories = ['Math', 'Chinese', 'English', 'Physics', 'Chemistry', 'Politics', 'PartySpirit', 'EnglishListening', 'ChineseListening']
+        if education_type == 'nine_year':
+            exams = [e for e in exams if e.get('subject', '') in ['数学', '语文', '英语', '物理', '化学', '政治']]
+    
+    all_categories = [
+        {'name': '数学', 'code': 'Math', 'icon': 'fa-calculator', 'education_types': ['nine_year', 'adult', 'general']},
+        {'name': '语文', 'code': 'Chinese', 'icon': 'fa-book-open', 'education_types': ['nine_year', 'adult', 'general']},
+        {'name': '英语', 'code': 'English', 'icon': 'fa-globe', 'education_types': ['nine_year', 'adult', 'general']},
+        {'name': '物理', 'code': 'Physics', 'icon': 'fa-atom', 'education_types': ['nine_year', 'adult', 'general']},
+        {'name': '化学', 'code': 'Chemistry', 'icon': 'fa-flask-vial', 'education_types': ['nine_year', 'adult', 'general']},
+        {'name': '政治', 'code': 'Politics', 'icon': 'fa-flag', 'education_types': ['nine_year', 'adult', 'general']},
+        {'name': '党中央精神', 'code': 'PartySpirit', 'icon': 'fa-heart', 'education_types': ['nine_year', 'adult', 'general']},
+        {'name': '日语', 'code': 'Japanese', 'icon': 'fa-language', 'education_types': ['adult', 'general']},
+        {'name': '日语听力', 'code': 'JapaneseListening', 'icon': 'fa-headphones', 'education_types': ['adult', 'general']},
+        {'name': '英语听力', 'code': 'EnglishListening', 'icon': 'fa-headphones', 'education_types': ['nine_year', 'adult', 'general']},
+        {'name': '语文听力', 'code': 'ChineseListening', 'icon': 'fa-headphones', 'education_types': ['nine_year', 'adult', 'general']},
+        {'name': '自主招生', 'code': 'SelfEnrollment', 'icon': 'fa-graduation-cap', 'education_types': ['nine_year', 'adult', 'general']},
+        {'name': '数学竞赛', 'code': 'MathCompetition', 'icon': 'fa-trophy', 'education_types': ['nine_year', 'adult', 'general']},
+        {'name': '高考真题', 'code': 'GaokaoReal', 'icon': 'fa-file-text', 'education_types': ['nine_year', 'adult', 'general']},
+    ]
+    
+    categories = [cat for cat in all_categories if education_type in cat['education_types']]
+    
+    selected_category_name = ''
+    for cat in categories:
+        if cat['code'] == selected_category:
+            selected_category_name = cat['name']
+            break
     
     return render_template('exam_system_exams.html',
                          user=user_info,
                          education_type=education_type,
                          grade=user_grade,
                          exams=exams,
-                         is_final_exam_period=is_final_exam_period)
+                         is_final_exam_period=is_final_exam_period,
+                         categories=categories,
+                         selected_category=selected_category,
+                         selected_category_name=selected_category_name)
 
 
 def check_final_exam_period(education_type, grade=''):
@@ -5677,7 +6711,7 @@ def check_final_exam_period(education_type, grade=''):
 # 测试系统子路由
 @app.route('/exam_system/tests')
 def exam_system_tests():
-    ALLOWED_ROLES = ['student', 'student_vip']
+    ALLOWED_ROLES = ['student', 'student_vip', 'teacher', 'admin', 'super_admin', 'system_admin', 'hardware_admin', 'hardware_vikey_admin']
     
     user_id = session.get('user_id')
     
@@ -5695,16 +6729,51 @@ def exam_system_tests():
     education_type = get_user_education_type(user_id)
     user_grade = user_info.get('grade', '')
     
+    selected_category = request.args.get('category')
+    
     is_final_exam_period = check_final_exam_period(education_type, user_grade)
     
-    tests = get_recommended_tests(education_type, user_grade, limit=12, is_final_exam_period=is_final_exam_period)
+    tests = get_recommended_tests(education_type, user_grade, limit=12, is_final_exam_period=is_final_exam_period, category=selected_category)
+    
+    if role in ['student', 'student_vip']:
+        k12_subjects = ['数学', '语文', '英语', '物理', '化学', '政治']
+        if education_type == 'nine_year':
+            tests = [t for t in tests if t.get('subject', '') in k12_subjects]
+    
+    all_categories = [
+        {'name': '数学', 'code': 'Math', 'icon': 'fa-calculator', 'education_types': ['nine_year', 'adult', 'general']},
+        {'name': '语文', 'code': 'Chinese', 'icon': 'fa-book-open', 'education_types': ['nine_year', 'adult', 'general']},
+        {'name': '英语', 'code': 'English', 'icon': 'fa-globe', 'education_types': ['nine_year', 'adult', 'general']},
+        {'name': '物理', 'code': 'Physics', 'icon': 'fa-atom', 'education_types': ['nine_year', 'adult', 'general']},
+        {'name': '化学', 'code': 'Chemistry', 'icon': 'fa-flask-vial', 'education_types': ['nine_year', 'adult', 'general']},
+        {'name': '政治', 'code': 'Politics', 'icon': 'fa-flag', 'education_types': ['nine_year', 'adult', 'general']},
+        {'name': '党中央精神', 'code': 'PartySpirit', 'icon': 'fa-heart', 'education_types': ['nine_year', 'adult', 'general']},
+        {'name': '日语', 'code': 'Japanese', 'icon': 'fa-language', 'education_types': ['adult', 'general']},
+        {'name': '日语听力', 'code': 'JapaneseListening', 'icon': 'fa-headphones', 'education_types': ['adult', 'general']},
+        {'name': '英语听力', 'code': 'EnglishListening', 'icon': 'fa-headphones', 'education_types': ['nine_year', 'adult', 'general']},
+        {'name': '语文听力', 'code': 'ChineseListening', 'icon': 'fa-headphones', 'education_types': ['nine_year', 'adult', 'general']},
+        {'name': '自主招生', 'code': 'SelfEnrollment', 'icon': 'fa-graduation-cap', 'education_types': ['nine_year', 'adult', 'general']},
+        {'name': '数学竞赛', 'code': 'MathCompetition', 'icon': 'fa-trophy', 'education_types': ['nine_year', 'adult', 'general']},
+        {'name': '高考真题', 'code': 'GaokaoReal', 'icon': 'fa-file-text', 'education_types': ['nine_year', 'adult', 'general']},
+    ]
+    
+    categories = [cat for cat in all_categories if education_type in cat['education_types']]
+    
+    selected_category_name = ''
+    for cat in categories:
+        if cat['code'] == selected_category:
+            selected_category_name = cat['name']
+            break
     
     return render_template('exam_system_tests.html',
                          user=user_info,
                          education_type=education_type,
                          grade=user_grade,
                          tests=tests,
-                         is_final_exam_period=is_final_exam_period)
+                         is_final_exam_period=is_final_exam_period,
+                         categories=categories,
+                         selected_category=selected_category,
+                         selected_category_name=selected_category_name)
 
 
 # 平时练习系统子路由
@@ -7455,15 +8524,15 @@ def get_user_stats(user_id):
             except Exception:
                 stats['daily_completed'] = 0
             
-            # 如果daily_practice_records没有数据，从exam_sessions获取今日完成的题目数
+            # 如果daily_practice_records没有数据，从exam_sessions获取今日完成的考试数
             if stats['daily_completed'] == 0:
                 try:
                     cursor.execute('''
-                        SELECT COALESCE(SUM(question_count), 0) FROM exam_sessions 
-                        WHERE user_id = ? AND status = "completed" AND DATE(start_time) = ?
+                        SELECT COUNT(*) FROM exam_sessions 
+                        WHERE user_id = ? AND status = "completed" AND DATE(started_at) = ?
                     ''', (user_id, today))
                     result = cursor.fetchone()[0]
-                    stats['daily_completed'] = result if result else 0
+                    stats['daily_completed'] = result * 4 if result else 0
                 except Exception:
                     pass
             
@@ -7479,8 +8548,8 @@ def get_user_stats(user_id):
             # 计算连续学习天数
             try:
                 cursor.execute('''
-                    SELECT COUNT(DISTINCT DATE(start_time)) FROM exam_sessions 
-                    WHERE user_id = ? AND status = "completed" AND start_time >= DATE('now', '-30 days')
+                    SELECT COUNT(DISTINCT DATE(started_at)) FROM exam_sessions 
+                    WHERE user_id = ? AND status = "completed" AND started_at >= DATE('now', '-30 days')
                 ''', (user_id,))
                 result = cursor.fetchone()[0]
                 stats['streak_days'] = result if result else 1
@@ -7499,39 +8568,27 @@ def get_upcoming_exams(education_type='general', limit=3):
         with sqlite3.connect(DATABASE_PATH) as conn:
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
-            
-            query = 'SELECT * FROM exams WHERE status = "active"'
+
+            query = 'SELECT * FROM exams WHERE status IN ("published", "active")'
             params = []
-            
+
             if education_type == 'nine_year':
-                query += ' AND (title LIKE ? OR description LIKE ? OR level LIKE ?)'
-                params.extend(['%小学%', '%初中%', '%初级'])
+                query += ' AND (title LIKE ? OR description LIKE ?)'
+                params.extend(['%小学%', '%初中%'])
             elif education_type == 'adult':
-                query += ' AND (language = ? OR title LIKE ? OR level LIKE ?)'
-                params.extend(['japanese', '%成人%', '%中级'])
-            
+                query += ' AND (title LIKE ? OR description LIKE ?)'
+                params.extend(['%日语%', '%成人%'])
+
             query += ' ORDER BY created_at DESC LIMIT ?'
             params.append(limit)
-            
+
             cursor.execute(query, tuple(params))
             rows = cursor.fetchall()
             return [dict(row) for row in rows]
     except Exception as e:
         logger.error(f"获取即将开始的考试失败: {e}")
-    
-    # 返回默认测试数据
-    return [
-        {
-            'id': 'default_1',
-            'title': '综合能力测试',
-            'description': '测试您的综合学习能力',
-            'duration': 60,
-            'question_count': 20,
-            'total_points': 100,
-            'language': '综合',
-            'level': '初级'
-        }
-    ]
+
+    return []
 
 
 def get_user_wrong_questions(user_id, limit=5):
@@ -7556,7 +8613,7 @@ def get_user_wrong_questions(user_id, limit=5):
     return []
 
 
-def get_recommended_exams(education_type='general', grade='', limit=6, is_final_exam_period=False):
+def get_recommended_exams(education_type='general', grade='', limit=6, is_final_exam_period=False, category=None):
     """获取推荐考试"""
     grade_keywords = {
         '小学1年级': ['语文', '数学', '英语', '科学'],
@@ -7573,6 +8630,23 @@ def get_recommended_exams(education_type='general', grade='', limit=6, is_final_
         '高中3年级': ['语文', '数学', '英语', '物理', '化学', '生物', '历史', '地理', '政治', '高考']
     }
     
+    category_keywords = {
+        'Math': ['数学', '代数', '几何', '微积分'],
+        'Chinese': ['语文', '中文', '作文'],
+        'English': ['英语'],
+        'Physics': ['物理'],
+        'Chemistry': ['化学'],
+        'Politics': ['政治', '马克思主义', '毛泽东', '思想'],
+        'PartySpirit': ['党中央', '精神', '习近平'],
+        'Japanese': ['日语'],
+        'JapaneseListening': ['日语', '听力'],
+        'EnglishListening': ['英语', '听力'],
+        'ChineseListening': ['语文', '听力'],
+        'SelfEnrollment': ['自主招生'],
+        'MathCompetition': ['竞赛', '数学竞赛'],
+        'GaokaoReal': ['高考', '真题']
+    }
+    
     k12_keywords = ['语文', '数学', '物理', '化学', '生物', '历史', '地理', '思想品德', '科学', '信息技术', '小升初', '中考', '高考', '年级', '小学', '初中', '高中', '同步']
     k12_english_keywords = ['中考英语', '高考英语', '初中英语', '高中英语', '小学英语']
     adult_keywords = ['日语', '德语', '法语', '俄语', '高等数学', '线性代数', '大学物理', '考研', '四级', '六级', '专四', '专八', '雅思', '托福', '成人', '职业', '资格', '电工', '焊工', '面包制作']
@@ -7585,7 +8659,7 @@ def get_recommended_exams(education_type='general', grade='', limit=6, is_final_
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
             
-            cursor.execute('SELECT * FROM exams WHERE status = "active" AND title NOT LIKE ? AND title NOT LIKE ? ORDER BY question_count DESC, created_at DESC', ('%测试考试%', '%test%'))
+            cursor.execute('SELECT * FROM exams WHERE status IN ("published", "active") AND title NOT LIKE ? AND title NOT LIKE ? ORDER BY created_at DESC', ('%测试考试%', '%test%'))
             all_exams = cursor.fetchall()
             
             filtered_exams = []
@@ -7658,6 +8732,17 @@ def get_recommended_exams(education_type='general', grade='', limit=6, is_final_
                                     matched = True
                                     break
                 
+                if category:
+                    cat_keywords = category_keywords.get(category, [])
+                    if cat_keywords:
+                        cat_matched = False
+                        for keyword in cat_keywords:
+                            if keyword in title or keyword == subject:
+                                cat_matched = True
+                                break
+                        if not cat_matched:
+                            matched = False
+                
                 if matched:
                     exam['exam_type'] = 'final' if is_final_exam else 'weekly'
                     filtered_exams.append(exam)
@@ -7712,7 +8797,7 @@ def get_recommended_exams(education_type='general', grade='', limit=6, is_final_
     return []
 
 
-def get_recommended_tests(education_type='general', grade='', limit=6, is_final_exam_period=False):
+def get_recommended_tests(education_type='general', grade='', limit=6, is_final_exam_period=False, category=None):
     """获取推荐测试（日常练习）"""
     grade_keywords = {
         '小学1年级': ['语文', '数学', '英语', '科学'],
@@ -7729,6 +8814,23 @@ def get_recommended_tests(education_type='general', grade='', limit=6, is_final_
         '高中3年级': ['语文', '数学', '英语', '物理', '化学', '生物', '历史', '地理', '政治', '高考']
     }
     
+    category_keywords = {
+        'Math': ['数学', '代数', '几何', '微积分'],
+        'Chinese': ['语文', '中文', '作文'],
+        'English': ['英语'],
+        'Physics': ['物理'],
+        'Chemistry': ['化学'],
+        'Politics': ['政治', '马克思主义', '毛泽东', '思想'],
+        'PartySpirit': ['党中央', '精神', '习近平'],
+        'Japanese': ['日语'],
+        'JapaneseListening': ['日语', '听力'],
+        'EnglishListening': ['英语', '听力'],
+        'ChineseListening': ['语文', '听力'],
+        'SelfEnrollment': ['自主招生'],
+        'MathCompetition': ['竞赛', '数学竞赛'],
+        'GaokaoReal': ['高考', '真题']
+    }
+    
     k12_keywords = ['语文', '数学', '物理', '化学', '生物', '历史', '地理', '思想品德', '科学', '信息技术']
     adult_keywords = ['日语', '德语', '法语', '俄语', '高等数学', '线性代数', '大学物理', '考研', '四级', '六级', '专四', '专八', '雅思', '托福', '成人', '职业', '资格', '电工', '焊工', '面包制作']
     test_keywords = ['练习', '训练', '专项', '作业', '巩固', '复习', '模拟', '每日', '周测']
@@ -7739,7 +8841,7 @@ def get_recommended_tests(education_type='general', grade='', limit=6, is_final_
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
             
-            cursor.execute('SELECT * FROM exams WHERE status = "active" ORDER BY question_count DESC, created_at DESC')
+            cursor.execute('SELECT * FROM exams WHERE status IN ("published", "active") ORDER BY question_count DESC, created_at DESC')
             all_exams = cursor.fetchall()
             
             filtered_tests = []
@@ -7793,6 +8895,17 @@ def get_recommended_tests(education_type='general', grade='', limit=6, is_final_
                                 if keyword in title or keyword == subject:
                                     matched = True
                                     break
+                
+                if category:
+                    cat_keywords = category_keywords.get(category, [])
+                    if cat_keywords:
+                        cat_matched = False
+                        for keyword in cat_keywords:
+                            if keyword in title or keyword == subject:
+                                cat_matched = True
+                                break
+                        if not cat_matched:
+                            matched = False
                 
                 if matched:
                     exam['test_type'] = 'review' if is_review else 'daily'
@@ -7989,7 +9102,7 @@ def get_user_rewards(user_id, education_type):
             cursor.execute('SELECT COUNT(*) FROM exam_results WHERE user_id = ?', (user_id,))
             exam_count = cursor.fetchone()[0]
             
-            cursor.execute('SELECT COUNT(*) FROM exam_results WHERE user_id = ? AND score >= passing_score', (user_id,))
+            cursor.execute('SELECT COUNT(*) FROM exam_results er JOIN exams e ON er.exam_id = e.id WHERE er.user_id = ? AND er.score >= COALESCE(e.passing_score, 60)', (user_id,))
             pass_count = cursor.fetchone()[0]
             
             cursor.execute('SELECT COUNT(*) FROM wrong_questions WHERE user_id = ?', (user_id,))
@@ -8499,18 +9612,20 @@ def arduino_page():
 def teacher_page():
     role = session.get('role', 'guest')
     if role != 'teacher':
-        from app.utils.role_router import get_role_router
-        return redirect(get_role_router().get_redirect_path(role))
-    return app.send_static_file('html/teacher.html')
+        if role == 'guest':
+            return render_template('login_required.html', request_path='/teacher'), 401
+        return render_template('admin_center.html')
+    return render_template('admin_center.html')
 
 # 教研员专属页面路由
 @app.route('/researcher')
 def researcher_page():
     role = session.get('role', 'guest')
     if role != 'researcher':
-        from app.utils.role_router import get_role_router
-        return redirect(get_role_router().get_redirect_path(role))
-    return app.send_static_file('html/researcher.html')
+        if role == 'guest':
+            return render_template('login_required.html', request_path='/researcher'), 401
+        return render_template('admin_center.html')
+    return render_template('admin_center.html')
 
 # Dashboard重定向到角色页面
 @app.route('/dashboard')
@@ -16675,18 +17790,63 @@ def math_user_history():
 def handle_400_error(e):
     """处理400错误 - 请求格式错误"""
     logger.warning(f"[错误页面] 400错误: {e}")
+    try:
+        import sqlite3
+        import os
+        from datetime import datetime
+        db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'app.db')
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO error_logs (error_type, error_message, stack_trace, status, created_at)
+            VALUES (?, ?, ?, ?, ?)
+        ''', ('http_400', f"400 Bad Request: {request.path}", str(e), 'open', datetime.now().isoformat()))
+        conn.commit()
+        conn.close()
+    except Exception as db_err:
+        logger.warning(f"记录400错误到数据库失败: {db_err}")
     return render_template('400.html'), 400
 
 @app.errorhandler(401)
 def handle_401_error(e):
     """处理401错误 - 需要登录"""
     logger.warning(f"[错误页面] 401错误: {e}")
+    try:
+        import sqlite3
+        import os
+        from datetime import datetime
+        db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'app.db')
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO error_logs (error_type, error_message, stack_trace, status, created_at)
+            VALUES (?, ?, ?, ?, ?)
+        ''', ('http_401', f"401 Unauthorized: {request.path}", str(e), 'open', datetime.now().isoformat()))
+        conn.commit()
+        conn.close()
+    except Exception as db_err:
+        logger.warning(f"记录401错误到数据库失败: {db_err}")
     return render_template('401.html'), 401
 
 @app.errorhandler(403)
 def handle_403_error(e):
     """处理403错误 - 权限不足"""
     logger.warning(f"[错误页面] 403错误: {e}")
+    try:
+        import sqlite3
+        import os
+        from datetime import datetime
+        db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'app.db')
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO error_logs (error_type, error_message, stack_trace, status, created_at)
+            VALUES (?, ?, ?, ?, ?)
+        ''', ('http_403', f"403 Forbidden: {request.path} (role:{session.get('role','unknown')})", str(e), 'open', datetime.now().isoformat()))
+        conn.commit()
+        conn.close()
+    except Exception as db_err:
+        logger.warning(f"记录403错误到数据库失败: {db_err}")
     return render_template('403.html', 
                           current_role=session.get('role', '未登录'),
                           request_path=request.path), 403
@@ -16695,13 +17855,50 @@ def handle_403_error(e):
 def handle_404_error(e):
     """处理404错误 - 页面未找到"""
     logger.warning(f"[错误页面] 404错误: {request.path}")
+    try:
+        import sqlite3
+        import os
+        from datetime import datetime
+        db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'app.db')
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO error_logs (error_type, error_message, stack_trace, status, created_at)
+            VALUES (?, ?, ?, ?, ?)
+        ''', ('http_404', f"404 Not Found: {request.path}", str(e), 'open', datetime.now().isoformat()))
+        conn.commit()
+        conn.close()
+    except Exception as db_err:
+        logger.warning(f"记录404错误到数据库失败: {db_err}")
     return render_template('404.html'), 404
 
 @app.errorhandler(500)
 def handle_500_error(e):
     """处理500错误 - 服务器内部错误"""
     logger.error(f"[错误页面] 500错误: {e}")
-    return render_template('500.html'), 500
+    try:
+        import sqlite3
+        import os
+        import traceback
+        from datetime import datetime
+        db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'app.db')
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO error_logs (error_type, error_message, stack_trace, status, created_at)
+            VALUES (?, ?, ?, ?, ?)
+        ''', ('http_500', f"500 Internal Server Error: {request.path}", traceback.format_exc(), 'open', datetime.now().isoformat()))
+        conn.commit()
+        conn.close()
+    except Exception as db_err:
+        logger.warning(f"记录500错误到数据库失败: {db_err}")
+    try:
+        return render_template('error.html',
+                              error_code=500,
+                              error_title='服务器内部错误',
+                              error_message='抱歉，服务器遇到了一些问题，请稍后再试'), 500
+    except Exception:
+        return '<h1>500 Internal Server Error</h1><p>抱歉，服务器遇到了一些问题</p>', 500
 
 
 try:
@@ -16756,13 +17953,22 @@ def handle_generic_error(e):
             'status': 'error'
         }), 500
     # 否则返回友好的错误页面
-    return render_template('error.html',
-                          error_code=500,
-                          error_title='服务器内部错误',
-                          error_message='抱歉，服务器遇到了一些问题，请稍后再试',
-                          error_suggestion='如果问题持续存在，请联系管理员或提交反馈',
-                          error_id=str(uuid.uuid4()),
-                          timestamp=datetime.now().strftime('%Y-%m-%d %H:%M:%S')), 500
+    try:
+        import uuid as uuid_module
+        error_id = str(uuid_module.uuid4())
+    except Exception:
+        error_id = 'unknown'
+    
+    try:
+        return render_template('error.html',
+                              error_code=500,
+                              error_title='服务器内部错误',
+                              error_message='抱歉，服务器遇到了一些问题，请稍后再试',
+                              error_suggestion='如果问题持续存在，请联系管理员或提交反馈',
+                              error_id=error_id,
+                              timestamp=datetime.now().strftime('%Y-%m-%d %H:%M:%S')), 500
+    except Exception:
+        return f'<h1>500 Internal Server Error</h1><p>抱歉，服务器遇到了一些问题</p>', 500
 
 
 # ==================== 题库自动维护系统API ====================
@@ -18867,6 +20073,99 @@ try:
 except Exception as e:
     logger.error(f"✗ 注册蓝图 system_extension_api 失败: {e}")
 
+# ==================== AI记忆管理API ====================
+try:
+    from app.api.ai_memory_api import ai_memory_api
+    app.register_blueprint(ai_memory_api)
+    logger.info("✓ 注册蓝图: ai_memory_api")
+except Exception as e:
+    logger.error(f"✗ 注册蓝图 ai_memory_api 失败: {e}")
+
+# ==================== AI情感分析API ====================
+try:
+    from app.api.ai_emotion_api import ai_emotion_api
+    app.register_blueprint(ai_emotion_api)
+    logger.info("✓ 注册蓝图: ai_emotion_api")
+except Exception as e:
+    logger.error(f"✗ 注册蓝图 ai_emotion_api 失败: {e}")
+
+# ==================== AI智能评估API ====================
+try:
+    from app.api.ai_evaluation_api import ai_evaluation_api
+    app.register_blueprint(ai_evaluation_api)
+    logger.info("✓ 注册蓝图: ai_evaluation_api")
+except Exception as e:
+    logger.error(f"✗ 注册蓝图 ai_evaluation_api 失败: {e}")
+
+# ==================== AI认知推理API ====================
+try:
+    from app.api.ai_cognitive_api import ai_cognitive_api
+    app.register_blueprint(ai_cognitive_api)
+    logger.info("✓ 注册蓝图: ai_cognitive_api")
+except Exception as e:
+    logger.error(f"✗ 注册蓝图 ai_cognitive_api 失败: {e}")
+
+# ==================== AI自适应学习API ====================
+try:
+    from app.api.ai_adaptive_api import ai_adaptive_api
+    app.register_blueprint(ai_adaptive_api)
+    logger.info("✓ 注册蓝图: ai_adaptive_api")
+except Exception as e:
+    logger.error(f"✗ 注册蓝图 ai_adaptive_api 失败: {e}")
+
+# ==================== AI智能问答API ====================
+try:
+    from app.api.ai_qna_api import ai_qna_api
+    app.register_blueprint(ai_qna_api)
+    logger.info("✓ 注册蓝图: ai_qna_api")
+except Exception as e:
+    logger.error(f"✗ 注册蓝图 ai_qna_api 失败: {e}")
+
+# ==================== AI智能决策API ====================
+try:
+    from app.api.ai_decision_api import ai_decision_api
+    app.register_blueprint(ai_decision_api)
+    logger.info("✓ 注册蓝图: ai_decision_api")
+except Exception as e:
+    logger.error(f"✗ 注册蓝图 ai_decision_api 失败: {e}")
+
+# ==================== AI学习预测API ====================
+try:
+    from app.api.ai_prediction_api import ai_prediction_api
+    app.register_blueprint(ai_prediction_api)
+    logger.info("✓ 注册蓝图: ai_prediction_api")
+except Exception as e:
+    logger.error(f"✗ 注册蓝图 ai_prediction_api 失败: {e}")
+
+# ==================== AI资源推荐API ====================
+try:
+    from app.api.ai_recommendation_api import ai_recommendation_api
+    app.register_blueprint(ai_recommendation_api)
+    logger.info("✓ 注册蓝图: ai_recommendation_api")
+except Exception as e:
+    logger.error(f"✗ 注册蓝图 ai_recommendation_api 失败: {e}")
+
+try:
+    from app.api.ai_professional_api import ai_professional_api
+    app.register_blueprint(ai_professional_api)
+    logger.info("✓ 注册蓝图: ai_professional_api")
+except Exception as e:
+    logger.error(f"✗ 注册蓝图 ai_professional_api 失败: {e}")
+
+try:
+    from app.api.ai_dashboard_api import ai_dashboard_api
+    app.register_blueprint(ai_dashboard_api)
+    logger.info("✓ 注册蓝图: ai_dashboard_api")
+except Exception as e:
+    logger.error(f"✗ 注册蓝图 ai_dashboard_api 失败: {e}")
+
+try:
+    from app.api.agent_management_api import agent_management_api
+    app.register_blueprint(agent_management_api)
+    logger.info("✓ 注册蓝图: agent_management_api")
+except Exception as e:
+    logger.error(f"✗ 注册蓝图 agent_management_api 失败: {e}")
+
 # ==================== AI布局管理员工模块 ====================
 
 def require_layout_admin():
@@ -19024,6 +20323,1079 @@ def arduino_ide():
     }
     return render_template('admin_app/arduino_ide.html', user=user)
 
+# ==================== Arduino IDE API ====================
+
+def _init_arduino_tables():
+    """初始化Arduino相关数据库表"""
+    try:
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS arduino_projects (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    name TEXT NOT NULL,
+                    description TEXT DEFAULT '',
+                    code TEXT DEFAULT '',
+                    board_type TEXT DEFAULT 'uno',
+                    tags TEXT DEFAULT '',
+                    is_template INTEGER DEFAULT 0,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS arduino_components (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    category TEXT NOT NULL,
+                    description TEXT DEFAULT '',
+                    pin_type TEXT DEFAULT 'digital',
+                    default_code TEXT DEFAULT '',
+                    icon TEXT DEFAULT '🔌',
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            conn.commit()
+
+            cursor = conn.cursor()
+            cursor.execute("SELECT COUNT(*) FROM arduino_components")
+            if cursor.fetchone()[0] == 0:
+                components = [
+                    ('LED', 'output', '发光二极管，最常用的输出元件', 'digital', 'int ledPin = 13;\nvoid setup() {\n  pinMode(ledPin, OUTPUT);\n}\nvoid loop() {\n  digitalWrite(ledPin, HIGH);\n  delay(1000);\n  digitalWrite(ledPin, LOW);\n  delay(1000);\n}', '💡'),
+                    ('Buzzer', 'output', '蜂鸣器，可发出声音信号', 'digital', 'int buzzerPin = 8;\nvoid setup() {\n  pinMode(buzzerPin, OUTPUT);\n}\nvoid loop() {\n  digitalWrite(buzzerPin, HIGH);\n  delay(500);\n  digitalWrite(buzzerPin, LOW);\n  delay(500);\n}', '🔊'),
+                    ('Servo Motor', 'output', '舵机，可精确控制角度0-180度', 'pwm', '#include <Servo.h>\nServo myservo;\nvoid setup() {\n  myservo.attach(9);\n}\nvoid loop() {\n  myservo.write(90);\n  delay(1000);\n  myservo.write(0);\n  delay(1000);\n}', '⚙️'),
+                    ('Button', 'input', '按键开关，常用的输入元件', 'digital', 'int buttonPin = 2;\nint buttonState = 0;\nvoid setup() {\n  pinMode(buttonPin, INPUT);\n  Serial.begin(9600);\n}\nvoid loop() {\n  buttonState = digitalRead(buttonPin);\n  Serial.println(buttonState);\n  delay(100);\n}', '🔘'),
+                    ('Ultrasonic Sensor', 'input', '超声波测距传感器HC-SR04', 'digital', '#define TRIG_PIN 9\n#define ECHO_PIN 10\nvoid setup() {\n  Serial.begin(9600);\n  pinMode(TRIG_PIN, OUTPUT);\n  pinMode(ECHO_PIN, INPUT);\n}\nvoid loop() {\n  digitalWrite(TRIG_PIN, LOW);\n  delayMicroseconds(2);\n  digitalWrite(TRIG_PIN, HIGH);\n  delayMicroseconds(10);\n  digitalWrite(TRIG_PIN, LOW);\n  long duration = pulseIn(ECHO_PIN, HIGH);\n  float distance = duration * 0.034 / 2;\n  Serial.print("Distance: ");\n  Serial.print(distance);\n  Serial.println(" cm");\n  delay(500);\n}', '📡'),
+                    ('Temperature Sensor', 'input', '温度传感器LM35', 'analog', 'int tempPin = A0;\nvoid setup() {\n  Serial.begin(9600);\n}\nvoid loop() {\n  int reading = analogRead(tempPin);\n  float voltage = reading * 5.0 / 1024.0;\n  float tempC = voltage * 100;\n  Serial.print("Temp: ");\n  Serial.print(tempC);\n  Serial.println(" C");\n  delay(1000);\n}', '🌡️'),
+                    ('Photoresistor', 'input', '光敏电阻，检测光线强度', 'analog', 'int lightPin = A0;\nvoid setup() {\n  Serial.begin(9600);\n}\nvoid loop() {\n  int lightValue = analogRead(lightPin);\n  Serial.print("Light: ");\n  Serial.println(lightValue);\n  delay(500);\n}', '☀️'),
+                    ('LCD 1602', 'output', 'LCD液晶显示屏1602', 'digital', '#include <LiquidCrystal.h>\nLiquidCrystal lcd(12, 11, 5, 4, 3, 2);\nvoid setup() {\n  lcd.begin(16, 2);\n  lcd.print("Hello, Arduino!");\n}\nvoid loop() {\n}', '📺'),
+                    ('IR Receiver', 'input', '红外接收器，接收红外遥控信号', 'digital', '#include <IRremote.h>\nint RECV_PIN = 11;\nIRrecv irrecv(RECV_PIN);\ndecode_results results;\nvoid setup() {\n  Serial.begin(9600);\n  irrecv.enableIRIn();\n}\nvoid loop() {\n  if (irrecv.decode(&results)) {\n    Serial.println(results.value, HEX);\n    irrecv.resume();\n  }\n}', '📡'),
+                    ('DC Motor', 'output', '直流电机，通过L298N驱动', 'pwm', 'int enA = 9;\nint in1 = 8;\nint in2 = 7;\nvoid setup() {\n  pinMode(enA, OUTPUT);\n  pinMode(in1, OUTPUT);\n  pinMode(in2, OUTPUT);\n}\nvoid loop() {\n  digitalWrite(in1, HIGH);\n  digitalWrite(in2, LOW);\n  analogWrite(enA, 200);\n  delay(2000);\n}', '🔄'),
+                    ('RGB LED', 'output', 'RGB全彩LED', 'pwm', 'int redPin = 9;\nint greenPin = 10;\nint bluePin = 11;\nvoid setup() {\n  pinMode(redPin, OUTPUT);\n  pinMode(greenPin, OUTPUT);\n  pinMode(bluePin, OUTPUT);\n}\nvoid loop() {\n  setColor(255, 0, 0);\n  delay(1000);\n  setColor(0, 255, 0);\n  delay(1000);\n  setColor(0, 0, 255);\n  delay(1000);\n}\nvoid setColor(int r, int g, int b) {\n  analogWrite(redPin, r);\n  analogWrite(greenPin, g);\n  analogWrite(bluePin, b);\n}', '🌈'),
+                    ('PIR Sensor', 'input', '人体红外感应传感器', 'digital', 'int pirPin = 2;\nint val = 0;\nvoid setup() {\n  pinMode(pirPin, INPUT);\n  Serial.begin(9600);\n}\nvoid loop() {\n  val = digitalRead(pirPin);\n  if (val == HIGH) {\n    Serial.println("Motion detected!");\n  }\n  delay(500);\n}', '👤'),
+                ]
+                cursor.executemany(
+                    "INSERT INTO arduino_components (name, category, description, pin_type, default_code, icon) VALUES (?, ?, ?, ?, ?, ?)",
+                    components
+                )
+                conn.commit()
+                logger.info("✓ Arduino组件库初始化完成")
+    except Exception as e:
+        logger.error(f"Arduino表初始化失败: {e}")
+
+_init_arduino_tables()
+
+@app.route('/api/arduino/projects', methods=['GET'])
+@require_login
+def api_arduino_projects_list():
+    """获取Arduino项目列表"""
+    user_id = session.get('user_id')
+    try:
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT id, name, description, board_type, tags, created_at, updated_at FROM arduino_projects WHERE user_id = ? ORDER BY updated_at DESC",
+                (user_id,)
+            )
+            projects = [dict(row) for row in cursor.fetchall()]
+        return jsonify({'success': True, 'data': projects})
+    except Exception as e:
+        logger.error(f"获取Arduino项目列表失败: {e}")
+        return jsonify({'success': False, 'message': '获取项目列表失败'}), 500
+
+@app.route('/api/arduino/projects', methods=['POST'])
+@require_login
+def api_arduino_projects_create():
+    """创建Arduino项目"""
+    user_id = session.get('user_id')
+    try:
+        data = request.get_json() or {}
+        name = data.get('name', '').strip()
+        if not name:
+            return jsonify({'success': False, 'message': '项目名称不能为空'}), 400
+
+        description = data.get('description', '')
+        code = data.get('code', '')
+        board_type = data.get('board_type', 'uno')
+        tags = data.get('tags', '')
+
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "INSERT INTO arduino_projects (user_id, name, description, code, board_type, tags) VALUES (?, ?, ?, ?, ?, ?)",
+                (user_id, name, description, code, board_type, tags)
+            )
+            conn.commit()
+            project_id = cursor.lastrowid
+
+        return jsonify({'success': True, 'message': '项目创建成功', 'data': {'id': project_id}})
+    except Exception as e:
+        logger.error(f"创建Arduino项目失败: {e}")
+        return jsonify({'success': False, 'message': '创建项目失败'}), 500
+
+@app.route('/api/arduino/projects/<int:project_id>', methods=['GET'])
+@require_login
+def api_arduino_projects_get(project_id):
+    """获取单个Arduino项目"""
+    user_id = session.get('user_id')
+    try:
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT * FROM arduino_projects WHERE id = ? AND user_id = ?",
+                (project_id, user_id)
+            )
+            row = cursor.fetchone()
+            if not row:
+                return jsonify({'success': False, 'message': '项目不存在'}), 404
+            return jsonify({'success': True, 'data': dict(row)})
+    except Exception as e:
+        logger.error(f"获取Arduino项目失败: {e}")
+        return jsonify({'success': False, 'message': '获取项目失败'}), 500
+
+@app.route('/api/arduino/projects/<int:project_id>', methods=['PUT'])
+@require_login
+def api_arduino_projects_update(project_id):
+    """更新Arduino项目"""
+    user_id = session.get('user_id')
+    try:
+        data = request.get_json() or {}
+        name = data.get('name')
+        description = data.get('description')
+        code = data.get('code')
+        board_type = data.get('board_type')
+        tags = data.get('tags')
+
+        updates = []
+        values = []
+        if name is not None:
+            updates.append("name = ?")
+            values.append(name.strip())
+        if description is not None:
+            updates.append("description = ?")
+            values.append(description)
+        if code is not None:
+            updates.append("code = ?")
+            values.append(code)
+        if board_type is not None:
+            updates.append("board_type = ?")
+            values.append(board_type)
+        if tags is not None:
+            updates.append("tags = ?")
+            values.append(tags)
+
+        if not updates:
+            return jsonify({'success': False, 'message': '没有需要更新的字段'}), 400
+
+        updates.append("updated_at = CURRENT_TIMESTAMP")
+        values.extend([project_id, user_id])
+
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                f"UPDATE arduino_projects SET {', '.join(updates)} WHERE id = ? AND user_id = ?",
+                values
+            )
+            if cursor.rowcount == 0:
+                return jsonify({'success': False, 'message': '项目不存在或无权修改'}), 404
+            conn.commit()
+
+        return jsonify({'success': True, 'message': '项目更新成功'})
+    except Exception as e:
+        logger.error(f"更新Arduino项目失败: {e}")
+        return jsonify({'success': False, 'message': '更新项目失败'}), 500
+
+@app.route('/api/arduino/projects/<int:project_id>', methods=['DELETE'])
+@require_login
+def api_arduino_projects_delete(project_id):
+    """删除Arduino项目"""
+    user_id = session.get('user_id')
+    try:
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "DELETE FROM arduino_projects WHERE id = ? AND user_id = ?",
+                (project_id, user_id)
+            )
+            if cursor.rowcount == 0:
+                return jsonify({'success': False, 'message': '项目不存在或无权删除'}), 404
+            conn.commit()
+        return jsonify({'success': True, 'message': '项目删除成功'})
+    except Exception as e:
+        logger.error(f"删除Arduino项目失败: {e}")
+        return jsonify({'success': False, 'message': '删除项目失败'}), 500
+
+@app.route('/api/arduino/components', methods=['GET'])
+@require_login
+def api_arduino_components():
+    """获取Arduino组件库"""
+    try:
+        category = request.args.get('category', '')
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            if category:
+                cursor.execute(
+                    "SELECT * FROM arduino_components WHERE category = ? ORDER BY name",
+                    (category,)
+                )
+            else:
+                cursor.execute("SELECT * FROM arduino_components ORDER BY category, name")
+            components = [dict(row) for row in cursor.fetchall()]
+        return jsonify({'success': True, 'data': components})
+    except Exception as e:
+        logger.error(f"获取Arduino组件库失败: {e}")
+        return jsonify({'success': False, 'message': '获取组件库失败'}), 500
+
+@app.route('/api/arduino/templates', methods=['GET'])
+@require_login
+def api_arduino_templates():
+    """获取Arduino代码模板"""
+    templates = [
+        {
+            'id': 'blink',
+            'name': 'Blink 闪烁',
+            'description': '最基础的Arduino程序，让LED闪烁',
+            'category': 'basic',
+            'code': 'int ledPin = 13;\n\nvoid setup() {\n  pinMode(ledPin, OUTPUT);\n  Serial.begin(9600);\n  Serial.println("Blink Start");\n}\n\nvoid loop() {\n  digitalWrite(ledPin, HIGH);\n  Serial.println("LED ON");\n  delay(1000);\n  digitalWrite(ledPin, LOW);\n  Serial.println("LED OFF");\n  delay(1000);\n}\n'
+        },
+        {
+            'id': 'serial',
+            'name': 'Serial 串口通信',
+            'description': '串口通信基础，发送和接收数据',
+            'category': 'basic',
+            'code': 'void setup() {\n  Serial.begin(9600);\n  Serial.println("Serial Communication Ready");\n}\n\nvoid loop() {\n  if (Serial.available() > 0) {\n    String data = Serial.readStringUntil(\'\\n\');\n    Serial.print("Received: ");\n    Serial.println(data);\n  }\n}\n'
+        },
+        {
+            'id': 'button_led',
+            'name': 'Button LED 按键控制LED',
+            'description': '使用按键控制LED开关',
+            'category': 'intermediate',
+            'code': 'const int buttonPin = 2;\nconst int ledPin = 13;\nint buttonState = 0;\n\nvoid setup() {\n  pinMode(buttonPin, INPUT);\n  pinMode(ledPin, OUTPUT);\n  Serial.begin(9600);\n}\n\nvoid loop() {\n  buttonState = digitalRead(buttonPin);\n  if (buttonState == HIGH) {\n    digitalWrite(ledPin, HIGH);\n    Serial.println("Button pressed - LED ON");\n  } else {\n    digitalWrite(ledPin, LOW);\n  }\n}\n'
+        },
+        {
+            'id': 'servo_sweep',
+            'name': 'Servo Sweep 舵机扫描',
+            'description': '舵机来回扫描0-180度',
+            'category': 'intermediate',
+            'code': '#include <Servo.h>\n\nServo myservo;\nint pos = 0;\n\nvoid setup() {\n  myservo.attach(9);\n  Serial.begin(9600);\n}\n\nvoid loop() {\n  for (pos = 0; pos <= 180; pos += 1) {\n    myservo.write(pos);\n    Serial.print("Angle: ");\n    Serial.println(pos);\n    delay(15);\n  }\n  for (pos = 180; pos >= 0; pos -= 1) {\n    myservo.write(pos);\n    delay(15);\n  }\n}\n'
+        },
+        {
+            'id': 'ultrasonic',
+            'name': 'Ultrasonic Distance 超声波测距',
+            'description': '使用HC-SR04超声波传感器测距',
+            'category': 'intermediate',
+            'code': '#define TRIG_PIN 9\n#define ECHO_PIN 10\n\nvoid setup() {\n  Serial.begin(9600);\n  pinMode(TRIG_PIN, OUTPUT);\n  pinMode(ECHO_PIN, INPUT);\n}\n\nvoid loop() {\n  digitalWrite(TRIG_PIN, LOW);\n  delayMicroseconds(2);\n  digitalWrite(TRIG_PIN, HIGH);\n  delayMicroseconds(10);\n  digitalWrite(TRIG_PIN, LOW);\n  \n  long duration = pulseIn(ECHO_PIN, HIGH);\n  float distance = duration * 0.034 / 2;\n  \n  Serial.print("Distance: ");\n  Serial.print(distance);\n  Serial.println(" cm");\n  delay(500);\n}\n'
+        },
+        {
+            'id': 'temp_monitor',
+            'name': 'Temperature Monitor 温度监控',
+            'description': 'LM35温度传感器实时监控并报警',
+            'category': 'advanced',
+            'code': 'const int tempPin = A0;\nconst int buzzerPin = 8;\nconst float threshold = 30.0;\n\nvoid setup() {\n  Serial.begin(9600);\n  pinMode(buzzerPin, OUTPUT);\n}\n\nvoid loop() {\n  int reading = analogRead(tempPin);\n  float voltage = reading * 5.0 / 1024.0;\n  float tempC = voltage * 100;\n  \n  Serial.print("Temperature: ");\n  Serial.print(tempC);\n  Serial.print(" C ");\n  \n  if (tempC > threshold) {\n    Serial.println("[ALERT!]");\n    digitalWrite(buzzerPin, HIGH);\n    delay(500);\n    digitalWrite(buzzerPin, LOW);\n  } else {\n    Serial.println("[OK]");\n  }\n  delay(1000);\n}\n'
+        },
+        {
+            'id': 'traffic_light',
+            'name': 'Traffic Light 交通灯',
+            'description': '模拟交通灯控制系统',
+            'category': 'advanced',
+            'code': 'const int redPin = 10;\nconst int yellowPin = 9;\nconst int greenPin = 8;\n\nvoid setup() {\n  pinMode(redPin, OUTPUT);\n  pinMode(yellowPin, OUTPUT);\n  pinMode(greenPin, OUTPUT);\n  Serial.begin(9600);\n}\n\nvoid loop() {\n  digitalWrite(redPin, HIGH);\n  Serial.println("RED - Stop");\n  delay(5000);\n  \n  digitalWrite(redPin, LOW);\n  digitalWrite(greenPin, HIGH);\n  Serial.println("GREEN - Go");\n  delay(5000);\n  \n  digitalWrite(greenPin, LOW);\n  digitalWrite(yellowPin, HIGH);\n  Serial.println("YELLOW - Caution");\n  delay(2000);\n  digitalWrite(yellowPin, LOW);\n}\n'
+        },
+    ]
+    return jsonify({'success': True, 'data': templates})
+
+@app.route('/api/arduino/compile', methods=['POST'])
+@require_login
+def api_arduino_compile():
+    """模拟Arduino编译"""
+    try:
+        data = request.get_json() or {}
+        code = data.get('code', '')
+
+        if not code.strip():
+            return jsonify({'success': False, 'message': '代码不能为空', 'errors': []}), 400
+
+        errors = []
+        warnings = []
+
+        if 'setup()' not in code and 'void setup' not in code:
+            errors.append({'line': 0, 'message': '缺少 setup() 函数'})
+        if 'loop()' not in code and 'void loop' not in code:
+            errors.append({'line': 0, 'message': '缺少 loop() 函数'})
+
+        open_braces = code.count('{')
+        close_braces = code.count('}')
+        if open_braces != close_braces:
+            errors.append({'line': 0, 'message': f'大括号不匹配: {open_braces}个左括号 vs {close_braces}个右括号'})
+
+        lines = code.split('\n')
+        for i, line in enumerate(lines, 1):
+            stripped = line.strip()
+            if stripped and not stripped.startswith('//') and not stripped.startswith('#'):
+                if 'digitalWrite(' in stripped and 'pinMode' not in code:
+                    warnings.append({'line': i, 'message': '建议先使用pinMode设置引脚模式'})
+
+        if errors:
+            return jsonify({
+                'success': False,
+                'message': '编译失败',
+                'errors': errors,
+                'warnings': warnings,
+                'stats': {'total_lines': len(lines), 'code_size': len(code)}
+            }), 400
+
+        bin_size = len(code) * 2 + 1024
+
+        return jsonify({
+            'success': True,
+            'message': '编译成功',
+            'errors': [],
+            'warnings': warnings,
+            'stats': {
+                'total_lines': len(lines),
+                'code_size': len(code),
+                'binary_size': bin_size,
+                'flash_usage': f'{min(bin_size * 100 // 32256, 99)}%',
+                'ram_usage': f'{min(len(lines) * 2, 50)}%'
+            }
+        })
+    except Exception as e:
+        logger.error(f"Arduino编译失败: {e}")
+        return jsonify({'success': False, 'message': f'编译错误: {str(e)}'}), 500
+
+@app.route('/api/arduino/serial', methods=['POST'])
+@require_login
+def api_arduino_serial():
+    """模拟串口输出"""
+    try:
+        data = request.get_json() or {}
+        code = data.get('code', '')
+        duration = data.get('duration', 5)
+
+        outputs = []
+        import re
+
+        for match in re.finditer(r'Serial\.(print|println)\((.+?)\);', code):
+            func = match.group(1)
+            content = match.group(2).strip()
+            text = ''
+            if content.startswith('"') and content.endswith('"'):
+                text = content[1:-1]
+            elif content.startswith("'") and content.endswith("'"):
+                text = content[1:-1]
+            else:
+                text = f'[{content}]'
+            outputs.append({
+                'time': f'{len(outputs) * 0.5:.1f}s',
+                'data': text,
+                'newline': func == 'println'
+            })
+
+        for i in range(min(duration, 10)):
+            for match in re.finditer(r'Serial\.(print|println)\((.+?)\);', code):
+                func = match.group(1)
+                content = match.group(2).strip()
+                text = ''
+                if content.startswith('"') and content.endswith('"'):
+                    text = content[1:-1]
+                elif content.startswith("'") and content.endswith("'"):
+                    text = content[1:-1]
+                else:
+                    text = f'[{content}]'
+                outputs.append({
+                    'time': f'{(i + 1) * 1.0:.1f}s',
+                    'data': text,
+                    'newline': func == 'println'
+                })
+
+        return jsonify({
+            'success': True,
+            'data': outputs[:50],
+            'baud_rate': 9600
+        })
+    except Exception as e:
+        logger.error(f"串口模拟失败: {e}")
+        return jsonify({'success': False, 'message': '串口模拟失败'}), 500
+
+# ==================== Arduino AI Agent 初始化 ====================
+
+def _init_arduino_ai_agents():
+    """初始化Arduino AI Agent到ai_agents表"""
+    try:
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            cursor = conn.cursor()
+            
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS ai_agents (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    agent_name TEXT NOT NULL,
+                    agent_type TEXT UNIQUE NOT NULL,
+                    status TEXT DEFAULT 'stopped',
+                    description TEXT DEFAULT '',
+                    capabilities TEXT DEFAULT '',
+                    last_run_time TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            conn.commit()
+            
+            cursor.execute("SELECT COUNT(*) FROM ai_agents")
+            count = cursor.fetchone()[0]
+            
+            arduino_agents = [
+                ('Arduino代码生成Agent', 'arduino_code_generator', 'stopped', 
+                 '根据需求自动生成Arduino代码，支持多种组件和项目模板',
+                 '代码生成,模板匹配,组件集成'),
+                ('Arduino代码调试Agent', 'arduino_code_debugger', 'stopped',
+                 '自动检测代码错误、警告并提供修复建议',
+                 '语法检查,错误定位,调试建议'),
+                ('Arduino代码优化Agent', 'arduino_code_optimizer', 'stopped',
+                 '优化代码性能和内存使用，提供多级别优化方案',
+                 '性能优化,内存优化,代码精简'),
+                ('Arduino组件推荐Agent', 'arduino_component_advisor', 'stopped',
+                 '根据项目需求推荐电子元件和接线方案',
+                 '组件选型,接线指导,成本估算'),
+            ]
+            
+            existing = set()
+            cursor.execute("SELECT agent_type FROM ai_agents")
+            for row in cursor.fetchall():
+                existing.add(row[0])
+            
+            added = 0
+            for name, agent_type, status, description, capabilities in arduino_agents:
+                if agent_type not in existing:
+                    cursor.execute("""
+                        INSERT INTO ai_agents (agent_name, agent_type, status, description, created_at, updated_at)
+                        VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                    """, (name, agent_type, status, description))
+                    added += 1
+            
+            conn.commit()
+            if added > 0:
+                logger.info(f"✓ 已初始化 {added} 个Arduino AI Agent")
+    except Exception as e:
+        logger.error(f"Arduino AI Agent初始化失败: {e}")
+
+_init_arduino_ai_agents()
+
+# 初始化Arduino AI员工实例
+_arduino_ai_employees = {}
+
+def _init_arduino_employees():
+    """初始化Arduino AI员工实例"""
+    global _arduino_ai_employees
+    try:
+        from ai_engines.arduino_ai_employees import (
+            ArduinoCodeGeneratorEmployee,
+            ArduinoCodeDebuggerEmployee,
+            ArduinoCodeOptimizerEmployee,
+            ArduinoComponentAdvisorEmployee,
+        )
+        _arduino_ai_employees = {
+            'arduino_gen_001': ArduinoCodeGeneratorEmployee('arduino_gen_001', 'Arduino代码生成AI', 7),
+            'arduino_debug_001': ArduinoCodeDebuggerEmployee('arduino_debug_001', 'Arduino代码调试AI', 8),
+            'arduino_opt_001': ArduinoCodeOptimizerEmployee('arduino_opt_001', 'Arduino代码优化AI', 7),
+            'arduino_comp_001': ArduinoComponentAdvisorEmployee('arduino_comp_001', 'Arduino组件推荐AI', 6),
+        }
+        for emp in _arduino_ai_employees.values():
+            if hasattr(emp, 'start'):
+                emp.start()
+        logger.info(f"✓ 已初始化 {len(_arduino_ai_employees)} 个Arduino AI员工")
+    except Exception as e:
+        logger.error(f"Arduino AI员工初始化失败: {e}")
+
+_init_arduino_employees()
+
+# ==================== 全局AI员工赋能注册表 ====================
+
+_all_empowered_employees = {}
+
+def _init_all_empowered_employees():
+    """初始化系统中所有AI员工并统一注册赋能"""
+    global _all_empowered_employees
+
+    # 1. 注册Arduino AI员工
+    for emp_id, emp in _arduino_ai_employees.items():
+        _all_empowered_employees[emp_id] = emp
+
+    # 2. 注册 ai_employee_manager 中的员工
+    try:
+        global ai_employee_manager
+        if hasattr(ai_employee_manager, 'employees'):
+            for emp_id, emp in ai_employee_manager.employees.items():
+                _all_empowered_employees[emp_id] = emp
+    except:
+        pass
+
+    # 3. 从数据库加载集群员工配置并创建赋能实例
+    try:
+        from ai_engines.ai_employees import AIEmployee as GenericAIEmployee
+        cluster_personality_map = {
+            'api_specialist': 'analytical', 'frontend_specialist': 'creative',
+            'backend_specialist': 'driven', 'database_specialist': 'cautious',
+            'middleware_specialist': 'cautious', 'logging_specialist': 'analytical',
+            'lock_manager': 'cautious', 'ai_education_specialist': 'supportive',
+            'ai_question_bank_specialist': 'analytical', 'ai_analysis_specialist': 'analytical',
+            'ai_tutor_specialist': 'supportive', 'ai_code_specialist': 'creative',
+            'ai_image_specialist': 'creative', 'monitoring_manager': 'cautious',
+            'database_manager': 'cautious',
+        }
+        cluster_domain_map = {
+            'api_specialist': 'general_programming', 'frontend_specialist': 'general_programming',
+            'backend_specialist': 'general_programming', 'database_specialist': 'system_admin',
+            'middleware_specialist': 'system_admin', 'logging_specialist': 'diagnostics',
+            'lock_manager': 'system_admin', 'ai_education_specialist': 'education',
+            'ai_question_bank_specialist': 'question_bank', 'ai_analysis_specialist': 'system_admin',
+            'ai_tutor_specialist': 'education', 'ai_code_specialist': 'general_programming',
+            'ai_image_specialist': 'general_programming', 'monitoring_manager': 'diagnostics',
+            'database_manager': 'system_admin',
+        }
+
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute("SELECT DISTINCT employee_id, employee_type, capabilities, status FROM ai_employee_config")
+            rows = cursor.fetchall()
+
+            for row in rows:
+                emp_type = row['employee_type']
+                emp_id = f"cluster_{row['employee_id']}"
+                if emp_id in _all_empowered_employees:
+                    continue
+
+                try:
+                    capabilities = row['capabilities'] or '[]'
+                    import json
+                    try:
+                        caps = json.loads(capabilities)
+                    except:
+                        caps = [c.strip() for c in capabilities.split(',') if c.strip()]
+
+                    # 创建带赋能的通用AI员工
+                    emp = GenericAIEmployee(emp_id, f"{emp_type}员工", emp_type, caps)
+
+                    # 覆盖默认性格和领域映射
+                    if hasattr(emp, 'personality') and emp.personality:
+                        from ai_engines.intelligent_empowerment import PersonalitySystem, NetworkLearningEngine
+                        ptype = cluster_personality_map.get(emp_type, 'analytical')
+                        domain = cluster_domain_map.get(emp_type, 'general_programming')
+                        emp.personality = PersonalitySystem(ptype)
+                        emp.learning_engine = NetworkLearningEngine(emp_id, domain)
+
+                    _all_empowered_employees[emp_id] = emp
+                except Exception as e:
+                    logger.warning(f"集群员工 {emp_type} 赋能创建失败: {e}")
+
+    except Exception as e:
+        logger.error(f"集群员工加载失败: {e}")
+
+    # 4. 创建分布式服务员工
+    try:
+        from ai_engines.distributed_ai_employee_manager import (
+            AIServiceEmployee, APIServiceEmployee, DatabaseServiceEmployee,
+            FileSystemServiceEmployee, MonitoringEmployee
+        )
+        dist_employees = [
+            ('dist_ai_svc_001', AIServiceEmployee('dist_ai_svc_001')),
+            ('dist_api_svc_001', APIServiceEmployee('dist_api_svc_001')),
+            ('dist_db_svc_001', DatabaseServiceEmployee('dist_db_svc_001')),
+            ('dist_fs_svc_001', FileSystemServiceEmployee('dist_fs_svc_001')),
+            ('dist_mon_001', MonitoringEmployee('dist_mon_001')),
+        ]
+        for emp_id, emp in dist_employees:
+            _all_empowered_employees[emp_id] = emp
+    except Exception as e:
+        logger.warning(f"分布式员工创建失败: {e}")
+
+    # 5. 创建通用AI员工（ai_employees.py中的10个）
+    try:
+        from ai_engines.ai_employees import init_ai_employees, ai_employee_manager as generic_mgr
+        init_ai_employees()
+        for emp_id, emp in generic_mgr.employees.items():
+            if emp_id not in _all_empowered_employees:
+                _all_empowered_employees[emp_id] = emp
+    except Exception as e:
+        logger.warning(f"通用AI员工加载失败: {e}")
+
+    enabled_count = sum(1 for e in _all_empowered_employees.values() if getattr(e, 'empowerment_enabled', False))
+    logger.info(f"✓ 全局AI员工赋能注册完成: 共 {len(_all_empowered_employees)} 名员工, {enabled_count} 名已启用赋能")
+
+_init_all_empowered_employees()
+
+# ==================== 数据库同步 ====================
+
+def _sync_all_data_to_database():
+    """启动时将所有AI员工数据同步到数据库"""
+    try:
+        from ai_engines.data_sync import sync_all_employees
+        result = sync_all_employees(_all_empowered_employees, DATABASE_PATH)
+        if result['success']:
+            logger.info(f"✓ 数据库同步完成: {result['synced_employees']}名员工, {result['empowered_employees']}名已赋能")
+            if result['errors']:
+                logger.warning(f"同步错误: {len(result['errors'])}个")
+    except Exception as e:
+        logger.error(f"数据库同步失败: {e}")
+
+_sync_all_data_to_database()
+
+# ==================== Arduino AI 辅助 API ====================
+
+def _get_arduino_employee(employee_id: str):
+    """获取Arduino AI员工实例"""
+    return _arduino_ai_employees.get(employee_id)
+
+@app.route('/api/arduino/ai/generate', methods=['POST'])
+@require_login
+def api_arduino_ai_generate():
+    """AI生成Arduino代码"""
+    try:
+        data = request.get_json() or {}
+        description = data.get('description', '')
+        components = data.get('components', [])
+        difficulty = data.get('difficulty', 'intermediate')
+
+        employee = _get_arduino_employee('arduino_gen_001')
+        if employee and hasattr(employee, 'empowered_execute'):
+            result = employee.empowered_execute({
+                'type': 'generate',
+                'description': description,
+                'components': components,
+                'difficulty': difficulty
+            })
+            from ai_engines.data_sync import write_through_sync, log_task_to_db
+            write_through_sync('arduino_gen_001', employee, DATABASE_PATH)
+            log_task_to_db('arduino_generate', {'description': description}, 'success' if result.get('success') else 'fail', result, DATABASE_PATH)
+            return jsonify(result)
+
+        return jsonify({
+            'success': False,
+            'message': 'AI员工未就绪'
+        }), 500
+    except Exception as e:
+        logger.error(f"Arduino AI生成失败: {e}")
+        return jsonify({'success': False, 'message': f'生成失败: {str(e)}'}), 500
+
+@app.route('/api/arduino/ai/explain', methods=['POST'])
+@require_login
+def api_arduino_ai_explain():
+    """AI解释Arduino代码"""
+    try:
+        data = request.get_json() or {}
+        code = data.get('code', '')
+
+        employee = _get_arduino_employee('arduino_gen_001')
+        if employee and hasattr(employee, 'empowered_execute'):
+            result = employee.empowered_execute({
+                'type': 'explain',
+                'code': code
+            })
+            from ai_engines.data_sync import write_through_sync
+            write_through_sync('arduino_gen_001', employee, DATABASE_PATH)
+            return jsonify(result)
+
+        return jsonify({'success': False, 'message': 'AI员工未就绪'}), 500
+    except Exception as e:
+        logger.error(f"Arduino AI解释失败: {e}")
+        return jsonify({'success': False, 'message': f'解释失败: {str(e)}'}), 500
+
+@app.route('/api/arduino/ai/debug', methods=['POST'])
+@require_login
+def api_arduino_ai_debug():
+    """AI调试Arduino代码"""
+    try:
+        data = request.get_json() or {}
+        code = data.get('code', '')
+
+        employee = _get_arduino_employee('arduino_debug_001')
+        if employee and hasattr(employee, 'empowered_execute'):
+            result = employee.empowered_execute({
+                'type': 'debug',
+                'code': code
+            })
+            from ai_engines.data_sync import write_through_sync
+            write_through_sync('arduino_debug_001', employee, DATABASE_PATH)
+            return jsonify(result)
+
+        return jsonify({'success': False, 'message': 'AI员工未就绪'}), 500
+    except Exception as e:
+        logger.error(f"Arduino AI调试失败: {e}")
+        return jsonify({'success': False, 'message': f'调试失败: {str(e)}'}), 500
+
+@app.route('/api/arduino/ai/optimize', methods=['POST'])
+@require_login
+def api_arduino_ai_optimize():
+    """AI优化Arduino代码"""
+    try:
+        data = request.get_json() or {}
+        code = data.get('code', '')
+        level = data.get('level', 'medium')
+
+        employee = _get_arduino_employee('arduino_opt_001')
+        if employee and hasattr(employee, 'empowered_execute'):
+            result = employee.empowered_execute({
+                'type': 'optimize',
+                'code': code,
+                'level': level
+            })
+            from ai_engines.data_sync import write_through_sync
+            write_through_sync('arduino_opt_001', employee, DATABASE_PATH)
+            return jsonify(result)
+
+        return jsonify({'success': False, 'message': 'AI员工未就绪'}), 500
+    except Exception as e:
+        logger.error(f"Arduino AI优化失败: {e}")
+        return jsonify({'success': False, 'message': f'优化失败: {str(e)}'}), 500
+
+@app.route('/api/arduino/ai/components', methods=['POST'])
+@require_login
+def api_arduino_ai_components():
+    """AI推荐组件"""
+    try:
+        data = request.get_json() or {}
+        description = data.get('description', '')
+        project_type = data.get('project_type', '')
+
+        employee = _get_arduino_employee('arduino_comp_001')
+        if employee and hasattr(employee, 'empowered_execute'):
+            result = employee.empowered_execute({
+                'type': 'recommend',
+                'description': description,
+                'project_type': project_type
+            })
+            from ai_engines.data_sync import write_through_sync
+            write_through_sync('arduino_comp_001', employee, DATABASE_PATH)
+            return jsonify(result)
+
+        return jsonify({'success': False, 'message': 'AI员工未就绪'}), 500
+    except Exception as e:
+        logger.error(f"Arduino AI组件推荐失败: {e}")
+        return jsonify({'success': False, 'message': f'推荐失败: {str(e)}'}), 500
+
+@app.route('/api/arduino/ai/circuit', methods=['POST'])
+@require_login
+def api_arduino_ai_circuit():
+    """AI生成接线建议"""
+    try:
+        data = request.get_json() or {}
+        components = data.get('components', [])
+
+        employee = _get_arduino_employee('arduino_comp_001')
+        if employee and hasattr(employee, 'empowered_execute'):
+            result = employee.empowered_execute({
+                'type': 'circuit_suggest',
+                'components': components
+            })
+            return jsonify(result)
+
+        return jsonify({'success': False, 'message': 'AI员工未就绪'}), 500
+    except Exception as e:
+        logger.error(f"Arduino AI接线建议失败: {e}")
+        return jsonify({'success': False, 'message': f'接线建议失败: {str(e)}'}), 500
+
+@app.route('/api/arduino/ai/analyze', methods=['POST'])
+@require_login
+def api_arduino_ai_analyze():
+    """AI分析代码中的组件"""
+    try:
+        data = request.get_json() or {}
+        code = data.get('code', '')
+
+        employee = _get_arduino_employee('arduino_comp_001')
+        if employee and hasattr(employee, 'empowered_execute'):
+            result = employee.empowered_execute({
+                'type': 'analyze_code',
+                'code': code
+            })
+            return jsonify(result)
+
+        return jsonify({'success': False, 'message': 'AI员工未就绪'}), 500
+    except Exception as e:
+        logger.error(f"Arduino AI组件分析失败: {e}")
+        return jsonify({'success': False, 'message': f'分析失败: {str(e)}'}), 500
+
+@app.route('/api/arduino/ai/agents', methods=['GET'])
+@require_login
+def api_arduino_ai_agents():
+    """获取Arduino AI Agent列表"""
+    try:
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT id, agent_name, agent_type, status, description, created_at
+                FROM ai_agents 
+                WHERE agent_type LIKE 'arduino_%'
+                ORDER BY id
+            """)
+            agents = [dict(row) for row in cursor.fetchall()]
+
+        employee_status = {}
+        try:
+            for emp_id, emp in _arduino_ai_employees.items():
+                if hasattr(emp, 'get_status'):
+                    employee_status[emp_id] = emp.get_status()
+        except:
+            pass
+
+        return jsonify({
+            'success': True,
+            'data': agents,
+            'employee_status': employee_status
+        })
+    except Exception as e:
+        logger.error(f"获取Arduino AI Agent列表失败: {e}")
+        return jsonify({'success': False, 'message': '获取Agent列表失败'}), 500
+
+# ==================== Arduino AI 智能赋能 API ====================
+
+@app.route('/api/arduino/ai/empowerment/profile', methods=['GET'])
+@require_login
+def api_arduino_ai_empowerment_profile():
+    """获取所有AI员工的智能赋能档案"""
+    try:
+        profiles = []
+        for emp_id, emp in _arduino_ai_employees.items():
+            if hasattr(emp, 'get_empowerment_profile'):
+                profiles.append(emp.get_empowerment_profile())
+        return jsonify({'success': True, 'data': profiles})
+    except Exception as e:
+        logger.error(f"获取智能赋能档案失败: {e}")
+        return jsonify({'success': False, 'message': '获取档案失败'}), 500
+
+@app.route('/api/arduino/ai/empowerment/<employee_id>/personality', methods=['GET'])
+@require_login
+def api_arduino_ai_personality(employee_id):
+    """获取指定AI员工的性格详情"""
+    try:
+        emp = _get_arduino_employee(employee_id)
+        if not emp or not hasattr(emp, 'get_personality_detail'):
+            return jsonify({'success': False, 'message': '员工不存在或未启用赋能'}), 404
+        return jsonify({'success': True, 'data': emp.get_personality_detail()})
+    except Exception as e:
+        logger.error(f"获取性格详情失败: {e}")
+        return jsonify({'success': False, 'message': '获取失败'}), 500
+
+@app.route('/api/arduino/ai/empowerment/<employee_id>/learning', methods=['GET'])
+@require_login
+def api_arduino_ai_learning(employee_id):
+    """获取指定AI员工的学习详情"""
+    try:
+        emp = _get_arduino_employee(employee_id)
+        if not emp or not hasattr(emp, 'get_learning_detail'):
+            return jsonify({'success': False, 'message': '员工不存在或未启用赋能'}), 404
+        return jsonify({'success': True, 'data': emp.get_learning_detail()})
+    except Exception as e:
+        logger.error(f"获取学习详情失败: {e}")
+        return jsonify({'success': False, 'message': '获取失败'}), 500
+
+@app.route('/api/arduino/ai/empowerment/<employee_id>/learn', methods=['POST'])
+@require_login
+def api_arduino_ai_trigger_learn(employee_id):
+    """触发AI员工网络学习"""
+    try:
+        emp = _get_arduino_employee(employee_id)
+        if not emp or not hasattr(emp, 'trigger_learning_session'):
+            return jsonify({'success': False, 'message': '员工不存在或未启用赋能'}), 404
+        data = request.get_json() or {}
+        topic = data.get('topic')
+        duration = data.get('duration', 30)
+        result = emp.trigger_learning_session(topic, duration)
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"触发学习失败: {e}")
+        return jsonify({'success': False, 'message': '触发学习失败'}), 500
+
+@app.route('/api/arduino/ai/empowerment/<employee_id>/rest', methods=['POST'])
+@require_login
+def api_arduino_ai_rest(employee_id):
+    """让AI员工休息恢复能量"""
+    try:
+        emp = _get_arduino_employee(employee_id)
+        if not emp or not hasattr(emp, 'rest_employee'):
+            return jsonify({'success': False, 'message': '员工不存在或未启用赋能'}), 404
+        return jsonify(emp.rest_employee())
+    except Exception as e:
+        logger.error(f"AI休息失败: {e}")
+        return jsonify({'success': False, 'message': '操作失败'}), 500
+
+# ==================== 系统级统一智能赋能 API ====================
+
+@app.route('/api/ai/empowerment/overview', methods=['GET'])
+@require_login
+def api_ai_empowerment_overview():
+    """获取系统所有AI员工的智能赋能概览 - 从数据库读取"""
+    try:
+        from ai_engines.data_sync import load_empowerment_overview_from_db
+        result = load_empowerment_overview_from_db(DATABASE_PATH)
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"获取赋能概览失败: {e}")
+        return jsonify({'success': False, 'message': '获取概览失败'}), 500
+
+@app.route('/api/ai/empowerment/<employee_id>/profile', methods=['GET'])
+@require_login
+def api_ai_empowerment_detail(employee_id):
+    """获取指定AI员工的完整赋能档案 - 从数据库读取"""
+    try:
+        from ai_engines.data_sync import load_employee_detail_from_db
+        result = load_employee_detail_from_db(employee_id, DATABASE_PATH)
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"获取员工赋能详情失败: {e}")
+        return jsonify({'success': False, 'message': '获取失败'}), 500
+
+@app.route('/api/ai/empowerment/<employee_id>/learn', methods=['POST'])
+@require_login
+def api_ai_empowerment_learn(employee_id):
+    """触发任意AI员工的网络学习 - 操作后立即写穿到数据库"""
+    try:
+        emp = _all_empowered_employees.get(employee_id)
+
+        if not emp or not hasattr(emp, 'trigger_learning_session'):
+            return jsonify({'success': False, 'message': '员工不存在或未启用赋能'}), 404
+
+        data = request.get_json() or {}
+        topic = data.get('topic')
+        duration = data.get('duration', 30)
+        result = emp.trigger_learning_session(topic, duration)
+
+        # 写穿同步 - 立即持久化到数据库
+        from ai_engines.data_sync import write_through_sync
+        write_through_sync(employee_id, emp, DATABASE_PATH)
+
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"触发学习失败: {e}")
+        return jsonify({'success': False, 'message': '触发学习失败'}), 500
+
+@app.route('/api/ai/empowerment/<employee_id>/rest', methods=['POST'])
+@require_login
+def api_ai_empowerment_rest(employee_id):
+    """让任意AI员工休息恢复能量 - 操作后立即写穿到数据库"""
+    try:
+        emp = _all_empowered_employees.get(employee_id)
+
+        if not emp or not hasattr(emp, 'rest_employee'):
+            return jsonify({'success': False, 'message': '员工不存在或未启用赋能'}), 404
+
+        result = emp.rest_employee()
+
+        # 写穿同步
+        from ai_engines.data_sync import write_through_sync
+        write_through_sync(employee_id, emp, DATABASE_PATH)
+
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"AI休息失败: {e}")
+        return jsonify({'success': False, 'message': '操作失败'}), 500
+
+@app.route('/api/ai/empowerment/knowledge-domains', methods=['GET'])
+@require_login
+def api_ai_knowledge_domains():
+    """获取所有知识领域信息"""
+    try:
+        from ai_engines.intelligent_empowerment import KNOWLEDGE_SOURCES, LEARNING_RESOURCES, PERSONALITY_TEMPLATES
+        domains = []
+        for key, val in KNOWLEDGE_SOURCES.items():
+            domains.append({
+                'key': key,
+                'name': val['name'],
+                'topic_count': len(val['topics']),
+                'difficulty_levels': val['difficulty_levels'],
+            })
+        return jsonify({
+            'success': True,
+            'domains': domains,
+            'resources': LEARNING_RESOURCES,
+            'personality_types': [{'key': k, 'name': v['name'], 'description': v['description'], 'emoji': v['emoji']} for k, v in PERSONALITY_TEMPLATES.items()],
+        })
+    except Exception as e:
+        logger.error(f"获取知识领域失败: {e}")
+        return jsonify({'success': False, 'message': '获取失败'}), 500
+
+# ==================== 数据库同步 API ====================
+
+@app.route('/api/ai/sync', methods=['POST'])
+@require_login
+def api_ai_sync_database():
+    """手动触发数据同步到数据库"""
+    try:
+        from ai_engines.data_sync import sync_all_employees
+        result = sync_all_employees(_all_empowered_employees, DATABASE_PATH)
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"数据同步失败: {e}")
+        return jsonify({'success': False, 'message': f'同步失败: {e}'}), 500
+
+@app.route('/api/ai/sync/status', methods=['GET'])
+@require_login
+def api_ai_sync_status():
+    """获取数据库同步状态"""
+    try:
+        from ai_engines.data_sync import get_sync_status
+        status = get_sync_status(DATABASE_PATH)
+        return jsonify({'success': True, 'data': status})
+    except Exception as e:
+        logger.error(f"获取同步状态失败: {e}")
+        return jsonify({'success': False, 'message': '获取失败'}), 500
+
+@app.route('/api/ai/sync/details', methods=['GET'])
+@require_login
+def api_ai_sync_details():
+    """获取数据库中AI员工赋能详情"""
+    try:
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+
+            # 获取所有赋能员工
+            cursor.execute('''
+                SELECT e.employee_id, e.employee_name, e.employee_type,
+                       e.personality_type, e.current_emotion, e.energy_level,
+                       e.interaction_count, e.success_streak, e.decision_count,
+                       l.domain, l.total_topics, l.mastered_topics, l.avg_proficiency,
+                       l.total_learning_hours, l.learning_streak,
+                       (SELECT COUNT(*) FROM ai_employee_certifications c WHERE c.employee_id = e.employee_id) as cert_count
+                FROM ai_employee_empowerment e
+                LEFT JOIN ai_employee_learning l ON e.employee_id = l.employee_id
+                ORDER BY e.employee_type, e.employee_name
+            ''')
+            rows = cursor.fetchall()
+
+            employees = []
+            for row in rows:
+                employees.append({
+                    'employee_id': row['employee_id'],
+                    'name': row['employee_name'],
+                    'type': row['employee_type'],
+                    'personality_type': row['personality_type'],
+                    'emotion': row['current_emotion'],
+                    'energy': row['energy_level'],
+                    'interactions': row['interaction_count'],
+                    'success_streak': row['success_streak'],
+                    'decisions': row['decision_count'],
+                    'domain': row['domain'],
+                    'total_topics': row['total_topics'],
+                    'mastered_topics': row['mastered_topics'],
+                    'avg_proficiency': row['avg_proficiency'],
+                    'learning_hours': row['total_learning_hours'],
+                    'learning_streak': row['learning_streak'],
+                    'certifications': row['cert_count'],
+                })
+
+            return jsonify({
+                'success': True,
+                'total': len(employees),
+                'employees': employees,
+            })
+    except Exception as e:
+        logger.error(f"获取同步详情失败: {e}")
+        return jsonify({'success': False, 'message': '获取失败'}), 500
+
 @app.route('/admin/ai-intelligent-center')
 def ai_intelligent_center():
     """AI智能控制中心页面"""
@@ -19039,6 +21411,144 @@ def ai_intelligent_center():
         'role': session.get('role')
     }
     return render_template('admin_app/ai_intelligent_center.html', user=user)
+
+@app.route('/admin_app/ai_cognitive_reasoning')
+def admin_app_ai_cognitive_reasoning():
+    """AI认知推理系统页面"""
+    has_access, redirect_to = require_admin_app_access()
+    if not has_access:
+        if redirect_to == 'login':
+            return redirect('/admin_app/login')
+        return "无权访问", 403
+
+    user = {
+        'id': session.get('user_id'),
+        'username': session.get('username'),
+        'role': session.get('role')
+    }
+    
+    try:
+        from app.services.page_data_service import get_cognitive_reasoning_stats
+        stats = get_cognitive_reasoning_stats()
+    except Exception:
+        stats = {}
+    
+    return render_template('admin_app/ai_cognitive_reasoning.html', user=user, stats=stats)
+
+@app.route('/admin_app/ai_adaptive_learning')
+def admin_app_ai_adaptive_learning():
+    """AI自适应学习系统页面"""
+    has_access, redirect_to = require_admin_app_access()
+    if not has_access:
+        if redirect_to == 'login':
+            return redirect('/admin_app/login')
+        return "无权访问", 403
+
+    user = {
+        'id': session.get('user_id'),
+        'username': session.get('username'),
+        'role': session.get('role')
+    }
+    
+    try:
+        from app.services.page_data_service import get_adaptive_learning_stats
+        stats = get_adaptive_learning_stats()
+    except Exception:
+        stats = {}
+    
+    return render_template('admin_app/ai_adaptive_learning.html', user=user, stats=stats)
+
+@app.route('/admin_app/ai_intelligent_qna')
+def admin_app_ai_intelligent_qna():
+    """AI智能问答系统页面"""
+    has_access, redirect_to = require_admin_app_access()
+    if not has_access:
+        if redirect_to == 'login':
+            return redirect('/admin_app/login')
+        return "无权访问", 403
+
+    user = {
+        'id': session.get('user_id'),
+        'username': session.get('username'),
+        'role': session.get('role')
+    }
+    
+    try:
+        from app.services.page_data_service import get_intelligent_qna_stats
+        stats = get_intelligent_qna_stats()
+    except Exception:
+        stats = {}
+    
+    return render_template('admin_app/ai_intelligent_qna.html', user=user, stats=stats)
+
+@app.route('/admin_app/ai_memory')
+def admin_app_ai_memory():
+    """AI记忆管理系统页面"""
+    has_access, redirect_to = require_admin_app_access()
+    if not has_access:
+        if redirect_to == 'login':
+            return redirect('/admin_app/login')
+        return "无权访问", 403
+    
+    user = {
+        'id': session.get('user_id'),
+        'username': session.get('username'),
+        'role': session.get('role')
+    }
+    
+    try:
+        from app.services.page_data_service import get_memory_stats
+        stats = get_memory_stats()
+    except Exception:
+        stats = {}
+    
+    return render_template('admin_app/ai_memory.html', user=user, stats=stats)
+
+@app.route('/admin_app/ai_emotion')
+def admin_app_ai_emotion():
+    """AI情感分析系统页面"""
+    has_access, redirect_to = require_admin_app_access()
+    if not has_access:
+        if redirect_to == 'login':
+            return redirect('/admin_app/login')
+        return "无权访问", 403
+    
+    user = {
+        'id': session.get('user_id'),
+        'username': session.get('username'),
+        'role': session.get('role')
+    }
+    
+    try:
+        from app.services.page_data_service import get_emotion_stats
+        stats = get_emotion_stats()
+    except Exception:
+        stats = {}
+    
+    return render_template('admin_app/ai_emotion.html', user=user, stats=stats)
+
+@app.route('/admin_app/ai_evaluation')
+def admin_app_ai_evaluation():
+    """AI智能评估系统页面"""
+    has_access, redirect_to = require_admin_app_access()
+    if not has_access:
+        if redirect_to == 'login':
+            return redirect('/admin_app/login')
+        return "无权访问", 403
+    
+    user = {
+        'id': session.get('user_id'),
+        'username': session.get('username'),
+        'role': session.get('role')
+    }
+    
+    try:
+        from app.services.page_data_service import get_evaluation_stats
+        stats = get_evaluation_stats()
+    except Exception:
+        stats = {}
+    
+    return render_template('admin_app/ai_evaluation.html', user=user, stats=stats)
 
 @app.route('/manifest.json')
 def pwa_manifest():

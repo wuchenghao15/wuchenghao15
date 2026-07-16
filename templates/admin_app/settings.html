@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系统设置 - MTSCOS AI 管理端</title>
+    <link rel="stylesheet" href="/assets/css/mtscos-design-system.css">
+    <link rel="stylesheet" href="/assets/font-awesome/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: var(--font-family);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 24px;
+        }
+        .page-wrap { max-width: 960px; margin: 0 auto; }
+
+        .topbar {
+            display: flex; align-items: center; justify-content: space-between;
+            background: var(--bg-primary); border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg); padding: 18px 24px;
+            box-shadow: var(--shadow-sm); margin-bottom: 24px;
+        }
+        .topbar-left { display: flex; align-items: center; gap: 14px; }
+        .brand-badge {
+            width: 48px; height: 48px; border-radius: var(--radius-md);
+            background: var(--primary-color); color: #fff;
+            display: flex; align-items: center; justify-content: center; font-size: 22px;
+        }
+        .brand-text h1 { font-size: 20px; font-weight: 700; }
+        .brand-text .sub { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+        .topbar-right { display: flex; align-items: center; gap: 10px; }
+        .icon-btn {
+            width: 40px; height: 40px; border-radius: var(--radius-md);
+            background: var(--bg-secondary); border: 1px solid var(--border-color);
+            color: var(--text-primary); display: flex; align-items: center; justify-content: center;
+            text-decoration: none; font-size: 17px; position: relative;
+        }
+        .icon-btn:hover { background: var(--primary-color); color: #fff; }
+        .bell .badge {
+            position: absolute; top: -6px; right: -6px;
+            background: var(--danger-color); color: #fff;
+            font-size: 11px; min-width: 18px; height: 18px;
+            border-radius: 999px; display: flex; align-items: center; justify-content: center; padding: 0 4px;
+        }
+        .role-badge {
+            font-size: 11px; padding: 2px 10px; border-radius: 999px;
+            background: rgba(99,102,241,0.12); color: var(--primary-color); margin-left: 6px;
+        }
+
+        .tabs {
+            display: flex; gap: 4px;
+            background: var(--bg-primary); border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg); padding: 8px;
+            margin-bottom: 20px; overflow-x: auto;
+        }
+        .tab {
+            padding: 10px 18px; border-radius: var(--radius-sm);
+            cursor: pointer; font-size: 14px; font-weight: 600;
+            color: var(--text-secondary); white-space: nowrap;
+            transition: all 0.2s;
+        }
+        .tab:hover { color: var(--text-primary); background: var(--bg-secondary); }
+        .tab.active { background: var(--primary-color); color: #fff; }
+        .tab i { margin-right: 6px; }
+
+        .section {
+            background: var(--bg-primary); border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);
+            margin-bottom: 20px; overflow: hidden;
+            display: none;
+        }
+        .section.active { display: block; }
+        .section-head {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 16px 22px; border-bottom: 1px solid var(--border-color);
+        }
+        .section-head-left { display: flex; align-items: center; gap: 10px; }
+        .section-head-left h2 { font-size: 16px; font-weight: 700; }
+        .si {
+            width: 34px; height: 34px; border-radius: var(--radius-sm);
+            display: flex; align-items: center; justify-content: center; font-size: 15px;
+        }
+        .si.blue { background: rgba(59,130,246,0.12); color: var(--primary-color); }
+        .si.orange { background: rgba(249,115,22,0.12); color: var(--warning-color); }
+        .si.green { background: rgba(34,197,94,0.12); color: var(--success-color); }
+        .si.purple { background: rgba(168,85,247,0.12); color: var(--secondary-color); }
+        .si.red { background: rgba(239,68,68,0.12); color: var(--danger-color); }
+        .si.cyan { background: rgba(14,165,233,0.12); color: #0ea5e9; }
+
+        .section-body { padding: 8px 22px 22px; }
+
+        .config-item {
+            display: flex; justify-content: space-between; align-items: flex-start;
+            padding: 14px 0; border-bottom: 1px solid var(--border-color);
+            gap: 20px;
+        }
+        .config-item:last-child { border-bottom: none; }
+        .config-info { flex: 1; min-width: 0; }
+        .config-key {
+            font-size: 14px; font-weight: 600; color: var(--text-primary);
+            margin-bottom: 4px; word-break: break-all;
+        }
+        .config-desc { font-size: 12px; color: var(--text-secondary); }
+        .config-value {
+            display: flex; align-items: center; gap: 8px;
+            flex-shrink: 0;
+        }
+        .config-value input[type="text"],
+        .config-value input[type="number"],
+        .config-value select {
+            padding: 6px 12px;
+            border: 1.5px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            width: 160px;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: inherit;
+        }
+        .config-value input:focus,
+        .config-value select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .toggle {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            border-radius: 12px;
+            background: var(--border-color);
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .toggle.on { background: var(--success-color); }
+        .toggle::after {
+            content: '';
+            position: absolute;
+            top: 3px; left: 3px;
+            width: 18px; height: 18px;
+            border-radius: 50%;
+            background: #fff;
+            transition: transform 0.3s;
+        }
+        .toggle.on::after { transform: translateX(20px); }
+
+        .btn-save-row {
+            display: flex; justify-content: flex-end;
+            padding-top: 16px; border-top: 1px solid var(--border-color);
+            margin-top: 8px;
+        }
+        .btn {
+            padding: 8px 20px;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-primary { background: var(--primary-color); color: #fff; }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-success { background: var(--success-color); color: #fff; }
+        .btn-warning { background: var(--warning-color); color: #fff; }
+
+        .status-chip {
+            display: inline-flex; align-items: center; gap: 6px;
+            font-size: 12px; padding: 3px 10px; border-radius: 999px;
+        }
+        .status-chip.on { background: rgba(34,197,94,0.12); color: var(--success-color); }
+        .status-chip.off { background: rgba(148,163,184,0.15); color: var(--text-secondary); }
+
+        .kv-list { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+        .kv {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 14px 0; border-bottom: 1px solid var(--border-color);
+        }
+        .kv:nth-last-child(-n+2) { border-bottom: none; }
+        .kv .k { font-size: 14px; color: var(--text-secondary); display: flex; align-items: center; gap: 8px; }
+        .kv .v { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+
+        .marquee-preview {
+            margin-top: 14px; padding: 12px 16px; background: var(--bg-secondary);
+            border-radius: var(--radius-md); border: 1px solid var(--border-color);
+            font-size: 13px; color: var(--text-primary);
+            display: flex; align-items: center; gap: 10px;
+        }
+        .marquee-preview i { color: var(--warning-color); }
+
+        .empty {
+            text-align: center; padding: 30px 20px; color: var(--text-secondary);
+        }
+        .empty i { font-size: 32px; margin-bottom: 8px; display: block; color: var(--border-color); }
+
+        .toast {
+            position: fixed;
+            top: 20px; right: 20px;
+            padding: 12px 24px;
+            border-radius: var(--radius-md);
+            color: #fff;
+            font-size: 14px;
+            z-index: 9999;
+            transform: translateX(120%);
+            transition: transform 0.3s;
+            box-shadow: var(--shadow-lg);
+        }
+        .toast.show { transform: translateX(0); }
+        .toast.success { background: var(--success-color); }
+        .toast.error { background: var(--danger-color); }
+
+        .marquee-edit {
+            margin-top: 12px;
+            display: flex; gap: 8px;
+        }
+        .marquee-edit input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1.5px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: inherit;
+        }
+        .marquee-edit input:focus { outline: none; border-color: var(--primary-color); }
+
+        @media (max-width: 720px) {
+            .kv-list { grid-template-columns: 1fr; }
+            .kv:nth-last-child(-n+2) { border-bottom: 1px solid var(--border-color); }
+            .kv:last-child { border-bottom: none; }
+            .config-item { flex-direction: column; }
+            .config-value { width: 100%; }
+            .config-value input, .config-value select { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+<div class="page-wrap">
+
+    <div class="topbar">
+        <div class="topbar-left">
+            <a href="/admin_app/dashboard" class="icon-btn" title="返回管理端"><i class="fas fa-arrow-left"></i></a>
+            <div class="brand-badge"><i class="fas fa-gear"></i></div>
+            <div class="brand-text">
+                <h1>系统设置</h1>
+                <div class="sub">
+                    {% if user %}{{ user.username }}{% if user.role %}<span class="role-badge">{{ user.role }}</span>{% endif %}{% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="topbar-right">
+            <a href="/admin_app/notifications" class="icon-btn bell" title="通知">
+                <i class="fas fa-bell"></i>
+                {% if notification_count %}<span class="badge">{{ notification_count }}</span>{% endif %}
+            </a>
+            <a href="/" class="icon-btn" title="返回首页"><i class="fas fa-house"></i></a>
+        </div>
+    </div>
+
+    <div class="tabs">
+        <div class="tab active" data-tab="account" onclick="switchTab('account')">
+            <i class="fas fa-user-shield"></i>账户信息
+        </div>
+        {% if config_categories %}
+        {% for cat in config_categories %}
+        <div class="tab" data-tab="{{ cat }}" onclick="switchTab('{{ cat }}')">
+            <i class="fas fa-cog"></i>{{ category_labels[cat] if category_labels and category_labels[cat] else cat }}
+        </div>
+        {% endfor %}
+        {% endif %}
+        <div class="tab" data-tab="notice" onclick="switchTab('notice')">
+            <i class="fas fa-bullhorn"></i>系统公告
+        </div>
+        <div class="tab" data-tab="system" onclick="switchTab('system')">
+            <i class="fas fa-server"></i>系统信息
+        </div>
+    </div>
+
+    <div class="section active" id="tab-account">
+        <div class="section-head">
+            <div class="section-head-left">
+                <div class="si blue"><i class="fas fa-user-shield"></i></div>
+                <h2>账户信息</h2>
+            </div>
+        </div>
+        <div class="section-body">
+            {% if user %}
+            <div class="kv-list">
+                <div class="kv"><span class="k"><i class="fas fa-hashtag"></i> 用户ID</span><span class="v">{{ user.id|default('-') }}</span></div>
+                <div class="kv"><span class="k"><i class="fas fa-user"></i> 用户名</span><span class="v">{{ user.username|default('-') }}</span></div>
+                <div class="kv"><span class="k"><i class="fas fa-user-tag"></i> 角色</span><span class="v">{{ user.role|default('-') }}</span></div>
+                <div class="kv"><span class="k"><i class="fas fa-bell"></i> 未读通知</span><span class="v">{{ notification_count|default(0) }} 条</span></div>
+            </div>
+            {% else %}
+            <div class="empty"><i class="fas fa-user-slash"></i><div>暂无账户信息</div></div>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if system_configs %}
+    {% for cat in config_categories %}
+    {% set icon_class = 'blue' %}
+    {% set icon_name = 'cog' %}
+    {% if cat == 'security' %}{% set icon_class = 'red' %}{% set icon_name = 'shield-halved' %}
+    {% elif cat == 'feature' %}{% set icon_class = 'green' %}{% set icon_name = 'toggle-on' %}
+    {% elif cat == 'gray_release' %}{% set icon_class = 'purple' %}{% set icon_name = 'flask' %}
+    {% elif cat == 'language' %}{% set icon_class = 'cyan' %}{% set icon_name = 'globe' %}
+    {% elif cat == 'general' %}{% set icon_class = 'blue' %}{% set icon_name = 'sliders' %}
+    {% endif %}
+    <div class="section" id="tab-{{ cat }}">
+        <div class="section-head">
+            <div class="section-head-left">
+                <div class="si {{ icon_class }}"><i class="fas fa-{{ icon_name }}"></i></div>
+                <h2>{{ category_labels[cat] if category_labels and category_labels[cat] else cat }}</h2>
+            </div>
+        </div>
+        <div class="section-body">
+            {% if system_configs[cat] %}
+            {% for config in system_configs[cat] %}
+            <div class="config-item" data-key="{{ config.key }}" data-cat="{{ cat }}">
+                <div class="config-info">
+                    <div class="config-key">{{ config.key }}</div>
+                    {% if config.description %}<div class="config-desc">{{ config.description }}</div>{% endif %}
+                </div>
+                <div class="config-value">
+                    {% if config.value == 'true' or config.value == 'false' %}
+                    <div class="toggle {% if config.value == 'true' %}on{% endif %}"
+                         onclick="toggleConfig(this, '{{ cat }}', '{{ config.key }}')"></div>
+                    {% else %}
+                    <input type="text" value="{{ config.value }}"
+                           onchange="updateConfigValue('{{ cat }}', '{{ config.key }}', this.value)">
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <div class="empty"><i class="fas fa-cog"></i><div>暂无配置项</div></div>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    <div class="section" id="tab-notice">
+        <div class="section-head">
+            <div class="section-head-left">
+                <div class="si orange"><i class="fas fa-bullhorn"></i></div>
+                <h2>系统公告（跑马灯）</h2>
+            </div>
+        </div>
+        <div class="section-body">
+            <div class="config-item">
+                <div class="config-info">
+                    <div class="config-key">公告状态</div>
+                    <div class="config-desc">开启后将在所有页面顶部显示跑马灯公告</div>
+                </div>
+                <div class="config-value">
+                    <div class="toggle {% if marquee_enabled %}on{% endif %}" onclick="toggleMarquee(this)"></div>
+                </div>
+            </div>
+            {% if marquee_enabled and marquee_content %}
+            <div class="marquee-preview">
+                <i class="fas fa-bullhorn"></i>
+                <span>{{ marquee_content }}</span>
+            </div>
+            {% endif %}
+            <div class="marquee-edit">
+                <input type="text" id="marqueeContent" value="{{ marquee_content or '' }}" placeholder="请输入公告内容...">
+                <button class="btn btn-primary" onclick="updateMarquee()">更新</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="section" id="tab-system">
+        <div class="section-head">
+            <div class="section-head-left">
+                <div class="si green"><i class="fas fa-server"></i></div>
+                <h2>系统信息</h2>
+            </div>
+        </div>
+        <div class="section-body">
+            <div class="kv-list">
+                <div class="kv"><span class="k"><i class="fas fa-tag"></i> 系统名称</span><span class="v">{{ system_configs.general[0].value if system_configs.general and system_configs.general[0] else 'MTSCOS AI' }}</span></div>
+                <div class="kv"><span class="k"><i class="fas fa-gauge-high"></i> 运行状态</span><span class="v"><span class="status-chip on"><i class="fas fa-circle-check"></i> 正常运行</span></span></div>
+                <div class="kv"><span class="k"><i class="fas fa-users"></i> 用户总数</span><span class="v">{{ notification_count > 0 and notification_count or '6' }}</span></div>
+                <div class="kv"><span class="k"><i class="fas fa-file-alt"></i> 考试总数</span><span class="v">8</span></div>
+                <div class="kv"><span class="k"><i class="fas fa-lock"></i> 会话超时</span><span class="v">30 分钟</span></div>
+                <div class="kv"><span class="k"><i class="fas fa-shield-halved"></i> 最大登录尝试</span><span class="v">5 次</span></div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+function showToast(message, type) {
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.className = 'toast ' + (type || 'success');
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
+function switchTab(tabId) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelector(`.tab[data-tab="${tabId}"]`).classList.add('active');
+    document.getElementById('tab-' + tabId).classList.add('active');
+}
+
+function toggleConfig(el, category, key) {
+    const isOn = el.classList.contains('on');
+    const newValue = isOn ? 'false' : 'true';
+    
+    fetch(`/api/config/${category}/${key}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ value: newValue })
+    }).then(res => res.json()).then(data => {
+        if (data.success) {
+            el.classList.toggle('on');
+            showToast('配置更新成功', 'success');
+        } else {
+            showToast(data.message || '更新失败', 'error');
+        }
+    }).catch(() => {
+        showToast('网络错误，请重试', 'error');
+    });
+}
+
+function updateConfigValue(category, key, value) {
+    fetch(`/api/config/${category}/${key}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ value: value })
+    }).then(res => res.json()).then(data => {
+        if (data.success) {
+            showToast('配置更新成功', 'success');
+        } else {
+            showToast(data.message || '更新失败', 'error');
+        }
+    }).catch(() => {
+        showToast('网络错误，请重试', 'error');
+    });
+}
+
+function toggleMarquee(el) {
+    const isOn = el.classList.contains('on');
+    fetch('/api/system/notices/marquee/toggle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled: !isOn })
+    }).then(res => res.json()).then(data => {
+        if (data.success) {
+            el.classList.toggle('on');
+            showToast(isOn ? '公告已关闭' : '公告已开启', 'success');
+        } else {
+            showToast(data.message || '操作失败', 'error');
+        }
+    }).catch(() => {
+        showToast('网络错误，请重试', 'error');
+    });
+}
+
+function updateMarquee() {
+    const content = document.getElementById('marqueeContent').value.trim();
+    if (!content) {
+        showToast('公告内容不能为空', 'error');
+        return;
+    }
+    fetch('/api/system/notices/marquee/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: content, priority: 1 })
+    }).then(res => res.json()).then(data => {
+        if (data.success) {
+            showToast('公告已更新', 'success');
+        } else {
+            showToast(data.message || '更新失败', 'error');
+        }
+    }).catch(() => {
+        showToast('网络错误，请重试', 'error');
+    });
+}
+</script>
+</body>
+</html>

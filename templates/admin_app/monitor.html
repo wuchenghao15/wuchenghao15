@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系统监控</title>
+    <link rel="stylesheet" href="/assets/css/mtscos-design-system.css">
+    <link rel="stylesheet" href="/assets/font-awesome/css/all.min.css">
+    <style>
+        .log-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        .log-table th, .log-table td { padding: 10px; text-align: left; border-bottom: 1px solid var(--border-color); }
+        .log-table th { background: var(--bg-secondary); color: var(--text-primary); }
+        .log-table tr:hover { background: var(--bg-secondary); }
+        .cpu-bar, .mem-bar { height: 20px; background: var(--bg-secondary); border-radius: 10px; overflow: hidden; }
+        .cpu-fill, .mem-fill { height: 100%; border-radius: 10px; transition: width 0.3s; }
+        .cpu-fill { background: linear-gradient(90deg, var(--warning-color), var(--error-color)); }
+        .mem-fill { background: linear-gradient(90deg, var(--primary-color), var(--secondary-color)); }
+        .status-indicator { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 8px; }
+        .status-online { background: var(--success-color); }
+        .status-offline { background: var(--error-color); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-server"></i> 系统监控</h1>
+            <div class="user-info">
+                <span>欢迎, {{ user.username }}</span>
+                {% if notification_count > 0 %}
+                <span class="notification-badge">{{ notification_count }}</span>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="nav-bar">
+            <ul>
+                <li><a href="/admin_app/dashboard">管理首页</a></li>
+                <li><a href="/admin_app/users">用户管理</a></li>
+                <li><a href="/admin_app/exams">考试管理</a></li>
+                <li><a href="/admin_app/monitor" class="active">系统监控</a></li>
+            </ul>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon bg-primary"><i class="fas fa-clock"></i></div>
+                <div class="stat-info">
+                    <div class="stat-value">{{ uptime }}%</div>
+                    <div class="stat-label">系统运行时间</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon bg-success"><i class="fas fa-users"></i></div>
+                <div class="stat-info">
+                    <div class="stat-value">{{ total_users }}</div>
+                    <div class="stat-label">总用户数</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon bg-warning"><i class="fas fa-file-alt"></i></div>
+                <div class="stat-info">
+                    <div class="stat-value">{{ total_exams }}</div>
+                    <div class="stat-label">考试总数</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon bg-secondary"><i class="fas fa-database"></i></div>
+                <div class="stat-info">
+                    <div class="stat-value">{{ db_size }} MB</div>
+                    <div class="stat-label">数据库大小</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">系统状态</h3>
+            </div>
+            <div class="card-body">
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <span class="detail-label">CPU使用率</span>
+                        <div class="cpu-bar"><div class="cpu-fill" style="width: {{ cpu_usage }}%"></div></div>
+                        <span class="detail-value">{{ cpu_usage }}%</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">内存使用率</span>
+                        <div class="mem-bar"><div class="mem-fill" style="width: {{ memory_usage }}%"></div></div>
+                        <span class="detail-value">{{ memory_usage }}%</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">活跃用户</span>
+                        <span class="detail-value"><span class="status-indicator status-online"></span>{{ active_users }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">今日查询</span>
+                        <span class="detail-value">{{ db_queries }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">题目总数</span>
+                        <span class="detail-value">{{ total_questions }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">试卷总数</span>
+                        <span class="detail-value">{{ total_papers }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">已完成考试</span>
+                        <span class="detail-value">{{ completed_exams }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">最近访问日志</h3>
+            </div>
+            <div class="card-body">
+                <table class="log-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>路径</th>
+                            <th>方法</th>
+                            <th>用户</th>
+                            <th>IP</th>
+                            <th>时间</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs %}
+                        <tr>
+                            <td>{{ log.id }}</td>
+                            <td>{{ log.path }}</td>
+                            <td>{{ log.method }}</td>
+                            <td>{{ log.username }}</td>
+                            <td>{{ log.ip_address }}</td>
+                            <td>{{ log.access_time }}</td>
+                        </tr>
+                        {% endfor %}
+                        {% if not logs %}
+                        <tr><td colspan="6" class="empty-state">暂无日志数据</td></tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

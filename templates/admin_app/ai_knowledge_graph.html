@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI知识图谱系统</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%); min-height: 100vh; }
+        .container { padding: 20px; max-width: 1400px; margin: 0 auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; color: white; }
+        .header h1 { font-size: 26px; }
+        .header .user-info { display: flex; align-items: center; gap: 15px; }
+        .nav-bar { background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); padding: 15px 20px; margin-bottom: 20px; border-radius: 10px; }
+        .nav-bar ul { list-style: none; display: flex; gap: 20px; }
+        .nav-bar ul li a { color: white; text-decoration: none; padding: 8px 15px; border-radius: 6px; transition: background 0.3s; }
+        .nav-bar ul li a:hover, .nav-bar ul li a.active { background: rgba(255,255,255,0.2); }
+        .main-content { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .card { background: white; border-radius: 12px; padding: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .card h2 { font-size: 18px; color: #333; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-size: 13px; color: #555; margin-bottom: 5px; }
+        .form-group select, .form-group input, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+        .form-group textarea { height: 100px; resize: vertical; }
+        .btn { padding: 10px 20px; border-radius: 6px; border: none; cursor: pointer; font-size: 14px; font-weight: 500; }
+        .btn-primary { background: #06b6d4; color: white; }
+        .btn-primary:hover { background: #0891b2; }
+        .btn-success { background: #10b981; color: white; }
+        .btn-success:hover { background: #059669; }
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px; }
+        .stat-item { background: white; border-radius: 10px; padding: 15px; text-align: center; }
+        .stat-item .value { font-size: 24px; font-weight: bold; color: #06b6d4; }
+        .stat-item .label { font-size: 12px; color: #666; margin-top: 5px; }
+        .table-container { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        table th, table td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; font-size: 13px; }
+        table th { background: #f8f9fa; color: #555; font-weight: 600; }
+        table tr:hover { background: #f9fafb; }
+        .graph-placeholder { height: 400px; background: #f8f9fa; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #999; }
+        @media (max-width: 768px) { .main-content { grid-template-columns: 1fr; } .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-project-diagram"></i> AI知识图谱系统</h1>
+            <div class="user-info">
+                <span>欢迎, {{ user.username }}</span>
+            </div>
+        </div>
+        
+        <div class="nav-bar">
+            <ul>
+                <li><a href="/admin_app/dashboard">管理首页</a></li>
+                <li><a href="/admin_app/ai_learning_dashboard">AI学习仪表盘</a></li>
+                <li><a href="/admin_app/ai_knowledge_graph" class="active">知识图谱</a></li>
+                <li><a href="/admin_app/ai_cognitive_reasoning">认知推理</a></li>
+            </ul>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-item">
+                <div class="value">{{ graph_stats.get('total_nodes', '--') }}</div>
+                <div class="label">节点总数</div>
+            </div>
+            <div class="stat-item">
+                <div class="value">{{ graph_stats.get('total_relations', '--') }}</div>
+                <div class="label">关系总数</div>
+            </div>
+            <div class="stat-item">
+                <div class="value">{{ graph_stats.get('total_categories', '--') }}</div>
+                <div class="label">类别数量</div>
+            </div>
+            <div class="stat-item">
+                <div class="value">{{ graph_stats.get('updated_today', '--') }}</div>
+                <div class="label">今日更新</div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="card" style="grid-column: span 2;">
+                <h2><i class="fas fa-network-wired"></i> 知识图谱可视化</h2>
+                <div class="graph-placeholder">
+                    <div style="text-align: center;">
+                        <i class="fas fa-project-diagram" style="font-size: 48px; margin-bottom: 15px;"></i>
+                        <p>知识图谱可视化区域</p>
+                        <p style="font-size: 12px; margin-top: 5px;">节点数: {{ graph_stats.get('total_nodes', 0) }} | 关系数: {{ graph_stats.get('total_relations', 0) }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2><i class="fas fa-plus-circle"></i> 添加知识节点</h2>
+                <div class="form-group">
+                    <label>节点名称</label>
+                    <input type="text" id="node-name" placeholder="请输入节点名称">
+                </div>
+                <div class="form-group">
+                    <label>节点类别</label>
+                    <select id="node-category">
+                        <option value="concept">概念</option>
+                        <option value="entity">实体</option>
+                        <option value="relation">关系</option>
+                        <option value="attribute">属性</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>节点描述</label>
+                    <textarea id="node-description" placeholder="请输入节点描述"></textarea>
+                </div>
+                <button class="btn btn-success" onclick="addNode()">添加节点</button>
+            </div>
+
+            <div class="card">
+                <h2><i class="fas fa-list"></i> 最近节点</h2>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>名称</th>
+                                <th>类别</th>
+                                <th>描述</th>
+                                <th>创建时间</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for node in graph_stats.get('recent_nodes', []) %}
+                            <tr>
+                                <td>{{ node.name }}</td>
+                                <td>{{ node.category }}</td>
+                                <td>{{ node.description[:30] }}...</td>
+                                <td>{{ node.timestamp }}</td>
+                            </tr>
+                            {% endfor %}
+                            {% if not graph_stats.get('recent_nodes') %}
+                            <tr><td colspan="4" style="text-align: center; color: #999;">暂无节点数据</td></tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function addNode() {
+            const nodeName = document.getElementById('node-name').value;
+            const nodeCategory = document.getElementById('node-category').value;
+            const nodeDescription = document.getElementById('node-description').value;
+            
+            if (!nodeName) {
+                alert('请输入节点名称');
+                return;
+            }
+            
+            alert(`知识节点已添加：\n名称: ${nodeName}\n类别: ${nodeCategory}\n描述: ${nodeDescription}`);
+            document.getElementById('node-name').value = '';
+            document.getElementById('node-description').value = '';
+        }
+    </script>
+</body>
+</html>

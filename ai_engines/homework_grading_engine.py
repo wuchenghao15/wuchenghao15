@@ -32,7 +32,8 @@ DATABASE_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__f
 
 # 题型分类
 AUTO_GRADABLE_TYPES = {'single_choice', 'multiple_choice', 'true_false', 'fill_blank'}
-AI_ASSISTED_TYPES = {'short_answer', 'essay', 'composition', 'listening'}
+AI_ASSISTED_TYPES = {'short_answer', 'essay', 'composition'}
+LISTENING_TYPES = {'listening'}
 
 # 题型中文名
 QUESTION_TYPE_NAMES = {
@@ -325,6 +326,12 @@ class HomeworkGradingEngine:
                             method = 'auto'
                             ai_confidence = 1.0
                             matched_keywords = []
+                        elif qtype in LISTENING_TYPES:
+                            is_correct, score, feedback = self._grade_listening(
+                                qtype, student_answer, correct, max_score, meta)
+                            method = 'listening_auto'
+                            ai_confidence = 0.85
+                            matched_keywords = []
                         else:
                             is_correct, score, feedback, ai_confidence, matched_keywords = self._grade_ai_assisted(
                                 qtype, student_answer, correct, max_score, keywords, meta)
@@ -442,6 +449,61 @@ class HomeworkGradingEngine:
             logger.error(f"自动批改失败: {e}")
             return False, 0, f'批改异常: {e}'
 
+    def _grade_listening(self, qtype: str, student_answer: str, correct_answer: str,
+                        max_score: float, meta: Dict) -> Tuple[bool, float, str]:
+        """听力题批改（基于关键词匹配和语义相似度）"""
+        try:
+            student = str(student_answer or '').strip().lower()
+            correct = str(correct_answer or '').strip().lower()
+            
+            if not student:
+                return False, 0, '未作答'
+            
+            if not correct:
+                return False, 0, '缺少标准答案'
+            
+            listening_rules = meta.get('listening_rules', {})
+            match_mode = listening_rules.get('match_mode', 'semantic')
+            
+            if match_mode == 'exact' or qtype == 'listening_single':
+                if student == correct:
+                    return True, max_score, '答案正确'
+                else:
+                    return False, 0, f'答案错误，正确答案: {correct_answer}'
+            
+            elif match_mode == 'keyword':
+                keywords = listening_rules.get('keywords', [])
+                if not keywords:
+                    keywords = [w.strip() for w in correct.split() if len(w) > 1]
+                
+                matched_count = sum(1 for kw in keywords if kw.lower() in student)
+                if matched_count >= len(keywords):
+                    return True, max_score, '完全正确'
+                elif matched_count > 0:
+                    ratio = matched_count / len(keywords)
+                    score = max_score * ratio
+                    return False, round(score, 1), f'部分正确，关键词匹配 {matched_count}/{len(keywords)}'
+                else:
+                    return False, 0, f'未匹配到关键信息，正确答案: {correct_answer}'
+            
+            else:
+                similarity = self._text_similarity(student, correct)
+                
+                if similarity >= 0.85:
+                    return True, max_score, f'答案正确，相似度: {round(similarity * 100)}%'
+                elif similarity >= 0.6:
+                    score = max_score * similarity
+                    return False, round(score, 1), f'答案基本正确，相似度: {round(similarity * 100)}%'
+                elif similarity >= 0.3:
+                    score = max_score * similarity * 0.5
+                    return False, round(score, 1), f'答案部分正确，相似度: {round(similarity * 100)}%'
+                else:
+                    return False, 0, f'答案错误，正确答案: {correct_answer}'
+        
+        except Exception as e:
+            logger.error(f"听力题批改失败: {e}")
+            return False, 0, f'批改异常: {e}'
+    
     def _grade_ai_assisted(self, qtype: str, student_answer: str, correct_answer: str,
                            max_score: float, keywords: List[str],
                            meta: Dict) -> Tuple[bool, float, str, float, List[str]]:
