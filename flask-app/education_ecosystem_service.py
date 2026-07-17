@@ -1,22 +1,26 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-MTSCOS 教育生态服务 (v15.15.0)
-=============================
-提供教育生态合作伙伴、产业链协同、资源对接、生态合作、行业联盟、
-生态数据共享、生态治理、生态运营等综合管理服务。
+MTSCOS 教育生态系统服务 (v15.22.0)
+====================================
+提供生态合作伙伴管理、资源共享、服务集成、数据互通、标准规范、
+价值共创、风险防控和可持续发展等综合管理服务。
 
 核心能力：
-1. 合作伙伴管理 - 伙伴注册、资质审核、信息维护、关系管理
-2. 合作联盟 - 联盟创建、成员管理、合作协议、联盟活动
-3. 资源对接 - 资源池管理、资源匹配、资源共享、资源交易
-4. 生态数据 - 数据采集、数据共享、数据权限、数据审计
-5. 生态治理 - 治理架构、成员选举、决策管理、规则制定
-6. 生态运营 - 运营计划、运营执行、效果评估、优化调整
-7. 生态活动 - 活动策划、活动报名、活动执行、活动复盘
-8. 收益分配 - 收益计算、分配规则、分配执行
-9. 评价体系 - 伙伴评价、服务评价、评价统计
-10. 统计分析 - 生态数据统计与可视化
+1. 生态合作伙伴 - 合作伙伴管理、关系维护、准入审核、合作协议
+2. 生态资源共享 - 资源注册、权限管理、共享记录、资源检索
+3. 生态服务集成 - 服务注册、服务调用、服务监控、服务评价
+4. 生态数据互通 - 数据交换、数据标准、数据映射、数据质量、数据安全
+5. 生态标准规范 - 标准制定、标准发布、标准认证、合规检查
+6. 生态价值共创 - 价值评估、贡献记录、收益分配、合作共赢
+7. 生态风险防控 - 风险识别、风险评估、风险预警、风险处置
+8. 生态可持续发展 - 可持续评估、指标监控、改进措施、报告生成
+9. 生态监控预警 - 监控数据采集、预警规则、预警触发、历史记录
+10. 生态统计分析 - 综合统计报表
+
+差异化支持：
+- 成人教育
+- K12教育
 """
 import os
 import json
@@ -46,90 +50,96 @@ logger = logging.getLogger('EducationEcosystem')
 # ========== 生态配置 ==========
 
 PARTNER_TYPES = {
-    'school': {'name': '学校', 'education_types': ['k12', 'higher']},
-    'institution': {'name': '教育机构', 'education_types': ['k12', 'higher', 'vocational', 'adult']},
-    'training': {'name': '培训机构', 'education_types': ['k12', 'vocational', 'adult']},
-    'enterprise': {'name': '企业', 'education_types': ['vocational', 'adult']},
-    'government': {'name': '政府', 'education_types': ['k12', 'higher', 'vocational', 'adult']},
-    'ngo': {'name': '社会组织', 'education_types': ['k12', 'higher', 'adult']},
-    'research': {'name': '科研机构', 'education_types': ['higher', 'vocational']},
-    'media': {'name': '媒体', 'education_types': ['k12', 'higher', 'adult']}
-}
-
-COOPERATION_MODELS = {
-    'strategic_alliance': {'name': '战略联盟', 'requires_agreement': True},
-    'project_cooperation': {'name': '项目合作', 'requires_agreement': True},
-    'resource_sharing': {'name': '资源共享', 'requires_agreement': False},
-    'joint_operation': {'name': '联合运营', 'requires_agreement': True},
-    'technical_cooperation': {'name': '技术合作', 'requires_agreement': True},
-    'talent_cooperation': {'name': '人才合作', 'requires_agreement': True},
-    'funding_cooperation': {'name': '资金合作', 'requires_agreement': True},
-    'brand_cooperation': {'name': '品牌合作', 'requires_agreement': True}
-}
-
-ECOSYSTEM_ROLES = {
-    'core_member': {'name': '核心成员', 'permission_level': 5},
-    'strategic_partner': {'name': '战略伙伴', 'permission_level': 4},
-    'regular_member': {'name': '普通成员', 'permission_level': 3},
-    'observer': {'name': '观察员', 'permission_level': 2},
-    'supplier': {'name': '供应商', 'permission_level': 2},
-    'service_provider': {'name': '服务商', 'permission_level': 2},
-    'customer': {'name': '客户', 'permission_level': 1},
-    'investor': {'name': '投资者', 'permission_level': 3}
-}
-
-INDUSTRY_SECTORS = {
-    'k12': {'name': 'K12教育', 'description': '基础教育阶段'},
-    'higher': {'name': '高等教育', 'description': '大学及以上教育'},
-    'vocational': {'name': '职业教育', 'description': '职业技能培训'},
-    'adult': {'name': '成人教育', 'description': '成人继续教育'},
-    'online': {'name': '在线教育', 'description': '互联网教育平台'},
-    'edtech': {'name': '教育科技', 'description': '教育技术与产品'},
-    'publishing': {'name': '教育出版', 'description': '教材与出版物'},
-    'equipment': {'name': '教育装备', 'description': '教学设备与器材'}
+    'education': {'name': '教育机构', 'sub_types': ['高校', '职业院校', '培训机构', '幼儿园', '中小学']},
+    'enterprise': {'name': '企业', 'sub_types': ['教育科技', '互联网', '金融', '制造业', '服务业']},
+    'government': {'name': '政府', 'sub_types': ['教育局', '人社局', '发改委', '科技局']},
+    'research': {'name': '科研机构', 'sub_types': ['研究院', '实验室', '智库', '研究所']},
+    'social': {'name': '社会组织', 'sub_types': ['基金会', '协会', '公益组织', '社区']},
+    'international': {'name': '国际组织', 'sub_types': ['联合国机构', '国际教育组织', '跨国企业']},
+    'media': {'name': '媒体', 'sub_types': ['新闻媒体', '教育媒体', '自媒体']},
+    'finance': {'name': '金融机构', 'sub_types': ['银行', '保险', '投资机构', '基金']}
 }
 
 RESOURCE_TYPES = {
-    'course': {'name': '课程资源', 'unit': '门'},
-    'teacher': {'name': '师资资源', 'unit': '人'},
-    'technology': {'name': '技术资源', 'unit': '项'},
-    'funding': {'name': '资金资源', 'unit': '元'},
-    'channel': {'name': '渠道资源', 'unit': '个'},
-    'brand': {'name': '品牌资源', 'unit': '项'},
-    'data': {'name': '数据资源', 'unit': '条'},
-    'facility': {'name': '设施资源', 'unit': '套'}
+    'course': {'name': '课程资源', 'formats': ['视频', '文档', 'PPT', 'MOOC']},
+    'teaching': {'name': '教学资源', 'formats': ['教案', '课件', '题库', '教具']},
+    'research': {'name': '科研资源', 'formats': ['论文', '专利', '数据', '设备']},
+    'human': {'name': '人力资源', 'formats': ['教师', '专家', '顾问', '导师']},
+    'equipment': {'name': '设备资源', 'formats': ['实验设备', '教学仪器', '硬件设施']},
+    'data': {'name': '数据资源', 'formats': ['数据集', 'API', '数据库', '报表']},
+    'funding': {'name': '资金资源', 'formats': ['项目资金', '奖学金', '投资', '赞助']},
+    'brand': {'name': '品牌资源', 'formats': ['品牌授权', '认证标识', '知识产权']}
 }
 
-ALLIANCE_TYPES = {
-    'industry': {'name': '行业联盟', 'scope': 'national'},
-    'regional': {'name': '区域联盟', 'scope': 'local'},
-    'discipline': {'name': '学科联盟', 'scope': 'specialized'},
-    'technology': {'name': '技术联盟', 'scope': 'technical'},
-    'industry_chain': {'name': '产业联盟', 'scope': 'cross-industry'},
-    'international': {'name': '国际联盟', 'scope': 'global'}
+SERVICE_TYPES = {
+    'teaching': {'name': '教学服务', 'features': ['在线授课', '辅导答疑', '作业批改']},
+    'research': {'name': '科研服务', 'features': ['课题申报', '论文发表', '成果转化']},
+    'management': {'name': '管理服务', 'features': ['教务管理', '学生管理', '财务管理']},
+    'consulting': {'name': '咨询服务', 'features': ['教育规划', '职业指导', '企业培训']},
+    'technology': {'name': '技术服务', 'features': ['平台开发', '系统集成', '运维支持']},
+    'training': {'name': '培训服务', 'features': ['技能培训', '资格认证', '继续教育']},
+    'assessment': {'name': '评估服务', 'features': ['教学评估', '质量认证', '绩效评价']},
+    'certification': {'name': '认证服务', 'features': ['学历认证', '技能认证', '资质认证']}
 }
 
-DATA_SHARING_MODELS = {
-    'public': {'name': '公开共享', 'require_approval': False},
-    'authorized': {'name': '授权共享', 'require_approval': True},
-    'paid': {'name': '有偿共享', 'require_approval': True},
-    'joint_analysis': {'name': '联合分析', 'require_approval': True},
-    'anonymous': {'name': '匿名共享', 'require_approval': False},
-    'encrypted': {'name': '加密共享', 'require_approval': True}
+DATA_TYPES = {
+    'student': {'name': '学生数据', 'fields': ['学籍信息', '成绩', '行为数据', '画像']},
+    'teacher': {'name': '教师数据', 'fields': ['资质信息', '教学记录', '评价数据']},
+    'teaching': {'name': '教学数据', 'fields': ['课程数据', '课堂数据', '互动数据']},
+    'research': {'name': '科研数据', 'fields': ['项目数据', '成果数据', '经费数据']},
+    'management': {'name': '管理数据', 'fields': ['行政数据', '人事数据', '资产数据']},
+    'financial': {'name': '财务数据', 'fields': ['收入数据', '支出数据', '预算数据']},
+    'operation': {'name': '运营数据', 'fields': ['流量数据', '用户数据', '服务数据']},
+    'external': {'name': '外部数据', 'fields': ['行业数据', '政策数据', '市场数据']}
 }
 
-GOVERNANCE_TYPES = {
-    'council': {'name': '理事会', 'term': '2年'},
-    'supervisory': {'name': '监事会', 'term': '2年'},
-    'general_assembly': {'name': '会员大会', 'term': '1年'},
-    'professional_committee': {'name': '专业委员会', 'term': '2年'},
-    'working_group': {'name': '工作小组', 'term': '1年'},
-    'secretariat': {'name': '秘书处', 'term': '1年'}
+STANDARD_TYPES = {
+    'course': {'name': '课程标准', 'scope': ['课程设计', '内容要求', '考核标准']},
+    'teaching': {'name': '教学标准', 'scope': ['教学方法', '教学流程', '教学质量']},
+    'quality': {'name': '质量标准', 'scope': ['质量体系', '评估指标', '认证标准']},
+    'data': {'name': '数据标准', 'scope': ['数据格式', '数据接口', '数据安全']},
+    'technology': {'name': '技术标准', 'scope': ['技术架构', '开发规范', '运维标准']},
+    'service': {'name': '服务标准', 'scope': ['服务流程', '服务质量', '服务承诺']},
+    'security': {'name': '安全标准', 'scope': ['信息安全', '网络安全', '数据隐私']},
+    'management': {'name': '管理标准', 'scope': ['管理制度', '工作流程', '绩效考核']}
+}
+
+VALUE_MODELS = {
+    'knowledge': {'name': '知识创造', 'indicators': ['论文发表', '专利申请', '知识产出']},
+    'ability': {'name': '能力培养', 'indicators': ['技能提升', '证书获取', '就业质量']},
+    'innovation': {'name': '创新驱动', 'indicators': ['技术创新', '模式创新', '产品创新']},
+    'social': {'name': '社会服务', 'indicators': ['公益活动', '社区服务', '扶贫助困']},
+    'culture': {'name': '文化传承', 'indicators': ['文化保护', '非遗传承', '文化传播']},
+    'international': {'name': '国际交流', 'indicators': ['海外合作', '留学项目', '国际认证']},
+    'industry': {'name': '产业发展', 'indicators': ['产学研合作', '成果转化', '产业升级']},
+    'talent': {'name': '人才输出', 'indicators': ['毕业生就业', '人才流动', '行业贡献']}
+}
+
+RISK_TYPES = {
+    'policy': {'name': '政策风险', 'severity': ['低', '中', '高', '严重']},
+    'market': {'name': '市场风险', 'severity': ['低', '中', '高', '严重']},
+    'technology': {'name': '技术风险', 'severity': ['低', '中', '高', '严重']},
+    'financial': {'name': '财务风险', 'severity': ['低', '中', '高', '严重']},
+    'operation': {'name': '运营风险', 'severity': ['低', '中', '高', '严重']},
+    'compliance': {'name': '合规风险', 'severity': ['低', '中', '高', '严重']},
+    'security': {'name': '安全风险', 'severity': ['低', '中', '高', '严重']},
+    'reputation': {'name': '声誉风险', 'severity': ['低', '中', '高', '严重']}
+}
+
+SUSTAINABILITY_FACTORS = {
+    'resource': {'name': '资源节约', 'metrics': ['能耗', '水耗', '材料利用率']},
+    'environment': {'name': '环境友好', 'metrics': ['碳排放', '废弃物处理', '绿色认证']},
+    'social': {'name': '社会责任', 'metrics': ['公益投入', '就业贡献', '社区服务']},
+    'economic': {'name': '经济可持续', 'metrics': ['盈利能力', '成本控制', '投资回报']},
+    'innovation': {'name': '创新驱动', 'metrics': ['研发投入', '专利数量', '技术转化']},
+    'talent': {'name': '人才培养', 'metrics': ['师资建设', '人才储备', '员工发展']},
+    'culture': {'name': '文化传承', 'metrics': ['文化保护', '非遗传承', '文化传播']},
+    'institution': {'name': '制度保障', 'metrics': ['治理结构', '合规体系', '风险管控']}
 }
 
 
 class EducationEcosystemService:
-    """教育生态服务"""
+    """教育生态系统服务"""
 
     def __init__(self):
         self.db_path = DATABASE_PATH
@@ -143,326 +153,308 @@ class EducationEcosystemService:
         try:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
+
                 cursor.execute('''
                     CREATE TABLE IF NOT EXISTS ecosystem_partners (
                         partner_id TEXT PRIMARY KEY,
                         partner_name TEXT NOT NULL,
                         partner_type TEXT NOT NULL,
+                        sub_type TEXT,
                         education_type TEXT,
-                        ecosystem_role TEXT DEFAULT 'regular_member',
-                        industry_sector TEXT,
-                        registration_date TEXT,
-                        status TEXT DEFAULT 'pending',
                         contact_person TEXT,
                         contact_phone TEXT,
                         contact_email TEXT,
                         address TEXT,
-                        province TEXT,
-                        city TEXT,
-                        website TEXT,
+                        description TEXT,
                         logo_url TEXT,
-                        description TEXT,
-                        annual_revenue TEXT,
-                        employee_count INTEGER,
-                        established_year INTEGER,
-                        created_at TEXT,
-                        updated_at TEXT
-                    )
-                ''')
-                cursor.execute('''
-                    CREATE TABLE IF NOT EXISTS partner_profiles (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        partner_id TEXT NOT NULL,
-                        profile_type TEXT,
-                        profile_data TEXT,
-                        education_type TEXT,
-                        created_at TEXT,
-                        FOREIGN KEY (partner_id) REFERENCES ecosystem_partners(partner_id)
-                    )
-                ''')
-                cursor.execute('''
-                    CREATE TABLE IF NOT EXISTS cooperation_agreements (
-                        agreement_id TEXT PRIMARY KEY,
-                        partner_id_a TEXT NOT NULL,
-                        partner_id_b TEXT NOT NULL,
-                        cooperation_model TEXT NOT NULL,
-                        education_type TEXT,
-                        start_date TEXT,
-                        end_date TEXT,
-                        agreement_content TEXT,
-                        status TEXT DEFAULT 'draft',
-                        sign_date TEXT,
-                        created_at TEXT,
-                        updated_at TEXT,
-                        FOREIGN KEY (partner_id_a) REFERENCES ecosystem_partners(partner_id),
-                        FOREIGN KEY (partner_id_b) REFERENCES ecosystem_partners(partner_id)
-                    )
-                ''')
-                cursor.execute('''
-                    CREATE TABLE IF NOT EXISTS cooperation_projects (
-                        project_id TEXT PRIMARY KEY,
-                        project_name TEXT NOT NULL,
-                        agreement_id TEXT,
-                        education_type TEXT,
-                        industry_sector TEXT,
-                        description TEXT,
-                        budget REAL,
-                        start_date TEXT,
-                        end_date TEXT,
-                        status TEXT DEFAULT 'planning',
-                        progress REAL DEFAULT 0,
-                        leader_id TEXT,
-                        leader_name TEXT,
-                        participating_partners TEXT,
-                        deliverables TEXT,
-                        created_at TEXT,
-                        updated_at TEXT,
-                        FOREIGN KEY (agreement_id) REFERENCES cooperation_agreements(agreement_id)
-                    )
-                ''')
-                cursor.execute('''
-                    CREATE TABLE IF NOT EXISTS industry_alliances (
-                        alliance_id TEXT PRIMARY KEY,
-                        alliance_name TEXT NOT NULL,
-                        alliance_type TEXT NOT NULL,
-                        education_type TEXT,
-                        description TEXT,
-                        founding_date TEXT,
-                        headquarters TEXT,
-                        logo_url TEXT,
-                        member_count INTEGER DEFAULT 0,
-                        status TEXT DEFAULT 'active',
-                        created_at TEXT,
-                        updated_at TEXT
-                    )
-                ''')
-                cursor.execute('''
-                    CREATE TABLE IF NOT EXISTS alliance_members (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        alliance_id TEXT NOT NULL,
-                        partner_id TEXT NOT NULL,
-                        member_role TEXT DEFAULT 'member',
+                        status TEXT DEFAULT 'pending',
                         join_date TEXT,
-                        status TEXT DEFAULT 'active',
-                        FOREIGN KEY (alliance_id) REFERENCES industry_alliances(alliance_id),
-                        FOREIGN KEY (partner_id) REFERENCES ecosystem_partners(partner_id),
-                        UNIQUE(alliance_id, partner_id)
+                        expire_date TEXT,
+                        created_at TEXT,
+                        updated_at TEXT
                     )
                 ''')
+
                 cursor.execute('''
-                    CREATE TABLE IF NOT EXISTS resource_pool (
+                    CREATE TABLE IF NOT EXISTS partner_relations (
+                        relation_id TEXT PRIMARY KEY,
+                        partner_id TEXT NOT NULL,
+                        related_partner_id TEXT NOT NULL,
+                        relation_type TEXT,
+                        education_type TEXT,
+                        description TEXT,
+                        start_date TEXT,
+                        end_date TEXT,
+                        status TEXT DEFAULT 'active',
+                        created_at TEXT
+                    )
+                ''')
+
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS shared_resources (
                         resource_id TEXT PRIMARY KEY,
                         resource_name TEXT NOT NULL,
                         resource_type TEXT NOT NULL,
+                        format TEXT,
                         education_type TEXT,
-                        owner_id TEXT NOT NULL,
+                        owner_partner_id TEXT,
                         owner_name TEXT,
                         description TEXT,
-                        quantity INTEGER DEFAULT 1,
-                        unit TEXT,
-                        value REAL DEFAULT 0,
-                        is_shared INTEGER DEFAULT 0,
-                        sharing_model TEXT,
                         access_level TEXT DEFAULT 'public',
                         tags TEXT,
+                        file_url TEXT,
+                        size INTEGER,
+                        download_count INTEGER DEFAULT 0,
+                        view_count INTEGER DEFAULT 0,
+                        status TEXT DEFAULT 'available',
                         created_at TEXT,
-                        updated_at TEXT,
-                        FOREIGN KEY (owner_id) REFERENCES ecosystem_partners(partner_id)
+                        updated_at TEXT
                     )
                 ''')
+
                 cursor.execute('''
-                    CREATE TABLE IF NOT EXISTS resource_sharing (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    CREATE TABLE IF NOT EXISTS resource_access (
+                        access_id TEXT PRIMARY KEY,
                         resource_id TEXT NOT NULL,
-                        provider_id TEXT NOT NULL,
-                        receiver_id TEXT NOT NULL,
-                        sharing_model TEXT NOT NULL,
-                        education_type TEXT,
-                        start_date TEXT,
-                        end_date TEXT,
-                        status TEXT DEFAULT 'pending',
-                        cost REAL DEFAULT 0,
-                        usage_count INTEGER DEFAULT 0,
-                        approved_at TEXT,
-                        created_at TEXT,
-                        FOREIGN KEY (resource_id) REFERENCES resource_pool(resource_id),
-                        FOREIGN KEY (provider_id) REFERENCES ecosystem_partners(partner_id),
-                        FOREIGN KEY (receiver_id) REFERENCES ecosystem_partners(partner_id)
+                        partner_id TEXT NOT NULL,
+                        access_type TEXT,
+                        granted_at TEXT,
+                        expires_at TEXT,
+                        status TEXT DEFAULT 'active',
+                        created_at TEXT
                     )
                 ''')
+
                 cursor.execute('''
-                    CREATE TABLE IF NOT EXISTS ecosystem_data (
-                        data_id TEXT PRIMARY KEY,
-                        data_name TEXT NOT NULL,
+                    CREATE TABLE IF NOT EXISTS integrated_services (
+                        service_id TEXT PRIMARY KEY,
+                        service_name TEXT NOT NULL,
+                        service_type TEXT NOT NULL,
+                        education_type TEXT,
+                        provider_partner_id TEXT,
+                        provider_name TEXT,
+                        description TEXT,
+                        endpoint_url TEXT,
+                        api_key TEXT,
+                        status TEXT DEFAULT 'available',
+                        call_count INTEGER DEFAULT 0,
+                        avg_response_time REAL DEFAULT 0,
+                        created_at TEXT,
+                        updated_at TEXT
+                    )
+                ''')
+
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS service_registry (
+                        registry_id TEXT PRIMARY KEY,
+                        service_id TEXT NOT NULL,
+                        partner_id TEXT NOT NULL,
+                        registered_at TEXT,
+                        status TEXT DEFAULT 'registered',
+                        created_at TEXT
+                    )
+                ''')
+
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS data_interchange (
+                        interchange_id TEXT PRIMARY KEY,
+                        data_type TEXT NOT NULL,
+                        education_type TEXT,
+                        source_partner_id TEXT,
+                        target_partner_id TEXT,
+                        data_format TEXT,
+                        data_size INTEGER,
+                        transfer_status TEXT DEFAULT 'pending',
+                        transfer_time TEXT,
+                        created_at TEXT
+                    )
+                ''')
+
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS data_standards (
+                        standard_id TEXT PRIMARY KEY,
+                        standard_name TEXT NOT NULL,
                         data_type TEXT,
                         education_type TEXT,
-                        source_id TEXT,
-                        source_name TEXT,
-                        description TEXT,
-                        data_format TEXT,
-                        record_count INTEGER DEFAULT 0,
-                        sharing_model TEXT DEFAULT 'public',
-                        is_encrypted INTEGER DEFAULT 0,
-                        created_at TEXT,
-                        updated_at TEXT
-                    )
-                ''')
-                cursor.execute('''
-                    CREATE TABLE IF NOT EXISTS data_access_logs (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        data_id TEXT NOT NULL,
-                        accessor_id TEXT NOT NULL,
-                        access_type TEXT,
-                        access_time TEXT,
-                        duration INTEGER DEFAULT 0,
-                        data_usage TEXT,
-                        FOREIGN KEY (data_id) REFERENCES ecosystem_data(data_id),
-                        FOREIGN KEY (accessor_id) REFERENCES ecosystem_partners(partner_id)
-                    )
-                ''')
-                cursor.execute('''
-                    CREATE TABLE IF NOT EXISTS governance_structure (
-                        structure_id TEXT PRIMARY KEY,
-                        structure_name TEXT NOT NULL,
-                        governance_type TEXT NOT NULL,
-                        education_type TEXT,
-                        description TEXT,
-                        term TEXT,
-                        member_count INTEGER DEFAULT 0,
+                        format_spec TEXT,
+                        version TEXT DEFAULT '1.0',
                         status TEXT DEFAULT 'active',
                         created_at TEXT,
                         updated_at TEXT
                     )
                 ''')
+
                 cursor.execute('''
-                    CREATE TABLE IF NOT EXISTS governance_members (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        structure_id TEXT NOT NULL,
-                        partner_id TEXT NOT NULL,
-                        member_name TEXT,
-                        position TEXT,
-                        term_start TEXT,
-                        term_end TEXT,
-                        status TEXT DEFAULT 'active',
-                        FOREIGN KEY (structure_id) REFERENCES governance_structure(structure_id),
-                        FOREIGN KEY (partner_id) REFERENCES ecosystem_partners(partner_id)
-                    )
-                ''')
-                cursor.execute('''
-                    CREATE TABLE IF NOT EXISTS ecosystem_operations (
-                        operation_id TEXT PRIMARY KEY,
-                        operation_name TEXT NOT NULL,
+                    CREATE TABLE IF NOT EXISTS ecosystem_standards (
+                        standard_id TEXT PRIMARY KEY,
+                        standard_name TEXT NOT NULL,
+                        standard_type TEXT NOT NULL,
                         education_type TEXT,
-                        operation_type TEXT,
                         description TEXT,
-                        target_metrics TEXT,
-                        start_date TEXT,
-                        end_date TEXT,
-                        status TEXT DEFAULT 'planning',
-                        budget REAL DEFAULT 0,
-                        responsible_id TEXT,
-                        responsible_name TEXT,
-                        created_at TEXT,
-                        updated_at TEXT,
-                        FOREIGN KEY (responsible_id) REFERENCES ecosystem_partners(partner_id)
-                    )
-                ''')
-                cursor.execute('''
-                    CREATE TABLE IF NOT EXISTS operation_records (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        operation_id TEXT NOT NULL,
-                        record_type TEXT,
-                        record_content TEXT,
-                        record_time TEXT,
-                        operator_id TEXT,
-                        FOREIGN KEY (operation_id) REFERENCES ecosystem_operations(operation_id),
-                        FOREIGN KEY (operator_id) REFERENCES ecosystem_partners(partner_id)
-                    )
-                ''')
-                cursor.execute('''
-                    CREATE TABLE IF NOT EXISTS ecosystem_events (
-                        event_id TEXT PRIMARY KEY,
-                        event_name TEXT NOT NULL,
-                        event_type TEXT,
-                        education_type TEXT,
-                        industry_sector TEXT,
-                        description TEXT,
-                        location TEXT,
-                        start_date TEXT,
-                        end_date TEXT,
-                        start_time TEXT,
-                        end_time TEXT,
-                        max_participants INTEGER DEFAULT 100,
-                        registered_count INTEGER DEFAULT 0,
-                        organizer_id TEXT,
-                        organizer_name TEXT,
-                        status TEXT DEFAULT 'planned',
-                        cover_image TEXT,
-                        created_at TEXT,
-                        updated_at TEXT,
-                        FOREIGN KEY (organizer_id) REFERENCES ecosystem_partners(partner_id)
-                    )
-                ''')
-                cursor.execute('''
-                    CREATE TABLE IF NOT EXISTS event_participants (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        event_id TEXT NOT NULL,
-                        partner_id TEXT NOT NULL,
-                        participant_name TEXT,
-                        participant_role TEXT,
-                        register_time TEXT,
-                        attended INTEGER DEFAULT 0,
-                        FOREIGN KEY (event_id) REFERENCES ecosystem_events(event_id),
-                        FOREIGN KEY (partner_id) REFERENCES ecosystem_partners(partner_id),
-                        UNIQUE(event_id, partner_id)
-                    )
-                ''')
-                cursor.execute('''
-                    CREATE TABLE IF NOT EXISTS ecosystem_benefits (
-                        benefit_id TEXT PRIMARY KEY,
-                        benefit_name TEXT NOT NULL,
-                        education_type TEXT,
-                        benefit_type TEXT,
-                        description TEXT,
-                        total_amount REAL DEFAULT 0,
-                        distribution_count INTEGER DEFAULT 0,
+                        scope TEXT,
+                        version TEXT DEFAULT '1.0',
+                        status TEXT DEFAULT 'draft',
+                        published_at TEXT,
                         created_at TEXT,
                         updated_at TEXT
                     )
                 ''')
+
                 cursor.execute('''
-                    CREATE TABLE IF NOT EXISTS benefit_distribution (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        benefit_id TEXT NOT NULL,
+                    CREATE TABLE IF NOT EXISTS standard_compliance (
+                        compliance_id TEXT PRIMARY KEY,
+                        standard_id TEXT NOT NULL,
                         partner_id TEXT NOT NULL,
-                        amount REAL DEFAULT 0,
-                        distribution_ratio REAL DEFAULT 0,
-                        distribution_date TEXT,
-                        status TEXT DEFAULT 'pending',
-                        FOREIGN KEY (benefit_id) REFERENCES ecosystem_benefits(benefit_id),
-                        FOREIGN KEY (partner_id) REFERENCES ecosystem_partners(partner_id)
-                    )
-                ''')
-                cursor.execute('''
-                    CREATE TABLE IF NOT EXISTS ecosystem_ratings (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        target_type TEXT NOT NULL,
-                        target_id TEXT NOT NULL,
-                        rater_id TEXT NOT NULL,
-                        rater_name TEXT,
-                        rating INTEGER NOT NULL,
-                        comment TEXT,
                         education_type TEXT,
+                        compliance_status TEXT DEFAULT 'pending',
+                        audit_date TEXT,
+                        audit_result TEXT,
                         created_at TEXT,
-                        FOREIGN KEY (rater_id) REFERENCES ecosystem_partners(partner_id)
+                        updated_at TEXT
                     )
                 ''')
+
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS value_co_creation (
+                        project_id TEXT PRIMARY KEY,
+                        project_name TEXT NOT NULL,
+                        value_model TEXT NOT NULL,
+                        education_type TEXT,
+                        description TEXT,
+                        status TEXT DEFAULT 'active',
+                        created_at TEXT,
+                        updated_at TEXT
+                    )
+                ''')
+
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS value_contributions (
+                        contribution_id TEXT PRIMARY KEY,
+                        project_id TEXT NOT NULL,
+                        partner_id TEXT NOT NULL,
+                        education_type TEXT,
+                        contribution_type TEXT,
+                        amount REAL,
+                        description TEXT,
+                        created_at TEXT
+                    )
+                ''')
+
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS risk_management (
+                        risk_id TEXT PRIMARY KEY,
+                        risk_type TEXT NOT NULL,
+                        education_type TEXT,
+                        title TEXT NOT NULL,
+                        description TEXT,
+                        severity TEXT DEFAULT 'medium',
+                        probability REAL DEFAULT 0.5,
+                        impact REAL DEFAULT 0.5,
+                        status TEXT DEFAULT 'identified',
+                        created_at TEXT,
+                        updated_at TEXT
+                    )
+                ''')
+
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS risk_assessments (
+                        assessment_id TEXT PRIMARY KEY,
+                        risk_id TEXT NOT NULL,
+                        assessor_id INTEGER,
+                        assessor_name TEXT,
+                        assessment_date TEXT,
+                        severity TEXT,
+                        probability REAL,
+                        impact REAL,
+                        risk_score REAL,
+                        recommendations TEXT,
+                        created_at TEXT
+                    )
+                ''')
+
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS sustainability (
+                        sustainability_id TEXT PRIMARY KEY,
+                        partner_id TEXT NOT NULL,
+                        education_type TEXT,
+                        overall_score REAL DEFAULT 0,
+                        status TEXT DEFAULT 'evaluating',
+                        last_evaluation TEXT,
+                        created_at TEXT,
+                        updated_at TEXT
+                    )
+                ''')
+
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS sustainability_metrics (
+                        metric_id TEXT PRIMARY KEY,
+                        sustainability_id TEXT NOT NULL,
+                        factor_type TEXT,
+                        metric_name TEXT,
+                        value REAL,
+                        target_value REAL,
+                        unit TEXT,
+                        created_at TEXT
+                    )
+                ''')
+
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS ecosystem_monitoring (
+                        monitor_id TEXT PRIMARY KEY,
+                        partner_id TEXT,
+                        education_type TEXT,
+                        monitor_type TEXT,
+                        threshold REAL,
+                        status TEXT DEFAULT 'active',
+                        created_at TEXT,
+                        updated_at TEXT
+                    )
+                ''')
+
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS monitoring_data (
+                        data_id TEXT PRIMARY KEY,
+                        monitor_id TEXT NOT NULL,
+                        value REAL,
+                        recorded_at TEXT,
+                        created_at TEXT
+                    )
+                ''')
+
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS ecosystem_alerts (
+                        alert_id TEXT PRIMARY KEY,
+                        monitor_id TEXT NOT NULL,
+                        partner_id TEXT,
+                        education_type TEXT,
+                        alert_type TEXT,
+                        severity TEXT DEFAULT 'warning',
+                        message TEXT,
+                        status TEXT DEFAULT 'active',
+                        created_at TEXT,
+                        resolved_at TEXT
+                    )
+                ''')
+
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS alert_history (
+                        history_id TEXT PRIMARY KEY,
+                        alert_id TEXT NOT NULL,
+                        action TEXT,
+                        actor_id INTEGER,
+                        actor_name TEXT,
+                        action_time TEXT,
+                        notes TEXT,
+                        created_at TEXT
+                    )
+                ''')
+
                 conn.commit()
-                logger.info('教育生态服务数据库初始化完成')
+                logger.info('教育生态系统服务数据库初始化完成')
         except Exception as e:
             logger.error(f'数据库初始化失败: {e}')
 
-    # ========== 合作伙伴管理 ==========
+    # ========== 生态合作伙伴 ==========
 
     def register_partner(self, partner_name: str, partner_type: str,
                          **kwargs) -> Dict[str, Any]:
@@ -470,30 +462,22 @@ class EducationEcosystemService:
             partner_id = f"ep_{uuid.uuid4().hex[:12]}"
             now = datetime.now().isoformat()
             config = PARTNER_TYPES.get(partner_type, {})
-            education_types = config.get('education_types', ['k12', 'adult'])
-            education_type = kwargs.get('education_type', education_types[0])
             with self._lock:
                 with self._get_connection() as conn:
                     cursor = conn.cursor()
                     cursor.execute('''
                         INSERT INTO ecosystem_partners (
-                            partner_id, partner_name, partner_type, education_type,
-                            ecosystem_role, industry_sector, registration_date,
-                            status, contact_person, contact_phone, contact_email,
-                            address, province, city, website, logo_url, description,
-                            annual_revenue, employee_count, established_year,
-                            created_at, updated_at
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    ''', (partner_id, partner_name, partner_type, education_type,
-                          kwargs.get('ecosystem_role', 'regular_member'),
-                          kwargs.get('industry_sector'), now[:10], 'pending',
-                          kwargs.get('contact_person'), kwargs.get('contact_phone'),
-                          kwargs.get('contact_email'), kwargs.get('address'),
-                          kwargs.get('province'), kwargs.get('city'),
-                          kwargs.get('website'), kwargs.get('logo_url'),
-                          kwargs.get('description'), kwargs.get('annual_revenue'),
-                          kwargs.get('employee_count'), kwargs.get('established_year'),
-                          now, now))
+                            partner_id, partner_name, partner_type, sub_type,
+                            education_type, contact_person, contact_phone,
+                            contact_email, address, description, logo_url,
+                            status, join_date, created_at, updated_at
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?)
+                    ''', (partner_id, partner_name, partner_type,
+                          kwargs.get('sub_type', config.get('sub_types', [''])[0]),
+                          kwargs.get('education_type'), kwargs.get('contact_person'),
+                          kwargs.get('contact_phone'), kwargs.get('contact_email'),
+                          kwargs.get('address'), kwargs.get('description'),
+                          kwargs.get('logo_url'), now[:10], now, now))
                     conn.commit()
                     logger.info(f'注册合作伙伴: {partner_name} ({partner_id})')
                     return {'success': True, 'partner_id': partner_id}
@@ -506,11 +490,15 @@ class EducationEcosystemService:
         try:
             now = datetime.now().isoformat()
             status = 'approved' if approved else 'rejected'
+            expire_date = (datetime.now() + timedelta(days=365)).isoformat()[:10] if approved else None
             with self._lock:
                 with self._get_connection() as conn:
                     cursor = conn.cursor()
-                    cursor.execute('UPDATE ecosystem_partners SET status = ?, updated_at = ? WHERE partner_id = ? AND status = ?',
-                                 (status, now, partner_id, 'pending'))
+                    cursor.execute('''
+                        UPDATE ecosystem_partners
+                        SET status = ?, expire_date = ?, updated_at = ?
+                        WHERE partner_id = ? AND status = 'pending'
+                    ''', (status, expire_date, now, partner_id))
                     if cursor.rowcount > 0:
                         conn.commit()
                         return {'success': True, 'status': status}
@@ -519,28 +507,32 @@ class EducationEcosystemService:
             logger.error(f'审核合作伙伴失败: {e}')
             return {'success': False, 'error': str(e)}
 
-    def update_partner_profile(self, partner_id: str, profile_type: str,
-                               profile_data: Dict, **kwargs) -> Dict[str, Any]:
+    def establish_relation(self, partner_id: str, related_partner_id: str,
+                           relation_type: str, **kwargs) -> Dict[str, Any]:
         try:
+            relation_id = f"pr_{uuid.uuid4().hex[:12]}"
             now = datetime.now().isoformat()
             with self._lock:
                 with self._get_connection() as conn:
                     cursor = conn.cursor()
-                    cursor.execute('SELECT partner_id FROM ecosystem_partners WHERE partner_id = ?', (partner_id,))
-                    if not cursor.fetchone():
-                        return {'success': False, 'error': '合作伙伴不存在'}
-                    data_json = json.dumps(profile_data, ensure_ascii=False)
-                    cursor.execute('INSERT OR REPLACE INTO partner_profiles (partner_id, profile_type, profile_data, education_type, created_at) VALUES (?, ?, ?, ?, ?)',
-                                 (partner_id, profile_type, data_json, kwargs.get('education_type'), now))
+                    cursor.execute('''
+                        INSERT INTO partner_relations (
+                            relation_id, partner_id, related_partner_id,
+                            relation_type, education_type, description,
+                            start_date, end_date, status, created_at
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active', ?)
+                    ''', (relation_id, partner_id, related_partner_id, relation_type,
+                          kwargs.get('education_type'), kwargs.get('description'),
+                          now[:10], kwargs.get('end_date'), now))
                     conn.commit()
-                    return {'success': True}
+                    logger.info(f'建立合作伙伴关系: {partner_id} <-> {related_partner_id}')
+                    return {'success': True, 'relation_id': relation_id}
         except Exception as e:
-            logger.error(f'更新合作伙伴资料失败: {e}')
+            logger.error(f'建立合作伙伴关系失败: {e}')
             return {'success': False, 'error': str(e)}
 
     def list_partners(self, partner_type: str = None, education_type: str = None,
-                      status: str = 'approved', page: int = 1,
-                      page_size: int = 20) -> Dict[str, Any]:
+                      status: str = None, page: int = 1, page_size: int = 20) -> Dict[str, Any]:
         try:
             with self._get_connection() as conn:
                 conn.row_factory = sqlite3.Row
@@ -567,190 +559,84 @@ class EducationEcosystemService:
             logger.error(f'获取合作伙伴列表失败: {e}')
             return {'success': False, 'error': str(e)}
 
-    # ========== 合作联盟 ==========
+    # ========== 资源共享 ==========
 
-    def create_alliance(self, alliance_name: str, alliance_type: str,
-                        **kwargs) -> Dict[str, Any]:
+    def register_resource(self, resource_name: str, resource_type: str,
+                          owner_partner_id: str, **kwargs) -> Dict[str, Any]:
         try:
-            alliance_id = f"al_{uuid.uuid4().hex[:12]}"
-            now = datetime.now().isoformat()
-            config = ALLIANCE_TYPES.get(alliance_type, {})
-            with self._lock:
-                with self._get_connection() as conn:
-                    cursor = conn.cursor()
-                    cursor.execute('''
-                        INSERT INTO industry_alliances (
-                            alliance_id, alliance_name, alliance_type, education_type,
-                            description, founding_date, headquarters, logo_url,
-                            member_count, status, created_at, updated_at
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 'active', ?, ?)
-                    ''', (alliance_id, alliance_name, alliance_type,
-                          kwargs.get('education_type'), kwargs.get('description'),
-                          now[:10], kwargs.get('headquarters'), kwargs.get('logo_url'),
-                          now, now))
-                    conn.commit()
-                    logger.info(f'创建联盟: {alliance_name} ({alliance_id})')
-                    return {'success': True, 'alliance_id': alliance_id}
-        except Exception as e:
-            logger.error(f'创建联盟失败: {e}')
-            return {'success': False, 'error': str(e)}
-
-    def add_alliance_member(self, alliance_id: str, partner_id: str,
-                            **kwargs) -> Dict[str, Any]:
-        try:
-            now = datetime.now().isoformat()
-            with self._lock:
-                with self._get_connection() as conn:
-                    cursor = conn.cursor()
-                    cursor.execute('SELECT partner_id, education_type FROM ecosystem_partners WHERE partner_id = ?', (partner_id,))
-                    partner = cursor.fetchone()
-                    if not partner:
-                        return {'success': False, 'error': '合作伙伴不存在'}
-                    cursor.execute('INSERT OR IGNORE INTO alliance_members (alliance_id, partner_id, member_role, join_date, status) VALUES (?, ?, ?, ?, ?)',
-                                 (alliance_id, partner_id, kwargs.get('member_role', 'member'), now[:10], 'active'))
-                    if cursor.rowcount > 0:
-                        cursor.execute('UPDATE industry_alliances SET member_count = member_count + 1, updated_at = ? WHERE alliance_id = ?', (now, alliance_id))
-                        conn.commit()
-                        return {'success': True}
-                    return {'success': False, 'error': '已加入该联盟'}
-        except Exception as e:
-            logger.error(f'添加联盟成员失败: {e}')
-            return {'success': False, 'error': str(e)}
-
-    def create_cooperation_agreement(self, partner_id_a: str, partner_id_b: str,
-                                     cooperation_model: str, **kwargs) -> Dict[str, Any]:
-        try:
-            agreement_id = f"ca_{uuid.uuid4().hex[:12]}"
-            now = datetime.now().isoformat()
-            config = COOPERATION_MODELS.get(cooperation_model, {})
-            with self._lock:
-                with self._get_connection() as conn:
-                    cursor = conn.cursor()
-                    cursor.execute('SELECT education_type FROM ecosystem_partners WHERE partner_id = ?', (partner_id_a,))
-                    edu_type_a = cursor.fetchone()
-                    cursor.execute('SELECT education_type FROM ecosystem_partners WHERE partner_id = ?', (partner_id_b,))
-                    edu_type_b = cursor.fetchone()
-                    if not edu_type_a or not edu_type_b:
-                        return {'success': False, 'error': '合作伙伴不存在'}
-                    education_type = kwargs.get('education_type', edu_type_a[0] if edu_type_a[0] == edu_type_b[0] else 'mixed')
-                    cursor.execute('''
-                        INSERT INTO cooperation_agreements (
-                            agreement_id, partner_id_a, partner_id_b, cooperation_model,
-                            education_type, start_date, end_date, agreement_content,
-                            status, sign_date, created_at, updated_at
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    ''', (agreement_id, partner_id_a, partner_id_b, cooperation_model,
-                          education_type, kwargs.get('start_date'), kwargs.get('end_date'),
-                          kwargs.get('agreement_content'), 'draft', None, now, now))
-                    conn.commit()
-                    logger.info(f'创建合作协议: {agreement_id}')
-                    return {'success': True, 'agreement_id': agreement_id}
-        except Exception as e:
-            logger.error(f'创建合作协议失败: {e}')
-            return {'success': False, 'error': str(e)}
-
-    def sign_agreement(self, agreement_id: str) -> Dict[str, Any]:
-        try:
-            now = datetime.now().isoformat()
-            with self._lock:
-                with self._get_connection() as conn:
-                    cursor = conn.cursor()
-                    cursor.execute('UPDATE cooperation_agreements SET status = ?, sign_date = ?, updated_at = ? WHERE agreement_id = ? AND status = ?',
-                                 ('active', now[:10], now, agreement_id, 'draft'))
-                    if cursor.rowcount > 0:
-                        conn.commit()
-                        return {'success': True, 'status': 'active'}
-                    return {'success': False, 'error': '协议状态不允许签署'}
-        except Exception as e:
-            logger.error(f'签署协议失败: {e}')
-            return {'success': False, 'error': str(e)}
-
-    # ========== 资源对接 ==========
-
-    def add_resource(self, resource_name: str, resource_type: str,
-                     owner_id: str, **kwargs) -> Dict[str, Any]:
-        try:
-            resource_id = f"rs_{uuid.uuid4().hex[:12]}"
+            resource_id = f"sr_{uuid.uuid4().hex[:12]}"
             now = datetime.now().isoformat()
             config = RESOURCE_TYPES.get(resource_type, {})
             with self._lock:
                 with self._get_connection() as conn:
                     cursor = conn.cursor()
-                    cursor.execute('SELECT partner_name, education_type FROM ecosystem_partners WHERE partner_id = ?', (owner_id,))
-                    owner = cursor.fetchone()
-                    if not owner:
-                        return {'success': False, 'error': '所有者不存在'}
                     cursor.execute('''
-                        INSERT INTO resource_pool (
-                            resource_id, resource_name, resource_type, education_type,
-                            owner_id, owner_name, description, quantity, unit,
-                            value, is_shared, sharing_model, access_level, tags,
-                            created_at, updated_at
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        INSERT INTO shared_resources (
+                            resource_id, resource_name, resource_type, format,
+                            education_type, owner_partner_id, owner_name,
+                            description, access_level, tags, file_url, size,
+                            download_count, view_count, status, created_at, updated_at
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, 'available', ?, ?)
                     ''', (resource_id, resource_name, resource_type,
-                          kwargs.get('education_type', owner[1]),
-                          owner_id, owner[0], kwargs.get('description'),
-                          kwargs.get('quantity', 1), config.get('unit', '项'),
-                          kwargs.get('value', 0), kwargs.get('is_shared', 0),
-                          kwargs.get('sharing_model'), kwargs.get('access_level', 'public'),
-                          kwargs.get('tags'), now, now))
+                          kwargs.get('format', config.get('formats', [''])[0]),
+                          kwargs.get('education_type'), owner_partner_id,
+                          kwargs.get('owner_name'), kwargs.get('description'),
+                          kwargs.get('access_level', 'public'), kwargs.get('tags'),
+                          kwargs.get('file_url'), kwargs.get('size', 0), now, now))
                     conn.commit()
-                    logger.info(f'添加资源: {resource_name} ({resource_id})')
+                    logger.info(f'注册共享资源: {resource_name} ({resource_id})')
                     return {'success': True, 'resource_id': resource_id}
         except Exception as e:
-            logger.error(f'添加资源失败: {e}')
+            logger.error(f'注册共享资源失败: {e}')
             return {'success': False, 'error': str(e)}
 
-    def request_resource_sharing(self, resource_id: str, receiver_id: str,
-                                 **kwargs) -> Dict[str, Any]:
+    def grant_resource_access(self, resource_id: str, partner_id: str,
+                              access_type: str, **kwargs) -> Dict[str, Any]:
+        try:
+            access_id = f"ra_{uuid.uuid4().hex[:12]}"
+            now = datetime.now().isoformat()
+            expires_at = (datetime.now() + timedelta(days=kwargs.get('duration_days', 30))).isoformat()[:10]
+            with self._lock:
+                with self._get_connection() as conn:
+                    cursor = conn.cursor()
+                    cursor.execute('''
+                        INSERT INTO resource_access (
+                            access_id, resource_id, partner_id, access_type,
+                            granted_at, expires_at, status, created_at
+                        ) VALUES (?, ?, ?, ?, ?, ?, 'active', ?)
+                    ''', (access_id, resource_id, partner_id, access_type, now[:10], expires_at, now))
+                    conn.commit()
+                    return {'success': True, 'access_id': access_id}
+        except Exception as e:
+            logger.error(f'授权资源访问失败: {e}')
+            return {'success': False, 'error': str(e)}
+
+    def record_resource_usage(self, resource_id: str, usage_type: str = 'view') -> Dict[str, Any]:
         try:
             now = datetime.now().isoformat()
             with self._lock:
                 with self._get_connection() as conn:
                     cursor = conn.cursor()
-                    cursor.execute('SELECT owner_id, sharing_model, education_type FROM resource_pool WHERE resource_id = ?', (resource_id,))
-                    resource = cursor.fetchone()
-                    if not resource:
-                        return {'success': False, 'error': '资源不存在'}
-                    sharing_model = kwargs.get('sharing_model', resource[1] or 'authorized')
-                    cursor.execute('INSERT OR IGNORE INTO resource_sharing (resource_id, provider_id, receiver_id, sharing_model, education_type, start_date, end_date, status, cost, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                                 (resource_id, resource[0], receiver_id, sharing_model,
-                                  kwargs.get('education_type', resource[2]),
-                                  now[:10], kwargs.get('end_date'), 'pending',
-                                  kwargs.get('cost', 0), now))
+                    if usage_type == 'download':
+                        cursor.execute('UPDATE shared_resources SET download_count = download_count + 1, updated_at = ? WHERE resource_id = ?', (now, resource_id))
+                    else:
+                        cursor.execute('UPDATE shared_resources SET view_count = view_count + 1, updated_at = ? WHERE resource_id = ?', (now, resource_id))
                     if cursor.rowcount > 0:
                         conn.commit()
                         return {'success': True}
-                    return {'success': False, 'error': '已申请该资源共享'}
+                    return {'success': False, 'error': '资源不存在'}
         except Exception as e:
-            logger.error(f'申请资源共享失败: {e}')
-            return {'success': False, 'error': str(e)}
-
-    def approve_resource_sharing(self, resource_sharing_id: int, approved: bool) -> Dict[str, Any]:
-        try:
-            now = datetime.now().isoformat()
-            status = 'approved' if approved else 'rejected'
-            with self._lock:
-                with self._get_connection() as conn:
-                    cursor = conn.cursor()
-                    cursor.execute('UPDATE resource_sharing SET status = ?, approved_at = ? WHERE id = ? AND status = ?',
-                                 (status, now[:10] if approved else None, resource_sharing_id, 'pending'))
-                    if cursor.rowcount > 0:
-                        conn.commit()
-                        return {'success': True, 'status': status}
-                    return {'success': False, 'error': '资源共享申请状态不允许审核'}
-        except Exception as e:
-            logger.error(f'审核资源共享失败: {e}')
+            logger.error(f'记录资源使用失败: {e}')
             return {'success': False, 'error': str(e)}
 
     def search_resources(self, keyword: str = None, resource_type: str = None,
-                         education_type: str = None, is_shared: bool = True,
+                         education_type: str = None, access_level: str = None,
                          page: int = 1, page_size: int = 20) -> Dict[str, Any]:
         try:
             with self._get_connection() as conn:
                 conn.row_factory = sqlite3.Row
                 cursor = conn.cursor()
-                query = 'SELECT * FROM resource_pool WHERE 1=1'
+                query = 'SELECT * FROM shared_resources WHERE status = "available"'
                 params = []
                 if keyword:
                     query += ' AND (resource_name LIKE ? OR description LIKE ?)'
@@ -761,9 +647,9 @@ class EducationEcosystemService:
                 if education_type:
                     query += ' AND education_type = ?'
                     params.append(education_type)
-                if is_shared is not None:
-                    query += ' AND is_shared = ?'
-                    params.append(1 if is_shared else 0)
+                if access_level:
+                    query += ' AND access_level = ?'
+                    params.append(access_level)
                 cursor.execute(f'SELECT COUNT(*) as cnt FROM ({query})', params)
                 total = cursor.fetchone()['cnt']
                 query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?'
@@ -775,599 +661,762 @@ class EducationEcosystemService:
             logger.error(f'搜索资源失败: {e}')
             return {'success': False, 'error': str(e)}
 
-    # ========== 生态数据 ==========
+    # ========== 服务集成 ==========
 
-    def create_data_set(self, data_name: str, **kwargs) -> Dict[str, Any]:
+    def register_service(self, service_name: str, service_type: str,
+                         provider_partner_id: str, **kwargs) -> Dict[str, Any]:
         try:
-            data_id = f"ds_{uuid.uuid4().hex[:12]}"
+            service_id = f"is_{uuid.uuid4().hex[:12]}"
+            now = datetime.now().isoformat()
+            config = SERVICE_TYPES.get(service_type, {})
+            with self._lock:
+                with self._get_connection() as conn:
+                    cursor = conn.cursor()
+                    cursor.execute('''
+                        INSERT INTO integrated_services (
+                            service_id, service_name, service_type, education_type,
+                            provider_partner_id, provider_name, description,
+                            endpoint_url, api_key, status, call_count,
+                            avg_response_time, created_at, updated_at
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'available', 0, 0, ?, ?)
+                    ''', (service_id, service_name, service_type, kwargs.get('education_type'),
+                          provider_partner_id, kwargs.get('provider_name'),
+                          kwargs.get('description'), kwargs.get('endpoint_url'),
+                          kwargs.get('api_key'), now, now))
+                    conn.commit()
+                    logger.info(f'注册集成服务: {service_name} ({service_id})')
+                    return {'success': True, 'service_id': service_id}
+        except Exception as e:
+            logger.error(f'注册集成服务失败: {e}')
+            return {'success': False, 'error': str(e)}
+
+    def subscribe_service(self, service_id: str, partner_id: str) -> Dict[str, Any]:
+        try:
+            registry_id = f"sr_{uuid.uuid4().hex[:12]}"
+            now = datetime.now().isoformat()
+            with self._lock:
+                with self._get_connection() as conn:
+                    cursor = conn.cursor()
+                    cursor.execute('SELECT status FROM integrated_services WHERE service_id = ?', (service_id,))
+                    service = cursor.fetchone()
+                    if not service:
+                        return {'success': False, 'error': '服务不存在'}
+                    if service[0] != 'available':
+                        return {'success': False, 'error': '服务不可用'}
+                    cursor.execute('INSERT OR IGNORE INTO service_registry (registry_id, service_id, partner_id, registered_at, status, created_at) VALUES (?, ?, ?, ?, "registered", ?)',
+                                 (registry_id, service_id, partner_id, now[:10], now))
+                    if cursor.rowcount > 0:
+                        conn.commit()
+                        return {'success': True, 'registry_id': registry_id}
+                    return {'success': False, 'error': '已订阅该服务'}
+        except Exception as e:
+            logger.error(f'订阅服务失败: {e}')
+            return {'success': False, 'error': str(e)}
+
+    def record_service_call(self, service_id: str, response_time: float = 0) -> Dict[str, Any]:
+        try:
+            now = datetime.now().isoformat()
+            with self._lock:
+                with self._get_connection() as conn:
+                    cursor = conn.cursor()
+                    cursor.execute('SELECT call_count, avg_response_time FROM integrated_services WHERE service_id = ?', (service_id,))
+                    service = cursor.fetchone()
+                    if not service:
+                        return {'success': False, 'error': '服务不存在'}
+                    new_count = service[0] + 1
+                    new_avg = ((service[1] * service[0]) + response_time) / new_count if service[0] > 0 else response_time
+                    cursor.execute('UPDATE integrated_services SET call_count = ?, avg_response_time = ?, updated_at = ? WHERE service_id = ?',
+                                 (new_count, round(new_avg, 2), now, service_id))
+                    conn.commit()
+                    return {'success': True, 'call_count': new_count, 'avg_response_time': round(new_avg, 2)}
+        except Exception as e:
+            logger.error(f'记录服务调用失败: {e}')
+            return {'success': False, 'error': str(e)}
+
+    def get_service_stats(self, service_id: str = None, education_type: str = None) -> Dict[str, Any]:
+        try:
+            with self._get_connection() as conn:
+                conn.row_factory = sqlite3.Row
+                cursor = conn.cursor()
+                query = 'SELECT service_id, service_name, service_type, call_count, avg_response_time FROM integrated_services WHERE 1=1'
+                params = []
+                if service_id:
+                    query += ' AND service_id = ?'
+                    params.append(service_id)
+                if education_type:
+                    query += ' AND education_type = ?'
+                    params.append(education_type)
+                cursor.execute(query, params)
+                stats = [dict(s) for s in cursor.fetchall()]
+                return {'success': True, 'stats': stats}
+        except Exception as e:
+            logger.error(f'获取服务统计失败: {e}')
+            return {'success': False, 'error': str(e)}
+
+    # ========== 数据互通 ==========
+
+    def initiate_data_transfer(self, data_type: str, source_partner_id: str,
+                               target_partner_id: str, **kwargs) -> Dict[str, Any]:
+        try:
+            interchange_id = f"dt_{uuid.uuid4().hex[:12]}"
             now = datetime.now().isoformat()
             with self._lock:
                 with self._get_connection() as conn:
                     cursor = conn.cursor()
                     cursor.execute('''
-                        INSERT INTO ecosystem_data (
-                            data_id, data_name, data_type, education_type,
-                            source_id, source_name, description, data_format,
-                            record_count, sharing_model, is_encrypted,
-                            created_at, updated_at
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    ''', (data_id, data_name, kwargs.get('data_type'),
-                          kwargs.get('education_type'), kwargs.get('source_id'),
-                          kwargs.get('source_name'), kwargs.get('description'),
-                          kwargs.get('data_format'), kwargs.get('record_count', 0),
-                          kwargs.get('sharing_model', 'public'),
-                          kwargs.get('is_encrypted', 0), now, now))
+                        INSERT INTO data_interchange (
+                            interchange_id, data_type, education_type,
+                            source_partner_id, target_partner_id, data_format,
+                            data_size, transfer_status, created_at
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?)
+                    ''', (interchange_id, data_type, kwargs.get('education_type'),
+                          source_partner_id, target_partner_id,
+                          kwargs.get('data_format'), kwargs.get('data_size', 0), now))
                     conn.commit()
-                    logger.info(f'创建数据集: {data_name} ({data_id})')
-                    return {'success': True, 'data_id': data_id}
+                    return {'success': True, 'interchange_id': interchange_id}
         except Exception as e:
-            logger.error(f'创建数据集失败: {e}')
+            logger.error(f'发起数据传输失败: {e}')
             return {'success': False, 'error': str(e)}
 
-    def request_data_access(self, data_id: str, accessor_id: str,
-                            **kwargs) -> Dict[str, Any]:
+    def update_transfer_status(self, interchange_id: str, status: str,
+                               **kwargs) -> Dict[str, Any]:
         try:
+            now = datetime.now().isoformat()
+            transfer_time = now[:10] if status == 'completed' else None
+            with self._lock:
+                with self._get_connection() as conn:
+                    cursor = conn.cursor()
+                    cursor.execute('''
+                        UPDATE data_interchange
+                        SET transfer_status = ?, transfer_time = ?, updated_at = ?
+                        WHERE interchange_id = ?
+                    ''', (status, transfer_time, now, interchange_id))
+                    if cursor.rowcount > 0:
+                        conn.commit()
+                        return {'success': True, 'status': status}
+                    return {'success': False, 'error': '传输记录不存在'}
+        except Exception as e:
+            logger.error(f'更新传输状态失败: {e}')
+            return {'success': False, 'error': str(e)}
+
+    def define_data_standard(self, standard_name: str, data_type: str,
+                             **kwargs) -> Dict[str, Any]:
+        try:
+            standard_id = f"ds_{uuid.uuid4().hex[:12]}"
             now = datetime.now().isoformat()
             with self._lock:
                 with self._get_connection() as conn:
                     cursor = conn.cursor()
-                    cursor.execute('SELECT sharing_model, is_encrypted FROM ecosystem_data WHERE data_id = ?', (data_id,))
-                    data_set = cursor.fetchone()
-                    if not data_set:
-                        return {'success': False, 'error': '数据集不存在'}
-                    model = DATA_SHARING_MODELS.get(data_set[0], {})
-                    if model.get('require_approval', True):
-                        cursor.execute('INSERT INTO data_access_logs (data_id, accessor_id, access_type, access_time, data_usage) VALUES (?, ?, ?, ?, ?)',
-                                     (data_id, accessor_id, 'request', now, kwargs.get('data_usage')))
-                        conn.commit()
-                        return {'success': True, 'status': 'pending'}
-                    cursor.execute('INSERT INTO data_access_logs (data_id, accessor_id, access_type, access_time, data_usage) VALUES (?, ?, ?, ?, ?)',
-                                 (data_id, accessor_id, 'access', now, kwargs.get('data_usage')))
+                    cursor.execute('''
+                        INSERT INTO data_standards (
+                            standard_id, standard_name, data_type, education_type,
+                            format_spec, version, status, created_at, updated_at
+                        ) VALUES (?, ?, ?, ?, ?, ?, 'active', ?, ?)
+                    ''', (standard_id, standard_name, data_type, kwargs.get('education_type'),
+                          kwargs.get('format_spec'), kwargs.get('version', '1.0'), now, now))
                     conn.commit()
-                    return {'success': True, 'status': 'granted'}
+                    return {'success': True, 'standard_id': standard_id}
         except Exception as e:
-            logger.error(f'申请数据访问失败: {e}')
+            logger.error(f'定义数据标准失败: {e}')
             return {'success': False, 'error': str(e)}
 
-    def audit_data_access(self, data_id: str = None, accessor_id: str = None,
-                          start_date: str = None, end_date: str = None) -> Dict[str, Any]:
+    def validate_data_format(self, standard_id: str, data: Dict[str, Any]) -> Dict[str, Any]:
         try:
             with self._get_connection() as conn:
                 conn.row_factory = sqlite3.Row
                 cursor = conn.cursor()
-                query = 'SELECT * FROM data_access_logs WHERE 1=1'
-                params = []
-                if data_id:
-                    query += ' AND data_id = ?'
-                    params.append(data_id)
-                if accessor_id:
-                    query += ' AND accessor_id = ?'
-                    params.append(accessor_id)
-                if start_date:
-                    query += ' AND access_time >= ?'
-                    params.append(start_date)
-                if end_date:
-                    query += ' AND access_time <= ?'
-                    params.append(end_date)
-                query += ' ORDER BY access_time DESC'
-                cursor.execute(query, params)
-                logs = [dict(l) for l in cursor.fetchall()]
-                return {'success': True, 'access_logs': logs}
+                cursor.execute('SELECT format_spec FROM data_standards WHERE standard_id = ?', (standard_id,))
+                standard = cursor.fetchone()
+                if not standard:
+                    return {'success': False, 'error': '数据标准不存在'}
+                spec = json.loads(standard['format_spec']) if standard['format_spec'] else {}
+                required_fields = spec.get('required', [])
+                missing_fields = [f for f in required_fields if f not in data]
+                if missing_fields:
+                    return {'success': False, 'error': f'缺少必填字段: {", ".join(missing_fields)}'}
+                return {'success': True, 'validated': True, 'message': '数据格式验证通过'}
         except Exception as e:
-            logger.error(f'审计数据访问失败: {e}')
+            logger.error(f'验证数据格式失败: {e}')
             return {'success': False, 'error': str(e)}
 
-    def list_data_sets(self, education_type: str = None, sharing_model: str = None,
-                       page: int = 1, page_size: int = 20) -> Dict[str, Any]:
+    def get_data_transfer_history(self, source_partner_id: str = None,
+                                   target_partner_id: str = None,
+                                   education_type: str = None,
+                                   page: int = 1, page_size: int = 20) -> Dict[str, Any]:
         try:
             with self._get_connection() as conn:
                 conn.row_factory = sqlite3.Row
                 cursor = conn.cursor()
-                query = 'SELECT * FROM ecosystem_data WHERE 1=1'
+                query = 'SELECT * FROM data_interchange WHERE 1=1'
                 params = []
+                if source_partner_id:
+                    query += ' AND source_partner_id = ?'
+                    params.append(source_partner_id)
+                if target_partner_id:
+                    query += ' AND target_partner_id = ?'
+                    params.append(target_partner_id)
                 if education_type:
                     query += ' AND education_type = ?'
                     params.append(education_type)
-                if sharing_model:
-                    query += ' AND sharing_model = ?'
-                    params.append(sharing_model)
                 cursor.execute(f'SELECT COUNT(*) as cnt FROM ({query})', params)
                 total = cursor.fetchone()['cnt']
                 query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?'
                 params.extend([page_size, (page - 1) * page_size])
                 cursor.execute(query, params)
-                data_sets = [dict(d) for d in cursor.fetchall()]
-                return {'success': True, 'data_sets': data_sets, 'total': total, 'page': page, 'page_size': page_size}
+                history = [dict(h) for h in cursor.fetchall()]
+                return {'success': True, 'history': history, 'total': total, 'page': page, 'page_size': page_size}
         except Exception as e:
-            logger.error(f'获取数据集列表失败: {e}')
+            logger.error(f'获取数据传输历史失败: {e}')
             return {'success': False, 'error': str(e)}
 
-    # ========== 生态治理 ==========
+    # ========== 标准规范 ==========
 
-    def create_governance_structure(self, structure_name: str, governance_type: str,
-                                    **kwargs) -> Dict[str, Any]:
+    def create_standard(self, standard_name: str, standard_type: str,
+                        **kwargs) -> Dict[str, Any]:
         try:
-            structure_id = f"gs_{uuid.uuid4().hex[:12]}"
+            standard_id = f"es_{uuid.uuid4().hex[:12]}"
             now = datetime.now().isoformat()
-            config = GOVERNANCE_TYPES.get(governance_type, {})
+            config = STANDARD_TYPES.get(standard_type, {})
             with self._lock:
                 with self._get_connection() as conn:
                     cursor = conn.cursor()
                     cursor.execute('''
-                        INSERT INTO governance_structure (
-                            structure_id, structure_name, governance_type, education_type,
-                            description, term, member_count, status, created_at, updated_at
-                        ) VALUES (?, ?, ?, ?, ?, ?, 0, 'active', ?, ?)
-                    ''', (structure_id, structure_name, governance_type,
-                          kwargs.get('education_type'), kwargs.get('description'),
-                          kwargs.get('term', config.get('term', '2年')), now, now))
+                        INSERT INTO ecosystem_standards (
+                            standard_id, standard_name, standard_type, education_type,
+                            description, scope, version, status, created_at, updated_at
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, 'draft', ?, ?)
+                    ''', (standard_id, standard_name, standard_type, kwargs.get('education_type'),
+                          kwargs.get('description'), kwargs.get('scope', ','.join(config.get('scope', []))),
+                          kwargs.get('version', '1.0'), now, now))
                     conn.commit()
-                    logger.info(f'创建治理结构: {structure_name} ({structure_id})')
-                    return {'success': True, 'structure_id': structure_id}
+                    logger.info(f'创建标准规范: {standard_name} ({standard_id})')
+                    return {'success': True, 'standard_id': standard_id}
         except Exception as e:
-            logger.error(f'创建治理结构失败: {e}')
+            logger.error(f'创建标准规范失败: {e}')
             return {'success': False, 'error': str(e)}
 
-    def add_governance_member(self, structure_id: str, partner_id: str,
-                              **kwargs) -> Dict[str, Any]:
+    def publish_standard(self, standard_id: str) -> Dict[str, Any]:
         try:
             now = datetime.now().isoformat()
             with self._lock:
                 with self._get_connection() as conn:
                     cursor = conn.cursor()
-                    cursor.execute('SELECT partner_name FROM ecosystem_partners WHERE partner_id = ?', (partner_id,))
-                    partner = cursor.fetchone()
-                    if not partner:
-                        return {'success': False, 'error': '合作伙伴不存在'}
-                    cursor.execute('INSERT OR IGNORE INTO governance_members (structure_id, partner_id, member_name, position, term_start, term_end, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
-                                 (structure_id, partner_id, partner[0],
-                                  kwargs.get('position'), now[:10],
-                                  kwargs.get('term_end'), 'active'))
+                    cursor.execute('''
+                        UPDATE ecosystem_standards
+                        SET status = 'published', published_at = ?, updated_at = ?
+                        WHERE standard_id = ? AND status = 'draft'
+                    ''', (now[:10], now, standard_id))
                     if cursor.rowcount > 0:
-                        cursor.execute('UPDATE governance_structure SET member_count = member_count + 1, updated_at = ? WHERE structure_id = ?', (now, structure_id))
                         conn.commit()
-                        return {'success': True}
-                    return {'success': False, 'error': '已加入该治理结构'}
+                        return {'success': True, 'status': 'published'}
+                    return {'success': False, 'error': '标准状态不允许发布'}
         except Exception as e:
-            logger.error(f'添加治理成员失败: {e}')
+            logger.error(f'发布标准失败: {e}')
             return {'success': False, 'error': str(e)}
 
-    def conduct_election(self, structure_id: str, **kwargs) -> Dict[str, Any]:
+    def assess_compliance(self, standard_id: str, partner_id: str,
+                          **kwargs) -> Dict[str, Any]:
         try:
+            compliance_id = f"sc_{uuid.uuid4().hex[:12]}"
             now = datetime.now().isoformat()
             with self._lock:
                 with self._get_connection() as conn:
                     cursor = conn.cursor()
-                    cursor.execute('SELECT governance_type FROM governance_structure WHERE structure_id = ?', (structure_id,))
-                    structure = cursor.fetchone()
-                    if not structure:
-                        return {'success': False, 'error': '治理结构不存在'}
-                    election_data = {
-                        'election_date': now[:10],
-                        'candidates': kwargs.get('candidates', []),
-                        'voters': kwargs.get('voters', []),
-                        'results': kwargs.get('results', {}),
-                        'method': kwargs.get('method', 'vote')
-                    }
-                    cursor.execute('INSERT INTO operation_records (operation_id, record_type, record_content, record_time) VALUES (?, ?, ?, ?)',
-                                 (structure_id, 'election', json.dumps(election_data, ensure_ascii=False), now))
-                    conn.commit()
-                    return {'success': True, 'election_date': now[:10]}
-        except Exception as e:
-            logger.error(f'执行选举失败: {e}')
-            return {'success': False, 'error': str(e)}
-
-    def create_governance_rule(self, structure_id: str, rule_name: str,
-                               rule_content: str, **kwargs) -> Dict[str, Any]:
-        try:
-            now = datetime.now().isoformat()
-            rule_data = {
-                'rule_name': rule_name,
-                'rule_content': rule_content,
-                'effective_date': kwargs.get('effective_date', now[:10]),
-                'status': kwargs.get('status', 'active')
-            }
-            with self._lock:
-                with self._get_connection() as conn:
-                    cursor = conn.cursor()
-                    cursor.execute('INSERT INTO operation_records (operation_id, record_type, record_content, record_time) VALUES (?, ?, ?, ?)',
-                                 (structure_id, 'rule', json.dumps(rule_data, ensure_ascii=False), now))
-                    conn.commit()
-                    return {'success': True}
-        except Exception as e:
-            logger.error(f'创建治理规则失败: {e}')
-            return {'success': False, 'error': str(e)}
-
-    # ========== 生态运营 ==========
-
-    def create_operation_plan(self, operation_name: str, **kwargs) -> Dict[str, Any]:
-        try:
-            operation_id = f"op_{uuid.uuid4().hex[:12]}"
-            now = datetime.now().isoformat()
-            with self._lock:
-                with self._get_connection() as conn:
-                    cursor = conn.cursor()
+                    cursor.execute('SELECT status FROM ecosystem_standards WHERE standard_id = ?', (standard_id,))
+                    standard = cursor.fetchone()
+                    if not standard or standard[0] != 'published':
+                        return {'success': False, 'error': '标准未发布'}
                     cursor.execute('''
-                        INSERT INTO ecosystem_operations (
-                            operation_id, operation_name, education_type, operation_type,
-                            description, target_metrics, start_date, end_date,
-                            status, budget, responsible_id, responsible_name,
+                        INSERT INTO standard_compliance (
+                            compliance_id, standard_id, partner_id, education_type,
+                            compliance_status, audit_date, audit_result,
                             created_at, updated_at
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    ''', (operation_id, operation_name, kwargs.get('education_type'),
-                          kwargs.get('operation_type'), kwargs.get('description'),
-                          json.dumps(kwargs.get('target_metrics', {}), ensure_ascii=False),
-                          kwargs.get('start_date'), kwargs.get('end_date'),
-                          'planning', kwargs.get('budget', 0),
-                          kwargs.get('responsible_id'), kwargs.get('responsible_name'),
-                          now, now))
+                        ) VALUES (?, ?, ?, ?, 'pending', ?, ?, ?, ?)
+                    ''', (compliance_id, standard_id, partner_id, kwargs.get('education_type'),
+                          now[:10], kwargs.get('audit_result'), now, now))
                     conn.commit()
-                    logger.info(f'创建运营计划: {operation_name} ({operation_id})')
-                    return {'success': True, 'operation_id': operation_id}
+                    return {'success': True, 'compliance_id': compliance_id}
         except Exception as e:
-            logger.error(f'创建运营计划失败: {e}')
+            logger.error(f'评估合规性失败: {e}')
             return {'success': False, 'error': str(e)}
 
-    def execute_operation(self, operation_id: str, **kwargs) -> Dict[str, Any]:
+    def update_compliance_status(self, compliance_id: str, status: str,
+                                  **kwargs) -> Dict[str, Any]:
         try:
-            now = datetime.now().isoformat()
-            with self._lock:
-                with self._get_connection() as conn:
-                    cursor = conn.cursor()
-                    cursor.execute('UPDATE ecosystem_operations SET status = ?, updated_at = ? WHERE operation_id = ? AND status = ?',
-                                 ('executing', now, operation_id, 'planning'))
-                    if cursor.rowcount > 0:
-                        execution_data = {
-                            'action': 'execute',
-                            'timestamp': now,
-                            'operator': kwargs.get('operator'),
-                            'details': kwargs.get('details', {})
-                        }
-                        cursor.execute('INSERT INTO operation_records (operation_id, record_type, record_content, record_time) VALUES (?, ?, ?, ?)',
-                                     (operation_id, 'execution', json.dumps(execution_data, ensure_ascii=False), now))
-                        conn.commit()
-                        return {'success': True, 'status': 'executing'}
-                    return {'success': False, 'error': '运营计划状态不允许执行'}
-        except Exception as e:
-            logger.error(f'执行运营计划失败: {e}')
-            return {'success': False, 'error': str(e)}
-
-    def evaluate_operation(self, operation_id: str, **kwargs) -> Dict[str, Any]:
-        try:
-            now = datetime.now().isoformat()
-            with self._lock:
-                with self._get_connection() as conn:
-                    cursor = conn.cursor()
-                    cursor.execute('UPDATE ecosystem_operations SET status = ?, updated_at = ? WHERE operation_id = ? AND status = ?',
-                                 ('completed', now, operation_id, 'executing'))
-                    if cursor.rowcount > 0:
-                        evaluation_data = {
-                            'evaluation_date': now[:10],
-                            'metrics': kwargs.get('metrics', {}),
-                            'score': kwargs.get('score'),
-                            'comments': kwargs.get('comments', ''),
-                            'recommendations': kwargs.get('recommendations', [])
-                        }
-                        cursor.execute('INSERT INTO operation_records (operation_id, record_type, record_content, record_time) VALUES (?, ?, ?, ?)',
-                                     (operation_id, 'evaluation', json.dumps(evaluation_data, ensure_ascii=False), now))
-                        conn.commit()
-                        return {'success': True, 'status': 'completed'}
-                    return {'success': False, 'error': '运营计划状态不允许评估'}
-        except Exception as e:
-            logger.error(f'评估运营计划失败: {e}')
-            return {'success': False, 'error': str(e)}
-
-    def optimize_operation(self, operation_id: str, **kwargs) -> Dict[str, Any]:
-        try:
-            now = datetime.now().isoformat()
-            optimization_data = {
-                'optimization_date': now[:10],
-                'changes': kwargs.get('changes', []),
-                'reason': kwargs.get('reason', ''),
-                'expected_impact': kwargs.get('expected_impact', {})
-            }
-            with self._lock:
-                with self._get_connection() as conn:
-                    cursor = conn.cursor()
-                    cursor.execute('INSERT INTO operation_records (operation_id, record_type, record_content, record_time) VALUES (?, ?, ?, ?)',
-                                 (operation_id, 'optimization', json.dumps(optimization_data, ensure_ascii=False), now))
-                    conn.commit()
-                    return {'success': True}
-        except Exception as e:
-            logger.error(f'优化运营计划失败: {e}')
-            return {'success': False, 'error': str(e)}
-
-    # ========== 生态活动 ==========
-
-    def create_event(self, event_name: str, **kwargs) -> Dict[str, Any]:
-        try:
-            event_id = f"ee_{uuid.uuid4().hex[:12]}"
             now = datetime.now().isoformat()
             with self._lock:
                 with self._get_connection() as conn:
                     cursor = conn.cursor()
                     cursor.execute('''
-                        INSERT INTO ecosystem_events (
-                            event_id, event_name, event_type, education_type,
-                            industry_sector, description, location, start_date,
-                            end_date, start_time, end_time, max_participants,
-                            registered_count, organizer_id, organizer_name,
-                            status, cover_image, created_at, updated_at
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?)
-                    ''', (event_id, event_name, kwargs.get('event_type'),
-                          kwargs.get('education_type'), kwargs.get('industry_sector'),
-                          kwargs.get('description'), kwargs.get('location'),
-                          kwargs.get('start_date'), kwargs.get('end_date'),
-                          kwargs.get('start_time', '09:00'),
-                          kwargs.get('end_time', '17:00'),
-                          kwargs.get('max_participants', 100),
-                          kwargs.get('organizer_id'), kwargs.get('organizer_name'),
-                          'planned', kwargs.get('cover_image'), now, now))
-                    conn.commit()
-                    logger.info(f'创建生态活动: {event_name} ({event_id})')
-                    return {'success': True, 'event_id': event_id}
-        except Exception as e:
-            logger.error(f'创建生态活动失败: {e}')
-            return {'success': False, 'error': str(e)}
-
-    def register_event(self, event_id: str, partner_id: str, **kwargs) -> Dict[str, Any]:
-        try:
-            now = datetime.now().isoformat()
-            with self._lock:
-                with self._get_connection() as conn:
-                    cursor = conn.cursor()
-                    cursor.execute('SELECT max_participants, registered_count, status FROM ecosystem_events WHERE event_id = ?', (event_id,))
-                    event = cursor.fetchone()
-                    if not event:
-                        return {'success': False, 'error': '活动不存在'}
-                    if event[2] != 'planned':
-                        return {'success': False, 'error': '活动状态不允许报名'}
-                    if event[0] and event[1] >= event[0]:
-                        return {'success': False, 'error': '名额已满'}
-                    cursor.execute('INSERT OR IGNORE INTO event_participants (event_id, partner_id, participant_name, participant_role, register_time) VALUES (?, ?, ?, ?, ?)',
-                                 (event_id, partner_id, kwargs.get('participant_name'),
-                                  kwargs.get('participant_role', 'participant'), now))
-                    if cursor.rowcount > 0:
-                        cursor.execute('UPDATE ecosystem_events SET registered_count = registered_count + 1, updated_at = ? WHERE event_id = ?', (now, event_id))
-                        conn.commit()
-                        return {'success': True}
-                    return {'success': False, 'error': '已报名该活动'}
-        except Exception as e:
-            logger.error(f'活动报名失败: {e}')
-            return {'success': False, 'error': str(e)}
-
-    def record_event_attendance(self, event_id: str, partner_id: str, attended: bool = True) -> Dict[str, Any]:
-        try:
-            now = datetime.now().isoformat()
-            with self._lock:
-                with self._get_connection() as conn:
-                    cursor = conn.cursor()
-                    cursor.execute('UPDATE event_participants SET attended = ? WHERE event_id = ? AND partner_id = ?',
-                                 (1 if attended else 0, event_id, partner_id))
+                        UPDATE standard_compliance
+                        SET compliance_status = ?, audit_result = ?, updated_at = ?
+                        WHERE compliance_id = ?
+                    ''', (status, kwargs.get('audit_result'), now, compliance_id))
                     if cursor.rowcount > 0:
                         conn.commit()
-                        return {'success': True}
-                    return {'success': False, 'error': '报名记录不存在'}
+                        return {'success': True, 'status': status}
+                    return {'success': False, 'error': '合规记录不存在'}
         except Exception as e:
-            logger.error(f'记录活动出席失败: {e}')
+            logger.error(f'更新合规状态失败: {e}')
             return {'success': False, 'error': str(e)}
 
-    def close_event(self, event_id: str, **kwargs) -> Dict[str, Any]:
-        try:
-            now = datetime.now().isoformat()
-            with self._lock:
-                with self._get_connection() as conn:
-                    cursor = conn.cursor()
-                    cursor.execute('UPDATE ecosystem_events SET status = ?, updated_at = ? WHERE event_id = ? AND status = ?',
-                                 ('completed', now, event_id, 'planned'))
-                    if cursor.rowcount > 0:
-                        cursor.execute('SELECT COUNT(*) FROM event_participants WHERE event_id = ? AND attended = 1', (event_id,))
-                        attended_count = cursor.fetchone()[0]
-                        cursor.execute('UPDATE ecosystem_events SET registered_count = ? WHERE event_id = ?', (attended_count, event_id))
-                        conn.commit()
-                        return {'success': True, 'status': 'completed', 'attended_count': attended_count}
-                    return {'success': False, 'error': '活动状态不允许结束'}
-        except Exception as e:
-            logger.error(f'结束活动失败: {e}')
-            return {'success': False, 'error': str(e)}
+    # ========== 价值共创 ==========
 
-    # ========== 收益分配 ==========
-
-    def create_benefit(self, benefit_name: str, **kwargs) -> Dict[str, Any]:
+    def create_value_project(self, project_name: str, value_model: str,
+                             **kwargs) -> Dict[str, Any]:
         try:
-            benefit_id = f"bf_{uuid.uuid4().hex[:12]}"
+            project_id = f"vc_{uuid.uuid4().hex[:12]}"
             now = datetime.now().isoformat()
             with self._lock:
                 with self._get_connection() as conn:
                     cursor = conn.cursor()
                     cursor.execute('''
-                        INSERT INTO ecosystem_benefits (
-                            benefit_id, benefit_name, education_type, benefit_type,
-                            description, total_amount, distribution_count,
-                            created_at, updated_at
-                        ) VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?)
-                    ''', (benefit_id, benefit_name, kwargs.get('education_type'),
-                          kwargs.get('benefit_type'), kwargs.get('description'),
-                          kwargs.get('total_amount', 0), now, now))
+                        INSERT INTO value_co_creation (
+                            project_id, project_name, value_model, education_type,
+                            description, status, created_at, updated_at
+                        ) VALUES (?, ?, ?, ?, ?, 'active', ?, ?)
+                    ''', (project_id, project_name, value_model, kwargs.get('education_type'),
+                          kwargs.get('description'), now, now))
                     conn.commit()
-                    logger.info(f'创建收益: {benefit_name} ({benefit_id})')
-                    return {'success': True, 'benefit_id': benefit_id}
+                    logger.info(f'创建价值共创项目: {project_name} ({project_id})')
+                    return {'success': True, 'project_id': project_id}
         except Exception as e:
-            logger.error(f'创建收益失败: {e}')
+            logger.error(f'创建价值共创项目失败: {e}')
             return {'success': False, 'error': str(e)}
 
-    def calculate_distribution(self, benefit_id: str, **kwargs) -> Dict[str, Any]:
+    def record_contribution(self, project_id: str, partner_id: str,
+                            contribution_type: str, **kwargs) -> Dict[str, Any]:
         try:
+            contribution_id = f"vct_{uuid.uuid4().hex[:12]}"
             now = datetime.now().isoformat()
             with self._lock:
                 with self._get_connection() as conn:
                     cursor = conn.cursor()
-                    cursor.execute('SELECT total_amount, education_type FROM ecosystem_benefits WHERE benefit_id = ?', (benefit_id,))
-                    benefit = cursor.fetchone()
-                    if not benefit:
-                        return {'success': False, 'error': '收益不存在'}
-                    total_amount = benefit[0]
-                    education_type = benefit[1]
-                    distributions = kwargs.get('distributions', [])
-                    total_ratio = sum(d.get('ratio', 0) for d in distributions)
-                    if total_ratio != 1 and total_ratio != 100:
-                        return {'success': False, 'error': '分配比例总和必须为1或100'}
-                    ratio_adjust = 100 if total_ratio == 100 else 1
-                    for dist in distributions:
-                        ratio = dist.get('ratio', 0) / ratio_adjust
-                        amount = total_amount * ratio
-                        cursor.execute('INSERT INTO benefit_distribution (benefit_id, partner_id, amount, distribution_ratio, distribution_date, status) VALUES (?, ?, ?, ?, ?, ?)',
-                                     (benefit_id, dist['partner_id'], amount, ratio, now[:10], 'pending'))
+                    cursor.execute('SELECT status FROM value_co_creation WHERE project_id = ?', (project_id,))
+                    project = cursor.fetchone()
+                    if not project or project[0] != 'active':
+                        return {'success': False, 'error': '项目不存在或已结束'}
+                    cursor.execute('''
+                        INSERT INTO value_contributions (
+                            contribution_id, project_id, partner_id, education_type,
+                            contribution_type, amount, description, created_at
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    ''', (contribution_id, project_id, partner_id, kwargs.get('education_type'),
+                          contribution_type, kwargs.get('amount', 0), kwargs.get('description'), now))
                     conn.commit()
-                    return {'success': True, 'distribution_count': len(distributions)}
+                    return {'success': True, 'contribution_id': contribution_id}
         except Exception as e:
-            logger.error(f'计算收益分配失败: {e}')
+            logger.error(f'记录贡献失败: {e}')
             return {'success': False, 'error': str(e)}
 
-    def approve_distribution(self, benefit_id: str) -> Dict[str, Any]:
-        try:
-            now = datetime.now().isoformat()
-            with self._lock:
-                with self._get_connection() as conn:
-                    cursor = conn.cursor()
-                    cursor.execute('UPDATE benefit_distribution SET status = ? WHERE benefit_id = ? AND status = ?',
-                                 ('approved', benefit_id, 'pending'))
-                    if cursor.rowcount > 0:
-                        cursor.execute('UPDATE ecosystem_benefits SET distribution_count = distribution_count + 1, updated_at = ? WHERE benefit_id = ?', (now, benefit_id))
-                        conn.commit()
-                        return {'success': True}
-                    return {'success': False, 'error': '没有待审核的分配记录'}
-        except Exception as e:
-            logger.error(f'审核收益分配失败: {e}')
-            return {'success': False, 'error': str(e)}
-
-    # ========== 评价体系 ==========
-
-    def rate_entity(self, target_type: str, target_id: str, rater_id: str,
-                    rating: int, **kwargs) -> Dict[str, Any]:
-        try:
-            now = datetime.now().isoformat()
-            with self._lock:
-                with self._get_connection() as conn:
-                    cursor = conn.cursor()
-                    cursor.execute('SELECT partner_name FROM ecosystem_partners WHERE partner_id = ?', (rater_id,))
-                    rater = cursor.fetchone()
-                    if not rater:
-                        return {'success': False, 'error': '评价者不存在'}
-                    cursor.execute('INSERT OR REPLACE INTO ecosystem_ratings (target_type, target_id, rater_id, rater_name, rating, comment, education_type, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-                                 (target_type, target_id, rater_id, rater[0], rating,
-                                  kwargs.get('comment'), kwargs.get('education_type'), now))
-                    conn.commit()
-                    cursor.execute('SELECT AVG(rating), COUNT(*) FROM ecosystem_ratings WHERE target_type = ? AND target_id = ?', (target_type, target_id))
-                    stats = cursor.fetchone()
-                    avg = round(stats[0], 1) if stats[0] else 0
-                    count = stats[1] or 0
-                    return {'success': True, 'average_rating': avg, 'rating_count': count}
-        except Exception as e:
-            logger.error(f'评价实体失败: {e}')
-            return {'success': False, 'error': str(e)}
-
-    def get_entity_ratings(self, target_type: str, target_id: str,
-                           page: int = 1, page_size: int = 20) -> Dict[str, Any]:
+    def calculate_value(self, project_id: str) -> Dict[str, Any]:
         try:
             with self._get_connection() as conn:
                 conn.row_factory = sqlite3.Row
                 cursor = conn.cursor()
-                query = 'SELECT * FROM ecosystem_ratings WHERE target_type = ? AND target_id = ?'
-                cursor.execute(f'SELECT COUNT(*) as cnt FROM ({query})', (target_type, target_id))
+                cursor.execute('SELECT value_model FROM value_co_creation WHERE project_id = ?', (project_id,))
+                project = cursor.fetchone()
+                if not project:
+                    return {'success': False, 'error': '项目不存在'}
+                cursor.execute('SELECT SUM(amount) as total FROM value_contributions WHERE project_id = ?', (project_id,))
+                total = cursor.fetchone()['total'] or 0
+                cursor.execute('SELECT COUNT(DISTINCT partner_id) as partners FROM value_contributions WHERE project_id = ?', (project_id,))
+                partners = cursor.fetchone()['partners'] or 0
+                return {'success': True, 'project_id': project_id, 'value_model': project['value_model'],
+                        'total_contribution': total, 'participating_partners': partners}
+        except Exception as e:
+            logger.error(f'计算价值失败: {e}')
+            return {'success': False, 'error': str(e)}
+
+    def list_value_projects(self, value_model: str = None, education_type: str = None,
+                            status: str = None, page: int = 1, page_size: int = 20) -> Dict[str, Any]:
+        try:
+            with self._get_connection() as conn:
+                conn.row_factory = sqlite3.Row
+                cursor = conn.cursor()
+                query = 'SELECT * FROM value_co_creation WHERE 1=1'
+                params = []
+                if value_model:
+                    query += ' AND value_model = ?'
+                    params.append(value_model)
+                if education_type:
+                    query += ' AND education_type = ?'
+                    params.append(education_type)
+                if status:
+                    query += ' AND status = ?'
+                    params.append(status)
+                cursor.execute(f'SELECT COUNT(*) as cnt FROM ({query})', params)
                 total = cursor.fetchone()['cnt']
                 query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?'
-                cursor.execute(query, (target_type, target_id, page_size, (page - 1) * page_size))
-                ratings = [dict(r) for r in cursor.fetchall()]
-                cursor.execute('SELECT AVG(rating) FROM ecosystem_ratings WHERE target_type = ? AND target_id = ?', (target_type, target_id))
-                avg = cursor.fetchone()[0]
-                return {'success': True, 'ratings': ratings, 'average_rating': round(avg, 1) if avg else 0, 'total': total, 'page': page, 'page_size': page_size}
+                params.extend([page_size, (page - 1) * page_size])
+                cursor.execute(query, params)
+                projects = [dict(p) for p in cursor.fetchall()]
+                return {'success': True, 'projects': projects, 'total': total, 'page': page, 'page_size': page_size}
         except Exception as e:
-            logger.error(f'获取实体评价失败: {e}')
+            logger.error(f'获取价值项目列表失败: {e}')
             return {'success': False, 'error': str(e)}
 
-    def get_rating_summary(self, education_type: str = None) -> Dict[str, Any]:
+    # ========== 风险防控 ==========
+
+    def identify_risk(self, risk_type: str, title: str, **kwargs) -> Dict[str, Any]:
+        try:
+            risk_id = f"rm_{uuid.uuid4().hex[:12]}"
+            now = datetime.now().isoformat()
+            with self._lock:
+                with self._get_connection() as conn:
+                    cursor = conn.cursor()
+                    cursor.execute('''
+                        INSERT INTO risk_management (
+                            risk_id, risk_type, education_type, title, description,
+                            severity, probability, impact, status, created_at, updated_at
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'identified', ?, ?)
+                    ''', (risk_id, risk_type, kwargs.get('education_type'), title,
+                          kwargs.get('description'), kwargs.get('severity', 'medium'),
+                          kwargs.get('probability', 0.5), kwargs.get('impact', 0.5), now, now))
+                    conn.commit()
+                    logger.info(f'识别风险: {title} ({risk_id})')
+                    return {'success': True, 'risk_id': risk_id}
+        except Exception as e:
+            logger.error(f'识别风险失败: {e}')
+            return {'success': False, 'error': str(e)}
+
+    def assess_risk(self, risk_id: str, assessor_id: int, assessor_name: str,
+                    **kwargs) -> Dict[str, Any]:
+        try:
+            assessment_id = f"ra_{uuid.uuid4().hex[:12]}"
+            now = datetime.now().isoformat()
+            severity = kwargs.get('severity', 'medium')
+            probability = kwargs.get('probability', 0.5)
+            impact = kwargs.get('impact', 0.5)
+            risk_score = probability * impact
+            with self._lock:
+                with self._get_connection() as conn:
+                    cursor = conn.cursor()
+                    cursor.execute('''
+                        INSERT INTO risk_assessments (
+                            assessment_id, risk_id, assessor_id, assessor_name,
+                            assessment_date, severity, probability, impact,
+                            risk_score, recommendations, created_at
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ''', (assessment_id, risk_id, assessor_id, assessor_name, now[:10],
+                          severity, probability, impact, round(risk_score, 2),
+                          kwargs.get('recommendations'), now))
+                    cursor.execute('''
+                        UPDATE risk_management
+                        SET severity = ?, probability = ?, impact = ?, status = 'assessed', updated_at = ?
+                        WHERE risk_id = ?
+                    ''', (severity, probability, impact, now, risk_id))
+                    conn.commit()
+                    return {'success': True, 'assessment_id': assessment_id, 'risk_score': round(risk_score, 2)}
+        except Exception as e:
+            logger.error(f'评估风险失败: {e}')
+            return {'success': False, 'error': str(e)}
+
+    def mitigate_risk(self, risk_id: str, **kwargs) -> Dict[str, Any]:
+        try:
+            now = datetime.now().isoformat()
+            with self._lock:
+                with self._get_connection() as conn:
+                    cursor = conn.cursor()
+                    cursor.execute('''
+                        UPDATE risk_management
+                        SET status = 'mitigated', updated_at = ?
+                        WHERE risk_id = ? AND status = 'assessed'
+                    ''', (now, risk_id))
+                    if cursor.rowcount > 0:
+                        conn.commit()
+                        return {'success': True, 'status': 'mitigated'}
+                    return {'success': False, 'error': '风险状态不允许处置'}
+        except Exception as e:
+            logger.error(f'处置风险失败: {e}')
+            return {'success': False, 'error': str(e)}
+
+    def get_risk_dashboard(self, education_type: str = None, risk_type: str = None) -> Dict[str, Any]:
         try:
             with self._get_connection() as conn:
                 conn.row_factory = sqlite3.Row
                 cursor = conn.cursor()
-                query = 'SELECT target_type, AVG(rating) as avg_rating, COUNT(*) as total_count FROM ecosystem_ratings WHERE 1=1'
+                query = 'SELECT * FROM risk_management WHERE 1=1'
                 params = []
                 if education_type:
                     query += ' AND education_type = ?'
                     params.append(education_type)
-                query += ' GROUP BY target_type'
+                if risk_type:
+                    query += ' AND risk_type = ?'
+                    params.append(risk_type)
                 cursor.execute(query, params)
-                summaries = [dict(s) for s in cursor.fetchall()]
-                return {'success': True, 'summary': summaries}
+                risks = [dict(r) for r in cursor.fetchall()]
+                cursor.execute('''
+                    SELECT status, COUNT(*) as count FROM risk_management WHERE 1=1
+                ''' + (' AND education_type = ?' if education_type else ''), params if education_type else [])
+                summary = [{'status': r['status'], 'count': r['count']} for r in cursor.fetchall()]
+                return {'success': True, 'risks': risks, 'summary': summary}
         except Exception as e:
-            logger.error(f'获取评价统计失败: {e}')
+            logger.error(f'获取风险面板失败: {e}')
+            return {'success': False, 'error': str(e)}
+
+    # ========== 可持续发展 ==========
+
+    def evaluate_sustainability(self, partner_id: str, **kwargs) -> Dict[str, Any]:
+        try:
+            sustainability_id = f"su_{uuid.uuid4().hex[:12]}"
+            now = datetime.now().isoformat()
+            overall_score = kwargs.get('overall_score', 0)
+            with self._lock:
+                with self._get_connection() as conn:
+                    cursor = conn.cursor()
+                    cursor.execute('''
+                        INSERT INTO sustainability (
+                            sustainability_id, partner_id, education_type,
+                            overall_score, status, last_evaluation,
+                            created_at, updated_at
+                        ) VALUES (?, ?, ?, ?, 'evaluated', ?, ?, ?)
+                    ''', (sustainability_id, partner_id, kwargs.get('education_type'),
+                          overall_score, now[:10], now, now))
+                    metrics = kwargs.get('metrics', [])
+                    for metric in metrics:
+                        metric_id = f"sm_{uuid.uuid4().hex[:12]}"
+                        cursor.execute('''
+                            INSERT INTO sustainability_metrics (
+                                metric_id, sustainability_id, factor_type,
+                                metric_name, value, target_value, unit, created_at
+                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                        ''', (metric_id, sustainability_id, metric.get('factor_type'),
+                              metric.get('metric_name'), metric.get('value', 0),
+                              metric.get('target_value', 0), metric.get('unit', ''), now))
+                    conn.commit()
+                    return {'success': True, 'sustainability_id': sustainability_id, 'overall_score': overall_score}
+        except Exception as e:
+            logger.error(f'评估可持续性失败: {e}')
+            return {'success': False, 'error': str(e)}
+
+    def update_sustainability_metrics(self, sustainability_id: str,
+                                       metrics: List[Dict[str, Any]]) -> Dict[str, Any]:
+        try:
+            now = datetime.now().isoformat()
+            with self._lock:
+                with self._get_connection() as conn:
+                    cursor = conn.cursor()
+                    for metric in metrics:
+                        cursor.execute('''
+                            UPDATE sustainability_metrics
+                            SET value = ?, target_value = ?, updated_at = ?
+                            WHERE sustainability_id = ? AND metric_name = ?
+                        ''', (metric.get('value'), metric.get('target_value'), now,
+                              sustainability_id, metric.get('metric_name')))
+                    conn.commit()
+                    return {'success': True}
+        except Exception as e:
+            logger.error(f'更新可持续性指标失败: {e}')
+            return {'success': False, 'error': str(e)}
+
+    def generate_sustainability_report(self, partner_id: str,
+                                       education_type: str = None) -> Dict[str, Any]:
+        try:
+            with self._get_connection() as conn:
+                conn.row_factory = sqlite3.Row
+                cursor = conn.cursor()
+                cursor.execute('''
+                    SELECT s.*, p.partner_name
+                    FROM sustainability s
+                    LEFT JOIN ecosystem_partners p ON s.partner_id = p.partner_id
+                    WHERE s.partner_id = ?
+                ''' + (' AND s.education_type = ?' if education_type else ''),
+                              (partner_id, education_type) if education_type else (partner_id,))
+                sustainability = cursor.fetchone()
+                if not sustainability:
+                    return {'success': False, 'error': '未找到可持续性评估记录'}
+                cursor.execute('SELECT * FROM sustainability_metrics WHERE sustainability_id = ?',
+                              (sustainability['sustainability_id'],))
+                metrics = [dict(m) for m in cursor.fetchall()]
+                report = {
+                    'partner_id': partner_id,
+                    'partner_name': sustainability['partner_name'],
+                    'education_type': sustainability['education_type'],
+                    'overall_score': sustainability['overall_score'],
+                    'last_evaluation': sustainability['last_evaluation'],
+                    'metrics': metrics
+                }
+                return {'success': True, 'report': report}
+        except Exception as e:
+            logger.error(f'生成可持续性报告失败: {e}')
+            return {'success': False, 'error': str(e)}
+
+    def list_sustainability_records(self, education_type: str = None,
+                                     page: int = 1, page_size: int = 20) -> Dict[str, Any]:
+        try:
+            with self._get_connection() as conn:
+                conn.row_factory = sqlite3.Row
+                cursor = conn.cursor()
+                query = 'SELECT * FROM sustainability WHERE 1=1'
+                params = []
+                if education_type:
+                    query += ' AND education_type = ?'
+                    params.append(education_type)
+                cursor.execute(f'SELECT COUNT(*) as cnt FROM ({query})', params)
+                total = cursor.fetchone()['cnt']
+                query += ' ORDER BY last_evaluation DESC LIMIT ? OFFSET ?'
+                params.extend([page_size, (page - 1) * page_size])
+                cursor.execute(query, params)
+                records = [dict(r) for r in cursor.fetchall()]
+                return {'success': True, 'records': records, 'total': total, 'page': page, 'page_size': page_size}
+        except Exception as e:
+            logger.error(f'获取可持续性记录失败: {e}')
+            return {'success': False, 'error': str(e)}
+
+    # ========== 监控预警 ==========
+
+    def create_monitor(self, monitor_type: str, threshold: float,
+                       **kwargs) -> Dict[str, Any]:
+        try:
+            monitor_id = f"em_{uuid.uuid4().hex[:12]}"
+            now = datetime.now().isoformat()
+            with self._lock:
+                with self._get_connection() as conn:
+                    cursor = conn.cursor()
+                    cursor.execute('''
+                        INSERT INTO ecosystem_monitoring (
+                            monitor_id, partner_id, education_type, monitor_type,
+                            threshold, status, created_at, updated_at
+                        ) VALUES (?, ?, ?, ?, ?, 'active', ?, ?)
+                    ''', (monitor_id, kwargs.get('partner_id'), kwargs.get('education_type'),
+                          monitor_type, threshold, now, now))
+                    conn.commit()
+                    return {'success': True, 'monitor_id': monitor_id}
+        except Exception as e:
+            logger.error(f'创建监控失败: {e}')
+            return {'success': False, 'error': str(e)}
+
+    def record_monitor_data(self, monitor_id: str, value: float) -> Dict[str, Any]:
+        try:
+            data_id = f"md_{uuid.uuid4().hex[:12]}"
+            now = datetime.now().isoformat()
+            with self._lock:
+                with self._get_connection() as conn:
+                    cursor = conn.cursor()
+                    cursor.execute('SELECT threshold, partner_id, education_type FROM ecosystem_monitoring WHERE monitor_id = ?', (monitor_id,))
+                    monitor = cursor.fetchone()
+                    if not monitor:
+                        return {'success': False, 'error': '监控不存在'}
+                    cursor.execute('''
+                        INSERT INTO monitoring_data (
+                            data_id, monitor_id, value, recorded_at, created_at
+                        ) VALUES (?, ?, ?, ?, ?)
+                    ''', (data_id, monitor_id, value, now[:10], now))
+                    if value > monitor[0]:
+                        alert_id = f"ea_{uuid.uuid4().hex[:12]}"
+                        cursor.execute('''
+                            INSERT INTO ecosystem_alerts (
+                                alert_id, monitor_id, partner_id, education_type,
+                                alert_type, severity, message, status, created_at
+                            ) VALUES (?, ?, ?, ?, ?, ?, ?, 'active', ?)
+                        ''', (alert_id, monitor_id, monitor[1], monitor[2],
+                              'threshold_exceeded', 'warning',
+                              f'Monitor {monitor_id} exceeded threshold: {value} > {monitor[0]}', now))
+                    conn.commit()
+                    return {'success': True, 'data_id': data_id}
+        except Exception as e:
+            logger.error(f'记录监控数据失败: {e}')
+            return {'success': False, 'error': str(e)}
+
+    def resolve_alert(self, alert_id: str, actor_id: int, actor_name: str,
+                      **kwargs) -> Dict[str, Any]:
+        try:
+            now = datetime.now().isoformat()
+            with self._lock:
+                with self._get_connection() as conn:
+                    cursor = conn.cursor()
+                    cursor.execute('''
+                        UPDATE ecosystem_alerts
+                        SET status = 'resolved', resolved_at = ?, updated_at = ?
+                        WHERE alert_id = ? AND status = 'active'
+                    ''', (now[:10], now, alert_id))
+                    if cursor.rowcount > 0:
+                        history_id = f"ah_{uuid.uuid4().hex[:12]}"
+                        cursor.execute('''
+                            INSERT INTO alert_history (
+                                history_id, alert_id, action, actor_id,
+                                actor_name, action_time, notes, created_at
+                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                        ''', (history_id, alert_id, 'resolved', actor_id, actor_name, now[:10],
+                              kwargs.get('notes'), now))
+                        conn.commit()
+                        return {'success': True, 'status': 'resolved'}
+                    return {'success': False, 'error': '告警不存在或已解决'}
+        except Exception as e:
+            logger.error(f'解决告警失败: {e}')
+            return {'success': False, 'error': str(e)}
+
+    def get_alert_history(self, partner_id: str = None, education_type: str = None,
+                          page: int = 1, page_size: int = 20) -> Dict[str, Any]:
+        try:
+            with self._get_connection() as conn:
+                conn.row_factory = sqlite3.Row
+                cursor = conn.cursor()
+                query = 'SELECT * FROM ecosystem_alerts WHERE 1=1'
+                params = []
+                if partner_id:
+                    query += ' AND partner_id = ?'
+                    params.append(partner_id)
+                if education_type:
+                    query += ' AND education_type = ?'
+                    params.append(education_type)
+                cursor.execute(f'SELECT COUNT(*) as cnt FROM ({query})', params)
+                total = cursor.fetchone()['cnt']
+                query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?'
+                params.extend([page_size, (page - 1) * page_size])
+                cursor.execute(query, params)
+                alerts = [dict(a) for a in cursor.fetchall()]
+                return {'success': True, 'alerts': alerts, 'total': total, 'page': page, 'page_size': page_size}
+        except Exception as e:
+            logger.error(f'获取告警历史失败: {e}')
             return {'success': False, 'error': str(e)}
 
     # ========== 统计分析 ==========
 
-    def get_ecosystem_stats(self, education_type: str = None) -> Dict[str, Any]:
+    def get_ecosystem_summary(self, education_type: str = None) -> Dict[str, Any]:
         try:
             with self._get_connection() as conn:
+                conn.row_factory = sqlite3.Row
                 cursor = conn.cursor()
-                stats = {}
+                where_clause = f' AND education_type = "{education_type}"' if education_type else ''
 
-                partner_query = 'SELECT COUNT(*) FROM ecosystem_partners WHERE status = ?'
-                partner_params = ['approved']
-                if education_type:
-                    partner_query += ' AND education_type = ?'
-                    partner_params.append(education_type)
-                cursor.execute(partner_query, partner_params)
-                stats['total_partners'] = cursor.fetchone()[0]
+                cursor.execute(f'SELECT COUNT(*) as count FROM ecosystem_partners WHERE status = "approved"{where_clause}')
+                partners = cursor.fetchone()['count']
 
-                alliance_query = 'SELECT COUNT(*) FROM industry_alliances WHERE status = ?'
-                alliance_params = ['active']
-                if education_type:
-                    alliance_query += ' AND education_type = ?'
-                    alliance_params.append(education_type)
-                cursor.execute(alliance_query, alliance_params)
-                stats['total_alliances'] = cursor.fetchone()[0]
+                cursor.execute(f'SELECT COUNT(*) as count FROM shared_resources WHERE status = "available"{where_clause}')
+                resources = cursor.fetchone()['count']
 
-                resource_query = 'SELECT COUNT(*) FROM resource_pool'
-                resource_params = []
-                if education_type:
-                    resource_query += ' WHERE education_type = ?'
-                    resource_params.append(education_type)
-                cursor.execute(resource_query, resource_params)
-                stats['total_resources'] = cursor.fetchone()[0]
+                cursor.execute(f'SELECT COUNT(*) as count FROM integrated_services WHERE status = "available"{where_clause}')
+                services = cursor.fetchone()['count']
 
-                agreement_query = 'SELECT COUNT(*) FROM cooperation_agreements WHERE status = ?'
-                agreement_params = ['active']
-                if education_type:
-                    agreement_query += ' AND education_type = ?'
-                    agreement_params.append(education_type)
-                cursor.execute(agreement_query, agreement_params)
-                stats['active_agreements'] = cursor.fetchone()[0]
+                cursor.execute(f'SELECT COUNT(*) as count FROM data_interchange WHERE transfer_status = "completed"{where_clause}')
+                data_transfers = cursor.fetchone()['count']
 
-                event_query = 'SELECT COUNT(*) FROM ecosystem_events WHERE status = ?'
-                event_params = ['completed']
-                if education_type:
-                    event_query += ' AND education_type = ?'
-                    event_params.append(education_type)
-                cursor.execute(event_query, event_params)
-                stats['completed_events'] = cursor.fetchone()[0]
+                cursor.execute(f'SELECT COUNT(*) as count FROM ecosystem_standards WHERE status = "published"{where_clause}')
+                standards = cursor.fetchone()['count']
 
-                rating_query = 'SELECT AVG(rating) FROM ecosystem_ratings'
-                rating_params = []
-                if education_type:
-                    rating_query += ' WHERE education_type = ?'
-                    rating_params.append(education_type)
-                cursor.execute(rating_query, rating_params)
-                avg_rating = cursor.fetchone()[0]
-                stats['average_rating'] = round(avg_rating, 1) if avg_rating else 0
+                cursor.execute(f'SELECT COUNT(*) as count FROM value_co_creation WHERE status = "active"{where_clause}')
+                projects = cursor.fetchone()['count']
 
-                cursor.execute('SELECT partner_type, COUNT(*) as cnt FROM ecosystem_partners WHERE status = ? GROUP BY partner_type', ('approved',))
-                stats['partner_type_distribution'] = {row[0]: row[1] for row in cursor.fetchall()}
+                cursor.execute(f'SELECT COUNT(*) as count FROM risk_management WHERE status = "identified"{where_clause}')
+                active_risks = cursor.fetchone()['count']
 
-                cursor.execute('SELECT industry_sector, COUNT(*) as cnt FROM ecosystem_partners WHERE status = ? GROUP BY industry_sector', ('approved',))
-                stats['sector_distribution'] = {row[0]: row[1] for row in cursor.fetchall()}
+                cursor.execute(f'SELECT COUNT(*) as count FROM ecosystem_alerts WHERE status = "active"{where_clause}')
+                active_alerts = cursor.fetchone()['count']
 
-                return {'success': True, 'stats': stats}
+                summary = {
+                    'partner_count': partners,
+                    'resource_count': resources,
+                    'service_count': services,
+                    'data_transfer_count': data_transfers,
+                    'standard_count': standards,
+                    'active_projects': projects,
+                    'active_risks': active_risks,
+                    'active_alerts': active_alerts,
+                    'education_type': education_type or 'all'
+                }
+                return {'success': True, 'summary': summary}
         except Exception as e:
-            logger.error(f'获取生态统计失败: {e}')
+            logger.error(f'获取生态系统统计失败: {e}')
             return {'success': False, 'error': str(e)}

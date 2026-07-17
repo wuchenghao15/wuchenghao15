@@ -1,20 +1,25 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-MTSCOS 教育创新创业服务 (v15.17.0)
+MTSCOS 教育创新管理服务 (v15.22.0)
 ====================================
-提供创新项目孵化、创业培训、创业指导、投融资对接、知识产权保护等综合服务。
+提供创新项目管理、创新人才培养、创新成果转化等综合管理服务。
 
 核心能力：
-1. 创新项目 - 项目申报、评审管理、跟踪评估
-2. 孵化服务 - 孵化计划、项目入驻、阶段管理
-3. 创业培训 - 课程管理、培训报名、成果认证
-4. 创业导师 - 导师管理、匹配对接、指导记录
-5. 投融资服务 - 融资对接、投资管理、项目估值
-6. 知识产权 - 专利申请、商标注册、版权保护
-7. 创业园区 - 园区管理、企业入驻、资源共享
-8. 创业大赛 - 赛事组织、项目报名、评审颁奖
-9. 创业生态 - 生态建设、资源整合、协作网络
+1. 创新项目管理 - 项目创建、阶段管理、成员管理、任务管理
+2. 创新人才培养 - 人才登记、角色管理、能力评估、成长轨迹
+3. 创新成果转化 - 成果登记、转化管理、知识产权、产业化跟踪
+4. 创新资金管理 - 资金申请、审批管理、预算控制、使用跟踪
+5. 创新平台建设 - 平台创建、资源管理、运营维护、协作支持
+6. 创新合作网络 - 合作建立、资源共享、协同创新、成果共享
+7. 创新评估体系 - 评估指标、评分管理、报告生成、改进建议
+8. 创新文化建设 - 文化活动、氛围营造、激励机制、创新宣传
+9. 奖励管理 - 奖项设置、申报管理、评审流程、颁奖记录
+10. 统计分析 - 创新数据汇总、趋势分析、决策支持
+
+差异化支持：
+- 成人教育：职业技能创新、企业培训、终身学习
+- K12教育：素养培育、创客教育、STEM教育
 """
 import os
 import json
@@ -44,96 +49,96 @@ logger = logging.getLogger('EducationInnovation')
 # ========== 创新配置 ==========
 
 INNOVATION_TYPES = {
-    'tech': {'name': '技术创新', 'description': '基于新技术研发的创新'},
-    'product': {'name': '产品创新', 'description': '新产品开发与优化'},
-    'model': {'name': '模式创新', 'description': '商业模式创新'},
-    'service': {'name': '服务创新', 'description': '服务方式与内容创新'},
-    'management': {'name': '管理创新', 'description': '管理方法与流程创新'},
-    'education': {'name': '教育创新', 'description': '教育理念与方法创新'},
-    'content': {'name': '内容创新', 'description': '内容创作与呈现创新'},
-    'business_model': {'name': '商业模式创新', 'description': '商业运作模式创新'}
+    'teaching': {'name': '教学创新', 'description': '教学方法与模式创新', 'education_type': ['adult', 'k12']},
+    'course': {'name': '课程创新', 'description': '课程内容与体系创新', 'education_type': ['adult', 'k12']},
+    'technology': {'name': '技术创新', 'description': '教育技术与工具创新', 'education_type': ['adult', 'k12']},
+    'management': {'name': '管理创新', 'description': '教育管理与治理创新', 'education_type': ['adult']},
+    'model': {'name': '模式创新', 'description': '教育服务与运营模式创新', 'education_type': ['adult', 'k12']},
+    'service': {'name': '服务创新', 'description': '教育服务方式创新', 'education_type': ['adult']},
+    'product': {'name': '产品创新', 'description': '教育产品与资源创新', 'education_type': ['adult', 'k12']},
+    'organization': {'name': '组织创新', 'description': '教育组织形态创新', 'education_type': ['adult']}
 }
 
-INCUBATION_STAGES = {
-    'idea': {'name': '创意阶段', 'description': '概念构思与可行性分析'},
-    'seed': {'name': '种子阶段', 'description': '原型开发与初步验证'},
-    'startup': {'name': '初创阶段', 'description': '产品上线与市场探索'},
-    'growth': {'name': '成长阶段', 'description': '规模扩张与团队建设'},
-    'expansion': {'name': '扩张阶段', 'description': '市场拓展与融资准备'},
-    'mature': {'name': '成熟阶段', 'description': '稳定运营与规模化'},
-    'transformation': {'name': '转型阶段', 'description': '业务转型与升级'},
-    'exit': {'name': '退出阶段', 'description': '并购或上市退出'}
+PROJECT_PHASES = {
+    'idea': {'name': '创意阶段', 'description': '项目创意产生与筛选', 'order': 1},
+    'rnd': {'name': '研发阶段', 'description': '方案设计与原型开发', 'order': 2},
+    'pilot': {'name': '试点阶段', 'description': '小范围试验与验证', 'order': 3},
+    'promotion': {'name': '推广阶段', 'description': '规模推广与应用', 'order': 4},
+    'industrialization': {'name': '产业化阶段', 'description': '商业化与规模化', 'order': 5},
+    'evaluation': {'name': '评估阶段', 'description': '效果评估与总结', 'order': 6},
+    'iteration': {'name': '迭代阶段', 'description': '优化改进与升级', 'order': 7},
+    'termination': {'name': '终止阶段', 'description': '项目结束与归档', 'order': 8}
 }
 
-ENTREPRENEURSHIP_PROGRAMS = {
-    'incubation': {'name': '创业孵化', 'duration': '3-6个月'},
-    'training': {'name': '创业培训', 'duration': '1-3个月'},
-    'competition': {'name': '创业竞赛', 'duration': '1-2个月'},
-    'investment': {'name': '创业投资', 'duration': '长期'},
-    'accelerator': {'name': '创业加速器', 'duration': '6-12个月'},
-    'incubator': {'name': '创业孵化器', 'duration': '6-24个月'},
-    'park': {'name': '创业园区', 'duration': '长期'},
-    'community': {'name': '创业社区', 'duration': '长期'}
+TALENT_ROLES = {
+    'mentor': {'name': '创新导师', 'description': '指导创新实践', 'education_type': ['adult', 'k12']},
+    'practitioner': {'name': '创新实践者', 'description': '执行创新项目', 'education_type': ['adult', 'k12']},
+    'researcher': {'name': '创新研究者', 'description': '开展创新研究', 'education_type': ['adult']},
+    'manager': {'name': '创新管理者', 'description': '管理创新过程', 'education_type': ['adult']},
+    'investor': {'name': '创新投资者', 'description': '提供资金支持', 'education_type': ['adult']},
+    'promoter': {'name': '创新推广者', 'description': '推广创新成果', 'education_type': ['adult', 'k12']},
+    'evaluator': {'name': '创新评估者', 'description': '评估创新成效', 'education_type': ['adult', 'k12']},
+    'decision_maker': {'name': '创新决策者', 'description': '制定创新战略', 'education_type': ['adult']}
 }
 
-TRAINING_MODULES = {
-    'foundation': {'name': '创业基础', 'hours': 16, 'level': '入门'},
-    'business_plan': {'name': '商业计划', 'hours': 24, 'level': '进阶'},
-    'marketing': {'name': '市场营销', 'hours': 20, 'level': '进阶'},
-    'finance': {'name': '财务管理', 'hours': 18, 'level': '进阶'},
-    'team': {'name': '团队管理', 'hours': 12, 'level': '入门'},
-    'funding': {'name': '融资策略', 'hours': 20, 'level': '高级'},
-    'legal': {'name': '法律合规', 'hours': 16, 'level': '入门'},
-    'ip': {'name': '知识产权', 'hours': 16, 'level': '进阶'}
+TRANSFORMATION_MODES = {
+    'technology_transfer': {'name': '技术转让', 'description': '技术成果转让', 'education_type': ['adult']},
+    'patent_license': {'name': '专利许可', 'description': '专利技术许可', 'education_type': ['adult']},
+    'industry_university': {'name': '产学研合作', 'description': '产学研协同创新', 'education_type': ['adult']},
+    'incubator': {'name': '孵化器', 'description': '入驻孵化器培育', 'education_type': ['adult']},
+    'accelerator': {'name': '加速器', 'description': '快速成长加速', 'education_type': ['adult']},
+    'venture_capital': {'name': '创业投资', 'description': '引入风险投资', 'education_type': ['adult']},
+    'enterprise_cooperation': {'name': '企业合作', 'description': '企业联合开发', 'education_type': ['adult']},
+    'government_support': {'name': '政府支持', 'description': '获取政府资助', 'education_type': ['adult', 'k12']}
 }
 
-MENTOR_ROLES = {
-    'entrepreneurship': {'name': '创业导师', 'expertise': '创业经验指导'},
-    'technical': {'name': '技术导师', 'expertise': '技术研发指导'},
-    'business': {'name': '商业导师', 'expertise': '商业模式设计'},
-    'industry': {'name': '行业导师', 'expertise': '行业趋势分析'},
-    'investment': {'name': '投资导师', 'expertise': '投融资指导'},
-    'legal': {'name': '法律导师', 'expertise': '法律风险防控'},
-    'finance': {'name': '财务导师', 'expertise': '财务管理咨询'},
-    'management': {'name': '管理导师', 'expertise': '企业管理指导'}
+FUNDING_SOURCES = {
+    'government': {'name': '政府资助', 'description': '政府专项资金', 'education_type': ['adult', 'k12']},
+    'enterprise': {'name': '企业投资', 'description': '企业投入资金', 'education_type': ['adult']},
+    'donation': {'name': '社会捐赠', 'description': '社会力量捐赠', 'education_type': ['adult', 'k12']},
+    'research': {'name': '科研经费', 'description': '科研项目经费', 'education_type': ['adult']},
+    'crowdfunding': {'name': '众筹', 'description': '众筹融资', 'education_type': ['adult']},
+    'cooperation': {'name': '合作基金', 'description': '多方合作基金', 'education_type': ['adult']},
+    'special': {'name': '专项基金', 'description': '专项创新基金', 'education_type': ['adult', 'k12']},
+    'self': {'name': '自有资金', 'description': '自有资金投入', 'education_type': ['adult', 'k12']}
 }
 
-INVESTMENT_TYPES = {
-    'angel': {'name': '天使投资', 'stage': '种子期', 'amount': '10万-500万'},
-    'vc': {'name': '风险投资', 'stage': '成长期', 'amount': '500万-5000万'},
-    'pe': {'name': '私募股权', 'stage': '成熟期', 'amount': '5000万以上'},
-    'crowdfunding': {'name': '众筹', 'stage': '初创期', 'amount': '1万-100万'},
-    'government': {'name': '政府扶持', 'stage': '各阶段', 'amount': '视政策'},
-    'bank': {'name': '银行贷款', 'stage': '成长期', 'amount': '灵活'},
-    'corporate': {'name': '企业投资', 'stage': '各阶段', 'amount': '灵活'},
-    'personal': {'name': '个人投资', 'stage': '各阶段', 'amount': '灵活'}
+PLATFORM_TYPES = {
+    'lab': {'name': '创新实验室', 'description': '专业创新实验场所', 'education_type': ['adult', 'k12']},
+    'maker': {'name': '创客空间', 'description': '创客实践空间', 'education_type': ['adult', 'k12']},
+    'incubator': {'name': '孵化器', 'description': '创业孵化基地', 'education_type': ['adult']},
+    'accelerator': {'name': '加速器', 'description': '企业加速成长', 'education_type': ['adult']},
+    'tech_transfer': {'name': '技术转移中心', 'description': '技术成果转移', 'education_type': ['adult']},
+    'industry_university': {'name': '产学研平台', 'description': '产学研协同平台', 'education_type': ['adult']},
+    'international': {'name': '国际合作平台', 'description': '国际交流合作', 'education_type': ['adult']},
+    'alliance': {'name': '创新联盟', 'description': '创新合作联盟', 'education_type': ['adult', 'k12']}
 }
 
-IP_PROTECTION = {
-    'patent': {'name': '专利', 'duration': '20年', 'type': '发明/实用新型/外观'},
-    'trademark': {'name': '商标', 'duration': '10年', 'type': '文字/图形/组合'},
-    'copyright': {'name': '版权', 'duration': '作者终生+50年', 'type': '作品/软件'},
-    'trade_secret': {'name': '商业秘密', 'duration': '长期', 'type': '技术/经营信息'},
-    'domain': {'name': '域名', 'duration': '1-10年', 'type': '网址'},
-    'software_copyright': {'name': '软件著作权', 'duration': '50年', 'type': '软件作品'},
-    'ic_layout': {'name': '集成电路布图', 'duration': '10年', 'type': '芯片设计'},
-    'plant_variety': {'name': '植物新品种', 'duration': '15-20年', 'type': '农业品种'}
+COOPERATION_TYPES = {
+    'school_enterprise': {'name': '校企合作', 'description': '学校与企业合作', 'education_type': ['adult']},
+    'industry_university': {'name': '产学研合作', 'description': '产业、学校、科研合作', 'education_type': ['adult']},
+    'international': {'name': '国际合作', 'description': '国际教育合作', 'education_type': ['adult']},
+    'school_school': {'name': '校际合作', 'description': '学校间合作', 'education_type': ['adult', 'k12']},
+    'industry': {'name': '行业合作', 'description': '跨行业合作', 'education_type': ['adult']},
+    'interdisciplinary': {'name': '跨学科合作', 'description': '多学科交叉合作', 'education_type': ['adult', 'k12']},
+    'community': {'name': '社区合作', 'description': '学校与社区合作', 'education_type': ['adult', 'k12']},
+    'government': {'name': '政府合作', 'description': '与政府部门合作', 'education_type': ['adult', 'k12']}
 }
 
-COMPETITION_TYPES = {
-    'innovation': {'name': '创新创业大赛', 'scope': '综合性'},
-    'business_plan': {'name': '商业计划竞赛', 'scope': '商业策划'},
-    'tech': {'name': '科技竞赛', 'scope': '科技创新'},
-    'creative': {'name': '创意大赛', 'scope': '创意设计'},
-    'challenge': {'name': '创业挑战赛', 'scope': '专项挑战'},
-    'roadshow': {'name': '路演大赛', 'scope': '项目展示'},
-    'industry': {'name': '行业竞赛', 'scope': '特定行业'},
-    'international': {'name': '国际竞赛', 'scope': '跨国参与'}
+ASSESSMENT_CRITERIA = {
+    'innovation': {'name': '创新性', 'description': '创新程度与独特性', 'weight': 0.15},
+    'practicality': {'name': '实用性', 'description': '实际应用价值', 'weight': 0.15},
+    'impact': {'name': '影响力', 'description': '产生的影响范围', 'weight': 0.15},
+    'sustainability': {'name': '可持续性', 'description': '长期发展潜力', 'weight': 0.12},
+    'economic': {'name': '经济效益', 'description': '经济价值创造', 'weight': 0.13},
+    'social': {'name': '社会效益', 'description': '社会价值贡献', 'weight': 0.15},
+    'academic': {'name': '学术价值', 'description': '理论与学术贡献', 'weight': 0.10},
+    'promotion': {'name': '推广价值', 'description': '可复制推广性', 'weight': 0.10}
 }
 
 
 class EducationInnovationService:
-    """教育创新创业服务"""
+    """教育创新管理服务"""
 
     def __init__(self):
         self.db_path = DATABASE_PATH
@@ -151,314 +156,301 @@ class EducationInnovationService:
                     CREATE TABLE IF NOT EXISTS innovation_projects (
                         project_id TEXT PRIMARY KEY,
                         project_name TEXT NOT NULL,
-                        innovation_type TEXT,
+                        innovation_type TEXT NOT NULL,
                         education_type TEXT,
-                        category TEXT,
                         description TEXT,
-                        founder_name TEXT,
-                        founder_id INTEGER,
-                        team_members TEXT,
-                        status TEXT DEFAULT 'draft',
-                        stage TEXT DEFAULT 'idea',
-                        score REAL DEFAULT 0,
-                        created_at TEXT,
-                        updated_at TEXT
-                    )
-                ''')
-                cursor.execute('''
-                    CREATE TABLE IF NOT EXISTS project_details (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        project_id TEXT NOT NULL,
-                        content TEXT,
-                        milestones TEXT,
+                        leader_id INTEGER,
+                        leader_name TEXT,
                         budget REAL DEFAULT 0,
-                        target_market TEXT,
-                        competitive_analysis TEXT,
-                        risks TEXT,
-                        mitigation_strategy TEXT,
-                        FOREIGN KEY(project_id) REFERENCES innovation_projects(project_id)
-                    )
-                ''')
-                cursor.execute('''
-                    CREATE TABLE IF NOT EXISTS incubation_programs (
-                        program_id TEXT PRIMARY KEY,
-                        program_name TEXT NOT NULL,
-                        program_type TEXT,
-                        education_type TEXT,
-                        description TEXT,
-                        duration TEXT,
+                        status TEXT DEFAULT 'idea',
                         start_date TEXT,
                         end_date TEXT,
-                        max_seats INTEGER DEFAULT 20,
-                        enrolled_count INTEGER DEFAULT 0,
-                        status TEXT DEFAULT 'open',
+                        expected_outcome TEXT,
+                        actual_outcome TEXT,
+                        progress REAL DEFAULT 0,
+                        visibility TEXT DEFAULT 'internal',
                         created_at TEXT,
                         updated_at TEXT
                     )
                 ''')
                 cursor.execute('''
-                    CREATE TABLE IF NOT EXISTS program_applications (
+                    CREATE TABLE IF NOT EXISTS project_phases (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        program_id TEXT NOT NULL,
                         project_id TEXT NOT NULL,
-                        applicant_id INTEGER,
-                        applicant_name TEXT,
-                        application_date TEXT,
+                        phase TEXT NOT NULL,
+                        phase_name TEXT,
+                        start_date TEXT,
+                        end_date TEXT,
                         status TEXT DEFAULT 'pending',
-                        review_notes TEXT,
-                        FOREIGN KEY(program_id) REFERENCES incubation_programs(program_id),
+                        description TEXT,
+                        completed_at TEXT,
                         FOREIGN KEY(project_id) REFERENCES innovation_projects(project_id)
                     )
                 ''')
                 cursor.execute('''
-                    CREATE TABLE IF NOT EXISTS entrepreneurship_training (
-                        training_id TEXT PRIMARY KEY,
-                        training_name TEXT NOT NULL,
-                        module_type TEXT,
-                        education_type TEXT,
-                        description TEXT,
-                        duration_hours INTEGER,
-                        start_date TEXT,
-                        end_date TEXT,
-                        instructor TEXT,
-                        max_participants INTEGER DEFAULT 30,
-                        enrolled_count INTEGER DEFAULT 0,
-                        status TEXT DEFAULT 'open',
-                        created_at TEXT,
-                        updated_at TEXT
-                    )
-                ''')
-                cursor.execute('''
-                    CREATE TABLE IF NOT EXISTS training_records (
+                    CREATE TABLE IF NOT EXISTS project_members (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        training_id TEXT NOT NULL,
-                        participant_id INTEGER,
-                        participant_name TEXT,
-                        enrollment_date TEXT,
-                        attendance_rate REAL DEFAULT 0,
-                        completion_status TEXT DEFAULT 'in_progress',
-                        certificate_no TEXT,
-                        FOREIGN KEY(training_id) REFERENCES entrepreneurship_training(training_id)
-                    )
-                ''')
-                cursor.execute('''
-                    CREATE TABLE IF NOT EXISTS mentorship (
-                        mentor_id TEXT PRIMARY KEY,
-                        mentor_name TEXT NOT NULL,
-                        mentor_role TEXT,
-                        expertise TEXT,
-                        education_type TEXT,
-                        experience_years INTEGER,
-                        availability TEXT,
-                        hourly_rate REAL DEFAULT 0,
-                        status TEXT DEFAULT 'active',
-                        created_at TEXT,
-                        updated_at TEXT
-                    )
-                ''')
-                cursor.execute('''
-                    CREATE TABLE IF NOT EXISTS mentor_matching (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        mentor_id TEXT NOT NULL,
                         project_id TEXT NOT NULL,
-                        student_id INTEGER,
-                        match_date TEXT,
-                        status TEXT DEFAULT 'matched',
-                        session_count INTEGER DEFAULT 0,
-                        FOREIGN KEY(mentor_id) REFERENCES mentorship(mentor_id),
-                        FOREIGN KEY(project_id) REFERENCES innovation_projects(project_id)
-                    )
-                ''')
-                cursor.execute('''
-                    CREATE TABLE IF NOT EXISTS investment_deals (
-                        deal_id TEXT PRIMARY KEY,
-                        project_id TEXT NOT NULL,
-                        investment_type TEXT,
-                        investor_name TEXT,
-                        amount REAL,
-                        equity_percent REAL,
-                        deal_date TEXT,
-                        status TEXT DEFAULT 'negotiating',
-                        FOREIGN KEY(project_id) REFERENCES innovation_projects(project_id)
-                    )
-                ''')
-                cursor.execute('''
-                    CREATE TABLE IF NOT EXISTS deal_flow (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        deal_id TEXT NOT NULL,
-                        stage TEXT,
-                        comment TEXT,
-                        update_date TEXT,
-                        FOREIGN KEY(deal_id) REFERENCES investment_deals(deal_id)
-                    )
-                ''')
-                cursor.execute('''
-                    CREATE TABLE IF NOT EXISTS ip_protection (
-                        ip_id TEXT PRIMARY KEY,
-                        ip_type TEXT,
-                        education_type TEXT,
-                        name TEXT NOT NULL,
-                        description TEXT,
-                        applicant_name TEXT,
-                        applicant_id INTEGER,
-                        status TEXT DEFAULT 'pending',
-                        registration_no TEXT,
-                        application_date TEXT,
-                        approval_date TEXT,
-                        expiry_date TEXT,
-                        created_at TEXT,
-                        updated_at TEXT
-                    )
-                ''')
-                cursor.execute('''
-                    CREATE TABLE IF NOT EXISTS ip_records (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        ip_id TEXT NOT NULL,
-                        project_id TEXT,
-                        record_type TEXT,
-                        detail TEXT,
-                        record_date TEXT,
-                        FOREIGN KEY(ip_id) REFERENCES ip_protection(ip_id),
-                        FOREIGN KEY(project_id) REFERENCES innovation_projects(project_id)
-                    )
-                ''')
-                cursor.execute('''
-                    CREATE TABLE IF NOT EXISTS startup_parks (
-                        park_id TEXT PRIMARY KEY,
-                        park_name TEXT NOT NULL,
-                        location TEXT,
-                        education_type TEXT,
-                        description TEXT,
-                        total_area REAL,
-                        available_area REAL,
-                        resident_count INTEGER DEFAULT 0,
-                        services TEXT,
-                        status TEXT DEFAULT 'active',
-                        created_at TEXT,
-                        updated_at TEXT
-                    )
-                ''')
-                cursor.execute('''
-                    CREATE TABLE IF NOT EXISTS park_residents (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        park_id TEXT NOT NULL,
-                        project_id TEXT NOT NULL,
-                        company_name TEXT,
-                        resident_date TEXT,
-                        area_allocated REAL,
-                        status TEXT DEFAULT 'active',
-                        FOREIGN KEY(park_id) REFERENCES startup_parks(park_id),
-                        FOREIGN KEY(project_id) REFERENCES innovation_projects(project_id)
-                    )
-                ''')
-                cursor.execute('''
-                    CREATE TABLE IF NOT EXISTS startup_competitions (
-                        competition_id TEXT PRIMARY KEY,
-                        competition_name TEXT NOT NULL,
-                        competition_type TEXT,
-                        education_type TEXT,
-                        description TEXT,
-                        start_date TEXT,
-                        end_date TEXT,
-                        registration_deadline TEXT,
-                        max_teams INTEGER DEFAULT 100,
-                        registered_count INTEGER DEFAULT 0,
-                        status TEXT DEFAULT 'registration',
-                        prizes TEXT,
-                        created_at TEXT,
-                        updated_at TEXT
-                    )
-                ''')
-                cursor.execute('''
-                    CREATE TABLE IF NOT EXISTS competition_results (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        competition_id TEXT NOT NULL,
-                        project_id TEXT NOT NULL,
-                        team_name TEXT,
-                        rank INTEGER,
-                        score REAL,
-                        prize TEXT,
-                        status TEXT DEFAULT 'participating',
-                        FOREIGN KEY(competition_id) REFERENCES startup_competitions(competition_id),
-                        FOREIGN KEY(project_id) REFERENCES innovation_projects(project_id)
-                    )
-                ''')
-                cursor.execute('''
-                    CREATE TABLE IF NOT EXISTS startup_ecosystem (
-                        ecosystem_id TEXT PRIMARY KEY,
-                        ecosystem_name TEXT NOT NULL,
-                        education_type TEXT,
-                        description TEXT,
-                        members_count INTEGER DEFAULT 0,
-                        status TEXT DEFAULT 'active',
-                        created_at TEXT,
-                        updated_at TEXT
-                    )
-                ''')
-                cursor.execute('''
-                    CREATE TABLE IF NOT EXISTS ecosystem_members (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        ecosystem_id TEXT NOT NULL,
-                        member_id INTEGER,
+                        member_id INTEGER NOT NULL,
                         member_name TEXT,
-                        member_type TEXT,
+                        role TEXT,
                         join_date TEXT,
-                        FOREIGN KEY(ecosystem_id) REFERENCES startup_ecosystem(ecosystem_id)
+                        leave_date TEXT,
+                        UNIQUE(project_id, member_id)
                     )
                 ''')
                 cursor.execute('''
-                    CREATE TABLE IF NOT EXISTS venture_capital (
-                        vc_id TEXT PRIMARY KEY,
-                        vc_name TEXT NOT NULL,
-                        fund_size REAL,
-                        investment_focus TEXT,
+                    CREATE TABLE IF NOT EXISTS project_tasks (
+                        task_id TEXT PRIMARY KEY,
+                        project_id TEXT NOT NULL,
+                        task_name TEXT NOT NULL,
+                        description TEXT,
+                        assignee_id INTEGER,
+                        assignee_name TEXT,
+                        priority TEXT DEFAULT 'medium',
+                        status TEXT DEFAULT 'pending',
+                        due_date TEXT,
+                        completed_at TEXT,
+                        created_at TEXT,
+                        FOREIGN KEY(project_id) REFERENCES innovation_projects(project_id)
+                    )
+                ''')
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS innovation_talent (
+                        talent_id TEXT PRIMARY KEY,
+                        talent_name TEXT NOT NULL,
                         education_type TEXT,
-                        contact_info TEXT,
+                        email TEXT,
+                        phone TEXT,
+                        department TEXT,
+                        position TEXT,
                         status TEXT DEFAULT 'active',
                         created_at TEXT,
                         updated_at TEXT
                     )
                 ''')
                 cursor.execute('''
-                    CREATE TABLE IF NOT EXISTS vc_portfolio (
+                    CREATE TABLE IF NOT EXISTS talent_profiles (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        vc_id TEXT NOT NULL,
+                        talent_id TEXT NOT NULL,
+                        role TEXT NOT NULL,
+                        expertise TEXT,
+                        skills TEXT,
+                        experience TEXT,
+                        achievements TEXT,
+                        FOREIGN KEY(talent_id) REFERENCES innovation_talent(talent_id)
+                    )
+                ''')
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS innovation_results (
+                        result_id TEXT PRIMARY KEY,
                         project_id TEXT NOT NULL,
-                        investment_amount REAL,
-                        investment_date TEXT,
-                        equity_percent REAL,
-                        FOREIGN KEY(vc_id) REFERENCES venture_capital(vc_id),
+                        result_name TEXT NOT NULL,
+                        result_type TEXT,
+                        description TEXT,
+                        intellectual_property TEXT,
+                        status TEXT DEFAULT 'pending',
+                        created_at TEXT,
                         FOREIGN KEY(project_id) REFERENCES innovation_projects(project_id)
+                    )
+                ''')
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS result_transformation (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        result_id TEXT NOT NULL,
+                        transformation_mode TEXT,
+                        partner TEXT,
+                        agreement_date TEXT,
+                        value REAL DEFAULT 0,
+                        status TEXT DEFAULT 'planning',
+                        progress REAL DEFAULT 0,
+                        FOREIGN KEY(result_id) REFERENCES innovation_results(result_id)
+                    )
+                ''')
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS funding_management (
+                        funding_id TEXT PRIMARY KEY,
+                        project_id TEXT NOT NULL,
+                        source TEXT NOT NULL,
+                        amount REAL DEFAULT 0,
+                        allocated_amount REAL DEFAULT 0,
+                        used_amount REAL DEFAULT 0,
+                        budget_details TEXT,
+                        status TEXT DEFAULT 'pending',
+                        created_at TEXT,
+                        FOREIGN KEY(project_id) REFERENCES innovation_projects(project_id)
+                    )
+                ''')
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS funding_applications (
+                        application_id TEXT PRIMARY KEY,
+                        project_id TEXT NOT NULL,
+                        funding_source TEXT,
+                        amount REAL DEFAULT 0,
+                        purpose TEXT,
+                        budget_plan TEXT,
+                        status TEXT DEFAULT 'submitted',
+                        review_comments TEXT,
+                        approved_amount REAL,
+                        approved_at TEXT,
+                        created_at TEXT,
+                        FOREIGN KEY(project_id) REFERENCES innovation_projects(project_id)
+                    )
+                ''')
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS innovation_platforms (
+                        platform_id TEXT PRIMARY KEY,
+                        platform_name TEXT NOT NULL,
+                        platform_type TEXT,
+                        education_type TEXT,
+                        description TEXT,
+                        location TEXT,
+                        capacity INTEGER DEFAULT 0,
+                        current_users INTEGER DEFAULT 0,
+                        status TEXT DEFAULT 'active',
+                        created_at TEXT,
+                        updated_at TEXT
+                    )
+                ''')
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS platform_resources (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        platform_id TEXT NOT NULL,
+                        resource_name TEXT,
+                        resource_type TEXT,
+                        quantity INTEGER DEFAULT 1,
+                        status TEXT DEFAULT 'available',
+                        FOREIGN KEY(platform_id) REFERENCES innovation_platforms(platform_id)
+                    )
+                ''')
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS cooperation_networks (
+                        network_id TEXT PRIMARY KEY,
+                        network_name TEXT NOT NULL,
+                        cooperation_type TEXT,
+                        education_type TEXT,
+                        description TEXT,
+                        partner_count INTEGER DEFAULT 0,
+                        status TEXT DEFAULT 'active',
+                        created_at TEXT,
+                        updated_at TEXT
+                    )
+                ''')
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS cooperation_records (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        network_id TEXT NOT NULL,
+                        partner_name TEXT,
+                        partner_type TEXT,
+                        cooperation_content TEXT,
+                        start_date TEXT,
+                        end_date TEXT,
+                        status TEXT DEFAULT 'ongoing',
+                        FOREIGN KEY(network_id) REFERENCES cooperation_networks(network_id)
+                    )
+                ''')
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS assessment_system (
+                        assessment_id TEXT PRIMARY KEY,
+                        project_id TEXT NOT NULL,
+                        assessment_type TEXT,
+                        criteria TEXT,
+                        weights TEXT,
+                        scheduled_date TEXT,
+                        status TEXT DEFAULT 'scheduled',
+                        created_at TEXT,
+                        FOREIGN KEY(project_id) REFERENCES innovation_projects(project_id)
+                    )
+                ''')
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS assessment_scores (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        assessment_id TEXT NOT NULL,
+                        criterion TEXT,
+                        score REAL,
+                        comment TEXT,
+                        FOREIGN KEY(assessment_id) REFERENCES assessment_system(assessment_id)
+                    )
+                ''')
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS innovation_culture (
+                        culture_id TEXT PRIMARY KEY,
+                        culture_name TEXT NOT NULL,
+                        education_type TEXT,
+                        description TEXT,
+                        objectives TEXT,
+                        status TEXT DEFAULT 'active',
+                        created_at TEXT,
+                        updated_at TEXT
+                    )
+                ''')
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS culture_initiatives (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        culture_id TEXT NOT NULL,
+                        initiative_name TEXT,
+                        description TEXT,
+                        start_date TEXT,
+                        end_date TEXT,
+                        status TEXT DEFAULT 'planned',
+                        FOREIGN KEY(culture_id) REFERENCES innovation_culture(culture_id)
+                    )
+                ''')
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS innovation_awards (
+                        award_id TEXT PRIMARY KEY,
+                        award_name TEXT NOT NULL,
+                        education_type TEXT,
+                        description TEXT,
+                        level TEXT,
+                        criteria TEXT,
+                        status TEXT DEFAULT 'active',
+                        created_at TEXT,
+                        updated_at TEXT
+                    )
+                ''')
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS award_records (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        award_id TEXT NOT NULL,
+                        project_id TEXT,
+                        talent_id TEXT,
+                        applicant_name TEXT,
+                        application_date TEXT,
+                        status TEXT DEFAULT 'submitted',
+                        result TEXT,
+                        awarded_at TEXT,
+                        FOREIGN KEY(award_id) REFERENCES innovation_awards(award_id)
                     )
                 ''')
                 conn.commit()
-                logger.info('教育创新创业服务数据库初始化完成')
+                logger.info('教育创新管理服务数据库初始化完成')
         except Exception as e:
             logger.error(f'数据库初始化失败: {e}')
 
-    # ========== 创新项目 ==========
+    # ========== 创新项目管理 ==========
 
-    def create_innovation_project(self, project_name: str, innovation_type: str,
-                                   education_type: str, **kwargs) -> Dict[str, Any]:
+    def create_project(self, project_name: str, innovation_type: str,
+                       education_type: str, **kwargs) -> Dict[str, Any]:
         try:
-            project_id = f"inv_{uuid.uuid4().hex[:12]}"
+            project_id = f"ipr_{uuid.uuid4().hex[:12]}"
             now = datetime.now().isoformat()
             with self._lock:
                 with self._get_connection() as conn:
                     cursor = conn.cursor()
                     cursor.execute('''
                         INSERT INTO innovation_projects (
-                            project_id, project_name, innovation_type,
-                            education_type, category, description,
-                            founder_name, founder_id, team_members,
-                            status, stage, created_at, updated_at
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', 'idea', ?, ?)
-                    ''', (project_id, project_name, innovation_type,
-                          education_type, kwargs.get('category'),
-                          kwargs.get('description'), kwargs.get('founder_name'),
-                          kwargs.get('founder_id'), kwargs.get('team_members'),
-                          now, now))
-                    cursor.execute('INSERT INTO project_details (project_id) VALUES (?)', (project_id,))
+                            project_id, project_name, innovation_type, education_type,
+                            description, leader_id, leader_name, budget,
+                            status, start_date, end_date, expected_outcome,
+                            actual_outcome, progress, visibility, created_at, updated_at
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'idea', ?, ?, ?, NULL, 0, ?, ?, ?)
+                    ''', (project_id, project_name, innovation_type, education_type,
+                          kwargs.get('description'), kwargs.get('leader_id'),
+                          kwargs.get('leader_name'), kwargs.get('budget', 0),
+                          kwargs.get('start_date', now[:10]), kwargs.get('end_date'),
+                          kwargs.get('expected_outcome'),
+                          kwargs.get('visibility', 'internal'), now, now))
                     conn.commit()
                     logger.info(f'创建创新项目: {project_name} ({project_id})')
                     return {'success': True, 'project_id': project_id}
@@ -466,441 +458,234 @@ class EducationInnovationService:
             logger.error(f'创建创新项目失败: {e}')
             return {'success': False, 'error': str(e)}
 
-    def submit_project_review(self, project_id: str) -> Dict[str, Any]:
+    def update_project_phase(self, project_id: str, phase: str,
+                              **kwargs) -> Dict[str, Any]:
         try:
             now = datetime.now().isoformat()
+            phase_config = PROJECT_PHASES.get(phase, {})
             with self._lock:
                 with self._get_connection() as conn:
                     cursor = conn.cursor()
-                    cursor.execute('UPDATE innovation_projects SET status = ?, updated_at = ? WHERE project_id = ? AND status = ?',
-                                 ('reviewing', now, project_id, 'draft'))
-                    if cursor.rowcount > 0:
-                        conn.commit()
-                        return {'success': True, 'status': 'reviewing'}
-                    return {'success': False, 'error': '项目状态不允许提交'}
-        except Exception as e:
-            logger.error(f'提交项目评审失败: {e}')
-            return {'success': False, 'error': str(e)}
-
-    def review_project(self, project_id: str, approved: bool, **kwargs) -> Dict[str, Any]:
-        try:
-            now = datetime.now().isoformat()
-            status = 'approved' if approved else 'rejected'
-            with self._lock:
-                with self._get_connection() as conn:
-                    cursor = conn.cursor()
-                    cursor.execute('UPDATE innovation_projects SET status = ?, score = ?, updated_at = ? WHERE project_id = ? AND status = ?',
-                                 (status, kwargs.get('score', 0), now, project_id, 'reviewing'))
-                    if cursor.rowcount > 0:
-                        conn.commit()
-                        return {'success': True, 'status': status, 'score': kwargs.get('score', 0)}
-                    return {'success': False, 'error': '项目状态不允许评审'}
-        except Exception as e:
-            logger.error(f'评审项目失败: {e}')
-            return {'success': False, 'error': str(e)}
-
-    def update_project_stage(self, project_id: str, stage: str) -> Dict[str, Any]:
-        try:
-            now = datetime.now().isoformat()
-            with self._lock:
-                with self._get_connection() as conn:
-                    cursor = conn.cursor()
-                    cursor.execute('UPDATE innovation_projects SET stage = ?, updated_at = ? WHERE project_id = ?',
-                                 (stage, now, project_id))
-                    if cursor.rowcount > 0:
-                        conn.commit()
-                        return {'success': True, 'stage': stage}
-                    return {'success': False, 'error': '项目不存在'}
+                    cursor.execute('SELECT status FROM innovation_projects WHERE project_id = ?', (project_id,))
+                    project = cursor.fetchone()
+                    if not project:
+                        return {'success': False, 'error': '项目不存在'}
+                    cursor.execute('SELECT id FROM project_phases WHERE project_id = ? AND phase = ?', (project_id, phase))
+                    if cursor.fetchone():
+                        cursor.execute('''
+                            UPDATE project_phases SET status = ?, start_date = ?, end_date = ?, description = ?, completed_at = ?
+                            WHERE project_id = ? AND phase = ?
+                        ''', (kwargs.get('status', 'in_progress'), kwargs.get('start_date'),
+                              kwargs.get('end_date'), kwargs.get('description'),
+                              kwargs.get('completed_at'), project_id, phase))
+                    else:
+                        cursor.execute('''
+                            INSERT INTO project_phases (project_id, phase, phase_name, start_date, end_date, status, description, completed_at)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                        ''', (project_id, phase, phase_config.get('name'), kwargs.get('start_date'),
+                              kwargs.get('end_date'), kwargs.get('status', 'in_progress'),
+                              kwargs.get('description'), kwargs.get('completed_at')))
+                    cursor.execute('UPDATE innovation_projects SET status = ?, updated_at = ? WHERE project_id = ?',
+                                  (phase, now, project_id))
+                    conn.commit()
+                    return {'success': True, 'phase': phase}
         except Exception as e:
             logger.error(f'更新项目阶段失败: {e}')
             return {'success': False, 'error': str(e)}
 
-    # ========== 孵化服务 ==========
-
-    def create_incubation_program(self, program_name: str, program_type: str,
-                                   education_type: str, **kwargs) -> Dict[str, Any]:
-        try:
-            program_id = f"inc_{uuid.uuid4().hex[:12]}"
-            now = datetime.now().isoformat()
-            config = ENTREPRENEURSHIP_PROGRAMS.get(program_type, {})
-            with self._lock:
-                with self._get_connection() as conn:
-                    cursor = conn.cursor()
-                    cursor.execute('''
-                        INSERT INTO incubation_programs (
-                            program_id, program_name, program_type,
-                            education_type, description, duration,
-                            start_date, end_date, max_seats,
-                            enrolled_count, status, created_at, updated_at
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'open', ?, ?)
-                    ''', (program_id, program_name, program_type,
-                          education_type, kwargs.get('description'),
-                          kwargs.get('duration', config.get('duration', '3个月')),
-                          kwargs.get('start_date'), kwargs.get('end_date'),
-                          kwargs.get('max_seats', 20), now, now))
-                    conn.commit()
-                    logger.info(f'创建孵化项目: {program_name} ({program_id})')
-                    return {'success': True, 'program_id': program_id}
-        except Exception as e:
-            logger.error(f'创建孵化项目失败: {e}')
-            return {'success': False, 'error': str(e)}
-
-    def apply_incubation_program(self, program_id: str, project_id: str,
-                                  **kwargs) -> Dict[str, Any]:
+    def add_project_member(self, project_id: str, member_id: int,
+                           member_name: str, **kwargs) -> Dict[str, Any]:
         try:
             now = datetime.now().isoformat()
             with self._lock:
                 with self._get_connection() as conn:
                     cursor = conn.cursor()
-                    cursor.execute('SELECT max_seats, enrolled_count, status FROM incubation_programs WHERE program_id = ?', (program_id,))
-                    program = cursor.fetchone()
-                    if not program:
-                        return {'success': False, 'error': '孵化项目不存在'}
-                    if program[2] != 'open':
-                        return {'success': False, 'error': '孵化项目报名已关闭'}
-                    if program[0] and program[1] >= program[0]:
-                        return {'success': False, 'error': '名额已满'}
-                    cursor.execute('INSERT OR IGNORE INTO program_applications (program_id, project_id, applicant_id, applicant_name, application_date, status) VALUES (?, ?, ?, ?, ?, \'pending\')',
-                                 (program_id, project_id, kwargs.get('applicant_id'), kwargs.get('applicant_name'), now[:10]))
+                    cursor.execute('INSERT OR IGNORE INTO project_members (project_id, member_id, member_name, role, join_date) VALUES (?, ?, ?, ?, ?)',
+                                  (project_id, member_id, member_name, kwargs.get('role', 'member'), now))
                     if cursor.rowcount > 0:
                         conn.commit()
                         return {'success': True}
-                    return {'success': False, 'error': '已申请该项目'}
+                    return {'success': False, 'error': '成员已加入项目'}
         except Exception as e:
-            logger.error(f'申请孵化项目失败: {e}')
+            logger.error(f'添加项目成员失败: {e}')
             return {'success': False, 'error': str(e)}
 
-    def review_application(self, application_id: int, approved: bool,
+    def create_project_task(self, project_id: str, task_name: str,
                             **kwargs) -> Dict[str, Any]:
         try:
-            now = datetime.now().isoformat()
-            status = 'approved' if approved else 'rejected'
-            with self._lock:
-                with self._get_connection() as conn:
-                    cursor = conn.cursor()
-                    cursor.execute('SELECT program_id FROM program_applications WHERE id = ? AND status = ?', (application_id, 'pending'))
-                    app = cursor.fetchone()
-                    if not app:
-                        return {'success': False, 'error': '申请记录不存在'}
-                    cursor.execute('UPDATE program_applications SET status = ?, review_notes = ? WHERE id = ?',
-                                 (status, kwargs.get('review_notes'), application_id))
-                    if approved:
-                        cursor.execute('UPDATE incubation_programs SET enrolled_count = enrolled_count + 1, updated_at = ? WHERE program_id = ?', (now, app[0]))
-                    conn.commit()
-                    return {'success': True, 'status': status}
-        except Exception as e:
-            logger.error(f'审核申请失败: {e}')
-            return {'success': False, 'error': str(e)}
-
-    def list_incubation_programs(self, education_type: str = None,
-                                  status: str = None, page: int = 1,
-                                  page_size: int = 20) -> Dict[str, Any]:
-        try:
-            with self._get_connection() as conn:
-                conn.row_factory = sqlite3.Row
-                cursor = conn.cursor()
-                query = 'SELECT * FROM incubation_programs WHERE 1=1'
-                params = []
-                if education_type:
-                    query += ' AND education_type = ?'
-                    params.append(education_type)
-                if status:
-                    query += ' AND status = ?'
-                    params.append(status)
-                cursor.execute(f'SELECT COUNT(*) as cnt FROM ({query})', params)
-                total = cursor.fetchone()['cnt']
-                query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?'
-                params.extend([page_size, (page - 1) * page_size])
-                cursor.execute(query, params)
-                programs = [dict(p) for p in cursor.fetchall()]
-                return {'success': True, 'programs': programs, 'total': total, 'page': page, 'page_size': page_size}
-        except Exception as e:
-            logger.error(f'获取孵化项目列表失败: {e}')
-            return {'success': False, 'error': str(e)}
-
-    # ========== 创业培训 ==========
-
-    def create_training(self, training_name: str, module_type: str,
-                        education_type: str, **kwargs) -> Dict[str, Any]:
-        try:
-            training_id = f"trn_{uuid.uuid4().hex[:12]}"
-            now = datetime.now().isoformat()
-            config = TRAINING_MODULES.get(module_type, {})
-            with self._lock:
-                with self._get_connection() as conn:
-                    cursor = conn.cursor()
-                    cursor.execute('''
-                        INSERT INTO entrepreneurship_training (
-                            training_id, training_name, module_type,
-                            education_type, description, duration_hours,
-                            start_date, end_date, instructor,
-                            max_participants, enrolled_count, status,
-                            created_at, updated_at
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'open', ?, ?)
-                    ''', (training_id, training_name, module_type,
-                          education_type, kwargs.get('description'),
-                          kwargs.get('duration_hours', config.get('hours', 16)),
-                          kwargs.get('start_date'), kwargs.get('end_date'),
-                          kwargs.get('instructor'), kwargs.get('max_participants', 30),
-                          now, now))
-                    conn.commit()
-                    logger.info(f'创建培训课程: {training_name} ({training_id})')
-                    return {'success': True, 'training_id': training_id}
-        except Exception as e:
-            logger.error(f'创建培训课程失败: {e}')
-            return {'success': False, 'error': str(e)}
-
-    def enroll_training(self, training_id: str, participant_id: int,
-                         **kwargs) -> Dict[str, Any]:
-        try:
-            now = datetime.now().isoformat()
-            with self._lock:
-                with self._get_connection() as conn:
-                    cursor = conn.cursor()
-                    cursor.execute('SELECT max_participants, enrolled_count, status FROM entrepreneurship_training WHERE training_id = ?', (training_id,))
-                    training = cursor.fetchone()
-                    if not training:
-                        return {'success': False, 'error': '培训课程不存在'}
-                    if training[2] != 'open':
-                        return {'success': False, 'error': '培训课程报名已关闭'}
-                    if training[0] and training[1] >= training[0]:
-                        return {'success': False, 'error': '名额已满'}
-                    cursor.execute('INSERT OR IGNORE INTO training_records (training_id, participant_id, participant_name, enrollment_date) VALUES (?, ?, ?, ?)',
-                                 (training_id, participant_id, kwargs.get('participant_name'), now[:10]))
-                    if cursor.rowcount > 0:
-                        cursor.execute('UPDATE entrepreneurship_training SET enrolled_count = enrolled_count + 1, updated_at = ? WHERE training_id = ?', (now, training_id))
-                        conn.commit()
-                        return {'success': True}
-                    return {'success': False, 'error': '已报名该培训'}
-        except Exception as e:
-            logger.error(f'报名培训失败: {e}')
-            return {'success': False, 'error': str(e)}
-
-    def record_training_completion(self, record_id: int, attendance_rate: float,
-                                    **kwargs) -> Dict[str, Any]:
-        try:
-            now = datetime.now().isoformat()
-            completion_status = 'completed' if attendance_rate >= 80 else 'incomplete'
-            certificate_no = f"TCR{datetime.now().strftime('%Y%m%d')}{uuid.uuid4().hex[:6].upper()}" if completion_status == 'completed' else None
-            with self._lock:
-                with self._get_connection() as conn:
-                    cursor = conn.cursor()
-                    cursor.execute('UPDATE training_records SET attendance_rate = ?, completion_status = ?, certificate_no = ? WHERE id = ?',
-                                 (attendance_rate, completion_status, certificate_no, record_id))
-                    if cursor.rowcount > 0:
-                        conn.commit()
-                        return {'success': True, 'completion_status': completion_status, 'certificate_no': certificate_no}
-                    return {'success': False, 'error': '培训记录不存在'}
-        except Exception as e:
-            logger.error(f'记录培训完成状态失败: {e}')
-            return {'success': False, 'error': str(e)}
-
-    def list_trainings(self, education_type: str = None, module_type: str = None,
-                       status: str = None, page: int = 1, page_size: int = 20) -> Dict[str, Any]:
-        try:
-            with self._get_connection() as conn:
-                conn.row_factory = sqlite3.Row
-                cursor = conn.cursor()
-                query = 'SELECT * FROM entrepreneurship_training WHERE 1=1'
-                params = []
-                if education_type:
-                    query += ' AND education_type = ?'
-                    params.append(education_type)
-                if module_type:
-                    query += ' AND module_type = ?'
-                    params.append(module_type)
-                if status:
-                    query += ' AND status = ?'
-                    params.append(status)
-                cursor.execute(f'SELECT COUNT(*) as cnt FROM ({query})', params)
-                total = cursor.fetchone()['cnt']
-                query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?'
-                params.extend([page_size, (page - 1) * page_size])
-                cursor.execute(query, params)
-                trainings = [dict(t) for t in cursor.fetchall()]
-                return {'success': True, 'trainings': trainings, 'total': total, 'page': page, 'page_size': page_size}
-        except Exception as e:
-            logger.error(f'获取培训列表失败: {e}')
-            return {'success': False, 'error': str(e)}
-
-    # ========== 创业导师 ==========
-
-    def register_mentor(self, mentor_name: str, mentor_role: str,
-                         education_type: str, **kwargs) -> Dict[str, Any]:
-        try:
-            mentor_id = f"mtr_{uuid.uuid4().hex[:12]}"
-            now = datetime.now().isoformat()
-            config = MENTOR_ROLES.get(mentor_role, {})
-            with self._lock:
-                with self._get_connection() as conn:
-                    cursor = conn.cursor()
-                    cursor.execute('''
-                        INSERT INTO mentorship (
-                            mentor_id, mentor_name, mentor_role,
-                            expertise, education_type, experience_years,
-                            availability, hourly_rate, status,
-                            created_at, updated_at
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?)
-                    ''', (mentor_id, mentor_name, mentor_role,
-                          kwargs.get('expertise', config.get('expertise', '')),
-                          education_type, kwargs.get('experience_years', 0),
-                          kwargs.get('availability'), kwargs.get('hourly_rate', 0),
-                          now, now))
-                    conn.commit()
-                    logger.info(f'注册导师: {mentor_name} ({mentor_id})')
-                    return {'success': True, 'mentor_id': mentor_id}
-        except Exception as e:
-            logger.error(f'注册导师失败: {e}')
-            return {'success': False, 'error': str(e)}
-
-    def match_mentor(self, mentor_id: str, project_id: str, **kwargs) -> Dict[str, Any]:
-        try:
-            now = datetime.now().isoformat()
-            with self._lock:
-                with self._get_connection() as conn:
-                    cursor = conn.cursor()
-                    cursor.execute('INSERT OR IGNORE INTO mentor_matching (mentor_id, project_id, student_id, match_date, status) VALUES (?, ?, ?, ?, \'matched\')',
-                                 (mentor_id, project_id, kwargs.get('student_id'), now[:10]))
-                    if cursor.rowcount > 0:
-                        conn.commit()
-                        return {'success': True}
-                    return {'success': False, 'error': '已匹配该导师'}
-        except Exception as e:
-            logger.error(f'匹配导师失败: {e}')
-            return {'success': False, 'error': str(e)}
-
-    def record_mentor_session(self, match_id: int) -> Dict[str, Any]:
-        try:
-            now = datetime.now().isoformat()
-            with self._lock:
-                with self._get_connection() as conn:
-                    cursor = conn.cursor()
-                    cursor.execute('UPDATE mentor_matching SET session_count = session_count + 1 WHERE id = ?', (match_id,))
-                    if cursor.rowcount > 0:
-                        conn.commit()
-                        return {'success': True}
-                    return {'success': False, 'error': '匹配记录不存在'}
-        except Exception as e:
-            logger.error(f'记录导师会话失败: {e}')
-            return {'success': False, 'error': str(e)}
-
-    def list_mentors(self, mentor_role: str = None, education_type: str = None,
-                      status: str = 'active', page: int = 1, page_size: int = 20) -> Dict[str, Any]:
-        try:
-            with self._get_connection() as conn:
-                conn.row_factory = sqlite3.Row
-                cursor = conn.cursor()
-                query = 'SELECT * FROM mentorship WHERE 1=1'
-                params = []
-                if mentor_role:
-                    query += ' AND mentor_role = ?'
-                    params.append(mentor_role)
-                if education_type:
-                    query += ' AND education_type = ?'
-                    params.append(education_type)
-                if status:
-                    query += ' AND status = ?'
-                    params.append(status)
-                cursor.execute(f'SELECT COUNT(*) as cnt FROM ({query})', params)
-                total = cursor.fetchone()['cnt']
-                query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?'
-                params.extend([page_size, (page - 1) * page_size])
-                cursor.execute(query, params)
-                mentors = [dict(m) for m in cursor.fetchall()]
-                return {'success': True, 'mentors': mentors, 'total': total, 'page': page, 'page_size': page_size}
-        except Exception as e:
-            logger.error(f'获取导师列表失败: {e}')
-            return {'success': False, 'error': str(e)}
-
-    # ========== 投融资服务 ==========
-
-    def create_investment_deal(self, project_id: str, investment_type: str,
-                                amount: float, **kwargs) -> Dict[str, Any]:
-        try:
-            deal_id = f"ivd_{uuid.uuid4().hex[:12]}"
+            task_id = f"ptk_{uuid.uuid4().hex[:12]}"
             now = datetime.now().isoformat()
             with self._lock:
                 with self._get_connection() as conn:
                     cursor = conn.cursor()
                     cursor.execute('''
-                        INSERT INTO investment_deals (
-                            deal_id, project_id, investment_type,
-                            investor_name, amount, equity_percent,
-                            deal_date, status
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, 'negotiating')
-                    ''', (deal_id, project_id, investment_type,
-                          kwargs.get('investor_name'), amount,
-                          kwargs.get('equity_percent', 0), now[:10]))
-                    cursor.execute('INSERT INTO deal_flow (deal_id, stage, comment, update_date) VALUES (?, ?, ?, ?)',
-                                 (deal_id, 'negotiating', 'Deal created', now[:10]))
+                        INSERT INTO project_tasks (task_id, project_id, task_name, description,
+                                                   assignee_id, assignee_name, priority, status,
+                                                   due_date, created_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)
+                    ''', (task_id, project_id, task_name, kwargs.get('description'),
+                          kwargs.get('assignee_id'), kwargs.get('assignee_name'),
+                          kwargs.get('priority', 'medium'), kwargs.get('due_date'), now))
                     conn.commit()
-                    logger.info(f'创建投资交易: {deal_id}')
-                    return {'success': True, 'deal_id': deal_id}
+                    return {'success': True, 'task_id': task_id}
         except Exception as e:
-            logger.error(f'创建投资交易失败: {e}')
+            logger.error(f'创建项目任务失败: {e}')
             return {'success': False, 'error': str(e)}
 
-    def update_deal_stage(self, deal_id: str, stage: str, **kwargs) -> Dict[str, Any]:
-        try:
-            now = datetime.now().isoformat()
-            with self._lock:
-                with self._get_connection() as conn:
-                    cursor = conn.cursor()
-                    cursor.execute('UPDATE investment_deals SET status = ?, updated_at = ? WHERE deal_id = ?',
-                                 (stage, now, deal_id))
-                    cursor.execute('INSERT INTO deal_flow (deal_id, stage, comment, update_date) VALUES (?, ?, ?, ?)',
-                                 (deal_id, stage, kwargs.get('comment', ''), now[:10]))
-                    conn.commit()
-                    return {'success': True, 'stage': stage}
-        except Exception as e:
-            logger.error(f'更新交易阶段失败: {e}')
-            return {'success': False, 'error': str(e)}
+    # ========== 创新人才培养 ==========
 
-    def register_vc(self, vc_name: str, **kwargs) -> Dict[str, Any]:
+    def register_talent(self, talent_name: str, education_type: str,
+                        **kwargs) -> Dict[str, Any]:
         try:
-            vc_id = f"vc_{uuid.uuid4().hex[:12]}"
+            talent_id = f"tal_{uuid.uuid4().hex[:12]}"
             now = datetime.now().isoformat()
             with self._lock:
                 with self._get_connection() as conn:
                     cursor = conn.cursor()
                     cursor.execute('''
-                        INSERT INTO venture_capital (
-                            vc_id, vc_name, fund_size,
-                            investment_focus, education_type,
-                            contact_info, status, created_at, updated_at
-                        ) VALUES (?, ?, ?, ?, ?, ?, 'active', ?, ?)
-                    ''', (vc_id, vc_name, kwargs.get('fund_size', 0),
-                          kwargs.get('investment_focus'), kwargs.get('education_type'),
-                          kwargs.get('contact_info'), now, now))
+                        INSERT INTO innovation_talent (talent_id, talent_name, education_type,
+                                                      email, phone, department, position,
+                                                      status, created_at, updated_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, 'active', ?, ?)
+                    ''', (talent_id, talent_name, education_type, kwargs.get('email'),
+                          kwargs.get('phone'), kwargs.get('department'),
+                          kwargs.get('position'), now, now))
                     conn.commit()
-                    logger.info(f'注册创投机构: {vc_name} ({vc_id})')
-                    return {'success': True, 'vc_id': vc_id}
+                    logger.info(f'注册创新人才: {talent_name} ({talent_id})')
+                    return {'success': True, 'talent_id': talent_id}
         except Exception as e:
-            logger.error(f'注册创投机构失败: {e}')
+            logger.error(f'注册创新人才失败: {e}')
             return {'success': False, 'error': str(e)}
 
-    def add_vc_portfolio(self, vc_id: str, project_id: str,
-                          investment_amount: float, **kwargs) -> Dict[str, Any]:
+    def update_talent_profile(self, talent_id: str, role: str,
+                               **kwargs) -> Dict[str, Any]:
         try:
-            now = datetime.now().isoformat()
             with self._lock:
                 with self._get_connection() as conn:
                     cursor = conn.cursor()
-                    cursor.execute('INSERT INTO vc_portfolio (vc_id, project_id, investment_amount, investment_date, equity_percent) VALUES (?, ?, ?, ?, ?)',
-                                 (vc_id, project_id, investment_amount, now[:10], kwargs.get('equity_percent', 0)))
+                    cursor.execute('SELECT id FROM talent_profiles WHERE talent_id = ? AND role = ?', (talent_id, role))
+                    if cursor.fetchone():
+                        cursor.execute('''
+                            UPDATE talent_profiles SET expertise = ?, skills = ?, experience = ?, achievements = ?
+                            WHERE talent_id = ? AND role = ?
+                        ''', (kwargs.get('expertise'), kwargs.get('skills'),
+                              kwargs.get('experience'), kwargs.get('achievements'),
+                              talent_id, role))
+                    else:
+                        cursor.execute('''
+                            INSERT INTO talent_profiles (talent_id, role, expertise, skills, experience, achievements)
+                            VALUES (?, ?, ?, ?, ?, ?)
+                        ''', (talent_id, role, kwargs.get('expertise'), kwargs.get('skills'),
+                              kwargs.get('experience'), kwargs.get('achievements')))
                     conn.commit()
                     return {'success': True}
         except Exception as e:
-            logger.error(f'添加投资组合失败: {e}')
+            logger.error(f'更新人才档案失败: {e}')
             return {'success': False, 'error': str(e)}
 
-    def list_deals(self, project_id: str = None, status: str = None,
-                   page: int = 1, page_size: int = 20) -> Dict[str, Any]:
+    def assess_talent(self, talent_id: str, assessment_data: Dict[str, Any]) -> Dict[str, Any]:
+        try:
+            total_score = 0
+            total_weight = 0
+            for criterion, score in assessment_data.get('scores', {}).items():
+                weight = ASSESSMENT_CRITERIA.get(criterion, {}).get('weight', 0.125)
+                total_score += score * weight
+                total_weight += weight
+            avg_score = round(total_score / total_weight, 2) if total_weight > 0 else 0
+            level = 'excellent' if avg_score >= 90 else ('good' if avg_score >= 80 else ('qualified' if avg_score >= 60 else 'needs_improvement'))
+            return {'success': True, 'score': avg_score, 'level': level}
+        except Exception as e:
+            logger.error(f'人才评估失败: {e}')
+            return {'success': False, 'error': str(e)}
+
+    def list_talent(self, education_type: str = None, role: str = None,
+                    page: int = 1, page_size: int = 20) -> Dict[str, Any]:
         try:
             with self._get_connection() as conn:
                 conn.row_factory = sqlite3.Row
                 cursor = conn.cursor()
-                query = 'SELECT * FROM investment_deals WHERE 1=1'
+                query = 'SELECT * FROM innovation_talent WHERE 1=1'
+                params = []
+                if education_type:
+                    query += ' AND education_type = ?'
+                    params.append(education_type)
+                cursor.execute(f'SELECT COUNT(*) as cnt FROM ({query})', params)
+                total = cursor.fetchone()['cnt']
+                query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?'
+                params.extend([page_size, (page - 1) * page_size])
+                cursor.execute(query, params)
+                talent = [dict(t) for t in cursor.fetchall()]
+                return {'success': True, 'talent': talent, 'total': total, 'page': page, 'page_size': page_size}
+        except Exception as e:
+            logger.error(f'获取人才列表失败: {e}')
+            return {'success': False, 'error': str(e)}
+
+    # ========== 成果转化 ==========
+
+    def register_result(self, project_id: str, result_name: str,
+                        **kwargs) -> Dict[str, Any]:
+        try:
+            result_id = f"irs_{uuid.uuid4().hex[:12]}"
+            now = datetime.now().isoformat()
+            with self._lock:
+                with self._get_connection() as conn:
+                    cursor = conn.cursor()
+                    cursor.execute('''
+                        INSERT INTO innovation_results (result_id, project_id, result_name,
+                                                        result_type, description,
+                                                        intellectual_property, status, created_at)
+                        VALUES (?, ?, ?, ?, ?, ?, 'pending', ?)
+                    ''', (result_id, project_id, result_name, kwargs.get('result_type'),
+                          kwargs.get('description'), kwargs.get('intellectual_property'), now))
+                    conn.commit()
+                    logger.info(f'登记创新成果: {result_name} ({result_id})')
+                    return {'success': True, 'result_id': result_id}
+        except Exception as e:
+            logger.error(f'登记创新成果失败: {e}')
+            return {'success': False, 'error': str(e)}
+
+    def create_transformation_plan(self, result_id: str, transformation_mode: str,
+                                    **kwargs) -> Dict[str, Any]:
+        try:
+            with self._lock:
+                with self._get_connection() as conn:
+                    cursor = conn.cursor()
+                    cursor.execute('''
+                        INSERT INTO result_transformation (result_id, transformation_mode, partner,
+                                                           agreement_date, value, status, progress)
+                        VALUES (?, ?, ?, ?, ?, 'planning', 0)
+                    ''', (result_id, transformation_mode, kwargs.get('partner'),
+                          kwargs.get('agreement_date'), kwargs.get('value', 0)))
+                    conn.commit()
+                    return {'success': True}
+        except Exception as e:
+            logger.error(f'创建转化计划失败: {e}')
+            return {'success': False, 'error': str(e)}
+
+    def update_transformation_progress(self, transformation_id: int,
+                                        progress: float, **kwargs) -> Dict[str, Any]:
+        try:
+            status = 'completed' if progress >= 100 else ('in_progress' if progress > 0 else 'planning')
+            with self._lock:
+                with self._get_connection() as conn:
+                    cursor = conn.cursor()
+                    cursor.execute('UPDATE result_transformation SET progress = ?, status = ? WHERE id = ?',
+                                  (progress, status, transformation_id))
+                    if cursor.rowcount > 0:
+                        conn.commit()
+                        return {'success': True, 'status': status}
+                    return {'success': False, 'error': '转化记录不存在'}
+        except Exception as e:
+            logger.error(f'更新转化进度失败: {e}')
+            return {'success': False, 'error': str(e)}
+
+    def list_results(self, project_id: str = None, status: str = None,
+                     page: int = 1, page_size: int = 20) -> Dict[str, Any]:
+        try:
+            with self._get_connection() as conn:
+                conn.row_factory = sqlite3.Row
+                cursor = conn.cursor()
+                query = 'SELECT * FROM innovation_results WHERE 1=1'
                 params = []
                 if project_id:
                     query += ' AND project_id = ?'
@@ -910,380 +695,529 @@ class EducationInnovationService:
                     params.append(status)
                 cursor.execute(f'SELECT COUNT(*) as cnt FROM ({query})', params)
                 total = cursor.fetchone()['cnt']
-                query += ' ORDER BY deal_date DESC LIMIT ? OFFSET ?'
+                query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?'
                 params.extend([page_size, (page - 1) * page_size])
                 cursor.execute(query, params)
-                deals = [dict(d) for d in cursor.fetchall()]
-                return {'success': True, 'deals': deals, 'total': total, 'page': page, 'page_size': page_size}
+                results = [dict(r) for r in cursor.fetchall()]
+                return {'success': True, 'results': results, 'total': total, 'page': page, 'page_size': page_size}
         except Exception as e:
-            logger.error(f'获取交易列表失败: {e}')
+            logger.error(f'获取成果列表失败: {e}')
             return {'success': False, 'error': str(e)}
 
-    # ========== 知识产权 ==========
+    # ========== 资金管理 ==========
 
-    def apply_ip_protection(self, ip_type: str, name: str, education_type: str,
-                            **kwargs) -> Dict[str, Any]:
+    def create_funding_application(self, project_id: str, funding_source: str,
+                                    amount: float, **kwargs) -> Dict[str, Any]:
         try:
-            ip_id = f"ip_{uuid.uuid4().hex[:12]}"
+            application_id = f"fap_{uuid.uuid4().hex[:12]}"
             now = datetime.now().isoformat()
-            config = IP_PROTECTION.get(ip_type, {})
-            duration = int(config.get('duration', '10年').replace('年', '')) if '年' in str(config.get('duration', '')) else 10
-            expiry_date = (datetime.now() + timedelta(days=duration * 365)).isoformat()[:10] if duration > 0 else None
             with self._lock:
                 with self._get_connection() as conn:
                     cursor = conn.cursor()
                     cursor.execute('''
-                        INSERT INTO ip_protection (
-                            ip_id, ip_type, education_type, name,
-                            description, applicant_name, applicant_id,
-                            status, application_date, expiry_date,
-                            created_at, updated_at
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?)
-                    ''', (ip_id, ip_type, education_type, name,
-                          kwargs.get('description'), kwargs.get('applicant_name'),
-                          kwargs.get('applicant_id'), now[:10], expiry_date,
-                          now, now))
+                        INSERT INTO funding_applications (application_id, project_id, funding_source,
+                                                          amount, purpose, budget_plan, status,
+                                                          review_comments, approved_amount, approved_at, created_at)
+                        VALUES (?, ?, ?, ?, ?, ?, 'submitted', NULL, NULL, NULL, ?)
+                    ''', (application_id, project_id, funding_source, amount,
+                          kwargs.get('purpose'), kwargs.get('budget_plan'), now))
                     conn.commit()
-                    logger.info(f'申请知识产权: {name} ({ip_id})')
-                    return {'success': True, 'ip_id': ip_id}
+                    logger.info(f'创建资金申请: {application_id}')
+                    return {'success': True, 'application_id': application_id}
         except Exception as e:
-            logger.error(f'申请知识产权失败: {e}')
+            logger.error(f'创建资金申请失败: {e}')
             return {'success': False, 'error': str(e)}
 
-    def approve_ip_protection(self, ip_id: str, approved: bool, **kwargs) -> Dict[str, Any]:
+    def review_funding_application(self, application_id: str, approved: bool,
+                                    **kwargs) -> Dict[str, Any]:
         try:
             now = datetime.now().isoformat()
             status = 'approved' if approved else 'rejected'
-            registration_no = f"IPR{datetime.now().strftime('%Y%m%d')}{uuid.uuid4().hex[:6].upper()}" if approved else None
             with self._lock:
                 with self._get_connection() as conn:
                     cursor = conn.cursor()
-                    cursor.execute('UPDATE ip_protection SET status = ?, registration_no = ?, approval_date = ?, updated_at = ? WHERE ip_id = ? AND status = ?',
-                                 (status, registration_no, now[:10] if approved else None, now, ip_id, 'pending'))
+                    cursor.execute('''
+                        UPDATE funding_applications SET status = ?, review_comments = ?,
+                                                       approved_amount = ?, approved_at = ?
+                        WHERE application_id = ?
+                    ''', (status, kwargs.get('review_comments'),
+                          kwargs.get('approved_amount'), now, application_id))
                     if cursor.rowcount > 0:
                         conn.commit()
-                        return {'success': True, 'status': status, 'registration_no': registration_no}
-                    return {'success': False, 'error': '申请状态不允许审核'}
+                        return {'success': True, 'status': status}
+                    return {'success': False, 'error': '资金申请不存在'}
         except Exception as e:
-            logger.error(f'审核知识产权失败: {e}')
+            logger.error(f'审核资金申请失败: {e}')
             return {'success': False, 'error': str(e)}
 
-    def link_ip_to_project(self, ip_id: str, project_id: str) -> Dict[str, Any]:
+    def allocate_funding(self, project_id: str, source: str, amount: float,
+                         **kwargs) -> Dict[str, Any]:
         try:
-            now = datetime.now().isoformat()
-            with self._lock:
-                with self._get_connection() as conn:
-                    cursor = conn.cursor()
-                    cursor.execute('INSERT INTO ip_records (ip_id, project_id, record_type, detail, record_date) VALUES (?, ?, \'link\', \'Linked to project\', ?)',
-                                 (ip_id, project_id, now[:10]))
-                    conn.commit()
-                    return {'success': True}
-        except Exception as e:
-            logger.error(f'关联知识产权失败: {e}')
-            return {'success': False, 'error': str(e)}
-
-    def list_ip_protections(self, ip_type: str = None, education_type: str = None,
-                             status: str = None, page: int = 1, page_size: int = 20) -> Dict[str, Any]:
-        try:
-            with self._get_connection() as conn:
-                conn.row_factory = sqlite3.Row
-                cursor = conn.cursor()
-                query = 'SELECT * FROM ip_protection WHERE 1=1'
-                params = []
-                if ip_type:
-                    query += ' AND ip_type = ?'
-                    params.append(ip_type)
-                if education_type:
-                    query += ' AND education_type = ?'
-                    params.append(education_type)
-                if status:
-                    query += ' AND status = ?'
-                    params.append(status)
-                cursor.execute(f'SELECT COUNT(*) as cnt FROM ({query})', params)
-                total = cursor.fetchone()['cnt']
-                query += ' ORDER BY application_date DESC LIMIT ? OFFSET ?'
-                params.extend([page_size, (page - 1) * page_size])
-                cursor.execute(query, params)
-                protections = [dict(p) for p in cursor.fetchall()]
-                return {'success': True, 'protections': protections, 'total': total, 'page': page, 'page_size': page_size}
-        except Exception as e:
-            logger.error(f'获取知识产权列表失败: {e}')
-            return {'success': False, 'error': str(e)}
-
-    # ========== 创业园区 ==========
-
-    def create_startup_park(self, park_name: str, location: str,
-                            education_type: str, **kwargs) -> Dict[str, Any]:
-        try:
-            park_id = f"prk_{uuid.uuid4().hex[:12]}"
+            funding_id = f"fnd_{uuid.uuid4().hex[:12]}"
             now = datetime.now().isoformat()
             with self._lock:
                 with self._get_connection() as conn:
                     cursor = conn.cursor()
                     cursor.execute('''
-                        INSERT INTO startup_parks (
-                            park_id, park_name, location,
-                            education_type, description, total_area,
-                            available_area, resident_count, services,
-                            status, created_at, updated_at
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, 'active', ?, ?)
-                    ''', (park_id, park_name, location, education_type,
-                          kwargs.get('description'), kwargs.get('total_area', 0),
-                          kwargs.get('available_area', kwargs.get('total_area', 0)),
-                          kwargs.get('services'), now, now))
+                        INSERT INTO funding_management (funding_id, project_id, source, amount,
+                                                        allocated_amount, used_amount, budget_details, status, created_at)
+                        VALUES (?, ?, ?, ?, ?, 0, ?, 'allocated', ?)
+                    ''', (funding_id, project_id, source, amount, amount,
+                          kwargs.get('budget_details'), now))
                     conn.commit()
-                    logger.info(f'创建创业园区: {park_name} ({park_id})')
-                    return {'success': True, 'park_id': park_id}
+                    return {'success': True, 'funding_id': funding_id}
         except Exception as e:
-            logger.error(f'创建创业园区失败: {e}')
+            logger.error(f'分配资金失败: {e}')
             return {'success': False, 'error': str(e)}
 
-    def apply_park_residency(self, park_id: str, project_id: str,
+    def record_funding_usage(self, funding_id: str, amount: float,
                              **kwargs) -> Dict[str, Any]:
         try:
-            now = datetime.now().isoformat()
             with self._lock:
                 with self._get_connection() as conn:
                     cursor = conn.cursor()
-                    cursor.execute('SELECT available_area, resident_count, status FROM startup_parks WHERE park_id = ?', (park_id,))
-                    park = cursor.fetchone()
-                    if not park:
-                        return {'success': False, 'error': '创业园区不存在'}
-                    if park[2] != 'active':
-                        return {'success': False, 'error': '园区状态不允许入驻'}
-                    if park[0] and park[0] < kwargs.get('area_required', 0):
-                        return {'success': False, 'error': '可用面积不足'}
-                    cursor.execute('INSERT OR IGNORE INTO park_residents (park_id, project_id, company_name, resident_date, area_allocated, status) VALUES (?, ?, ?, ?, ?, \'active\')',
-                                 (park_id, project_id, kwargs.get('company_name'), now[:10], kwargs.get('area_allocated', 0)))
-                    if cursor.rowcount > 0:
-                        cursor.execute('UPDATE startup_parks SET available_area = available_area - ?, resident_count = resident_count + 1, updated_at = ? WHERE park_id = ?',
-                                     (kwargs.get('area_allocated', 0), now, park_id))
-                        conn.commit()
-                        return {'success': True}
-                    return {'success': False, 'error': '已入驻该园区'}
-        except Exception as e:
-            logger.error(f'申请园区入驻失败: {e}')
-            return {'success': False, 'error': str(e)}
-
-    def update_resident_status(self, resident_id: int, status: str) -> Dict[str, Any]:
-        try:
-            now = datetime.now().isoformat()
-            with self._lock:
-                with self._get_connection() as conn:
-                    cursor = conn.cursor()
-                    cursor.execute('SELECT park_id, area_allocated FROM park_residents WHERE id = ?', (resident_id,))
-                    resident = cursor.fetchone()
-                    if not resident:
-                        return {'success': False, 'error': '入驻记录不存在'}
-                    cursor.execute('UPDATE park_residents SET status = ? WHERE id = ?', (status, resident_id))
-                    if status == 'left':
-                        cursor.execute('UPDATE startup_parks SET available_area = available_area + ?, resident_count = resident_count - 1, updated_at = ? WHERE park_id = ?',
-                                     (resident[1], now, resident[0]))
+                    cursor.execute('SELECT used_amount, allocated_amount FROM funding_management WHERE funding_id = ?', (funding_id,))
+                    funding = cursor.fetchone()
+                    if not funding:
+                        return {'success': False, 'error': '资金记录不存在'}
+                    new_used = funding[0] + amount
+                    if new_used > funding[1]:
+                        return {'success': False, 'error': '使用金额超过分配额度'}
+                    status = 'fully_used' if new_used >= funding[1] else 'in_use'
+                    cursor.execute('UPDATE funding_management SET used_amount = ?, status = ? WHERE funding_id = ?',
+                                  (new_used, status, funding_id))
                     conn.commit()
-                    return {'success': True, 'status': status}
+                    return {'success': True, 'remaining': funding[1] - new_used}
         except Exception as e:
-            logger.error(f'更新入驻状态失败: {e}')
+            logger.error(f'记录资金使用失败: {e}')
             return {'success': False, 'error': str(e)}
 
-    def list_startup_parks(self, education_type: str = None, status: str = None,
-                           page: int = 1, page_size: int = 20) -> Dict[str, Any]:
+    def get_funding_summary(self, project_id: str = None) -> Dict[str, Any]:
         try:
             with self._get_connection() as conn:
                 conn.row_factory = sqlite3.Row
                 cursor = conn.cursor()
-                query = 'SELECT * FROM startup_parks WHERE 1=1'
+                query = 'SELECT SUM(amount) as total, SUM(used_amount) as used FROM funding_management WHERE 1=1'
+                params = []
+                if project_id:
+                    query += ' AND project_id = ?'
+                    params.append(project_id)
+                cursor.execute(query, params)
+                summary = cursor.fetchone()
+                total = summary['total'] or 0
+                used = summary['used'] or 0
+                return {'success': True, 'total': total, 'used': used, 'remaining': total - used}
+        except Exception as e:
+            logger.error(f'获取资金汇总失败: {e}')
+            return {'success': False, 'error': str(e)}
+
+    # ========== 平台建设 ==========
+
+    def create_platform(self, platform_name: str, platform_type: str,
+                        education_type: str, **kwargs) -> Dict[str, Any]:
+        try:
+            platform_id = f"plt_{uuid.uuid4().hex[:12]}"
+            now = datetime.now().isoformat()
+            with self._lock:
+                with self._get_connection() as conn:
+                    cursor = conn.cursor()
+                    cursor.execute('''
+                        INSERT INTO innovation_platforms (platform_id, platform_name, platform_type,
+                                                          education_type, description, location,
+                                                          capacity, current_users, status,
+                                                          created_at, updated_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, 0, 'active', ?, ?)
+                    ''', (platform_id, platform_name, platform_type, education_type,
+                          kwargs.get('description'), kwargs.get('location'),
+                          kwargs.get('capacity', 0), now, now))
+                    conn.commit()
+                    logger.info(f'创建创新平台: {platform_name} ({platform_id})')
+                    return {'success': True, 'platform_id': platform_id}
+        except Exception as e:
+            logger.error(f'创建创新平台失败: {e}')
+            return {'success': False, 'error': str(e)}
+
+    def add_platform_resource(self, platform_id: str, resource_name: str,
+                              **kwargs) -> Dict[str, Any]:
+        try:
+            with self._lock:
+                with self._get_connection() as conn:
+                    cursor = conn.cursor()
+                    cursor.execute('''
+                        INSERT INTO platform_resources (platform_id, resource_name, resource_type, quantity, status)
+                        VALUES (?, ?, ?, ?, 'available')
+                    ''', (platform_id, resource_name, kwargs.get('resource_type'),
+                          kwargs.get('quantity', 1)))
+                    conn.commit()
+                    return {'success': True}
+        except Exception as e:
+            logger.error(f'添加平台资源失败: {e}')
+            return {'success': False, 'error': str(e)}
+
+    def update_platform_status(self, platform_id: str, status: str) -> Dict[str, Any]:
+        try:
+            now = datetime.now().isoformat()
+            with self._lock:
+                with self._get_connection() as conn:
+                    cursor = conn.cursor()
+                    cursor.execute('UPDATE innovation_platforms SET status = ?, updated_at = ? WHERE platform_id = ?',
+                                  (status, now, platform_id))
+                    if cursor.rowcount > 0:
+                        conn.commit()
+                        return {'success': True}
+                    return {'success': False, 'error': '平台不存在'}
+        except Exception as e:
+            logger.error(f'更新平台状态失败: {e}')
+            return {'success': False, 'error': str(e)}
+
+    def list_platforms(self, education_type: str = None, platform_type: str = None,
+                       page: int = 1, page_size: int = 20) -> Dict[str, Any]:
+        try:
+            with self._get_connection() as conn:
+                conn.row_factory = sqlite3.Row
+                cursor = conn.cursor()
+                query = 'SELECT * FROM innovation_platforms WHERE 1=1'
                 params = []
                 if education_type:
                     query += ' AND education_type = ?'
                     params.append(education_type)
-                if status:
-                    query += ' AND status = ?'
-                    params.append(status)
+                if platform_type:
+                    query += ' AND platform_type = ?'
+                    params.append(platform_type)
                 cursor.execute(f'SELECT COUNT(*) as cnt FROM ({query})', params)
                 total = cursor.fetchone()['cnt']
                 query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?'
                 params.extend([page_size, (page - 1) * page_size])
                 cursor.execute(query, params)
-                parks = [dict(p) for p in cursor.fetchall()]
-                return {'success': True, 'parks': parks, 'total': total, 'page': page, 'page_size': page_size}
+                platforms = [dict(p) for p in cursor.fetchall()]
+                return {'success': True, 'platforms': platforms, 'total': total, 'page': page, 'page_size': page_size}
         except Exception as e:
-            logger.error(f'获取创业园区列表失败: {e}')
+            logger.error(f'获取平台列表失败: {e}')
             return {'success': False, 'error': str(e)}
 
-    # ========== 创业大赛 ==========
+    # ========== 合作网络 ==========
 
-    def create_competition(self, competition_name: str, competition_type: str,
-                            education_type: str, **kwargs) -> Dict[str, Any]:
+    def create_cooperation_network(self, network_name: str, cooperation_type: str,
+                                   education_type: str, **kwargs) -> Dict[str, Any]:
         try:
-            competition_id = f"cmp_{uuid.uuid4().hex[:12]}"
+            network_id = f"cnw_{uuid.uuid4().hex[:12]}"
             now = datetime.now().isoformat()
             with self._lock:
                 with self._get_connection() as conn:
                     cursor = conn.cursor()
                     cursor.execute('''
-                        INSERT INTO startup_competitions (
-                            competition_id, competition_name, competition_type,
-                            education_type, description, start_date,
-                            end_date, registration_deadline, max_teams,
-                            registered_count, status, prizes,
-                            created_at, updated_at
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'registration', ?, ?, ?)
-                    ''', (competition_id, competition_name, competition_type,
-                          education_type, kwargs.get('description'),
-                          kwargs.get('start_date'), kwargs.get('end_date'),
-                          kwargs.get('registration_deadline'),
-                          kwargs.get('max_teams', 100), kwargs.get('prizes'),
-                          now, now))
+                        INSERT INTO cooperation_networks (network_id, network_name, cooperation_type,
+                                                           education_type, description, partner_count,
+                                                           status, created_at, updated_at)
+                        VALUES (?, ?, ?, ?, ?, 0, 'active', ?, ?)
+                    ''', (network_id, network_name, cooperation_type, education_type,
+                          kwargs.get('description'), now, now))
                     conn.commit()
-                    logger.info(f'创建创业大赛: {competition_name} ({competition_id})')
-                    return {'success': True, 'competition_id': competition_id}
+                    logger.info(f'创建合作网络: {network_name} ({network_id})')
+                    return {'success': True, 'network_id': network_id}
         except Exception as e:
-            logger.error(f'创建创业大赛失败: {e}')
+            logger.error(f'创建合作网络失败: {e}')
             return {'success': False, 'error': str(e)}
 
-    def register_competition(self, competition_id: str, project_id: str,
-                             **kwargs) -> Dict[str, Any]:
+    def add_cooperation_partner(self, network_id: str, partner_name: str,
+                                **kwargs) -> Dict[str, Any]:
         try:
             now = datetime.now().isoformat()
             with self._lock:
                 with self._get_connection() as conn:
                     cursor = conn.cursor()
-                    cursor.execute('SELECT max_teams, registered_count, status FROM startup_competitions WHERE competition_id = ?', (competition_id,))
-                    comp = cursor.fetchone()
-                    if not comp:
-                        return {'success': False, 'error': '大赛不存在'}
-                    if comp[2] != 'registration':
-                        return {'success': False, 'error': '报名已截止'}
-                    if comp[0] and comp[1] >= comp[0]:
-                        return {'success': False, 'error': '名额已满'}
-                    cursor.execute('INSERT OR IGNORE INTO competition_results (competition_id, project_id, team_name, status) VALUES (?, ?, ?, \'participating\')',
-                                 (competition_id, project_id, kwargs.get('team_name')))
+                    cursor.execute('''
+                        INSERT INTO cooperation_records (network_id, partner_name, partner_type,
+                                                          cooperation_content, start_date, end_date, status)
+                        VALUES (?, ?, ?, ?, ?, ?, 'ongoing')
+                    ''', (network_id, partner_name, kwargs.get('partner_type'),
+                          kwargs.get('cooperation_content'), kwargs.get('start_date', now[:10]),
+                          kwargs.get('end_date')))
+                    cursor.execute('UPDATE cooperation_networks SET partner_count = partner_count + 1, updated_at = ? WHERE network_id = ?',
+                                  (now, network_id))
+                    conn.commit()
+                    return {'success': True}
+        except Exception as e:
+            logger.error(f'添加合作方失败: {e}')
+            return {'success': False, 'error': str(e)}
+
+    def update_cooperation_status(self, record_id: int, status: str) -> Dict[str, Any]:
+        try:
+            with self._lock:
+                with self._get_connection() as conn:
+                    cursor = conn.cursor()
+                    cursor.execute('UPDATE cooperation_records SET status = ? WHERE id = ?',
+                                  (status, record_id))
                     if cursor.rowcount > 0:
-                        cursor.execute('UPDATE startup_competitions SET registered_count = registered_count + 1, updated_at = ? WHERE competition_id = ?', (now, competition_id))
                         conn.commit()
                         return {'success': True}
-                    return {'success': False, 'error': '项目已报名'}
+                    return {'success': False, 'error': '合作记录不存在'}
         except Exception as e:
-            logger.error(f'大赛报名失败: {e}')
+            logger.error(f'更新合作状态失败: {e}')
             return {'success': False, 'error': str(e)}
 
-    def record_competition_result(self, result_id: int, rank: int, score: float,
-                                   **kwargs) -> Dict[str, Any]:
-        try:
-            now = datetime.now().isoformat()
-            with self._lock:
-                with self._get_connection() as conn:
-                    cursor = conn.cursor()
-                    cursor.execute('UPDATE competition_results SET rank = ?, score = ?, prize = ?, status = ? WHERE id = ?',
-                                 (rank, score, kwargs.get('prize'), 'completed', result_id))
-                    if cursor.rowcount > 0:
-                        conn.commit()
-                        return {'success': True, 'rank': rank, 'score': score}
-                    return {'success': False, 'error': '参赛记录不存在'}
-        except Exception as e:
-            logger.error(f'记录大赛结果失败: {e}')
-            return {'success': False, 'error': str(e)}
-
-    def list_competitions(self, education_type: str = None, competition_type: str = None,
-                           status: str = None, page: int = 1, page_size: int = 20) -> Dict[str, Any]:
+    def list_cooperation_networks(self, education_type: str = None,
+                                  page: int = 1, page_size: int = 20) -> Dict[str, Any]:
         try:
             with self._get_connection() as conn:
                 conn.row_factory = sqlite3.Row
                 cursor = conn.cursor()
-                query = 'SELECT * FROM startup_competitions WHERE 1=1'
+                query = 'SELECT * FROM cooperation_networks WHERE 1=1'
                 params = []
                 if education_type:
                     query += ' AND education_type = ?'
                     params.append(education_type)
-                if competition_type:
-                    query += ' AND competition_type = ?'
-                    params.append(competition_type)
-                if status:
-                    query += ' AND status = ?'
-                    params.append(status)
                 cursor.execute(f'SELECT COUNT(*) as cnt FROM ({query})', params)
                 total = cursor.fetchone()['cnt']
-                query += ' ORDER BY start_date DESC LIMIT ? OFFSET ?'
+                query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?'
                 params.extend([page_size, (page - 1) * page_size])
                 cursor.execute(query, params)
-                competitions = [dict(c) for c in cursor.fetchall()]
-                return {'success': True, 'competitions': competitions, 'total': total, 'page': page, 'page_size': page_size}
+                networks = [dict(n) for n in cursor.fetchall()]
+                return {'success': True, 'networks': networks, 'total': total, 'page': page, 'page_size': page_size}
         except Exception as e:
-            logger.error(f'获取大赛列表失败: {e}')
+            logger.error(f'获取合作网络列表失败: {e}')
             return {'success': False, 'error': str(e)}
 
-    # ========== 创业生态 ==========
+    # ========== 评估体系 ==========
 
-    def create_ecosystem(self, ecosystem_name: str, education_type: str,
-                         **kwargs) -> Dict[str, Any]:
+    def create_assessment(self, project_id: str, assessment_type: str,
+                          **kwargs) -> Dict[str, Any]:
         try:
-            ecosystem_id = f"eco_{uuid.uuid4().hex[:12]}"
+            assessment_id = f"ast_{uuid.uuid4().hex[:12]}"
             now = datetime.now().isoformat()
+            criteria = json.dumps(list(ASSESSMENT_CRITERIA.keys()))
+            weights = json.dumps({k: v.get('weight', 0.125) for k, v in ASSESSMENT_CRITERIA.items()})
             with self._lock:
                 with self._get_connection() as conn:
                     cursor = conn.cursor()
                     cursor.execute('''
-                        INSERT INTO startup_ecosystem (
-                            ecosystem_id, ecosystem_name, education_type,
-                            description, members_count, status,
-                            created_at, updated_at
-                        ) VALUES (?, ?, ?, ?, 0, 'active', ?, ?)
-                    ''', (ecosystem_id, ecosystem_name, education_type,
-                          kwargs.get('description'), now, now))
+                        INSERT INTO assessment_system (assessment_id, project_id, assessment_type,
+                                                       criteria, weights, scheduled_date, status, created_at)
+                        VALUES (?, ?, ?, ?, ?, ?, 'scheduled', ?)
+                    ''', (assessment_id, project_id, assessment_type, criteria, weights,
+                          kwargs.get('scheduled_date'), now))
                     conn.commit()
-                    logger.info(f'创建创业生态: {ecosystem_name} ({ecosystem_id})')
-                    return {'success': True, 'ecosystem_id': ecosystem_id}
+                    return {'success': True, 'assessment_id': assessment_id}
         except Exception as e:
-            logger.error(f'创建创业生态失败: {e}')
+            logger.error(f'创建评估失败: {e}')
             return {'success': False, 'error': str(e)}
 
-    def add_ecosystem_member(self, ecosystem_id: str, member_id: int,
-                              member_name: str, member_type: str) -> Dict[str, Any]:
+    def record_assessment_scores(self, assessment_id: str, scores: Dict[str, float]) -> Dict[str, Any]:
         try:
-            now = datetime.now().isoformat()
+            total_score = 0
+            total_weight = 0
             with self._lock:
                 with self._get_connection() as conn:
                     cursor = conn.cursor()
-                    cursor.execute('INSERT OR IGNORE INTO ecosystem_members (ecosystem_id, member_id, member_name, member_type, join_date) VALUES (?, ?, ?, ?, ?)',
-                                 (ecosystem_id, member_id, member_name, member_type, now[:10]))
-                    if cursor.rowcount > 0:
-                        cursor.execute('UPDATE startup_ecosystem SET members_count = members_count + 1, updated_at = ? WHERE ecosystem_id = ?', (now, ecosystem_id))
-                        conn.commit()
-                        return {'success': True}
-                    return {'success': False, 'error': '已加入该生态'}
+                    for criterion, score in scores.items():
+                        weight = ASSESSMENT_CRITERIA.get(criterion, {}).get('weight', 0.125)
+                        total_score += score * weight
+                        total_weight += weight
+                        cursor.execute('INSERT INTO assessment_scores (assessment_id, criterion, score) VALUES (?, ?, ?)',
+                                      (assessment_id, criterion, score))
+                    avg_score = round(total_score / total_weight, 2) if total_weight > 0 else 0
+                    cursor.execute('UPDATE assessment_system SET status = ? WHERE assessment_id = ?',
+                                  ('completed', assessment_id))
+                    conn.commit()
+                    return {'success': True, 'overall_score': avg_score}
         except Exception as e:
-            logger.error(f'添加生态成员失败: {e}')
+            logger.error(f'记录评估分数失败: {e}')
             return {'success': False, 'error': str(e)}
 
-    def list_ecosystem_members(self, ecosystem_id: str, member_type: str = None,
-                                page: int = 1, page_size: int = 20) -> Dict[str, Any]:
+    def generate_assessment_report(self, assessment_id: str) -> Dict[str, Any]:
         try:
             with self._get_connection() as conn:
                 conn.row_factory = sqlite3.Row
                 cursor = conn.cursor()
-                query = 'SELECT * FROM ecosystem_members WHERE ecosystem_id = ?'
-                params = [ecosystem_id]
-                if member_type:
-                    query += ' AND member_type = ?'
-                    params.append(member_type)
-                cursor.execute(f'SELECT COUNT(*) as cnt FROM ({query})', params)
-                total = cursor.fetchone()['cnt']
-                query += ' ORDER BY join_date DESC LIMIT ? OFFSET ?'
-                params.extend([page_size, (page - 1) * page_size])
-                cursor.execute(query, params)
-                members = [dict(m) for m in cursor.fetchall()]
-                return {'success': True, 'members': members, 'total': total, 'page': page, 'page_size': page_size}
+                cursor.execute('SELECT * FROM assessment_system WHERE assessment_id = ?', (assessment_id,))
+                assessment = cursor.fetchone()
+                if not assessment:
+                    return {'success': False, 'error': '评估不存在'}
+                cursor.execute('SELECT * FROM assessment_scores WHERE assessment_id = ?', (assessment_id,))
+                scores = [dict(s) for s in cursor.fetchall()]
+                total_score = sum(s['score'] * ASSESSMENT_CRITERIA.get(s['criterion'], {}).get('weight', 0.125) for s in scores)
+                avg_score = round(total_score / len(scores), 2) if scores else 0
+                recommendations = []
+                for s in scores:
+                    if s['score'] < 70:
+                        recommendations.append(f"{ASSESSMENT_CRITERIA.get(s['criterion'], {}).get('name', s['criterion'])}需要改进")
+                return {'success': True, 'assessment': dict(assessment), 'scores': scores,
+                        'overall_score': avg_score, 'recommendations': recommendations}
         except Exception as e:
-            logger.error(f'获取生态成员列表失败: {e}')
+            logger.error(f'生成评估报告失败: {e}')
             return {'success': False, 'error': str(e)}
 
-    def list_ecosystems(self, education_type: str = None, status: str = None,
+    def list_assessments(self, project_id: str = None, status: str = None,
                          page: int = 1, page_size: int = 20) -> Dict[str, Any]:
         try:
             with self._get_connection() as conn:
                 conn.row_factory = sqlite3.Row
                 cursor = conn.cursor()
-                query = 'SELECT * FROM startup_ecosystem WHERE 1=1'
+                query = 'SELECT * FROM assessment_system WHERE 1=1'
+                params = []
+                if project_id:
+                    query += ' AND project_id = ?'
+                    params.append(project_id)
+                if status:
+                    query += ' AND status = ?'
+                    params.append(status)
+                cursor.execute(f'SELECT COUNT(*) as cnt FROM ({query})', params)
+                total = cursor.fetchone()['cnt']
+                query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?'
+                params.extend([page_size, (page - 1) * page_size])
+                cursor.execute(query, params)
+                assessments = [dict(a) for a in cursor.fetchall()]
+                return {'success': True, 'assessments': assessments, 'total': total, 'page': page, 'page_size': page_size}
+        except Exception as e:
+            logger.error(f'获取评估列表失败: {e}')
+            return {'success': False, 'error': str(e)}
+
+    # ========== 创新文化 ==========
+
+    def create_culture_program(self, culture_name: str, education_type: str,
+                               **kwargs) -> Dict[str, Any]:
+        try:
+            culture_id = f"cul_{uuid.uuid4().hex[:12]}"
+            now = datetime.now().isoformat()
+            with self._lock:
+                with self._get_connection() as conn:
+                    cursor = conn.cursor()
+                    cursor.execute('''
+                        INSERT INTO innovation_culture (culture_id, culture_name, education_type,
+                                                        description, objectives, status,
+                                                        created_at, updated_at)
+                        VALUES (?, ?, ?, ?, ?, 'active', ?, ?)
+                    ''', (culture_id, culture_name, education_type, kwargs.get('description'),
+                          kwargs.get('objectives'), now, now))
+                    conn.commit()
+                    logger.info(f'创建创新文化项目: {culture_name} ({culture_id})')
+                    return {'success': True, 'culture_id': culture_id}
+        except Exception as e:
+            logger.error(f'创建创新文化项目失败: {e}')
+            return {'success': False, 'error': str(e)}
+
+    def add_culture_initiative(self, culture_id: str, initiative_name: str,
+                               **kwargs) -> Dict[str, Any]:
+        try:
+            with self._lock:
+                with self._get_connection() as conn:
+                    cursor = conn.cursor()
+                    cursor.execute('''
+                        INSERT INTO culture_initiatives (culture_id, initiative_name, description,
+                                                          start_date, end_date, status)
+                        VALUES (?, ?, ?, ?, ?, 'planned')
+                    ''', (culture_id, initiative_name, kwargs.get('description'),
+                          kwargs.get('start_date'), kwargs.get('end_date')))
+                    conn.commit()
+                    return {'success': True}
+        except Exception as e:
+            logger.error(f'添加文化活动失败: {e}')
+            return {'success': False, 'error': str(e)}
+
+    def update_initiative_status(self, initiative_id: int, status: str) -> Dict[str, Any]:
+        try:
+            with self._lock:
+                with self._get_connection() as conn:
+                    cursor = conn.cursor()
+                    cursor.execute('UPDATE culture_initiatives SET status = ? WHERE id = ?',
+                                  (status, initiative_id))
+                    if cursor.rowcount > 0:
+                        conn.commit()
+                        return {'success': True}
+                    return {'success': False, 'error': '活动不存在'}
+        except Exception as e:
+            logger.error(f'更新活动状态失败: {e}')
+            return {'success': False, 'error': str(e)}
+
+    def list_culture_programs(self, education_type: str = None,
+                              page: int = 1, page_size: int = 20) -> Dict[str, Any]:
+        try:
+            with self._get_connection() as conn:
+                conn.row_factory = sqlite3.Row
+                cursor = conn.cursor()
+                query = 'SELECT * FROM innovation_culture WHERE 1=1'
+                params = []
+                if education_type:
+                    query += ' AND education_type = ?'
+                    params.append(education_type)
+                cursor.execute(f'SELECT COUNT(*) as cnt FROM ({query})', params)
+                total = cursor.fetchone()['cnt']
+                query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?'
+                params.extend([page_size, (page - 1) * page_size])
+                cursor.execute(query, params)
+                programs = [dict(p) for p in cursor.fetchall()]
+                return {'success': True, 'programs': programs, 'total': total, 'page': page, 'page_size': page_size}
+        except Exception as e:
+            logger.error(f'获取文化项目列表失败: {e}')
+            return {'success': False, 'error': str(e)}
+
+    # ========== 奖励管理 ==========
+
+    def create_award(self, award_name: str, education_type: str,
+                     **kwargs) -> Dict[str, Any]:
+        try:
+            award_id = f"awd_{uuid.uuid4().hex[:12]}"
+            now = datetime.now().isoformat()
+            with self._lock:
+                with self._get_connection() as conn:
+                    cursor = conn.cursor()
+                    cursor.execute('''
+                        INSERT INTO innovation_awards (award_id, award_name, education_type,
+                                                        description, level, criteria, status,
+                                                        created_at, updated_at)
+                        VALUES (?, ?, ?, ?, ?, ?, 'active', ?, ?)
+                    ''', (award_id, award_name, education_type, kwargs.get('description'),
+                          kwargs.get('level', 'school'), kwargs.get('criteria'), now, now))
+                    conn.commit()
+                    logger.info(f'创建奖项: {award_name} ({award_id})')
+                    return {'success': True, 'award_id': award_id}
+        except Exception as e:
+            logger.error(f'创建奖项失败: {e}')
+            return {'success': False, 'error': str(e)}
+
+    def submit_award_application(self, award_id: str, **kwargs) -> Dict[str, Any]:
+        try:
+            now = datetime.now().isoformat()
+            with self._lock:
+                with self._get_connection() as conn:
+                    cursor = conn.cursor()
+                    cursor.execute('''
+                        INSERT INTO award_records (award_id, project_id, talent_id, applicant_name,
+                                                   application_date, status, result, awarded_at)
+                        VALUES (?, ?, ?, ?, ?, 'submitted', NULL, NULL)
+                    ''', (award_id, kwargs.get('project_id'), kwargs.get('talent_id'),
+                          kwargs.get('applicant_name'), now[:10]))
+                    conn.commit()
+                    return {'success': True}
+        except Exception as e:
+            logger.error(f'提交奖项申请失败: {e}')
+            return {'success': False, 'error': str(e)}
+
+    def review_award_application(self, record_id: int, result: str,
+                                  **kwargs) -> Dict[str, Any]:
+        try:
+            now = datetime.now().isoformat()
+            status = 'awarded' if result == 'win' else 'rejected'
+            with self._lock:
+                with self._get_connection() as conn:
+                    cursor = conn.cursor()
+                    cursor.execute('UPDATE award_records SET status = ?, result = ?, awarded_at = ? WHERE id = ?',
+                                  (status, result, now[:10] if result == 'win' else None, record_id))
+                    if cursor.rowcount > 0:
+                        conn.commit()
+                        return {'success': True, 'status': status}
+                    return {'success': False, 'error': '奖项申请记录不存在'}
+        except Exception as e:
+            logger.error(f'评审奖项申请失败: {e}')
+            return {'success': False, 'error': str(e)}
+
+    def list_awards(self, education_type: str = None, status: str = None,
+                    page: int = 1, page_size: int = 20) -> Dict[str, Any]:
+        try:
+            with self._get_connection() as conn:
+                conn.row_factory = sqlite3.Row
+                cursor = conn.cursor()
+                query = 'SELECT * FROM innovation_awards WHERE 1=1'
                 params = []
                 if education_type:
                     query += ' AND education_type = ?'
@@ -1296,55 +1230,60 @@ class EducationInnovationService:
                 query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?'
                 params.extend([page_size, (page - 1) * page_size])
                 cursor.execute(query, params)
-                ecosystems = [dict(e) for e in cursor.fetchall()]
-                return {'success': True, 'ecosystems': ecosystems, 'total': total, 'page': page, 'page_size': page_size}
+                awards = [dict(a) for a in cursor.fetchall()]
+                return {'success': True, 'awards': awards, 'total': total, 'page': page, 'page_size': page_size}
         except Exception as e:
-            logger.error(f'获取创业生态列表失败: {e}')
+            logger.error(f'获取奖项列表失败: {e}')
             return {'success': False, 'error': str(e)}
 
-    # ========== 统计服务 ==========
+    # ========== 统计分析 ==========
 
-    def get_innovation_statistics(self, education_type: str = None) -> Dict[str, Any]:
+    def get_innovation_summary(self, education_type: str = None) -> Dict[str, Any]:
         try:
             with self._get_connection() as conn:
+                conn.row_factory = sqlite3.Row
                 cursor = conn.cursor()
-                stats = {}
-                if education_type:
-                    cursor.execute('SELECT COUNT(*) FROM innovation_projects WHERE education_type = ?', (education_type,))
-                    stats['total_projects'] = cursor.fetchone()[0]
-                    cursor.execute('SELECT COUNT(*) FROM innovation_projects WHERE education_type = ? AND status = ?', (education_type, 'approved'))
-                    stats['approved_projects'] = cursor.fetchone()[0]
-                    cursor.execute('SELECT COUNT(*) FROM incubation_programs WHERE education_type = ?', (education_type,))
-                    stats['incubation_programs'] = cursor.fetchone()[0]
-                    cursor.execute('SELECT COUNT(*) FROM entrepreneurship_training WHERE education_type = ?', (education_type,))
-                    stats['trainings'] = cursor.fetchone()[0]
-                    cursor.execute('SELECT COUNT(*) FROM startup_competitions WHERE education_type = ?', (education_type,))
-                    stats['competitions'] = cursor.fetchone()[0]
-                    cursor.execute('SELECT COUNT(*) FROM ip_protection WHERE education_type = ?', (education_type,))
-                    stats['ip_protections'] = cursor.fetchone()[0]
-                    cursor.execute('SELECT COUNT(*) FROM mentorship WHERE education_type = ?', (education_type,))
-                    stats['mentors'] = cursor.fetchone()[0]
-                    cursor.execute('SELECT COUNT(*) FROM investment_deals WHERE project_id IN (SELECT project_id FROM innovation_projects WHERE education_type = ?)', (education_type,))
-                    stats['deals'] = cursor.fetchone()[0]
-                else:
-                    cursor.execute('SELECT COUNT(*) FROM innovation_projects')
-                    stats['total_projects'] = cursor.fetchone()[0]
-                    cursor.execute('SELECT COUNT(*) FROM innovation_projects WHERE status = ?', ('approved',))
-                    stats['approved_projects'] = cursor.fetchone()[0]
-                    cursor.execute('SELECT COUNT(*) FROM incubation_programs')
-                    stats['incubation_programs'] = cursor.fetchone()[0]
-                    cursor.execute('SELECT COUNT(*) FROM entrepreneurship_training')
-                    stats['trainings'] = cursor.fetchone()[0]
-                    cursor.execute('SELECT COUNT(*) FROM startup_competitions')
-                    stats['competitions'] = cursor.fetchone()[0]
-                    cursor.execute('SELECT COUNT(*) FROM ip_protection')
-                    stats['ip_protections'] = cursor.fetchone()[0]
-                    cursor.execute('SELECT COUNT(*) FROM mentorship')
-                    stats['mentors'] = cursor.fetchone()[0]
-                    cursor.execute('SELECT COUNT(*) FROM investment_deals')
-                    stats['deals'] = cursor.fetchone()[0]
-                stats['education_type'] = education_type or 'all'
-                return {'success': True, 'statistics': stats}
+                filters = 'WHERE education_type = ?' if education_type else 'WHERE 1=1'
+                params = [education_type] if education_type else []
+                
+                cursor.execute(f'SELECT COUNT(*) as count FROM innovation_projects {filters}', params)
+                projects = cursor.fetchone()['count'] or 0
+                
+                cursor.execute(f'SELECT COUNT(*) as count FROM innovation_talent {filters}', params)
+                talent = cursor.fetchone()['count'] or 0
+                
+                cursor.execute(f'SELECT COUNT(*) as count FROM innovation_results {filters}', params)
+                results = cursor.fetchone()['count'] or 0
+                
+                cursor.execute(f'SELECT COUNT(*) as count FROM innovation_platforms {filters}', params)
+                platforms = cursor.fetchone()['count'] or 0
+                
+                cursor.execute(f'SELECT COUNT(*) as count FROM cooperation_networks {filters}', params)
+                networks = cursor.fetchone()['count'] or 0
+                
+                cursor.execute(f'SELECT SUM(amount) as total FROM funding_management', params)
+                funding = cursor.fetchone()['total'] or 0
+                
+                cursor.execute(f'SELECT COUNT(*) as count FROM innovation_awards {filters}', params)
+                awards = cursor.fetchone()['count'] or 0
+                
+                cursor.execute(f'SELECT COUNT(*) as count FROM assessment_system WHERE status = "completed"', params)
+                assessments = cursor.fetchone()['count'] or 0
+                
+                return {
+                    'success': True,
+                    'education_type': education_type or 'all',
+                    'summary': {
+                        'total_projects': projects,
+                        'total_talent': talent,
+                        'total_results': results,
+                        'total_platforms': platforms,
+                        'total_networks': networks,
+                        'total_funding': round(funding, 2),
+                        'total_awards': awards,
+                        'completed_assessments': assessments
+                    }
+                }
         except Exception as e:
-            logger.error(f'获取统计数据失败: {e}')
+            logger.error(f'获取创新统计汇总失败: {e}')
             return {'success': False, 'error': str(e)}
