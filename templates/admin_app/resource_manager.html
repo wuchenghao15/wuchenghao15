@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>资源管理</title>
+    <link rel="stylesheet" href="/assets/css/mtscos-design-system.css">
+    <link rel="stylesheet" href="/assets/font-awesome/css/all.min.css">
+    <style>
+        .resource-table { width: 100%; border-collapse: collapse; }
+        .resource-table th, .resource-table td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border-color); }
+        .resource-table th { background: var(--bg-secondary); color: var(--text-primary); }
+        .resource-table tr:hover { background: var(--bg-secondary); }
+        .btn-group { display: flex; gap: 6px; }
+        .btn-sm { padding: 4px 10px; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-folder-open"></i> 资源管理</h1>
+            <div class="user-info">
+                <span>欢迎, {{ user.username }}</span>
+                {% if notification_count > 0 %}
+                <span class="notification-badge">{{ notification_count }}</span>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="nav-bar">
+            <ul>
+                <li><a href="/admin_app/dashboard">管理首页</a></li>
+                <li><a href="/admin_app/resource_manager" class="active">资源管理</a></li>
+            </ul>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon bg-primary"><i class="fas fa-file"></i></div>
+                <div class="stat-info">
+                    <div class="stat-value">{{ resource_stats.total_files }}</div>
+                    <div class="stat-label">文件总数</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon bg-success"><i class="fas fa-hdd"></i></div>
+                <div class="stat-info">
+                    <div class="stat-value">{{ resource_stats.total_size }} MB</div>
+                    <div class="stat-label">总大小</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon bg-warning"><i class="fas fa-image"></i></div>
+                <div class="stat-info">
+                    <div class="stat-value">{{ resource_stats.image_count }}</div>
+                    <div class="stat-label">图片数量</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon bg-secondary"><i class="fas fa-video"></i></div>
+                <div class="stat-info">
+                    <div class="stat-value">{{ resource_stats.video_count }}</div>
+                    <div class="stat-label">视频数量</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">资源列表</h3>
+                <div class="search-bar">
+                    <input type="text" placeholder="搜索资源名称..." id="resource-search">
+                    <button class="btn btn-primary btn-sm" onclick="searchResources()">搜索</button>
+                </div>
+            </div>
+            <div class="card-body">
+                <table class="resource-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>文件名</th>
+                            <th>类型</th>
+                            <th>大小</th>
+                            <th>上传时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for resource in resources %}
+                        <tr>
+                            <td>{{ resource.id }}</td>
+                            <td>{{ resource.name }}</td>
+                            <td>{{ resource.type }}</td>
+                            <td>{{ resource.size }}</td>
+                            <td>{{ resource.created_at }}</td>
+                            <td>
+                                <div class="btn-group">
+                                    <button class="btn btn-primary btn-sm">预览</button>
+                                    <button class="btn btn-secondary btn-sm">下载</button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        {% if not resources %}
+                        <tr><td colspan="6" class="empty-state">暂无资源数据</td></tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <script>
+        function searchResources() {
+            const keyword = document.getElementById('resource-search').value;
+            alert(`搜索资源: ${keyword}`);
+        }
+    </script>
+</body>
+</html>

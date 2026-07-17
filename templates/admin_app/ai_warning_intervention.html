@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI预警干预系统</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); min-height: 100vh; }
+        .container { padding: 20px; max-width: 1400px; margin: 0 auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; color: white; }
+        .header h1 { font-size: 26px; }
+        .header .user-info { display: flex; align-items: center; gap: 15px; }
+        .nav-bar { background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); padding: 15px 20px; margin-bottom: 20px; border-radius: 10px; }
+        .nav-bar ul { list-style: none; display: flex; gap: 20px; }
+        .nav-bar ul li a { color: white; text-decoration: none; padding: 8px 15px; border-radius: 6px; transition: background 0.3s; }
+        .nav-bar ul li a:hover, .nav-bar ul li a.active { background: rgba(255,255,255,0.2); }
+        .main-content { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .card { background: white; border-radius: 12px; padding: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .card h2 { font-size: 18px; color: #333; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-size: 13px; color: #555; margin-bottom: 5px; }
+        .form-group select, .form-group input, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+        .form-group textarea { height: 100px; resize: vertical; }
+        .btn { padding: 10px 20px; border-radius: 6px; border: none; cursor: pointer; font-size: 14px; font-weight: 500; }
+        .btn-primary { background: #ef4444; color: white; }
+        .btn-primary:hover { background: #dc2626; }
+        .btn-success { background: #10b981; color: white; }
+        .btn-success:hover { background: #059669; }
+        .btn-info { background: #3b82f6; color: white; }
+        .btn-info:hover { background: #2563eb; }
+        .result-area { background: #f8f9fa; border-radius: 8px; padding: 15px; min-height: 100px; margin-top: 15px; white-space: pre-wrap; font-size: 14px; color: #333; }
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px; }
+        .stat-item { background: white; border-radius: 10px; padding: 15px; text-align: center; }
+        .stat-item .value { font-size: 24px; font-weight: bold; color: #ef4444; }
+        .stat-item .label { font-size: 12px; color: #666; margin-top: 5px; }
+        .table-container { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        table th, table td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; font-size: 13px; }
+        table th { background: #f8f9fa; color: #555; font-weight: 600; }
+        table tr:hover { background: #f9fafb; }
+        .alert-item { background: #fef2f2; border-left: 4px solid #ef4444; padding: 15px; border-radius: 8px; margin-bottom: 10px; }
+        .alert-item.medium { background: #fffbeb; border-left-color: #f59e0b; }
+        .alert-item.low { background: #eff6ff; border-left-color: #3b82f6; }
+        .alert-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+        .alert-level { font-weight: bold; font-size: 12px; padding: 2px 8px; border-radius: 4px; }
+        .alert-level.high { background: #fee2e2; color: #dc2626; }
+        .alert-level.medium { background: #fef3c7; color: #d97706; }
+        .alert-level.low { background: #dbeafe; color: #2563eb; }
+        .alert-message { font-size: 14px; color: #333; }
+        .alert-time { font-size: 12px; color: #999; }
+        @media (max-width: 768px) { .main-content { grid-template-columns: 1fr; } .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-bell"></i> AI预警干预系统</h1>
+            <div class="user-info">
+                <span>欢迎, {{ user.username }}</span>
+            </div>
+        </div>
+        
+        <div class="nav-bar">
+            <ul>
+                <li><a href="/admin_app/dashboard">管理首页</a></li>
+                <li><a href="/admin_app/ai_learning_dashboard">AI学习仪表盘</a></li>
+                <li><a href="/admin_app/ai_emotion">情感分析</a></li>
+                <li><a href="/admin_app/ai_warning_intervention" class="active">预警干预</a></li>
+            </ul>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-item">
+                <div class="value">{{ warning_stats.get('total_alerts', '--') }}</div>
+                <div class="label">预警总数</div>
+            </div>
+            <div class="stat-item">
+                <div class="value">{{ warning_stats.get('active_alerts', '--') }}</div>
+                <div class="label">活跃预警</div>
+            </div>
+            <div class="stat-item">
+                <div class="value">{{ warning_stats.get('resolved_alerts', '--') }}</div>
+                <div class="label">已处理预警</div>
+            </div>
+            <div class="stat-item">
+                <div class="value">{{ warning_stats.get('interventions', '--') }}</div>
+                <div class="label">干预次数</div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="card">
+                <h2><i class="fas fa-exclamation-triangle"></i> 活跃预警</h2>
+                <div id="active-alerts">
+                    {% for alert in warning_stats.get('active_alerts_list', []) %}
+                    <div class="alert-item {{ alert.level }}">
+                        <div class="alert-header">
+                            <span class="alert-level {{ alert.level }}">{{ alert.level }}</span>
+                            <span class="alert-time">{{ alert.timestamp }}</span>
+                        </div>
+                        <div class="alert-message">{{ alert.message }}</div>
+                        <div style="margin-top: 10px;">
+                            <button class="btn btn-success" style="padding: 5px 12px; font-size: 12px;" onclick="resolveAlert({{ alert.id }})">处理</button>
+                            <button class="btn btn-info" style="padding: 5px 12px; font-size: 12px; margin-left: 5px;" onclick="viewAlert({{ alert.id }})">详情</button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% if not warning_stats.get('active_alerts_list') %}
+                    <div style="text-align: center; padding: 20px; color: #999;">暂无活跃预警</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="card">
+                <h2><i class="fas fa-shield-alt"></i> 创建干预措施</h2>
+                <div class="form-group">
+                    <label>预警ID</label>
+                    <input type="number" id="alert-id" placeholder="请输入预警ID">
+                </div>
+                <div class="form-group">
+                    <label>干预类型</label>
+                    <select id="intervention-type">
+                        <option value="notification">通知提醒</option>
+                        <option value="guidance">引导建议</option>
+                        <option value="restriction">限制操作</option>
+                        <option value="escalation">升级处理</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>干预内容</label>
+                    <textarea id="intervention-content" placeholder="请输入干预内容"></textarea>
+                </div>
+                <button class="btn btn-primary" onclick="createIntervention()">执行干预</button>
+            </div>
+
+            <div class="card" style="grid-column: span 2;">
+                <h2><i class="fas fa-history"></i> 干预历史记录</h2>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>预警ID</th>
+                                <th>类型</th>
+                                <th>内容</th>
+                                <th>状态</th>
+                                <th>时间</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for intervention in warning_stats.get('intervention_history', []) %}
+                            <tr>
+                                <td>{{ intervention.alert_id }}</td>
+                                <td>{{ intervention.type }}</td>
+                                <td>{{ intervention.content }}</td>
+                                <td><span class="status-badge {{ 'status-completed' if intervention.status == 'completed' else 'status-pending' }}">{{ intervention.status }}</span></td>
+                                <td>{{ intervention.timestamp }}</td>
+                            </tr>
+                            {% endfor %}
+                            {% if not warning_stats.get('intervention_history') %}
+                            <tr><td colspan="5" style="text-align: center; color: #999;">暂无干预记录</td></tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function resolveAlert(alertId) {
+            if (confirm(`确定要处理预警 ${alertId} 吗？`)) {
+                alert(`预警 ${alertId} 已处理`);
+            }
+        }
+        
+        function viewAlert(alertId) {
+            alert(`预警 ${alertId} 详情`);
+        }
+        
+        function createIntervention() {
+            const alertId = document.getElementById('alert-id').value;
+            const type = document.getElementById('intervention-type').value;
+            const content = document.getElementById('intervention-content').value;
+            
+            if (!alertId) {
+                alert('请输入预警ID');
+                return;
+            }
+            
+            alert(`干预措施已创建：\n预警ID: ${alertId}\n类型: ${type}\n内容: ${content}`);
+            document.getElementById('alert-id').value = '';
+            document.getElementById('intervention-content').value = '';
+        }
+    </script>
+</body>
+</html>

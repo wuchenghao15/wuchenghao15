@@ -1,0 +1,316 @@
+#!/usr/bin/env python3
+import json
+import os
+from datetime import datetime
+
+def generate_japanese_vocabulary_questions():
+    """生成日语词汇题目"""
+    questions = []
+    
+    # N5级别词汇
+    n5_vocab = [
+        {"word": "たべる", "reading": "taberu", "meaning": "食べる", "options": ["食べる", "飲む", "見る", "行く"], "answer": 0, "level": "beginner"},
+        {"word": "みる", "reading": "miru", "meaning": "見る", "options": ["聞く", "見る", "話す", "書く"], "answer": 1, "level": "beginner"},
+        {"word": "いく", "reading": "iku", "meaning": "行く", "options": ["来る", "行く", "帰る", "出る"], "answer": 1, "level": "beginner"},
+        {"word": "する", "reading": "suru", "meaning": "する", "options": ["する", "なる", "ある", "いる"], "answer": 0, "level": "beginner"},
+        {"word": "ある", "reading": "aru", "meaning": "ある", "options": ["いる", "ある", "する", "なる"], "answer": 1, "level": "beginner"},
+        {"word": "いる", "reading": "iru", "meaning": "いる", "options": ["ある", "なる", "いる", "する"], "answer": 2, "level": "beginner"},
+        {"word": "なる", "reading": "naru", "meaning": "なる", "options": ["する", "なる", "ある", "いる"], "answer": 1, "level": "beginner"},
+        {"word": "かく", "reading": "kaku", "meaning": "書く", "options": ["読む", "書く", "話す", "聞く"], "answer": 1, "level": "beginner"},
+        {"word": "よむ", "reading": "yomu", "meaning": "読む", "options": ["書く", "話す", "読む", "見る"], "answer": 2, "level": "beginner"},
+        {"word": "きく", "reading": "kiku", "meaning": "聞く", "options": ["聞く", "話す", "読む", "書く"], "answer": 0, "level": "beginner"},
+    ]
+    
+    # N4级别词汇
+    n4_vocab = [
+        {"word": "勉強", "reading": "benkyou", "meaning": "勉強", "options": ["勉強", "仕事", "授業", "試験"], "answer": 0, "level": "intermediate"},
+        {"word": "仕事", "reading": "shigoto", "meaning": "仕事", "options": ["学校", "仕事", "家庭", "友達"], "answer": 1, "level": "intermediate"},
+        {"word": "授業", "reading": "jugyou", "meaning": "授業", "options": ["授業", "試験", "課題", "宿題"], "answer": 0, "level": "intermediate"},
+        {"word": "試験", "reading": "shiken", "meaning": "試験", "options": ["試験", "授業", "勉強", "卒業"], "answer": 0, "level": "intermediate"},
+        {"word": "旅行", "reading": "ryokou", "meaning": "旅行", "options": ["旅行", "出張", "帰省", "遠足"], "answer": 0, "level": "intermediate"},
+        {"word": "帰省", "reading": "kisei", "meaning": "帰省", "options": ["旅行", "帰省", "出張", "移住"], "answer": 1, "level": "intermediate"},
+        {"word": "出張", "reading": "shucchou", "meaning": "出張", "options": ["出張", "旅行", "帰省", "通勤"], "answer": 0, "level": "intermediate"},
+        {"word": "通勤", "reading": "tsuukin", "meaning": "通勤", "options": ["通学", "通勤", "通院", "通勤"], "answer": 1, "level": "intermediate"},
+        {"word": "通学", "reading": "tsugaku", "meaning": "通学", "options": ["通勤", "通学", "通院", "通勤"], "answer": 1, "level": "intermediate"},
+        {"word": "通院", "reading": "tsuin", "meaning": "通院", "options": ["通学", "通勤", "通院", "通勤"], "answer": 2, "level": "intermediate"},
+    ]
+    
+    # N3级别词汇
+    n3_vocab = [
+        {"word": "達成", "reading": "tassei", "meaning": "達成", "options": ["達成", "達人", "達者", "達見"], "answer": 0, "level": "advanced"},
+        {"word": "達人", "reading": "tatsujin", "meaning": "達人", "options": ["達成", "達人", "達者", "達見"], "answer": 1, "level": "advanced"},
+        {"word": "達者", "reading": "tassha", "meaning": "達者", "options": ["達成", "達人", "達者", "達見"], "answer": 2, "level": "advanced"},
+        {"word": "経験", "reading": "keiken", "meaning": "経験", "options": ["経験", "経済", "経営", "経過"], "answer": 0, "level": "advanced"},
+        {"word": "経済", "reading": "keizai", "meaning": "経済", "options": ["経験", "経済", "経営", "経過"], "answer": 1, "level": "advanced"},
+        {"word": "経営", "reading": "keiei", "meaning": "経営", "options": ["経験", "経済", "経営", "経過"], "answer": 2, "level": "advanced"},
+        {"word": "経過", "reading": "keika", "meaning": "経過", "options": ["経験", "経済", "経営", "経過"], "answer": 3, "level": "advanced"},
+        {"word": "環境", "reading": "kankyou", "meaning": "環境", "options": ["環境", "環境", "環境", "環境"], "answer": 0, "level": "advanced"},
+        {"word": "影響", "reading": "eikyou", "meaning": "影響", "options": ["影響", "影響", "影響", "影響"], "answer": 0, "level": "advanced"},
+        {"word": "効果", "reading": "koka", "meaning": "効果", "options": ["効果", "効果", "効果", "効果"], "answer": 0, "level": "advanced"},
+    ]
+    
+    all_vocab = n5_vocab + n4_vocab + n3_vocab
+    
+    for i, vocab in enumerate(all_vocab):
+        questions.append({
+            "id": f"japanese_{vocab['level']}_vocabulary_{int(datetime.now().timestamp())}_{i}",
+            "language": "japanese",
+            "level": vocab["level"],
+            "type": "vocabulary",
+            "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "content": {
+                "question": f"'{vocab['word']}'の正しい意味を選びなさい：{' '.join([f'{chr(65+i)}. {opt}' for i, opt in enumerate(vocab['options'])])}",
+                "correct_answer": vocab["answer"],
+                "reading": vocab["reading"],
+                "meaning": vocab["meaning"]
+            }
+        })
+    
+    return questions
+
+def generate_japanese_grammar_questions():
+    """生成日语语法题目"""
+    questions = []
+    
+    # 初级语法
+    beginner_grammar = [
+        {
+            "grammar": "～ます形",
+            "example": "私は毎朝コーヒーを____。",
+            "options": ["飲みます", "飲む", "飲んで", "飲み"],
+            "answer": 0,
+            "level": "beginner",
+            "explanation": "ます形は丁寧語で、動詞の基本形を変化させます。"
+        },
+        {
+            "grammar": "～て形",
+            "example": "友達とレストランでご飯を食べ____、映画を見に行きました。",
+            "options": ["て", "た", "ます", "る"],
+            "answer": 0,
+            "level": "beginner",
+            "explanation": "て形は動作の連続や理由を表します。"
+        },
+        {
+            "grammar": "～た形",
+            "example": "昨日、公園で遊び____。",
+            "options": ["た", "ます", "て", "る"],
+            "answer": 0,
+            "level": "beginner",
+            "explanation": "た形は過去の動作を表します。"
+        },
+        {
+            "grammar": "～ない形",
+            "example": "私は肉を食べ____。",
+            "options": ["ない", "ません", "なかった", "ました"],
+            "answer": 0,
+            "level": "beginner",
+            "explanation": "ない形は否定を表します。"
+        },
+        {
+            "grammar": "～を",
+            "example": "りんご____食べます。",
+            "options": ["を", "が", "は", "に"],
+            "answer": 0,
+            "level": "beginner",
+            "explanation": "をは目的語を表します。"
+        },
+    ]
+    
+    # 中级语法
+    intermediate_grammar = [
+        {
+            "grammar": "～ながら",
+            "example": "音楽を聴き____勉強します。",
+            "options": ["ながら", "たら", "ても", "と"],
+            "answer": 0,
+            "level": "intermediate",
+            "explanation": "ながらは2つの動作を同時に行うことを表します。"
+        },
+        {
+            "grammar": "～たら",
+            "example": "仕事が終わっ____、電話します。",
+            "options": ["たら", "なら", "ば", "と"],
+            "answer": 0,
+            "level": "intermediate",
+            "explanation": "たらは条件や仮定を表します。"
+        },
+        {
+            "grammar": "～ても",
+            "example": "雨が降っ____、学校に行きます。",
+            "options": ["ても", "たら", "なら", "と"],
+            "answer": 0,
+            "level": "intermediate",
+            "explanation": "てもは逆接の条件を表します。"
+        },
+        {
+            "grammar": "～ように",
+            "example": "遅れない____早く出かけましょう。",
+            "options": ["ように", "ために", "から", "ので"],
+            "answer": 0,
+            "level": "intermediate",
+            "explanation": "ようには目的や希望を表します。"
+        },
+        {
+            "grammar": "～ために",
+            "example": "日本に行く____貯金しています。",
+            "options": ["ために", "ように", "から", "ので"],
+            "answer": 0,
+            "level": "intermediate",
+            "explanation": "ためには目的を表します（意志動詞）。"
+        },
+    ]
+    
+    # 高级语法
+    advanced_grammar = [
+        {
+            "grammar": "～にとって",
+            "example": "学生____時間はとても貴重です。",
+            "options": ["にとって", "に対して", "に関して", "について"],
+            "answer": 0,
+            "level": "advanced",
+            "explanation": "にとっては評価の視点を表します。"
+        },
+        {
+            "grammar": "～に対して",
+            "example": "先生____質問をしました。",
+            "options": ["に対して", "にとって", "に関して", "について"],
+            "answer": 0,
+            "level": "advanced",
+            "explanation": "に対しては対象を表します。"
+        },
+        {
+            "grammar": "～に関して",
+            "example": "この問題____詳しく説明します。",
+            "options": ["に関して", "について", "にとって", "に対して"],
+            "answer": 0,
+            "level": "advanced",
+            "explanation": "に関しては関連することを表します。"
+        },
+        {
+            "grammar": "～について",
+            "example": "この計画____意見を聞きたいです。",
+            "options": ["について", "に関して", "にとって", "に対して"],
+            "answer": 0,
+            "level": "advanced",
+            "explanation": "については話題や対象を表します。"
+        },
+        {
+            "grammar": "～ということだ",
+            "example": "明日は休み____。",
+            "options": ["ということだ", "というものだ", "というわけだ", "というはずだ"],
+            "answer": 0,
+            "level": "advanced",
+            "explanation": "ということだは情報の伝達を表します。"
+        },
+    ]
+    
+    all_grammar = beginner_grammar + intermediate_grammar + advanced_grammar
+    
+    for i, grammar in enumerate(all_grammar):
+        questions.append({
+            "id": f"japanese_{grammar['level']}_grammar_{int(datetime.now().timestamp())}_{i}",
+            "language": "japanese",
+            "level": grammar["level"],
+            "type": "grammar",
+            "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "content": {
+                "question": f"適切な言葉を入れなさい：{grammar['example']}",
+                "options": grammar["options"],
+                "correct_answer": grammar["answer"],
+                "grammar": grammar["grammar"],
+                "explanation": grammar["explanation"]
+            }
+        })
+    
+    return questions
+
+def generate_japanese_reading_questions():
+    """生成日语阅读题目"""
+    questions = []
+    
+    reading_passages = [
+        {
+            "passage": "私は毎朝7時に起きます。そして、コーヒーを飲みながら新聞を読みます。8時半に家を出て、電車で会社に行きます。会社は9時から5時までです。",
+            "question": "この人は毎朝何をしますか？",
+            "options": ["コーヒーを飲みながら新聞を読む", "テレビを見る", "散歩する", "勉強する"],
+            "answer": 0,
+            "level": "beginner"
+        },
+        {
+            "passage": "田中さんは大学の学生です。毎日図書館で勉強します。週末は友達と遊びに行きます。将来は医師になりたいと思っています。",
+            "question": "田中さんの夢は何ですか？",
+            "options": ["医師になる", "教師になる", "会社員になる", "研究者になる"],
+            "answer": 0,
+            "level": "beginner"
+        },
+        {
+            "passage": "日本の四季ははっきりしています。春は桜が咲き、夏は暑くて雨が多いです。秋は紅葉が美しく、冬は雪が降ります。私は秋が一番好きです。",
+            "question": "この人はどの季節が一番好きですか？",
+            "options": ["秋", "春", "夏", "冬"],
+            "answer": 0,
+            "level": "intermediate"
+        },
+        {
+            "passage": "最近、スマートフォンの普及によって、人々のコミュニケーションの方法が変わってきました。昔は手紙を書いていましたが、今はメールやSNSで簡単に連絡できます。",
+            "question": "昔のコミュニケーション方法は何ですか？",
+            "options": ["手紙", "メール", "SNS", "電話"],
+            "answer": 0,
+            "level": "intermediate"
+        },
+        {
+            "passage": "環境問題は現在の重要な課題です。エネルギーの節約やリサイクルが求められています。私たち一人一人が少しずつでも環境に配慮することが大切です。",
+            "question": "環境問題で求められていることは何ですか？",
+            "options": ["エネルギーの節約とリサイクル", "経済の発展", "技術の進歩", "人口の増加"],
+            "answer": 0,
+            "level": "advanced"
+        },
+    ]
+    
+    for i, passage in enumerate(reading_passages):
+        questions.append({
+            "id": f"japanese_{passage['level']}_reading_{int(datetime.now().timestamp())}_{i}",
+            "language": "japanese",
+            "level": passage["level"],
+            "type": "reading",
+            "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "content": {
+                "passage": passage["passage"],
+                "question": passage["question"],
+                "options": passage["options"],
+                "correct_answer": passage["answer"]
+            }
+        })
+    
+    return questions
+
+def save_questions(questions):
+    """保存题目到文件"""
+    for q in questions:
+        level = q["level"]
+        q_type = q["type"]
+        directory = f"/Users/wuchenghao/Library/CloudStorage/OneDrive-个人/文档/MTSCOS_AI_Project/app/data/question_bank/japanese/{q_type}/{level}"
+        os.makedirs(directory, exist_ok=True)
+        
+        filename = f"{directory}/{q['id']}.json"
+        with open(filename, 'w', encoding='utf-8') as f:
+            json.dump(q, f, ensure_ascii=False, indent=2)
+
+def main():
+    print("📚 开始扩展日语题库...")
+    
+    vocab_questions = generate_japanese_vocabulary_questions()
+    grammar_questions = generate_japanese_grammar_questions()
+    reading_questions = generate_japanese_reading_questions()
+    
+    all_questions = vocab_questions + grammar_questions + reading_questions
+    
+    save_questions(all_questions)
+    
+    print(f"✅ 日语题库扩展完成！")
+    print(f"   - 词汇题目: {len(vocab_questions)} 题")
+    print(f"   - 语法题目: {len(grammar_questions)} 题")
+    print(f"   - 阅读题目: {len(reading_questions)} 题")
+    print(f"   - 总计: {len(all_questions)} 题")
+
+if __name__ == "__main__":
+    main()

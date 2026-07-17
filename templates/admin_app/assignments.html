@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>作业管理</title>
+    <link rel="stylesheet" href="/assets/css/mtscos-design-system.css">
+    <link rel="stylesheet" href="/assets/font-awesome/css/all.min.css">
+    <style>
+        .assign-table { width: 100%; border-collapse: collapse; }
+        .assign-table th, .assign-table td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border-color); }
+        .assign-table th { background: var(--bg-secondary); color: var(--text-primary); }
+        .assign-table tr:hover { background: var(--bg-secondary); }
+        .btn-group { display: flex; gap: 6px; }
+        .btn-sm { padding: 4px 10px; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-homework"></i> 作业管理</h1>
+            <div class="user-info">
+                <span>欢迎, {{ user.username }}</span>
+                {% if notification_count > 0 %}
+                <span class="notification-badge">{{ notification_count }}</span>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="nav-bar">
+            <ul>
+                <li><a href="/admin_app/dashboard">管理首页</a></li>
+                <li><a href="/admin_app/courses">课程管理</a></li>
+                <li><a href="/admin_app/assignments" class="active">作业管理</a></li>
+            </ul>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon bg-primary"><i class="fas fa-file-text"></i></div>
+                <div class="stat-info">
+                    <div class="stat-value">{{ assign_stats.total_assignments }}</div>
+                    <div class="stat-label">作业总数</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon bg-success"><i class="fas fa-check-circle"></i></div>
+                <div class="stat-info">
+                    <div class="stat-value">{{ assign_stats.submitted_count }}</div>
+                    <div class="stat-label">已提交</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon bg-warning"><i class="fas fa-clock"></i></div>
+                <div class="stat-info">
+                    <div class="stat-value">{{ assign_stats.pending_count }}</div>
+                    <div class="stat-label">待提交</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon bg-secondary"><i class="fas fa-graduation-cap"></i></div>
+                <div class="stat-info">
+                    <div class="stat-value">{{ assign_stats.graded_count }}</div>
+                    <div class="stat-label">已批改</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">作业列表</h3>
+                <div class="search-bar">
+                    <input type="text" placeholder="搜索作业名称..." id="assign-search">
+                    <button class="btn btn-primary btn-sm" onclick="searchAssignments()">搜索</button>
+                </div>
+            </div>
+            <div class="card-body">
+                <table class="assign-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>作业名称</th>
+                            <th>所属课程</th>
+                            <th>截止时间</th>
+                            <th>提交数</th>
+                            <th>状态</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for assign in assignments %}
+                        <tr>
+                            <td>{{ assign.id }}</td>
+                            <td>{{ assign.name }}</td>
+                            <td>{{ assign.course_name }}</td>
+                            <td>{{ assign.deadline }}</td>
+                            <td>{{ assign.submitted_count }}/{{ assign.total_count }}</td>
+                            <td>{{ assign.status }}</td>
+                            <td>
+                                <div class="btn-group">
+                                    <button class="btn btn-primary btn-sm">编辑</button>
+                                    <button class="btn btn-secondary btn-sm">批改</button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        {% if not assignments %}
+                        <tr><td colspan="7" class="empty-state">暂无作业数据</td></tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <script>
+        function searchAssignments() {
+            const keyword = document.getElementById('assign-search').value;
+            alert(`搜索作业: ${keyword}`);
+        }
+    </script>
+</body>
+</html>

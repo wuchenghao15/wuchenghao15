@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>超级管理员控制台 - MTSCOS AI</title>
+    <link rel="stylesheet" href="/assets/css/mtscos-design-system.css">
+    <link rel="stylesheet" href="/assets/font-awesome/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: var(--font-family);
+            background: var(--bg-secondary);
+            min-height: 100vh;
+            color: var(--text-primary);
+        }
+        .header {
+            background: var(--bg-primary);
+            padding: 20px 30px;
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 { font-size: 22px; color: var(--text-primary); }
+        .header .user-info { display: flex; align-items: center; gap: 12px; }
+        .header .user-info span { color: var(--text-secondary); font-size: 14px; }
+        .header .badge {
+            background: var(--primary-color);
+            color: white;
+            padding: 4px 12px;
+            border-radius: var(--radius-sm);
+            font-size: 12px;
+        }
+        .main { padding: 24px 30px; max-width: 1200px; margin: 0 auto; }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            box-shadow: var(--shadow-md);
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            transition: transform 0.2s;
+        }
+        .stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+        .stat-icon {
+            width: 56px; height: 56px;
+            border-radius: var(--radius-md);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px;
+        }
+        .bg-primary { background: rgba(99, 102, 241, 0.1); color: var(--primary-color); }
+        .bg-success { background: rgba(34, 197, 94, 0.1); color: var(--success-color); }
+        .bg-warning { background: rgba(245, 158, 11, 0.1); color: var(--warning-color); }
+        .bg-danger { background: rgba(239, 68, 68, 0.1); color: var(--danger-color); }
+        .bg-info { background: rgba(14, 165, 233, 0.1); color: #0ea5e9; }
+        .stat-value { font-size: 28px; font-weight: 700; color: var(--text-primary); }
+        .stat-label { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
+        .role-distribution {
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            box-shadow: var(--shadow-md);
+            margin-bottom: 30px;
+        }
+        .role-distribution h3 { font-size: 16px; margin-bottom: 16px; color: var(--text-primary); }
+        .role-bars { display: flex; flex-direction: column; gap: 12px; }
+        .role-bar { display: flex; align-items: center; gap: 12px; }
+        .role-bar .role-name { width: 80px; font-size: 14px; color: var(--text-secondary); }
+        .role-bar .bar-container {
+            flex: 1; height: 24px; background: var(--bg-secondary);
+            border-radius: var(--radius-sm); overflow: hidden;
+        }
+        .role-bar .bar-fill {
+            height: 100%; border-radius: var(--radius-sm);
+            display: flex; align-items: center; padding: 0 8px;
+            color: white; font-size: 12px; font-weight: 600;
+            transition: width 0.5s ease;
+        }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+        @media (max-width: 768px) { .grid-2 { grid-template-columns: 1fr; } }
+        .card {
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            box-shadow: var(--shadow-md);
+        }
+        .card h3 { font-size: 16px; margin-bottom: 16px; color: var(--text-primary); }
+        .data-table { width: 100%; border-collapse: collapse; }
+        .data-table th, .data-table td {
+            padding: 10px 12px; text-align: left;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 13px;
+        }
+        .data-table th { color: var(--text-secondary); font-weight: 600; }
+        .data-table td { color: var(--text-primary); }
+        .data-table tr:hover { background: var(--bg-secondary); }
+        .empty-state { text-align: center; padding: 30px; color: var(--text-secondary); font-size: 14px; }
+        .nav-links { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+        .nav-links a {
+            padding: 8px 16px; background: var(--bg-primary);
+            border-radius: var(--radius-sm); text-decoration: none;
+            color: var(--text-secondary); font-size: 14px;
+            box-shadow: var(--shadow-sm); transition: all 0.2s;
+        }
+        .nav-links a:hover { color: var(--primary-color); box-shadow: var(--shadow-md); }
+        .status-tag {
+            padding: 2px 8px; border-radius: var(--radius-sm);
+            font-size: 11px; font-weight: 600;
+        }
+        .status-published { background: rgba(34, 197, 94, 0.1); color: var(--success-color); }
+        .status-active { background: rgba(14, 165, 233, 0.1); color: #0ea5e9; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1><i class="fas fa-crown"></i> 超级管理员控制台</h1>
+        <div class="user-info">
+            <span>{{ user.username }}</span>
+            <span class="badge">{{ user.role }}</span>
+        </div>
+    </div>
+
+    <div class="main">
+        <div class="nav-links">
+            <a href="/"><i class="fas fa-home"></i> 首页</a>
+            <a href="/admin_center"><i class="fas fa-cog"></i> 管理中心</a>
+            <a href="/admin_app/dashboard"><i class="fas fa-chart-line"></i> 管理仪表盘</a>
+            <a href="/admin_app/users"><i class="fas fa-users"></i> 用户管理</a>
+            <a href="/admin_app/exams"><i class="fas fa-file-alt"></i> 考试管理</a>
+            <a href="/settings"><i class="fas fa-sliders-h"></i> 系统设置</a>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon bg-primary"><i class="fas fa-users"></i></div>
+                <div>
+                    <div class="stat-value">{{ stats.total_users or 0 }}</div>
+                    <div class="stat-label">用户总数</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon bg-success"><i class="fas fa-file-alt"></i></div>
+                <div>
+                    <div class="stat-value">{{ stats.total_exams or 0 }}</div>
+                    <div class="stat-label">考试总数</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon bg-warning"><i class="fas fa-book"></i></div>
+                <div>
+                    <div class="stat-value">{{ stats.total_courses or 0 }}</div>
+                    <div class="stat-label">课程总数</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon bg-info"><i class="fas fa-question-circle"></i></div>
+                <div>
+                    <div class="stat-value">{{ stats.total_questions or 0 }}</div>
+                    <div class="stat-label">题目总数</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon bg-danger"><i class="fas fa-bell"></i></div>
+                <div>
+                    <div class="stat-value">{{ stats.total_notifications or 0 }}</div>
+                    <div class="stat-label">通知总数</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="role-distribution">
+            <h3><i class="fas fa-chart-pie"></i> 用户角色分布</h3>
+            <div class="role-bars">
+                {% set total = (stats.total_users or 1) %}
+                <div class="role-bar">
+                    <span class="role-name">学生</span>
+                    <div class="bar-container">
+                        <div class="bar-fill" style="background: var(--primary-color); width: {{ (stats.student_count or 0) * 100 // total }}%;">
+                            {{ stats.student_count or 0 }}
+                        </div>
+                    </div>
+                </div>
+                <div class="role-bar">
+                    <span class="role-name">教师</span>
+                    <div class="bar-container">
+                        <div class="bar-fill" style="background: var(--success-color); width: {{ (stats.teacher_count or 0) * 100 // total }}%;">
+                            {{ stats.teacher_count or 0 }}
+                        </div>
+                    </div>
+                </div>
+                <div class="role-bar">
+                    <span class="role-name">管理员</span>
+                    <div class="bar-container">
+                        <div class="bar-fill" style="background: var(--warning-color); width: {{ (stats.admin_count or 0) * 100 // total }}%;">
+                            {{ stats.admin_count or 0 }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid-2">
+            <div class="card">
+                <h3><i class="fas fa-history"></i> 最近登录</h3>
+                {% if stats.recent_logins %}
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>用户名</th>
+                            <th>角色</th>
+                            <th>登录时间</th>
+                            <th>IP地址</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for login in stats.recent_logins %}
+                        <tr>
+                            <td>{{ login.username }}</td>
+                            <td>{{ login.role }}</td>
+                            <td>{{ login.login_time[:19] if login.login_time else '-' }}</td>
+                            <td>{{ login.login_ip or '-' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="empty-state">暂无登录记录</div>
+                {% endif %}
+            </div>
+
+            <div class="card">
+                <h3><i class="fas fa-file-alt"></i> 最近考试</h3>
+                {% if stats.recent_exams %}
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>考试名称</th>
+                            <th>状态</th>
+                            <th>创建时间</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for exam in stats.recent_exams %}
+                        <tr>
+                            <td>{{ exam.id }}</td>
+                            <td>{{ exam.title }}</td>
+                            <td>
+                                {% if exam.status == 'published' %}
+                                <span class="status-tag status-published">已发布</span>
+                                {% elif exam.status == 'active' %}
+                                <span class="status-tag status-active">进行中</span>
+                                {% else %}
+                                <span class="status-tag">{{ exam.status or '未知' }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ exam.created_at[:10] if exam.created_at else '-' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="empty-state">暂无考试数据</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</body>
+</html>
