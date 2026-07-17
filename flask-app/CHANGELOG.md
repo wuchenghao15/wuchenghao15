@@ -2,6 +2,31 @@
 
 所有重要的项目变更都将记录在此文件中。
 
+## 🚀 v15.9.0 - 2026-07-17
+
+### 🏫 教育服务体系创新拓展（在线学习/生涯规划/创客STEAM/劳动教育）
+
+新增4个教育服务创新拓展模块，教育服务体系达到 **4层40模块** 完整架构，全面覆盖德智体美劳五育并举。
+
+### ✨ 新功能
+
+- **在线学习平台服务** (online_learning_platform_service.py)：直播课堂、录播课程、互动教学（7种互动）、学习进度追踪、在线答疑、作业考试、学习社区
+- **学生生涯规划服务** (career_planning_service.py)：5种职业测评（霍兰德/MBTI/价值观/能力/成熟度）、升学规划、新高考选科、职业探索、咨询辅导、目标追踪
+- **创客与STEAM教育服务** (maker_steam_service.py)：5大STEAM学科、8种课程、创客空间、设备管理、材料库存、创新项目PBL、机器人教育、3D打印、STEAM竞赛
+- **劳动教育服务** (labor_education_service.py)：5大劳动类别、劳动课程、劳动实践、技能考核、实践基地、勤工助学、劳动评价（6维度）、劳动档案、劳动表彰
+
+### 📁 新增文件
+
+- `flask-app/online_learning_platform_service.py` - 在线学习平台服务（1354行）
+- `flask-app/career_planning_service.py` - 学生生涯规划服务（1271行）
+- `flask-app/maker_steam_service.py` - 创客与STEAM教育服务（1345行）
+- `flask-app/labor_education_service.py` - 劳动教育服务（1329行）
+
+### 📚 文档
+
+- 更新 `VERSION` 至 v15.9.0
+- 更新 `docs/CHANGELOG.md` 添加 v15.9.0 详细更新记录
+
 ## 🚀 v15.8.0 - 2026-07-17
 
 ### 🏫 教育服务体系纵深拓展（特殊教育/职业资格/学分银行/教师发展）
