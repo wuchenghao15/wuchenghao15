@@ -35,6 +35,9 @@ def _register_blueprints(app):
         ('activity_api', 'app.api.activity_api'),
         ('export_api', 'app.api.export_api'),
         ('ai_engine_api', 'app.api.ai_engine_api'),
+        ('ai_brain_api', 'app.api.ai_brain_api'),
+        ('ai_cluster_api', 'app.api.ai_cluster_api'),
+        ('ai_self_learning_api', 'app.api.ai_self_learning_api'),
     ]
     
     registered = 0
