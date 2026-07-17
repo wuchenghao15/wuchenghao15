@@ -2,6 +2,31 @@
 
 所有重要的项目变更都将记录在此文件中。
 
+## 🚀 v15.13.0 - 2026-07-17
+
+### 🏫 教育服务体系创新升级（资源共享/质量监测/政策研究/创新孵化）
+
+新增4个教育服务创新升级模块，教育服务体系达到 **4层56模块** 完整架构，推动教育生态的开放共享和持续创新。
+
+### ✨ 新功能
+
+- **教育资源共享服务** (educational_resource_sharing_service.py)：14种资源类型、6种共享模式、5种联盟类型、7种授权类型、资源版本管理、6种校际协作、资源交易、知识产权管理、共享空间、资源评价、推荐系统
+- **教育质量监测服务** (education_quality_monitoring_service.py)：8个监测维度、4级标准等级、4种指标类型、6种数据来源、4级预警阈值、5种报告类型、5种趋势周期、质量分析、对标分析、预警机制、改进计划
+- **教育政策研究服务** (education_policy_research_service.py)：7种政策类型、5级政策层级、8个政策领域、6种研究类型、6个评估维度、政策解读、政策评估、政策咨询、政策监测、影响分析、研究报告
+- **教育创新孵化服务** (education_innovation_incubation_service.py)：6种创新类型、7个孵化阶段、5种项目状态、5种大赛类型、5种导师角色、6种投资类型、5种知识产权、4级支持等级、孵化器管理、创新大赛、投融资对接、知识产权管理
+
+### 📁 新增文件
+
+- `flask-app/educational_resource_sharing_service.py` - 教育资源共享服务（1194行）
+- `flask-app/education_quality_monitoring_service.py` - 教育质量监测服务（1400行）
+- `flask-app/education_policy_research_service.py` - 教育政策研究服务（1375行）
+- `flask-app/education_innovation_incubation_service.py` - 教育创新孵化服务（1260行）
+
+### 📚 文档
+
+- 更新 `VERSION` 至 v15.13.0
+- 更新 `docs/CHANGELOG.md` 添加 v15.13.0 详细更新记录
+
 ## 🚀 v15.12.0 - 2026-07-17
 
 ### 🏫 教育服务体系信息化升级（教育信息化/数据分析/评估认证/教育督导）
