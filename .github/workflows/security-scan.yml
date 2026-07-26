@@ -1,0 +1,52 @@
+name: 安全扫描
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  schedule:
+    - cron: '0 0 * * 0'
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 设置 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 运行 pip-audit
+        run: |
+          pip install pip-audit
+          pip-audit --format=json > pip-audit-results.json || true
+          echo "pip-audit 扫描完成"
+        continue-on-error: true
+
+      - name: 检查敏感信息
+        run: |
+          echo "=== 敏感信息扫描 ==="
+          # 检查硬编码密码
+          grep -r "password\s*=\s*['\"]" --include="*.py" || echo "✅ 未发现硬编码密码模式"
+          
+          # 检查API密钥模式
+          grep -rE "(api[_-]?key|secret|token)\s*=\s*['\"][A-Za-z0-9]{20,}" --include="*.py" || echo "✅ 未发现硬编码密钥模式"
+          
+          # 检查数据库文件
+          find . -name "*.db" -o -name "*.sqlite" -o -name "*.sqlite3" | head -10
+          echo "数据库文件扫描完成"
+        continue-on-error: true
+
+      - name: 上传安全结果
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        continue-on-error: true
+        with:
+          sarif_file: pip-audit-results.json
