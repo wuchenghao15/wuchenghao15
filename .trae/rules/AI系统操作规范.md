@@ -11,7 +11,7 @@ description: MTSCOS AI系统操作规范 - AI员工、AI引擎、AI集群、AI�
 
 ### 1.2 AI系统架构
 
-```
+```text
 MTSCOS AI系统
 ├── AI员工层 (AI Employees)
 │   ├── AIEmployee 基类
@@ -112,7 +112,7 @@ def __init__(self, employee_id, name, employee_type="general", level=1):
 
 #### 2.2.4 注册流程
 
-```
+```text
 1. 创建AI员工实例
 2. 启用智能赋能
 3. 注册到AIEmployeeManager
@@ -133,7 +133,7 @@ def __init__(self, employee_id, name, employee_type="general", level=1):
 
 #### 2.3.2 升级流程
 
-```
+```text
 1. 触发升级检查
 2. 验证升级条件
 3. 执行升级（等级+1，技能提升）
@@ -208,7 +208,7 @@ def handle_employee_error(employee, error):
 
 #### 2.5.2 修改流程
 
-```
+```text
 1. 验证权限（必须super_admin或admin）
 2. 备份当前配置
 3. 执行修改
@@ -287,7 +287,7 @@ def save_engine_config(engine_type, config):
 
 #### 3.3.2 升级流程
 
-```
+```text
 1. 备份当前配置
 2. 测试环境验证升级
 3. 执行升级
@@ -346,7 +346,7 @@ def rollback_engine(engine_type, version):
 
 #### 3.4.4 升级流程
 
-```
+```text
 1. 检测远程更新
 2. 备份当前代码和数据库
 3. 拉取远程代码
@@ -391,7 +391,7 @@ def log_engine_call(engine_type, prompt, response, latency):
 
 ### 4.1 AI集群架构
 
-```
+```text
 AI集群
 ├── 集群配置 (ai_cluster_config)
 │   ├── cluster_id
@@ -421,7 +421,7 @@ AI集群
 
 #### 4.2.2 创建流程
 
-```
+```text
 1. 验证权限（必须super_admin）
 2. 生成cluster_id
 3. 设置集群配置
@@ -443,7 +443,7 @@ AI集群
 
 #### 4.3.2 升级流程
 
-```
+```text
 1. 评估集群状态
 2. 制定升级计划
 3. 备份当前配置
@@ -508,7 +508,7 @@ def handle_cluster_failure(cluster_id, employee_id):
 
 ### 5.1 AI阵列架构
 
-```
+```text
 AI阵列
 ├── 阵列矩阵 (Cluster Matrix)
 │   ├── 阵列节点
@@ -537,7 +537,7 @@ AI阵列
 
 #### 5.2.2 创建流程
 
-```
+```text
 1. 验证硬件资源
 2. 配置阵列节点
 3. 建立节点通信
@@ -623,7 +623,7 @@ def failover(array_id, failed_node_id):
 
 ### 6.1 神经元网络架构
 
-```
+```text
 AI神经元网络
 ├── 模型层
 │   ├── 深度学习模型定义
@@ -678,7 +678,7 @@ def save_model(model_name, model, version, metadata):
 
 #### 6.3.1 训练流程
 
-```
+```text
 1. 数据准备（清洗、标注、划分）
 2. 模型初始化（加载预训练权重）
 3. 训练执行（监控损失、精度）
@@ -738,7 +738,7 @@ def inference():
 
 ### 7.1 AI脑库架构
 
-```
+```text
 AI脑库
 ├── 知识库 (Knowledge Base)
 │   ├── 知识条目
@@ -789,7 +789,7 @@ AI脑库
 
 #### 7.2.3 知识添加流程
 
-```
+```text
 1. 验证知识格式
 2. 检查知识重复
 3. 添加到知识库
@@ -973,7 +973,7 @@ def enhance_knowledge(knowledge_id):
 
 ### 8.8 维护执行流程
 
-```
+```text
 1. AI管家定时检查维护规则配置
 2. 根据规则频率触发对应维护任务
 3. 执行维护操作（状态检查、日志清理、性能评估等）
@@ -1005,7 +1005,7 @@ def log_maintenance_operation(operation_type, target, result, details):
 
 系统采用语义化版本号（Semantic Versioning）格式：
 
-```
+```text
 {major}.{minor}.{patch}
 ```
 
@@ -1040,7 +1040,7 @@ def log_maintenance_operation(operation_type, target, result, details):
 
 版本号获取遵循以下优先级顺序：
 
-```
+```text
 1. 从 system_rules 表读取 SYS_VERSION 规则值
 2. 从 Git commit hash 获取（作为fallback）
 3. 返回 'unknown'（兜底）
@@ -1048,7 +1048,7 @@ def log_maintenance_operation(operation_type, target, result, details):
 
 #### 8.10.5 版本号更新流程
 
-```
+```text
 1. 升级流程执行完成并验证成功
 2. 检查 MAINT_VERSION_AUTO_INCREMENT_ENABLED 是否启用
 3. 读取 MAINT_VERSION_INCREMENT_TYPE 获取递增类型
@@ -1091,7 +1091,7 @@ def _increment_version(self, increment_type='patch'):
             conn.commit()
         ```
         return new_version
-```
+```text
 
 ### 8.11 灰度发布规则
 
@@ -1132,7 +1132,7 @@ def _increment_version(self, increment_type='patch'):
 7. 服务重启
 8. 版本号递增（仅在灰度发布成功后）
 9. 记录升级历史和维护日志
-```
+```text
 
 #### 8.11.4 灰度健康检查标准
 
@@ -1185,7 +1185,7 @@ def _perform_gray_release(self):
             return {'success': False, 'auto_rollback': False}
     
     return {'success': True}
-```
+```text
 
 ### 8.12 用户权限规则
 
@@ -1267,7 +1267,7 @@ def _perform_gray_release(self):
 4. 访问资源时检查权限缓存
 5. 权限变更时刷新缓存
 6. 记录权限操作审计日志
-```
+```text
 
 #### 8.12.6 权限缓存策略
 
@@ -1292,7 +1292,7 @@ def audit_permission_operation(operation_type, target, operator, role, details):
             VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
         ''', (operation_type, target, operator, role, json.dumps(details)))
         conn.commit()
-```
+```text
 
 ### 8.13 自动修复后台代码规则
 
@@ -1351,7 +1351,7 @@ def audit_permission_operation(operation_type, target, operator, role, details):
 7. 修复验证（验证修复后代码是否正常运行）
 8. 学习增强（将成功修复经验写入脑库）
 9. 通知告警（发送修复结果通知）
-```
+```text
 
 #### 8.13.4 数据库留底策略
 
@@ -1400,7 +1400,7 @@ def rollback_fix(fix_id):
         conn.commit()
         
         return {'success': True, 'message': '回滚成功'}
-```
+```text
 
 #### 8.13.6 修复验证规则
 
@@ -1525,7 +1525,7 @@ def handle_service_failure(service_id):
         conn.commit()
         
         return True
-```
+```text
 
 #### 8.14.6 健康检查规则
 
@@ -1656,7 +1656,7 @@ def adjust_sandbox_limit():
         update_max_sandboxes(new_max)
         log_maintenance_operation('sandbox_scaling', 'sandbox_manager', 'success', 
                                    {'old_max': current_max_sandboxes, 'new_max': new_max})
-```
+```text
 
 #### 8.15.8 预温机制
 
@@ -1793,7 +1793,7 @@ def delete_rule(rule_id):
     # 按 comment(rule_id) 精准匹配规则行号
     # 倒序执行 iptables -D 删除
     delete_iptables_rule_by_comment(rule_id)
-```
+```text
 
 #### 8.16.6 同步策略
 
@@ -2107,7 +2107,7 @@ def delete_port_rule(port_id):
     # 按 comment(port_id) 精准匹配规则行号
     # 倒序执行 iptables -D 删除
     delete_iptables_rule_by_comment(port_id)
-```
+```text
 
 #### 8.18.7 端口映射规则
 
@@ -2722,7 +2722,7 @@ def load_dialog_document(document_id):
     except Exception as e:
         logger.error(f"加载弹窗文档失败: {str(e)}")
         return None
-```
+```text
 
 #### 8.21.13 弹窗文档同步规则
 
@@ -2835,7 +2835,7 @@ def load_dialog_document(document_id):
    - 记录维护日志
    - 记录升级时间
    - 更新previous_version
-```
+```text
 
 #### 8.22.8 版本回滚规则
 
@@ -2910,7 +2910,7 @@ AutoScheduler
 ├── run_once()               # 执行一轮所有任务
 ├── run_forever()            # 持续后台运行
 └── get_status()             # 获取引擎状态
-```
+```text
 
 #### 8.23.6 启动和停止
 
@@ -2935,7 +2935,7 @@ python3 scheduler_control.py logs
 
 # 直接后台启动（不使用控制脚本）
 nohup python3 auto_scheduler.py > /dev/null 2>&1 &
-```
+```text
 
 #### 8.23.7 进程保护规则
 
@@ -3001,7 +3001,7 @@ nohup python3 auto_scheduler.py > /dev/null 2>&1 &
 │  │          │  │           │  │logs          │   │   │   │
 │  └──────────┘  └──────────┘  └──────────────┘   │   │   │
 └─────────────────────────────────────────────────────────┘
-```
+```text
 
 #### 8.23.9 操作日志记录规则
 
@@ -3158,7 +3158,7 @@ nohup python3 auto_scheduler.py > /dev/null 2>&1 &
 │  │blackbox  │  │action_log    │  │snapshot          │   │
 │  └──────────┘  └──────────────┘  └──────────────────┘   │
 └──────────────────────────────────────────────────────────┘
-```
+```text
 
 #### 8.24.7 自动恢复机制
 
@@ -3204,7 +3204,7 @@ bb.resolve_event(event_id, resolved_by='admin', notes='手动修复完成')
 @disaster_handler('api_error', 'API接口异常')
 def api_function():
     ...
-```
+```text
 
 #### 8.24.9 日志文件
 
@@ -3225,7 +3225,7 @@ AI脑库数据投喂引擎定时向脑库注入知识数据，驱动AI员工学�
 知识投喂 → AI学习 → AI升级 → 神经网络训练 → 集群统筹 → 统计报告
     ↑                                                    │
     └────────────────── 反馈优化 ←────────────────────────┘
-```
+```text
 
 #### 8.25.2 投喂机制规则配置
 
@@ -3305,7 +3305,7 @@ AI脑库数据投喂引擎定时向脑库注入知识数据，驱动AI员工学�
 │  + 连接权重自动训练(学习率0.01)                     │
 │  + 低权重连接自动修剪(阈值0.1)                      │
 └────────────────────────────────────────────────────┘
-```
+```text
 
 #### 8.25.5 调度任务集成
 
@@ -3356,7 +3356,7 @@ AI脑库数据投喂引擎定时向脑库注入知识数据，驱动AI员工学�
 错误扫描 → 方案匹配 → 执行修复 → 记录案例 → 投喂脑库 → 自学习
    ↑                                              │
    └──────────────── 新方案反馈 ←──────────────────┘
-```
+```text
 
 错误来源覆盖4个渠道：
 - error_logs表（后端未解决错误）
@@ -3618,7 +3618,7 @@ Flask错误处理器已增强，所有HTTP错误页面访问自动记录到error
 3. 取置信度(confidence_score)最高的方案
 4. 若最高置信度 >= AUTO_REPAIR_CONFIDENCE_THRESHOLD(0.7)则执行修复
 5. 否则标记为unmatched，进入自学习队列
-```
+```text
 
 匹配优先级：置信度高的方案优先，同置信度按success_rate排序。
 
@@ -3852,7 +3852,7 @@ Flask错误处理器已增强，所有HTTP错误页面访问自动记录到error
   "data": {},
   "timestamp": "2026-07-16T12:00:00Z"
 }
-```
+```text
 
 #### 8.30.3 API检查清单
 
@@ -4284,7 +4284,7 @@ Flask错误处理器已增强，所有HTTP错误页面访问自动记录到error
 3. 评估组件性能并优化
 4. 生成定期报告
 5. 通知管理员异常情况
-```
+```text
 
 ---
 
@@ -4424,7 +4424,7 @@ def audit_ai_operation(operation_type, target, operator, details):
             VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
         ''', (operation_type, target, operator, json.dumps(details)))
         conn.commit()
-```
+```text
 
 ---
 

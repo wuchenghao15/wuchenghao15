@@ -17,28 +17,30 @@
 9. [AI集群与模型库](#9-ai集群与模型库)
 10. [安全架构](#10-安全架构)
 11. [自维护运维OS](#11-自维护运维os)
-12. [Git自动同步](#12-git自动同步)
-13. [前端页面系统](#13-前端页面系统)
-14. [移动端适配](#14-移动端适配)
-15. [AI智能题目生成器](#15-ai智能题目生成器)
-16. [AI智能学习路径推荐](#16-ai智能学习路径推荐)
-17. [AI试卷自动组卷系统](#17-ai试卷自动组卷系统)
-18. [学生成绩分析仪表盘](#18-学生成绩分析仪表盘)
-19. [项目思维导图](#19-项目思维导图)
-20. [版本历史](#20-版本历史)
-21. [API接口文档](#21-api接口文档)
-22. [部署指南](#22-部署指南)
+12. [端口管理系统](#12-端口管理系统)
+13. [集群管理系统](#13-集群管理系统)
+14. [Git自动同步](#14-git自动同步)
+15. [前端页面系统](#15-前端页面系统)
+16. [移动端适配](#16-移动端适配)
+17. [AI智能题目生成器](#17-ai智能题目生成器)
+18. [AI智能学习路径推荐](#18-ai智能学习路径推荐)
+19. [AI试卷自动组卷系统](#19-ai试卷自动组卷系统)
+20. [学生成绩分析仪表盘](#20-学生成绩分析仪表盘)
+21. [项目思维导图](#21-项目思维导图)
+22. [版本历史](#22-版本历史)
+23. [API接口文档](#23-api接口文档)
+24. [部署指南](#24-部署指南)
 
 ---
 
 ## 1. 系统概述
 
-MTSCOS AI 智能考试系统是一个基于 Flask 框架的分布式智能考试管理平台。v17.22.0 版本代号 "SuperAdmin UX Unified Edition"（超管UX统一版），主要新增了超管识别隐藏记住我/忘记密码/创建账号、VIKEY全链路打通、主版本+20子系统统一对齐、CI接入Dependabot+Trivy+Bandit等特性。
+MTSCOS AI 智能考试系统是一个基于 Flask 框架的分布式智能考试管理平台。v17.22.0 版本代号 "SuperAdmin UX Unified Edition"（超管UX统一版），主要新增超管识别隐藏记住我/忘记密码/创建账号、VIKEY 全链路打通、主版本+20子系统统一对齐、CI 接入 Dependabot+Trivy+Bandit 等特性。
 
 ### 核心特性
-- **MTS架构v2.0双引擎**：规划引擎（策略）+ 执行AI员工阵列（41+位），8阶段配置加载 + 6阶段模块加载
-- **分布式数据库架构**：9+ 独立SQLite分片（auth/exam/question/learning/user/system/admin/log/ai），透明路由，开箱零配置
-- **AI智能引擎矩阵**：41+ 专业AI员工，技能可进化、故障可自愈
+- **MTS架构v2.0双引擎**：规划引擎（策略）+ 执行AI员工阵列（550+ AI员工/引擎、47 Agent），8阶段配置加载 + 6阶段模块加载
+- **分布式数据库架构**：9+ 独立SQLite分片（auth/exam/question/learning/user/system/admin/log/ai），共 87 张表（0 空表），透明路由，开箱零配置
+- **AI智能引擎矩阵**：550+ 专业AI员工/引擎与 47 个 Agent，技能可进化、故障可自愈
 - **完整题库系统**：11门学科 × 7种题型 × 3Bloom层级，实时AI生成 + 网络爬取
 - **企业级权限管理**：RBAC 16级角色 + ABAC属性过滤，50+权限规则，全链路不可篡改审计
 - **AI防火墙+应用安全**：WAF 10条规则（SQLi/XSS/RCE/SSRF/LFI/目录穿越/扫描/暴力破解/限流）+ pip-audit/Trivy/Bandit/CodeQL
@@ -51,7 +53,7 @@ MTSCOS AI 智能考试系统是一个基于 Flask 框架的分布式智能考试
 | 优势维度 | 核心能力 | 差异化价值 |
 | :--- | :--- | :--- |
 | **架构设计** | MTS双引擎分层协作 | 规划与执行分离，策略可进化，执行可扩展 |
-| **AI能力** | 41+专业AI员工自治协作 | 不是单点AI工具，而是完整的AI团队 |
+| **AI能力** | 550+专业AI员工/引擎、47 Agent 自治协作 | 不是单点AI工具，而是完整的AI团队 |
 | **安全性** | VIKEY硬件密钥+AI防火墙+多层防护 | 企业级安全，超管登录硬件加固 |
 | **运维效率** | 8维自动修复+预防式诊断 | 系统自我维护，减少人工干预 |
 | **学习效果** | IRT+RL自适应学习路径 | 科学的学习推荐，艾宾浩斯螺旋复习 |
@@ -85,20 +87,20 @@ MTSCOS AI 源于一个简单而大胆的问题：**如果我们不仅仅自动�
 
 MTS架构源于对成功教育机构运作方式的观察：
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────┐
-│                    MTS架构设计灵感来源                           │
+│                    MTS架构设计灵感来源                          │
 ├─────────────────────────────────────────────────────────────────┤
-│  现实教育机构                      MTS架构对应组件               │
+│  现实教育机构                      MTS架构对应组件              │
 │  ───────────                      ────────────────              │
-│  校长                             规划引擎 (Plan Engine)        │
-│  → 理解意图、分配资源、战略决策    → 意图识别、任务分解、路由决策 │
+│  校长                             规划引擎 (Plan Engine)       │
+│  → 理解意图、分配资源、战略决策    → 意图识别、任务分解、路由决策│
 │                                                                  │
 │  教师/员工团队                     执行AI员工阵列 (Worker Agents)│
-│  → 一人一岗、专业分工              → 41+位AI员工、技能可进化     │
+│  → 一人一岗、专业分工              → 550+位AI员工、技能可进化    │
 │                                                                  │
-│  学校基础设施                      基础设施层 (Fabric)           │
-│  → 教室、图书馆、通信系统          → 分片数据库、消息队列、缓存   │
+│  学校基础设施                      基础设施层 (Fabric)          │
+│  → 教室、图书馆、通信系统          → 分片数据库、消息队列、缓存  │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -106,7 +108,7 @@ MTS架构源于对成功教育机构运作方式的观察：
 
 MTS中的"双轨"指的是两条并行流：
 
-```
+```text
 学习轨（Learning Track）:
   命题生成 → 智能组卷 → 批改评分 → 薄弱诊断 → 学习路径
 
@@ -130,59 +132,62 @@ MTS中的"双轨"指的是两条并行流：
 ## 3. 系统架构
 
 ### 3.1 目录结构
-```
-flask-app/
-├── app.py                     # 应用主入口
-├── modular_start.py           # 模块化启动脚本
-├── startup_modules/           # 模块化启动器
-│   ├── db_config_loader.py   # 数据库配置加载器（8阶段）
-│   ├── core_init.py           # 核心初始化（4步骤）
-│   └── module_loader.py       # 功能模块加载器（6阶段）
-├── ai_engines/                # AI引擎模块（20+核心引擎）
-│   ├── ai_cluster_manager.py         # AI集群管理
-│   ├── ai_employee_manager.py        # AI员工管理
-│   ├── ai_question_bank.py           # 题库生成引擎
-│   ├── adaptive_learning_engine.py   # 自适应学习引擎
-│   ├── knowledge_graph_engine.py     # 知识图谱引擎
-│   ├── reward_achievement_engine.py  # 奖励成就引擎
-│   ├── wrong_book_engine.py          # 错题本智能引擎
+
+```text
+MTSCOS-AI-Project/
+├── server_real_db.py               # ✅ 生产入口（识别MTS架构+启动分片库）
+├── server_preview.py               # 🧪 预览入口
+├── app.py                          # 历史兼容入口
+├── modular_start.py                # 模块化启动脚本
+├── startup_modules/                # 模块化启动器
+│   ├── db_config_loader.py         # 数据库配置加载器（8阶段）
+│   ├── core_init.py                # 核心初始化（4步骤）
+│   └── module_loader.py            # 功能模块加载器（6阶段）
+├── ai_engines/                     # AI引擎模块（550+员工/引擎、47 Agent）
+│   ├── ai_cluster_manager.py       # AI集群管理
+│   ├── ai_employee_manager.py      # AI员工管理
+│   ├── ai_question_bank.py         # 题库生成引擎
+│   ├── adaptive_learning_engine.py # 自适应学习引擎
+│   ├── knowledge_graph_engine.py   # 知识图谱引擎
+│   ├── reward_achievement_engine.py# 奖励成就引擎
+│   ├── wrong_book_engine.py        # 错题本智能引擎
 │   ├── learning_prediction_engine.py # 学习预测分析引擎
-│   ├── ai_tutor_engine.py            # AI助教答疑引擎
+│   ├── ai_tutor_engine.py          # AI助教答疑引擎
 │   ├── collaborative_learning_engine.py # 协作学习引擎
 │   ├── teaching_evaluation_engine.py # 智能教学评估引擎
 │   ├── resource_recommendation_engine.py # 学习资源推荐引擎
-│   ├── learning_report_engine.py      # 学情分析报告引擎
-│   ├── homework_grading_engine.py    # 智能作业批改引擎
+│   ├── learning_report_engine.py  # 学情分析报告引擎
+│   ├── homework_grading_engine.py  # 智能作业批改引擎
 │   ├── home_school_communication_engine.py # 家校沟通引擎
-│   ├── gamification_engine.py        # 学习游戏化引擎
+│   ├── gamification_engine.py      # 学习游戏化引擎
 │   ├── intelligent_warning_engine.py # 智能预警引擎
 │   ├── ai_question_authoring_engine.py # AI辅助出题引擎
 │   ├── learning_visualization_engine.py # 学习数据可视化引擎
-│   ├── learning_diagnosis_engine.py  # 智能学习诊断引擎
-│   ├── knowledge_base_engine.py      # 智能知识库引擎
+│   ├── learning_diagnosis_engine.py # 智能学习诊断引擎
+│   ├── knowledge_base_engine.py    # 智能知识库引擎
 │   └── classroom_interaction_engine.py # AI课堂互动引擎
-├── app/                       # 应用模块
-│   ├── api/                   # API接口（120+个）
-│   ├── ai/                    # AI子模块
-│   ├── blueprints/            # 蓝图模块
-│   ├── services/              # 服务模块
-│   │   ├── cluster_service.py       # 集群管理服务
-│   │   └── port_monitor_service.py  # 端口监控服务
-│   ├── models/                # 数据模型（20+个）
-│   │   ├── permission.py            # 权限模型
-│   │   └── role.py                  # 角色模型
-│   ├── middlewares/           # 中间件
-│   ├── routes/                # 路由模块
-│   ├── containers/            # 容器模块
-│   │   └── user_container.py        # 用户容器
-│   └── utils/                 # 工具模块
-│       └── permission_manager.py    # 权限管理器
-├── split_databases/           # 分布式数据库（16+个）
-├── templates/                 # HTML模板（100+个）
-├── static/                    # 静态资源
-├── scripts/                   # 脚本工具
-│   └── expand_question_bank.py # 题库拓展脚本
-└── docs/                      # 文档目录
+├── app/                            # 应用模块
+│   ├── api/                        # API接口（120+个）
+│   ├── ai/                         # AI子模块
+│   ├── blueprints/                 # 蓝图模块
+│   ├── services/                   # 服务模块
+│   │   ├── cluster_service.py      # 集群管理服务
+│   │   └── port_monitor_service.py # 端口监控服务
+│   ├── models/                     # 数据模型
+│   │   ├── permission.py           # 权限模型
+│   │   └── role.py                 # 角色模型
+│   ├── middlewares/                # 中间件
+│   ├── routes/                     # 路由模块
+│   ├── containers/                 # 容器模块
+│   │   └── user_container.py       # 用户容器
+│   └── utils/                      # 工具模块
+│       └── permission_manager.py   # 权限管理器
+├── split_databases/                # 分布式数据库（9+ SQLite分片，87张表）
+├── templates/                      # HTML模板（100+个）
+├── static/                         # 静态资源
+├── scripts/                        # 脚本工具
+│   └── expand_question_bank.py     # 题库拓展脚本
+└── docs/                           # 文档目录
 ```
 
 ---
@@ -192,6 +197,7 @@ flask-app/
 ### 4.1 启动流程（5大阶段）
 
 #### 阶段1: 数据库配置加载（8个子阶段）
+
 | 子阶段 | 配置项数 | 数据源 |
 |--------|---------|--------|
 | base | 12+ | system.db, admin.db |
@@ -220,51 +226,51 @@ flask-app/
 #### 阶段4: 系统管理API注册
 #### 阶段5: 启动Web服务器
 
-### 3.2 启动命令
+### 4.2 启动命令
+
 ```bash
-# 标准启动
-python app.py --port 8888
+# 生产入口（推荐）
+python3 server_real_db.py --host 0.0.0.0 --port 8888
 
 # 调试模式
-python app.py --port 8888 --debug
+python3 server_preview.py --port 8888 --debug
 
 # 指定主机
-python app.py --host 0.0.0.0 --port 9000
+python3 server_real_db.py --host 0.0.0.0 --port 9000
 
 # SSL模式
-python app.py --ssl --ssl-port 8443
+python3 server_real_db.py --ssl --ssl-port 8443
 ```
 
 ---
 
-## 4. 分布式数据库
+## 5. 分布式数据库
 
-### 4.1 数据库列表（16+个）
+### 5.1 数据库列表（9+ SQLite分片，87张表，0空表）
+
 | 数据库 | 用途 |
 |--------|------|
-| auth.db | 认证和用户管理 |
-| exam.db | 考试管理 |
-| question.db | 题库管理 |
-| user.db | 用户信息 |
-| system.db | 系统配置 |
-| admin.db | 管理后台 |
-| ai.db | AI引擎 |
-| learning.db | 学习系统 |
-| proctor.db | 监考系统 |
-| log.db | 日志系统 |
-| api_management.db | API管理 |
-| routes_management.db | 路由管理 |
-| search_models.db | 检索模型 |
-| mtscos.db | 端口监控数据 |
+| auth.db | 认证和用户管理（users/roles/permissions/sessions/2FA/VIKEY绑定） |
+| exam.db | 考试管理（exams/exam_questions/exam_results/proctor events） |
+| question.db | 题库管理（question_bank/ai_generated/tags/blooms/difficulty） |
+| user.db | 用户信息（profiles/parent-student links/groups/avatar） |
+| system.db | 系统配置（configs/system_versions/subsystem_versions/feature-flags） |
+| admin.db | 管理后台（admin_ops/change-audit/super-admin audit log） |
+| ai.db | AI引擎数据（ai_employees/clusters/llm model-pool/ai_results/brain_map） |
+| learning.db | 学习系统（learning_records/knowledge_points/study_paths/wrong-book） |
+| log.db | 日志系统（system_logs/audit_logs/error_logs/slow_query） |
+| proctor.db | 监考系统（proctoring events / learning analytics ext.） |
+| math.db / physics.db / other.db | 学科域扩展（预留） |
 
-### 4.2 智能数据库路由
-通过 `smart_db_router.py` 实现 SQL 查询自动路由到正确的分布式数据库。
+### 5.2 智能数据库路由
+通过 `smart_db_router_simple.py` 实现 SQL 查询自动路由到正确的分布式数据库分片，业务层无感知。
 
 ---
 
-## 5. AI智能引擎矩阵
+## 6. AI智能引擎矩阵
 
-### 5.1 核心引擎列表（20个）
+### 6.1 核心引擎列表（20+）
+
 | 引擎名称 | API前缀 | 功能描述 |
 |---------|--------|---------|
 | 题目生成引擎 | /api/question | AI自动生成题目 |
@@ -288,20 +294,21 @@ python app.py --ssl --ssl-port 8443
 | 智能知识库引擎 | /api/knowledge_base | 知识存储与检索 |
 | AI课堂互动引擎 | /api/classroom_interaction | 课堂活动管理 |
 
-### 5.2 AI员工（60+）
+### 6.2 AI员工（550+）
 - 题目生成员工、考试分析员工、消息管理员工、奖励系统员工
 - 练习学习员工、日语听力音频生成专家AI、AutomationPlanAgent
 - 配置管理AI员工、端口监控AI员工、Git管理AI员工等
 
-### 5.3 AI Agent（8+）
+### 6.3 AI Agent（47个）
 - 系统监控Agent、数据备份Agent、智能调度器、版本管理Agent
-- Git同步Agent、自愈Agent、API管理Agent、数据库Agent
+- Git同步Agent、自愈Agent、API管理Agent、数据库Agent等
 
 ---
 
-## 6. 题库系统
+## 7. 题库系统
 
-### 6.1 科目覆盖
+### 7.1 科目覆盖
+
 #### 成人教育科目（9个）
 - 成人高考语文、成人高考数学、成人高考英语
 - 成人高考政治、成人高考物理、成人高考化学
@@ -313,21 +320,22 @@ python app.py --ssl --ssl-port 8443
 - 高中：语文、数学、英语、物理、化学、生物、历史、地理、政治（9个）
 - 通用：语文、数学、英语、物理、化学、生物、历史、地理、政治、科学、日语（11个）
 
-### 6.2 题型支持
+### 7.2 题型支持
 - 单选题、多选题、判断题、填空题、简答题、论述题、听力题
 
-### 6.3 题库规模
+### 7.3 题库规模
 - 每个科目生成1000道题目
 - 总计：37个科目 × 1000题 = 37,000+ 题目
 
-### 6.4 难度分级
+### 7.4 难度分级
 - 简单（easy）、中等（medium）、困难（hard）
 
 ---
 
-## 7. 权限管理体系
+## 8. 权限管理体系
 
-### 7.1 角色体系（12个角色）
+### 8.1 角色体系（16个角色）
+
 | 角色 | 中文名 | 权限级别 | 说明 |
 |------|--------|---------|------|
 | guest | 访客 | 0 | 无登录权限 |
@@ -340,9 +348,10 @@ python app.py --ssl --ssl-port 8443
 | ai_manager | AI管理员 | 7 | AI引擎配置与管理 |
 | cluster_manager | 集群管理员 | 8 | 集群节点管理 |
 | admin | 管理员 | 9 | 系统管理（只读） |
+| super_admin | 超级管理员 | 9 | 超管UX，需VIKEY硬件密钥 |
 | hardware_admin | 硬件管理员 | 14 | 最高权限，需加密狗认证 |
 
-### 7.2 权限矩阵
+### 8.2 权限矩阵
 每个角色拥有独立的权限列表，涵盖：
 - 用户管理：view_profile, manage_account, change_password
 - 考试系统：view_exams, take_exam, view_results, manage_exams
@@ -352,7 +361,7 @@ python app.py --ssl --ssl-port 8443
 - 集群管理：manage_cluster, view_cluster_stats, manage_nodes
 - 端口管理：manage_ports, view_port_stats, allocate_port
 
-### 7.3 权限装饰器
+### 8.3 权限装饰器
 - `@require_login` - 需要登录
 - `@require_admin` - 需要管理员权限
 - `@require_super_admin` - 需要超级管理员权限
@@ -360,9 +369,10 @@ python app.py --ssl --ssl-port 8443
 
 ---
 
-## 8. AI集群与模型库
+## 9. AI集群与模型库
 
-### 8.1 AI模型配置（15个模型）
+### 9.1 AI模型配置（15个模型）
+
 | 模型ID | 模型名称 | 类型 | 提供商 | 版本 |
 |--------|---------|------|--------|------|
 | gpt-4 | GPT-4 | llm | openai | 4.0 |
@@ -381,13 +391,13 @@ python app.py --ssl --ssl-port 8443
 | baichuan-7b | Baichuan-7B | llm | baichuan | 1.0 |
 | zephyr-7b | Zephyr-7B | llm | huggingface | 1.0 |
 
-### 8.2 模型性能指标
+### 9.2 模型性能指标
 每个模型记录：
 - 延迟（latency）：响应时间（秒）
 - 吞吐量（throughput）：每秒处理请求数
 - 准确率（accuracy）：回答准确率百分比
 
-### 8.3 集群管理功能
+### 9.3 集群管理功能
 - 节点动态扩展
 - 负载均衡策略
 - 健康检查与自动故障转移
@@ -396,14 +406,15 @@ python app.py --ssl --ssl-port 8443
 
 ---
 
-## 9. 安全架构
+## 10. 安全架构
 
-### 9.1 认证层
+### 10.1 认证层
 - **VIKEY硬件密钥**：USB驱动 → 挑战/响应 → 会话Token绑定
 - **6位挑战码**：超管登录强制二次验证
 - **Session Cookie + CSRF Token**：生产环境必须前端TLS
 
-### 9.2 防护层（WAF 10条规则）
+### 10.2 防护层（WAF 10条规则）
+
 | 规则 | 防护内容 |
 |------|---------|
 | SQLi | SQL注入攻击 |
@@ -417,29 +428,30 @@ python app.py --ssl --ssl-port 8443
 | 接口限流 | API调用频率限制 |
 | 异常请求 | 异常参数/格式检测 |
 
-### 9.3 CI安全扫描矩阵
+### 10.3 CI安全扫描矩阵
 - **pip-audit**：Python依赖安全审计
 - **Trivy FS**：文件系统漏洞扫描
 - **Bandit**：Python代码安全扫描
 - **CodeQL**：GitHub代码安全分析
 - **Dependabot**：pip日更 + Actions周更
 
-### 9.4 审计层
+### 10.4 审计层
 - **操作日志**：所有管理操作记录
 - **登录日志**：登录时间、IP、设备信息
 - **数据变更日志**：数据增删改全链路追踪
 - **不可篡改**：审计日志追加写入，禁止修改删除
 
-### 9.5 AI防火墙服务
+### 10.5 AI防火墙服务
 - 服务文件：`core/services/ai_firewall.py`
-- API文件：`app/api/ai/firewall_api.py`
+- API文件：`app/api/ai_firewall_api.py`
 - 功能：实时安全扫描、威胁检测、自动防护
 
 ---
 
-## 10. 自维护运维OS
+## 11. 自维护运维OS
 
-### 10.1 8维自动修复
+### 11.1 8维自动修复
+
 | 修复维度 | 修复内容 | 触发条件 |
 |---------|---------|---------|
 | 表结构修复 | 缺失表/字段自动创建 | 数据库连接异常 |
@@ -451,7 +463,7 @@ python app.py --ssl --ssl-port 8443
 | 索引重建 | 数据库索引重建 | 查询性能下降 |
 | ACL校准 | 权限规则重新计算 | 角色/权限变更 |
 
-### 10.2 预防式诊断（8维健康检查）
+### 11.2 预防式诊断（8维健康检查）
 - CPU使用率监控
 - 内存使用率监控
 - 磁盘空间监控
@@ -461,12 +473,12 @@ python app.py --ssl --ssl-port 8443
 - 服务可用性检查
 - 安全状态扫描
 
-### 10.3 自动化任务系统
+### 11.3 自动化任务系统
 - **代码巡检员**：自动扫描代码异常和Bug
 - **漏洞扫描员**：定期扫描系统安全漏洞
 - **日志监控员**：实时监控错误日志和异常
 
-### 10.4 异常退出处理机制
+### 11.4 异常退出处理机制
 - 任务状态追踪（pending/running/completed/failed）
 - 异常退出自动重试（最多3次）
 - 失败任务自动上报
@@ -474,9 +486,10 @@ python app.py --ssl --ssl-port 8443
 
 ---
 
-## 11. 端口管理系统
+## 12. 端口管理系统
 
-### 11.1 端口配置（21个端口）
+### 12.1 端口配置（21个端口）
+
 | 端口 | 服务名称 | 状态 | 说明 |
 |------|---------|------|------|
 | 8888 | MTSCOS HTTP服务 | running | 主应用HTTP端口 |
@@ -500,7 +513,7 @@ python app.py --ssl --ssl-port 8443
 | 8082 | 日志服务 | running | 日志服务端口 |
 | 8083 | 定时任务 | running | 定时任务服务端口 |
 
-### 11.2 端口管理功能
+### 12.2 端口管理功能
 - **端口扫描**：扫描指定范围端口状态
 - **端口分配**：自动分配可用端口
 - **端口预留**：为特定服务预留端口
@@ -509,7 +522,8 @@ python app.py --ssl --ssl-port 8443
 - **参数匹配**：配置参数验证与匹配
 - **自动修复**：端口异常自动修复
 
-### 11.3 API接口
+### 12.3 API接口
+
 | 接口 | 方法 | 说明 |
 |------|------|------|
 | /api/ports/status | GET | 获取所有端口状态 |
@@ -522,15 +536,16 @@ python app.py --ssl --ssl-port 8443
 
 ---
 
-## 12. 集群管理系统
+## 13. 集群管理系统
 
-### 12.1 节点管理
+### 13.1 节点管理
 - 节点注册与注销
 - 节点状态监控（ACTIVE/HEALTHY/UNHEALTHY/DOWN/MAINTENANCE）
 - 节点角色管理（MASTER/SLAVE/STANDBY）
 - 节点权重配置
 
-### 12.2 负载均衡策略（4种）
+### 13.2 负载均衡策略（4种）
+
 | 策略 | 说明 | 适用场景 |
 |------|------|---------|
 | ROUND_ROBIN | 轮询 | 节点性能相近 |
@@ -538,17 +553,18 @@ python app.py --ssl --ssl-port 8443
 | WEIGHTED_ROUND_ROBIN | 加权轮询 | 需要按权重分配 |
 | IP_HASH | IP哈希 | 需要会话保持 |
 
-### 12.3 健康检查
+### 13.3 健康检查
 - 心跳超时检测（30秒）
 - HTTP健康检查（/health端点）
 - 自动故障转移
 - 主节点自动提升
 
-### 12.4 数据复制
+### 13.4 数据复制
 - 主从数据复制
 - 实时同步机制
 
-### 12.5 API接口
+### 13.5 API接口
+
 | 接口 | 方法 | 说明 |
 |------|------|------|
 | /api/cluster/nodes | GET | 获取节点列表 |
@@ -562,21 +578,22 @@ python app.py --ssl --ssl-port 8443
 
 ---
 
-## 13. Git自动同步
+## 14. Git自动同步
 
-### 13.1 自动同步功能
+### 14.1 自动同步功能
 - 变更检测
 - 自动提交（带审批机制）
 - 自动推送
 - 定时同步（每5分钟）
 
-### 13.2 安全机制
+### 14.2 安全机制
 - 保护分支禁止强制推送（main/master/develop）
 - 大规模提交需审批（50+文件变更）
 - 操作记录审计
 - 差异对比保存
 
-### 13.3 API接口
+### 14.3 API接口
+
 | 接口 | 方法 | 说明 |
 |------|------|------|
 | /api/git/status | GET | Git状态 |
@@ -588,19 +605,20 @@ python app.py --ssl --ssl-port 8443
 
 ---
 
-## 14. 前端页面系统
+## 15. 前端页面系统
 
-### 14.1 模板系统
+### 15.1 模板系统
 - 100+ HTML模板文件
 - Jinja2模板引擎
 - 全局模板函数（角色名称、日期格式化等）
 
-### 14.2 布局优化
+### 15.2 布局优化
 - 左侧固定标签栏（260px）+ 右侧Tab切换内容区
 - 响应式设计，支持移动端适配
 - 渐变进度条、统计卡片、实时日志
 
-### 14.3 主要页面
+### 15.3 主要页面
+
 | 页面 | 路由 | 说明 |
 |------|------|------|
 | 超级管理员仪表盘 | /super_admin_dashboard | 10个标签页，系统监控与管理 |
@@ -612,21 +630,21 @@ python app.py --ssl --ssl-port 8443
 
 ---
 
-## 15. 移动端适配
+## 16. 移动端适配
 
-### 15.1 响应式布局
+### 16.1 响应式布局
 - 媒体查询适配不同屏幕尺寸
 - 触控友好的按钮尺寸
 - 滑动手势支持
 - 移动端专属导航
 
-### 15.2 移动端优化
+### 16.2 移动端优化
 - 页面宽度自适应
 - 组件缩放适配
 - 加载性能优化
 - 离线缓存支持
 
-### 15.3 手机管理端
+### 16.3 手机管理端
 - 独立路由：/admin_app
 - 移动端专属界面设计
 - 简化的操作流程
@@ -634,25 +652,26 @@ python app.py --ssl --ssl-port 8443
 
 ---
 
-## 14. AI智能题目生成器
+## 17. AI智能题目生成器
 
-### 14.1 功能概述
+### 17.1 功能概述
 AI智能题目生成器是一个基于文本内容自动生成考试题目的智能系统。用户输入任意文本内容，系统会自动分析文本、提取关键点，并生成多种题型的考试题目。
 
-### 14.2 核心特性
+### 17.2 核心特性
 - **文本分析**：自动检测文本科目（语文、数学、英语、物理、化学、生物、历史、地理、政治、科学、日语）
 - **关键点提取**：从文本中提取关键信息作为题目基础
 - **6种题型生成**：单选题、多选题、判断题、填空题、简答题、论述题
 - **难度控制**：简单/中等/困难三级难度
 - **自动保存**：支持将生成的题目保存到题库数据库
 
-### 14.3 技术实现
+### 17.3 技术实现
 - 服务文件：`app/services/ai_question_generation_service.py`
 - API文件：`app/api/ai_generation_api.py`
 - 前端页面：`templates/admin_app/ai_question_generator.html`
 - 页面路由：`/admin/ai-question-generator`
 
-### 14.4 API接口
+### 17.4 API接口
+
 | 接口 | 方法 | 说明 |
 |------|------|------|
 | /api/ai/generate-questions | POST | 从文本生成题目 |
@@ -663,7 +682,8 @@ AI智能题目生成器是一个基于文本内容自动生成考试题目的智
 | /api/ai/detect-subject | POST | 自动检测科目 |
 | /api/ai/extract-key-points | POST | 提取关键点 |
 
-### 14.5 使用示例
+### 17.5 使用示例
+
 ```json
 POST /api/ai/generate-questions
 {
@@ -677,24 +697,25 @@ POST /api/ai/generate-questions
 
 ---
 
-## 15. AI智能学习路径推荐
+## 18. AI智能学习路径推荐
 
-### 15.1 功能概述
+### 18.1 功能概述
 AI智能学习路径推荐系统分析学生学习数据，识别薄弱环节，生成个性化学习路径，帮助学生高效提升学习成绩。
 
-### 15.2 核心特性
+### 18.2 核心特性
 - **薄弱环节分析**：基于错题数据分析各知识点错误率，分级标记（紧急加强/重点复习/巩固练习/日常练习）
 - **学习路径生成**：根据薄弱环节自动生成1-30天的个性化学习路径
 - **知识图谱**：9个科目完整知识体系，每个科目5个主题，共45个主题
 - **学习进度追踪**：按科目统计学习进度
 
-### 15.3 技术实现
+### 18.3 技术实现
 - 服务文件：`app/services/ai_study_path_service.py`
 - API文件：`app/api/study_path_api.py`
 - 前端页面：`templates/admin_app/ai_study_path.html`
 - 页面路由：`/admin/ai-study-path`
 
-### 15.4 API接口
+### 18.4 API接口
+
 | 接口 | 方法 | 说明 |
 |------|------|------|
 | /api/ai/study-path/generate | POST | 生成学习路径 |
@@ -703,7 +724,8 @@ AI智能学习路径推荐系统分析学生学习数据，识别薄弱环节，
 | /api/ai/study-path/knowledge-graph | GET | 获取知识图谱 |
 | /api/ai/study-path/progress | POST | 获取学习进度 |
 
-### 15.5 使用示例
+### 18.5 使用示例
+
 ```json
 POST /api/ai/study-path/generate
 {
@@ -715,12 +737,12 @@ POST /api/ai/study-path/generate
 
 ---
 
-## 16. AI试卷自动组卷系统
+## 19. AI试卷自动组卷系统
 
-### 16.1 功能概述
+### 19.1 功能概述
 AI试卷自动组卷系统根据科目、难度、题型自动从题库中选择题目组卷，确保知识覆盖率均衡，自动计算分数分布和考试时长，生成高质量试卷。
 
-### 16.2 核心特性
+### 19.2 核心特性
 - **智能组卷算法**：基于难度比例、题型比例自动选题，确保试卷质量
 - **知识覆盖率分析**：分析试卷对各知识点的覆盖程度
 - **质量评分系统**：综合难度和题型分布计算试卷质量分数
@@ -728,13 +750,14 @@ AI试卷自动组卷系统根据科目、难度、题型自动从题库中选择
 - **考试时长计算**：根据科目和题目数量自动计算考试时长
 - **试卷预览与保存**：支持预览试卷摘要，一键保存到数据库
 
-### 16.3 技术实现
+### 19.3 技术实现
 - 服务文件：`app/services/ai_exam_composition_service.py`
 - API文件：`app/api/exam_composition_api.py`
 - 前端页面：`templates/admin_app/ai_exam_composer.html`
 - 页面路由：`/admin/ai-exam-composer`
 
-### 16.4 API接口
+### 19.4 API接口
+
 | 接口 | 方法 | 说明 |
 |------|------|------|
 | /api/ai/exam-compose | POST | 自动组卷 |
@@ -744,7 +767,8 @@ AI试卷自动组卷系统根据科目、难度、题型自动从题库中选择
 | /api/ai/exam-compose/subjects | GET | 获取科目列表 |
 | /api/ai/exam-compose/types | GET | 获取题型列表 |
 
-### 16.5 使用示例
+### 19.5 使用示例
+
 ```json
 POST /api/ai/exam-compose
 {
@@ -759,24 +783,25 @@ POST /api/ai/exam-compose
 
 ---
 
-## 17. 学生成绩分析仪表盘
+## 20. 学生成绩分析仪表盘
 
-### 17.1 功能概述
+### 20.1 功能概述
 学生成绩分析仪表盘提供多维度的学生学习数据可视化分析，包括成绩分布、学习时间趋势、薄弱知识点分析等，帮助教师和管理员全面了解学生学习状况。
 
-### 17.2 核心特性
+### 20.2 核心特性
 - **实时统计面板**：学生总数、平均分、及格率、不及格率、学习时长
 - **数据可视化图表**：成绩分布直方图、各科平均分雷达图、学习时间趋势图、错题率分析饼图
 - **成绩排名表**：Top 10学生排名，显示进步幅度
 - **薄弱知识点分析**：按错误率排序，显示掌握程度进度条
 - **筛选功能**：支持按科目、班级、时间范围筛选数据
 
-### 17.3 技术实现
+### 20.3 技术实现
 - 前端页面：`templates/admin_app/student_analytics.html`
 - 页面路由：`/admin/student-analytics`
 - 图表库：Chart.js
 
-### 17.4 图表类型
+### 20.4 图表类型
+
 | 图表名称 | 类型 | 用途 |
 |---------|------|------|
 | 成绩分布直方图 | Bar | 展示各分数段人数分布 |
@@ -786,112 +811,9 @@ POST /api/ai/exam-compose
 
 ---
 
-## 20. 版本历史
+## 21. 项目思维导图
 
-| 版本 | 代号 | 日期 | 主要特性 |
-|------|------|------|---------|
-| v7.2.0 | Comprehensive Enhancement Edition | 2026-07-09 | 题库拓展(37K题)、权限矩阵(12角色)、AI集群(15模型)、端口管理(21端口)、集群管理(4种策略)、AI题目生成器、AI学习路径推荐、AI试卷自动组卷、学生成绩分析仪表盘、AI生成题目元数据表迁移 |
-| v7.1.0 | Dashboard Refactor Edition | 2026-07-08 | 仪表盘重构、AI拓展系统、629路由、14数据库481表、41AI员工 |
-| v7.0.0 | Intelligent Modular Edition | 2026-07-07 | 模块化启动、AI智能检索、API/路由数据库管理 |
-| v6.0.0 | Distributed Database Edition | 2026-07-06 | 分布式数据库架构（13个独立数据库） |
-| v5.0.0 | AI Integration Edition | 2026-06-01 | AI集成版本，AI助教引擎 |
-| v4.0.0 | Exam System Edition | 2026-05-01 | 在线考试和监考功能 |
-| v3.0.0 | Learning Edition | 2026-04-01 | 学习管理系统 |
-| v2.0.0 | Admin Edition | 2026-03-01 | 权限和用户管理 |
-| v1.0.0 | Initial Edition | 2026-02-01 | 初始版本 |
-
----
-
-## 21. API接口文档
-
-### 21.1 系统管理API
-| 接口 | 方法 | 说明 |
-|------|------|------|
-| /api/system/status | GET | 获取系统完整状态 |
-| /api/system/configs | GET | 获取系统配置 |
-| /api/system/configs/reload | POST | 重新加载配置 |
-| /api/system/modules | GET | 获取模块加载状态 |
-
-### 21.2 认证API
-| 接口 | 方法 | 说明 |
-|------|------|------|
-| /api/auth/login | POST | 用户登录 |
-| /api/auth/register | POST | 用户注册 |
-| /api/auth/logout | GET/POST | 用户登出 |
-| /api/auth/check | GET | 检查登录状态 |
-
-### 21.3 AI员工API
-| 接口 | 方法 | 说明 |
-|------|------|------|
-| /api/ai_employees/status | GET | AI员工状态 |
-| /api/ai_employees/list | GET | AI员工列表 |
-| /api/ai_employees/register | POST | 注册AI员工 |
-| /api/ai_employees/auto_extend | POST | AI自动拓展 |
-
-### 21.4 路由管理API
-| 接口 | 方法 | 说明 |
-|------|------|------|
-| /api/routes/list | GET | 获取路由列表 |
-| /api/routes/reload | POST | 重新加载路由 |
-| /api/routes/check | GET | 检查路由状态 |
-
-### 21.5 版本管理API
-| 接口 | 方法 | 说明 |
-|------|------|------|
-| /api/version/status | GET | 版本状态 |
-| /api/version/check | GET | 版本检查 |
-| /api/version/upgrade | POST | 版本升级 |
-
-### 21.6 监控API
-| 接口 | 方法 | 说明 |
-|------|------|------|
-| /api/monitoring/stats | GET | 系统监控统计 |
-| /api/monitoring/errors | GET | 错误统计 |
-| /api/monitoring/logs | GET | 监控日志 |
-
----
-
-## 22. 部署指南
-
-### 22.1 环境要求
-- Python 3.8+
-- SQLite 3.30+
-- Git
-- 推荐：Redis、MySQL（可选）
-
-### 22.2 安装步骤
-```bash
-# 克隆仓库
-git clone https://github.com/MTSCOS/MTSCOS_AI_Project.git
-cd flask-app
-
-# 安装依赖
-pip install -r requirements.txt
-
-# 初始化数据库
-python -c "from app.utils.db import init_all_databases; init_all_databases()"
-
-# 启动服务
-python app.py --port 8888
-```
-
-### 22.3 配置说明
-- 配置文件：`app/config/config.py`
-- 数据库路径：`split_databases/`
-- 静态资源：`static/`
-- 模板文件：`templates/`
-
-### 22.4 安全建议
-- 生产环境启用HTTPS
-- 设置管理员密码（非默认值）
-- 定期备份数据库
-- 监控系统日志
-
----
-
-## 19. 项目思维导图
-
-完整的项目思维导图请参见独立文档：[docs/MIND_MAP.md](docs/MIND_MAP.md)
+完整的项目思维导图请参见独立文档：[docs/MIND_MAP.md](MIND_MAP.md)
 
 ### 思维导图概览
 
@@ -903,7 +825,7 @@ python app.py --port 8888
 - 人机协同，让教师专注创造性工作
 ### **MTS架构v2.0**
 - 规划引擎（意图识别、任务分解、ACL校验、路由决策）
-- 执行AI员工阵列（41+专业AI员工、技能可进化、任务可委托）
+- 执行AI员工阵列（550+专业AI员工/引擎、47 Agent、技能可进化、任务可委托）
 - 基础设施层（分片SQLite、内存发布订阅、多级缓存）
 ### **AI员工体系**
 - 教学领域：教师AI、命题专家、作业批改员、AI辅导老师
@@ -923,6 +845,119 @@ python app.py --port 8888
 - 8维自动修复：表结构/配置/缓存/连接池/回滚/数据恢复/索引/ACL
 - 预防式诊断：8维健康检查、性能监控、异常检测、自动上报
 ```
+
+---
+
+## 22. 版本历史
+
+| 版本 | 代号 | 日期 | 主要特性 |
+|------|------|------|---------|
+| v17.22.0 | SuperAdmin UX Unified Edition | 2026-07-26 | 超管UX统一、VIKEY全链路打通、主版本+20子系统统一对齐、CI接入Dependabot+Trivy+Bandit、9+ SQLite分片（87张表）、550+ AI员工/引擎、47 Agent |
+| v7.2.0 | Comprehensive Enhancement Edition | 2026-07-09 | 题库拓展(37K题)、权限矩阵(12角色)、AI集群(15模型)、端口管理(21端口)、集群管理(4种策略)、AI题目生成器、AI学习路径推荐、AI试卷自动组卷、学生成绩分析仪表盘 |
+| v7.1.0 | Dashboard Refactor Edition | 2026-07-08 | 仪表盘重构、AI拓展系统、629路由、41AI员工 |
+| v7.0.0 | Intelligent Modular Edition | 2026-07-07 | 模块化启动、AI智能检索、API/路由数据库管理 |
+| v6.0.0 | Distributed Database Edition | 2026-07-06 | 分布式数据库架构（13个独立数据库） |
+| v5.0.0 | AI Integration Edition | 2026-06-01 | AI集成版本，AI助教引擎 |
+| v4.0.0 | Exam System Edition | 2026-05-01 | 在线考试和监考功能 |
+| v3.0.0 | Learning Edition | 2026-04-01 | 学习管理系统 |
+| v2.0.0 | Admin Edition | 2026-03-01 | 权限和用户管理 |
+| v1.0.0 | Initial Edition | 2026-02-01 | 初始版本 |
+
+---
+
+## 23. API接口文档
+
+### 23.1 系统管理API
+
+| 接口 | 方法 | 说明 |
+|------|------|------|
+| /api/system/status | GET | 获取系统完整状态 |
+| /api/system/configs | GET | 获取系统配置 |
+| /api/system/configs/reload | POST | 重新加载配置 |
+| /api/system/modules | GET | 获取模块加载状态 |
+
+### 23.2 认证API
+
+| 接口 | 方法 | 说明 |
+|------|------|------|
+| /api/auth/login | POST | 用户登录 |
+| /api/auth/register | POST | 用户注册 |
+| /api/auth/logout | GET/POST | 用户登出 |
+| /api/auth/check | GET | 检查登录状态 |
+
+### 23.3 AI员工API
+
+| 接口 | 方法 | 说明 |
+|------|------|------|
+| /api/ai_employees/status | GET | AI员工状态 |
+| /api/ai_employees/list | GET | AI员工列表 |
+| /api/ai_employees/register | POST | 注册AI员工 |
+| /api/ai_employees/auto_extend | POST | AI自动拓展 |
+
+### 23.4 路由管理API
+
+| 接口 | 方法 | 说明 |
+|------|------|------|
+| /api/routes/list | GET | 获取路由列表 |
+| /api/routes/reload | POST | 重新加载路由 |
+| /api/routes/check | GET | 检查路由状态 |
+
+### 23.5 版本管理API
+
+| 接口 | 方法 | 说明 |
+|------|------|------|
+| /api/version/status | GET | 版本状态 |
+| /api/version/check | GET | 版本检查 |
+| /api/version/upgrade | POST | 版本升级 |
+
+### 23.6 监控API
+
+| 接口 | 方法 | 说明 |
+|------|------|------|
+| /api/monitoring/stats | GET | 系统监控统计 |
+| /api/monitoring/errors | GET | 错误统计 |
+| /api/monitoring/logs | GET | 监控日志 |
+
+---
+
+## 24. 部署指南
+
+### 24.1 环境要求
+- Python 3.9+
+- SQLite 3.30+
+- pip 20.0+
+- Git
+- 推荐：Redis 7.0+（可选，系统支持内存缓存降级）
+
+### 24.2 安装步骤
+
+```bash
+# 克隆仓库
+git clone https://github.com/wuchenghao15/MTSCOS-AI-Project.git
+cd MTSCOS-AI-Project
+
+# 创建虚拟环境
+python3 -m venv venv
+source venv/bin/activate
+
+# 安装依赖
+pip install -r requirements.txt
+
+# 启动服务（生产入口，推荐）
+python3 server_real_db.py --host 0.0.0.0 --port 8888
+```
+
+### 24.3 配置说明
+- 配置文件：`app/config/config.py`
+- 数据库路径：`split_databases/`
+- 静态资源：`static/`
+- 模板文件：`templates/`
+
+### 24.4 安全建议
+- 生产环境启用HTTPS
+- 设置管理员密码（非默认值）
+- 定期备份数据库
+- 监控系统日志
 
 ---
 

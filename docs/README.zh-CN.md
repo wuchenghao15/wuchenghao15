@@ -8,7 +8,7 @@
   <p>
     <b>分布式多智能体协作 · MTS架构v2.0双引擎 · 覆盖 K12 / 成人 / 高等教育 全场景</b><br>
     AI自动命题 + 智能组卷 + 薄弱诊断 + 个性化学习路径 + RBAC+ABAC 双模型权限审计，
-    41+ 位「AI员工」组成自愈式学区运营团队，从文本到可评分的试卷和学习路径，全部自动完成。
+    550+ 位「AI员工/引擎」与 47 个 Agent 组成自愈式学区运营团队，从文本到可评分的试卷和学习路径，全部自动完成。
   </p>
 
   <p>
@@ -72,19 +72,19 @@
 
 ---
 
-## 🧠 项目愿景
+## 项目愿景
 
 K12、成人教育与高校教师 **80% 的工时**被重复劳动消耗：组卷、改作业、成绩统计、
 薄弱知识点定位、学习计划撰写、题库内容整理……
 
-MTSCOS AI 要做的是：把整个「智能学区运营团队」交给你 — 41+ 位专业「AI员工」分工协作（命题、组卷、批改、诊断、学习规划、防火墙、审计、Git运维、布局修复……），
+MTSCOS AI 要做的是：把整个「智能学区运营团队」交给你 — 550+ 位专业「AI员工/引擎」与 47 个 Agent 分工协作（命题、组卷、批改、诊断、学习规划、防火墙、审计、Git运维、布局修复……），
 由 **MTS 架构 v2.0（多智能体双轨自演进协作架构）** 统一编排。输入一段教学文本，系统自动输出可评分的试卷和个性化学习路径。
 
-> 🧭 **MTSCOS** = **M**ulti-Agent **T**win-Track **S**elf-evolving **C**ollaborative **O**perating **S**ystem
+> **MTSCOS** = **M**ulti-Agent **T**win-Track **S**elf-evolving **C**ollaborative **O**perating **S**ystem
 
 ---
 
-## 🌟 设计理念与灵感来源
+## 设计理念与灵感来源
 
 ### 「AI学区」愿景
 
@@ -98,7 +98,7 @@ MTSCOS AI 源于一个简单而大胆的问题：**如果我们不仅仅自动�
 | :--- | :--- |
 | **设计时就考虑人机协同** | AI员工处理重复性工作，人类专注于创造性教学和决策 |
 | **自我进化能力** | 系统持续从数据、用户交互和外部知识源中学习 |
-| **去中心化智能** | 41+ AI员工各有所长，像真实团队一样协作 |
+| **去中心化智能** | 550+ AI员工/引擎与 47 个 Agent 各有所长，像真实团队一样协作 |
 | **安全即DNA** | 每个组件从底层开始就构建企业级安全 |
 | **零配置体验** | 开箱即用，智能默认值；复杂性按需暴露 |
 
@@ -122,33 +122,33 @@ MTS中的"双轨"指的是两条并行流：
 
 ---
 
-## ✨ 10 大亮点（为什么选 MTSCOS AI）
+## 10 大亮点（为什么选 MTSCOS AI）
 
 | 维度 | 核心能力 |
 | :---: | :--- |
-| 🏗️ **MTS架构v2.0双引擎** | 「规划引擎」负责策略，「执行AI员工」负责落地；8阶段配置加载 + 6阶段模块加载，详见 [docs/MT_ARCHITECTURE.md](docs/MT_ARCHITECTURE.md) |
-| 🤖 **41+ 位AI员工/Agent** | 教师AI / 学生AI / 命题专家 / 作业批改 / 题目生成 / 安全审计 / Git管家 / DevOps / 布局修复 / 代码修复 / 数据分析 / 脑库管理员 / 翻译官…技能可进化、故障可自愈 |
-| 🔗 **15+ 大模型统一调度** | GPT-4o / Claude-3.5 / Qwen2.5 / Llama-3 / Gemini / DeepSeek / 火山方舟 / 通义千问 — 按能力、负载、延迟SLA智能路由 |
-| 📚 **动态题目引擎v2** | 实时AI生成 + 网络爬取多模态题目，跨会话避免撞库；7题型 × 11学科 × 3Bloom层级 |
-| 🧩 **分片数据库矩阵** | 9+ 独立 SQLite 分片（auth/exam/question/learning/user/system/admin/log/ai/other/math/physics…），透明路由，开箱零配置 |
-| 🔐 **企业级RBAC+ABAC** | 16级角色（访客→家长→设计师→教师→监考→题库→AI→集群→管理员→超级管理员→硬件管理员），50+ 权限规则，全链路不可篡改审计，VIKEY USB硬件密钥登录 |
-| 🛡️ **AI防火墙+应用安全** | WAF 10条规则（SQLi/XSS/RCE/SSRF/LFI/目录穿越/扫描/暴力破解/限流）+ pip-audit/Trivy FS/Bandit代码扫描 + Dependabot 日更 + CodeQL |
-| ♻️ **自维护运维OS** | 8种自动修复路径（表结构/配置/缓存/连接池/回滚/数据恢复/索引/ACL）+ 8维预防式健康诊断 |
-| 🔌 **统一版本API** | 1个主版本 + 20个子系统版本，批量升级 / 回滚 / 版本锁定 / 变更历史，数据库 `system_versions` + `subsystem_versions` 双表审计 |
-| 📱 **响应式 + 移动门户** | 桌面 / 平板 / 手机布局全覆盖；移动端独立登录与考试页；超管专属 VIKEY + 6位挑战码 硬件登录 |
+| **MTS架构v2.0双引擎** | 「规划引擎」负责策略，「执行AI员工」负责落地；8阶段配置加载 + 6阶段模块加载，详见 [docs/MT_ARCHITECTURE.md](docs/MT_ARCHITECTURE.md) |
+| **550+ AI员工 / 47 Agent** | 教师AI / 学生AI / 命题专家 / 作业批改 / 题目生成 / 安全审计 / Git管家 / DevOps / 布局修复 / 代码修复 / 数据分析 / 脑库管理员 / 翻译官…技能可进化、故障可自愈 |
+| **15+ 大模型统一调度** | GPT-4o / Claude-3.5 / Qwen2.5 / Llama-3 / Gemini / DeepSeek / 火山方舟 / 通义千问 — 按能力、负载、延迟SLA智能路由 |
+| **动态题目引擎v2** | 实时AI生成 + 网络爬取多模态题目，跨会话避免撞库；7题型 × 11学科 × 3Bloom层级 |
+| **分片数据库矩阵** | 9+ 独立 SQLite 分片（auth/exam/question/learning/user/system/admin/log/ai/other/math/physics…），共 87 张表（0 空表），透明路由，开箱零配置 |
+| **企业级RBAC+ABAC** | 16级角色（访客→家长→设计师→教师→监考→题库→AI→集群→管理员→超级管理员→硬件管理员），50+ 权限规则，全链路不可篡改审计，VIKEY USB硬件密钥登录 |
+| **AI防火墙+应用安全** | WAF 10条规则（SQLi/XSS/RCE/SSRF/LFI/目录穿越/扫描/暴力破解/限流）+ pip-audit/Trivy FS/Bandit代码扫描 + Dependabot 日更 + CodeQL |
+| **自维护运维OS** | 8种自动修复路径（表结构/配置/缓存/连接池/回滚/数据恢复/索引/ACL）+ 8维预防式健康诊断 |
+| **统一版本API** | 1个主版本 + 20个子系统版本，批量升级 / 回滚 / 版本锁定 / 变更历史，数据库 `system_versions` + `subsystem_versions` 双表审计 |
+| **响应式 + 移动门户** | 桌面 / 平板 / 手机布局全覆盖；移动端独立登录与考试页；超管专属 VIKEY + 6位挑战码 硬件登录 |
 
 ---
 
-## 🏗️ MTS 架构 v2.0（一分钟读懂）
+## MTS 架构 v2.0（一分钟读懂）
 
-```
+```text
                     ┌──────────────────────────────────────────┐
                     │  MTS 架构 v2.0  —  双引擎分层协作流水线   │
                     └──────────────────────────────────────────┘
 
    ┌────────────┐   ┌────────────────────┐   ┌──────────────────────┐   ┌────────────┐
-   │  请求入口  │→  │   🧭 规划引擎     │→  │  ⚙️ 执行AI员工阵列  │→  │  响应出口  │
-   │  Ingress   │   │  (意图→分解→ACL)   │   │  (41+位AI员工协同)   │   │   Egress   │
+   │  请求入口  │→  │   规划引擎         │→  │  执行AI员工阵列      │→  │  响应出口  │
+   │  Ingress   │   │  (意图→分解→ACL)   │   │  (550+ AI员工协同)   │   │   Egress   │
    └──────┬─────┘   └─────────┬──────────┘   └──────────┬───────────┘   └──────┬─────┘
           │                   │                       │                      │
           ▼                   ▼                       ▼                      ▼
@@ -163,33 +163,33 @@ MTS中的"双轨"指的是两条并行流：
 
 ---
 
-## 🎯 功能全景矩阵（开箱即用）
+## 功能全景矩阵（开箱即用）
 
-### 📚 题库与考试
+### 题库与考试
 - **统一题库**：11门学科（语文/数学/英语/物理/化学/生物/历史/地理/政治/科学/日语）× 7种题型（单选/多选/判断/填空/简答/论述/听力）× Bloom 3层级 + 难度/区分度信度自动校验
 - **动态题目引擎**：AI实时生成 + 网络抓取，跨试卷/跨会话撞库避免
 - **AI智能组卷**：知识点覆盖率分析、分数分布自动计算、质量评分、一键预览+保存
 - **智能监考**：切屏/失焦/复制/粘贴 检测，作弊行为自动标记归档
 
-### 🧑‍🎓 学习与辅导
+### 学习与辅导
 - **自适应学习路径引擎（IRT + RL强化学习）**：IRT评分 + Q值推荐序列，艾宾浩斯螺旋复习 + 支架式教学逐级降难度
 - **薄弱诊断（不是错在哪而是为什么错）**：能力雷达 + 知识点掌握热力图 + 错题归因树
 - **智能错题本**：错题自动收录、间隔复习、掌握度追踪
 - **AI辅导老师**：分科答疑、语文作文批改、英语写作评估、数学步骤讲解
 - **学情分析仪表盘**：成绩分布直方图、平均分雷达、学习时长趋势、错误率象限图
 
-### 🏫 10角色管理门户
+### 10角色管理门户
 教师工作台 · 考试中心 · 题库管理员 · 学生学习门户 · 家长端 · 设计师控制台 · AI运维台 · 集群运维台 · 管理员仪表盘 · **超管登录界面（硬件加固）** + VIKEY USB密钥 + 6位挑战码双因子
 
-### 🛡️ 安全与治理
+### 安全与治理
 - RBAC 16级 + ABAC 属性过滤，6层访问控制矩阵
 - 企业WAF（SQLi/XSS/RCE/SSRF/LFI/目录穿越/爬虫/暴力破解/接口限流）
-- **VIKEY 硬件密钥登录**（v17.22新增）：USB驱动 → 挑战/响应 → 会话Token绑定
-- **AI 防火墙服务**（v17.22新增）：[ai_firewall.py](core/services/ai_firewall.py) + [ai_firewall_api.py](app/api/ai_firewall_api.py)
+- **VIKEY 硬件密钥登录**：USB驱动 → 挑战/响应 → 会话Token绑定
+- **AI 防火墙服务**：[ai_firewall.py](core/services/ai_firewall.py) + [ai_firewall_api.py](app/api/ai_firewall_api.py)
 - 全链路不可变审计（操作/登录/数据变更/接口调用）+ 仪表盘 + 一键导出
 - Dependabot 按日推送Pip安全补丁、按周推送GitHub Actions；CI全矩阵跑 pip-audit/Trivy/Bandit/CodeQL
 
-### ⚙️ 运维与自愈
+### 运维与自愈
 - **统一版本管理器**：主版本 + 20子系统版本，批量升级 / 回滚 / 锁定 / 历史查询
 - 8维自动修复（表结构/配置/缓存/连接池/版本回滚/数据恢复/索引重建/ACL校准）
 - 集群实时监控（CPU/内存/磁盘/网络/慢查询/索引建议）
@@ -198,7 +198,7 @@ MTS中的"双轨"指的是两条并行流：
 
 ---
 
-## 🚀 快速开始
+## 快速开始
 
 ### 环境要求
 
@@ -231,13 +231,14 @@ python3 server_real_db.py --host 0.0.0.0 --port 8888
 ```
 
 打开浏览器访问：
-- 🏠 **首页 / 登录** → <http://localhost:8888/>
-- 📊 **MTS架构v2.0展示页** → <http://localhost:8888/mt_architecture>
-- 📖 **系统规范页** → <http://localhost:8888/system_spec>
-- 🛡️ **超管模式** → 用户名输入 `wuchenghao15`，登录页将自动隐藏「记住我 / 忘记密码 / 创建账户」并启动 VIKEY 硬件密钥 + 6位挑战码 登录流（生产强制）
+- **首页 / 登录** → <http://localhost:8888/>
+- **MTS架构v2.0展示页** → <http://localhost:8888/mt_architecture>
+- **系统规范页** → <http://localhost:8888/system_spec>
+- **超管模式** → 用户名输入 `wuchenghao15`，登录页将自动隐藏「记住我 / 忘记密码 / 创建账户」并启动 VIKEY 硬件密钥 + 6位挑战码 登录流（生产强制）
 
 **命令行参数**：
-```
+
+```text
 --host      绑定地址          默认 127.0.0.1
 --port      HTTP 端口         默认 8888
 --ssl       启用 HTTPS        默认 False
@@ -264,7 +265,7 @@ docker run -d -p 8888:8888 --name mtscos-ai \
 
 ---
 
-## 🧪 演示账号（开箱即用）
+## 演示账号（开箱即用）
 
 10+ 角色预置账号，**统一密码：`Test@2026`**
 
@@ -280,11 +281,11 @@ docker run -d -p 8888:8888 --name mtscos-ai \
 | `test_cm` | 集群管理员 | 3 |
 | `test_admin` | 系统管理员 | 4 |
 | `test_hwadmin` | 硬件管理员 | 5 |
-| `wuchenghao15` | **🧑‍💻 超级管理员** | 9 · **需 VIKEY 硬件密钥** |
+| `wuchenghao15` | **超级管理员** | 9 · **需 VIKEY 硬件密钥** |
 
 ---
 
-## 🧩 对外接口速览（全部 Flask Blueprint 注册）
+## 对外接口速览（全部 Flask Blueprint 注册）
 
 鉴权使用 **Session Cookie + CSRF Token**；生产环境必须前端 TLS。管理员登录后可在 `/api/versions` 查看交互式 OpenAPI 风格文档。
 
@@ -309,9 +310,9 @@ docker run -d -p 8888:8888 --name mtscos-ai \
 
 ---
 
-## 🗃️ 分片数据库矩阵（按业务域拆分）
+## 分片数据库矩阵（按业务域拆分）
 
-```
+```text
 split_databases/
 ├── auth.db         用户 / 角色 / 权限 / 会话 / 2FA / VIKEY绑定
 ├── user.db         个人档案 / 家校关系 / 用户组 / 头像
@@ -330,9 +331,9 @@ split_databases/
 
 ---
 
-## 🧭 项目目录结构
+## 项目目录结构
 
-```
+```text
 MTSCOS-AI-Project/
 ├── server_real_db.py         ✅ 生产入口（识别MTS架构+启动分片库）
 ├── server_preview.py         🧪 预览入口
@@ -351,15 +352,15 @@ MTSCOS-AI-Project/
 │   ├── ai_firewall.py        AI防火墙服务
 │   └── vikey_driver.py       VIKEY硬件USB驱动
 ├── startup_modules/          core_init / db_config_loader / module_loader
-├── ai_engines/               41+ AI员工 / Agent / mechanism_ai / 布局修复
+├── ai_engines/               550+ AI员工 / 47 Agent / mechanism_ai / 布局修复
 ├── app/
 │   ├── ai/                   分领域AI引擎（命题/学习/诊断…）
 │   ├── middlewares/          访问控制 / 安全中间件 / CSRF…
 │   └── api/                  ai_firewall / ai_security_workforce / layout_ai / vikey / version
 ├── templates/                100+ Jinja2页面（index.html, mt_architecture.html, system_spec.html…）
 ├── static/                   images/logo.svg + favicon / css / js/vikey/
-├── split_databases/          ☝️ 9+ 域分片DB（持久化请挂载此卷）
-├── docs/                     完整文档索引 → 见「📚 文档导航」
+├── split_databases/          ☝️ 9+ 域分片DB（87张表，0空表；持久化请挂载此卷）
+├── docs/                     完整文档索引 → 见「文档导航」
 └── data/                     备份 / 导出 / 用户上传
 ```
 
@@ -367,7 +368,7 @@ MTSCOS-AI-Project/
 
 ---
 
-## 🛣️ 版本路线图
+## 版本路线图
 
 | 里程碑 | 目标时间 | 状态 |
 |---|:---:|:---:|
@@ -380,14 +381,14 @@ MTSCOS-AI-Project/
 
 ---
 
-## 🤝 如何参与贡献
+## 如何参与贡献
 
 任何形式的贡献都非常欢迎：
-- ⭐ ⭐ **点一下Star** ⭐ ⭐ 对项目很重要
-- 🐛 [提交Bug](https://github.com/wuchenghao15/MTSCOS-AI-Project/issues/new?template=bug_report.md)
-- 💡 [提新想法 / 产品讨论](https://github.com/wuchenghao15/MTSCOS-AI-Project/discussions)
-- 🌐 翻译文档、润色中/英文
-- 🧩 新增学科、题型、AI员工岗位
+- ⭐ **点一下Star** ⭐ 对项目很重要
+- [提交Bug](https://github.com/wuchenghao15/MTSCOS-AI-Project/issues/new?template=bug_report.md)
+- [提新想法 / 产品讨论](https://github.com/wuchenghao15/MTSCOS-AI-Project/discussions)
+- 翻译文档、润色中/英文
+- 新增学科、题型、AI员工岗位
 
 ### 本地开发流程
 
@@ -403,7 +404,8 @@ python3 -m pytest tests/ -x
 ```
 
 提交信息格式（Conventional Commits 1.0）：
-```
+
+```text
 feat(question): 新增语文阅读理解图文题
 fix(security): 修补SSRF漏洞外链
 docs(readme): 修正快速开始参数说明
@@ -415,24 +417,24 @@ docs(readme): 修正快速开始参数说明
 
 ---
 
-## 📚 文档导航
+## 文档导航
 
 | 文档 | 用途 |
 |---|---|
-| 🇺🇸 [英文 README](README.md) | English full documentation |
-| 🏛️ [MTS架构 v2.0 白皮书](docs/MT_ARCHITECTURE.md) | 40+ AI员工双引擎流水线详解 |
+| [英文 README](README.md) | English full documentation |
+| 🏛️ [MTS架构 v2.0 白皮书](docs/MT_ARCHITECTURE.md) | 550+ AI员工 / 47 Agent 双引擎流水线详解 |
 | 📋 [系统完整说明书（§1-§9硬约束）](docs/SYSTEM_DOC.md) | 系统规范、开发约束、对外能力、安全合规 |
 | 🚀 [部署指南](docs/DEPLOYMENT_GUIDE.md) | 生产 / Docker / K8s / TLS / 高可用 |
 | 🚧 [安全与漏洞响应](docs/SECURITY.md) | 漏洞上报流程 / WAF规则 / CI扫描矩阵 |
 | ➕ [贡献者指南](docs/CONTRIBUTING.md) | 代码规范 / 提交格式 / PR流程 |
 | 📦 [项目结构详解](docs/PROJECT_STRUCTURE.md) | 完整目录树、职责划分、模块归属 |
 | 🗺️ [版本变更日志](docs/CHANGELOG.md) | v1.0至今全量变更 |
-| 🧠 [AI引擎架构](ai_engines/AI_ENGINE_ARCHITECTURE.md) | 41+ AI员工矩阵 |
+| 🧠 [AI引擎架构](ai_engines/AI_ENGINE_ARCHITECTURE.md) | 550+ AI员工矩阵 |
 | 🏷️ [GitHub Releases](https://github.com/wuchenghao15/MTSCOS-AI-Project/releases) | 每个版本的打包下载 |
 
 ---
 
-## ⚖️ 许可协议
+## 许可协议
 
 MIT License © 2026 wuchenghao15 / MTSCOS AI — 全文见 [`LICENSE`](LICENSE)
 
@@ -444,7 +446,7 @@ MIT License © 2026 wuchenghao15 / MTSCOS AI — 全文见 [`LICENSE`](LICENSE)
 
 <div align="center">
 
-### 🌟 如果这个项目帮你节省了时间，点个 Star 再走！
+### 如果这个项目帮你节省了时间，点个 Star 再走！
 
 [![Star增长趋势](https://starchart.cc/wuchenghao15/MTSCOS-AI-Project.svg?variant=adaptive)](https://starchart.cc/wuchenghao15/MTSCOS-AI-Project)
 
